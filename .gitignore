@@ -1,0 +1,141 @@
+# NetNeural SoftwareMono - Gitignore
+# This monorepo manages documentation and scripts but excludes external repository changes
+
+# =============================================================================
+# EXTERNAL REPOSITORIES - Exclude all changes from external repos
+# =============================================================================
+
+# Backend Services
+account-manager/
+alert-listener/
+alerts-bfu/
+api-slurper/
+cellular-alerts/
+cellular-gateway/
+cellular-manager/
+cloud-data-manager/
+core-ui/
+data-manager/
+device-ingress/
+digital-twin/
+edge-vmark-input/
+iot-common/
+mod-edge-core/
+mqtt2db/
+notifications/
+recall-ingest/
+sso/
+ui-dev-server/
+vmark-cloud-gateway/
+
+# Frontend Applications
+cellular-ui/
+origin-ui/
+react-components/
+sso-ui/
+store-ui/
+
+# Mobile Applications
+Alerts-Android/
+nn-alerts-ios/
+
+# Bundle Components
+bundle-api-provision-thread/
+bundle-input-device-rest/
+bundle-iot-device-admin/
+bundle-mdns-core-python/
+bundle-other-mdns-hub/
+bundle-output-netneural/
+bundle-provision-security-data-netneural/
+bundle-template-cpp/
+bundle-template-java/
+bundle-template-python/
+
+# Infrastructure & Tools
+action-get-latest-tag/
+dev-coap-server-californium/
+digital-ocean-k8s-setup/
+docker-build-template/
+hydrant/
+merchandising/
+test-stripe-backend/
+
+# Integration Services
+cloud-device-admin-mqtt/
+core-mdns-site-local-broadcast/
+Onboarding/
+ot-commissioner/
+Policies/
+
+# =============================================================================
+# ALLOW THESE FILES/FOLDERS (Monorepo Management)
+# =============================================================================
+
+# Important: Use ! to explicitly include files you want to track
+!docs/
+!clone_all_repos.sh
+!README.md
+!.gitignore
+
+# =============================================================================
+# STANDARD GITIGNORE PATTERNS
+# =============================================================================
+
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and Runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs (in case you build anything locally)
+dist/
+build/
+*.tgz
+*.tar.gz
+
+# Node modules (if you install any)
+node_modules/
+
+# Go build outputs (if you build any Go services)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+coverage.txt
