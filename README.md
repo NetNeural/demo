@@ -92,10 +92,9 @@ SoftwareMono/
 
 ### Initial Setup
 
-1. **Clone the monorepo** (already done):
+1. **Clone all external repositories** (if not done):
    ```bash
-   # Repositories cloned via clone_all_repos.sh
-   ls -la  # View all 50+ repositories
+   ./clone_all_repos.sh  # Clones all 50+ NetNeural repositories
    ```
 
 2. **Set up Go environment**:
@@ -112,6 +111,31 @@ SoftwareMono/
    cd ../cellular-ui && npm install
    cd ../react-components && npm install
    ```
+
+### 🔄 External Repository Management
+
+This monorepo is configured to track only documentation and management scripts, while allowing free modification of all external repositories without affecting the monorepo's Git history.
+
+```bash
+# Update all external repositories
+./update_all_repos.sh
+
+# Check status of all external repositories  
+./check_repo_status.sh
+
+# Work freely in any external repo
+cd sso
+git checkout -b feature/new-auth
+# Make changes, commit, push - monorepo remains unaffected
+```
+
+**What's tracked in this monorepo:**
+- ✅ Documentation (`docs/`)
+- ✅ Management scripts (`*.sh`)  
+- ✅ Main README and configuration
+- ❌ External repository changes (50+ repos ignored)
+
+**See [External Repository Management Guide](docs/EXTERNAL_REPO_MANAGEMENT.md) for detailed workflows.**
 
 ### Development Workflow
 
