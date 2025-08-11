@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetNeural Competitive Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table th {
+            background-color: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .comparison-table tr:hover {
+            background-color: #f7fafc;
+        }
+        
+        .score {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .score.high { background-color: #48bb78; }
+        .score.medium { background-color: #ed8936; }
+        .score.low { background-color: #e53e3e; }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .metric-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .wide-card {
+            grid-column: 1 / -1;
+        }
+        
+        .rating-stars {
+            color: #fbbf24;
+            font-size: 1.2em;
+        }
+        
+        .company-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NetNeural Competitive Analysis Dashboard</h1>
+            <p>Comprehensive Market Intelligence & Performance Metrics</p>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Market Position Chart -->
+            <div class="card">
+                <h3>Market Position Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="marketPositionChart"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                        <span>NetNeural</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4ecdc4;"></div>
+                        <span>Cumulocity</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #45b7d1;"></div>
+                        <span>Particle</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #feca57;"></div>
+                        <span>Kaaiot</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Revenue Comparison -->
+            <div class="card">
+                <h3>Annual Revenue Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Customer Satisfaction Ratings -->
+            <div class="card">
+                <h3>Customer Satisfaction Metrics</h3>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span class="company-logo">C</span>Cumulocity
+                    </div>
+                    <div class="metric-value">
+                        <span class="rating-stars">★★★★☆</span> 4.2/5.0
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span class="company-logo">P</span>Particle
+                    </div>
+                    <div class="metric-value">
+                        <span class="rating-stars">★★★★★</span> 4.5/5.0
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span class="company-logo">K</span>Kaaiot
+                    </div>
+                    <div class="metric-value">
+                        <span class="rating-stars">★★★★☆</span> 4.3/5.0
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span class="company-logo">N</span>NetNeural
+                    </div>
+                    <div class="metric-value">
+                        <span style="color: #9ca3af;">TBD</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Health Scores -->
+            <div class="card">
+                <h3>Business Health Assessment</h3>
+                <div class="chart-container">
+                    <canvas id="healthChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Market Share Evolution -->
+            <div class="card">
+                <h3>Market Share Projection</h3>
+                <div class="chart-container">
+                    <canvas id="marketShareChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Competitive Scoring Matrix -->
+            <div class="card">
+                <h3>Competitive Scoring Matrix</h3>
+                <div class="chart-container">
+                    <canvas id="scoringChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comprehensive Comparison Table -->
+        <div class="card wide-card">
+            <h3>Comprehensive Competitive Analysis Matrix</h3>
+            <div class="table-container">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>Founded</th>
+                            <th>Annual Revenue</th>
+                            <th>Market Cap/Funding</th>
+                            <th>Customer Rating</th>
+                            <th>Market Share</th>
+                            <th>Financial Health</th>
+                            <th>Innovation Score</th>
+                            <th>Customer Base</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="company-logo">C</span><strong>Cumulocity IoT</strong></td>
+                            <td>1969 (55+ years)</td>
+                            <td>€878.5M</td>
+                            <td>€3.8B Market Cap</td>
+                            <td><span class="score medium">4.2/5.0</span></td>
+                            <td><span class="score high">15%</span></td>
+                            <td><span class="score high">9.5/10</span></td>
+                            <td><span class="score high">8.0/10</span></td>
+                            <td>10,000+ companies</td>
+                        </tr>
+                        <tr>
+                            <td><span class="company-logo">P</span><strong>Particle</strong></td>
+                            <td>2012 (12 years)</td>
+                            <td>$50-100M (est.)</td>
+                            <td>$83.2M Funding</td>
+                            <td><span class="score high">4.5/5.0</span></td>
+                            <td><span class="score medium">8%</span></td>
+                            <td><span class="score medium">7.5/10</span></td>
+                            <td><span class="score high">9.0/10</span></td>
+                            <td>240K+ developers</td>
+                        </tr>
+                        <tr>
+                            <td><span class="company-logo">K</span><strong>Kaaiot</strong></td>
+                            <td>2016 (8 years)</td>
+                            <td>$10-25M (est.)</td>
+                            <td>Private Funding</td>
+                            <td><span class="score medium">4.3/5.0</span></td>
+                            <td><span class="score low">3%</span></td>
+                            <td><span class="score medium">6.5/10</span></td>
+                            <td><span class="score medium">7.0/10</span></td>
+                            <td>500+ companies</td>
+                        </tr>
+                        <tr>
+                            <td><span class="company-logo">N</span><strong>NetNeural</strong></td>
+                            <td>2024 (<1 year)</td>
+                            <td>Pre-revenue</td>
+                            <td>Seeking Funding</td>
+                            <td><span class="score low">TBD</span></td>
+                            <td><span class="score low">0%</span></td>
+                            <td><span class="score low">5.0/10</span></td>
+                            <td><span class="score high">8.5/10</span></td>
+                            <td>Target: Mid-market</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Market Opportunity Analysis -->
+        <div class="card wide-card">
+            <h3>NetNeural Market Opportunity Analysis</h3>
+            <div class="dashboard" style="margin: 0;">
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #0369a1; margin-bottom: 10px;">Market Size</h4>
+                    <div class="metric-value" style="color: #0369a1;">$79.13B by 2030</div>
+                    <p style="color: #0369a1; opacity: 0.8;">Global IoT Platform Market</p>
+                </div>
+                <div style="background: #f0fdf4; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #15803d; margin-bottom: 10px;">Target Market</h4>
+                    <div class="metric-value" style="color: #15803d;">$2.3B SAM</div>
+                    <p style="color: #15803d; opacity: 0.8;">Mid-market Segment</p>
+                </div>
+                <div style="background: #fffbeb; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #d97706; margin-bottom: 10px;">Growth Rate</h4>
+                    <div class="metric-value" style="color: #d97706;">27.6% CAGR</div>
+                    <p style="color: #d97706; opacity: 0.8;">AIoT Market Growth</p>
+                </div>
+                <div style="background: #fdf2f8; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #be185d; margin-bottom: 10px;">Opportunity</h4>
+                    <div class="metric-value" style="color: #be185d;">67% Cost Savings</div>
+                    <p style="color: #be185d; opacity: 0.8;">vs. Enterprise Solutions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Market Position Chart
+        const marketCtx = document.getElementById('marketPositionChart').getContext('2d');
+        new Chart(marketCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'NetNeural',
+                    data: [{x: 7, y: 9}], // Features vs Value
+                    backgroundColor: '#ff6b6b',
+                    borderColor: '#ff5252',
+                    pointRadius: 15
+                }, {
+                    label: 'Cumulocity',
+                    data: [{x: 9, y: 6}],
+                    backgroundColor: '#4ecdc4',
+                    borderColor: '#26a69a',
+                    pointRadius: 15
+                }, {
+                    label: 'Particle',
+                    data: [{x: 6, y: 8}],
+                    backgroundColor: '#45b7d1',
+                    borderColor: '#2196f3',
+                    pointRadius: 15
+                }, {
+                    label: 'Kaaiot',
+                    data: [{x: 8, y: 7}],
+                    backgroundColor: '#feca57',
+                    borderColor: '#ff9800',
+                    pointRadius: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Feature Completeness' },
+                        min: 0, max: 10
+                    },
+                    y: {
+                        title: { display: true, text: 'Value Proposition' },
+                        min: 0, max: 10
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Cumulocity', 'Particle', 'Kaaiot', 'NetNeural'],
+                datasets: [{
+                    label: 'Annual Revenue (Millions USD)',
+                    data: [1200, 75, 17.5, 0],
+                    backgroundColor: ['#4ecdc4', '#45b7d1', '#feca57', '#ff6b6b'],
+                    borderColor: ['#26a69a', '#2196f3', '#ff9800', '#ff5252'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Revenue (Millions USD)' }
+                    }
+                }
+            }
+        });
+        
+        // Business Health Chart
+        const healthCtx = document.getElementById('healthChart').getContext('2d');
+        new Chart(healthCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Financial Stability', 'Market Position', 'Innovation', 'Customer Satisfaction', 'Growth Potential'],
+                datasets: [{
+                    label: 'Cumulocity',
+                    data: [9.5, 9, 8, 8.2, 6],
+                    backgroundColor: 'rgba(78, 205, 196, 0.2)',
+                    borderColor: '#4ecdc4',
+                    pointBackgroundColor: '#4ecdc4',
+                }, {
+                    label: 'Particle',
+                    data: [7.5, 7, 9, 8.9, 9],
+                    backgroundColor: 'rgba(69, 183, 209, 0.2)',
+                    borderColor: '#45b7d1',
+                    pointBackgroundColor: '#45b7d1',
+                }, {
+                    label: 'Kaaiot',
+                    data: [6.5, 5.5, 7, 7.8, 7],
+                    backgroundColor: 'rgba(254, 202, 87, 0.2)',
+                    borderColor: '#feca57',
+                    pointBackgroundColor: '#feca57',
+                }, {
+                    label: 'NetNeural',
+                    data: [5, 3, 8.5, 0, 9.5],
+                    backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                    borderColor: '#ff6b6b',
+                    pointBackgroundColor: '#ff6b6b',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 10
+                    }
+                }
+            }
+        });
+        
+        // Market Share Evolution
+        const marketShareCtx = document.getElementById('marketShareChart').getContext('2d');
+        new Chart(marketShareCtx, {
+            type: 'line',
+            data: {
+                labels: ['2024', '2025', '2026', '2027', '2028'],
+                datasets: [{
+                    label: 'Cumulocity',
+                    data: [15, 14.5, 14, 13.5, 13],
+                    borderColor: '#4ecdc4',
+                    tension: 0.1
+                }, {
+                    label: 'Particle',
+                    data: [8, 8.5, 9, 9.5, 10],
+                    borderColor: '#45b7d1',
+                    tension: 0.1
+                }, {
+                    label: 'Kaaiot',
+                    data: [3, 3.2, 3.5, 3.8, 4],
+                    borderColor: '#feca57',
+                    tension: 0.1
+                }, {
+                    label: 'NetNeural',
+                    data: [0, 0.01, 0.03, 0.08, 0.25],
+                    borderColor: '#ff6b6b',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        title: { display: true, text: 'Market Share (%)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Competitive Scoring Chart
+        const scoringCtx = document.getElementById('scoringChart').getContext('2d');
+        new Chart(scoringCtx, {
+            type: 'bar',
+            data: {
+                labels: ['NetNeural', 'Cumulocity', 'Particle', 'Kaaiot'],
+                datasets: [{
+                    label: 'Risk (10 = Low Risk)',
+                    data: [6, 8, 7, 7],
+                    backgroundColor: '#ff6b6b'
+                }, {
+                    label: 'Value (10 = High Value)',
+                    data: [9, 6, 8, 7],
+                    backgroundColor: '#4ecdc4'
+                }, {
+                    label: 'Features (10 = Complete)',
+                    data: [7, 9, 6, 8],
+                    backgroundColor: '#45b7d1'
+                }, {
+                    label: 'Support (10 = Excellent)',
+                    data: [6, 9, 7, 7],
+                    backgroundColor: '#feca57'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
