@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "deploy:preview": "npm run build:static && echo 'Static files ready in ./out directory'",
+    "clean": "rm -rf .next out"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

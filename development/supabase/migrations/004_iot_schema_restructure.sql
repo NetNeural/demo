@@ -251,7 +251,8 @@ CREATE INDEX IF NOT EXISTS idx_sensors_type ON public.sensors(sensor_type);
 CREATE INDEX IF NOT EXISTS idx_gateways_status ON public.gateways(status);
 CREATE INDEX IF NOT EXISTS idx_locations_coordinates ON public.locations(latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_user_permissions_user ON public.user_permissions(user_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_org_time ON public.activity_logs(organization_id, created_at DESC);
+-- Commented out temporarily - will be added in migration 006
+-- CREATE INDEX IF NOT EXISTS idx_activity_logs_org_time ON public.activity_logs(organization_id, created_at DESC);
 
 -- Create updated_at triggers
 CREATE OR REPLACE FUNCTION public.handle_updated_at()

@@ -11,6 +11,7 @@
     "dev:watch": "turbo run dev:watch",
     "dev:hot": "turbo run dev --parallel --no-cache",
     "build": "turbo run build",
+    "build:web": "cd apps/web && npm run build:static",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
@@ -32,7 +33,11 @@
     "unraid:logs": "docker-compose -f docker/docker-compose.unraid.yml --env-file .env.unraid logs -f",
     "deploy:remote": "docker-compose -f docker/docker-compose.remote.yml up -d --build",
     "docker:remote:down": "docker-compose -f docker/docker-compose.remote.yml down",
-    "docker:remote:logs": "docker-compose -f docker/docker-compose.remote.yml logs -f"
+    "docker:remote:logs": "docker-compose -f docker/docker-compose.remote.yml logs -f",
+    "deploy": "bash ../scripts/deploy.sh",
+    "deploy:supabase": "supabase db push && supabase gen types typescript --linked > packages/types/src/supabase.ts",
+    "deploy:web": "npm run build:web",
+    "deploy:check": "bash ../scripts/deploy.sh --dry-run"
   },
   "devDependencies": {
     "@types/node": "^24.2.1",

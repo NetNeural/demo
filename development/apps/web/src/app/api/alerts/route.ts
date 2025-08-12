@@ -1,20 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+// Required for static export
+export const dynamic = 'force-static'
+export const revalidate = false
 
 export async function GET(request: NextRequest) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const response = await fetch(`${apiUrl}/api/alerts`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    const supabase = createClient()
+    const { data: alerts, error } = await supabase
+      .from('alerts')
+      .select(`
+        *,
+        sensor:sensors(name, location, type)
+      `)
+      .eq('is_active', true)
+      .order('triggered_at', { ascending: false })
 
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
+    if (error) {
+      throw error
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    return NextResponse.json(alerts)
   } catch (error) {
     console.error('Error fetching alerts:', error)
     

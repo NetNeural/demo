@@ -1,9 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Static export configuration for GitHub Pages
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+  
+  // GitHub Pages configuration
+  basePath: process.env.NODE_ENV === 'production' ? '/SoftwareMono' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/SoftwareMono/' : '',
+  
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
+  
   // Optimize for development hot reload
   typescript: {
     // Allow production builds to successfully complete even if there are type errors
