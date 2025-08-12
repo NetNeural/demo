@@ -9,7 +9,6 @@ const navItems = [
   { href: '/', label: 'Home', key: 'home' },
   { href: '/dashboard', label: 'Dashboard', key: 'dashboard' },
   { href: '/mvp', label: 'MVP Demo', key: 'mvp' },
-  { href: '/overview', label: 'Overview', key: 'overview' },
 ];
 
 export default function Navigation({ currentPage }: NavigationProps) {

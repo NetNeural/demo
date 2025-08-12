@@ -1,8 +1,14 @@
 'use client';
 
 import React from 'react';
-import MVPDashboard from '../../components/dashboard/MVPDashboardEnhanced';
+import UnifiedDashboard from '../../components/dashboard/UnifiedDashboard';
 
 export default function MVPPage() {
-  return <MVPDashboard />;
+  return (
+    <UnifiedDashboard 
+      mode="demo" 
+      title="MVP Dashboard"
+      currentPage="mvp"
+    />
+  );
 }

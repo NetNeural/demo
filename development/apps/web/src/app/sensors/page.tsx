@@ -10,7 +10,6 @@ export default function SensorsPage() {
             <Link href="/" className="nav-link">← Home</Link>
             <Link href="/dashboard" className="nav-link">Dashboard</Link>
             <Link href="/mvp" className="nav-link">MVP Demo</Link>
-            <Link href="/overview" className="nav-link">Overview</Link>
             <Link href="/sensors" className="nav-link active">Sensors</Link>
           </div>
           <div className="text-small">Sensor Management</div>
