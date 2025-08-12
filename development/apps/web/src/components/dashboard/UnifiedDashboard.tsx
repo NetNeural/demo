@@ -7,7 +7,7 @@ import { SimpleIcons } from '../icons/SimpleIcons';
 import { SensorCard } from '../sensors/SensorCard';
 import { LocationMap } from '../maps/LocationMap';
 import { AlertPanel } from '../alerts/AlertPanel';
-import { SensorAnalytics } from '../analytics/SensorAnalytics';
+import { SensorTypeAnalytics } from '../analytics/SensorTypeAnalytics';
 import { MetricCard } from './MetricCard';
 import { StatusBadge } from './StatusBadge';
 import { ProgressBar } from './ProgressBar';
@@ -99,44 +99,80 @@ const generateMockSensors = (): Sensor[] => [
     status: 'online',
     location: 'Building B - Floor 2',
     department: 'Storage',
-    lastUpdate: new Date(Date.now() - Math.random() * 300000),
-    batteryLevel: 92
+    lastUpdate: new Date(Date.now() - Math.random() * 200000),
+    batteryLevel: 92 + Math.random() * 8
   },
   {
     id: '3',
-    name: 'Motion Detector C1',
+    name: 'Motion Detector C3',
     type: 'motion',
-    value: Math.random() > 0.7 ? 1 : 0,
-    unit: '',
+    value: Math.random() > 0.7 ? 1 : 0, // Binary: 1 = motion detected, 0 = no motion
+    unit: 'detected',
     status: 'online',
     location: 'Building C - Entrance',
     department: 'Security',
-    lastUpdate: new Date(Date.now() - Math.random() * 300000),
-    batteryLevel: 78
+    lastUpdate: new Date(Date.now() - Math.random() * 60000),
+    batteryLevel: 78 + Math.random() * 22
   },
   {
     id: '4',
-    name: 'Pressure Gauge A3',
-    type: 'pressure',
-    value: 1013 + Math.random() * 20 - 10,
-    unit: 'hPa',
-    status: Math.random() > 0.95 ? 'offline' : 'online',
-    location: 'Building A - Floor 3',
-    department: 'Operations',
-    lastUpdate: new Date(Date.now() - Math.random() * 300000),
-    batteryLevel: 88
+    name: 'Air Quality Monitor D4',
+    type: 'air_quality',
+    value: 25 + Math.random() * 75, // AQI scale 0-100+
+    unit: 'AQI',
+    status: 'online',
+    location: 'Building D - Office Area',
+    department: 'Facilities',
+    lastUpdate: new Date(Date.now() - Math.random() * 400000),
+    batteryLevel: 88 + Math.random() * 12
   },
   {
     id: '5',
-    name: 'Light Sensor D1',
+    name: 'Pressure Sensor E5',
+    type: 'pressure',
+    value: 1013 + Math.random() * 40 - 20, // Barometric pressure in hPa
+    unit: 'hPa',
+    status: Math.random() > 0.95 ? 'warning' : 'online',
+    location: 'Building E - Laboratory',
+    department: 'Research',
+    lastUpdate: new Date(Date.now() - Math.random() * 180000),
+    batteryLevel: 91 + Math.random() * 9
+  },
+  {
+    id: '6',
+    name: 'Sound Level Monitor F6',
+    type: 'sound',
+    value: 35 + Math.random() * 50, // dB levels
+    unit: 'dB',
+    status: 'online',
+    location: 'Building F - Manufacturing',
+    department: 'Production',
+    lastUpdate: new Date(Date.now() - Math.random() * 120000),
+    batteryLevel: 76 + Math.random() * 24
+  },
+  {
+    id: '7',
+    name: 'Light Sensor G7',
     type: 'light',
-    value: 300 + Math.random() * 700,
+    value: 200 + Math.random() * 800, // Lux levels
     unit: 'lux',
     status: 'online',
-    location: 'Building D - Laboratory',
-    department: 'Research',
-    lastUpdate: new Date(Date.now() - Math.random() * 300000),
-    batteryLevel: 95
+    location: 'Building G - Office Space',
+    department: 'Administration',
+    lastUpdate: new Date(Date.now() - Math.random() * 90000),
+    batteryLevel: 94 + Math.random() * 6
+  },
+  {
+    id: '8',
+    name: 'Vibration Monitor H8',
+    type: 'vibration',
+    value: 0.1 + Math.random() * 2.0, // Vibration intensity
+    unit: 'mm/s',
+    status: Math.random() > 0.8 ? 'alert' : 'online',
+    location: 'Building H - Machine Room',
+    department: 'Maintenance',
+    lastUpdate: new Date(Date.now() - Math.random() * 150000),
+    batteryLevel: 83 + Math.random() * 17
   }
 ];
 
@@ -219,40 +255,109 @@ export default function UnifiedDashboard({
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedSensor, setSelectedSensor] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [sensorStatusFilter, setSensorStatusFilter] = useState<'all' | 'online' | 'issues'>('all');
   const [sensorReadings, setSensorReadings] = useState<SensorReading[]>([]);
   // Generate mock sensor readings for demo mode
   const generateMockSensorReadings = (sensorType: string, sensorId: string) => {
-    const readings = [];
     const now = new Date();
-    const baseValues: { [key: string]: { base: number; unit: string; variance: number } } = {
-      'Temperature': { base: 22, unit: '°C', variance: 5 },
-      'Humidity': { base: 65, unit: '%', variance: 15 },
-      'Motion': { base: 0.5, unit: 'events/min', variance: 0.8 },
-      'Pressure': { base: 1013, unit: 'hPa', variance: 20 },
-      'Light': { base: 450, unit: 'lux', variance: 200 },
-      'Air Quality': { base: 85, unit: 'AQI', variance: 15 },
-      'Noise': { base: 45, unit: 'dB', variance: 10 },
-      'Power': { base: 120, unit: 'W', variance: 30 }
-    };
-
-    const sensorConfig = baseValues[sensorType] || baseValues['Temperature'];
+    const readings = [];
     
-    // Generate 24 hours of data (every 30 minutes = 48 points)
-    for (let i = 48; i >= 0; i--) {
-      const timestamp = new Date(now.getTime() - (i * 30 * 60 * 1000));
-      const variation = (Math.random() - 0.5) * sensorConfig.variance;
-      const trend = Math.sin(i * 0.1) * (sensorConfig.variance * 0.3); // Add some wave pattern
-      const value = Math.max(0, sensorConfig.base + variation + trend);
+    // Generate 24 hours of readings (one every hour)
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      let value: number;
+      let unit: string;
+      
+      // Generate realistic data patterns based on sensor type
+      switch (sensorType.toLowerCase()) {
+        case 'temperature':
+          // Daily temperature pattern: cooler at night, warmer during day
+          const hour = time.getHours();
+          const baseTemp = 20 + Math.sin((hour - 6) * Math.PI / 12) * 8; // Peak at 2 PM
+          value = baseTemp + (Math.random() - 0.5) * 3;
+          unit = '°C';
+          break;
+          
+        case 'humidity':
+          // Humidity inversely related to temperature + random variation
+          const tempValue = 20 + Math.sin((time.getHours() - 6) * Math.PI / 12) * 8;
+          const baseHumidity = 70 - (tempValue - 20) * 2; // Inverse relationship
+          value = Math.max(20, Math.min(80, baseHumidity + (Math.random() - 0.5) * 10));
+          unit = '%';
+          break;
+          
+        case 'motion':
+          // Motion detection: higher activity during business hours
+          const businessHour = time.getHours() >= 8 && time.getHours() <= 18;
+          const probability = businessHour ? 0.7 : 0.1;
+          value = Math.random() < probability ? 1 : 0;
+          unit = 'detected';
+          break;
+          
+        case 'air_quality':
+        case 'air quality':
+          // AQI: varies throughout day, higher during rush hours
+          const rushHour = (time.getHours() >= 7 && time.getHours() <= 9) || 
+                          (time.getHours() >= 17 && time.getHours() <= 19);
+          const baseAQI = rushHour ? 60 : 40;
+          value = Math.max(10, baseAQI + (Math.random() - 0.5) * 30);
+          unit = 'AQI';
+          break;
+          
+        case 'pressure':
+        case 'barometric':
+          // Atmospheric pressure: slow changes with weather patterns
+          const basePressure = 1013 + Math.sin(time.getTime() / (1000 * 60 * 60 * 24)) * 15;
+          value = basePressure + (Math.random() - 0.5) * 5;
+          unit = 'hPa';
+          break;
+          
+        case 'sound':
+          // Sound levels: higher during day, lower at night
+          const isDay = time.getHours() >= 6 && time.getHours() <= 22;
+          const baseSound = isDay ? 45 : 25;
+          value = baseSound + Math.random() * 20;
+          unit = 'dB';
+          break;
+          
+        case 'light':
+          // Light levels: follow sun pattern
+          const sunHour = time.getHours();
+          let lightValue = 0;
+          if (sunHour >= 6 && sunHour <= 18) {
+            const sunIntensity = Math.sin((sunHour - 6) * Math.PI / 12);
+            lightValue = sunIntensity * 800 + Math.random() * 100;
+          } else {
+            lightValue = Math.random() * 50; // Artificial lighting
+          }
+          value = Math.max(0, lightValue);
+          unit = 'lux';
+          break;
+          
+        case 'vibration':
+          // Vibration: higher during operational hours
+          const operational = time.getHours() >= 7 && time.getHours() <= 19;
+          const baseVibration = operational ? 0.5 : 0.1;
+          value = baseVibration + Math.random() * 0.3;
+          unit = 'mm/s';
+          break;
+          
+        default:
+          // Fallback for unknown sensor types
+          value = 50 + Math.random() * 100;
+          unit = 'units';
+      }
       
       readings.push({
-        id: `${sensorId}_${i}`,
+        id: `reading-${sensorId}-${i}`,
         value: parseFloat(value.toFixed(2)),
-        unit: sensorConfig.unit,
-        reading_time: timestamp.toISOString()
+        unit: unit,
+        reading_time: time.toISOString(),
       });
     }
     
-    return readings;
+    return readings.reverse(); // Return in chronological order
   };
 
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
@@ -404,9 +509,38 @@ export default function UnifiedDashboard({
   };
 
   const handleLocationClick = (locationId: string) => {
-    const locationSensors = sensors.filter(s => s.location.includes(locationId));
-    console.log('Location sensors:', locationSensors);
+    if (selectedLocation === locationId) {
+      // If clicking the same location, clear the filter
+      setSelectedLocation(null);
+    } else {
+      // Set the selected location to filter sensors
+      setSelectedLocation(locationId);
+    }
+    // Clear selected sensor when changing location filter
+    setSelectedSensor(null);
   };
+
+  // Filter sensors based on selected location and status
+  const filteredSensors = sensors
+    .filter(s => {
+      // Location filter
+      if (selectedLocation) {
+        const locationMatch = s.location.includes(selectedLocation) || 
+                             s.location.toLowerCase().includes(selectedLocation.toLowerCase());
+        if (!locationMatch) return false;
+      }
+      
+      // Status filter
+      if (sensorStatusFilter === 'online') {
+        return normalizeStatus(s.status) === 'online';
+      } else if (sensorStatusFilter === 'issues') {
+        const status = normalizeStatus(s.status);
+        return status === 'warning' || status === 'error' || status === 'offline';
+      }
+      
+      // 'all' filter - no status filtering
+      return true;
+    });
 
   // Calculate metrics
   const onlineSensors = sensors.filter(s => normalizeStatus(s.status) === 'online').length;
@@ -689,34 +823,87 @@ export default function UnifiedDashboard({
             <div className="grid grid-3 gap-6">
               {/* Left Column - Sensors and Map */}
               <div className="grid-span-2 flex flex-col gap-6">
-                {/* Location Map */}
+                {/* Location Map - Hidden for now, will redesign later
                 <div className="card">
                   <div className="card-header">
-                    <h2 className="card-title">Location Overview</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="card-title">Location Overview</h2>
+                      <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>{filteredSensors.filter(s => s.status === 'online').length} Online</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <span>{filteredSensors.filter(s => s.status === 'warning' || s.status === 'alert').length} Alerts</span>
+                        </div>
+                        <span className="text-gray-500">
+                          {locations.length} Locations • {filteredSensors.length}/{sensors.length} Sensors
+                          {selectedLocation && <span className="text-blue-600 ml-2">• Filtered by {selectedLocation}</span>}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="card-body">
-                    <LocationMap 
-                      locations={transformLocationsForMap(locations)} 
-                      onLocationSelect={handleLocationClick}
-                    />
+                    <div className="h-32">
+                      <LocationMap 
+                        locations={transformLocationsForMap(locations)} 
+                        onLocationSelect={handleLocationClick}
+                      />
+                    </div>
                   </div>
                 </div>
+                */}
 
                 {/* Sensors Grid */}
                 <div className="card">
                   <div className="card-header">
                     <div className="flex items-center justify-between">
-                      <h2 className="card-title">Sensors</h2>
+                      <div className="flex items-center gap-3">
+                        <h2 className="card-title">Sensors</h2>
+                        {selectedLocation && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                              📍 {selectedLocation}
+                            </span>
+                            <button 
+                              onClick={() => setSelectedLocation(null)}
+                              className="text-gray-400 hover:text-gray-600 text-sm"
+                              title="Clear location filter"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
-                        <button className="btn btn-primary btn-sm">All</button>
-                        <button className="btn btn-secondary btn-sm">Online</button>
-                        <button className="btn btn-secondary btn-sm">Issues</button>
+                        <span className="text-sm text-gray-500">
+                          {filteredSensors.length} of {sensors.length}
+                        </span>
+                        <button 
+                          onClick={() => setSensorStatusFilter('all')}
+                          className={`btn btn-sm ${sensorStatusFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          All
+                        </button>
+                        <button 
+                          onClick={() => setSensorStatusFilter('online')}
+                          className={`btn btn-sm ${sensorStatusFilter === 'online' ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          Online
+                        </button>
+                        <button 
+                          onClick={() => setSensorStatusFilter('issues')}
+                          className={`btn btn-sm ${sensorStatusFilter === 'issues' ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          Issues
+                        </button>
                       </div>
                     </div>
                   </div>
                   <div className="card-body">
                     <div className="grid grid-2 gap-4">
-                      {sensors.map((sensor) => (
+                      {filteredSensors.map((sensor) => (
                         <div
                           key={sensor.id}
                           className={`cursor-pointer transition-all border rounded-lg p-4 ${
@@ -740,25 +927,32 @@ export default function UnifiedDashboard({
                   <div className="card">
                     <div className="card-header">
                       <h2 className="card-title">Analytics: {selectedSensorData.name}</h2>
+                      <p className="text-sm text-gray-600">
+                        {selectedSensorData.location} • {selectedSensorData.department}
+                      </p>
                     </div>
                     <div className="card-body">
                       {mode === 'production' ? (
-                        <SensorAnalytics
+                        <SensorTypeAnalytics
                           sensorId={selectedSensorData.id}
                           sensorName={selectedSensorData.name}
                           sensorType={selectedSensorData.type}
                           readings={transformSensorReadings(sensorReadings)}
                           timeRange={timeRange}
                           onTimeRangeChange={setTimeRange}
+                          location={selectedSensorData.location}
+                          department={selectedSensorData.department}
                         />
                       ) : (
-                        <SensorAnalytics
+                        <SensorTypeAnalytics
                           sensorId={selectedSensorData.id}
                           sensorName={selectedSensorData.name}
                           sensorType={selectedSensorData.type}
                           readings={generateMockSensorReadings(selectedSensorData.type, selectedSensorData.id)}
                           timeRange={timeRange}
                           onTimeRangeChange={setTimeRange}
+                          location={selectedSensorData.location}
+                          department={selectedSensorData.department}
                         />
                       )}
                     </div>
@@ -781,7 +975,7 @@ export default function UnifiedDashboard({
             <div className="flex flex-col gap-6">
               <h2 className="h2">Location Overview</h2>
               
-              <div className="grid grid-3 gap-6">
+              <div className="grid grid-4 gap-4">
                 {locations.map((location) => (
                   <MetricCard
                     key={location.id}

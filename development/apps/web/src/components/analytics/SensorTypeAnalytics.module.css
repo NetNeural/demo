@@ -1,0 +1,358 @@
+/* Sensor Type Analytics Styles */
+
+/* Temperature Analytics */
+.temperature-status-good {
+  border-color: #10b981;
+}
+
+.temperature-status-cool {
+  border-color: #06b6d4;
+}
+
+.temperature-status-optimal {
+  border-color: #10b981;
+}
+
+.temperature-status-warm {
+  border-color: #f59e0b;
+}
+
+.temperature-status-hot {
+  border-color: #ef4444;
+}
+
+.temperature-badge-good {
+  background-color: #10b981;
+}
+
+.temperature-badge-cool {
+  background-color: #06b6d4;
+}
+
+.temperature-badge-optimal {
+  background-color: #10b981;
+}
+
+.temperature-badge-warm {
+  background-color: #f59e0b;
+}
+
+.temperature-badge-hot {
+  background-color: #ef4444;
+}
+
+/* Humidity Analytics */
+.humidity-status-dry {
+  border-color: #f59e0b;
+}
+
+.humidity-status-optimal {
+  border-color: #10b981;
+}
+
+.humidity-status-humid {
+  border-color: #ef4444;
+}
+
+.humidity-badge-dry {
+  background-color: #f59e0b;
+}
+
+.humidity-badge-optimal {
+  background-color: #10b981;
+}
+
+.humidity-badge-humid {
+  background-color: #ef4444;
+}
+
+/* Air Quality Analytics */
+.aqi-status-good {
+  border-color: #10b981;
+}
+
+.aqi-status-moderate {
+  border-color: #f59e0b;
+}
+
+.aqi-status-unhealthy-sensitive {
+  border-color: #f97316;
+}
+
+.aqi-status-unhealthy {
+  border-color: #ef4444;
+}
+
+.aqi-status-very-unhealthy {
+  border-color: #7c2d12;
+}
+
+.aqi-badge-good {
+  background-color: #10b981;
+}
+
+.aqi-badge-moderate {
+  background-color: #f59e0b;
+}
+
+.aqi-badge-unhealthy-sensitive {
+  background-color: #f97316;
+}
+
+.aqi-badge-unhealthy {
+  background-color: #ef4444;
+}
+
+.aqi-badge-very-unhealthy {
+  background-color: #7c2d12;
+}
+
+.aqi-advisory-good {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-left: 4px solid #10b981;
+  color: #10b981;
+}
+
+.aqi-advisory-moderate {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid #f59e0b;
+  color: #f59e0b;
+}
+
+.aqi-advisory-unhealthy-sensitive {
+  background-color: rgba(249, 115, 22, 0.1);
+  border-left: 4px solid #f97316;
+  color: #f97316;
+}
+
+.aqi-advisory-unhealthy {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+  color: #ef4444;
+}
+
+.aqi-advisory-very-unhealthy {
+  background-color: rgba(124, 45, 18, 0.1);
+  border-left: 4px solid #7c2d12;
+  color: #7c2d12;
+}
+
+/* Motion Analytics */
+.motion-active {
+  border-color: #10b981;
+}
+
+.motion-inactive {
+  border-color: #6b7280;
+}
+
+.motion-activity-high {
+  background-color: #dcfce7;
+  border-left: 4px solid #10b981;
+}
+
+.motion-activity-low {
+  background-color: #f3f4f6;
+}
+
+/* Pressure Analytics */
+.pressure-status {
+  border-color: #3b82f6;
+}
+
+/* Common utility classes */
+.sensor-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: white;
+}
+
+.sensor-status-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border-width: 2px;
+}
+
+.sensor-metric-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.sensor-insight-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Animation classes */
+.sensor-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.sensor-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Chart container styles */
+.chart-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Activity timeline styles */
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.activity-event {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.activity-event-active {
+  background-color: #f0fdf4;
+  border-left: 4px solid #22c55e;
+}
+
+.activity-event-inactive {
+  background-color: #f9fafb;
+}
+
+/* Responsive grid layouts */
+.sensor-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .sensor-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.sensor-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .sensor-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sensor-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .sensor-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Time range selector */
+.time-range-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.time-range-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: none;
+}
+
+.time-range-button-active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.time-range-button-inactive {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.time-range-button-inactive:hover {
+  background-color: #e5e7eb;
+}
+
+/* Sensor type icons */
+.sensor-icon {
+  font-size: 1.875rem;
+}
+
+/* Status indicators */
+.status-good {
+  color: #22c55e;
+}
+
+.status-warning {
+  color: #eab308;
+}
+
+.status-danger {
+  color: #ef4444;
+}
+
+.status-info {
+  color: #3b82f6;
+}
+
+/* Trend indicators */
+.trend-up {
+  color: #22c55e;
+}
+
+.trend-down {
+  color: #ef4444;
+}
+
+.trend-stable {
+  color: #6b7280;
+}
+
+/* Health advisory styles */
+.health-advisory {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.health-advisory-title {
+  font-weight: 500;
+}
+
+.health-advisory-text {
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
