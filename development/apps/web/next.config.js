@@ -7,9 +7,9 @@ const nextConfig = {
     unoptimized: true,
   },
   
-  // GitHub Pages configuration
-  basePath: process.env.NODE_ENV === 'production' ? '/SoftwareMono' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/SoftwareMono/' : '',
+    // GitHub Pages configuration
+  basePath: process.env.NODE_ENV === 'production' ? '/MonoRepo' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/MonoRepo/' : '',
   
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,

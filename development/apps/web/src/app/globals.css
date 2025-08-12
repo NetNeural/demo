@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom IoT dashboard styles */
+@import '../styles/theme.css';
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -29,5 +32,103 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* IoT Dashboard Specific Styles */
+@layer components {
+  /* Sensor Cards */
+  .sensor-card {
+    @apply bg-white rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-all duration-200;
+  }
+  
+  .sensor-card-header {
+    @apply flex items-center justify-between mb-4;
+  }
+  
+  .sensor-value {
+    @apply text-2xl font-bold;
+  }
+  
+  .sensor-unit {
+    @apply text-sm text-gray-500 ml-1;
+  }
+  
+  /* Status Indicators */
+  .status-online {
+    @apply text-green-600 bg-green-100;
+  }
+  
+  .status-warning {
+    @apply text-amber-600 bg-amber-100;
+  }
+  
+  .status-error {
+    @apply text-red-600 bg-red-100;
+  }
+  
+  .status-offline {
+    @apply text-gray-600 bg-gray-100;
+  }
+  
+  /* Alert Styles */
+  .alert-critical {
+    @apply bg-red-50 border-l-4 border-red-500 text-red-800;
+  }
+  
+  .alert-warning {
+    @apply bg-amber-50 border-l-4 border-amber-500 text-amber-800;
+  }
+  
+  .alert-info {
+    @apply bg-blue-50 border-l-4 border-blue-500 text-blue-800;
+  }
+  
+  /* Dashboard Grid */
+  .dashboard-grid {
+    @apply grid gap-6;
+  }
+  
+  .dashboard-grid-2 {
+    @apply grid-cols-1 md:grid-cols-2;
+  }
+  
+  .dashboard-grid-3 {
+    @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .dashboard-grid-4 {
+    @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-4;
+  }
+  
+  /* Metric Cards */
+  .metric-card {
+    @apply bg-white rounded-lg p-4 border border-gray-200;
+  }
+  
+  .metric-value-large {
+    @apply text-3xl font-bold leading-none;
+  }
+  
+  .metric-label {
+    @apply text-sm text-gray-600 mb-1;
+  }
+  
+  /* Navigation */
+  .nav-item {
+    @apply px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors;
+  }
+  
+  .nav-item-active {
+    @apply text-blue-600 bg-blue-50 font-medium;
+  }
+  
+  /* Charts Container */
+  .chart-container {
+    @apply bg-white p-6 rounded-lg border border-gray-200;
+  }
+  
+  .chart-title {
+    @apply text-lg font-semibold mb-4 flex items-center gap-2;
   }
 }
