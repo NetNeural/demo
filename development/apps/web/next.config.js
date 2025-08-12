@@ -17,7 +17,6 @@ const nextConfig = {
   },
   // Hot reload optimization
   reactStrictMode: true,
-  swcMinify: true,
 };
 
 module.exports = nextConfig;

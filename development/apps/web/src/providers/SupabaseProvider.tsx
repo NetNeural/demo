@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js'
 
 interface SupabaseContextType {
@@ -11,27 +11,18 @@ interface SupabaseContextType {
   supabase: SupabaseClient
 }
 
-// Create Supabase client with runtime environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 const SupabaseContext = createContext<SupabaseContextType>({
   user: null,
   session: null,
   loading: true,
-  supabase
+  supabase: createClient()
 })
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
   useEffect(() => {
     // Get initial session
@@ -51,7 +42,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   return (
     <SupabaseContext.Provider value={{ user, session, loading, supabase }}>

@@ -10,9 +10,12 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.2"
   },
   "exports": {
     ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@types/node": "^24.2.1"
   }
 }

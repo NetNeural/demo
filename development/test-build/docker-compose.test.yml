@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  test-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    image: test-app:latest
