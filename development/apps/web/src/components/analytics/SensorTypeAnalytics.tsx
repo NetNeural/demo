@@ -15,7 +15,6 @@ import {
   BarElement,
   RadialLinearScale,
 } from 'chart.js';
-import styles from './SensorTypeAnalytics.module.css';
 
 ChartJS.register(
   CategoryScale,
@@ -68,32 +67,32 @@ const TemperatureAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   const getComfortLevel = (temp: number): { level: string; cssClass: string; badgeClass: string; description: string } => {
     if (temp < 18) return { 
       level: 'Too Cold', 
-      cssClass: styles['temperature-status-cool'], 
-      badgeClass: styles['temperature-badge-cool'],
+      cssClass: 'border-cyan-500', 
+      badgeClass: 'bg-cyan-500',
       description: 'Below comfortable range' 
     };
     if (temp < 22) return { 
       level: 'Cool', 
-      cssClass: styles['temperature-status-cool'], 
-      badgeClass: styles['temperature-badge-cool'],
+      cssClass: 'border-cyan-500', 
+      badgeClass: 'bg-cyan-500',
       description: 'Slightly below optimal' 
     };
     if (temp < 26) return { 
       level: 'Optimal', 
-      cssClass: styles['temperature-status-optimal'], 
-      badgeClass: styles['temperature-badge-optimal'],
+      cssClass: 'border-green-500', 
+      badgeClass: 'bg-green-500',
       description: 'Ideal temperature range' 
     };
     if (temp < 30) return { 
       level: 'Warm', 
-      cssClass: styles['temperature-status-warm'], 
-      badgeClass: styles['temperature-badge-warm'],
+      cssClass: 'border-amber-500', 
+      badgeClass: 'bg-amber-500',
       description: 'Slightly above optimal' 
     };
     return { 
       level: 'Too Hot', 
-      cssClass: styles['temperature-status-hot'], 
-      badgeClass: styles['temperature-badge-hot'],
+      cssClass: 'border-red-500', 
+      badgeClass: 'bg-red-500',
       description: 'Above comfortable range' 
     };
   };
@@ -497,36 +496,36 @@ const HumidityAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   const getHumidityLevel = (humidity: number): { level: string; cssClass: string; badgeClass: string; description: string; risk: string } => {
     if (humidity < 30) return { 
       level: 'Too Dry', 
-      cssClass: styles['humidity-status-dry'], 
-      badgeClass: styles['humidity-badge-dry'],
+      cssClass: 'border-amber-500', 
+      badgeClass: 'bg-amber-500',
       description: 'Below optimal range',
       risk: 'Static electricity, dry skin, respiratory irritation'
     };
     if (humidity < 40) return { 
       level: 'Dry', 
-      cssClass: styles['humidity-status-dry'], 
-      badgeClass: styles['humidity-badge-dry'],
+      cssClass: 'border-amber-500', 
+      badgeClass: 'bg-amber-500',
       description: 'Slightly below optimal',
       risk: 'Minor comfort issues'
     };
     if (humidity < 60) return { 
       level: 'Optimal', 
-      cssClass: styles['humidity-status-optimal'], 
-      badgeClass: styles['humidity-badge-optimal'],
+      cssClass: 'border-green-500', 
+      badgeClass: 'bg-green-500',
       description: 'Ideal humidity range',
       risk: 'Comfortable environment'
     };
     if (humidity < 70) return { 
       level: 'Humid', 
-      cssClass: styles['humidity-status-humid'], 
-      badgeClass: styles['humidity-badge-humid'],
+      cssClass: 'border-red-500', 
+      badgeClass: 'bg-red-500',
       description: 'Slightly above optimal',
       risk: 'Slight discomfort'
     };
     return { 
       level: 'Too Humid', 
-      cssClass: styles['humidity-status-humid'], 
-      badgeClass: styles['humidity-badge-humid'],
+      cssClass: 'border-red-500', 
+      badgeClass: 'bg-red-500',
       description: 'Above comfortable range',
       risk: 'Mold growth risk, discomfort'
     };
@@ -657,41 +656,41 @@ const AirQualityAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   const getAQILevel = (aqi: number): { level: string; cssClass: string; badgeClass: string; advisoryClass: string; description: string; health: string } => {
     if (aqi <= 50) return { 
       level: 'Good', 
-      cssClass: styles['aqi-status-good'], 
-      badgeClass: styles['aqi-badge-good'],
-      advisoryClass: styles['aqi-advisory-good'],
+      cssClass: 'border-green-500', 
+      badgeClass: 'bg-green-500',
+      advisoryClass: 'bg-green-50 border-l-4 border-green-500 text-green-800',
       description: 'Air quality is satisfactory',
       health: 'Little to no health risk'
     };
     if (aqi <= 100) return { 
       level: 'Moderate', 
-      cssClass: styles['aqi-status-moderate'], 
-      badgeClass: styles['aqi-badge-moderate'],
-      advisoryClass: styles['aqi-advisory-moderate'],
+      cssClass: 'border-amber-500', 
+      badgeClass: 'bg-amber-500',
+      advisoryClass: 'bg-amber-50 border-l-4 border-amber-500 text-amber-800',
       description: 'Acceptable air quality',
       health: 'Sensitive individuals may experience minor issues'
     };
     if (aqi <= 150) return { 
       level: 'Unhealthy for Sensitive', 
-      cssClass: styles['aqi-status-unhealthy-sensitive'], 
-      badgeClass: styles['aqi-badge-unhealthy-sensitive'],
-      advisoryClass: styles['aqi-advisory-unhealthy-sensitive'],
+      cssClass: 'border-orange-500', 
+      badgeClass: 'bg-orange-500',
+      advisoryClass: 'bg-orange-50 border-l-4 border-orange-500 text-orange-800',
       description: 'Members of sensitive groups may experience health effects',
       health: 'Sensitive people should reduce outdoor exposure'
     };
     if (aqi <= 200) return { 
       level: 'Unhealthy', 
-      cssClass: styles['aqi-status-unhealthy'], 
-      badgeClass: styles['aqi-badge-unhealthy'],
-      advisoryClass: styles['aqi-advisory-unhealthy'],
+      cssClass: 'border-red-500', 
+      badgeClass: 'bg-red-500',
+      advisoryClass: 'bg-red-50 border-l-4 border-red-500 text-red-800',
       description: 'Everyone may begin to experience health effects',
       health: 'Active children and adults should avoid outdoor activities'
     };
     return { 
       level: 'Very Unhealthy', 
-      cssClass: styles['aqi-status-very-unhealthy'], 
-      badgeClass: styles['aqi-badge-very-unhealthy'],
-      advisoryClass: styles['aqi-advisory-very-unhealthy'],
+      cssClass: 'border-red-900', 
+      badgeClass: 'bg-red-900',
+      advisoryClass: 'bg-red-100 border-l-4 border-red-900 text-red-900',
       description: 'Health warnings of emergency conditions',
       health: 'Everyone should avoid outdoor exposure'
     };
