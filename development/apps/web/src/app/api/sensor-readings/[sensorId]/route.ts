@@ -8,11 +8,11 @@ export const revalidate = false
 // This route gets sensor readings from Supabase for a specific sensor
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sensorId: string } }
+  { params }: { params: Promise<{ sensorId: string }> }
 ) {
   try {
     const supabase = createClient()
-    const { sensorId } = params
+    const { sensorId } = await params
     const { searchParams } = new URL(request.url)
     const range = searchParams.get('range') || '24h'
     
