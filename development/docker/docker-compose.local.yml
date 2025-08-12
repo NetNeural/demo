@@ -1,0 +1,289 @@
+version: '3.8'
+
+services:
+  # NetNeural Database (PostgreSQL with extensions)
+  netneural-db:
+    image: supabase/postgres:15.1.0.147
+    container_name: netneural-postgres
+    ports:
+      - "4432:5432"
+    environment:
+      POSTGRES_DB: netneural
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: netneural-dev-password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - netneural_db_data:/var/lib/postgresql/data
+      - ./packages/database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./packages/database/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c log_min_messages=fatal
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Supabase Studio (Database Admin UI)
+  netneural-studio:
+    image: supabase/studio:20240326-5e5586d
+    container_name: netneural-studio
+    ports:
+      - "4001:3000"
+    environment:
+      SUPABASE_URL: http://localhost:4434
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      STUDIO_DEFAULT_ORGANIZATION: NetNeural
+      STUDIO_DEFAULT_PROJECT: NetNeural Local
+      POSTGRES_PASSWORD: netneural-dev-password
+    depends_on:
+      - netneural-db
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # PostgREST (Auto-generated REST API)
+  netneural-rest:
+    image: postgrest/postgrest:v12.0.1
+    container_name: netneural-postgrest
+    ports:
+      - "4434:3000"
+    environment:
+      PGRST_DB_URI: postgres://authenticator:netneural-dev-password@netneural-db:5432/netneural
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    depends_on:
+      - netneural-db
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # GoTrue (Authentication)
+  netneural-auth:
+    image: supabase/gotrue:v2.99.0
+    container_name: netneural-gotrue
+    ports:
+      - "4433:9999"
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:4433
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:netneural-dev-password@netneural-db:5432/netneural
+      GOTRUE_SITE_URL: http://localhost:4000
+      GOTRUE_URI_ALLOW_LIST: "*"
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@netneural.dev
+      GOTRUE_SMTP_HOST: smtp.gmail.com
+      GOTRUE_SMTP_PORT: 587
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+      GOTRUE_SMTP_SENDER_NAME: NetNeural
+      GOTRUE_MAILER_URLPATHS_INVITE: "/auth/v1/verify"
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: "/auth/v1/verify"
+      GOTRUE_MAILER_URLPATHS_RECOVERY: "/auth/v1/verify"
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: "/auth/v1/verify"
+    depends_on:
+      - netneural-db
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Realtime (WebSocket connections)
+  netneural-realtime:
+    image: supabase/realtime:v2.25.66
+    container_name: netneural-realtime
+    ports:
+      - "4435:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: netneural-db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: netneural-dev-password
+      DB_NAME: netneural
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      FLY_ALLOC_ID: fly123
+      FLY_APP_NAME: realtime
+      SECRET_KEY_BASE: UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+    depends_on:
+      - netneural-db
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Storage API (File uploads/downloads)
+  netneural-storage:
+    image: supabase/storage-api:v0.40.4
+    container_name: netneural-storage
+    ports:
+      - "4436:5000"
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      POSTGREST_URL: http://netneural-rest:3000
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      DATABASE_URL: postgres://supabase_storage_admin:netneural-dev-password@netneural-db:5432/netneural
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://netneural-imgproxy:5001
+    volumes:
+      - netneural_storage_data:/var/lib/storage
+    depends_on:
+      - netneural-db
+      - netneural-rest
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Image Proxy (Image transformations)
+  netneural-imgproxy:
+    image: darthsim/imgproxy:v3.8.0
+    container_name: netneural-imgproxy
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+    volumes:
+      - netneural_storage_data:/var/lib/storage:ro
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Redis (Caching and sessions)
+  netneural-redis:
+    image: redis:7-alpine
+    container_name: netneural-redis
+    ports:
+      - "4379:6379"
+    command: redis-server --appendonly yes --requirepass netneural-redis-password
+    volumes:
+      - netneural_redis_data:/data
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # NetNeural Web Application (Next.js)
+  netneural-web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.dev
+    container_name: netneural-web
+    ports:
+      - "4000:3000"
+    environment:
+      # Supabase Configuration
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:4434
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      # API Configuration
+      NEXT_PUBLIC_API_URL: http://localhost:4434
+      # Auth Configuration
+      NEXTAUTH_URL: http://localhost:4000
+      NEXTAUTH_SECRET: super-secret-nextauth-secret-key
+      # Redis Configuration
+      REDIS_URL: redis://:netneural-redis-password@netneural-redis:6379
+      # Environment
+      NODE_ENV: development
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - netneural-db
+      - netneural-rest
+      - netneural-auth
+      - netneural-storage
+      - netneural-redis
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # NetNeural API (Node.js + Express)
+  netneural-api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+    container_name: netneural-api
+    ports:
+      - "4437:4000"
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgres://postgres:netneural-dev-password@netneural-db:5432/netneural
+      # Supabase Configuration
+      SUPABASE_URL: http://netneural-rest:3000
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      # Redis Configuration
+      REDIS_URL: redis://:netneural-redis-password@netneural-redis:6379
+      # JWT Configuration
+      JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      # Environment
+      NODE_ENV: development
+      PORT: 4000
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    depends_on:
+      - netneural-db
+      - netneural-redis
+      - netneural-rest
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+  # Traefik (Reverse Proxy for local development)
+  netneural-traefik:
+    image: traefik:v3.0
+    container_name: netneural-traefik
+    ports:
+      - "4080:8080"  # Traefik dashboard
+      - "4081:80"    # HTTP entry point
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--entrypoints.web.address=:80"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--log.level=INFO"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - netneural-network
+
+volumes:
+  netneural_db_data:
+    driver: local
+  netneural_storage_data:
+    driver: local
+  netneural_redis_data:
+    driver: local
+
+networks:
+  netneural-network:
+    driver: bridge
+    name: netneural-local

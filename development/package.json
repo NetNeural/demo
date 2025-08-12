@@ -1,0 +1,53 @@
+{
+  "name": "netneural-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:watch": "turbo run dev:watch",
+    "dev:hot": "turbo run dev --parallel --no-cache",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "dev:start": "bash scripts/start-dev.sh",
+    "dev:supabase": "cd supabase && supabase start",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:mobile": "cd apps/mobile && npm start",
+    "setup:local": "bash scripts/setup-local.sh",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:local:up": "docker-compose -f docker/docker-compose.local.yml up -d",
+    "docker:local:down": "docker-compose -f docker/docker-compose.local.yml down",
+    "docker:local:logs": "docker-compose -f docker/docker-compose.local.yml logs -f",
+    "deploy:unraid": "bash deployment/deploy-unraid.sh",
+    "unraid:down": "docker-compose -f docker/docker-compose.unraid.yml --env-file .env.unraid down",
+    "unraid:logs": "docker-compose -f docker/docker-compose.unraid.yml --env-file .env.unraid logs -f",
+    "deploy:remote": "docker-compose -f docker/docker-compose.remote.yml up -d --build",
+    "docker:remote:down": "docker-compose -f docker/docker-compose.remote.yml down",
+    "docker:remote:logs": "docker-compose -f docker/docker-compose.remote.yml logs -f"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-shared": "^0.6.1",
+    "@supabase/supabase-js": "^2.39.3",
+    "chart.js": "^4.5.0",
+    "react-chartjs-2": "^5.3.0"
+  },
+  "packageManager": "npm@10.0.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

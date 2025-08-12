@@ -1,0 +1,301 @@
+version: '3.8'
+
+services:
+  # NetNeural Database (PostgreSQL with extensions) - Unraid
+  netneural-db-unraid:
+    image: supabase/postgres:15.1.0.147
+    container_name: netneural-postgres-unraid
+    ports:
+      - "4432:5432"
+    environment:
+      POSTGRES_DB: netneural
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-netneural-unraid-secure-password}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - netneural_db_data_unraid:/var/lib/postgresql/data
+      - ./packages/database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./packages/database/seed-production.sql:/docker-entrypoint-initdb.d/seed.sql
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c log_min_messages=warning
+      -c shared_preload_libraries=pg_stat_statements
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Supabase Studio (Database Admin UI) - Unraid
+  netneural-studio-unraid:
+    image: supabase/studio:20240326-5e5586d
+    container_name: netneural-studio-unraid
+    ports:
+      - "4001:3000"
+    environment:
+      SUPABASE_URL: http://192.168.1.45:4434
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      STUDIO_DEFAULT_ORGANIZATION: NetNeural
+      STUDIO_DEFAULT_PROJECT: NetNeural Unraid
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-netneural-unraid-secure-password}
+    depends_on:
+      - netneural-db-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # PostgREST (Auto-generated REST API) - Unraid
+  netneural-rest-unraid:
+    image: postgrest/postgrest:v12.0.1
+    container_name: netneural-postgrest-unraid
+    ports:
+      - "4434:3000"
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-netneural-unraid-secure-password}@netneural-db-unraid:5432/netneural
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    depends_on:
+      - netneural-db-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # GoTrue (Authentication) - Unraid
+  netneural-auth-unraid:
+    image: supabase/gotrue:v2.99.0
+    container_name: netneural-gotrue-unraid
+    ports:
+      - "4433:9999"
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://192.168.1.45:4433
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-netneural-unraid-secure-password}@netneural-db-unraid:5432/netneural
+      GOTRUE_SITE_URL: http://192.168.1.45:4000
+      GOTRUE_URI_ALLOW_LIST: "http://192.168.1.45:4000,http://localhost:4000,https://*.netneural.com"
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-admin@netneural.com}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: NetNeural
+      # OAuth Providers (optional)
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: ${GOOGLE_AUTH_ENABLED:-false}
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOTRUE_EXTERNAL_GOOGLE_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOTRUE_EXTERNAL_GITHUB_ENABLED: ${GITHUB_AUTH_ENABLED:-false}
+      GOTRUE_EXTERNAL_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GOTRUE_EXTERNAL_GITHUB_SECRET: ${GITHUB_CLIENT_SECRET}
+    depends_on:
+      - netneural-db-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Realtime (WebSocket connections) - Unraid
+  netneural-realtime-unraid:
+    image: supabase/realtime:v2.25.66
+    container_name: netneural-realtime-unraid
+    ports:
+      - "4435:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: netneural-db-unraid
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-netneural-unraid-secure-password}
+      DB_NAME: netneural
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: ${DB_ENC_KEY:-supabaserealtime}
+      API_JWT_SECRET: ${JWT_SECRET}
+      FLY_ALLOC_ID: unraid123
+      FLY_APP_NAME: netneural-realtime
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+    depends_on:
+      - netneural-db-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Storage API (File uploads/downloads) - Unraid
+  netneural-storage-unraid:
+    image: supabase/storage-api:v0.40.4
+    container_name: netneural-storage-unraid
+    ports:
+      - "4436:5000"
+    environment:
+      ANON_KEY: ${SUPABASE_ANON_KEY}
+      SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      POSTGREST_URL: http://netneural-rest-unraid:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:-netneural-unraid-secure-password}@netneural-db-unraid:5432/netneural
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: netneural-unraid
+      REGION: unraid
+      GLOBAL_S3_BUCKET: netneural-storage
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://netneural-imgproxy-unraid:5001
+    volumes:
+      - netneural_storage_data_unraid:/var/lib/storage
+    depends_on:
+      - netneural-db-unraid
+      - netneural-rest-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Image Proxy (Image transformations) - Unraid
+  netneural-imgproxy-unraid:
+    image: darthsim/imgproxy:v3.8.0
+    container_name: netneural-imgproxy-unraid
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_QUALITY: 80
+      IMGPROXY_MAX_SRC_RESOLUTION: 16.8
+    volumes:
+      - netneural_storage_data_unraid:/var/lib/storage:ro
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Redis (Caching and sessions) - Unraid
+  netneural-redis-unraid:
+    image: redis:7-alpine
+    container_name: netneural-redis-unraid
+    ports:
+      - "4379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-netneural-redis-unraid-password}
+    volumes:
+      - netneural_redis_data_unraid:/data
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # NetNeural Web Application (Next.js) - Unraid Production Build
+  netneural-web-unraid:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: production
+    container_name: netneural-web-unraid
+    ports:
+      - "4000:3000"
+    environment:
+      # Supabase Configuration
+      NEXT_PUBLIC_SUPABASE_URL: http://192.168.1.45:4434
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_KEY}
+      # API Configuration
+      NEXT_PUBLIC_API_URL: http://192.168.1.45:4434
+      NEXT_PUBLIC_REALTIME_URL: ws://192.168.1.45:4435
+      NEXT_PUBLIC_STORAGE_URL: http://192.168.1.45:4436
+      # Auth Configuration
+      NEXTAUTH_URL: http://192.168.1.45:4000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # Redis Configuration
+      REDIS_URL: redis://:${REDIS_PASSWORD:-netneural-redis-unraid-password}@netneural-redis-unraid:6379
+      # Environment
+      NODE_ENV: production
+    depends_on:
+      - netneural-db-unraid
+      - netneural-rest-unraid
+      - netneural-auth-unraid
+      - netneural-storage-unraid
+      - netneural-redis-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # NetNeural API (Node.js + Express) - Unraid
+  netneural-api-unraid:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: production
+    container_name: netneural-api-unraid
+    ports:
+      - "4437:4000"
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-netneural-unraid-secure-password}@netneural-db-unraid:5432/netneural
+      # Supabase Configuration
+      SUPABASE_URL: http://netneural-rest-unraid:3000
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_KEY}
+      # Redis Configuration
+      REDIS_URL: redis://:${REDIS_PASSWORD:-netneural-redis-unraid-password}@netneural-redis-unraid:6379
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      # Environment
+      NODE_ENV: production
+      PORT: 4000
+    depends_on:
+      - netneural-db-unraid
+      - netneural-redis-unraid
+      - netneural-rest-unraid
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+  # Traefik (Reverse Proxy) - Unraid
+  netneural-traefik-unraid:
+    image: traefik:v3.0
+    container_name: netneural-traefik-unraid
+    ports:
+      - "4080:8080"  # Traefik dashboard
+      - "4081:80"    # HTTP entry point
+      - "4443:443"   # HTTPS entry point
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=netneural-unraid-network"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--metrics.prometheus=true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.netneural.local`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    restart: unless-stopped
+    networks:
+      - netneural-unraid-network
+
+volumes:
+  netneural_db_data_unraid:
+    driver: local
+  netneural_storage_data_unraid:
+    driver: local
+  netneural_redis_data_unraid:
+    driver: local
+
+networks:
+  netneural-unraid-network:
+    driver: bridge
+    name: netneural-unraid
