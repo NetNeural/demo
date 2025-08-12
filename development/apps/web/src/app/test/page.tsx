@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 export default function TestPage() {
   return (
@@ -60,17 +61,26 @@ export default function TestPage() {
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           onClick={async () => {
             try {
-              const response = await fetch('/api/sensors');
-              const data = await response.json();
-              console.log('API Response:', data);
-              alert('Check console for API response');
+              const supabase = createClient();
+              const { data, error } = await supabase
+                .from('sensors')
+                .select('*')
+                .order('name');
+              
+              if (error) {
+                console.error('Supabase Error:', error);
+                alert('Supabase Error - check console');
+              } else {
+                console.log('Supabase Response:', data);
+                alert('Check console for Supabase response');
+              }
             } catch (error) {
-              console.error('API Error:', error);
-              alert('API Error - check console');
+              console.error('Connection Error:', error);
+              alert('Connection Error - check console');
             }
           }}
         >
-          Test API Connection
+          Test Supabase Connection
         </button>
       </div>
       </div>

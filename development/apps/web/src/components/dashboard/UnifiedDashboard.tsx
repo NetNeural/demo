@@ -378,26 +378,47 @@ export default function UnifiedDashboard({
           setAlerts(generateMockAlerts());
           setLastUpdate(new Date());
         } else {
-          // Fetch real data for production mode
-          const [sensorsRes, alertsRes, locationsRes] = await Promise.all([
-            fetch('/api/sensors'),
-            fetch('/api/alerts'),
-            fetch('/api/locations'),
-          ]);
+          // Fetch real data for production mode using direct Supabase calls
+          const supabase = createClient();
+          
+          try {
+            // Fetch sensors
+            const { data: sensorsData, error: sensorsError } = await supabase
+              .from('sensors')
+              .select('*')
+              .order('name');
 
-          if (sensorsRes.ok) {
-            const sensorsData = await sensorsRes.json();
-            setSensors(sensorsData);
-          }
+            if (sensorsError) {
+              console.error('Error fetching sensors:', sensorsError);
+            } else {
+              setSensors(sensorsData || []);
+            }
 
-          if (alertsRes.ok) {
-            const alertsData = await alertsRes.json();
-            setAlerts(alertsData);
-          }
+            // Fetch alerts
+            const { data: alertsData, error: alertsError } = await supabase
+              .from('alerts')
+              .select('*')
+              .order('created_at', { ascending: false });
 
-          if (locationsRes.ok) {
-            const locationsData = await locationsRes.json();
-            setLocations(locationsData);
+            if (alertsError) {
+              console.error('Error fetching alerts:', alertsError);
+            } else {
+              setAlerts(alertsData || []);
+            }
+
+            // Fetch locations
+            const { data: locationsData, error: locationsError } = await supabase
+              .from('locations')
+              .select('*')
+              .order('name');
+
+            if (locationsError) {
+              console.error('Error fetching locations:', locationsError);
+            } else {
+              setLocations(locationsData || []);
+            }
+          } catch (error) {
+            console.error('Error fetching data:', error);
           }
         }
       } catch (error) {
