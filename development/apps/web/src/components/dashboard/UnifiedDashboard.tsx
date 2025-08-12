@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { createClient } from '@/lib/supabase/client';
 import { SimpleIcons } from '../icons/SimpleIcons';
 import { SensorCard } from '../sensors/SensorCard';
 import { LocationMap } from '../maps/LocationMap';
@@ -427,11 +428,42 @@ export default function UnifiedDashboard({
     if (selectedSensor && mode === 'production') {
       const fetchSensorReadings = async () => {
         try {
-          const response = await fetch(`/api/sensor-readings/${selectedSensor}?range=${timeRange}`);
-          if (response.ok) {
-            const data = await response.json();
-            setSensorReadings(data);
+          const supabase = createClient();
+          
+          // Calculate the time range
+          let hoursBack = 24;
+          switch (timeRange) {
+            case '1h':
+              hoursBack = 1;
+              break;
+            case '24h':
+              hoursBack = 24;
+              break;
+            case '7d':
+              hoursBack = 24 * 7;
+              break;
+            case '30d':
+              hoursBack = 24 * 30;
+              break;
+            default:
+              hoursBack = 24;
           }
+          
+          const timeAgo = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+          
+          const { data: readings, error } = await supabase
+            .from('sensor_readings')
+            .select('*')
+            .eq('sensor_id', selectedSensor)
+            .gte('reading_time', timeAgo)
+            .order('reading_time', { ascending: true });
+
+          if (error) {
+            console.error('Supabase error:', error);
+            return;
+          }
+
+          setSensorReadings(readings || []);
         } catch (error) {
           console.error('Error fetching sensor readings:', error);
         }
