@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { SensorCard } from '../../components/sensors/SensorCard';
 import { LocationMap } from '../../components/maps/LocationMap';
 import { AlertPanel } from '../../components/alerts/AlertPanel';
@@ -141,10 +142,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="page flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading IoT Dashboard...</p>
+          <div className="loading"></div>
+          <p className="mt-4">Loading IoT Dashboard...</p>
         </div>
       </div>
     );
@@ -153,149 +154,150 @@ export default function DashboardPage() {
   const selectedSensorData = selectedSensor ? sensors.find(s => s.id === selectedSensor) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page">
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
-              ← Home
-            </Link>
-            <span className="text-gray-400">|</span>
-            <Link href="/test" className="text-gray-600 hover:text-gray-800">
-              Test Dashboard
-            </Link>
+      <nav className="nav">
+        <div className="nav-container">
+          <div className="nav-links">
+            <Link href="/" className="nav-link">← Home</Link>
+            <Link href="/dashboard" className="nav-link active">Dashboard</Link>
+            <Link href="/mvp" className="nav-link">MVP Demo</Link>
+            <Link href="/overview" className="nav-link">Overview</Link>
           </div>
-          <div className="text-sm text-gray-600">
-            Full IoT Dashboard
-          </div>
+          <div className="text-small">Full IoT Dashboard</div>
         </div>
       </nav>
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="header">
+        <div className="container">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">IoT Sensor Dashboard</h1>
-              <p className="text-gray-600">Real-time monitoring and analytics</p>
+              <h1 className="header-title">IoT Sensor Dashboard</h1>
+              <p className="header-subtitle">Real-time monitoring and analytics</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="badge badge-success">
                   {sensors.filter(s => s.status === 'online').length} sensors online
-                </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <div className="badge badge-error">
                   {alerts.filter(a => a.is_active && !a.acknowledged).length} active alerts
-                </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Sensors and Map */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Location Map */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Location Overview</h2>
-              <LocationMap 
-                locations={locations} 
-                onLocationSelect={handleLocationClick}
-              />
-            </div>
-
-            {/* Sensors Grid */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Sensors</h2>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200">
-                    All
-                  </button>
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md">
-                    Online
-                  </button>
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md">
-                    Issues
-                  </button>
+      <div className="section">
+        <div className="container">
+          <div className="grid grid-3 gap-6">
+            {/* Left Column - Sensors and Map */}
+            <div className="grid-span-2 flex flex-col gap-6">
+              {/* Location Map */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title">Location Overview</h2>
+                </div>
+                <div className="card-body">
+                  <LocationMap 
+                    locations={locations} 
+                    onLocationSelect={handleLocationClick}
+                  />
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sensors.map((sensor) => {
-                  // Transform sensor data to match SensorCard interface
-                  const sensorCardData = {
-                    ...sensor,
-                    lastReading: {
-                      value: sensor.last_reading,
-                      unit: sensor.unit,
-                      timestamp: sensor.last_seen,
-                    },
-                  };
-                  
-                  return (
-                    <div
-                      key={sensor.id}
-                      className={`cursor-pointer transition-all ${
-                        selectedSensor === sensor.id 
-                          ? 'ring-2 ring-blue-500 ring-opacity-50' 
-                          : 'hover:shadow-md'
-                      }`}
-                      onClick={() => handleSensorSelect(sensor.id)}
-                    >
-                      <SensorCard sensor={sensorCardData} />
+
+              {/* Sensors Grid */}
+              <div className="card">
+                <div className="card-header">
+                  <div className="flex items-center justify-between">
+                    <h2 className="card-title">Sensors</h2>
+                    <div className="flex items-center gap-2">
+                      <button className="btn btn-primary btn-sm">All</button>
+                      <button className="btn btn-secondary btn-sm">Online</button>
+                      <button className="btn btn-secondary btn-sm">Issues</button>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Alerts and Analytics */}
-          <div className="space-y-6">
-            {/* Alerts */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Alerts</h2>
-              <AlertPanel 
-                alerts={alerts} 
-                onAlertAcknowledge={handleAlertAcknowledge}
-              />
-            </div>
-
-            {/* Analytics */}
-            {selectedSensorData && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Analytics: {selectedSensorData.name}
-                </h2>
-                <SensorAnalytics
-                  sensorId={selectedSensorData.id}
-                  sensorName={selectedSensorData.name}
-                  sensorType={selectedSensorData.type}
-                  readings={sensorReadings}
-                  timeRange={timeRange}
-                  onTimeRangeChange={setTimeRange}
-                />
-              </div>
-            )}
-
-            {!selectedSensorData && (
-              <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                <div className="text-gray-400 mb-2">
-                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+                  </div>
                 </div>
-                <p className="text-gray-600">Select a sensor to view analytics</p>
+                <div className="card-body">
+                  <div className="grid grid-2 gap-4">
+                    {sensors.map((sensor) => {
+                      const sensorCardData = {
+                        ...sensor,
+                        lastReading: {
+                          value: sensor.last_reading,
+                          unit: sensor.unit,
+                          timestamp: sensor.last_seen,
+                        },
+                      };
+                      
+                      return (
+                        <div
+                          key={sensor.id}
+                          className={`cursor-pointer transition-all border rounded-lg p-4 ${
+                            selectedSensor === sensor.id 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => handleSensorSelect(sensor.id)}
+                        >
+                          <SensorCard sensor={sensorCardData} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Right Column - Alerts and Analytics */}
+            <div className="flex flex-col gap-6">
+              {/* Alerts */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title">Active Alerts</h2>
+                </div>
+                <div className="card-body">
+                  <AlertPanel 
+                    alerts={alerts} 
+                    onAlertAcknowledge={handleAlertAcknowledge}
+                  />
+                </div>
+              </div>
+
+              {/* Analytics */}
+              {selectedSensorData && (
+                <div className="card">
+                  <div className="card-header">
+                    <h2 className="card-title">Analytics: {selectedSensorData.name}</h2>
+                  </div>
+                  <div className="card-body">
+                    <SensorAnalytics
+                      sensorId={selectedSensorData.id}
+                      sensorName={selectedSensorData.name}
+                      sensorType={selectedSensorData.type}
+                      readings={sensorReadings}
+                      timeRange={timeRange}
+                      onTimeRangeChange={setTimeRange}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!selectedSensorData && (
+                <div className="card text-center">
+                  <div className="card-body">
+                    <div className="icon-container icon-lg icon-bg-gray mb-4">
+                      <ChartBarIcon />
+                    </div>
+                    <p>Select a sensor to view analytics</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

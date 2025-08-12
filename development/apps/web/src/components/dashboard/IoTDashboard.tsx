@@ -226,7 +226,7 @@ export function IoTDashboard() {
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                        <div className="nn-icon-container-sm bg-blue-500">
                           <span className="text-white font-bold">L</span>
                         </div>
                       </div>
@@ -245,7 +245,7 @@ export function IoTDashboard() {
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                        <div className="nn-icon-container-sm bg-green-500">
                           <span className="text-white font-bold">S</span>
                         </div>
                       </div>
@@ -267,7 +267,7 @@ export function IoTDashboard() {
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                        <div className="nn-icon-container-sm bg-red-500">
                           <span className="text-white font-bold">!</span>
                         </div>
                       </div>
@@ -288,7 +288,7 @@ export function IoTDashboard() {
                   <div className="p-5">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                        <div className="nn-icon-container-sm bg-purple-500">
                           <span className="text-white font-bold">O</span>
                         </div>
                       </div>

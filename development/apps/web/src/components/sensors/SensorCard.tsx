@@ -18,12 +18,12 @@ interface SensorCardProps {
 }
 
 export function SensorCard({ sensor, onClick }: SensorCardProps) {
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'online': return 'bg-green-100 text-green-800 border-green-200';
-      case 'offline': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'alert': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'online': return 'badge badge-success';
+      case 'offline': return 'badge badge-secondary';
+      case 'alert': return 'badge badge-error';
+      default: return 'badge badge-secondary';
     }
   };
 
@@ -42,34 +42,44 @@ export function SensorCard({ sensor, onClick }: SensorCardProps) {
 
   return (
     <div 
-      className={`p-4 rounded-lg border-2 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(sensor.status)}`}
+      className="card cursor-pointer hover:shadow-lg transition-shadow"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <span className="text-lg">{getStatusIcon(sensor.status)}</span>
-          <h3 className="font-semibold text-lg">{sensor.name}</h3>
+      <div className="card-header">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{getStatusIcon(sensor.status)}</span>
+            <h3 className="text-lg font-semibold">{sensor.name}</h3>
+          </div>
+          <div className={getStatusBadgeClass(sensor.status)}>
+            {sensor.type}
+          </div>
         </div>
-        <span className="text-sm font-medium px-2 py-1 rounded-full bg-white bg-opacity-50">
-          {sensor.type}
-        </span>
       </div>
       
-      <div className="space-y-1 text-sm">
-        <p><span className="font-medium">Location:</span> {sensor.location}</p>
-        <p><span className="font-medium">Department:</span> {sensor.department}</p>
-        
-        {sensor.lastReading && (
-          <div className="mt-2 pt-2 border-t border-current border-opacity-20">
-            <p className="font-medium">Last Reading:</p>
-            <p className="text-lg">
-              {sensor.lastReading.value} {sensor.lastReading.unit}
-            </p>
-            <p className="text-xs opacity-75">
-              {formatTimestamp(sensor.lastReading.timestamp)}
-            </p>
+      <div className="card-body">
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted">Location:</span>
+            <span>{sensor.location}</span>
           </div>
-        )}
+          <div className="flex justify-between">
+            <span className="text-muted">Department:</span>
+            <span>{sensor.department}</span>
+          </div>
+          
+          {sensor.lastReading && (
+            <div className="mt-3 pt-3 border-t">
+              <div className="text-muted mb-1">Last Reading:</div>
+              <div className="metric-value">
+                {sensor.lastReading.value} {sensor.lastReading.unit}
+              </div>
+              <div className="text-xs text-muted mt-1">
+                {formatTimestamp(sensor.lastReading.timestamp)}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
