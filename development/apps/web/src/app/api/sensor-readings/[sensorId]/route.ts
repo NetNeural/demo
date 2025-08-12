@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/client'
 
-// Required for static export
+// Required for static export - generate static params for known sensors
 export const dynamic = 'force-static'
 export const revalidate = false
+
+// Generate static params for all available sensors
+export async function generateStaticParams() {
+  try {
+    const supabase = createClient()
+    const { data: sensors } = await supabase
+      .from('sensors')
+      .select('id')
+    
+    return sensors?.map((sensor) => ({
+      sensorId: sensor.id,
+    })) || []
+  } catch (error) {
+    console.error('Error generating static params:', error)
+    return []
+  }
+}
 
 // This route gets sensor readings from Supabase for a specific sensor
 export async function GET(
@@ -13,29 +30,10 @@ export async function GET(
   try {
     const supabase = createClient()
     const { sensorId } = await params
-    const { searchParams } = new URL(request.url)
-    const range = searchParams.get('range') || '24h'
     
-    // Calculate the time range
-    let hoursBack = 24
-    switch (range) {
-      case '1h':
-        hoursBack = 1
-        break
-      case '6h':
-        hoursBack = 6
-        break
-      case '24h':
-        hoursBack = 24
-        break
-      case '7d':
-        hoursBack = 24 * 7
-        break
-      default:
-        hoursBack = 24
-    }
-    
-    const timeAgo = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString()
+    // For static export, we'll fetch the last 24 hours of data
+    // Query parameters would need to be handled client-side in static export
+    const timeAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     
     const { data: readings, error } = await supabase
       .from('sensor_readings')
