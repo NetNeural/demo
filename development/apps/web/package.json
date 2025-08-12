@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "build:static": "next build",
+    "build:production": "cross-env NODE_ENV=production next build",
+    "build:ci": "node -e \"const fs=require('fs'); if(fs.existsSync('.env.local')) fs.renameSync('.env.local', '.env.local.backup')\" && next build && node -e \"const fs=require('fs'); if(fs.existsSync('.env.local.backup')) fs.renameSync('.env.local.backup', '.env.local')\"",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",

@@ -42,6 +42,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify environment configuration
+        run: |
+          cd apps/web
+          echo "🔍 Environment files found:"
+          ls -la .env* 2>/dev/null || echo "No .env files found"
+          echo ""
+          echo "🌍 Environment variables:"
+          echo "NODE_ENV: $NODE_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:20}..."
+
       - name: Build web application
         env:
           NODE_ENV: production
@@ -51,7 +62,12 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: /MonoRepo
         run: |
           cd apps/web
-          npm run build
+          # Use CI build script that handles environment properly
+          npm run build:ci
+          echo ""
+          echo "✅ Build completed successfully!"
+          echo "📁 Output directory contents:"
+          ls -la out/ 2>/dev/null || echo "No output directory found"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
