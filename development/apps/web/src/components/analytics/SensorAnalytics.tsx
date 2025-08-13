@@ -145,11 +145,9 @@ export function SensorAnalytics({
           {readings.length > 0 ? (
             <div className="card bg-gradient">
               <div className="card-body">
-                <div className="text-center text-white mb-4">
+                <div className="text-center mb-4">
                   <h4 className="h4 mb-2">📈 Sensor Data Visualization</h4>
-                  <p className="text-light">
-                    {readings.length} readings over {timeRange} • Last updated: {new Date(readings[readings.length - 1]?.reading_time).toLocaleTimeString()}
-                  </p>
+                  <p className="text-muted">{readings.length} readings over {timeRange} • Last updated: {new Date(readings[readings.length - 1]?.reading_time).toLocaleTimeString()}</p>
                 </div>
                 
                 {/* Interactive Chart Area */}

@@ -324,12 +324,139 @@ span:not(.badge):not(.text-muted):not([class*="text-"]) {
   color: #374151 !important;
 }
 
+/* Health alert and status text */
+.card span.text-sm:not(.badge):not(.text-muted) {
+  color: #374151 !important;
+}
+
+/* Sensor status and count text */
+div[class*="flex"] span:not(.badge):not(.text-muted):not([class*="text-"]) {
+  color: #374151 !important;
+}
+
+/* Last reading timestamp and values */
+.card .text-xs:not(.text-muted):not([class*="text-"]):not(.badge) {
+  color: #6b7280 !important;
+}
+
+/* Metric displays */
+.metric-value:not([class*="text-"]) {
+  color: #0f172a !important;
+}
+
+/* Sensor online/offline status */
+.flex .items-center span:not(.badge):not(.text-muted) {
+  color: #374151 !important;
+}
+
+/* Statistics and numbers */
+.text-2xl:not([class*="text-"]):not(.text-muted) {
+  color: #1f2937 !important;
+}
+
+.text-lg:not([class*="text-"]):not(.text-muted) {
+  color: #1f2937 !important;
+}
+
+/* Ensure regular paragraph text is visible */
+.card p:not(.text-muted):not([class*="text-"]) {
+  color: #374151 !important;
+}
+
+/* Force visibility for any remaining white text */
+*:not(.badge):not([class*="bg-"]):not([class*="border-"]) {
+  color: inherit;
+}
+
 /* Metric Values */
 .metric-value {
   font-size: 2.5rem;
   font-weight: 700;
   line-height: 1;
   margin-bottom: 8px;
+}
+
+/* NN Metric Components */
+.nn-metric {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.nn-metric:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.nn-metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.nn-metric-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.nn-metric-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.nn-metric-change {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.nn-metric-change-positive {
+  color: #10b981;
+}
+
+.nn-metric-change-negative {
+  color: #ef4444;
+}
+
+.nn-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.nn-badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.nn-badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.nn-badge-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.nn-badge-info {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .metric-success {
@@ -713,4 +840,18 @@ svg {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Background Gradients */
+.bg-gradient {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: #1f2937;
+}
+
+.bg-gradient * {
+  color: #1f2937 !important;
+}
+
+.bg-gradient .text-muted {
+  color: #64748b !important;
 }

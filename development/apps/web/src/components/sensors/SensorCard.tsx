@@ -61,11 +61,11 @@ export function SensorCard({ sensor, onClick }: SensorCardProps) {
         <div className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted">Location:</span>
-            <span>{sensor.location}</span>
+            <span className="text-dark">{sensor.location}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted">Department:</span>
-            <span>{sensor.department}</span>
+            <span className="text-dark">{sensor.department}</span>
           </div>
           
           {sensor.lastReading && (

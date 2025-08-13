@@ -106,8 +106,8 @@ export default function Home() {
         <div className="container">
           <div className="card">
             <div className="card-header bg-gradient">
-              <h2 className="h2 text-white">Dashboard Features</h2>
-              <p className="text-light">Complete IoT platform functionality in a modern interface</p>
+              <h2 className="h2">Dashboard Features</h2>
+              <p className="text-muted">Complete IoT platform functionality in a modern interface</p>
             </div>
             <div className="card-body">
               <div className="grid grid-2 gap-8">

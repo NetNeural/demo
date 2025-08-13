@@ -910,11 +910,11 @@ export default function UnifiedDashboard({
                       <div className="flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-1">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>{filteredSensors.filter(s => s.status === 'online').length} Online</span>
+                          <span className="text-dark">{filteredSensors.filter(s => s.status === 'online').length} Online</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                          <span>{filteredSensors.filter(s => s.status === 'warning' || s.status === 'alert').length} Alerts</span>
+                          <span className="text-dark">{filteredSensors.filter(s => s.status === 'warning' || s.status === 'alert').length} Alerts</span>
                         </div>
                         <span className="text-gray-500">
                           {locations.length} Locations • {filteredSensors.length}/{sensors.length} Sensors
@@ -1299,7 +1299,7 @@ export default function UnifiedDashboard({
               {/* Predictive Analytics Section */}
               <div className="card">
                 <div className="card-header bg-gradient">
-                  <h3 className="card-title text-white">Predictive Analytics & AI Insights</h3>
+                  <h3 className="card-title text-dark">Predictive Analytics & AI Insights</h3>
                   <span className="badge badge-light">Beta</span>
                 </div>
                 <div className="card-body">
