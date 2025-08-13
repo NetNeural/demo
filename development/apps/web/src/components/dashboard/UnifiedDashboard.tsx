@@ -378,8 +378,18 @@ export default function UnifiedDashboard({
           setAlerts(generateMockAlerts());
           setLastUpdate(new Date());
         } else {
-          // Fetch real data for production mode using direct Supabase calls
+          // Try to fetch real data for production mode using direct Supabase calls
           const supabase = createClient();
+          
+          // If Supabase is not available, fall back to demo mode
+          if (!supabase) {
+            console.warn('⚠️ Supabase not available, falling back to demo mode');
+            setSensors(generateMockSensors());
+            setLocations(generateMockLocations());
+            setAlerts(generateMockAlerts());
+            setLastUpdate(new Date());
+            return;
+          }
           
           try {
             // Fetch sensors
@@ -390,6 +400,7 @@ export default function UnifiedDashboard({
 
             if (sensorsError) {
               console.error('Error fetching sensors:', sensorsError);
+              throw sensorsError; // Will trigger fallback to demo mode
             } else {
               setSensors(sensorsData || []);
             }
@@ -418,7 +429,13 @@ export default function UnifiedDashboard({
               setLocations(locationsData || []);
             }
           } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching data from Supabase:', error);
+            console.warn('⚠️ Falling back to demo mode due to Supabase error');
+            // Fallback to mock data if Supabase fails
+            setSensors(generateMockSensors());
+            setLocations(generateMockLocations());
+            setAlerts(generateMockAlerts());
+            setLastUpdate(new Date());
           }
         }
       } catch (error) {
@@ -450,6 +467,13 @@ export default function UnifiedDashboard({
       const fetchSensorReadings = async () => {
         try {
           const supabase = createClient();
+          
+          // If Supabase is not available, skip sensor readings
+          if (!supabase) {
+            console.warn('⚠️ Supabase not available, skipping sensor readings fetch');
+            setSensorReadings([]);
+            return;
+          }
           
           // Calculate the time range
           let hoursBack = 24;
@@ -487,6 +511,8 @@ export default function UnifiedDashboard({
           setSensorReadings(readings || []);
         } catch (error) {
           console.error('Error fetching sensor readings:', error);
+          console.warn('⚠️ Setting empty sensor readings due to error');
+          setSensorReadings([]);
         }
       };
 

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSupabase } from '../../providers/SupabaseProvider'
 
 export function LoginForm() {
-  const { supabase } = useSupabase()
+  const { supabase, isSupabaseAvailable } = useSupabase()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -13,6 +13,12 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
+    if (!supabase || !isSupabaseAvailable) {
+      alert('Authentication not available - running in demo mode')
+      setLoading(false)
+      return
+    }
 
     try {
       if (isSignUp) {
@@ -36,6 +42,11 @@ export function LoginForm() {
   }
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
+    if (!supabase || !isSupabaseAvailable) {
+      alert('Authentication not available - running in demo mode')
+      return
+    }
+    
     const { error } = await supabase.auth.signInWithOAuth({ provider })
     if (error) {
       alert(error.message)

@@ -8,14 +8,16 @@ interface SupabaseContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  supabase: SupabaseClient
+  supabase: SupabaseClient | null
+  isSupabaseAvailable: boolean
 }
 
 const SupabaseContext = createContext<SupabaseContextType>({
   user: null,
   session: null,
   loading: true,
-  supabase: createClient()
+  supabase: null,
+  isSupabaseAvailable: false
 })
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
@@ -23,12 +25,23 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const isSupabaseAvailable = !!supabase
 
   useEffect(() => {
+    if (!supabase) {
+      // If Supabase is not available, just set loading to false
+      console.warn('⚠️ Supabase not available, skipping auth setup')
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      setLoading(false)
+    }).catch((error) => {
+      console.error('Error getting session:', error)
       setLoading(false)
     })
 
@@ -45,7 +58,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   return (
-    <SupabaseContext.Provider value={{ user, session, loading, supabase }}>
+    <SupabaseContext.Provider value={{ user, session, loading, supabase, isSupabaseAvailable }}>
       {children}
     </SupabaseContext.Provider>
   )

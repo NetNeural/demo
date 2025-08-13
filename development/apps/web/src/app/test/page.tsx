@@ -62,6 +62,13 @@ export default function TestPage() {
           onClick={async () => {
             try {
               const supabase = createClient();
+              
+              if (!supabase) {
+                console.log('⚠️ Supabase not configured - running in demo mode');
+                alert('Supabase not configured - app running in demo mode');
+                return;
+              }
+              
               const { data, error } = await supabase
                 .from('sensors')
                 .select('*')

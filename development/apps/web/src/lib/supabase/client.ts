@@ -6,12 +6,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // Validate that we have the required environment variables
 if (!supabaseUrl) {
-  console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
-  console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('SUPABASE')))
+  console.warn('⚠️ Missing NEXT_PUBLIC_SUPABASE_URL environment variable - falling back to demo mode')
 }
 
 if (!supabaseAnonKey) {
-  console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+  console.warn('⚠️ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable - falling back to demo mode')
 }
 
 // Log the configuration being used (without sensitive data) - only in development
@@ -26,13 +25,20 @@ if (process.env.NODE_ENV === 'development') {
 
 export const createClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    const error = new Error(`Supabase configuration is missing. 
-    URL: ${supabaseUrl ? '✅ Set' : '❌ Missing'} 
-    Key: ${supabaseAnonKey ? '✅ Set' : '❌ Missing'}
-    Please check your environment variables.`)
-    console.error(error.message)
-    throw error
+    console.warn('⚠️ Supabase configuration is missing. Using fallback client.')
+    // Return a mock client that will trigger demo mode
+    return null
   }
   
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  try {
+    return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  } catch (error) {
+    console.error('❌ Failed to create Supabase client:', error)
+    return null
+  }
+}
+
+// Helper function to check if Supabase is available
+export const isSupabaseAvailable = () => {
+  return !!(supabaseUrl && supabaseAnonKey)
 }
