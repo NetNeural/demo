@@ -45,8 +45,8 @@ jobs:
       - name: Verify environment configuration
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: https://bldojxpockljyivldxwf.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ
         run: |
           cd apps/web
           echo "🔍 Environment files found:"
@@ -60,15 +60,15 @@ jobs:
       - name: Build web application
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: https://bldojxpockljyivldxwf.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ
           NEXT_PUBLIC_BASE_PATH: /MonoRepo
         run: |
           cd apps/web
           # Export environment variables to ensure they're available to Next.js
           export NODE_ENV=production
-          export NEXT_PUBLIC_SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
-          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+          export NEXT_PUBLIC_SUPABASE_URL="https://bldojxpockljyivldxwf.supabase.co"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ"
           # Verify the environment variables are set
           echo "🔧 Verifying environment variables before build:"
           echo "NODE_ENV=$NODE_ENV"
