@@ -257,6 +257,73 @@ p {
   font-size: 0.75rem;
 }
 
+/* Text Color Utilities */
+.text-muted {
+  color: #64748b;
+}
+
+.text-primary {
+  color: #3b82f6;
+}
+
+.text-secondary {
+  color: #6b7280;
+}
+
+.text-dark {
+  color: #1f2937;
+}
+
+.text-light {
+  color: #9ca3af;
+}
+
+/* Ensure proper text color inheritance in cards */
+.card * {
+  color: inherit;
+}
+
+.card .text-muted {
+  color: #64748b !important;
+}
+
+.card h3,
+.card .card-title {
+  color: #1f2937 !important;
+}
+
+.card span:not(.badge):not(.text-muted) {
+  color: #374151 !important;
+}
+
+/* Sensor Card specific fixes */
+.card .flex .span:not(.badge) {
+  color: #374151 !important;
+}
+
+/* Location and sensor name visibility */
+div[class*="flex"] span:not(.badge) {
+  color: #374151 !important;
+}
+
+/* Dashboard text fixes */
+.font-medium {
+  color: #1f2937 !important;
+}
+
+.font-semibold {
+  color: #1f2937 !important;
+}
+
+/* General text visibility fixes */
+p:not(.text-muted):not([class*="text-"]) {
+  color: #374151 !important;
+}
+
+span:not(.badge):not(.text-muted):not([class*="text-"]) {
+  color: #374151 !important;
+}
+
 /* Metric Values */
 .metric-value {
   font-size: 2.5rem;

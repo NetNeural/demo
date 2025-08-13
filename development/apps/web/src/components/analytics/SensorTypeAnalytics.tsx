@@ -33,7 +33,8 @@ interface SensorReading {
   id: string;
   value: number;
   unit: string;
-  reading_time: string;
+  reading_time?: string;  // For compatibility with transformed data
+  timestamp?: string;     // For database data
   metadata?: Record<string, any>;
 }
 
@@ -48,12 +49,17 @@ interface SensorTypeAnalyticsProps {
   department?: string;
 }
 
+// Helper function to get timestamp from reading
+const getReadingTime = (reading: SensorReading): string => {
+  return reading.reading_time || reading.timestamp || new Date().toISOString();
+};
+
 // Temperature Sensor Analytics
 const TemperatureAnalytics: React.FC<SensorTypeAnalyticsProps> = ({ 
   sensorName, readings, timeRange, onTimeRangeChange 
 }) => {
   const values = readings.map(r => r.value);
-  const times = readings.map(r => new Date(r.reading_time).toLocaleTimeString());
+  const times = readings.map(r => new Date(getReadingTime(r)).toLocaleTimeString());
   
   const stats = {
     current: values[values.length - 1] || 0,
@@ -293,15 +299,15 @@ const MotionAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   // Activity pattern analysis
   const hourlyActivity = new Array(24).fill(0);
   motionEvents.forEach(event => {
-    const hour = new Date(event.reading_time).getHours();
+    const hour = new Date(getReadingTime(event)).getHours();
     hourlyActivity[hour]++;
   });
 
   // Recent activity timeline
   const recentActivity = readings.slice(-20).map(reading => ({
-    time: new Date(reading.reading_time),
+    time: new Date(getReadingTime(reading)),
     motion: reading.value > 0,
-    timestamp: reading.reading_time
+    timestamp: getReadingTime(reading)
   }));
 
   const activityData = {
@@ -319,7 +325,7 @@ const MotionAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   const peakHour = hourlyActivity.indexOf(Math.max(...hourlyActivity));
   const quietHour = hourlyActivity.indexOf(Math.min(...hourlyActivity));
   const avgEventsPerHour = motionEvents.length / Math.max(1, new Set(motionEvents.map(e => 
-    new Date(e.reading_time).getHours()
+    new Date(getReadingTime(e)).getHours()
   )).size);
 
   return (
@@ -482,7 +488,7 @@ const HumidityAnalytics: React.FC<SensorTypeAnalyticsProps> = ({
   sensorName, readings, timeRange, onTimeRangeChange 
 }) => {
   const values = readings.map(r => r.value);
-  const times = readings.map(r => new Date(r.reading_time).toLocaleTimeString());
+  const times = readings.map(r => new Date(getReadingTime(r)).toLocaleTimeString());
   
   const stats = {
     current: values[values.length - 1] || 0,

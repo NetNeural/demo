@@ -68,7 +68,7 @@ interface SensorReading {
   id: string;
   value: number;
   unit: string;
-  reading_time?: string;
+  timestamp?: string;
 }
 
 interface UnifiedDashboardProps {
@@ -354,7 +354,7 @@ export default function UnifiedDashboard({
         id: `reading-${sensorId}-${i}`,
         value: parseFloat(value.toFixed(2)),
         unit: unit,
-        reading_time: time.toISOString(),
+        timestamp: time.toISOString(),
       });
     }
     
@@ -500,8 +500,8 @@ export default function UnifiedDashboard({
             .from('sensor_readings')
             .select('*')
             .eq('sensor_id', selectedSensor)
-            .gte('reading_time', timeAgo)
-            .order('reading_time', { ascending: true });
+            .gte('timestamp', timeAgo)
+            .order('timestamp', { ascending: true });
 
           if (error) {
             console.error('Supabase error:', error);
@@ -681,7 +681,7 @@ export default function UnifiedDashboard({
   const transformSensorReadings = (readings: SensorReading[]) =>
     readings.map(reading => ({
       ...reading,
-      reading_time: reading.reading_time ?? new Date().toISOString(),
+      reading_time: reading.timestamp ?? new Date().toISOString(),
     }));
 
   return (
