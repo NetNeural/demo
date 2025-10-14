@@ -141,8 +141,7 @@ export class DatabaseDeviceService {
   async createDevice(device: DeviceInsert): Promise<LocalDevice> {
     const { data, error } = await this.supabase
       .from('devices')
-      // @ts-expect-error - Temporary fix for strict optional property types
-      .insert(device)
+      .insert(device as any)
       .select(`
         *,
         integration:device_integrations(*),
@@ -163,10 +162,9 @@ export class DatabaseDeviceService {
    * Update an existing device
    */
   async updateDevice(id: string, updates: DeviceUpdate): Promise<LocalDevice> {
-    const { data, error } = await this.supabase
+    const { data, error} = await this.supabase
       .from('devices')
-      // @ts-expect-error - Temporary fix for strict optional property types
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...updates, updated_at: new Date().toISOString() } as any)
       .eq('id', id)
       .select(`
         *,
