@@ -160,7 +160,7 @@ automation:
     email:
       smtp_server: "${SMTP_SERVER}"
       recipients:
-        - "team@netneural.com"
+        - "team@netneural.ai"
         - "stakeholders@netneural.com"
 
 quality_assurance:

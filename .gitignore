@@ -77,6 +77,17 @@ Policies/
 !README.md
 !.gitignore
 
+# Development Application (Main Project)
+!development/
+development/.next/
+development/out/
+development/node_modules/
+development/*.tsbuildinfo
+development/.env.local
+development/.env.development.local
+development/.env.test.local
+development/.env.production.local
+
 # =============================================================================
 # STANDARD GITIGNORE PATTERNS
 # =============================================================================

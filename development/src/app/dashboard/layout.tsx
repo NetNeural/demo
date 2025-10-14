@@ -1,0 +1,103 @@
+'use client'
+
+import { createClient } from '@/lib/supabase/client'
+import { UserProvider, useUser } from '@/contexts/UserContext'
+import { OrganizationProvider } from '@/contexts/OrganizationContext'
+import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useUser()
+  const supabase = createClient()
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>
+  }
+
+  if (!user) {
+    return <div className="p-6">Redirecting to login...</div>
+  }
+
+  return (
+    <div className="dashboard-container">
+      <nav className="nav-sidebar">
+        <div className="nav-header">
+          <h1 className="nav-brand">NetNeural IoT</h1>
+        </div>
+        
+        {/* Organization Switcher */}
+        <div className="px-4 py-3 border-b border-gray-200">
+          <OrganizationSwitcherCompact />
+        </div>
+        
+        <div className="nav-menu">
+          <a href="/dashboard" className="nav-item">
+            <span className="nav-icon">📊</span>
+            Dashboard
+          </a>
+          <a href="/dashboard/devices" className="nav-item">
+            <span className="nav-icon">📱</span>
+            Devices
+          </a>
+          <a href="/dashboard/alerts" className="nav-item">
+            <span className="nav-icon">🚨</span>
+            Alerts
+          </a>
+          <a href="/dashboard/analytics" className="nav-item">
+            <span className="nav-icon">📈</span>
+            Analytics
+          </a>
+          <a href="/dashboard/organizations" className="nav-item">
+            <span className="nav-icon">🏢</span>
+            Organization
+          </a>
+          <a href="/dashboard/settings" className="nav-item">
+            <span className="nav-icon">⚙️</span>
+            Personal Settings
+          </a>
+        </div>
+        <div className="nav-user">
+          <div className="user-info">
+            <p className="text-sm font-medium text-gray-900">
+              {user.email}
+            </p>
+            {user.isSuperAdmin ? (
+              <p className="text-xs font-semibold text-red-600">
+                🛡️ Super Admin
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500">
+                {user.organizationName}
+              </p>
+            )}
+          </div>
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut()
+              window.location.href = '/'
+            }}
+            className="btn btn-ghost btn-sm"
+          >
+            Sign out
+          </button>
+        </div>
+      </nav>
+      <main className="main-content">
+        {children}
+      </main>
+    </div>
+  )
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <UserProvider>
+      <OrganizationProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </OrganizationProvider>
+    </UserProvider>
+  )
+}

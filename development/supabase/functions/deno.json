@@ -1,0 +1,40 @@
+{
+  "lock": false,
+  "tasks": {
+    "start": "supabase functions serve",
+    "deploy": "supabase functions deploy",
+    "logs": "supabase functions logs",
+    "test": "deno test --allow-all"
+  },
+  "imports": {
+    "@supabase/functions-js": "https://esm.sh/@supabase/functions-js@2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "cors": "https://deno.land/x/cors@v1.2.2/mod.ts",
+    "std/": "https://deno.land/std@0.224.0/",
+    "zod": "https://deno.land/x/zod@v3.23.8/mod.ts"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window", "dom"],
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-explicit-any"]
+    }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 80,
+    "indentWidth": 2,
+    "singleQuote": true,
+    "proseWrap": "preserve"
+  },
+  "nodeModulesDir": false
+}
