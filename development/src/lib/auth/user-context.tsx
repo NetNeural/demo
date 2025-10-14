@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
-import { Database } from '@/lib/database.types';
+import { Database } from '@/lib/supabase-types';
 import { NotificationModal, useNotificationModal } from '@/components/ui/notification-modal';
 
 type DatabaseUser = Database['public']['Tables']['users']['Row'];

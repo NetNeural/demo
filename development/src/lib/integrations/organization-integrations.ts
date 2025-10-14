@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/database.types';
+import { Database } from '@/lib/supabase-types';
 
 export interface OrganizationIntegration {
   id: string;

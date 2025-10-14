@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { Database, Json } from '@/lib/database.types';
+import { Database, Json } from '@/lib/supabase-types';
 
 type Device = Database['public']['Tables']['devices']['Row'];
 type DeviceInsert = Database['public']['Tables']['devices']['Insert'];
