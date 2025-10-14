@@ -14,9 +14,10 @@ const nextConfig = {
   },
   
   // Configure base path for GitHub Pages
-  // Use /MonoRepo for production builds, empty for development
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/MonoRepo' : ''),
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/MonoRepo/' : ''),
+  // Empty base path for custom domain (demo.netneural.ai)
+  // Set NEXT_PUBLIC_BASE_PATH=/MonoRepo if deploying to netneural.github.io/MonoRepo
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
   
   // Skip ESLint during build
   eslint: {

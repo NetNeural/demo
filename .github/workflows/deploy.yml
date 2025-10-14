@@ -79,11 +79,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           GOLIOTH_API_KEY: ${{ secrets.GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
-          NEXT_PUBLIC_APP_URL: "https://${{ github.repository_owner }}.github.io/MonoRepo"
+          NEXT_PUBLIC_APP_URL: "https://demo.netneural.ai"
           NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform"
           NEXT_PUBLIC_APP_VERSION: "1.0.0"
         run: |
-          echo "🚀 Building NetNeural Platform for GitHub Pages..."
+          echo "🚀 Building NetNeural Platform for custom domain..."
           echo "Build Mode: $BUILD_MODE"
           echo "Target URL: $NEXT_PUBLIC_APP_URL"
           npm run build
