@@ -14,8 +14,9 @@ const nextConfig = {
   },
   
   // Configure base path for GitHub Pages
-  basePath: process.env.NODE_ENV === 'production' ? '/MonoRepo' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/MonoRepo/' : '',
+  // Use /MonoRepo for production builds, empty for development
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/MonoRepo' : ''),
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/MonoRepo/' : ''),
   
   // Skip ESLint during build
   eslint: {

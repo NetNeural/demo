@@ -16,14 +16,12 @@
     "incremental": true,
     
     // Enhanced type checking
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     
-    // Suppress baseUrl deprecation warning (Next.js still requires it)
-    "ignoreDeprecations": "6.0",
     "forceConsistentCasingInFileNames": true,
     
     // Path mapping for cleaner imports

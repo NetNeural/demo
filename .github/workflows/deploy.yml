@@ -67,6 +67,7 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:20}... (truncated for security)"
           echo "GOLIOTH_API_KEY: ${GOLIOTH_API_KEY:0:10}... (truncated for security)"
           echo "Build Mode: Static Export for GitHub Pages"
+          echo "Production Supabase Project: bldojxpockljyivldxwf"
 
       - name: Build application
         env:
