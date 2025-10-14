@@ -1,111 +1,102 @@
-# 📚 NetNeural Documentation Index
+# NetNeural IoT Platform Documentation
 
-Welcome to NetNeural's comprehensive documentation! This guide will help you navigate through all available documentation organized by category.
+Welcome to the NetNeural IoT Platform technical documentation. This directory contains comprehensive documentation for all aspects of the platform.
 
-## 🚀 Quick Start
+## 📋 Documentation Index
 
-- **[Main README](../README.md)** - Project overview and quick start guide
-- **[Setup Local Environment](setup/DOCKER_CLI_ONLY_SETUP.md)** - Local development setup
-- **[Environment Configuration](../scripts/setup-local.sh)** - Automated local setup script
+### 🏗️ Architecture & Design
+- [`architecture.md`](./architecture.md) - System architecture overview
+- [`database.md`](./database.md) - Database schema and design patterns
+- [`security.md`](./security.md) - Security guidelines and implementation
 
-## 📁 Documentation Structure
+### 🔌 API & Integration
+- [`api.md`](./api.md) - Complete API documentation
+- [`golioth.md`](./golioth.md) - Golioth IoT platform integration guide
 
-### 🏗️ **Architecture & Planning**
-*Technical architecture decisions and project evolution*
+### 🚀 Deployment & Operations
+- [`deployment.md`](./deployment.md) - Production deployment procedures
+- [`performance.md`](./performance.md) - Performance optimization strategies
+- [`troubleshooting.md`](./troubleshooting.md) - Common issues and solutions
 
-- **[Infrastructure MVP Alignment](architecture/INFRASTRUCTURE_MVP_ALIGNMENT.md)** - Analysis of current vs. planned architecture
-- **[Supabase Compatibility Analysis](architecture/SUPABASE_COMPATIBILITY_ANALYSIS.md)** - Detailed analysis of Supabase integration
-- **[Modern Development Framework](architecture/MODERN_DEVELOPMENT_FRAMEWORK.md)** - Framework overview and decisions
-- **[Infrastructure Plan](architecture/NETNEURAL_INFRASTRUCTURE_PLAN.md)** - Complete infrastructure strategy
-- **[Development Strategy](architecture/REVISED_DEVELOPMENT_STRATEGY.md)** - Current development approach
-- **[Transformation Complete](architecture/TRANSFORMATION_COMPLETE.md)** - Project transformation summary
-- **[Cleanup Audit](architecture/CLEANUP_AUDIT.md)** - Architecture cleanup documentation
-- **[Root Directory Audit](architecture/ROOT_DIRECTORY_AUDIT_COMPLETE.md)** - Directory structure audit
-- **[Root Cleanup Complete](architecture/ROOT_CLEANUP_COMPLETE.md)** - Final directory cleanup summary
-- **[README Archive](architecture/README_OLD.md)** - Previous README for reference
+### 🧪 Development & Testing
+- [`testing.md`](./testing.md) - Testing strategies and implementation
+- [`contributing.md`](./contributing.md) - Development contribution guidelines
+- [`changelog.md`](./changelog.md) - Version history and release notes
+- [`faq.md`](./faq.md) - Frequently asked questions
 
-### 🛠️ **Setup & Installation**
-*Environment setup and configuration guides*
+## 📁 Project Structure
 
-- **[Docker CLI Setup](setup/DOCKER_CLI_ONLY_SETUP.md)** - Docker-only installation approach
-- **[Remote Docker Setup](setup/REMOTE_DOCKER_SETUP.md)** - Remote Docker configuration
-- **[SSH Docker Tunnel](setup/SSH_DOCKER_TUNNEL.md)** - SSH tunnel setup for remote Docker
-- **[Configure Remote Docker](setup/CONFIGURE_REMOTE_DOCKER.md)** - Remote Docker detailed configuration
-- **[Docker Install Alternatives](setup/DOCKER_INSTALL_ALTERNATIVES.md)** - Alternative Docker installation methods
+```
+development/                    # Project root directory
+├── README.md                   # Quick start and setup guide
+├── TECHNICAL_SPECIFICATION.md  # Master technical specification
+├── CODING_STANDARDS.md         # Development standards
+├── PROJECT_STRUCTURE.md        # Directory organization
+├── docs/                       # Technical documentation (this directory)
+│   ├── README.md              # This file
+│   ├── api.md                 # API documentation
+│   ├── deployment.md          # Deployment guide
+│   ├── testing.md             # Testing guide
+│   ├── database.md            # Database documentation
+│   ├── golioth.md             # Golioth integration
+│   ├── security.md            # Security guidelines
+│   ├── performance.md         # Performance optimization
+│   ├── troubleshooting.md     # Issue resolution
+│   ├── architecture.md        # System architecture
+│   ├── contributing.md        # Contributing guidelines
+│   ├── changelog.md           # Version history
+│   ├── faq.md                 # FAQ
+│   └── images/                # Documentation images
+├── src/                       # Application source code
+├── supabase/                  # Database configuration
+├── tests/                     # Test files
+├── scripts/                   # Development scripts
+└── ...                        # Other project files
+```
 
-### 🚀 **Deployment**
-*Production and staging deployment guides*
+## 🎯 Documentation Philosophy
 
-- **[Deployment Ready Guide](deployment/DEPLOYMENT_READY.md)** - Remote deployment setup
-- **[Unraid Deployment Script](../deployment/deploy-unraid.sh)** - Automated Unraid deployment
-- **[Docker Configurations](../docker/)** - All Docker Compose configurations
+### Key Principles
+1. **Clarity First**: Write for clarity, not brevity
+2. **Practical Examples**: Include working code examples
+3. **Keep Current**: Update docs with code changes
+4. **Searchable**: Use consistent terminology and keywords
+5. **Comprehensive**: Cover all aspects of the feature/system
 
-### 📋 **Historical Documentation**
-*Project planning and legacy documentation*
+### Target Audiences
+- **Developers**: Implementation details and code examples
+- **DevOps**: Deployment and operational procedures  
+- **Architects**: System design and integration patterns
+- **QA Engineers**: Testing strategies and procedures
 
-- **[24-Hour Visual MVP Plan](mvp-implementation/24-HOUR_VISUAL_MVP_PLAN_UPDATED.md)** - Current modular MVP strategy
-- **[Original MVP Plan](mvp-implementation/24-HOUR_VISUAL_MVP_PLAN.md)** - Original standalone MVP approach
-- **[Framework Planning](framework/)** - Framework decision documentation
-- **[MVP Implementation](mvp-implementation/)** - MVP development notes
-- **[MVP Legacy Integration](mvp-legacy-integration/)** - Legacy system integration
-- **[Project Planning](project-planning/)** - Project planning documents
-- **[Lessons Learned](lessons-learned/)** - Development lessons and insights
-- **[Visual Mockups](visual-mockups/)** - UI/UX design mockups
-- **[Mockups](mockups/)** - Additional design assets
+## 🔗 Quick Links
 
-## 🎯 **Common Tasks**
+### Essential Reading
+1. Start with [`../README.md`](../README.md) for development setup
+2. Review [`TECHNICAL_SPECIFICATION.md`](./TECHNICAL_SPECIFICATION.md) for complete system design
+3. Follow [`CODING_STANDARDS.md`](./CODING_STANDARDS.md) for development practices
+4. Reference [`api.md`](./api.md) for API integration
 
-### Development Setup
-1. **First-time setup**: Follow [Main README](../README.md) → Quick Start
-2. **Local development**: Run `npm run setup:local` or use [setup script](../scripts/setup-local.sh)
-3. **Docker issues**: Check [Docker CLI Setup](setup/DOCKER_CLI_ONLY_SETUP.md)
+### External Resources
+- [Supabase Documentation](https://supabase.com/docs)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Golioth Platform Documentation](https://docs.golioth.io/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 
-### Deployment
-1. **Unraid deployment**: Use `npm run deploy:unraid` or [deploy script](../deployment/deploy-unraid.sh)
-2. **Remote deployment**: Follow [Remote Docker Setup](setup/REMOTE_DOCKER_SETUP.md)
-3. **SSH tunneling**: Use [SSH Docker Tunnel](setup/SSH_DOCKER_TUNNEL.md) guide
+## 🤝 Contributing to Documentation
 
-### Architecture Understanding
-1. **Current architecture**: See [Transformation Complete](architecture/TRANSFORMATION_COMPLETE.md)
-2. **Supabase integration**: Read [Supabase Compatibility Analysis](architecture/SUPABASE_COMPATIBILITY_ANALYSIS.md)
-3. **Infrastructure overview**: Review [Infrastructure Plan](architecture/NETNEURAL_INFRASTRUCTURE_PLAN.md)
+When contributing to this documentation:
 
-## 🔧 **Scripts & Tools**
+1. **Follow the structure**: Use the established format and organization
+2. **Update the index**: Add new documents to this README
+3. **Use relative links**: Link to other docs using relative paths
+4. **Include examples**: Provide practical, working examples
+5. **Test your changes**: Ensure all links work and code examples are valid
 
-### Available Scripts
-- `npm run setup:local` - Automated local environment setup
-- `npm run deploy:unraid` - Deploy to Unraid server
-- `npm run dev:start` - Start development environment
-- `npm run docker:local:up` - Start local Docker services
-
-### Script Locations
-- **Setup Scripts**: `scripts/` directory
-- **Deployment Scripts**: `deployment/` directory
-- **Docker Configs**: `docker/` directory
-
-## 📊 **Project Status**
-
-**Current Phase**: ✅ Clean Supabase-first architecture implemented  
-**Architecture**: Modern monorepo with Supabase backend  
-**Status**: Ready for active development  
-
-### Tech Stack
-- **Frontend**: Next.js 14 + Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **API**: Express.js for custom logic
-- **Mobile**: React Native + Expo
-- **Infrastructure**: Docker + Docker Compose
-- **Monorepo**: Turborepo with shared packages
-
-## 🆘 **Need Help?**
-
-1. **Setup issues**: Check [Setup & Installation](#🛠️-setup--installation) section
-2. **Deployment problems**: Review [Deployment](#🚀-deployment) guides
-3. **Architecture questions**: Read [Architecture & Planning](#🏗️-architecture--planning) docs
-4. **Historical context**: Browse [Historical Documentation](#📋-historical-documentation)
+For detailed contributing guidelines, see [`contributing.md`](./contributing.md).
 
 ---
 
-**Last Updated**: Current session  
-**Documentation Status**: ✅ Organized and up-to-date  
-**Next Review**: As needed based on development progress
+**Last Updated**: September 18, 2025  
+**Version**: 1.0  
+**Maintainer**: NetNeural Development Team

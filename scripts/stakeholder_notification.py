@@ -33,7 +33,7 @@ class StakeholderNotifier:
             'smtp_port': int(os.environ.get('SMTP_PORT', '587')),
             'username': os.environ.get('SMTP_USERNAME'),
             'password': os.environ.get('SMTP_PASSWORD'),
-            'from_email': os.environ.get('FROM_EMAIL', 'ai-bot@netneural.com')
+            'from_email': os.environ.get('FROM_EMAIL', 'ai-bot@netneural.ai')
         }
         
     def send_slack_notification(self, message: str, event: str, status: str):

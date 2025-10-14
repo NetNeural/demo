@@ -1,60 +1,182 @@
 {
-  "name": "netneural-monorepo",
+  "name": "netneural-iot-platform",
   "version": "1.0.0",
+  "description": "NetNeural IoT Platform - Supabase-First Architecture with Next.js 15",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "turbo run dev",
-    "dev:watch": "turbo run dev:watch",
-    "dev:hot": "turbo run dev --parallel --no-cache",
-    "build": "turbo run build",
-    "build:web": "cd apps/web && npm run build:static",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "clean": "turbo run clean",
-    "dev:start": "bash scripts/start-dev.sh",
-    "dev:supabase": "cd supabase && supabase start",
-    "dev:web": "cd apps/web && npm run dev",
-    "dev:api": "cd apps/api && npm run dev",
-    "dev:mobile": "cd apps/mobile && npm start",
-    "setup:local": "bash scripts/setup-local.sh",
-    "docker:build": "docker-compose build",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
-    "docker:local:up": "docker-compose -f docker/docker-compose.local.yml up -d",
-    "docker:local:down": "docker-compose -f docker/docker-compose.local.yml down",
-    "docker:local:logs": "docker-compose -f docker/docker-compose.local.yml logs -f",
-    "deploy:unraid": "bash deployment/deploy-unraid.sh",
-    "unraid:down": "docker-compose -f docker/docker-compose.unraid.yml --env-file .env.unraid down",
-    "unraid:logs": "docker-compose -f docker/docker-compose.unraid.yml --env-file .env.unraid logs -f",
-    "deploy:remote": "docker-compose -f docker/docker-compose.remote.yml up -d --build",
-    "docker:remote:down": "docker-compose -f docker/docker-compose.remote.yml down",
-    "docker:remote:logs": "docker-compose -f docker/docker-compose.remote.yml logs -f",
-    "deploy": "bash ../scripts/deploy.sh",
-    "deploy:supabase": "supabase db push && supabase gen types typescript --linked > packages/types/src/supabase.ts",
-    "deploy:web": "npm run build:web",
-    "deploy:check": "bash ../scripts/deploy.sh --dry-run"
+  "author": "NetNeural Team",
+  "license": "PROPRIETARY",
+  "homepage": "https://netneural.github.io/SoftwareMono",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NetNeural/MonoRepo.git",
+    "directory": "development"
   },
-  "devDependencies": {
-    "@types/node": "^24.2.1",
-    "turbo": "^2.5.5",
-    "typescript": "^5.9.2"
+  "keywords": [
+    "iot",
+    "platform",
+    "nextjs",
+    "supabase",
+    "typescript",
+    "react",
+    "golioth",
+    "edge-functions"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "next dev --turbo",
+    "dev:debug": "next dev --turbo --experimental-debug",
+    "build": "next build",
+    "build:static": "next build && next export",
+    "build:analyze": "ANALYZE=true next build",
+    "start": "next start",
+    "start:static": "npx serve@latest out",
+    "export": "next build",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:types": "supabase gen types typescript --local > src/lib/database.types.ts",
+    "supabase:migrate": "supabase db push",
+    "supabase:studio": "supabase studio",
+    "supabase:functions:serve": "supabase functions serve",
+    "supabase:functions:deploy": "supabase functions deploy",
+    "supabase:functions:logs": "supabase functions logs",
+    "dev:full": "concurrently \"npm run supabase:start\" \"sleep 10 && npm run dev\"",
+    "dev:functions": "concurrently \"npm run supabase:start\" \"npm run supabase:functions:serve\"",
+    "setup": "npm install && npm run supabase:start && sleep 15 && npm run supabase:types",
+    "setup:users": "node scripts/create-test-users.js",
+    "setup:dev": "bash scripts/setup-dev-db.sh",
+    "setup:fresh": "npm run clean && npm install && npm run supabase:reset && npm run supabase:types",
+    "check": "npm run type-check && npm run lint && npm run format:check && npm run test",
+    "postinstall": "npm run supabase:types || echo 'Supabase not available, skipping type generation'",
+    "prepare": "husky"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.54.0",
-    "chart.js": "^4.5.0",
-    "client-only": "^0.0.1",
-    "react-chartjs-2": "^5.3.0"
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.75.0",
+    "@tailwindcss/forms": "^0.5.9",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
+    "lucide-react": "^0.545.0",
+    "next": "^15.5.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
   },
-  "packageManager": "npm@10.0.0",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@next/bundle-analyzer": "^15.5.5",
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/jest": "^29.5.13",
+    "@types/node": "^22.18.10",
+    "@types/react": "^18.3.26",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.5.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.2.1",
+    "husky": "^9.1.6",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^16.2.4",
+    "postcss": "^8.4.47",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "supabase": "^2.51.0",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.9.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "printWidth": 80,
+    "tabWidth": 2,
+    "useTabs": false,
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "next/core-web-vitals",
+      "prettier"
+    ],
+    "rules": {
+      "prefer-const": "error",
+      "no-var": "error",
+      "@typescript-eslint/no-unused-vars": "error"
+    }
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.ts"
+    ],
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testPathIgnorePatterns": [
+      "<rootDir>/.next/",
+      "<rootDir>/node_modules/",
+      "<rootDir>/tests/e2e/"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/lib/database.types.ts"
+    ]
   }
 }

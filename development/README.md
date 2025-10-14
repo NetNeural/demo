@@ -1,188 +1,368 @@
-# 🚀 NetNeural - Modern Supabase Platform
+# NetNeural IoT Platform - Development Project
 
-A clean, modern project management platform built with **Supabase + Next.js + React Native + Express**.
+A modern, full-stack IoT platform built with the latest web technologies and Supabase-first architecture.
 
-## 📁 Architecture Overview
+## 🚀 Latest Technology Stack
 
-```
-development/
-├── apps/
-│   ├── web/          # Next.js 14 + Tailwind + Supabase Auth
-│   ├── mobile/       # React Native + Expo + Supabase  
-│   └── api/          # Express.js + Supabase (lightweight server)
-├── packages/
-│   ├── supabase/     # Supabase client + auth utilities
-│   ├── types/        # Shared TypeScript types
-│   ├── ui/           # Shared React components
-│   └── utils/        # Utility functions
-└── supabase/         # Database schema + migrations
-```
+### Core Framework
+- **Next.js 15.0.x** - React framework with Turbopack bundler
+- **React 18.3.x** - UI library with concurrent features
+- **TypeScript 5.6.x** - Type-safe JavaScript with enhanced inference
+- **Node.js 20.x LTS** - JavaScript runtime
 
-## 🎯 Quick Start
+### Backend & Database
+- **Supabase Latest** - Backend-as-a-Service with PostgreSQL 15
+- **Edge Functions** - Serverless functions with Deno 2.0 runtime
+- **Real-time Database** - Live data synchronization
+- **Row Level Security** - Database-level authorization
+
+### Styling & UI
+- **Tailwind CSS 3.4.x** - Utility-first CSS framework
+- **Radix UI** - Headless component primitives
+- **Lucide React** - Beautiful icon library
+- **CSS Custom Properties** - Design token system
+
+### Development Tools
+- **Turbopack** - Next.js 15 native bundler (faster than Webpack)
+- **ESLint 9.x** - Code linting with TypeScript integration
+- **Prettier 3.x** - Code formatting
+- **Husky** - Git hooks for quality gates
+
+### Testing
+- **Playwright** - Modern E2E testing framework
+- **Jest 29.x** - Unit testing with React Testing Library
+- **MSW** - API mocking for tests
+- **V8 Coverage** - Code coverage reporting
+
+## 🛠️ Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Docker & Docker Compose
-- Supabase CLI (installed automatically)
+- **Node.js 20.x LTS**
+- **Docker Desktop** (for Supabase)
+- **Git**
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+### Setup
 
-### 2. Environment Setup
-```bash
-# Copy and configure environment files
-cp .env.local.example .env.local
-cp apps/web/.env.local.example apps/web/.env.local
-cp apps/api/.env.example apps/api/.env
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Update with your Supabase credentials
-```
+2. **Environment setup**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your Supabase credentials
+   ```
 
-### 3. Start Development
-```bash
-# Start all services (recommended)
-npm run dev:start
+3. **Start Supabase locally**
+   ```bash
+   supabase start
+   ```
 
-# OR setup local environment first
-npm run setup:local
+4. **Generate TypeScript types**
+   ```bash
+   supabase gen types typescript --local > src/types/supabase.ts
+   ```
 
-# OR start individually
-npm run dev:supabase  # Supabase local instance
-npm run dev:web       # Next.js frontend  
-npm run dev:api       # Express API
-npm run dev:mobile    # React Native app
-```
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-## 🔗 Development URLs
+6. **Open browser**
+   ```
+   http://localhost:3000
+   ```
 
-- **Web App**: http://localhost:3000
-- **API Server**: http://localhost:3001
-- **Supabase Studio**: http://localhost:54323
-- **Supabase API**: http://localhost:54321
+### 🎯 Development URLs
 
-## 📦 Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend** | Next.js 14 + Tailwind | Modern React with App Router |
-| **Mobile** | React Native + Expo | Cross-platform mobile |
-| **API** | Express.js + Supabase | Lightweight custom endpoints |
-| **Database** | PostgreSQL + Supabase | Auto-generated REST API |
-| **Auth** | Supabase Auth | OAuth + Email authentication |
-| **Storage** | Supabase Storage | File management |
-| **Real-time** | Supabase Realtime | WebSocket subscriptions |
-
-## 🛠 Development Commands
-
-```bash
-# Package management
-npm run build         # Build all packages
-npm run clean         # Clean build artifacts
-npm run test          # Run test suites
-npm run lint          # Code linting
-
-# Development
-npm run dev           # Start all apps with Turbo
-npm run dev:start     # Full development environment
-npm run dev:web       # Web app only
-npm run dev:api       # API server only
-npm run dev:mobile    # Mobile app only
-npm run dev:supabase  # Supabase local only
-```
-
-## 🚀 Deployment
-
-### Local Docker Development
-```bash
-npm run docker:local:up    # Full local stack
-npm run docker:local:down  # Stop local stack
-```
-
-### Unraid Server Deployment
-```bash
-npm run deploy:unraid      # Deploy to Unraid
-npm run unraid:logs        # View deployment logs
-npm run unraid:down        # Stop Unraid deployment
-```
-
-### Remote Docker Deployment
-```bash
-npm run deploy:remote      # Deploy to remote Docker host
-npm run docker:remote:down # Stop remote deployment
-```
-
-## ⚙️ Environment Configuration
-
-### Required Environment Variables
-
-#### Root `.env.local`
-```env
-# Supabase Configuration
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Deployment Configuration
-DOCKER_HOST=tcp://192.168.1.45:2376  # For remote deployment
-```
-
-#### Web App `apps/web/.env.local`
-```env
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-#### API `apps/api/.env`
-```env
-PORT=3001
-SUPABASE_URL=http://localhost:54321
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-CORS_ORIGIN=http://localhost:3000,http://localhost:19006
-```
-
-## 📚 Project Features
-
-### ✅ Implemented
-- **Authentication**: Email/password + OAuth (Google, GitHub)
-- **UI Components**: Login forms, dashboard layout
-- **Database**: User profiles, organizations, projects, tasks
-- **Security**: Row Level Security (RLS) policies
-- **Development**: Hot reload, TypeScript, Tailwind CSS
-
-### 🔄 In Development
-- **Project Management**: CRUD operations, task management
-- **Real-time**: Live collaboration, notifications
-- **File Storage**: Document uploads, image handling
-- **Mobile App**: React Native implementation
-- **Analytics**: User activity tracking
-
-### 🎯 Planned
-- **AI Integration**: Smart task suggestions, automation
-- **Integrations**: Slack, GitHub, Jira connections
-- **Advanced Auth**: SSO, team management
-- **Performance**: Caching, optimization
-
-## 🔒 Security
-
-- **Database**: Row Level Security on all tables
-- **Authentication**: Supabase Auth with JWT tokens
-- **API**: CORS protection, helmet security headers
-- **Environment**: Secure credential management
-- **Network**: Docker network isolation
-
-## 📖 Documentation
-
-- **[Complete Documentation Index](./docs/README.md)** - Navigate all documentation
-- **[Setup Guides](./docs/setup/)** - Environment setup and configuration
-- **[Deployment Guides](./docs/deployment/)** - Production deployment
-- **[Architecture Docs](./docs/architecture/)** - Technical architecture and decisions
-- **[Scripts & Tools](./scripts/README.md)** - Development and deployment scripts
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Next.js App** | http://localhost:3000 | Main application |
+| **Supabase Studio** | http://localhost:54323 | Database management |
+| **Supabase API** | http://localhost:54321 | Backend API |
+| **Edge Functions** | http://localhost:54321/functions/v1 | Serverless functions |
 
 ---
 
-**Built with ❤️ by NetNeural Labs**
+## 🏗️ Architecture Overview
 
-Ready to transform project management with AI! 🚀
+### Supabase-First Design
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (Next.js 15)                   │
+│  • App Router with static export                           │
+│  • Client-side Supabase auth & real-time                   │
+│  • NO API routes (all APIs via Edge Functions)             │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  Supabase Platform (ALL Backend)           │
+│  🗄️ PostgreSQL  🔐 Auth  ⚡ Edge Functions  📁 Storage   │
+│  📊 Real-time   📈 Analytics   🛡️ RLS   🔄 Webhooks      │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   External Integrations                    │
+│  • Golioth IoT Platform (via Edge Functions)               │
+│  • Third-party APIs (via Edge Functions)                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Principles
+
+1. **No Frontend API Routes**: All API logic in Supabase Edge Functions
+2. **Static Export Only**: Optimized for GitHub Pages deployment
+3. **Type Safety**: Auto-generated types from Supabase schema
+4. **Real-time First**: Live updates via Supabase real-time
+5. **Security by Default**: Row Level Security (RLS) enforced
+
+---
+
+## 📦 Latest Technology Stack
+
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| **Next.js** | 15.0.x | Frontend framework with Turbopack |
+| **React** | 18.3.x | UI library with concurrent features |
+| **TypeScript** | 5.6.x | Type-safe JavaScript |
+| **Supabase** | Latest | Complete backend platform |
+| **Tailwind CSS** | 3.4.x | Utility-first CSS framework |
+| **Radix UI** | Latest | Accessible component primitives |
+| **React Query** | 5.x | Server state management |
+| **React Hook Form** | 7.x | Form management |
+| **Zod** | 3.x | Schema validation |
+
+---
+
+## 🔧 Development Scripts
+
+### Essential Commands
+
+```bash
+# Development
+npm run dev              # Start with Turbopack (fastest)
+npm run dev:full         # Start Supabase + Next.js together
+npm run dev:functions    # Start Edge Functions development
+
+# Supabase Operations
+npm run supabase:start   # Start local Supabase stack
+npm run supabase:stop    # Stop local services
+npm run supabase:reset   # Reset database with fresh schema
+npm run supabase:types   # Generate TypeScript types
+npm run supabase:studio  # Open Supabase Studio
+
+# Edge Functions
+npm run supabase:functions:serve   # Serve functions locally
+npm run supabase:functions:deploy  # Deploy all functions
+npm run supabase:functions:logs    # View function logs
+
+# Building & Testing
+npm run build            # Build for production (static export)
+npm run start:static     # Test static build locally
+npm run test             # Run unit tests
+npm run test:e2e         # Run E2E tests with Playwright
+npm run lint             # Code linting
+npm run type-check       # TypeScript validation
+```
+
+### Advanced Development
+
+```bash
+# Full setup from scratch
+npm run setup:fresh      # Clean install + fresh database
+
+# Code quality
+npm run check            # Run all checks (types, lint, tests)
+npm run format           # Format code with Prettier
+
+# Performance analysis
+npm run build:analyze    # Analyze bundle size
+```
+
+---
+
+## 🗄️ Database & Migrations
+
+### Schema Management
+
+```bash
+# Create new migration
+supabase migration new add_feature_name
+
+# Apply migrations locally
+supabase db push
+
+# Reset to clean state
+supabase db reset
+
+# Generate types after schema changes
+npm run supabase:types
+```
+
+### Edge Functions Development
+
+```bash
+# Create new Edge Function
+supabase functions new my-function
+
+# Deploy specific function
+supabase functions deploy my-function
+
+# View function logs
+supabase functions logs my-function --follow
+```
+
+---
+
+## 🔐 Environment Configuration
+
+### Local Development (.env.local)
+
+```bash
+# Use local Supabase (default)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=local-development-key
+
+# Add your Golioth API key
+GOLIOTH_API_KEY=your-golioth-api-key
+```
+
+### Production Environment
+
+```bash
+# Replace with your Supabase project values
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+---
+
+## 📁 Project Structure
+
+```
+development/
+├── src/
+│   ├── app/                 # Next.js 15 App Router
+│   │   ├── (auth)/         # Authentication pages
+│   │   ├── (dashboard)/    # Protected dashboard pages
+│   │   └── globals.css     # Global styles
+│   ├── components/         # React components
+│   │   ├── ui/            # shadcn/ui components
+│   │   ├── auth/          # Auth components
+│   │   └── dashboard/     # Dashboard components
+│   ├── lib/               # Utilities & configurations
+│   │   ├── supabase/      # Supabase client setup
+│   │   ├── database.types.ts  # Auto-generated types
+│   │   └── utils.ts       # Helper functions
+│   └── hooks/             # Custom React hooks
+├── supabase/
+│   ├── migrations/        # Database schema versions
+│   ├── functions/         # Edge Functions (Deno)
+│   │   ├── _shared/       # Shared utilities
+│   │   ├── device-sync/   # Golioth integration
+│   │   └── notifications/ # Alert system
+│   └── config.toml        # Supabase configuration
+├── package.json           # Latest dependencies
+├── next.config.js         # Next.js 15 configuration
+└── tailwind.config.js     # Tailwind CSS setup
+```
+
+---
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+
+```bash
+# Run all tests
+npm run test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+### E2E Tests
+
+```bash
+# Run Playwright tests
+npm run test:e2e
+
+# Interactive UI mode
+npm run test:e2e:ui
+```
+
+### Edge Function Testing
+
+```bash
+# Test functions locally
+supabase functions serve
+curl -X POST http://localhost:54321/functions/v1/device-sync
+```
+
+---
+
+## 🚀 Deployment
+
+### GitHub Pages (Production)
+
+```bash
+# Build static export
+npm run build
+
+# Deploy automatically via GitHub Actions
+git push origin main
+```
+
+### Supabase Deployment
+
+```bash
+# Deploy database changes
+supabase db push
+
+# Deploy Edge Functions
+npm run supabase:functions:deploy
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+1. **Supabase not starting**: Ensure Docker is running
+2. **Type errors**: Run `npm run supabase:types` after schema changes
+3. **Build failures**: Check Next.js 15 static export compatibility
+4. **Edge Function errors**: Check Deno runtime compatibility
+
+### Debug Commands
+
+```bash
+# Check Supabase status
+supabase status
+
+# View detailed logs
+supabase logs
+
+# Reset everything
+npm run clean && npm run setup:fresh
+```
+
+---
+
+## 📚 Additional Resources
+
+- [Next.js 15 Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Turbopack Guide](https://turbo.build/pack/docs)
+- [Edge Functions Guide](https://supabase.com/docs/guides/functions)
+- [Golioth API Documentation](https://docs.golioth.io/)
+
+---
+
+**Need Help?** Check our [troubleshooting guide](./docs/troubleshooting.md) or create an issue.
