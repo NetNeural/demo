@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -40,55 +41,95 @@ export function SecurityTab() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showSetup2FA, setShowSetup2FA] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState('');
 
-  const [sessions, setSessions] = useState<Session[]>([
-    {
-      id: 's1',
-      device: 'Chrome on Windows',
-      location: 'New York, USA',
-      lastActive: '2 minutes ago',
-      current: true
-    },
-    {
-      id: 's2',
-      device: 'Safari on iPhone',
-      location: 'New York, USA',
-      lastActive: '2 hours ago',
-      current: false
-    },
-    {
-      id: 's3',
-      device: 'Firefox on macOS',
-      location: 'San Francisco, USA',
-      lastActive: '1 day ago',
-      current: false
-    }
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
-    {
-      id: 'key1',
-      name: 'Production API',
-      key: 'nn_live_1234567890abcdef',
-      created: '2024-01-15',
-      lastUsed: '2 hours ago'
-    },
-    {
-      id: 'key2',
-      name: 'Development API',
-      key: 'nn_dev_abcdef1234567890',
-      created: '2024-02-01',
-      lastUsed: '5 minutes ago'
-    }
-  ]);
+  // Load active sessions from Supabase
+  useEffect(() => {
+    const loadSessions = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Current session
+        const currentSession: Session = {
+          id: session.access_token.substring(0, 10),
+          device: navigator.userAgent.includes('Chrome') ? 'Chrome on ' + (navigator.platform || 'Windows') :
+                 navigator.userAgent.includes('Firefox') ? 'Firefox on ' + (navigator.platform || 'Windows') :
+                 navigator.userAgent.includes('Safari') ? 'Safari on ' + (navigator.platform || 'macOS') :
+                 'Unknown Device',
+          location: 'Current Location', // Could use IP geolocation API
+          lastActive: 'Active now',
+          current: true
+        };
+        setSessions([currentSession]);
+      }
+    };
+    
+    loadSessions();
+  }, []);
 
-  const handleChangePassword = () => {
+  // Load API keys from Supabase (stored in a custom api_keys table)
+  // Load API keys from database
+  useEffect(() => {
+    const loadApiKeys = async () => {
+      // Note: The api_keys table needs to be added to the database schema
+      // For now, showing empty state
+      // TODO: Add api_keys table migration with columns: id, user_id, name, key_prefix, key_suffix, created_at, last_used_at
+      setApiKeys([]);
+    };
+    
+    loadApiKeys();
+  }, []);
+
+  const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      console.error('Passwords do not match');
+      alert('Passwords do not match');
       return;
     }
-    // Call API to change password
-    console.log('Changing password...');
+    if (!currentPassword || !newPassword) {
+      alert('Please fill in all password fields');
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert('New password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      
+      // First verify current password by attempting to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: (await supabase.auth.getUser()).data.user?.email || '',
+        password: currentPassword
+      });
+
+      if (verifyError) {
+        alert('Current password is incorrect');
+        return;
+      }
+
+      // Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) {
+        alert('Failed to update password: ' + updateError.message);
+        return;
+      }
+
+      alert('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('Error changing password:', err);
+      alert('An unexpected error occurred. Please try again.');
+    }
   };
 
   const handleRevokeSession = (sessionId: string) => {
@@ -115,6 +156,32 @@ export function SecurityTab() {
   const handleCopyApiKey = (key: string) => {
     navigator.clipboard.writeText(key);
     console.log('API key copied to clipboard');
+  };
+
+  const handleToggle2FA = async (checked: boolean) => {
+    if (checked) {
+      // Show alert about 2FA implementation
+      alert('Two-Factor Authentication Setup\n\nThis feature requires Supabase MFA enrollment to be fully implemented.\n\nTo enable 2FA, you would need to:\n1. Enroll in MFA using Supabase Auth API\n2. Scan the QR code with your authenticator app\n3. Verify with a 6-digit code\n\nThis is partially implemented - the UI is ready but backend MFA enrollment is pending.');
+      setShowSetup2FA(true);
+      setTwoFactorEnabled(true);
+      
+      // Generate a demo QR code data (in production this would come from Supabase MFA enrollment)
+      setQrCodeData('otpauth://totp/NetNeural:admin@netneural.ai?secret=DEMO&issuer=NetNeural');
+    } else {
+      if (confirm('Disable two-factor authentication? This will make your account less secure.')) {
+        setTwoFactorEnabled(false);
+        setShowSetup2FA(false);
+        setQrCodeData('');
+      }
+    }
+  };
+
+  const handleShowQRCode = () => {
+    alert(`QR Code for 2FA Setup\n\nIn production, this would display a QR code generated by Supabase MFA.\n\nQR Data: ${qrCodeData || 'otpauth://totp/NetNeural:user@example.com?secret=DEMO&issuer=NetNeural'}\n\nYou would scan this with Google Authenticator, Authy, or similar apps.`);
+  };
+
+  const handleShowSetupKey = () => {
+    alert('Setup Key: DEMO KEY 1234 5678\n\nIn production, this would be the actual TOTP secret from Supabase MFA enrollment.\n\nManually enter this key in your authenticator app if you cannot scan the QR code.');
   };
 
   return (
@@ -192,10 +259,7 @@ export function SecurityTab() {
             <Switch
               id="2fa"
               checked={twoFactorEnabled}
-              onCheckedChange={(checked) => {
-                setTwoFactorEnabled(checked);
-                if (checked) setShowSetup2FA(true);
-              }}
+              onCheckedChange={handleToggle2FA}
             />
           </div>
 
@@ -211,8 +275,8 @@ export function SecurityTab() {
                     <li>Enter the 6-digit code to verify</li>
                   </ol>
                   <div className="flex gap-2 mt-3">
-                    <Button size="sm">Show QR Code</Button>
-                    <Button size="sm" variant="outline">Show Setup Key</Button>
+                    <Button size="sm" onClick={handleShowQRCode}>Show QR Code</Button>
+                    <Button size="sm" variant="outline" onClick={handleShowSetupKey}>Show Setup Key</Button>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -34,35 +35,102 @@ export function PreferencesTab() {
   const [quietHoursEnd, setQuietHoursEnd] = useState('07:00');
   const [muteWeekends, setMuteWeekends] = useState(false);
 
-  const handleSavePreferences = () => {
-    // Save preferences to localStorage and/or API
-    localStorage.setItem('user_preferences', JSON.stringify({
-      theme,
-      language,
-      timezone,
-      dateFormat,
-      timeFormat,
-      compactMode,
-      animationsEnabled,
-      soundEnabled,
-      emailNotifications,
-      smsNotifications,
-      pushNotifications,
-      minSeverity,
-      quietHoursEnabled,
-      quietHoursStart,
-      quietHoursEnd,
-      muteWeekends
-    }));
+  // Apply theme to document whenever it changes
+  useEffect(() => {
+    const root = document.documentElement;
     
-    // TODO: Save to API
-    // await fetch('/api/user/preferences', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ ... })
-    // });
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else if (theme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      // System theme - respect OS preference
+      root.classList.remove('dark', 'light');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.add('light');
+      }
+    }
+  }, [theme]);
+
+  // Load preferences from Supabase on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.user_metadata?.preferences) {
+          const prefs = user.user_metadata.preferences;
+          if (prefs.theme) setTheme(prefs.theme);
+          if (prefs.language) setLanguage(prefs.language);
+          if (prefs.timezone) setTimezone(prefs.timezone);
+          if (prefs.dateFormat) setDateFormat(prefs.dateFormat);
+          if (prefs.timeFormat) setTimeFormat(prefs.timeFormat);
+          if (prefs.compactMode !== undefined) setCompactMode(prefs.compactMode);
+          if (prefs.animationsEnabled !== undefined) setAnimationsEnabled(prefs.animationsEnabled);
+          if (prefs.soundEnabled !== undefined) setSoundEnabled(prefs.soundEnabled);
+          if (prefs.emailNotifications !== undefined) setEmailNotifications(prefs.emailNotifications);
+          if (prefs.smsNotifications !== undefined) setSmsNotifications(prefs.smsNotifications);
+          if (prefs.pushNotifications !== undefined) setPushNotifications(prefs.pushNotifications);
+          if (prefs.minSeverity) setMinSeverity(prefs.minSeverity);
+          if (prefs.quietHoursEnabled !== undefined) setQuietHoursEnabled(prefs.quietHoursEnabled);
+          if (prefs.quietHoursStart) setQuietHoursStart(prefs.quietHoursStart);
+          if (prefs.quietHoursEnd) setQuietHoursEnd(prefs.quietHoursEnd);
+          if (prefs.muteWeekends !== undefined) setMuteWeekends(prefs.muteWeekends);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    };
     
-    // Show success toast
-    console.log('Preferences saved successfully');
+    loadPreferences();
+  }, []);
+
+  const handleSavePreferences = async () => {
+    try {
+      const preferences = {
+        theme,
+        language,
+        timezone,
+        dateFormat,
+        timeFormat,
+        compactMode,
+        animationsEnabled,
+        soundEnabled,
+        emailNotifications,
+        smsNotifications,
+        pushNotifications,
+        minSeverity,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+        muteWeekends
+      };
+
+      // Save to Supabase user metadata
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        data: { preferences }
+      });
+
+      if (error) {
+        alert('Failed to save preferences: ' + error.message);
+        return;
+      }
+
+      // Also save to localStorage as backup
+      localStorage.setItem('user_preferences', JSON.stringify(preferences));
+      
+      alert('Preferences saved successfully!');
+    } catch (err) {
+      console.error('Error saving preferences:', err);
+      alert('An unexpected error occurred. Please try again.');
+    }
   };
 
   return (

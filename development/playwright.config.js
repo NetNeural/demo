@@ -108,8 +108,8 @@ module.exports = defineConfig({
   
   /* Test match patterns */
   testMatch: [
-    '**/__tests__/**/*.(test|spec).ts',
-    '**/tests/**/*.(test|spec).ts',
-    '**/*.(test|spec).ts'
+    '**/__tests__/**/*.{test,spec}.ts',
+    '**/tests/**/*.{test,spec}.ts',
+    '**/*.{test,spec}.ts'
   ],
 });

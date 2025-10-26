@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ interface OrganizationAlertsTabProps {
 }
 
 export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabProps) {
+  const router = useRouter();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +101,7 @@ export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabP
               Recent alerts from devices in this organization
             </CardDescription>
           </div>
-          <Button>
+          <Button onClick={() => router.push(`/dashboard/alerts?organization=${organizationId}`)}>
             <Plus className="w-4 h-4 mr-2" />
             View All
           </Button>

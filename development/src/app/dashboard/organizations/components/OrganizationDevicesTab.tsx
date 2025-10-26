@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Smartphone, Plus, Power, AlertCircle } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface Device {
@@ -21,6 +22,7 @@ interface OrganizationDevicesTabProps {
 }
 
 export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTabProps) {
+  const router = useRouter();
   const { canManageDevices } = useOrganization();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTa
               </CardDescription>
             </div>
             {canManageDevices && (
-              <Button>
+              <Button onClick={() => router.push(`/dashboard/devices?action=add&organization=${organizationId}`)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Device
               </Button>

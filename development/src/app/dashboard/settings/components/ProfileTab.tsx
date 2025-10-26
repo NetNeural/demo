@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Bell, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { SettingsSection } from './shared/SettingsSection';
 import { SettingsFormGroup } from './shared/SettingsFormGroup';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProfileTabProps {
   initialName?: string;
@@ -35,11 +36,88 @@ export function ProfileTab({
   const [marketing, setMarketing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load profile from Supabase on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      // Try to load from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        if (profile.full_name) setProfileName(profile.full_name);
+        if (profile.job_title) setJobTitle(profile.job_title);
+        if (profile.department) setDepartment(profile.department);
+        if (typeof profile.email_notifications === 'boolean') setNotifications(profile.email_notifications);
+        if (typeof profile.marketing_emails === 'boolean') setMarketing(profile.marketing_emails);
+      }
+      
+      // Email comes from auth
+      if (user.email) setEmail(user.email);
+    };
+    
+    loadProfile();
+  }, []);
+
   const handleSave = async () => {
     setIsLoading(true);
-    // TODO: Implement save functionality
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('You must be logged in to save profile');
+        setIsLoading(false);
+        return;
+      }
+
+      // Update or insert profile in profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: profileName,
+          job_title: jobTitle,
+          department: department,
+          email_notifications: notifications,
+          marketing_emails: marketing,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+
+      if (error) {
+        alert('Failed to save profile: ' + error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // If email changed, update auth user
+      if (email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: email
+        });
+        
+        if (emailError) {
+          alert('Profile saved but email update failed: ' + emailError.message);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      alert('Profile saved successfully!');
+    } catch (error) {
+      alert('Failed to save profile: ' + (error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {

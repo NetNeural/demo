@@ -91,7 +91,7 @@ export function OrganizationIntegrationsTab({ organizationId }: OrganizationInte
             </CardDescription>
           </div>
           {permissions.canManageIntegrations && (
-            <Button>
+            <Button onClick={() => alert('Add Integration feature coming soon! This will open a dialog to configure a new integration.')}>
               <Plus className="w-4 h-4 mr-2" />
               Add Integration
             </Button>

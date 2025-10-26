@@ -22,7 +22,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               Manage physical locations for organization {organizationId}
             </CardDescription>
           </div>
-          <Button>
+          <Button onClick={() => alert('Add Location feature coming soon! This will open a dialog to add a new location.')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Location
           </Button>

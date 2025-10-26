@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatsCard } from '@/components/ui/stats-card'
+import { LocationsCard } from '@/components/dashboard/LocationsCard'
 import { useOrganization } from '@/contexts/OrganizationContext'
 
 export default function DashboardPage() {
@@ -78,6 +79,11 @@ export default function DashboardPage() {
           label="Team Members"
           value={stats?.totalUsers?.toString() || currentOrganization.userCount?.toString() || "0"}
         />
+      </div>
+
+      {/* Locations Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <LocationsCard />
       </div>
     </div>
   )

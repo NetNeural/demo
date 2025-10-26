@@ -10,6 +10,7 @@ export default function LoginPage() {
   // Pre-fill credentials only in development mode for convenience
   const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : '')
   const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'NetNeural2025!' : '')
+  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,6 +22,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
       
+      // Sign in with password
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
@@ -34,6 +36,16 @@ export default function LoginPage() {
       if (!data.user) {
         setError('Login failed - please try again')
         return
+      }
+
+      // If "Remember Me" is NOT checked, set session to expire after 8 hours
+      // Default Supabase session is 7 days, so we override only if not remembering
+      if (!rememberMe && data.session) {
+        // Set session expiry to 8 hours (28800 seconds)
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        })
       }
 
       window.location.href = '/dashboard'
@@ -110,6 +122,19 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
+                </div>
+
+                <div className="mb-6 flex items-center">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 text-sm text-gray-700">
+                    Remember me (keep me signed in)
+                  </label>
                 </div>
 
                 <Button
