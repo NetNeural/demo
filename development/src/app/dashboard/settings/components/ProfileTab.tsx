@@ -44,19 +44,24 @@ export function ProfileTab({
       
       if (!user) return;
 
-      // Try to load from profiles table
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
+      // Load from users table for full_name
+      const { data: userRecord } = await supabase
+        .from('users')
+        .select('full_name')
         .eq('id', user.id)
         .single();
 
-      if (profile) {
-        if (profile.full_name) setProfileName(profile.full_name);
-        if (profile.job_title) setJobTitle(profile.job_title);
-        if (profile.department) setDepartment(profile.department);
-        if (typeof profile.email_notifications === 'boolean') setNotifications(profile.email_notifications);
-        if (typeof profile.marketing_emails === 'boolean') setMarketing(profile.marketing_emails);
+      if (userRecord?.full_name) {
+        setProfileName(userRecord.full_name);
+      }
+
+      // Load other profile fields from user_metadata
+      const metadata = user.user_metadata;
+      if (metadata) {
+        if (metadata.job_title) setJobTitle(metadata.job_title);
+        if (metadata.department) setDepartment(metadata.department);
+        if (typeof metadata.email_notifications === 'boolean') setNotifications(metadata.email_notifications);
+        if (typeof metadata.marketing_emails === 'boolean') setMarketing(metadata.marketing_emails);
       }
       
       // Email comes from auth
@@ -78,23 +83,33 @@ export function ProfileTab({
         return;
       }
 
-      // Update or insert profile in profiles table
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
+      // Update full_name in users table
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
           full_name: profileName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (userError) {
+        alert('Failed to save profile: ' + userError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Store other profile fields in user_metadata
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
           job_title: jobTitle,
           department: department,
           email_notifications: notifications,
-          marketing_emails: marketing,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        });
+          marketing_emails: marketing
+        }
+      });
 
-      if (error) {
-        alert('Failed to save profile: ' + error.message);
+      if (metadataError) {
+        alert('Profile saved partially. Metadata update failed: ' + metadataError.message);
         setIsLoading(false);
         return;
       }
