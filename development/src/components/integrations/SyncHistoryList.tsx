@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   RefreshCw, 
   CheckCircle2, 
@@ -129,7 +128,7 @@ export function SyncHistoryList({
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] pr-4">
+        <div className="h-[400px] pr-4 overflow-y-auto">
           {logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <RefreshCw className="h-8 w-8 mb-2" />
@@ -161,12 +160,12 @@ export function SyncHistoryList({
                       <span>
                         <strong className="text-green-600">{log.devices_succeeded}</strong> succeeded
                       </span>
-                      {log.devices_failed > 0 && (
+                      {(log.devices_failed ?? 0) > 0 && (
                         <span>
                           <strong className="text-red-600">{log.devices_failed}</strong> failed
                         </span>
                       )}
-                      {log.conflicts_detected > 0 && (
+                      {(log.conflicts_detected ?? 0) > 0 && (
                         <span>
                           <strong className="text-amber-600">{log.conflicts_detected}</strong> conflicts
                         </span>
@@ -201,7 +200,7 @@ export function SyncHistoryList({
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   )
