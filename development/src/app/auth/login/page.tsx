@@ -1,18 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function LoginPage() {
+  const router = useRouter()
   // Pre-fill credentials only in development mode for convenience
   const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : '')
   const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'NetNeural2025!' : '')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Check if user is already authenticated and redirect
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        router.replace('/dashboard')
+      }
+    }
+    
+    checkAuth()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,11 +46,13 @@ export default function LoginPage() {
 
       if (loginError) {
         setError('Invalid email or password. Please try again.')
+        setIsLoading(false)
         return
       }
 
       if (!data.user) {
         setError('Login failed - please try again')
+        setIsLoading(false)
         return
       }
 
@@ -48,12 +66,27 @@ export default function LoginPage() {
         })
       }
 
-      window.location.href = '/dashboard'
+      // Wait a brief moment to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify session is established before redirecting
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        // Use Next.js router for client-side navigation
+        router.push('/dashboard')
+        // Small delay then force refresh to ensure all auth state is synced
+        setTimeout(() => {
+          router.refresh()
+        }, 50)
+      } else {
+        setError('Session could not be established. Please try again.')
+        setIsLoading(false)
+      }
       
     } catch (err) {
       console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }

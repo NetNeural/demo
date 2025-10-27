@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ interface ApiKey {
 }
 
 export function SecurityTab() {
+  const { toast } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -86,15 +88,27 @@ export function SecurityTab() {
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      alert('Passwords do not match');
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
       return;
     }
     if (!currentPassword || !newPassword) {
-      alert('Please fill in all password fields');
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields",
+        variant: "destructive",
+      });
       return;
     }
     if (newPassword.length < 6) {
-      alert('New password must be at least 6 characters');
+      toast({
+        title: "Error",
+        description: "New password must be at least 6 characters",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -108,7 +122,11 @@ export function SecurityTab() {
       });
 
       if (verifyError) {
-        alert('Current password is incorrect');
+        toast({
+          title: "Error",
+          description: "Current password is incorrect",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -118,28 +136,45 @@ export function SecurityTab() {
       });
 
       if (updateError) {
-        alert('Failed to update password: ' + updateError.message);
+        toast({
+          title: "Error",
+          description: "Failed to update password: " + updateError.message,
+          variant: "destructive",
+        });
         return;
       }
 
-      alert('Password updated successfully!');
+      toast({
+        title: "Success",
+        description: "Password updated successfully!",
+      });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
       console.error('Error changing password:', err);
-      alert('An unexpected error occurred. Please try again.');
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleRevokeSession = (sessionId: string) => {
     setSessions(sessions.filter(s => s.id !== sessionId));
-    console.log('Session revoked:', sessionId);
+    toast({
+      title: "Session Revoked",
+      description: "The session has been successfully revoked",
+    });
   };
 
   const handleRevokeApiKey = (keyId: string) => {
     setApiKeys(apiKeys.filter(k => k.id !== keyId));
-    console.log('API key revoked:', keyId);
+    toast({
+      title: "API Key Revoked",
+      description: "The API key has been successfully revoked",
+    });
   };
 
   const handleCreateApiKey = () => {
@@ -151,11 +186,18 @@ export function SecurityTab() {
       lastUsed: 'Never'
     };
     setApiKeys([...apiKeys, newKey]);
+    toast({
+      title: "API Key Created",
+      description: "New API key has been created. Copy it now - it won't be shown again!",
+    });
   };
 
   const handleCopyApiKey = (key: string) => {
     navigator.clipboard.writeText(key);
-    console.log('API key copied to clipboard');
+    toast({
+      title: "Copied",
+      description: "API key copied to clipboard",
+    });
   };
 
   const handleToggle2FA = async (checked: boolean) => {

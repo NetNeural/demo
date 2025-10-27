@@ -2,10 +2,23 @@
 -- Add check constraints if they don't exist
 DO $$ 
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'device_integrations_integration_type_check') THEN
-    ALTER TABLE device_integrations ADD CONSTRAINT device_integrations_integration_type_check 
-      CHECK (integration_type IN ('golioth', 'aws_iot', 'azure_iot', 'google_iot'));
+  -- Drop old constraint if it exists
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'device_integrations_integration_type_check') THEN
+    ALTER TABLE device_integrations DROP CONSTRAINT device_integrations_integration_type_check;
   END IF;
+  
+  -- Add updated constraint with all supported types
+  ALTER TABLE device_integrations ADD CONSTRAINT device_integrations_integration_type_check 
+    CHECK (integration_type IN (
+      'golioth',      -- Golioth IoT platform for device management
+      'aws_iot',      -- AWS IoT Core for cloud-connected devices
+      'azure_iot',    -- Azure IoT Hub for enterprise IoT solutions
+      'google_iot',   -- Google Cloud IoT Core
+      'email',        -- Email/SMTP notifications
+      'slack',        -- Slack messaging integration
+      'webhook',      -- Custom HTTP webhooks for events
+      'mqtt'          -- MQTT broker for pub/sub messaging
+    ));
   
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'device_integrations_status_check') THEN
     ALTER TABLE device_integrations ADD CONSTRAINT device_integrations_status_check 

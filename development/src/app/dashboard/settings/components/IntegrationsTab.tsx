@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plug, Check, AlertCircle } from 'lucide-react';
+import { Plug, Check, AlertCircle, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,82 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { SettingsSection } from './shared/SettingsSection';
+
+// Integration type definitions with descriptions
+const INTEGRATION_TYPES = [
+  {
+    value: 'golioth',
+    label: '🌐 Golioth',
+    icon: '🌐',
+    description: 'Connect to Golioth IoT platform for device management, OTA updates, and cloud services',
+    purpose: 'Device Management & Cloud Sync',
+    requiredFields: ['API Key', 'Project ID'],
+    useCases: 'Device provisioning, firmware updates, remote configuration, device monitoring'
+  },
+  {
+    value: 'aws_iot',
+    label: '☁️ AWS IoT Core',
+    icon: '☁️',
+    description: 'Integrate with Amazon Web Services IoT Core for scalable device connectivity',
+    purpose: 'Enterprise Cloud IoT',
+    requiredFields: ['Region', 'Access Key ID', 'Secret Access Key'],
+    useCases: 'Device shadows, fleet management, AWS service integration, scalable IoT deployments'
+  },
+  {
+    value: 'azure_iot',
+    label: '🔵 Azure IoT Hub',
+    icon: '🔵',
+    description: 'Connect to Microsoft Azure IoT Hub for enterprise-grade IoT solutions',
+    purpose: 'Microsoft Cloud Integration',
+    requiredFields: ['Connection String', 'Hub Name'],
+    useCases: 'Device twins, direct methods, Azure service integration, enterprise IoT'
+  },
+  {
+    value: 'google_iot',
+    label: '🔷 Google Cloud IoT',
+    icon: '🔷',
+    description: 'Integrate with Google Cloud IoT Core for device management and telemetry',
+    purpose: 'Google Cloud Services',
+    requiredFields: ['Project ID', 'Region', 'Registry ID'],
+    useCases: 'Device registry, telemetry processing, Google Cloud integration'
+  },
+  {
+    value: 'email',
+    label: '📧 Email (SMTP)',
+    icon: '📧',
+    description: 'Send email notifications and alerts via SMTP server',
+    purpose: 'Email Notifications',
+    requiredFields: ['SMTP Host', 'Port', 'Username', 'Password'],
+    useCases: 'Alert notifications, daily reports, device status emails, user notifications'
+  },
+  {
+    value: 'slack',
+    label: '💬 Slack',
+    icon: '💬',
+    description: 'Send real-time notifications to Slack channels for team collaboration',
+    purpose: 'Team Messaging',
+    requiredFields: ['Webhook URL', 'Channel'],
+    useCases: 'Real-time alerts, team notifications, incident reports, device status updates'
+  },
+  {
+    value: 'webhook',
+    label: '🔗 Custom Webhook',
+    icon: '🔗',
+    description: 'Send HTTP POST requests to custom endpoints for event-driven integrations',
+    purpose: 'Custom Integrations',
+    requiredFields: ['Webhook URL'],
+    useCases: 'Custom automation, third-party integrations, event forwarding, data pipelines'
+  },
+  {
+    value: 'mqtt',
+    label: '📡 MQTT Broker',
+    icon: '📡',
+    description: 'Connect to MQTT broker for pub/sub messaging with IoT devices',
+    purpose: 'Device Messaging',
+    requiredFields: ['Broker URL', 'Port'],
+    useCases: 'Real-time device communication, telemetry streaming, command & control'
+  }
+] as const;
 
 interface Integration {
   id: string;
@@ -40,17 +117,26 @@ interface Organization {
 interface IntegrationsTabProps {
   organizations?: Organization[];
   initialOrganization?: string;
+  hideOrganizationSelector?: boolean;
 }
 
 export default function IntegrationsTab({
   organizations = [],
   initialOrganization = '',
+  hideOrganizationSelector = false,
 }: IntegrationsTabProps) {
   const [selectedOrganization, setSelectedOrganization] = useState(initialOrganization);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  // State for new integration
+  const [newIntegrationType, setNewIntegrationType] = useState('');
+  const [newIntegrationName, setNewIntegrationName] = useState('');
+  const [integrationConfig, setIntegrationConfig] = useState<Record<string, string>>({});
 
   const loadIntegrations = React.useCallback(async () => {
     setIsLoading(true);
@@ -115,14 +201,308 @@ export default function IntegrationsTab({
   }, [selectedOrganization, loadIntegrations]);
 
   const handleTestIntegration = async (integration: Integration) => {
-    console.log('Testing integration:', integration.name);
-    // TODO: Implement test integration
+    // Wrap everything in try-catch to prevent Next.js errors
+    try {
+      console.log('[TEST] Starting integration test for:', integration.name, integration.id);
+      
+      toast({
+        title: '🔍 Testing Integration',
+        description: `Testing connection to ${integration.name}...`,
+      });
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabase = createClient();
+      
+      let session;
+      try {
+        const { data: { session: sessionData } } = await supabase.auth.getSession();
+        session = sessionData;
+      } catch (authError) {
+        console.error('[TEST] Auth error:', authError);
+        toast({
+          title: '❌ Authentication Error',
+          description: 'Could not verify authentication. Please refresh and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (!session) {
+        console.error('[TEST] No active session');
+        toast({
+          title: '❌ Authentication Required',
+          description: 'Please log in to test integrations.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Call test endpoint
+      const testUrl = `${supabaseUrl}/functions/v1/integrations/test?id=${integration.id}`;
+      console.log('[TEST] Calling:', testUrl);
+      
+      let response;
+      try {
+        response = await fetch(testUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (fetchError) {
+        console.error('[TEST] Fetch error:', fetchError);
+        toast({
+          title: '❌ Connection Error',
+          description: 'Could not connect to server. Please check your network.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      console.log('[TEST] Response status:', response.status, response.statusText);
+
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        let errorMessage = `Test failed (HTTP ${response.status})`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.log('[TEST] Error response:', errorData);
+        } catch {
+          errorMessage = response.statusText || errorMessage;
+          console.log('[TEST] Could not parse error response, using status text');
+        }
+        
+        // Add helpful context based on status code
+        if (response.status === 404) {
+          errorMessage = '⚠️ Test feature not available: The integration test endpoint needs to be deployed to Supabase. For now, integrations will work in production once configured.';
+        } else if (response.status === 401 || response.status === 403) {
+          errorMessage = 'Authentication failed. Please refresh and try again.';
+        } else if (response.status >= 500) {
+          errorMessage = `Server error (${response.status}). The integration test service may be experiencing issues.`;
+        }
+        
+        console.log('[TEST] Showing error toast:', errorMessage);
+        toast({
+          title: response.status === 404 ? '⚠️ Feature Not Deployed' : '❌ Test Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Parse successful response
+      let result;
+      try {
+        result = await response.json();
+        console.log('[TEST] Success response:', result);
+      } catch {
+        console.error('[TEST] Could not parse success response');
+        toast({
+          title: '❌ Test Failed',
+          description: 'Invalid response from server',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Show success with details
+      console.log('[TEST] Showing success toast');
+      toast({
+        title: '✅ Test Successful',
+        description: result.message || `${integration.name} is configured correctly and responding.`,
+      });
+    } catch (error) {
+      // Catch ANY error and show toast instead of letting Next.js handle it
+      console.error('[TEST] Unexpected error:', error);
+      toast({
+        title: '❌ Test Error',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred during testing.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteIntegration = async (integration: Integration) => {
+    if (!confirm(`Are you sure you want to delete "${integration.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: '❌ Authentication Required',
+          description: 'Please log in to delete integrations.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/integrations?id=${integration.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      toast({
+        title: '✅ Integration Deleted',
+        description: `${integration.name} has been deleted successfully.`,
+      });
+
+      // Reload integrations
+      await loadIntegrations();
+    } catch (error) {
+      console.error('Error deleting integration:', error);
+      toast({
+        title: '❌ Delete Failed',
+        description: error instanceof Error ? error.message : 'Failed to delete integration. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveConfig = async () => {
-    console.log('Saving config for:', selectedIntegration?.name);
-    setShowConfigModal(false);
-    // TODO: Implement save config
+    if (!selectedIntegration) return;
+
+    try {
+      setIsLoading(true);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/integrations?id=${selectedIntegration.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            settings: integrationConfig,
+            status: 'active'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      toast({
+        title: 'Configuration Saved',
+        description: `Successfully updated ${selectedIntegration.name} configuration.`,
+      });
+      
+      setShowConfigModal(false);
+      setIntegrationConfig({});
+
+      // Reload integrations
+      await loadIntegrations();
+    } catch (error) {
+      console.error('Error saving config:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save configuration.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddIntegration = async () => {
+    if (!newIntegrationType || !newIntegrationName) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/integrations`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id: selectedOrganization,
+            integration_type: newIntegrationType,
+            name: newIntegrationName,
+            settings: integrationConfig
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Integration created:', result);
+      
+      toast({
+        title: 'Integration Added',
+        description: `${newIntegrationName} has been added successfully.`,
+      });
+
+      // Reset form
+      setNewIntegrationType('');
+      setNewIntegrationName('');
+      setIntegrationConfig({});
+      setShowAddModal(false);
+
+      // Reload integrations
+      await loadIntegrations();
+    } catch (error) {
+      console.error('Error adding integration:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add integration. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getStatusBadge = (status: Integration['status']) => {
@@ -149,18 +529,8 @@ export default function IntegrationsTab({
   };
 
   const getIntegrationIcon = (type: string) => {
-    switch (type) {
-      case 'golioth':
-        return '🌐';
-      case 'email':
-        return '📧';
-      case 'slack':
-        return '💬';
-      case 'webhook':
-        return '🔗';
-      default:
-        return '🔌';
-    }
+    const integType = INTEGRATION_TYPES.find(t => t.value === type);
+    return integType?.icon || '🔌';
   };
 
   return (
@@ -170,23 +540,34 @@ export default function IntegrationsTab({
         icon={<Plug className="w-5 h-5" />}
         title="Integrations"
         description="Connect with external services and platforms"
+        actions={
+          selectedOrganization && (
+            <Button size="sm" onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Integration
+            </Button>
+          )
+        }
       >
         <div className="space-y-4">
-          <div className="max-w-md">
-            <label className="text-sm font-medium mb-2 block">Select Organization</label>
-            <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose an organization..." />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Only show organization selector if not hidden */}
+          {!hideOrganizationSelector && (
+            <div className="max-w-md">
+              <label className="text-sm font-medium mb-2 block">Select Organization</label>
+              <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an organization..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Integrations Grid */}
           {selectedOrganization && (
@@ -221,6 +602,7 @@ export default function IntegrationsTab({
                           variant={integration.status === 'not-configured' ? 'default' : 'outline'}
                           onClick={() => {
                             setSelectedIntegration(integration);
+                            setIntegrationConfig(integration.config as Record<string, string>);
                             setShowConfigModal(true);
                           }}
                           className="flex-1"
@@ -236,6 +618,13 @@ export default function IntegrationsTab({
                             Test
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteIntegration(integration)}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -248,13 +637,33 @@ export default function IntegrationsTab({
 
       {/* Configuration Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configure {selectedIntegration?.name}</DialogTitle>
             <DialogDescription>
               Update the configuration for this integration
             </DialogDescription>
           </DialogHeader>
+
+          {/* Show integration info */}
+          {selectedIntegration && (
+            <div className="p-3 bg-gray-50 border rounded-lg">
+              {(() => {
+                const integType = INTEGRATION_TYPES.find(t => t.value === selectedIntegration.type);
+                if (!integType) return null;
+                
+                return (
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{integType.icon}</span>
+                    <div className="flex-1 text-sm">
+                      <p className="font-medium text-gray-900">{integType.purpose}</p>
+                      <p className="text-gray-600 mt-1">{integType.description}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           <div className="space-y-4 py-4">
             {selectedIntegration?.type === 'golioth' && (
@@ -264,6 +673,7 @@ export default function IntegrationsTab({
                   <Input
                     type="password"
                     defaultValue={String(selectedIntegration.config.apiKey || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, apiKey: e.target.value })}
                     placeholder="Enter Golioth API key"
                   />
                 </div>
@@ -271,6 +681,7 @@ export default function IntegrationsTab({
                   <label className="text-sm font-medium">Project ID</label>
                   <Input
                     defaultValue={String(selectedIntegration.config.projectId || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, projectId: e.target.value })}
                     placeholder="Enter project ID"
                   />
                 </div>
@@ -283,6 +694,7 @@ export default function IntegrationsTab({
                   <label className="text-sm font-medium">SMTP Host</label>
                   <Input
                     defaultValue={String(selectedIntegration.config.smtpHost || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, smtpHost: e.target.value })}
                     placeholder="smtp.gmail.com"
                   />
                 </div>
@@ -291,16 +703,25 @@ export default function IntegrationsTab({
                   <Input
                     type="number"
                     defaultValue={String(selectedIntegration.config.smtpPort || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, smtpPort: e.target.value })}
                     placeholder="587"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Username</label>
-                  <Input placeholder="your-email@gmail.com" />
+                  <Input 
+                    defaultValue={String(selectedIntegration.config.username || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, username: e.target.value })}
+                    placeholder="your-email@gmail.com" 
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Password</label>
-                  <Input type="password" placeholder="Enter password" />
+                  <Input 
+                    type="password" 
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, password: e.target.value })}
+                    placeholder="Enter password" 
+                  />
                 </div>
               </>
             )}
@@ -309,11 +730,19 @@ export default function IntegrationsTab({
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Webhook URL</label>
-                  <Input placeholder="https://hooks.slack.com/services/..." />
+                  <Input 
+                    defaultValue={String(selectedIntegration.config.webhookUrl || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, webhookUrl: e.target.value })}
+                    placeholder="https://hooks.slack.com/services/..." 
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Channel</label>
-                  <Input placeholder="#alerts" />
+                  <Input 
+                    defaultValue={String(selectedIntegration.config.channel || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, channel: e.target.value })}
+                    placeholder="#alerts" 
+                  />
                 </div>
               </>
             )}
@@ -324,12 +753,171 @@ export default function IntegrationsTab({
                   <label className="text-sm font-medium">Webhook URL</label>
                   <Input
                     defaultValue={String(selectedIntegration.config.url || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, url: e.target.value })}
                     placeholder="https://api.example.com/webhook"
                   />
+                  <p className="text-xs text-gray-500">HTTP endpoint that will receive POST requests with event data</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Secret Key (Optional)</label>
-                  <Input type="password" placeholder="Enter secret key" />
+                  <Input 
+                    type="password" 
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, secretKey: e.target.value })}
+                    placeholder="Enter secret key" 
+                  />
+                  <p className="text-xs text-gray-500">Used to verify webhook authenticity via HMAC signature</p>
+                </div>
+              </>
+            )}
+
+            {selectedIntegration?.type === 'mqtt' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Broker URL</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.broker || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, broker: e.target.value })}
+                    placeholder="mqtt://broker.example.com"
+                  />
+                  <p className="text-xs text-gray-500">MQTT broker address (mqtt:// or mqtts:// for TLS)</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Port</label>
+                  <Input
+                    type="number"
+                    defaultValue={String(selectedIntegration.config.port || '1883')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, port: e.target.value })}
+                    placeholder="1883"
+                  />
+                  <p className="text-xs text-gray-500">Standard: 1883 (MQTT), 8883 (MQTTS), 80/443 (WebSockets)</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Username (Optional)</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.username || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, username: e.target.value })}
+                    placeholder="mqtt_user"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Password (Optional)</label>
+                  <Input
+                    type="password"
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, password: e.target.value })}
+                    placeholder="Enter password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Client ID (Optional)</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.clientId || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, clientId: e.target.value })}
+                    placeholder="netneural-mqtt-client"
+                  />
+                  <p className="text-xs text-gray-500">Unique identifier for this MQTT client connection</p>
+                </div>
+              </>
+            )}
+
+            {selectedIntegration?.type === 'aws_iot' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">AWS Region</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.region || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, region: e.target.value })}
+                    placeholder="us-east-1"
+                  />
+                  <p className="text-xs text-gray-500">AWS region where your IoT Core is deployed</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Access Key ID</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.accessKeyId || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, accessKeyId: e.target.value })}
+                    placeholder="AKIAIOSFODNN7EXAMPLE"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Secret Access Key</label>
+                  <Input
+                    type="password"
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, secretAccessKey: e.target.value })}
+                    placeholder="Enter AWS secret access key"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">IoT Endpoint (Optional)</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.endpoint || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, endpoint: e.target.value })}
+                    placeholder="xxxxxx-ats.iot.us-east-1.amazonaws.com"
+                  />
+                  <p className="text-xs text-gray-500">Custom IoT endpoint if not using default</p>
+                </div>
+              </>
+            )}
+
+            {selectedIntegration?.type === 'azure_iot' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Connection String</label>
+                  <Input
+                    type="password"
+                    defaultValue={String(selectedIntegration.config.connectionString || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, connectionString: e.target.value })}
+                    placeholder="HostName=...;SharedAccessKeyName=...;SharedAccessKey=..."
+                  />
+                  <p className="text-xs text-gray-500">IoT Hub connection string from Azure Portal</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Hub Name (Optional)</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.hubName || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, hubName: e.target.value })}
+                    placeholder="my-iot-hub"
+                  />
+                </div>
+              </>
+            )}
+
+            {selectedIntegration?.type === 'google_iot' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Project ID</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.projectId || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, projectId: e.target.value })}
+                    placeholder="my-iot-project"
+                  />
+                  <p className="text-xs text-gray-500">Google Cloud Platform project ID</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Region</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.region || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, region: e.target.value })}
+                    placeholder="us-central1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Registry ID</label>
+                  <Input
+                    defaultValue={String(selectedIntegration.config.registryId || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, registryId: e.target.value })}
+                    placeholder="my-device-registry"
+                  />
+                  <p className="text-xs text-gray-500">IoT device registry identifier</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Service Account Key (JSON)</label>
+                  <textarea
+                    className="w-full min-h-[100px] p-2 border rounded-md text-sm font-mono"
+                    defaultValue={String(selectedIntegration.config.serviceAccountKey || '')}
+                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, serviceAccountKey: e.target.value })}
+                    placeholder='{"type": "service_account", "project_id": "...", ...}'
+                  />
+                  <p className="text-xs text-gray-500">Google Cloud service account credentials in JSON format</p>
                 </div>
               </>
             )}
@@ -340,6 +928,104 @@ export default function IntegrationsTab({
               Cancel
             </Button>
             <Button onClick={handleSaveConfig}>Save Configuration</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Integration Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Integration</DialogTitle>
+            <DialogDescription>
+              Select an integration type and configure it for your organization
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Integration Type *</label>
+              <Select value={newIntegrationType} onValueChange={setNewIntegrationType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select integration type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {INTEGRATION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Show integration description when type is selected */}
+            {newIntegrationType && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                {(() => {
+                  const selectedType = INTEGRATION_TYPES.find(t => t.value === newIntegrationType);
+                  if (!selectedType) return null;
+                  
+                  return (
+                    <>
+                      <div className="flex items-start gap-2">
+                        <span className="text-2xl">{selectedType.icon}</span>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-blue-900">{selectedType.label}</h4>
+                          <p className="text-sm text-blue-800 mt-1">{selectedType.description}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 pt-3 border-t border-blue-300">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="font-medium text-blue-900">Purpose:</span>
+                            <p className="text-blue-700">{selectedType.purpose}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-blue-900">Required Fields:</span>
+                            <p className="text-blue-700">{selectedType.requiredFields.join(', ')}</p>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <span className="font-medium text-blue-900">Use Cases:</span>
+                          <p className="text-blue-700">{selectedType.useCases}</p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Integration Name *</label>
+              <Input
+                value={newIntegrationName}
+                onChange={(e) => setNewIntegrationName(e.target.value)}
+                placeholder={
+                  newIntegrationType 
+                    ? `e.g., Production ${INTEGRATION_TYPES.find(t => t.value === newIntegrationType)?.label || 'Integration'}`
+                    : 'e.g., Production Golioth, Alert Webhook'
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAddModal(false);
+                setNewIntegrationType('');
+                setNewIntegrationName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddIntegration}>
+              Add Integration
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

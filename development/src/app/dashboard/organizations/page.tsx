@@ -65,12 +65,10 @@ export default function OrganizationsPage() {
             <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
           
-          {canManageMembers && (
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Members</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Members</span>
+          </TabsTrigger>
           
           <TabsTrigger value="devices" className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
@@ -82,12 +80,10 @@ export default function OrganizationsPage() {
             <span className="hidden sm:inline">Locations</span>
           </TabsTrigger>
           
-          {canManageIntegrations && (
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
-              <Plug className="w-4 h-4" />
-              <span className="hidden sm:inline">Integrations</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Plug className="w-4 h-4" />
+            <span className="hidden sm:inline">Integrations</span>
+          </TabsTrigger>
           
           <TabsTrigger value="alerts" className="flex items-center gap-2">
             <Bell className="w-4 h-4" />
@@ -106,11 +102,9 @@ export default function OrganizationsPage() {
           <OverviewTab organizationId={currentOrganization.id} />
         </TabsContent>
 
-        {canManageMembers && (
-          <TabsContent value="members">
-            <MembersTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
+        <TabsContent value="members">
+          <MembersTab organizationId={currentOrganization.id} />
+        </TabsContent>
 
         <TabsContent value="devices">
           <OrganizationDevicesTab organizationId={currentOrganization.id} />
@@ -120,11 +114,9 @@ export default function OrganizationsPage() {
           <LocationsTab organizationId={currentOrganization.id} />
         </TabsContent>
 
-        {canManageIntegrations && (
-          <TabsContent value="integrations">
-            <OrganizationIntegrationsTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
+        <TabsContent value="integrations">
+          <OrganizationIntegrationsTab organizationId={currentOrganization.id} />
+        </TabsContent>
 
         <TabsContent value="alerts">
           <OrganizationAlertsTab organizationId={currentOrganization.id} />

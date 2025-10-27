@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -16,6 +17,7 @@ import {
 import { Moon, Sun, Monitor, Globe, Layout, Bell } from 'lucide-react';
 
 export function PreferencesTab() {
+  const { toast } = useToast();
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/New_York');
@@ -119,17 +121,28 @@ export function PreferencesTab() {
       });
 
       if (error) {
-        alert('Failed to save preferences: ' + error.message);
+        toast({
+          title: "Error",
+          description: "Failed to save preferences: " + error.message,
+          variant: "destructive",
+        });
         return;
       }
 
       // Also save to localStorage as backup
       localStorage.setItem('user_preferences', JSON.stringify(preferences));
       
-      alert('Preferences saved successfully!');
+      toast({
+        title: "Success",
+        description: "Preferences saved successfully!",
+      });
     } catch (err) {
       console.error('Error saving preferences:', err);
-      alert('An unexpected error occurred. Please try again.');
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

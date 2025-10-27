@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatsCard } from '@/components/ui/stats-card'
 import { LocationsCard } from '@/components/dashboard/LocationsCard'
 import { useOrganization } from '@/contexts/OrganizationContext'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const { currentOrganization, stats, isLoading: isLoadingOrg } = useOrganization()
 
@@ -56,29 +58,37 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          icon="📱"
-          label="Total Devices"
-          value={stats?.totalDevices?.toString() || currentOrganization.deviceCount?.toString() || "0"}
-        />
+        <div onClick={() => router.push('/dashboard/devices')} className="cursor-pointer">
+          <StatsCard
+            icon="📱"
+            label="Total Devices"
+            value={stats?.totalDevices?.toString() || currentOrganization.deviceCount?.toString() || "0"}
+          />
+        </div>
         
-        <StatsCard
-          icon="✅"
-          label="Active Devices"
-          value={stats?.onlineDevices?.toString() || "0"}
-        />
+        <div onClick={() => router.push('/dashboard/devices')} className="cursor-pointer">
+          <StatsCard
+            icon="✅"
+            label="Active Devices"
+            value={stats?.onlineDevices?.toString() || "0"}
+          />
+        </div>
         
-        <StatsCard
-          icon="🚨"
-          label="Active Alerts"
-          value={stats?.activeAlerts?.toString() || "0"}
-        />
+        <div onClick={() => router.push('/dashboard/alerts')} className="cursor-pointer">
+          <StatsCard
+            icon="🚨"
+            label="Active Alerts"
+            value={stats?.activeAlerts?.toString() || "0"}
+          />
+        </div>
         
-        <StatsCard
-          icon="👥"
-          label="Team Members"
-          value={stats?.totalUsers?.toString() || currentOrganization.userCount?.toString() || "0"}
-        />
+        <div onClick={() => router.push('/dashboard/organizations')} className="cursor-pointer">
+          <StatsCard
+            icon="👥"
+            label="Team Members"
+            value={stats?.totalUsers?.toString() || currentOrganization.userCount?.toString() || "0"}
+          />
+        </div>
       </div>
 
       {/* Locations Section */}

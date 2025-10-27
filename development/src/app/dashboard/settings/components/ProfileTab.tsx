@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ export function ProfileTab({
   initialEmail = 'admin@netneural.ai',
   initialNotifications = true
 }: ProfileTabProps) {
+  const { toast } = useToast();
   const [profileName, setProfileName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [jobTitle, setJobTitle] = useState('');
@@ -78,7 +80,11 @@ export function ProfileTab({
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        alert('You must be logged in to save profile');
+        toast({
+          title: "Error",
+          description: "You must be logged in to save profile",
+          variant: "destructive",
+        });
         setIsLoading(false);
         return;
       }
@@ -93,7 +99,11 @@ export function ProfileTab({
         .eq('id', user.id);
 
       if (userError) {
-        alert('Failed to save profile: ' + userError.message);
+        toast({
+          title: "Error",
+          description: "Failed to save profile: " + userError.message,
+          variant: "destructive",
+        });
         setIsLoading(false);
         return;
       }
@@ -109,7 +119,11 @@ export function ProfileTab({
       });
 
       if (metadataError) {
-        alert('Profile saved partially. Metadata update failed: ' + metadataError.message);
+        toast({
+          title: "Partial Success",
+          description: "Profile saved partially. Metadata update failed: " + metadataError.message,
+          variant: "destructive",
+        });
         setIsLoading(false);
         return;
       }
@@ -121,15 +135,26 @@ export function ProfileTab({
         });
         
         if (emailError) {
-          alert('Profile saved but email update failed: ' + emailError.message);
+          toast({
+            title: "Partial Success",
+            description: "Profile saved but email update failed: " + emailError.message,
+            variant: "destructive",
+          });
           setIsLoading(false);
           return;
         }
       }
 
-      alert('Profile saved successfully!');
+      toast({
+        title: "Success",
+        description: "Profile saved successfully!",
+      });
     } catch (error) {
-      alert('Failed to save profile: ' + (error as Error).message);
+      toast({
+        title: "Error",
+        description: "Failed to save profile: " + (error as Error).message,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

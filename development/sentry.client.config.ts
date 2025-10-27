@@ -1,18 +1,10 @@
 import * as Sentry from '@sentry/nextjs';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseIntegration } from '@supabase/sentry-js-integration';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Integrations
   integrations: [
-    // Supabase integration for automatic error tracking
-    new SupabaseIntegration(SupabaseClient, {
-      tracing: true,
-      breadcrumbs: true,
-      errors: true,
-    }),
     // Session replay to watch user sessions
     Sentry.replayIntegration({
       maskAllText: true,

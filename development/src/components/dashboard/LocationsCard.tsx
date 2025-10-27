@@ -4,9 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MapPin } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useRouter } from 'next/navigation'
 
 export function LocationsCard() {
   const { stats } = useOrganization()
+  const router = useRouter()
+
+  const handleViewAll = () => {
+    router.push('/dashboard/locations')
+  }
 
   return (
     <Card>
@@ -35,7 +41,12 @@ export function LocationsCard() {
             </div>
           )}
           
-          <Button variant="outline" size="sm" className="w-full mt-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-2"
+            onClick={handleViewAll}
+          >
             View All Locations
           </Button>
         </div>

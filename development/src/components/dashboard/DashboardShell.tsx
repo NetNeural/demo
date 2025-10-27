@@ -26,6 +26,7 @@ export default function DashboardShell({
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
     { name: 'Devices', href: '/dashboard/devices', icon: '📱' },
+    { name: 'Organizations', href: '/dashboard/organizations', icon: '🏢' },
     { name: 'Alerts', href: '/dashboard/alerts', icon: '🚨' },
     { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
     { name: 'Settings & Users', href: '/dashboard/settings', icon: '⚙️' },
