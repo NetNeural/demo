@@ -10,9 +10,9 @@ export interface OrganizationIntegration {
   project_id?: string | null;
   base_url?: string | null;
   settings: Database['public']['Tables']['device_integrations']['Row']['settings'];
-  status: string;
-  created_at: string;
-  updated_at: string;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export class OrganizationIntegrationService {

@@ -65,7 +65,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       email: user.email || '',
       organizationId: null,
       organizationName: null,
-      role: profile.role,
+      role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
       isSuperAdmin: true
     }
   }
@@ -81,7 +81,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     email: user.email || '',
     organizationId: organization.id,
     organizationName: organization.name,
-    role: profile.role,
+    role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
     isSuperAdmin: false
   }
 }

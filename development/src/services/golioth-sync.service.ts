@@ -75,7 +75,7 @@ export class GoliothSyncService {
   async getSyncStats(organizationId: string, integrationId?: string) {
     const { data, error } = await this.supabase.rpc('get_sync_stats', {
       org_id: organizationId,
-      integration_id_param: integrationId || null,
+      integration_id_param: integrationId || undefined,
     })
 
     if (error) throw error
@@ -91,7 +91,7 @@ export class GoliothSyncService {
     })
 
     if (error) throw error
-    return data || []
+    return (data || []) as unknown as DeviceConflict[]
   }
 
   /**
@@ -109,7 +109,7 @@ export class GoliothSyncService {
       .update({
         resolution_status: 'resolved',
         resolution_strategy: strategy,
-        resolved_value: resolvedValue,
+        resolved_value: resolvedValue as any,
         resolved_by: user.data.user?.id,
         resolved_at: new Date().toISOString(),
       })

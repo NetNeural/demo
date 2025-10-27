@@ -50,6 +50,7 @@ export function SyncHistoryList({
         channel.unsubscribe()
       }
     }
+    return undefined
   }, [organizationId, integrationId, limit, autoRefresh])
 
   const loadLogs = async () => {
