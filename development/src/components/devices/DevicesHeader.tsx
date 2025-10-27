@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,12 +14,38 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { GoliothSyncButton } from '@/components/integrations/GoliothSyncButton'
+import { createClient } from '@/lib/supabase/client'
 
 export function DevicesHeader() {
   const { toast } = useToast()
+  const { currentOrganization } = useOrganization()
   const [open, setOpen] = useState(false)
   const [deviceName, setDeviceName] = useState('')
   const [deviceId, setDeviceId] = useState('')
+  const [goliothIntegration, setGoliothIntegration] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (currentOrganization?.id) {
+      loadGoliothIntegration()
+    }
+  }, [currentOrganization?.id])
+
+  const loadGoliothIntegration = async () => {
+    if (!currentOrganization) return
+
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('device_integrations')
+      .select('id')
+      .eq('organization_id', currentOrganization.id)
+      .eq('integration_type', 'golioth')
+      .eq('is_active', true)
+      .maybeSingle()
+
+    setGoliothIntegration(data?.id || null)
+  }
 
   const handleAddDevice = () => {
     if (!deviceName || !deviceId) {
@@ -49,50 +75,60 @@ export function DevicesHeader() {
         <p className="text-muted-foreground">Monitor your IoT devices and their status</p>
       </div>
       
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Device
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Device</DialogTitle>
-            <DialogDescription>
-              Register a new IoT device to your organization
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="device-name">Device Name</Label>
-              <Input
-                id="device-name"
-                placeholder="e.g., Office Sensor 1"
-                value={deviceName}
-                onChange={(e) => setDeviceName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="device-id">Device ID</Label>
-              <Input
-                id="device-id"
-                placeholder="e.g., DEV-001"
-                value={deviceId}
-                onChange={(e) => setDeviceId(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddDevice}>
+      <div className="flex items-center gap-2">
+        {goliothIntegration && currentOrganization && (
+          <GoliothSyncButton
+            integrationId={goliothIntegration}
+            organizationId={currentOrganization.id}
+            onSyncComplete={loadGoliothIntegration}
+          />
+        )}
+        
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
               Add Device
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Device</DialogTitle>
+              <DialogDescription>
+                Register a new IoT device to your organization
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="device-name">Device Name</Label>
+                <Input
+                  id="device-name"
+                  placeholder="e.g., Office Sensor 1"
+                  value={deviceName}
+                  onChange={(e) => setDeviceName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="device-id">Device ID</Label>
+                <Input
+                  id="device-id"
+                  placeholder="e.g., DEV-001"
+                  value={deviceId}
+                  onChange={(e) => setDeviceId(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddDevice}>
+                Add Device
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

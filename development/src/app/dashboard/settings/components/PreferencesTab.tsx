@@ -41,6 +41,9 @@ export function PreferencesTab() {
   useEffect(() => {
     const root = document.documentElement;
     
+    // Save to localStorage for persistence
+    localStorage.setItem('theme', theme);
+    
     if (theme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
@@ -63,6 +66,12 @@ export function PreferencesTab() {
   useEffect(() => {
     const loadPreferences = async () => {
       try {
+        // First check localStorage for immediate theme application
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          setTheme(savedTheme);
+        }
+        
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         

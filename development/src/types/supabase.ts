@@ -6,559 +6,1226 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      organizations: {
-        Row: {
-          id: string
-          name: string
-          slug: string
-          description: string | null
-          subscription_tier: string
-          is_active: boolean
-          settings: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          slug: string
-          description?: string | null
-          subscription_tier?: string
-          is_active?: boolean
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          slug?: string
-          description?: string | null
-          subscription_tier?: string
-          is_active?: boolean
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          id: string
-          email: string
-          full_name: string | null
-          role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
-          organization_id: string | null
-          is_active: boolean
-          created_by: string | null
-          last_login: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          role?: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
-          organization_id?: string | null
-          is_active?: boolean
-          created_by?: string | null
-          last_login?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          role?: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
-          organization_id?: string | null
-          is_active?: boolean
-          created_by?: string | null
-          last_login?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "users_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "users_created_by_fkey"
-            columns: ["created_by"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      device_integrations: {
-        Row: {
-          id: string
-          organization_id: string
-          integration_type: string
-          name: string
-          api_key_encrypted: string | null
-          project_id: string | null
-          base_url: string | null
-          settings: Json
-          status: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          integration_type: string
-          name: string
-          api_key_encrypted?: string | null
-          project_id?: string | null
-          base_url?: string | null
-          settings?: Json
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          integration_type?: string
-          name?: string
-          api_key_encrypted?: string | null
-          project_id?: string | null
-          base_url?: string | null
-          settings?: Json
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "device_integrations_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      locations: {
-        Row: {
-          id: string
-          organization_id: string
-          name: string
-          description: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          country: string | null
-          postal_code: string | null
-          latitude: number | null
-          longitude: number | null
-          settings: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          name: string
-          description?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          country?: string | null
-          postal_code?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          name?: string
-          description?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          country?: string | null
-          postal_code?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "locations_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      departments: {
-        Row: {
-          id: string
-          location_id: string
-          name: string
-          description: string | null
-          floor_level: number | null
-          area_square_feet: number | null
-          settings: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          location_id: string
-          name: string
-          description?: string | null
-          floor_level?: number | null
-          area_square_feet?: number | null
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          location_id?: string
-          name?: string
-          description?: string | null
-          floor_level?: number | null
-          area_square_feet?: number | null
-          settings?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "departments_location_id_fkey"
-            columns: ["location_id"]
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      devices: {
-        Row: {
-          id: string
-          organization_id: string
-          integration_id: string | null
-          external_device_id: string | null
-          name: string
-          device_type: string
-          model: string | null
-          serial_number: string | null
-          status: 'online' | 'offline' | 'warning' | 'error'
-          last_seen: string | null
-          battery_level: number | null
-          signal_strength: number | null
-          firmware_version: string | null
-          location_id: string | null
-          department_id: string | null
-          metadata: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          integration_id?: string | null
-          external_device_id?: string | null
-          name: string
-          device_type: string
-          model?: string | null
-          serial_number?: string | null
-          status?: 'online' | 'offline' | 'warning' | 'error'
-          last_seen?: string | null
-          battery_level?: number | null
-          signal_strength?: number | null
-          firmware_version?: string | null
-          location_id?: string | null
-          department_id?: string | null
-          metadata?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          integration_id?: string | null
-          external_device_id?: string | null
-          name?: string
-          device_type?: string
-          model?: string | null
-          serial_number?: string | null
-          status?: 'online' | 'offline' | 'warning' | 'error'
-          last_seen?: string | null
-          battery_level?: number | null
-          signal_strength?: number | null
-          firmware_version?: string | null
-          location_id?: string | null
-          department_id?: string | null
-          metadata?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "devices_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "devices_integration_id_fkey"
-            columns: ["integration_id"]
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "devices_location_id_fkey"
-            columns: ["location_id"]
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "devices_department_id_fkey"
-            columns: ["department_id"]
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      device_data: {
-        Row: {
-          id: string
-          device_id: string
-          sensor_type: string
-          value: number
-          unit: string | null
-          quality: number | null
-          metadata: Json
-          timestamp: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          device_id: string
-          sensor_type: string
-          value: number
-          unit?: string | null
-          quality?: number | null
-          metadata?: Json
-          timestamp?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          device_id?: string
-          sensor_type?: string
-          value?: number
-          unit?: string | null
-          quality?: number | null
-          metadata?: Json
-          timestamp?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "device_data_device_id_fkey"
-            columns: ["device_id"]
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       alerts: {
         Row: {
-          id: string
-          organization_id: string
-          device_id: string | null
           alert_type: string
-          severity: 'low' | 'medium' | 'high' | 'critical'
-          title: string
+          created_at: string | null
+          device_id: string | null
+          id: string
+          is_resolved: boolean | null
           message: string
-          metadata: Json
-          is_resolved: boolean
-          resolved_by: string | null
+          metadata: Json | null
+          organization_id: string
           resolved_at: string | null
-          created_at: string
-          updated_at: string
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          title: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          organization_id: string
-          device_id?: string | null
           alert_type: string
-          severity: 'low' | 'medium' | 'high' | 'critical'
-          title: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_resolved?: boolean | null
           message: string
-          metadata?: Json
-          is_resolved?: boolean
-          resolved_by?: string | null
+          metadata?: Json | null
+          organization_id: string
           resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
+          resolved_by?: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          title: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          organization_id?: string
-          device_id?: string | null
           alert_type?: string
-          severity?: 'low' | 'medium' | 'high' | 'critical'
-          title?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_resolved?: boolean | null
           message?: string
-          metadata?: Json
-          is_resolved?: boolean
-          resolved_by?: string | null
+          metadata?: Json | null
+          organization_id?: string
           resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          title?: string
+          updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "alerts_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "alerts_device_id_fkey"
             columns: ["device_id"]
+            isOneToOne: false
             referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "alerts_resolved_by_fkey"
             columns: ["resolved_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      notifications: {
-        Row: {
-          id: string
-          organization_id: string
-          alert_id: string | null
-          recipient_id: string
-          method: 'email' | 'sms' | 'webhook' | 'in_app'
-          status: 'pending' | 'sent' | 'delivered' | 'failed'
-          metadata: Json
-          sent_at: string | null
-          delivered_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          alert_id?: string | null
-          recipient_id: string
-          method: 'email' | 'sms' | 'webhook' | 'in_app'
-          status?: 'pending' | 'sent' | 'delivered' | 'failed'
-          metadata?: Json
-          sent_at?: string | null
-          delivered_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          alert_id?: string | null
-          recipient_id?: string
-          method?: 'email' | 'sms' | 'webhook' | 'in_app'
-          status?: 'pending' | 'sent' | 'delivered' | 'failed'
-          metadata?: Json
-          sent_at?: string | null
-          delivered_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_organization_id_fkey"
-            columns: ["organization_id"]
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notifications_alert_id_fkey"
-            columns: ["alert_id"]
-            referencedRelation: "alerts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_recipient_id_fkey"
-            columns: ["recipient_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
       }
       audit_logs: {
         Row: {
-          id: string
-          organization_id: string | null
-          user_id: string | null
           action: string
-          resource_type: string
-          resource_id: string | null
-          old_values: Json | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
           new_values: Json | null
-          metadata: Json
-          ip_address: string | null
+          old_values: Json | null
+          organization_id: string | null
+          resource_id: string | null
+          resource_type: string
           user_agent: string | null
-          created_at: string
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          organization_id?: string | null
-          user_id?: string | null
           action: string
-          resource_type: string
-          resource_id?: string | null
-          old_values?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
           new_values?: Json | null
-          metadata?: Json
-          ip_address?: string | null
+          old_values?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type: string
           user_agent?: string | null
-          created_at?: string
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          organization_id?: string | null
-          user_id?: string | null
           action?: string
-          resource_type?: string
-          resource_id?: string | null
-          old_values?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
           new_values?: Json | null
-          metadata?: Json
-          ip_address?: string | null
+          old_values?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
           user_agent?: string | null
-          created_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "audit_logs_organization_id_fkey"
             columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          area_square_feet: number | null
+          created_at: string | null
+          description: string | null
+          floor_level: number | null
+          id: string
+          location_id: string
+          name: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          area_square_feet?: number | null
+          created_at?: string | null
+          description?: string | null
+          floor_level?: number | null
+          id?: string
+          location_id: string
+          name: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          area_square_feet?: number | null
+          created_at?: string | null
+          description?: string | null
+          floor_level?: number | null
+          id?: string
+          location_id?: string
+          name?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_conflicts: {
+        Row: {
+          auto_resolve_reason: string | null
+          conflict_type: string
+          created_at: string
+          device_id: string
+          field_name: string
+          id: string
+          local_updated_at: string | null
+          local_value: Json
+          remote_updated_at: string | null
+          remote_value: Json
+          resolution_status: string
+          resolution_strategy: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_value: Json | null
+          sync_log_id: string | null
+        }
+        Insert: {
+          auto_resolve_reason?: string | null
+          conflict_type: string
+          created_at?: string
+          device_id: string
+          field_name: string
+          id?: string
+          local_updated_at?: string | null
+          local_value: Json
+          remote_updated_at?: string | null
+          remote_value: Json
+          resolution_status?: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_value?: Json | null
+          sync_log_id?: string | null
+        }
+        Update: {
+          auto_resolve_reason?: string | null
+          conflict_type?: string
+          created_at?: string
+          device_id?: string
+          field_name?: string
+          id?: string
+          local_updated_at?: string | null
+          local_value?: Json
+          remote_updated_at?: string | null
+          remote_value?: Json
+          resolution_status?: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_value?: Json | null
+          sync_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_conflicts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_data: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          id: string
+          metadata: Json | null
+          quality: number | null
+          sensor_type: string
+          timestamp: string | null
+          unit: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          id?: string
+          metadata?: Json | null
+          quality?: number | null
+          sensor_type: string
+          timestamp?: string | null
+          unit?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          metadata?: Json | null
+          quality?: number | null
+          sensor_type?: string
+          timestamp?: string | null
+          unit?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_data_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          base_url: string | null
+          conflict_resolution: string | null
+          created_at: string | null
+          id: string
+          integration_type: string
+          last_sync_at: string | null
+          last_sync_status: string | null
+          name: string
+          organization_id: string
+          project_id: string | null
+          settings: Json | null
+          status: string | null
+          sync_direction: string | null
+          sync_enabled: boolean | null
+          sync_error: string | null
+          sync_interval_seconds: number | null
+          updated_at: string | null
+          webhook_enabled: boolean | null
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          base_url?: string | null
+          conflict_resolution?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type: string
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          name: string
+          organization_id: string
+          project_id?: string | null
+          settings?: Json | null
+          status?: string | null
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_error?: string | null
+          sync_interval_seconds?: number | null
+          updated_at?: string | null
+          webhook_enabled?: boolean | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          base_url?: string | null
+          conflict_resolution?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type?: string
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          name?: string
+          organization_id?: string
+          project_id?: string | null
+          settings?: Json | null
+          status?: string | null
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_error?: string | null
+          sync_interval_seconds?: number | null
+          updated_at?: string | null
+          webhook_enabled?: boolean | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_integrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_service_assignments: {
+        Row: {
+          created_at: string
+          device_id: string
+          external_device_id: string
+          id: string
+          integration_id: string
+          last_sync_at: string | null
+          last_sync_log_id: string | null
+          metadata: Json | null
+          next_retry_at: string | null
+          sync_direction: string
+          sync_enabled: boolean
+          sync_error: string | null
+          sync_retry_count: number | null
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          external_device_id: string
+          id?: string
+          integration_id: string
+          last_sync_at?: string | null
+          last_sync_log_id?: string | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          sync_direction?: string
+          sync_enabled?: boolean
+          sync_error?: string | null
+          sync_retry_count?: number | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          external_device_id?: string
+          id?: string
+          integration_id?: string
+          last_sync_at?: string | null
+          last_sync_log_id?: string | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          sync_direction?: string
+          sync_enabled?: boolean
+          sync_error?: string | null
+          sync_retry_count?: number | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_service_assignments_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_service_assignments_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          battery_level: number | null
+          created_at: string | null
+          department_id: string | null
+          device_type: string
+          external_device_id: string | null
+          firmware_version: string | null
+          id: string
+          integration_id: string | null
+          last_seen: string | null
+          location_id: string | null
+          metadata: Json | null
+          model: string | null
+          name: string
+          organization_id: string
+          serial_number: string | null
+          signal_strength: number | null
+          status: Database["public"]["Enums"]["device_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string | null
+          department_id?: string | null
+          device_type: string
+          external_device_id?: string | null
+          firmware_version?: string | null
+          id?: string
+          integration_id?: string | null
+          last_seen?: string | null
+          location_id?: string | null
+          metadata?: Json | null
+          model?: string | null
+          name: string
+          organization_id: string
+          serial_number?: string | null
+          signal_strength?: number | null
+          status?: Database["public"]["Enums"]["device_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string | null
+          department_id?: string | null
+          device_type?: string
+          external_device_id?: string | null
+          firmware_version?: string | null
+          id?: string
+          integration_id?: string | null
+          last_seen?: string | null
+          location_id?: string | null
+          metadata?: Json | null
+          model?: string | null
+          name?: string
+          organization_id?: string
+          serial_number?: string | null
+          signal_strength?: number | null
+          status?: Database["public"]["Enums"]["device_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golioth_sync_log: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golioth_sync_log_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golioth_sync_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golioth_sync_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golioth_sync_log_2025_10: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      golioth_sync_log_2025_11: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      golioth_sync_log_2025_12: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      golioth_sync_log_2026_01: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          organization_id: string
+          postal_code: string | null
+          settings: Json | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          organization_id: string
+          postal_code?: string | null
+          settings?: Json | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          organization_id?: string
+          postal_code?: string | null
+          settings?: Json | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          alert_id: string | null
+          created_at: string | null
+          delivered_at: string | null
+          id: string
+          metadata: Json | null
+          method: Database["public"]["Enums"]["notification_method"]
+          organization_id: string
+          recipient_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"] | null
+        }
+        Insert: {
+          alert_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          id?: string
+          metadata?: Json | null
+          method: Database["public"]["Enums"]["notification_method"]
+          organization_id: string
+          recipient_id: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"] | null
+        }
+        Update: {
+          alert_id?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          id?: string
+          metadata?: Json | null
+          method?: Database["public"]["Enums"]["notification_method"]
+          organization_id?: string
+          recipient_id?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_by: string | null
+          joined_at: string | null
+          organization_id: string
+          permissions: Json | null
+          role: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id: string
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id?: string
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          owner_id: string | null
+          settings: Json | null
+          slug: string
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          owner_id?: string | null
+          settings?: Json | null
+          slug: string
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          owner_id?: string | null
+          settings?: Json | null
+          slug?: string
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_queue: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          integration_id: string
+          max_retries: number | null
+          next_retry_at: string | null
+          operation: string
+          organization_id: string
+          payload: Json
+          priority: number
+          retry_count: number | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          operation: string
+          organization_id: string
+          payload: Json
+          priority?: number
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          operation?: string
+          organization_id?: string
+          payload?: Json
+          priority?: number
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_queue_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          last_login: string | null
+          organization_id: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          is_active?: boolean | null
+          last_login?: string | null
+          organization_id?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          organization_id?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -566,17 +1233,179 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_pending_conflicts: {
+        Args: { org_id: string }
+        Returns: {
+          conflict_id: string
+          conflict_type: string
+          created_at: string
+          device_id: string
+          device_name: string
+          field_name: string
+        }[]
+      }
+      get_sync_stats: {
+        Args: { integration_id_param?: string; org_id: string }
+        Returns: {
+          avg_duration_ms: number
+          failed_syncs: number
+          last_sync_at: string
+          pending_conflicts: number
+          successful_syncs: number
+          total_syncs: number
+        }[]
+      }
+      get_user_organization_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      user_role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
-      device_status: 'online' | 'offline' | 'warning' | 'error'
-      alert_severity: 'low' | 'medium' | 'high' | 'critical'
-      notification_method: 'email' | 'sms' | 'webhook' | 'in_app'
-      notification_status: 'pending' | 'sent' | 'delivered' | 'failed'
+      alert_severity: "low" | "medium" | "high" | "critical"
+      device_status: "online" | "offline" | "warning" | "error"
+      notification_method: "email" | "sms" | "webhook" | "in_app"
+      notification_status: "pending" | "sent" | "delivered" | "failed"
+      user_role: "super_admin" | "org_admin" | "org_owner" | "user" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
     }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      alert_severity: ["low", "medium", "high", "critical"],
+      device_status: ["online", "offline", "warning", "error"],
+      notification_method: ["email", "sms", "webhook", "in_app"],
+      notification_status: ["pending", "sent", "delivered", "failed"],
+      user_role: ["super_admin", "org_admin", "org_owner", "user", "viewer"],
+    },
+  },
+} as const
+

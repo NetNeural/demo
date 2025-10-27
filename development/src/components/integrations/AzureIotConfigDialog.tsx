@@ -1,0 +1,197 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+interface AzureIotConfig {
+  id?: string
+  name: string
+  connection_string: string
+  hub_name: string
+  shared_access_key?: string
+}
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  integrationId?: string
+  organizationId: string
+  onSaved?: () => void
+}
+
+export function AzureIotConfigDialog({ 
+  open, 
+  onOpenChange, 
+  integrationId, 
+  organizationId,
+  onSaved 
+}: Props) {
+  const supabase = createClient()
+  const [loading, setLoading] = useState(false)
+  
+  const [config, setConfig] = useState<AzureIotConfig>({
+    name: 'Azure IoT Hub Integration',
+    connection_string: '',
+    hub_name: '',
+    shared_access_key: '',
+  })
+
+  useEffect(() => {
+    if (integrationId && open) {
+      loadConfig()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [integrationId, open])
+
+  const loadConfig = async () => {
+    if (!integrationId) return
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('device_integrations')
+        .select('*')
+        .eq('id', integrationId)
+        .single()
+
+      if (error) throw error
+
+      if (data && data.api_key_encrypted) {
+        const cfg = JSON.parse(data.api_key_encrypted)
+        setConfig({
+          id: data.id,
+          name: data.name,
+          connection_string: cfg?.connection_string || '',
+          hub_name: cfg?.hub_name || '',
+          shared_access_key: cfg?.shared_access_key || '',
+        })
+      }
+    } catch (error) {
+      toast.error('Failed to load configuration')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!config.name || !config.connection_string || !config.hub_name) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const payload = {
+        organization_id: organizationId,
+        integration_type: 'azure_iot',
+        name: config.name,
+        api_key_encrypted: JSON.stringify({
+          connection_string: config.connection_string,
+          hub_name: config.hub_name,
+          shared_access_key: config.shared_access_key,
+        }),
+        status: 'active',
+      }
+
+      if (integrationId) {
+        const { error } = await supabase
+          .from('device_integrations')
+          .update(payload)
+          .eq('id', integrationId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('device_integrations')
+          .insert(payload)
+
+        if (error) throw error
+      }
+
+      toast.success('Azure IoT Hub configuration saved successfully')
+      onSaved?.()
+      onOpenChange(false)
+    } catch (error) {
+      toast.error('Failed to save configuration')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-white dark:bg-white">
+        <DialogHeader>
+          <DialogTitle className="text-gray-900 dark:text-gray-900">
+            {integrationId ? 'Edit' : 'Add'} Azure IoT Hub Integration
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Integration Name *</Label>
+            <Input
+              id="name"
+              value={config.name}
+              onChange={(e) => setConfig({ ...config, name: e.target.value })}
+              placeholder="e.g., Azure IoT Production"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hub-name">IoT Hub Name *</Label>
+            <Input
+              id="hub-name"
+              value={config.hub_name}
+              onChange={(e) => setConfig({ ...config, hub_name: e.target.value })}
+              placeholder="my-iot-hub"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="connection-string">Connection String *</Label>
+            <Input
+              id="connection-string"
+              type="password"
+              value={config.connection_string}
+              onChange={(e) => setConfig({ ...config, connection_string: e.target.value })}
+              placeholder="HostName=...;SharedAccessKeyName=...;SharedAccessKey=..."
+            />
+            <p className="text-sm text-muted-foreground">
+              Get this from your Azure IoT Hub → Shared access policies
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shared-key">Shared Access Key (Optional)</Label>
+            <Input
+              id="shared-key"
+              type="password"
+              value={config.shared_access_key}
+              onChange={(e) => setConfig({ ...config, shared_access_key: e.target.value })}
+              placeholder="Additional access key if needed"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

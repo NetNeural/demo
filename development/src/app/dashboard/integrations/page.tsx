@@ -1,44 +1,272 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
+import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
+import { SyncHistoryList } from '@/components/integrations/SyncHistoryList'
+import { createClient } from '@/lib/supabase/client'
+import { goliothSyncService } from '@/services/golioth-sync.service'
+import { toast } from 'sonner'
+
+interface Integration {
+  id: string
+  name: string
+  integration_type: string
+  status: string | null
+  created_at: string
+  last_sync_at?: string | null
+  last_sync_status?: string | null
+}
 
 export default function IntegrationsPage() {
-  const router = useRouter()
+  const { currentOrganization } = useOrganization()
+  const supabase = createClient()
   
-  useEffect(() => {
-    router.push('/dashboard/organizations')
-  }, [router])
+  const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [loading, setLoading] = useState(true)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [conflictOpen, setConflictOpen] = useState(false)
+  const [selectedIntegration, setSelectedIntegration] = useState<string | undefined>()
+  const [pendingConflicts, setPendingConflicts] = useState(0)
 
-  return (
-    <div className="dashboard-page">
-      <div className="page-header">
-        <div className="page-header-content">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Integrations</h1>
-          <p className="text-gray-600">
-            Redirecting to Organizations page...
-          </p>
-        </div>
-      </div>
-      
-      <div className="card">
-        <div className="card-content">
-          <div className="text-center py-8">
-            <p className="text-gray-600 mb-4">
-              Integrations are now managed per organization for better security and isolation.
+  useEffect(() => {
+    if (currentOrganization?.id) {
+      loadIntegrations()
+      loadPendingConflicts()
+    }
+  }, [currentOrganization?.id])
+
+  const loadIntegrations = async () => {
+    if (!currentOrganization) return
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('device_integrations')
+        .select('*')
+        .eq('organization_id', currentOrganization.id)
+        .eq('integration_type', 'golioth')
+
+      if (error) throw error
+      setIntegrations((data || []) as Integration[])
+    } catch (error) {
+      console.error('Failed to load integrations:', error)
+      toast.error('Failed to load integrations')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadPendingConflicts = async () => {
+    if (!currentOrganization) return
+
+    try {
+      const conflicts = await goliothSyncService.getPendingConflicts(currentOrganization.id)
+      setPendingConflicts(conflicts.length)
+    } catch (error) {
+      console.error('Failed to load conflicts:', error)
+    }
+  }
+
+  const handleEdit = (integrationId: string) => {
+    setSelectedIntegration(integrationId)
+    setConfigOpen(true)
+  }
+
+  const handleAdd = () => {
+    setSelectedIntegration(undefined)
+    setConfigOpen(true)
+  }
+
+  const handleDelete = async (integrationId: string) => {
+    if (!confirm('Are you sure you want to delete this integration?')) return
+
+    try {
+      const { error } = await supabase
+        .from('device_integrations')
+        .delete()
+        .eq('id', integrationId)
+
+      if (error) throw error
+
+      toast.success('Integration deleted successfully')
+      loadIntegrations()
+    } catch (error) {
+      console.error('Failed to delete integration:', error)
+      toast.error('Failed to delete integration')
+    }
+  }
+
+  if (!currentOrganization) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
+          <div className="text-center space-y-3">
+            <p className="text-muted-foreground">No organization selected</p>
+            <p className="text-sm text-muted-foreground">
+              Please select an organization from the sidebar to manage integrations
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              You will be redirected to the Organizations page where you can manage integrations for each organization.
-            </p>
-            <a 
-              href="/dashboard/organizations" 
-              className="btn btn-primary"
-            >
-              Go to Organizations
-            </a>
           </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Golioth Integrations</h2>
+          <p className="text-muted-foreground">
+            Manage Golioth IoT platform integrations for {currentOrganization.name}
+          </p>
+        </div>
+        <Button onClick={handleAdd}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Integration
+        </Button>
+      </div>
+
+      {/* Pending Conflicts Alert */}
+      {pendingConflicts > 0 && (
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <CardTitle className="text-amber-900 dark:text-amber-100">
+                  Pending Conflicts
+                </CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConflictOpen(true)}
+              >
+                Resolve Conflicts
+              </Button>
+            </div>
+            <CardDescription className="text-amber-800 dark:text-amber-200">
+              {pendingConflicts} device conflict{pendingConflicts > 1 ? 's' : ''} need{pendingConflicts === 1 ? 's' : ''} resolution
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Integrations List */}
+      <div className="grid gap-4">
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Loading...</p>
+            </CardContent>
+          </Card>
+        ) : integrations.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-3">
+                <p className="text-muted-foreground">No Golioth integrations configured</p>
+                <Button onClick={handleAdd} variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Integration
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          integrations.map((integration) => (
+            <Card key={integration.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CardTitle>{integration.name}</CardTitle>
+                      <Badge variant={integration.status === 'active' ? 'default' : 'secondary'}>
+                        {integration.status === 'active' ? 'Active' : integration.status || 'Inactive'}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      {integration.last_sync_at ? (
+                        <>
+                          Last synced: {new Date(integration.last_sync_at).toLocaleString()}
+                          {integration.last_sync_status && (
+                            <Badge
+                              variant={integration.last_sync_status === 'completed' ? 'default' : 'destructive'}
+                              className="ml-2"
+                            >
+                              {integration.last_sync_status}
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        'Never synced'
+                      )}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(integration.id)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configure
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(integration.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Sync History */}
+      {integrations.length > 0 && currentOrganization && (
+        <SyncHistoryList
+          organizationId={currentOrganization.id}
+          limit={20}
+          autoRefresh={true}
+        />
+      )}
+
+      {/* Dialogs */}
+      {currentOrganization && (
+        <>
+          <GoliothConfigDialog
+            open={configOpen}
+            onOpenChange={setConfigOpen}
+            integrationId={selectedIntegration}
+            organizationId={currentOrganization.id}
+            onSaved={() => {
+              loadIntegrations()
+              setConfigOpen(false)
+            }}
+          />
+
+          <ConflictResolutionDialog
+            open={conflictOpen}
+            onOpenChange={setConflictOpen}
+            organizationId={currentOrganization.id}
+            onResolved={() => {
+              loadPendingConflicts()
+              setConflictOpen(false)
+            }}
+          />
+        </>
+      )}
     </div>
   )
 }

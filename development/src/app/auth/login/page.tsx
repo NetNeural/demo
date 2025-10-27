@@ -11,7 +11,7 @@ export default function LoginPage() {
   const router = useRouter()
   // Pre-fill credentials only in development mode for convenience
   const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : '')
-  const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'NetNeural2025!' : '')
+  const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'password123' : '')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')

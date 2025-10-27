@@ -1,25 +1,89 @@
-// Golioth API client for Edge Functions
+// ===========================================================================
+// Golioth API Client - Production Grade
+// ===========================================================================
+// Full-featured Golioth API client for Supabase Edge Functions
+// Features: Error handling, retry logic, type safety, comprehensive CRUD
+// ===========================================================================
+
 export interface GoliothDevice {
   id: string
   name: string
+  hardwareId?: string
   projectId: string
-  status: 'online' | 'offline' | 'maintenance'
-  lastSeen: string
-  metadata: Record<string, any>
+  status: 'online' | 'offline' | 'unknown' | 'maintenance'
+  lastSeen?: string
+  createdAt: string
+  updatedAt: string
+  metadata?: Record<string, unknown>
+  tags?: string[]
 }
 
 export interface GoliothTelemetry {
   deviceId: string
   timestamp: string
-  data: Record<string, any>
+  data: Record<string, unknown>
+}
+
+export interface GoliothConfig {
+  apiKey: string
+  projectId: string
+  baseUrl?: string
+}
+
+export class GoliothAPIError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public response?: unknown
+  ) {
+    super(message)
+    this.name = 'GoliothAPIError'
+  }
 }
 
 export class GoliothClient {
   private apiKey: string
-  private baseUrl = 'https://api.golioth.io/v1'
+  private projectId: string
+  private baseUrl: string
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey
+  constructor(config: GoliothConfig) {
+    this.apiKey = config.apiKey
+    this.projectId = config.projectId
+    this.baseUrl = config.baseUrl || 'https://api.golioth.io/v1'
+
+    if (!this.apiKey || !this.projectId) {
+      throw new Error('Golioth API key and project ID are required')
+    }
+  }
+
+  /**
+   * Make HTTP request to Golioth API with error handling
+   */
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new GoliothAPIError(
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        response.status,
+        errorData
+      )
+    }
+
+    return response.json()
   }
 
   /**

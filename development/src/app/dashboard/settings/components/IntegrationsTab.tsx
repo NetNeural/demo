@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog';
+import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog';
+import { SyncHistoryList } from '@/components/integrations/SyncHistoryList';
+import { AwsIotConfigDialog } from '@/components/integrations/AwsIotConfigDialog';
+import { AzureIotConfigDialog } from '@/components/integrations/AzureIotConfigDialog';
+import { GoogleIotConfigDialog } from '@/components/integrations/GoogleIotConfigDialog';
+import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog';
+import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog';
+import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog';
+import { MqttConfigDialog } from '@/components/integrations/MqttConfigDialog';
 import {
   Select,
   SelectContent,
@@ -131,6 +141,15 @@ export default function IntegrationsTab({
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGoliothConfig, setShowGoliothConfig] = useState(false);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [showAwsIotConfig, setShowAwsIotConfig] = useState(false);
+  const [showAzureIotConfig, setShowAzureIotConfig] = useState(false);
+  const [showGoogleIotConfig, setShowGoogleIotConfig] = useState(false);
+  const [showEmailConfig, setShowEmailConfig] = useState(false);
+  const [showSlackConfig, setShowSlackConfig] = useState(false);
+  const [showWebhookConfig, setShowWebhookConfig] = useState(false);
+  const [showMqttConfig, setShowMqttConfig] = useState(false);
   const { toast } = useToast();
 
   // State for new integration
@@ -602,8 +621,37 @@ export default function IntegrationsTab({
                           variant={integration.status === 'not-configured' ? 'default' : 'outline'}
                           onClick={() => {
                             setSelectedIntegration(integration);
-                            setIntegrationConfig(integration.config as Record<string, string>);
-                            setShowConfigModal(true);
+                            // Route to appropriate config dialog based on type
+                            switch (integration.type) {
+                              case 'golioth':
+                                setShowGoliothConfig(true);
+                                break;
+                              case 'aws_iot':
+                                setShowAwsIotConfig(true);
+                                break;
+                              case 'azure_iot':
+                                setShowAzureIotConfig(true);
+                                break;
+                              case 'google_iot':
+                                setShowGoogleIotConfig(true);
+                                break;
+                              case 'email':
+                                setShowEmailConfig(true);
+                                break;
+                              case 'slack':
+                                setShowSlackConfig(true);
+                                break;
+                              case 'webhook':
+                                setShowWebhookConfig(true);
+                                break;
+                              case 'mqtt':
+                                setShowMqttConfig(true);
+                                break;
+                              default:
+                                // Fallback to generic modal for unknown types
+                                setIntegrationConfig(integration.config as Record<string, string>);
+                                setShowConfigModal(true);
+                            }
                           }}
                           className="flex-1"
                         >
@@ -637,9 +685,9 @@ export default function IntegrationsTab({
 
       {/* Configuration Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-white">
           <DialogHeader>
-            <DialogTitle>Configure {selectedIntegration?.name}</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-gray-900">Configure {selectedIntegration?.name}</DialogTitle>
             <DialogDescription>
               Update the configuration for this integration
             </DialogDescription>
@@ -934,9 +982,9 @@ export default function IntegrationsTab({
 
       {/* Add Integration Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-white">
           <DialogHeader>
-            <DialogTitle>Add New Integration</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-gray-900">Add New Integration</DialogTitle>
             <DialogDescription>
               Select an integration type and configure it for your organization
             </DialogDescription>
@@ -999,7 +1047,7 @@ export default function IntegrationsTab({
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Integration Name *</label>
+              <label className="text-sm font-medium">Integration Name (Optional)</label>
               <Input
                 value={newIntegrationName}
                 onChange={(e) => setNewIntegrationName(e.target.value)}
@@ -1009,6 +1057,9 @@ export default function IntegrationsTab({
                     : 'e.g., Production Golioth, Alert Webhook'
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                You&apos;ll configure the full details in the next step
+              </p>
             </div>
           </div>
 
@@ -1023,12 +1074,160 @@ export default function IntegrationsTab({
             >
               Cancel
             </Button>
-            <Button onClick={handleAddIntegration}>
-              Add Integration
+            <Button 
+              onClick={() => {
+                // Close the add modal and open the appropriate config dialog
+                setShowAddModal(false);
+                
+                // Route to appropriate config dialog based on type
+                switch (newIntegrationType) {
+                  case 'golioth':
+                    setSelectedIntegration(null); // null means creating new
+                    setShowGoliothConfig(true);
+                    break;
+                  case 'aws_iot':
+                    setSelectedIntegration(null);
+                    setShowAwsIotConfig(true);
+                    break;
+                  case 'azure_iot':
+                    setSelectedIntegration(null);
+                    setShowAzureIotConfig(true);
+                    break;
+                  case 'google_iot':
+                    setSelectedIntegration(null);
+                    setShowGoogleIotConfig(true);
+                    break;
+                  case 'email':
+                    setSelectedIntegration(null);
+                    setShowEmailConfig(true);
+                    break;
+                  case 'slack':
+                    setSelectedIntegration(null);
+                    setShowSlackConfig(true);
+                    break;
+                  case 'webhook':
+                    setSelectedIntegration(null);
+                    setShowWebhookConfig(true);
+                    break;
+                  case 'mqtt':
+                    setSelectedIntegration(null);
+                    setShowMqttConfig(true);
+                    break;
+                  default:
+                    // Fallback to old method for unknown types
+                    handleAddIntegration();
+                }
+              }}
+              disabled={!newIntegrationType}
+            >
+              Continue to Configuration
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Golioth Configuration Dialog */}
+      {selectedOrganization && (
+        <>
+          <GoliothConfigDialog
+            open={showGoliothConfig}
+            onOpenChange={setShowGoliothConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowGoliothConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <ConflictResolutionDialog
+            open={showConflictDialog}
+            onOpenChange={setShowConflictDialog}
+            organizationId={selectedOrganization}
+            onResolved={() => {
+              setShowConflictDialog(false);
+              loadIntegrations();
+            }}
+          />
+
+          <AwsIotConfigDialog
+            open={showAwsIotConfig}
+            onOpenChange={setShowAwsIotConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowAwsIotConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <AzureIotConfigDialog
+            open={showAzureIotConfig}
+            onOpenChange={setShowAzureIotConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowAzureIotConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <GoogleIotConfigDialog
+            open={showGoogleIotConfig}
+            onOpenChange={setShowGoogleIotConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowGoogleIotConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <EmailConfigDialog
+            open={showEmailConfig}
+            onOpenChange={setShowEmailConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowEmailConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <SlackConfigDialog
+            open={showSlackConfig}
+            onOpenChange={setShowSlackConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowSlackConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <WebhookConfigDialog
+            open={showWebhookConfig}
+            onOpenChange={setShowWebhookConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowWebhookConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <MqttConfigDialog
+            open={showMqttConfig}
+            onOpenChange={setShowMqttConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowMqttConfig(false);
+              loadIntegrations();
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,603 @@
+# Integration Services Documentation
+
+## Overview
+
+NetNeural supports 8 different integration types for IoT device management, notifications, and cloud platform synchronization. Each integration can be configured through the UI and triggered programmatically.
+
+## Supported Integration Types
+
+### 1. **Golioth IoT Platform** 
+- **Type:** `golioth`
+- **Purpose:** Device management, OTA updates, cloud sync
+- **Backend:** ✅ Fully implemented (`device-sync`, `golioth-webhook` functions)
+- **Features:**
+  - Bidirectional device sync
+  - Conflict detection and resolution
+  - Webhook event handling
+  - Real-time device status updates
+
+### 2. **AWS IoT Core**
+- **Type:** `aws_iot`
+- **Purpose:** Enterprise cloud IoT with AWS integration
+- **Backend:** ✅ Implemented (`aws-iot-sync` function)
+- **Features:**
+  - Device shadow sync
+  - Fleet management
+  - Import/export devices
+  - AWS service integration
+
+### 3. **Azure IoT Hub**
+- **Type:** `azure_iot`
+- **Purpose:** Microsoft cloud IoT integration
+- **Backend:** ✅ Implemented (`azure-iot-sync` function)
+- **Features:**
+  - Device twin synchronization
+  - SAS token authentication
+  - Direct methods
+  - Import/export devices
+  - Azure service integration
+
+### 4. **Google Cloud IoT**
+- **Type:** `google_iot`
+- **Purpose:** Google Cloud Platform IoT integration
+- **Backend:** ✅ Implemented (`google-iot-sync` function)
+- **Features:**
+  - Device registry management
+  - Service account authentication
+  - Telemetry processing
+  - Import/export devices
+  - GCP service integration
+
+### 5. **Email (SMTP)**
+- **Type:** `email`
+- **Purpose:** Email notifications for alerts and reports
+- **Backend:** ✅ Implemented (`send-notification` function)
+- **Features:**
+  - Alert notifications
+  - Daily reports
+  - Device status emails
+  - User notifications
+
+### 6. **Slack**
+- **Type:** `slack`
+- **Purpose:** Team messaging and real-time alerts
+- **Backend:** ✅ Implemented (`send-notification` function)
+- **Features:**
+  - Real-time alert notifications
+  - Team collaboration
+  - Incident reports
+  - Device status updates
+
+### 7. **Custom Webhook**
+- **Type:** `webhook`
+- **Purpose:** HTTP POST/PUT to custom endpoints
+- **Backend:** ✅ Implemented (`send-notification` function)
+- **Features:**
+  - Custom automation
+  - Third-party integrations
+  - Event forwarding
+  - Data pipelines
+  - Signed requests (HMAC-SHA256)
+
+### 8. **MQTT Broker**
+- **Type:** `mqtt`
+- **Purpose:** Pub/sub messaging with IoT devices
+- **Backend:** ✅ Implemented (`mqtt-broker` function)
+- **Features:**
+  - Real-time device communication
+  - Publish/subscribe messaging
+  - Telemetry streaming
+  - Command & control
+  - Topic-based routing
+  - QoS support (0, 1, 2)
+  - Message persistence
+
+---
+
+## Usage Examples
+
+### Frontend - Using Integration Service
+
+```typescript
+import { integrationService } from '@/services/integration.service'
+
+// Send Email Notification
+await integrationService.sendEmail(
+  organizationId,
+  ['user@example.com'],
+  'Device Alert',
+  'Device XYZ is offline!'
+)
+
+// Send Slack Message
+await integrationService.sendSlack(
+  organizationId,
+  '🚨 Critical alert: Temperature exceeded threshold!',
+  { device: 'Sensor-123', temperature: 95 }
+)
+
+// Trigger Custom Webhook
+await integrationService.triggerWebhook(
+  organizationId,
+  'Device status changed',
+  { device_id: 'abc-123', status: 'online' }
+)
+
+// Sync with AWS IoT
+await integrationService.syncAwsIot({
+  organizationId,
+  integrationId,
+  operation: 'bidirectional'
+})
+
+// Sync with Azure IoT
+await integrationService.syncAzureIot({
+  organizationId,
+  integrationId,
+  operation: 'bidirectional'
+})
+
+// Sync with Google Cloud IoT
+await integrationService.syncGoogleIot({
+  organizationId,
+  integrationId,
+  operation: 'import'
+})
+
+// Publish MQTT message
+await integrationService.publishMqtt(
+  organizationId,
+  integrationId,
+  [
+    {
+      topic: 'devices/sensor-123/telemetry',
+      payload: { temperature: 23.5, humidity: 65 },
+      qos: 1,
+      retain: false
+    }
+  ]
+)
+
+// Subscribe to MQTT topics
+await integrationService.subscribeMqtt(
+  organizationId,
+  integrationId,
+  ['devices/+/telemetry', 'devices/+/status'],
+  'https://your-api.com/mqtt-callback' // Optional webhook
+)
+
+// Sync with Golioth
+await integrationService.syncGolioth({
+  organizationId,
+  integrationId,
+  operation: 'import'
+})
+```
+
+### Backend - Direct Edge Function Calls
+
+#### Send Notification
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/send-notification \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_type": "slack",
+    "message": "Test notification",
+    "priority": "high"
+  }'
+```
+
+#### AWS IoT Sync
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/aws-iot-sync \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_id": "integration-uuid",
+    "operation": "bidirectional"
+  }'
+```
+
+#### Azure IoT Sync
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/azure-iot-sync \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_id": "integration-uuid",
+    "operation": "bidirectional"
+  }'
+```
+
+#### Google Cloud IoT Sync
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/google-iot-sync \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_id": "integration-uuid",
+    "operation": "import"
+  }'
+```
+
+#### MQTT Publish
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/mqtt-broker \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_id": "integration-uuid",
+    "operation": "publish",
+    "messages": [
+      {
+        "topic": "devices/sensor-123/telemetry",
+        "payload": {"temperature": 23.5},
+        "qos": 1
+      }
+    ]
+  }'
+```
+
+#### MQTT Subscribe
+```bash
+curl -X POST https://your-project.supabase.co/functions/v1/mqtt-broker \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_id": "org-uuid",
+    "integration_id": "integration-uuid",
+    "operation": "subscribe",
+    "topics": ["devices/+/telemetry"],
+    "callback_url": "https://your-api.com/mqtt-callback"
+  }'
+```
+
+---
+
+## Configuration
+
+### Email Configuration
+```typescript
+{
+  smtp_host: 'smtp.gmail.com',
+  smtp_port: 587,
+  username: 'your-email@gmail.com',
+  password: 'app-password',
+  from_email: 'noreply@yourcompany.com',
+  from_name: 'NetNeural Alerts',
+  use_tls: true
+}
+```
+
+### Slack Configuration
+```typescript
+{
+  webhook_url: 'https://hooks.slack.com/services/...',
+  channel: '#alerts',
+  username: 'NetNeural Bot',
+  icon_emoji: ':robot_face:'
+}
+```
+
+### Custom Webhook Configuration
+```typescript
+{
+  url: 'https://api.example.com/webhook',
+  secret: 'your-webhook-secret', // For HMAC signing
+  method: 'POST',
+  content_type: 'application/json',
+  custom_headers: '{"X-API-Key": "your-key"}'
+}
+```
+
+### AWS IoT Configuration
+```typescript
+{
+  region: 'us-east-1',
+  access_key_id: 'AKIA...',
+  secret_access_key: 'secret',
+  endpoint: 'https://your-endpoint.iot.us-east-1.amazonaws.com' // Optional
+}
+```
+
+### Azure IoT Hub Configuration
+```typescript
+{
+  connection_string: 'HostName=your-hub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=...',
+  hub_name: 'your-iot-hub'
+}
+```
+
+### Google Cloud IoT Configuration
+```typescript
+{
+  project_id: 'your-project-id',
+  region: 'us-central1',
+  registry_id: 'your-device-registry',
+  service_account_key: '{"type":"service_account","project_id":"..."}' // JSON string
+}
+```
+
+### MQTT Broker Configuration
+```typescript
+{
+  broker_url: 'mqtt.example.com',
+  port: 1883,
+  protocol: 'mqtt', // or 'mqtts', 'ws', 'wss'
+  username: 'your-username',
+  password: 'your-password',
+  client_id: 'netneural-client',
+  use_tls: false
+}
+```
+
+---
+
+## Database Schema
+
+### device_integrations Table
+```sql
+- id: UUID
+- organization_id: UUID
+- integration_type: VARCHAR(50) -- 'golioth', 'aws_iot', etc.
+- name: VARCHAR(255)
+- api_key_encrypted: TEXT -- Encrypted credentials
+- project_id: VARCHAR(255) -- For Golioth, Google IoT
+- base_url: VARCHAR(500) -- For Golioth, webhooks, MQTT
+- settings: JSONB -- Additional config
+- status: VARCHAR(50) -- 'active', 'inactive', 'error'
+- sync_enabled: BOOLEAN -- For sync-capable integrations
+- sync_interval_seconds: INTEGER
+- sync_direction: VARCHAR(50) -- 'import', 'export', 'bidirectional'
+- conflict_resolution: VARCHAR(50) -- 'manual', 'local_wins', etc.
+- webhook_enabled: BOOLEAN
+- webhook_secret: VARCHAR(255)
+- webhook_url: VARCHAR(500)
+- last_sync_at: TIMESTAMPTZ
+- last_sync_status: VARCHAR(50)
+- sync_error: TEXT
+- created_at: TIMESTAMPTZ
+- updated_at: TIMESTAMPTZ
+```
+
+### notification_log Table
+```sql
+- id: UUID
+- organization_id: UUID
+- integration_id: UUID
+- integration_type: VARCHAR(50)
+- message: TEXT
+- priority: VARCHAR(20) -- 'low', 'medium', 'high', 'critical'
+- status: VARCHAR(50) -- 'pending', 'sent', 'failed', 'retrying'
+- sent_at: TIMESTAMPTZ
+- failed_at: TIMESTAMPTZ
+- retry_count: INTEGER
+- error_message: TEXT
+- metadata: JSONB
+- created_at: TIMESTAMPTZ
+- updated_at: TIMESTAMPTZ
+```
+
+### mqtt_messages Table
+```sql
+- id: UUID
+- organization_id: UUID
+- integration_id: UUID
+- topic: TEXT
+- payload: JSONB
+- qos: INTEGER -- 0, 1, or 2
+- received_at: TIMESTAMPTZ
+- created_at: TIMESTAMPTZ
+```
+
+---
+
+## Edge Functions
+
+### 1. send-notification
+- **Path:** `/functions/v1/send-notification`
+- **Purpose:** Send notifications via Email, Slack, or Webhook
+- **Supports:** email, slack, webhook
+- **Request:**
+  ```typescript
+  {
+    organization_id: string
+    integration_type: 'email' | 'slack' | 'webhook'
+    integration_id?: string // Optional, uses first active if omitted
+    subject?: string // For email
+    message: string
+    priority?: 'low' | 'medium' | 'high' | 'critical'
+    data?: Record<string, unknown>
+    recipients?: string[] // For email
+  }
+  ```
+
+### 2. aws-iot-sync
+- **Path:** `/functions/v1/aws-iot-sync`
+- **Purpose:** Sync devices with AWS IoT Core
+- **Operations:** import, export, bidirectional
+- **Request:**
+  ```typescript
+  {
+    organization_id: string
+    integration_id: string
+    operation: 'import' | 'export' | 'bidirectional'
+    device_ids?: string[] // Optional, syncs all if omitted
+  }
+  ```
+
+### 3. azure-iot-sync
+- **Path:** `/functions/v1/azure-iot-sync`
+- **Purpose:** Sync devices with Azure IoT Hub
+- **Operations:** import, export, bidirectional
+- **Authentication:** SAS token-based
+- **Features:** Device twin synchronization, direct methods
+- **Request:**
+  ```typescript
+  {
+    organization_id: string
+    integration_id: string
+    operation: 'import' | 'export' | 'bidirectional'
+    device_ids?: string[]
+  }
+  ```
+
+### 4. google-iot-sync
+- **Path:** `/functions/v1/google-iot-sync`
+- **Purpose:** Sync devices with Google Cloud IoT Core
+- **Operations:** import, export, bidirectional
+- **Authentication:** Service account JSON key
+- **Features:** Device registry management, telemetry, device config
+- **Request:**
+  ```typescript
+  {
+    organization_id: string
+    integration_id: string
+    operation: 'import' | 'export' | 'bidirectional'
+    device_ids?: string[]
+  }
+  ```
+
+### 5. mqtt-broker
+- **Path:** `/functions/v1/mqtt-broker`
+- **Purpose:** Pub/sub messaging with MQTT broker
+- **Operations:** publish, subscribe, test
+- **Features:** QoS support, message persistence, topic routing
+- **Request (publish):**
+  ```typescript
+  {
+    organization_id: string
+    integration_id: string
+    operation: 'publish'
+    messages: [{
+      topic: string
+      payload: string | object
+      qos?: 0 | 1 | 2
+      retain?: boolean
+    }]
+  }
+  ```
+- **Request (subscribe):**
+  ```typescript
+  {
+    organization_id: string
+    integration_id: string
+    operation: 'subscribe'
+    topics: string[]
+    callback_url?: string // Optional webhook for received messages
+  }
+  ```
+
+### 6. device-sync (Golioth)
+- **Path:** `/functions/v1/device-sync`
+- **Purpose:** Sync devices with Golioth platform
+- **Operations:** import, export, bidirectional
+- **Features:** Conflict detection, retry logic, queue management
+
+### 7. golioth-webhook
+- **Path:** `/functions/v1/golioth-webhook`
+- **Purpose:** Receive webhook events from Golioth
+- **Events:** Device status, telemetry, firmware updates
+
+---
+
+## Roadmap
+
+### Phase 1 (Complete) ✅
+- [x] Golioth integration (full stack)
+- [x] Email notifications
+- [x] Slack notifications
+- [x] Custom webhooks
+- [x] AWS IoT Core sync
+- [x] Azure IoT Hub sync
+- [x] Google Cloud IoT sync
+- [x] MQTT broker integration
+
+### Phase 2 (Planned) 📋
+- [ ] Notification templates
+- [ ] Retry logic for failed notifications
+- [ ] Integration analytics dashboard
+- [ ] Webhook event filtering
+- [ ] Rate limiting and throttling
+- [ ] Integration health monitoring
+- [ ] Batch notification sending
+
+### Phase 3 (Future) 🔮
+- [ ] Additional cloud platforms (IBM Watson IoT, etc.)
+- [ ] Advanced MQTT features (retained messages, LWT)
+- [ ] Multi-region deployments
+- [ ] Custom integration plugins
+- [ ] Integration marketplace
+
+---
+
+## Best Practices
+
+1. **Security:**
+   - Always encrypt API keys and secrets
+   - Use environment variables for sensitive data
+   - Rotate credentials regularly
+   - Implement webhook signature verification
+
+2. **Reliability:**
+   - Implement retry logic for failed operations
+   - Use queue systems for high-volume notifications
+   - Monitor integration health
+   - Set up alerting for integration failures
+
+3. **Performance:**
+   - Batch operations when possible
+   - Use asynchronous processing for notifications
+   - Implement rate limiting
+   - Cache integration configurations
+
+4. **Testing:**
+   - Test integrations after configuration
+   - Use test/sandbox environments
+   - Monitor notification logs
+   - Set up integration tests
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Email not sending:**
+- Check SMTP credentials
+- Verify port and TLS settings
+- Check spam folder
+- Verify from_email domain is authorized
+
+**Slack not posting:**
+- Verify webhook URL is correct
+- Check channel exists and bot has access
+- Ensure workspace allows incoming webhooks
+
+**Webhook failing:**
+- Verify endpoint URL is accessible
+- Check for SSL certificate issues
+- Verify signature verification if enabled
+- Check endpoint logs for errors
+
+**Sync errors:**
+- Verify API credentials are valid
+- Check network connectivity
+- Verify device IDs exist in both systems
+- Review sync logs for specific errors
+
+---
+
+## Support
+
+For integration support, please:
+1. Check the notification_log table for error messages
+2. Review Edge Function logs in Supabase dashboard
+3. Enable debug logging for detailed troubleshooting
+4. Contact support with integration_id and error details
