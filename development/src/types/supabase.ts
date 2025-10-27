@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -109,7 +114,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           new_values: Json | null
           old_values: Json | null
@@ -123,7 +128,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -137,7 +142,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -939,6 +944,120 @@ export type Database = {
           },
         ]
       }
+      mqtt_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          integration_id: string
+          organization_id: string
+          payload: Json
+          qos: number | null
+          received_at: string | null
+          topic: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          integration_id: string
+          organization_id: string
+          payload: Json
+          qos?: number | null
+          received_at?: string | null
+          topic: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          integration_id?: string
+          organization_id?: string
+          payload?: Json
+          qos?: number | null
+          received_at?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mqtt_messages_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mqtt_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          integration_id: string
+          integration_type: string
+          message: string
+          metadata: Json | null
+          organization_id: string
+          priority: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          integration_id: string
+          integration_type: string
+          message: string
+          metadata?: Json | null
+          organization_id: string
+          priority?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          integration_id?: string
+          integration_type?: string
+          message?: string
+          metadata?: Json | null
+          organization_id?: string
+          priority?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           alert_id: string | null
@@ -1255,14 +1374,12 @@ export type Database = {
           total_syncs: number
         }[]
       }
-      get_user_organization_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_user_organization_id: { Args: never; Returns: string }
       get_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      uuid_generate_v4: { Args: never; Returns: string }
     }
     Enums: {
       alert_severity: "low" | "medium" | "high" | "critical"
@@ -1408,4 +1525,3 @@ export const Constants = {
     },
   },
 } as const
-
