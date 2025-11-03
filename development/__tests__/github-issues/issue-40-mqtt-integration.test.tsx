@@ -8,7 +8,6 @@
  * - End-to-End: Full MQTT integration save flow
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { createClient } from '@supabase/supabase-js'
 
@@ -24,7 +23,10 @@ jest.mock('sonner', () => ({
 }))
 
 describe('Issue #40 - MQTT Integration Save', () => {
-  let mockSupabase: any
+  let mockSupabase: {
+    auth: { getSession: jest.Mock }
+    from: jest.Mock
+  }
   let mockFetch: jest.Mock
 
   beforeEach(() => {
@@ -329,8 +331,8 @@ describe('Issue #40 - MQTT Integration Save', () => {
             settings: { brokerUrl: 'mqtt://unreachable.broker', port: 1883 },
           }),
         })
-      } catch (error: any) {
-        expect(error.message).toContain('timeout')
+      } catch (error) {
+        expect((error as Error).message).toContain('timeout')
       }
     })
 
@@ -410,8 +412,8 @@ describe('Issue #40 - MQTT Integration Save', () => {
             code: error.error.code,
           })
         }
-      } catch (err) {
-        // Expected error
+      } catch {
+        // Expected error - allow test to continue
       }
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -534,8 +536,8 @@ describe('Issue #40 - MQTT Integration Save', () => {
           method: 'POST',
           body: JSON.stringify({ integration_type: 'mqtt' }),
         })
-      } catch (error: any) {
-        console.error('Network error:', error.message)
+      } catch (error) {
+        console.error('Network error:', (error as Error).message)
         mockToast({
           title: 'Network Error',
           description: 'Failed to connect to server. Please try again.',
@@ -580,7 +582,7 @@ describe('Issue #40 - MQTT Integration Save', () => {
     })
 
     test('integration should appear in list immediately after save', async () => {
-      const integrations: any[] = []
+      const integrations: Array<{ id: string; type: string; name: string }> = []
 
       // Save new integration
       mockFetch.mockResolvedValueOnce({
@@ -604,7 +606,7 @@ describe('Issue #40 - MQTT Integration Save', () => {
       integrations.push(saved.integration) // Add to local list
 
       expect(integrations).toHaveLength(1)
-      expect(integrations[0].type).toBe('mqtt')
+      expect(integrations[0]?.type).toBe('mqtt')
     })
   })
 })
