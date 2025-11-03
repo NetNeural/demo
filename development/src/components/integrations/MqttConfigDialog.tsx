@@ -135,9 +135,24 @@ export function MqttConfigDialog({
       toast.success('MQTT configuration saved successfully')
       onSaved?.()
       onOpenChange(false)
-    } catch (error) {
-      toast.error('Failed to save configuration')
-      console.error(error)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred';
+      const errorDetails = error?.details || error?.hint || '';
+      
+      console.error('MQTT Config Save Error:', {
+        error,
+        message: errorMessage,
+        details: errorDetails,
+        config: {
+          name: config.name,
+          broker_url: config.broker_url,
+          port: config.port,
+          organizationId,
+          integrationId
+        }
+      });
+      
+      toast.error(`Failed to save configuration: ${errorMessage}${errorDetails ? ` (${errorDetails})` : ''}`);
     } finally {
       setLoading(false)
     }

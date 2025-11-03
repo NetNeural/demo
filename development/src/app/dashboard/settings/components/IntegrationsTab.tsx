@@ -203,10 +203,43 @@ export default function IntegrationsTab({
       }));
 
       setIntegrations(transformedIntegrations);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading integrations:', error);
-      // Show empty state on error instead of mock data
-      setIntegrations([]);
+      
+      // Try fallback to direct database query
+      try {
+        const supabase = createClient();
+        const { data: directData, error: directError } = await supabase
+          .from('device_integrations')
+          .select('*')
+          .eq('organization_id', selectedOrganization)
+          .order('created_at', { ascending: false });
+
+        if (directError) throw directError;
+
+        console.log('Loaded integrations via fallback query:', directData);
+        
+        // Transform direct database results to match Integration interface
+        const fallbackIntegrations: Integration[] = (directData || []).map((integration: any) => ({
+          id: integration.id,
+          type: integration.integration_type,
+          name: integration.name,
+          status: integration.status || 'not-configured',
+          config: integration.settings || {}
+        }));
+
+        setIntegrations(fallbackIntegrations);
+        
+      } catch (fallbackError: any) {
+        console.error('Fallback query also failed:', fallbackError);
+        toast({
+          title: 'Failed to load integrations',
+          description: fallbackError?.message || 'Unknown error occurred',
+          variant: 'destructive'
+        });
+        // Show empty state on error
+        setIntegrations([]);
+      }
     } finally {
       setIsLoading(false);
     }
