@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { IntegrationStatusToggle } from './IntegrationStatusToggle'
 
 interface AzureIotConfig {
   id?: string
@@ -15,6 +16,7 @@ interface AzureIotConfig {
   connection_string: string
   hub_name: string
   shared_access_key?: string
+  status: 'active' | 'inactive' | 'not-configured'
 }
 
 interface Props {
@@ -40,6 +42,7 @@ export function AzureIotConfigDialog({
     connection_string: '',
     hub_name: '',
     shared_access_key: '',
+    status: 'not-configured',
   })
 
   useEffect(() => {
@@ -70,6 +73,7 @@ export function AzureIotConfigDialog({
           connection_string: cfg?.connection_string || '',
           hub_name: cfg?.hub_name || '',
           shared_access_key: cfg?.shared_access_key || '',
+          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
         })
       }
     } catch (error) {
@@ -97,7 +101,7 @@ export function AzureIotConfigDialog({
           hub_name: config.hub_name,
           shared_access_key: config.shared_access_key,
         }),
-        status: 'active',
+        status: config.status,
       }
 
       if (integrationId) {
@@ -181,6 +185,13 @@ export function AzureIotConfigDialog({
             />
           </div>
         </div>
+
+        <IntegrationStatusToggle
+          status={config.status}
+          onStatusChange={(status) => setConfig({ ...config, status })}
+          disabled={!config.connection_string || !config.hub_name}
+          disabledMessage="Configure connection string and hub name to enable"
+        />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

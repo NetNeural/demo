@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,21 @@ export function SyncHistoryList({
   const [logs, setLogs] = useState<SyncLog[]>([])
   const [loading, setLoading] = useState(true)
 
+  const loadLogs = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await goliothSyncService.getSyncHistory(organizationId, limit)
+      const filtered = integrationId
+        ? data.filter((log) => log.integration_id === integrationId)
+        : data
+      setLogs(filtered)
+    } catch (error) {
+      console.error('Failed to load sync history:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [organizationId, integrationId, limit])
+
   useEffect(() => {
     loadLogs()
 
@@ -51,22 +66,7 @@ export function SyncHistoryList({
       }
     }
     return undefined
-  }, [organizationId, integrationId, limit, autoRefresh])
-
-  const loadLogs = async () => {
-    setLoading(true)
-    try {
-      const data = await goliothSyncService.getSyncHistory(organizationId, limit)
-      const filtered = integrationId
-        ? data.filter((log) => log.integration_id === integrationId)
-        : data
-      setLogs(filtered)
-    } catch (error) {
-      console.error('Failed to load sync history:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [organizationId, integrationId, limit, autoRefresh, loadLogs])
 
   const getStatusIcon = (status: string) => {
     switch (status) {

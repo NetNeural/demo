@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users as UsersIcon, Mail, UserPlus, MoreVertical, Trash2 } from 'lucide-react';
+import { Users as UsersIcon, Mail, UserPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,8 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SettingsSection } from './shared/SettingsSection';
 import { SettingsFormGroup } from './shared/SettingsFormGroup';
+import { EditUserDialog } from '@/components/users/EditUserDialog';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -68,6 +71,11 @@ export default function UsersTab({
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('viewer');
   const [inviteDepartment, setInviteDepartment] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSendInvitation = async () => {
     console.log('Sending invitation:', { inviteEmail, inviteRole, inviteDepartment });
@@ -75,6 +83,33 @@ export default function UsersTab({
     setInviteEmail('');
     setInviteRole('viewer');
     setInviteDepartment('');
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeleting(true);
+    try {
+      // TODO: Implement actual API call
+      // const response = await fetch(`/api/users/${userToDelete.id}`, {
+      //   method: 'DELETE'
+      // });
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Remove from list
+      setUsers(users.filter(u => u.id !== userToDelete.id));
+      
+      toast.success(`${userToDelete.name} has been removed`);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -178,10 +213,34 @@ export default function UsersTab({
                   <TableCell className="text-muted-foreground">{user.lastActive}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          // Convert User to match EditUserDialog interface
+                          const editableUser = {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            role: user.role.toLowerCase().replace(' ', '_') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
+                            status: 'active' as const,
+                            department: user.department
+                          };
+                          setSelectedUser(editableUser);
+                          setEditOpen(true);
+                        }}
+                      >
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => {
+                          setUserToDelete(user);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -192,6 +251,44 @@ export default function UsersTab({
           </Table>
         </div>
       </SettingsSection>
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        user={selectedUser}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onUserUpdated={() => {
+          // Optionally refresh user list
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {userToDelete?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -35,6 +35,21 @@ export default function DevicesTab({ deviceCount = 334 }: DevicesTabProps) {
     // TODO: Implement export
   };
 
+  const handleDownloadTemplate = () => {
+    const template = `device_id,name,group,type
+device-001,Sensor 1,production,temperature
+device-002,Sensor 2,staging,humidity
+device-003,Gateway 1,production,gateway`;
+
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'device-import-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSync = async () => {
     console.log('Syncing devices...');
     // TODO: Implement sync
@@ -132,7 +147,7 @@ export default function DevicesTab({ deviceCount = 334 }: DevicesTabProps) {
                 <Upload className="w-4 h-4 mr-2" />
                 Import Devices
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleDownloadTemplate}>
                 <Download className="w-4 h-4 mr-2" />
                 Download Template
               </Button>

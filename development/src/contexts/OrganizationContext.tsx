@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { handleApiError } from '@/lib/api-error-handler';
 import type { 
   UserOrganization, 
   OrganizationPermissions, 
@@ -104,8 +105,21 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         },
       });
 
+      const errorResult = handleApiError(response, {
+        errorPrefix: 'Failed to fetch organizations',
+        throwOnError: false,
+      });
+
+      if (errorResult.isAuthError) {
+        setUserOrganizations([]);
+        setIsLoading(false);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch organizations: ${response.statusText}`);
+        setUserOrganizations([]);
+        setIsLoading(false);
+        return;
       }
 
       const data = await response.json();
@@ -200,8 +214,19 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         }
       );
 
+      const errorResult = handleApiError(response, {
+        errorPrefix: 'Failed to fetch stats',
+        throwOnError: false,
+      });
+
+      if (errorResult.isAuthError) {
+        setStats(null);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.statusText}`);
+        setStats(null);
+        return;
       }
 
       const data = await response.json();

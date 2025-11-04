@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { IntegrationStatusToggle } from './IntegrationStatusToggle'
 
 interface AwsIotConfig {
   id?: string
@@ -18,6 +19,7 @@ interface AwsIotConfig {
   secret_access_key: string
   endpoint?: string
   certificate?: string
+  status: 'active' | 'inactive' | 'not-configured'
 }
 
 interface Props {
@@ -46,7 +48,6 @@ export function AwsIotConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   
   const [config, setConfig] = useState<AwsIotConfig>({
@@ -56,6 +57,7 @@ export function AwsIotConfigDialog({
     secret_access_key: '',
     endpoint: '',
     certificate: '',
+    status: 'not-configured',
   })
 
   const loadConfig = useCallback(async () => {
@@ -63,6 +65,7 @@ export function AwsIotConfigDialog({
 
     setLoading(true)
     try {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('device_integrations')
         .select('*')
@@ -81,6 +84,7 @@ export function AwsIotConfigDialog({
           secret_access_key: (cfg?.secret_access_key as string) || '',
           endpoint: (cfg?.endpoint as string) || '',
           certificate: (cfg?.certificate as string) || '',
+          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
         })
       }
     } catch (error) {
@@ -105,6 +109,7 @@ export function AwsIotConfigDialog({
 
     setLoading(true)
     try {
+      const supabase = createClient()
       const payload = {
         organization_id: organizationId,
         integration_type: 'aws_iot',
@@ -116,7 +121,7 @@ export function AwsIotConfigDialog({
           endpoint: config.endpoint,
           certificate: config.certificate,
         },
-        status: 'active',
+        status: config.status,
       }
 
       if (integrationId) {
@@ -212,6 +217,13 @@ export function AwsIotConfigDialog({
               placeholder="https://your-endpoint.iot.region.amazonaws.com"
             />
           </div>
+
+          <IntegrationStatusToggle
+            status={config.status}
+            onStatusChange={(status) => setConfig({ ...config, status })}
+            disabled={!config.access_key_id || !config.secret_access_key}
+            disabledMessage="Configure AWS credentials to enable"
+          />
         </div>
 
         <DialogFooter>

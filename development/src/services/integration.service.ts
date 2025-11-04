@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client'
+import { handleApiError } from '@/lib/api-error-handler'
 
 export interface NotificationOptions {
   organizationId: string
@@ -56,8 +57,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult = handleApiError(response, {
+      errorPrefix: 'Failed to send notification',
+      throwOnError: false,
+    })
+
+    if (errorResult.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Failed to send notification')
     }
 
@@ -148,8 +158,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult = handleApiError(response, {
+      errorPrefix: 'Failed to sync with AWS IoT',
+      throwOnError: false,
+    })
+
+    if (errorResult.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Failed to sync with AWS IoT')
     }
 
@@ -184,8 +203,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult = handleApiError(response, {
+      errorPrefix: 'Failed to sync with Golioth',
+      throwOnError: false,
+    })
+
+    if (errorResult.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Failed to sync with Golioth')
     }
 
@@ -220,8 +248,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult2 = handleApiError(response, {
+      errorPrefix: 'Azure IoT sync failed',
+      throwOnError: false,
+    })
+
+    if (errorResult2.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Azure IoT sync failed')
     }
 
@@ -256,8 +293,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult3 = handleApiError(response, {
+      errorPrefix: 'Google Cloud IoT sync failed',
+      throwOnError: false,
+    })
+
+    if (errorResult3.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Google Cloud IoT sync failed')
     }
 
@@ -296,8 +342,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult4 = handleApiError(response, {
+      errorPrefix: 'MQTT publish failed',
+      throwOnError: false,
+    })
+
+    if (errorResult4.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'MQTT publish failed')
     }
 
@@ -338,8 +393,17 @@ export const integrationService = {
       }
     )
 
+    const errorResult5 = handleApiError(response, {
+      errorPrefix: 'MQTT subscribe failed',
+      throwOnError: false,
+    })
+
+    if (errorResult5.isAuthError) {
+      throw new Error('Not authenticated')
+    }
+
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'MQTT subscribe failed')
     }
 
@@ -407,8 +471,17 @@ export const integrationService = {
           }
         )
 
+        const errorResult6 = handleApiError(response, {
+          errorPrefix: 'MQTT test failed',
+          throwOnError: false,
+        })
+
+        if (errorResult6.isAuthError) {
+          throw new Error('Not authenticated')
+        }
+
         if (!response.ok) {
-          const error = await response.json()
+          const error = await response.json().catch(() => ({}))
           throw new Error(error.error || 'MQTT test failed')
         }
 

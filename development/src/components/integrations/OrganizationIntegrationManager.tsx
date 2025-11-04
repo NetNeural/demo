@@ -9,6 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { Plus, Trash2, CheckCircle, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { organizationIntegrationService, OrganizationIntegration } from "@/lib/integrations/organization-integrations";
 import { organizationGoliothSyncService, SyncResult } from "@/lib/sync/organization-golioth-sync";
 
@@ -33,6 +40,10 @@ export function OrganizationIntegrationManager() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [syncResults, setSyncResults] = useState<{ [integrationId: string]: SyncResult }>({});
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ open: boolean; integrationId: string | null }>({ 
+    open: false, 
+    integrationId: null 
+  });
   
   // New integration form
   const [showNewIntegrationForm, setShowNewIntegrationForm] = useState(false);
@@ -161,18 +172,16 @@ export function OrganizationIntegrationManager() {
   };
 
   const deleteIntegration = async (integrationId: string) => {
-    if (!confirm('Are you sure you want to delete this integration? This will remove all device mappings.')) {
-      return;
-    }
-
     try {
       setLoading(true);
       await organizationIntegrationService.deleteIntegration(integrationId);
       setIntegrations(integrations.filter(i => i.id !== integrationId));
       setMessage({ type: 'success', text: 'Integration deleted successfully' });
+      setDeleteConfirmation({ open: false, integrationId: null });
     } catch (error) {
       console.error('Error deleting integration:', error);
       setMessage({ type: 'error', text: 'Failed to delete integration' });
+      setDeleteConfirmation({ open: false, integrationId: null });
     } finally {
       setLoading(false);
     }
@@ -357,7 +366,7 @@ export function OrganizationIntegrationManager() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => deleteIntegration(integration.id)}
+                        onClick={() => setDeleteConfirmation({ open: true, integrationId: integration.id })}
                         disabled={loading}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -515,6 +524,32 @@ export function OrganizationIntegrationManager() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ open, integrationId: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Integration?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this integration? This will remove all device mappings. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmation({ open: false, integrationId: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmation.integrationId && deleteIntegration(deleteConfirmation.integrationId)}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

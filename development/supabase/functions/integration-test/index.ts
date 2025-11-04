@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logActivityStart, logActivityComplete, getIpAddress } from '../_shared/activity-logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,8 @@ serve(async (req) => {
     }
 
     if (req.method === 'POST') {
+      const startTime = Date.now()
+      
       const { data: integration, error } = await supabaseClient
         .from('device_integrations')
         .select(`
@@ -42,10 +45,25 @@ serve(async (req) => {
         )
       }
 
+      // Log test activity start
+      const logId = await logActivityStart(supabaseClient, {
+        organizationId: integration.organization_id,
+        integrationId: integration.id,
+        direction: 'outgoing',
+        activityType: 'test_connection',
+        method: 'POST',
+        endpoint: `/functions/v1/integration-test/${integrationId}`,
+        ipAddress: getIpAddress(req),
+        userAgent: req.headers.get('user-agent') || undefined,
+        metadata: {
+          integrationType: integration.integration_type,
+        },
+      })
+
       let testResult
       switch (integration.integration_type) {
         case 'golioth':
-          testResult = await testGoliothConnection(integration)
+          testResult = await testGoliothConnection(integration, supabaseClient, logId)
           break
         case 'azure_iot':
           testResult = await testAzureIoTConnection(integration)
@@ -59,6 +77,17 @@ serve(async (req) => {
             message: `Integration type ${integration.integration_type} is not supported for testing`,
             details: {}
           }
+      }
+
+      // Log test activity completion
+      if (logId) {
+        const responseTime = Date.now() - startTime
+        await logActivityComplete(supabaseClient, logId, {
+          status: testResult.success ? 'success' : 'failed',
+          responseTimeMs: responseTime,
+          responseBody: testResult,
+          errorMessage: testResult.success ? undefined : testResult.message,
+        })
       }
 
       return new Response(
@@ -79,7 +108,9 @@ serve(async (req) => {
   }
 })
 
-async function testGoliothConnection(integration: any) {
+async function testGoliothConnection(integration: any, supabaseClient: any, activityLogId: string | null) {
+  const startTime = Date.now()
+  
   try {
     const apiKey = integration.api_key_encrypted
     const projectId = integration.project_id
@@ -93,25 +124,63 @@ async function testGoliothConnection(integration: any) {
       }
     }
 
-    const response = await fetch(`${baseUrl}/v1/projects/${projectId}`, {
+    const endpoint = `${baseUrl}/v1/projects/${projectId}`
+    
+    // Log Golioth API call
+    const goliothLogId = await logActivityStart(supabaseClient, {
+      organizationId: integration.organization_id,
+      integrationId: integration.id,
+      direction: 'outgoing',
+      activityType: 'api_call',
+      method: 'GET',
+      endpoint: endpoint,
+      metadata: {
+        purpose: 'connection_test',
+      },
+    })
+
+    const response = await fetch(endpoint, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     })
 
+    const responseTime = Date.now() - startTime
+
     if (response.ok) {
       const data = await response.json()
+      
+      // Log successful API call
+      if (goliothLogId) {
+        await logActivityComplete(supabaseClient, goliothLogId, {
+          status: 'success',
+          responseStatus: response.status,
+          responseTimeMs: responseTime,
+          responseBody: { projectName: data.name },
+        })
+      }
+      
       return {
         success: true,
         message: 'Successfully connected to Golioth API',
         details: {
           projectName: data.name,
           status: response.status,
-          responseTime: Date.now()
+          responseTime: responseTime
         }
       }
     } else {
+      // Log failed API call
+      if (goliothLogId) {
+        await logActivityComplete(supabaseClient, goliothLogId, {
+          status: 'failed',
+          responseStatus: response.status,
+          responseTimeMs: responseTime,
+          errorMessage: `${response.status} ${response.statusText}`,
+        })
+      }
+      
       return {
         success: false,
         message: `Golioth API error: ${response.status} ${response.statusText}`,

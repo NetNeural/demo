@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { IntegrationStatusToggle } from './IntegrationStatusToggle'
 
 interface GoogleIotConfig {
   id?: string
@@ -16,6 +17,7 @@ interface GoogleIotConfig {
   region: string
   registry_id: string
   service_account_key: string
+  status: 'active' | 'inactive' | 'not-configured'
 }
 
 interface Props {
@@ -42,6 +44,7 @@ export function GoogleIotConfigDialog({
     region: 'us-central1',
     registry_id: '',
     service_account_key: '',
+    status: 'not-configured',
   })
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export function GoogleIotConfigDialog({
           region: cfg?.region || 'us-central1',
           registry_id: cfg?.registry_id || '',
           service_account_key: cfg?.service_account_key || '',
+          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
         })
       }
     } catch (error) {
@@ -101,7 +105,7 @@ export function GoogleIotConfigDialog({
           registry_id: config.registry_id,
           service_account_key: config.service_account_key,
         }),
-        status: 'active',
+        status: config.status,
       }
 
       if (integrationId) {
@@ -199,6 +203,13 @@ export function GoogleIotConfigDialog({
             </p>
           </div>
         </div>
+
+        <IntegrationStatusToggle
+          status={config.status}
+          onStatusChange={(status) => setConfig({ ...config, status })}
+          disabled={!config.project_id || !config.registry_id || !config.service_account_key}
+          disabledMessage="Configure project ID, registry ID, and service account key to enable"
+        />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

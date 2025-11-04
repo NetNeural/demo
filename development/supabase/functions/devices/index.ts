@@ -82,6 +82,115 @@ serve(async (req) => {
       })
     }
 
+    if (req.method === 'PUT') {
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const deviceId = pathParts[pathParts.length - 1]
+      
+      if (!deviceId || deviceId === 'devices') {
+        return createAuthErrorResponse('Device ID is required for updates', 400)
+      }
+
+      const body = await req.json()
+      const { 
+        organization_id,
+        name, 
+        device_type, 
+        model, 
+        serial_number, 
+        firmware_version,
+        location 
+      } = body
+
+      // Verify user has access to this device's organization
+      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      
+      if (!targetOrgId && !userContext.isSuperAdmin) {
+        return createAuthErrorResponse('User has no organization access', 403)
+      }
+
+      // Build update object
+      const updates: any = {
+        updated_at: new Date().toISOString()
+      }
+
+      if (name !== undefined) updates.name = name
+      if (device_type !== undefined) updates.device_type = device_type
+      if (model !== undefined) updates.model = model
+      if (serial_number !== undefined) updates.serial_number = serial_number
+      if (firmware_version !== undefined) updates.firmware_version = firmware_version
+
+      // Update device - RLS will enforce access automatically
+      const { data: updatedDevice, error: updateError } = await supabase
+        .from('devices')
+        .update(updates)
+        .eq('id', deviceId)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Update error:', updateError)
+        return createAuthErrorResponse(`Failed to update device: ${updateError.message}`, 500)
+      }
+
+      return createSuccessResponse({ 
+        device: updatedDevice,
+        message: 'Device updated successfully'
+      })
+    }
+
+    if (req.method === 'POST') {
+      const body = await req.json()
+      const { 
+        organization_id,
+        device_id,
+        name, 
+        device_type, 
+        model, 
+        serial_number, 
+        firmware_version,
+        location 
+      } = body
+
+      // Verify required fields
+      if (!name || !device_type) {
+        return createAuthErrorResponse('Name and device type are required', 400)
+      }
+
+      // Verify user has access to this organization
+      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      
+      if (!targetOrgId) {
+        return createAuthErrorResponse('User has no organization access', 403)
+      }
+
+      // Create device - RLS will enforce access automatically
+      const { data: newDevice, error: createError } = await supabase
+        .from('devices')
+        .insert({
+          organization_id: targetOrgId,
+          external_device_id: device_id || null,
+          name,
+          device_type,
+          model: model || null,
+          serial_number: serial_number || null,
+          firmware_version: firmware_version || null,
+          status: 'offline'
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Create error:', createError)
+        return createAuthErrorResponse(`Failed to create device: ${createError.message}`, 500)
+      }
+
+      return createSuccessResponse({ 
+        device: newDevice,
+        message: 'Device created successfully'
+      }, 201)
+    }
+
     return createAuthErrorResponse('Method not allowed', 405)
     
   } catch (error) {

@@ -35,7 +35,7 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalDevices || currentOrganization.deviceCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +12% from last month
+              Registered devices
             </p>
           </CardContent>
         </Card>
@@ -48,7 +48,7 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalUsers || currentOrganization.userCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +2 new this week
+              Organization members
             </p>
           </CardContent>
         </Card>
@@ -61,7 +61,7 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.activeAlerts || 0}</div>
             <p className="text-xs text-muted-foreground">
-              -5 from yesterday
+              Unresolved alerts
             </p>
           </CardContent>
         </Card>
@@ -72,9 +72,9 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
             <Plug className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{stats?.activeIntegrations || 0}</div>
             <p className="text-xs text-muted-foreground">
-              All systems operational
+              Configured integrations
             </p>
           </CardContent>
         </Card>
@@ -106,7 +106,16 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Created</p>
-              <p className="text-base">January 15, 2024</p>
+              <p className="text-base">
+                {currentOrganization.created_at 
+                  ? new Date(currentOrganization.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })
+                  : 'Unknown'
+                }
+              </p>
             </div>
           </div>
         </CardContent>
@@ -124,39 +133,8 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-2 h-2 mt-2 rounded-full bg-green-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">New device registered</p>
-                <p className="text-xs text-muted-foreground">Temperature Sensor #245 added to Building A</p>
-                <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-2 h-2 mt-2 rounded-full bg-blue-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Member invited</p>
-                <p className="text-xs text-muted-foreground">john.doe@example.com invited as Member</p>
-                <p className="text-xs text-muted-foreground mt-1">5 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-2 h-2 mt-2 rounded-full bg-amber-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Alert triggered</p>
-                <p className="text-xs text-muted-foreground">High temperature detected on Sensor #189</p>
-                <p className="text-xs text-muted-foreground mt-1">1 day ago</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 mt-2 rounded-full bg-purple-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Integration configured</p>
-                <p className="text-xs text-muted-foreground">Golioth integration successfully connected</p>
-                <p className="text-xs text-muted-foreground mt-1">2 days ago</p>
-              </div>
-            </div>
+          <div className="flex items-center justify-center p-8 text-muted-foreground">
+            <p className="text-sm">Activity tracking will be available soon</p>
           </div>
         </CardContent>
       </Card>
@@ -174,18 +152,24 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Online</span>
-                <span className="text-sm font-medium">234 (95%)</span>
+                <span className="text-sm font-medium">{stats?.onlineDevices || 0} ({stats?.totalDevices ? Math.round((stats.onlineDevices / stats.totalDevices) * 100) : 0}%)</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full w-[95%]" />
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all" 
+                  style={{ width: stats?.totalDevices ? `${(stats.onlineDevices / stats.totalDevices) * 100}%` : '0%' }}
+                />
               </div>
               
               <div className="flex items-center justify-between pt-2">
                 <span className="text-sm">Offline</span>
-                <span className="text-sm font-medium">11 (5%)</span>
+                <span className="text-sm font-medium">{stats?.totalDevices ? stats.totalDevices - stats.onlineDevices : 0} ({stats?.totalDevices ? Math.round(((stats.totalDevices - stats.onlineDevices) / stats.totalDevices) * 100) : 0}%)</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full w-[5%]" />
+                <div 
+                  className="bg-red-500 h-2 rounded-full transition-all" 
+                  style={{ width: stats?.totalDevices ? `${((stats.totalDevices - stats.onlineDevices) / stats.totalDevices) * 100}%` : '0%' }}
+                />
               </div>
             </div>
           </CardContent>
@@ -193,26 +177,26 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Alert Distribution</CardTitle>
+            <CardTitle>Alert Summary</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm">Critical</span>
-                <Badge variant="destructive">3</Badge>
+                <span className="text-sm">Active Alerts</span>
+                <Badge variant={stats?.activeAlerts ? "destructive" : "secondary"}>
+                  {stats?.activeAlerts || 0}
+                </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">High</span>
-                <Badge variant="default" className="bg-orange-500">8</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Medium</span>
-                <Badge variant="default" className="bg-amber-500">15</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Low</span>
-                <Badge variant="secondary">24</Badge>
-              </div>
+              {stats?.activeAlerts === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No active alerts - all systems operating normally
+                </p>
+              )}
+              {(stats?.activeAlerts || 0) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  View alerts tab for details and to acknowledge
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

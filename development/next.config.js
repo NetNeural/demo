@@ -2,11 +2,12 @@
 const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
-const isStaticExport = process.env.BUILD_MODE === 'static'
+// Default to static export for GitHub Pages (override with BUILD_MODE=dynamic for local dev)
+const isStaticExport = process.env.BUILD_MODE !== 'dynamic'
 
 const nextConfig = {
-  // Enable static export for GitHub Pages deployment when BUILD_MODE=static
-  ...(isStaticExport && { output: 'export' }),
+  // Static export for GitHub Pages - this is our primary deployment method
+  output: 'export',
 
   // Required for GitHub Pages deployment
   trailingSlash: true,
@@ -16,7 +17,7 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  // Configure base path for GitHub Pages
+  // Configure base path for GitHub Pages (set NEXT_PUBLIC_BASE_PATH in your GitHub Actions)
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
   assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
   
@@ -41,8 +42,6 @@ const nextConfig = {
   // Experimental features for Next.js 15
   experimental: {
     ppr: false,
-    // Enable instrumentation for Sentry
-    instrumentationHook: true,
   },
 
   // TypeScript configuration
@@ -55,32 +54,12 @@ const nextConfig = {
     CUSTOM_KEY: 'netneural-iot-platform',
   },
 
-  // Security headers
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-        ],
-      },
-    ]
-  },
+  // Note: Security headers and middleware don't work with static export
+  // Security is handled by:
+  // 1. Supabase Row Level Security (RLS) on all tables
+  // 2. Supabase Edge Functions for all API calls
+  // 3. Client-side authentication checks in components
+  // 4. GitHub Pages HTTPS by default
 
   // Webpack configuration
   webpack: (config, { dev }) => {
@@ -106,17 +85,17 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
-// Sentry configuration
+// Sentry configuration - disabled for static export builds
 const sentryWebpackPluginOptions = {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
-  widenClientFileUpload: process.env.NODE_ENV === 'production',
-  autoInstrumentServerFunctions: true,
+  widenClientFileUpload: false, // Disabled for static export
+  autoInstrumentServerFunctions: false, // No server functions in static export
   hideSourceMaps: true,
-  disableServerWebpackPlugin: process.env.NODE_ENV === 'development' || isStaticExport,
-  disableClientWebpackPlugin: process.env.NODE_ENV === 'development' || isStaticExport,
+  disableServerWebpackPlugin: true, // Always disabled for static export
+  disableClientWebpackPlugin: process.env.NODE_ENV === 'development', // Only in dev
 };
 
 // Export with Sentry and bundle analyzer

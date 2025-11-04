@@ -20,8 +20,18 @@ jest.mock('@/lib/supabase/client', () => ({
 }))
 
 describe('Issue #23: Login Redirect Flow', () => {
-  let mockRouter: any
-  let mockSupabase: any
+  let mockRouter: {
+    push: jest.Mock;
+    replace: jest.Mock;
+    refresh: jest.Mock;
+  };
+  let mockSupabase: {
+    auth: {
+      signInWithPassword: jest.Mock;
+      getSession: jest.Mock;
+      setSession: jest.Mock;
+    };
+  };
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -305,7 +315,7 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const rememberMeCheckbox = screen.getByLabelText(/remember me/i)
+    screen.getByLabelText(/remember me/i) // Verify it exists
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })

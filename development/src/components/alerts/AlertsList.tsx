@@ -3,7 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { createClient } from '@/lib/supabase/client'
+import { handleApiError } from '@/lib/sentry-utils'
+import { toast } from 'sonner'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface AlertItem {
   id: string
@@ -21,87 +26,151 @@ interface AlertItem {
 }
 
 export function AlertsList() {
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    {
-      id: '1',
-      title: 'High Temperature Alert',
-      description: 'Temperature exceeded 85°C threshold in production area. Immediate attention required.',
-      severity: 'critical',
-      device: 'Temperature Sensor - Floor 1',
-      deviceId: 'temp-001',
-      timestamp: '2 minutes ago',
-      rawTimestamp: new Date(Date.now() - 2 * 60 * 1000),
-      acknowledged: false,
-      category: 'temperature'
-    },
-    {
-      id: '2',
-      title: 'Low Battery Warning',
-      description: 'Battery level below 25% - replacement needed within 48 hours',
-      severity: 'medium',
-      device: 'Pressure Monitor - Tank A',
-      deviceId: 'press-tank-a',
-      timestamp: '15 minutes ago',
-      rawTimestamp: new Date(Date.now() - 15 * 60 * 1000),
-      acknowledged: false,
-      category: 'battery'
-    },
-    {
-      id: '3',
-      title: 'Device Offline',
-      description: 'No data received in 2 hours - check connectivity and power supply',
-      severity: 'high',
-      device: 'Vibration Detector - Motor 3',
-      deviceId: 'vib-motor-3',
-      timestamp: '2 hours ago',
-      rawTimestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      acknowledged: true,
-      acknowledgedBy: 'John Doe',
-      acknowledgedAt: new Date(Date.now() - 30 * 60 * 1000),
-      category: 'connectivity'
-    },
-    {
-      id: '4',
-      title: 'Connectivity Issue',
-      description: 'Intermittent connection detected - signal strength varies',
-      severity: 'low',
-      device: 'Motion Detector - Entry Gate',
-      deviceId: 'motion-gate-1',
-      timestamp: '4 hours ago',
-      rawTimestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      acknowledged: false,
-      category: 'connectivity'
-    },
-    {
-      id: '5',
-      title: 'Security Breach Attempt',
-      description: 'Unauthorized access attempt detected on secure zone sensor',
-      severity: 'critical',
-      device: 'Security Sensor - Zone 7',
-      deviceId: 'sec-zone-7',
-      timestamp: '5 minutes ago',
-      rawTimestamp: new Date(Date.now() - 5 * 60 * 1000),
-      acknowledged: false,
-      category: 'security'
-    }
-  ])
-
+  const { currentOrganization } = useOrganization()
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
   const [showDetails, setShowDetails] = useState(false)
 
-  const handleAcknowledge = (alertId: string) => {
-    setAlerts(prevAlerts => 
-      prevAlerts.map(alert => 
-        alert.id === alertId 
-          ? { 
-              ...alert, 
-              acknowledged: true, 
-              acknowledgedBy: 'Current User',
-              acknowledgedAt: new Date()
-            }
-          : alert
+  const fetchAlerts = useCallback(async () => {
+    if (!currentOrganization) {
+      setAlerts([])
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        toast.error('Authentication required')
+        setAlerts([])
+        return
+      }
+
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts?organization_id=${currentOrganization.id}`
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const error = new Error(errorData.error || `HTTP ${response.status}`)
+        
+        handleApiError(error, {
+          endpoint: `/functions/v1/alerts`,
+          method: 'GET',
+          status: response.status,
+          errorData,
+          context: {
+            organizationId: currentOrganization.id,
+          },
+        })
+        
+        toast.error('Failed to load alerts')
+        setAlerts([])
+        return
+      }
+
+      const data = await response.json()
+      
+      // Transform API response to match AlertItem format
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedAlerts = (data.alerts || []).map((alert: any) => ({
+        id: alert.id,
+        title: alert.title || alert.message || 'Alert',
+        description: alert.description || alert.message || '',
+        severity: alert.severity || 'medium',
+        device: alert.deviceName || alert.device_name || 'Unknown Device',
+        deviceId: alert.deviceId || alert.device_id || '',
+        timestamp: alert.created_at ? new Date(alert.created_at).toLocaleString() : 'Unknown',
+        rawTimestamp: alert.created_at ? new Date(alert.created_at) : new Date(),
+        acknowledged: alert.is_resolved || false,
+        acknowledgedBy: alert.resolved_by,
+        acknowledgedAt: alert.resolved_at ? new Date(alert.resolved_at) : undefined,
+        category: alert.category || 'system'
+      }))
+      
+      setAlerts(transformedAlerts)
+    } catch (error) {
+      console.error('Error fetching alerts:', error)
+      toast.error('Failed to load alerts')
+      setAlerts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [currentOrganization])
+
+  useEffect(() => {
+    fetchAlerts()
+  }, [fetchAlerts])
+
+  const handleAcknowledge = async (alertId: string) => {
+    if (!currentOrganization) return
+
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        toast.error('Authentication required')
+        return
+      }
+
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts/${alertId}/acknowledge`
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const error = new Error(errorData.error || `HTTP ${response.status}`)
+        
+        handleApiError(error, {
+          endpoint: `/functions/v1/alerts/${alertId}/acknowledge`,
+          method: 'POST',
+          status: response.status,
+          errorData,
+          context: {
+            alertId,
+            organizationId: currentOrganization.id,
+          },
+        })
+        
+        toast.error('Failed to acknowledge alert')
+        return
+      }
+
+      // Optimistically update UI
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { 
+                ...alert, 
+                acknowledged: true, 
+                acknowledgedBy: 'Current User',
+                acknowledgedAt: new Date()
+              }
+            : alert
+        )
       )
-    )
+      
+      toast.success('Alert acknowledged successfully')
+    } catch (error) {
+      console.error('Error acknowledging alert:', error)
+      toast.error('Failed to acknowledge alert')
+    }
   }
 
   const handleViewDetails = (alert: AlertItem) => {
@@ -143,6 +212,14 @@ export function AlertsList() {
 
   const activeAlerts = alerts.filter(a => !a.acknowledged)
   const acknowledgedAlerts = alerts.filter(a => a.acknowledged)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   return (
     <>

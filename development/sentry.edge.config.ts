@@ -16,7 +16,7 @@ Sentry.init({
   ],
 
   // Performance Monitoring
-  tracesSampleRate: 1.0, // Capture 100% of transactions (reduce to 0.1 in production)
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
   // Debug mode
   debug: false,

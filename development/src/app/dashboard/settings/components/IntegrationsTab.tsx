@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { handleApiError } from '@/lib/sentry-utils';
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog';
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog';
 import { AwsIotConfigDialog } from '@/components/integrations/AwsIotConfigDialog';
@@ -149,6 +150,9 @@ export default function IntegrationsTab({
   const [showSlackConfig, setShowSlackConfig] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const [showMqttConfig, setShowMqttConfig] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   // State for new integration
@@ -377,12 +381,15 @@ export default function IntegrationsTab({
   };
 
   const handleDeleteIntegration = async (integration: Integration) => {
-    if (!confirm(`Are you sure you want to delete "${integration.name}"? This action cannot be undone.`)) {
-      return;
-    }
+    setIntegrationToDelete(integration);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteIntegration = async () => {
+    if (!integrationToDelete) return;
 
     try {
-      setIsLoading(true);
+      setIsDeleting(true);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -397,7 +404,7 @@ export default function IntegrationsTab({
       }
 
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/integrations?id=${integration.id}`,
+        `${supabaseUrl}/functions/v1/integrations?id=${integrationToDelete.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -408,26 +415,61 @@ export default function IntegrationsTab({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.error || `HTTP ${response.status}`);
+        
+        handleApiError(error, {
+          endpoint: `/functions/v1/integrations?id=${integrationToDelete.id}`,
+          method: 'DELETE',
+          status: response.status,
+          errorData,
+          context: {
+            integrationId: integrationToDelete.id,
+            integrationName: integrationToDelete.name,
+            integrationType: integrationToDelete.type,
+            organizationId: selectedOrganization,
+          },
+        });
+        
+        toast({
+          title: '❌ Delete Failed',
+          description: errorData.error || 'Failed to delete integration. Please try again.',
+          variant: 'destructive',
+        });
+        return;
       }
 
       toast({
         title: '✅ Integration Deleted',
-        description: `${integration.name} has been deleted successfully.`,
+        description: `${integrationToDelete.name} has been deleted successfully.`,
       });
+
+      // Close dialog and reset state
+      setShowDeleteDialog(false);
+      setIntegrationToDelete(null);
 
       // Reload integrations
       await loadIntegrations();
     } catch (error) {
       console.error('Error deleting integration:', error);
+      
+      handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
+        endpoint: `/functions/v1/integrations?id=${integrationToDelete?.id}`,
+        method: 'DELETE',
+        context: {
+          integrationId: integrationToDelete?.id,
+          integrationName: integrationToDelete?.name,
+          organizationId: selectedOrganization,
+        },
+      });
+      
       toast({
         title: '❌ Delete Failed',
         description: error instanceof Error ? error.message : 'Failed to delete integration. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
     }
   };
 
@@ -1258,6 +1300,38 @@ export default function IntegrationsTab({
               loadIntegrations();
             }}
           />
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Integration</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete <strong>{integrationToDelete?.name}</strong>? 
+                  This will remove all device mappings and configuration. This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setIntegrationToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeleteIntegration}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Integration'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

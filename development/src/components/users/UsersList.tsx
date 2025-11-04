@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { UserDetailsDialog } from './UserDetailsDialog'
+import { EditUserDialog } from './EditUserDialog'
 
 interface User {
   id: string
@@ -10,8 +12,8 @@ interface User {
   email: string
   role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
-  lastLogin: string
-  department: string
+  lastLogin?: string
+  department?: string
 }
 
 export function UsersList() {
@@ -53,6 +55,10 @@ export function UsersList() {
       department: 'Maintenance'
     }
   ])
+
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const getRoleIcon = (role: User['role']) => {
     switch (role) {
@@ -122,10 +128,24 @@ export function UsersList() {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setEditOpen(true)
+                      }}
+                    >
                       Edit
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setDetailsOpen(true)
+                      }}
+                    >
                       View
                     </Button>
                   </div>
@@ -142,6 +162,24 @@ export function UsersList() {
           )}
         </CardContent>
       </Card>
+
+      {/* User Details Dialog */}
+      <UserDetailsDialog
+        user={selectedUser}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        onEdit={(user) => {
+          setSelectedUser(user)
+          setEditOpen(true)
+        }}
+      />
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        user={selectedUser}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   )
 }

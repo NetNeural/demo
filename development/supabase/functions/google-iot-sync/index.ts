@@ -10,6 +10,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { logActivityStart, logActivityComplete } from '../_shared/activity-logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -360,55 +361,93 @@ serve(async (req) => {
 
     let results
     const startTime = Date.now()
-
-    switch (operation) {
-      case 'import':
-        results = await importFromGoogle(googleConfig, accessToken, supabase, organization_id, integration_id)
-        break
-      
-      case 'export':
-        results = await exportToGoogle(googleConfig, accessToken, supabase, organization_id, integration_id, device_ids)
-        break
-      
-      case 'bidirectional':
-        const importResults = await importFromGoogle(googleConfig, accessToken, supabase, organization_id, integration_id)
-        const exportResults = await exportToGoogle(googleConfig, accessToken, supabase, organization_id, integration_id, device_ids)
-        results = {
-          import: importResults,
-          export: exportResults,
-          devices_processed: importResults.devices_processed + exportResults.devices_processed,
-          devices_succeeded: importResults.devices_succeeded + exportResults.devices_succeeded,
-          devices_failed: importResults.devices_failed + exportResults.devices_failed,
-        }
-        break
-      
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid operation' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-    }
-
-    const duration = Date.now() - startTime
-
-    // Log sync operation
-    await supabase.from('golioth_sync_log').insert({
-      organization_id,
-      integration_id,
-      operation,
-      status: results.devices_failed > 0 ? 'partial' : 'completed',
-      devices_processed: results.devices_processed,
-      devices_succeeded: results.devices_succeeded,
-      devices_failed: results.devices_failed,
-      error_message: results.errors && results.errors.length > 0 ? results.errors.join('; ') : null,
-      duration_ms: duration,
-      completed_at: new Date().toISOString(),
+    
+    // Start activity logging
+    const activityType = operation === 'import' ? 'sync_import' : 
+                        operation === 'export' ? 'sync_export' : 
+                        'sync_bidirectional'
+    
+    const endpoint = `https://cloudiot.googleapis.com/v1/projects/${googleConfig.project_id}/locations/${googleConfig.region}/registries/${googleConfig.registry_id}`
+    
+    const logId = await logActivityStart(supabase, {
+      organizationId: organization_id,
+      integrationId: integration_id,
+      direction: 'outgoing',
+      activityType,
+      method: 'POST',
+      endpoint,
+      metadata: {
+        operation,
+        device_count: device_ids?.length || 0,
+        project_id: googleConfig.project_id,
+        region: googleConfig.region,
+        registry_id: googleConfig.registry_id,
+      }
     })
 
-    return new Response(
-      JSON.stringify({ success: true, results }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    try {
+      switch (operation) {
+        case 'import':
+          results = await importFromGoogle(googleConfig, accessToken, supabase, organization_id, integration_id)
+          break
+        
+        case 'export':
+          results = await exportToGoogle(googleConfig, accessToken, supabase, organization_id, integration_id, device_ids)
+          break
+        
+        case 'bidirectional':
+          const importResults = await importFromGoogle(googleConfig, accessToken, supabase, organization_id, integration_id)
+          const exportResults = await exportToGoogle(googleConfig, accessToken, supabase, organization_id, integration_id, device_ids)
+          results = {
+            import: importResults,
+            export: exportResults,
+            devices_processed: importResults.devices_processed + exportResults.devices_processed,
+            devices_succeeded: importResults.devices_succeeded + exportResults.devices_succeeded,
+            devices_failed: importResults.devices_failed + exportResults.devices_failed,
+          }
+          break
+        
+        default:
+          return new Response(
+            JSON.stringify({ error: 'Invalid operation' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+      }
+
+      const duration = Date.now() - startTime
+
+      // Log activity completion
+      if (logId) {
+        await logActivityComplete(supabase, logId, {
+          status: results.devices_failed > 0 ? 'failed' : 'success',
+          responseTimeMs: duration,
+          responseBody: {
+            devices_processed: results.devices_processed,
+            devices_succeeded: results.devices_succeeded,
+            devices_failed: results.devices_failed,
+          },
+          errorMessage: results.errors && results.errors.length > 0 ? results.errors.join('; ') : undefined,
+        })
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, results }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } catch (syncError) {
+      const duration = Date.now() - startTime
+      
+      // Log failure
+      if (logId) {
+        await logActivityComplete(supabase, logId, {
+          status: 'error',
+          responseTimeMs: duration,
+          errorMessage: syncError instanceof Error ? syncError.message : 'Sync operation failed',
+        })
+      }
+      
+      throw syncError
+    }
 
   } catch (error) {
     console.error('Google Cloud IoT sync error:', error)

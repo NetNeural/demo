@@ -55,8 +55,11 @@ interface UpdateFields {
 
 async function testGoliothIntegration(settings: IntegrationSettings) {
   // Validate required fields
-  if (!settings?.apiKey || !settings?.projectId) {
-    return { success: false, message: 'Missing API Key or Project ID', details: {} }
+  if (!settings?.apiKey) {
+    return { success: false, message: 'Golioth integration requires an API Key. Please configure the integration first.', details: {} }
+  }
+  if (!settings?.projectId) {
+    return { success: false, message: 'Golioth integration requires a Project ID. Please configure the integration first.', details: {} }
   }
   
   // In production, this would call Golioth API
@@ -471,7 +474,8 @@ serve(async (req: Request) => {
             details: testResult.details
           })
         } else {
-          return createAuthErrorResponse(testResult.message || 'Integration test failed', 500)
+          // Return 400 for configuration issues (bad request), not 500 (server error)
+          return createAuthErrorResponse(testResult.message || 'Integration test failed', 400)
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'

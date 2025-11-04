@@ -197,7 +197,7 @@ export default function LoginPage() {
                   <div>• admin@netneural.ai</div>
                   <div>• user@netneural.ai</div>
                   <div>• viewer@netneural.ai</div>
-                  <div className="mt-1 text-xs">Password: NetNeural2025!</div>
+                  <div className="mt-1 text-xs">Password: password123</div>
                 </div>
               </AlertDescription>
             </Alert>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,14 +34,7 @@ export default function IntegrationsPage() {
   const [selectedIntegration, setSelectedIntegration] = useState<string | undefined>()
   const [pendingConflicts, setPendingConflicts] = useState(0)
 
-  useEffect(() => {
-    if (currentOrganization?.id) {
-      loadIntegrations()
-      loadPendingConflicts()
-    }
-  }, [currentOrganization?.id])
-
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     if (!currentOrganization) return
 
     setLoading(true)
@@ -60,9 +53,9 @@ export default function IntegrationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrganization, supabase])
 
-  const loadPendingConflicts = async () => {
+  const loadPendingConflicts = useCallback(async () => {
     if (!currentOrganization) return
 
     try {
@@ -71,7 +64,14 @@ export default function IntegrationsPage() {
     } catch (error) {
       console.error('Failed to load conflicts:', error)
     }
-  }
+  }, [currentOrganization])
+
+  useEffect(() => {
+    if (currentOrganization?.id) {
+      loadIntegrations()
+      loadPendingConflicts()
+    }
+  }, [currentOrganization?.id, loadIntegrations, loadPendingConflicts])
 
   const handleEdit = (integrationId: string) => {
     setSelectedIntegration(integrationId)

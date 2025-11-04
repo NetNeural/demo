@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Settings, Trash2, AlertTriangle } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { createClient } from '@/lib/supabase/client';
+import { handleApiError } from '@/lib/sentry-utils';
+import { toast } from 'sonner';
 
 interface OrganizationSettingsTabProps {
   organizationId: string;
@@ -33,12 +35,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
+        toast.error('Authentication required');
         setSaveMessage('Authentication required');
         return;
       }
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       if (!supabaseUrl) {
+        toast.error('Configuration error');
         setSaveMessage('Configuration error');
         return;
       }
@@ -56,19 +60,38 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.error || `HTTP ${response.status}`);
+        
+        // Send to Sentry with context and show feedback dialog
+        handleApiError(error, {
+          endpoint: `/functions/v1/organizations/${currentOrganization.id}`,
+          method: 'PATCH',
+          status: response.status,
+          errorData,
+          context: {
+            organizationId: currentOrganization.id,
+            organizationName: currentOrganization.name,
+            newName: orgName.trim(),
+          },
+        });
+        
         setSaveMessage(errorData.error || 'Failed to update organization');
+        toast.error(errorData.error || 'Failed to update organization');
         return;
       }
 
       setSaveMessage('Organization updated successfully!');
+      toast.success('Organization updated successfully!');
       await refreshOrganizations();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
       console.error('Error updating organization:', error);
-      setSaveMessage(error instanceof Error ? error.message : 'Failed to update organization');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update organization';
+      setSaveMessage(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

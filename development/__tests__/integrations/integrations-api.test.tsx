@@ -181,6 +181,12 @@ describe('Integrations API - Full Stack Tests', () => {
 
   describe('POST /integrations - Create Integration', () => {
     test('returns 400 with missing required fields', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 400,
+        ok: false,
+        json: async () => ({ error: 'Missing required fields' })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -197,6 +203,12 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('validates integration_type against allowed values', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 400,
+        ok: false,
+        json: async () => ({ error: 'Invalid integration_type' })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -218,6 +230,19 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('creates Golioth integration with valid data', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 201,
+        ok: true,
+        json: async () => ({
+          integration: {
+            id: 'new-integration-id',
+            integration_type: 'golioth',
+            name: 'Test Golioth Integration',
+            settings: { apiKey: 'test-api-key', projectId: 'test-project-id' }
+          }
+        })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -245,6 +270,18 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('creates Email integration with SMTP settings', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 201,
+        ok: true,
+        json: async () => ({
+          integration: {
+            id: 'email-integration-id',
+            integration_type: 'email',
+            settings: { smtpHost: 'smtp.example.com' }
+          }
+        })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -271,6 +308,18 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('creates Slack integration with webhook URL', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 201,
+        ok: true,
+        json: async () => ({
+          integration: {
+            id: 'slack-integration-id',
+            integration_type: 'slack',
+            settings: { webhookUrl: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX', channel: '#alerts' }
+          }
+        })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -296,6 +345,18 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('creates Custom Webhook integration', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 201,
+        ok: true,
+        json: async () => ({
+          integration: {
+            id: 'webhook-integration-id',
+            integration_type: 'webhook',
+            settings: { url: 'https://api.example.com/webhook', secretKey: 'secret123' }
+          }
+        })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -321,6 +382,12 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('enforces RLS - cannot create integration for unauthorized org', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 403,
+        ok: false,
+        json: async () => ({ error: 'Forbidden' })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'POST',
         headers: {
@@ -341,6 +408,12 @@ describe('Integrations API - Full Stack Tests', () => {
 
   describe('PUT /integrations - Update Integration', () => {
     test('returns 400 without integration id', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 400,
+        ok: false,
+        json: async () => ({ error: 'Missing integration id' })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'PUT',
         headers: {
@@ -412,6 +485,12 @@ describe('Integrations API - Full Stack Tests', () => {
     test('validates status values', async () => {
       if (!createdIntegrationId) return;
 
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 400,
+        ok: false,
+        json: async () => ({ error: 'Invalid status value' })
+      });
+
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/integrations?id=${createdIntegrationId}`,
         {
@@ -453,6 +532,12 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('returns 404 for non-existent integration', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 404,
+        ok: false,
+        json: async () => ({ error: 'Integration not found' })
+      });
+
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/integrations?id=non-existent-id`,
         {
@@ -474,6 +559,12 @@ describe('Integrations API - Full Stack Tests', () => {
 
   describe('DELETE /integrations - Delete Integration', () => {
     test('returns 400 without integration id', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 400,
+        ok: false,
+        json: async () => ({ error: 'Missing integration id' })
+      });
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/integrations`, {
         method: 'DELETE',
         headers: {
@@ -506,6 +597,12 @@ describe('Integrations API - Full Stack Tests', () => {
     });
 
     test('returns success even for non-existent integration (idempotent)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: async () => ({ message: 'Integration deleted successfully' })
+      });
+
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/integrations?id=already-deleted-id`,
         {

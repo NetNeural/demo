@@ -10,6 +10,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { logActivityStart, logActivityComplete } from '../_shared/activity-logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -248,65 +249,101 @@ serve(async (req) => {
     }
 
     let result
+    const startTime = Date.now()
     
-    // Send notification based on integration type
-    switch (integration_type) {
-      case 'email': {
-        if (!recipients || recipients.length === 0) {
-          return new Response(
-            JSON.stringify({ error: 'Recipients required for email notifications' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+    // Start activity logging
+    const activityType = integration_type === 'email' ? 'notification_email' :
+                        integration_type === 'slack' ? 'notification_slack' :
+                        'notification_webhook'
+    
+    const logId = await logActivityStart(supabase, {
+      organizationId: organization_id,
+      integrationId: integrations.id,
+      direction: 'outgoing',
+      activityType,
+      method: 'POST',
+      endpoint: integration_type === 'email' ? 'smtp' : 
+                integration_type === 'slack' ? integrations.webhook_url || '' :
+                integrations.webhook_url || '',
+      metadata: {
+        priority,
+        recipient_count: recipients?.length || 0,
+        has_subject: !!subject,
+      }
+    })
+    
+    try {
+      // Send notification based on integration type
+      switch (integration_type) {
+        case 'email': {
+          if (!recipients || recipients.length === 0) {
+            return new Response(
+              JSON.stringify({ error: 'Recipients required for email notifications' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+          
+          const emailConfig: EmailConfig = JSON.parse(integrations.api_key_encrypted || '{}')
+          result = await sendEmail(emailConfig, subject || 'NetNeural Notification', message, recipients)
+          break
         }
         
-        const emailConfig: EmailConfig = JSON.parse(integrations.api_key_encrypted || '{}')
-        result = await sendEmail(emailConfig, subject || 'NetNeural Notification', message, recipients)
-        break
-      }
-      
-      case 'slack': {
-        const slackConfig: SlackConfig = {
-          webhook_url: integrations.webhook_url || '',
-          channel: integrations.webhook_secret || '#general',
+        case 'slack': {
+          const slackConfig: SlackConfig = {
+            webhook_url: integrations.webhook_url || '',
+            channel: integrations.webhook_secret || '#general',
+          }
+          result = await sendSlack(slackConfig, message, data)
+          break
         }
-        result = await sendSlack(slackConfig, message, data)
-        break
-      }
-      
-      case 'webhook': {
-        const webhookConfig: WebhookConfig = {
-          url: integrations.webhook_url || '',
-          secret: integrations.webhook_secret,
-          method: 'POST',
-          content_type: 'application/json',
+        
+        case 'webhook': {
+          const webhookConfig: WebhookConfig = {
+            url: integrations.webhook_url || '',
+            secret: integrations.webhook_secret,
+            method: 'POST',
+            content_type: 'application/json',
+          }
+          result = await sendWebhook(webhookConfig, message, data)
+          break
         }
-        result = await sendWebhook(webhookConfig, message, data)
-        break
+        
+        default:
+          return new Response(
+            JSON.stringify({ error: `Unsupported integration type: ${integration_type}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+      }
+
+      const duration = Date.now() - startTime
+
+      // Log activity completion
+      if (logId) {
+        await logActivityComplete(supabase, logId, {
+          status: 'success',
+          responseTimeMs: duration,
+          responseBody: result,
+        })
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, result }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } catch (sendError) {
+      const duration = Date.now() - startTime
+      
+      // Log failure
+      if (logId) {
+        await logActivityComplete(supabase, logId, {
+          status: 'failed',
+          responseTimeMs: duration,
+          errorMessage: sendError instanceof Error ? sendError.message : 'Notification send failed',
+        })
       }
       
-      default:
-        return new Response(
-          JSON.stringify({ error: `Unsupported integration type: ${integration_type}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      throw sendError
     }
-
-    // Log the notification
-    await supabase.from('notification_log').insert({
-      organization_id,
-      integration_id: integrations.id,
-      integration_type,
-      message,
-      priority,
-      status: 'sent',
-      sent_at: new Date().toISOString(),
-      metadata: { result, data, recipients },
-    })
-
-    return new Response(
-      JSON.stringify({ success: true, result }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Notification error:', error)

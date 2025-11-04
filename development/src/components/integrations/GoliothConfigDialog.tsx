@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,8 @@ import { Loader2, Check, X, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { goliothSyncService } from '@/services/golioth-sync.service'
 import { toast } from 'sonner'
+import { IntegrationActivityLog } from './IntegrationActivityLog'
+import { IntegrationStatusToggle } from './IntegrationStatusToggle'
 
 interface GoliothConfig {
   id?: string
@@ -19,6 +21,7 @@ interface GoliothConfig {
   api_key: string
   project_id: string
   base_url: string
+  status: 'active' | 'inactive' | 'not-configured'
   sync_enabled: boolean
   sync_interval_seconds: number
   sync_direction: 'import' | 'export' | 'bidirectional'
@@ -53,6 +56,7 @@ export function GoliothConfigDialog({
     api_key: '',
     project_id: '',
     base_url: 'https://api.golioth.io/v1',
+    status: 'not-configured',
     sync_enabled: false,
     sync_interval_seconds: 300,
     sync_direction: 'bidirectional',
@@ -62,14 +66,7 @@ export function GoliothConfigDialog({
     webhook_url: '',
   })
 
-  // Load existing config
-  useEffect(() => {
-    if (integrationId && open) {
-      loadConfig()
-    }
-  }, [integrationId, open])
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     if (!integrationId) return
 
     setLoading(true)
@@ -89,10 +86,11 @@ export function GoliothConfigDialog({
           api_key: data.api_key_encrypted || '',
           project_id: data.project_id || '',
           base_url: data.base_url || 'https://api.golioth.io/v1',
+          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
           sync_enabled: data.sync_enabled || false,
           sync_interval_seconds: data.sync_interval_seconds || 300,
-          sync_direction: (data.sync_direction as any) || 'bidirectional',
-          conflict_resolution: (data.conflict_resolution as any) || 'manual',
+          sync_direction: (data.sync_direction as 'import' | 'export' | 'bidirectional') || 'bidirectional',
+          conflict_resolution: (data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
           webhook_enabled: data.webhook_enabled || false,
           webhook_secret: data.webhook_secret || '',
           webhook_url: data.webhook_url || '',
@@ -104,7 +102,14 @@ export function GoliothConfigDialog({
     } finally {
       setLoading(false)
     }
-  }
+  }, [integrationId])
+
+  // Load existing config
+  useEffect(() => {
+    if (integrationId && open) {
+      loadConfig()
+    }
+  }, [integrationId, open, loadConfig])
 
   const testConnection = async () => {
     setTesting(true)
@@ -112,7 +117,7 @@ export function GoliothConfigDialog({
     
     try {
       if (integrationId) {
-        const result = await goliothSyncService.testConnection(integrationId)
+        const result = await goliothSyncService.testConnection(integrationId, organizationId)
         setTestResult(result)
         
         if (result) {
@@ -123,7 +128,9 @@ export function GoliothConfigDialog({
       }
     } catch (error) {
       setTestResult(false)
-      toast.error('Connection test failed')
+      const errorMessage = error instanceof Error ? error.message : 'Connection test failed'
+      toast.error(errorMessage)
+      console.error('[GoliothConfigDialog] Test connection error:', error)
     } finally {
       setTesting(false)
     }
@@ -147,7 +154,7 @@ export function GoliothConfigDialog({
         webhook_enabled: config.webhook_enabled,
         webhook_secret: config.webhook_secret,
         webhook_url: config.webhook_url,
-        status: 'active',
+        status: config.status,
       }
 
       if (integrationId) {
@@ -188,11 +195,12 @@ export function GoliothConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="sync">Sync Settings</TabsTrigger>
             <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+            <TabsTrigger value="activity">Activity Log</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
@@ -240,6 +248,13 @@ export function GoliothConfigDialog({
                 placeholder="https://api.golioth.io/v1"
               />
             </div>
+
+            <IntegrationStatusToggle
+              status={config.status}
+              onStatusChange={(status) => setConfig({ ...config, status })}
+              disabled={!config.api_key || !config.project_id}
+              disabledMessage="Configure API key and Project ID to enable"
+            />
 
             <div className="flex items-center justify-between pt-4">
               <Button
@@ -412,6 +427,18 @@ export function GoliothConfigDialog({
               </p>
             </div>
           </TabsContent>
+
+          {/* Activity Log Tab */}
+          {integrationId && (
+            <TabsContent value="activity" className="space-y-4">
+              <IntegrationActivityLog
+                integrationId={integrationId}
+                organizationId={organizationId}
+                limit={50}
+                autoRefresh={true}
+              />
+            </TabsContent>
+          )}
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t">

@@ -4,7 +4,6 @@
  * This file contains integration tests for all 17 fixed GitHub issues
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 // Mock Next.js router

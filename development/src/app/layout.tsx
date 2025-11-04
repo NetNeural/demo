@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
 import { Toaster } from '@/components/ui/toaster'
+import { SentryInit } from '@/components/SentryInit'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <SentryInit />
         <Providers>
           {children}
           <Toaster />

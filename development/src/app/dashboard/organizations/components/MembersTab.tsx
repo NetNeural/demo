@@ -27,6 +27,7 @@ import { UserPlus, Mail, Trash2, Shield, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CreateUserDialog } from '@/components/organizations/CreateUserDialog';
+import { handleApiError } from '@/lib/sentry-utils';
 
 interface OrganizationMember {
   id: string;
@@ -81,13 +82,40 @@ export function MembersTab({ organizationId }: MembersTabProps) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Members API Error:', response.status, errorData);
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        
+        // Send to Sentry with context - feedback dialog shown automatically
+        const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        handleApiError(error, {
+          endpoint: `/api/organizations/${organizationId}/members`,
+          method: 'GET',
+          status: response.status,
+          errorData,
+          context: {
+            organization_id: organizationId,
+          },
+        });
+        
+        throw error;
       }
 
       const data = await response.json();
       setMembers(data.members || []);
     } catch (error) {
       console.error('Error fetching members:', error);
+      
+      // Send to Sentry if not already sent
+      if (error instanceof Error && !error.message.includes('HTTP error')) {
+        handleApiError(error, {
+          endpoint: `/api/organizations/${organizationId}/members`,
+          method: 'GET',
+          context: {
+            component: 'MembersTab',
+            action: 'fetchMembers',
+            organization_id: organizationId,
+          },
+        });
+      }
+      
       setMembers([]);
     } finally {
       setLoading(false);

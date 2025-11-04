@@ -1,3 +1,5 @@
+WARN: no SMS provider is enabled. Disabling phone login
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -7,11 +9,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -114,7 +111,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown
+          ip_address: unknown | null
           metadata: Json | null
           new_values: Json | null
           old_values: Json | null
@@ -128,7 +125,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown
+          ip_address?: unknown | null
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -142,7 +139,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown
+          ip_address?: unknown | null
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -885,6 +882,93 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_activity_log: {
+        Row: {
+          activity_type: string
+          completed_at: string | null
+          created_at: string
+          direction: string
+          endpoint: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          integration_id: string
+          ip_address: string | null
+          metadata: Json | null
+          method: string | null
+          organization_id: string
+          request_body: Json | null
+          request_headers: Json | null
+          response_body: Json | null
+          response_status: number | null
+          response_time_ms: number | null
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          completed_at?: string | null
+          created_at?: string
+          direction: string
+          endpoint?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method?: string | null
+          organization_id: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          completed_at?: string | null
+          created_at?: string
+          direction?: string
+          endpoint?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method?: string | null
+          organization_id?: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_activity_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_activity_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           address: string | null
@@ -1349,9 +1433,55 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      integration_activity_summary: {
+        Row: {
+          activity_date: string | null
+          activity_type: string | null
+          avg_response_time_ms: number | null
+          direction: string | null
+          error_count: number | null
+          integration_id: string | null
+          last_activity_at: string | null
+          organization_id: string | null
+          status: string | null
+          success_count: number | null
+          total_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_activity_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_activity_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      cleanup_old_integration_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      complete_integration_activity: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_log_id: string
+          p_response_body?: Json
+          p_response_status?: number
+          p_response_time_ms?: number
+          p_status: string
+        }
+        Returns: undefined
+      }
       get_pending_conflicts: {
         Args: { org_id: string }
         Returns: {
@@ -1374,12 +1504,28 @@ export type Database = {
           total_syncs: number
         }[]
       }
-      get_user_organization_id: { Args: never; Returns: string }
+      get_user_organization_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      uuid_generate_v4: { Args: never; Returns: string }
+      log_integration_activity: {
+        Args: {
+          p_activity_type: string
+          p_direction: string
+          p_endpoint?: string
+          p_integration_id: string
+          p_metadata?: Json
+          p_method?: string
+          p_organization_id: string
+          p_status?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       alert_severity: "low" | "medium" | "high" | "critical"
@@ -1525,3 +1671,6 @@ export const Constants = {
     },
   },
 } as const
+
+A new version of Supabase CLI is available: v2.54.11 (currently installed v2.51.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

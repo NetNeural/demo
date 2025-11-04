@@ -6,6 +6,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { handleApiError } from '@/lib/api-error-handler'
 
 interface AlertItem {
   id: string
@@ -37,6 +40,7 @@ export function AlertsCard() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const { currentOrganization } = useOrganization()
+  const router = useRouter()
 
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
@@ -64,8 +68,21 @@ export function AlertsCard() {
           }
         });
         
+        const errorResult = handleApiError(response, {
+          errorPrefix: 'Failed to fetch alerts',
+          throwOnError: false,
+        })
+
+        if (errorResult.isAuthError) {
+          setAlerts([])
+          setLoading(false)
+          return
+        }
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          setAlerts([])
+          setLoading(false)
+          return
         }
         
         const data = await response.json();
@@ -106,6 +123,60 @@ export function AlertsCard() {
     fetchAlerts()
   }, [fetchAlerts])
 
+  const handleAcknowledgeAlert = async (alertId: string) => {
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        toast.error('No active session')
+        return
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts/${alertId}/acknowledge`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      const errorResult = handleApiError(response, {
+        errorPrefix: 'Failed to acknowledge alert',
+        throwOnError: false,
+      })
+
+      if (errorResult.isAuthError) {
+        toast.error('Not authenticated')
+        return
+      }
+
+      if (!response.ok) {
+        toast.error('Failed to acknowledge alert')
+        return
+      }
+
+      // Optimistic UI update
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, acknowledged: true }
+            : alert
+        )
+      )
+
+      toast.success('Alert acknowledged')
+    } catch (error) {
+      console.error('Error acknowledging alert:', error)
+      toast.error('Failed to acknowledge alert')
+      // Refresh to get actual state
+      fetchAlerts()
+    }
+  }
+
   const getSeverityIcon = (severity: AlertItem['severity']) => {
     switch (severity) {
       case 'critical': return '🚨'
@@ -131,7 +202,11 @@ export function AlertsCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Active Alerts</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => router.push('/dashboard/alerts')}
+          >
             View All Alerts
           </Button>
         </div>
@@ -178,7 +253,12 @@ export function AlertsCard() {
                       {alert.severity.toUpperCase()}
                     </span>
                     {!alert.acknowledged && (
-                      <Button variant="ghost" size="sm" className="text-xs h-6">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-6"
+                        onClick={() => handleAcknowledgeAlert(alert.id)}
+                      >
                         Acknowledge
                       </Button>
                     )}

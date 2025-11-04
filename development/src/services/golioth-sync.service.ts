@@ -178,22 +178,40 @@ export class GoliothSyncService {
   /**
    * Test integration connection
    */
-  async testConnection(integrationId: string): Promise<boolean> {
+  async testConnection(integrationId: string, organizationId: string): Promise<boolean> {
     try {
-      // Trigger a test sync with no devices
-      const { error } = await this.supabase.functions.invoke('device-sync', {
+      console.log('[Golioth Service] Starting test connection...', { integrationId, organizationId })
+      
+      // Trigger a test sync with test operation
+      const { data, error } = await this.supabase.functions.invoke('device-sync', {
         body: { 
           integrationId, 
-          organizationId: 'test',
-          operation: 'import',
+          organizationId,
+          operation: 'test',
           deviceIds: []
         },
       })
 
-      if (error) throw error
+      console.log('[Golioth Service] Response received:', { data, error })
+
+      if (error) {
+        console.error('[Golioth Service] HTTP Error from edge function:', error)
+        // Check if error has a message from our edge function
+        const errorMessage = error.message || 'Connection test failed'
+        throw new Error(errorMessage)
+      }
+      
+      if (!data?.success) {
+        const errorMessage = data?.error || 'Connection test failed'
+        console.error('[Golioth Service] Test failed:', errorMessage, 'Full data:', data)
+        throw new Error(errorMessage)
+      }
+      
+      console.log('[Golioth Service] Test connection successful:', data.message)
       return true
-    } catch {
-      return false
+    } catch (error) {
+      console.error('[Golioth Service] Test connection exception:', error)
+      throw error
     }
   }
 }

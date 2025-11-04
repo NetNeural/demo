@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { Plus, ExternalLink, Settings, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import { databaseDeviceService } from "@/lib/database/devices";
+import { MqttConfigDialog } from "@/components/integrations/MqttConfigDialog";
+import { useOrganization } from "@/contexts/OrganizationContext";
 
 interface DeviceIntegration {
   id: string;
@@ -37,6 +39,9 @@ export function DeviceIntegrationManager() {
   const [externalDeviceId, setExternalDeviceId] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [integrationToConfig, setIntegrationToConfig] = useState<DeviceIntegration | null>(null);
+  const { currentOrganization } = useOrganization();
 
   useEffect(() => {
     loadData();
@@ -347,7 +352,14 @@ export function DeviceIntegrationManager() {
                       </>
                     )}
                   </Badge>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setIntegrationToConfig(integration);
+                      setConfigDialogOpen(true);
+                    }}
+                  >
                     Configure
                   </Button>
                 </div>
@@ -356,6 +368,19 @@ export function DeviceIntegrationManager() {
           </div>
         </CardContent>
       </Card>
+
+      {/* MQTT Config Dialog (works for MQTT integrations, can be extended for others) */}
+      {integrationToConfig?.integration_type === 'mqtt' && currentOrganization && (
+        <MqttConfigDialog
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
+          organizationId={currentOrganization.id}
+          integrationId={integrationToConfig.id}
+          onSaved={() => {
+            loadData(); // Refresh integrations list
+          }}
+        />
+      )}
     </div>
   );
 }

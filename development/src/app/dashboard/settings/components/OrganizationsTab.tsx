@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { SettingsSection } from './shared/SettingsSection';
 import { SettingsFormGroup } from './shared/SettingsFormGroup';
+import { useRouter } from 'next/navigation';
 
 interface Organization {
   id: string;
@@ -31,14 +32,15 @@ interface OrganizationsTabProps {
 export default function OrganizationsTab({
   initialOrganizations = [],
 }: OrganizationsTabProps) {
-  const [organizations, setOrganizations] = useState<Organization[]>(initialOrganizations);
+  const [organizations] = useState<Organization[]>(initialOrganizations);
   const [newOrgName, setNewOrgName] = useState('');
   const [newOrgSlug, setNewOrgSlug] = useState('');
   const [newOrgIndustry, setNewOrgIndustry] = useState('');
+  const router = useRouter();
 
   const handleCreateOrganization = async () => {
     console.log('Creating organization:', { newOrgName, newOrgSlug, newOrgIndustry });
-    // TODO: Implement API call
+    // TODO: Implement API call and update organizations state
   };
 
   const getRoleBadge = (role?: string) => {
@@ -85,11 +87,21 @@ export default function OrganizationsTab({
               </div>
 
               <div className="flex gap-2 pt-2 border-t">
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => router.push(`/dashboard/organizations/${org.id}/settings`)}
+                >
                   Configure
                 </Button>
                 {org.role === 'admin' && (
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => router.push(`/dashboard/organizations/${org.id}`)}
+                  >
                     Manage
                   </Button>
                 )}

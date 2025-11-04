@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
@@ -23,7 +24,16 @@ import { OrganizationAlertsTab } from './components/OrganizationAlertsTab';
 import { OrganizationSettingsTab } from './components/OrganizationSettingsTab';
 
 export default function OrganizationsPage() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Set active tab from URL parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   const { 
     currentOrganization,
     isOwner 

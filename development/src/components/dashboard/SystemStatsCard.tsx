@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { handleApiError } from '@/lib/api-error-handler'
 
 interface SystemStats {
   totalDevices: number
@@ -59,9 +60,38 @@ export function SystemStatsCard() {
         }
       });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+      const errorResult = handleApiError(response, {
+        errorPrefix: 'Failed to fetch system stats',
+        throwOnError: false,
+        logErrors: true,
+      })
+
+      if (errorResult.isAuthError) {
+        console.log('User not authenticated - showing empty stats')
+        setStats({
+          totalDevices: 0,
+          activeDevices: 0,
+          offlineDevices: 0,
+          alertsCount: 0,
+          connectivityRate: 0,
+          dataPoints: 0
+        })
+        setLoading(false)
+        return
+      }
+
+      if (!response.ok) {
+        setStats({
+          totalDevices: 0,
+          activeDevices: 0,
+          offlineDevices: 0,
+          alertsCount: 0,
+          connectivityRate: 0,
+          dataPoints: 0
+        })
+        setLoading(false)
+        return
+      }
         
         const data = await response.json();
         
