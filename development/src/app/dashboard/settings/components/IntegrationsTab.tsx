@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog';
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog';
-import { SyncHistoryList } from '@/components/integrations/SyncHistoryList';
 import { AwsIotConfigDialog } from '@/components/integrations/AwsIotConfigDialog';
 import { AzureIotConfigDialog } from '@/components/integrations/AzureIotConfigDialog';
 import { GoogleIotConfigDialog } from '@/components/integrations/GoogleIotConfigDialog';
@@ -203,7 +202,7 @@ export default function IntegrationsTab({
       }));
 
       setIntegrations(transformedIntegrations);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading integrations:', error);
       
       // Try fallback to direct database query
@@ -220,21 +219,21 @@ export default function IntegrationsTab({
         console.log('Loaded integrations via fallback query:', directData);
         
         // Transform direct database results to match Integration interface
-        const fallbackIntegrations: Integration[] = (directData || []).map((integration: any) => ({
+        const fallbackIntegrations: Integration[] = (directData || []).map((integration) => ({
           id: integration.id,
           type: integration.integration_type,
           name: integration.name,
-          status: integration.status || 'not-configured',
-          config: integration.settings || {}
+          status: (integration.status as Integration['status']) || 'not-configured',
+          config: (integration.settings as Record<string, unknown>) || {}
         }));
 
         setIntegrations(fallbackIntegrations);
         
-      } catch (fallbackError: any) {
+      } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
         toast({
           title: 'Failed to load integrations',
-          description: fallbackError?.message || 'Unknown error occurred',
+          description: (fallbackError as Error)?.message || 'Unknown error occurred',
           variant: 'destructive'
         });
         // Show empty state on error
@@ -243,7 +242,7 @@ export default function IntegrationsTab({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganization]);
+  }, [selectedOrganization, toast]);
 
   // Load integrations when organization changes
   React.useEffect(() => {

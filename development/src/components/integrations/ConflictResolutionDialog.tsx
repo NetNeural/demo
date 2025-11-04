@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { goliothSyncService } from '@/services/golioth-sync.service'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface Conflict {
@@ -20,8 +19,8 @@ interface Conflict {
   device_id: string
   device_name: string
   field_name: string
-  local_value: any
-  remote_value: any
+  local_value: Record<string, unknown> | string | number | boolean | null
+  remote_value: Record<string, unknown> | string | number | boolean | null
   detected_at: string
 }
 
@@ -38,23 +37,16 @@ export function ConflictResolutionDialog({
   organizationId,
   onResolved,
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
 
-  useEffect(() => {
-    if (open) {
-      loadConflicts()
-    }
-  }, [open, organizationId])
-
   const loadConflicts = async () => {
     setLoading(true)
     try {
       const data = await goliothSyncService.getPendingConflicts(organizationId)
-      setConflicts(data as any)
+      setConflicts(data as unknown as Conflict[])
       setCurrentIndex(0)
     } catch (error) {
       console.error('Failed to load conflicts:', error)
@@ -64,15 +56,25 @@ export function ConflictResolutionDialog({
     }
   }
 
+  useEffect(() => {
+    if (open) {
+      loadConflicts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, organizationId])
+
   const handleResolve = async (strategy: 'local_wins' | 'remote_wins' | 'merge') => {
     if (!currentConflict) return
 
     setResolving(true)
     try {
+      const value = strategy === 'remote_wins' ? currentConflict.remote_value : currentConflict.local_value
+      const resolvedValue = typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined
+      
       await goliothSyncService.resolveConflict(
         currentConflict.id,
         strategy,
-        strategy === 'remote_wins' ? currentConflict.remote_value : currentConflict.local_value
+        resolvedValue
       )
 
       toast.success(`Conflict resolved using ${strategy.replace('_', ' ')}`)
@@ -97,7 +99,7 @@ export function ConflictResolutionDialog({
 
   const currentConflict = conflicts[currentIndex]
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: Record<string, unknown> | string | number | boolean | null): string => {
     if (value === null || value === undefined) return 'null'
     if (typeof value === 'object') return JSON.stringify(value, null, 2)
     return String(value)

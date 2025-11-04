@@ -45,9 +45,9 @@ export class GoliothSyncService {
       if (error) throw error
 
       return data
-    } catch (error: any) {
+    } catch (error) {
       console.error('Sync trigger error:', error)
-      throw new Error(`Failed to trigger sync: ${error.message}`)
+      throw new Error(`Failed to trigger sync: ${(error as Error).message}`)
     }
   }
 
@@ -109,6 +109,7 @@ export class GoliothSyncService {
       .update({
         resolution_status: 'resolved',
         resolution_strategy: strategy,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolved_value: resolvedValue as any,
         resolved_by: user.data.user?.id,
         resolved_at: new Date().toISOString(),
@@ -125,7 +126,8 @@ export class GoliothSyncService {
       .single()
 
     if (conflict) {
-      await this.applyConflictResolution(conflict.device_id, strategy, resolvedValue || conflict.remote_value)
+      const valueToApply = resolvedValue || (conflict.remote_value as Record<string, unknown>)
+      await this.applyConflictResolution(conflict.device_id, strategy, valueToApply)
     }
   }
 
@@ -135,7 +137,7 @@ export class GoliothSyncService {
   private async applyConflictResolution(
     deviceId: string,
     strategy: string,
-    resolvedValue: any
+    resolvedValue: Record<string, unknown>
   ): Promise<void> {
     if (strategy === 'local_wins') {
       // Keep local, no action needed
@@ -179,7 +181,7 @@ export class GoliothSyncService {
   async testConnection(integrationId: string): Promise<boolean> {
     try {
       // Trigger a test sync with no devices
-      const { data, error } = await this.supabase.functions.invoke('device-sync', {
+      const { error } = await this.supabase.functions.invoke('device-sync', {
         body: { 
           integrationId, 
           organizationId: 'test',

@@ -25,9 +25,7 @@ import { OrganizationSettingsTab } from './components/OrganizationSettingsTab';
 export default function OrganizationsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const { 
-    currentOrganization, 
-    canManageMembers, 
-    canManageIntegrations,
+    currentOrganization,
     isOwner 
   } = useOrganization();
 

@@ -146,14 +146,24 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     } catch (error) {
       console.error('Error adding member:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to add member';
-      const helpText = errorMessage.includes('not found') 
-        ? ' Make sure the user has an account first.' 
-        : '';
-      toast({
-        title: 'Error',
-        description: errorMessage + helpText,
-        variant: 'destructive',
-      });
+      const isUserNotFound = errorMessage.toLowerCase().includes('not found') || 
+                             errorMessage.toLowerCase().includes('does not exist');
+      
+      if (isUserNotFound) {
+        toast({
+          title: 'User Not Found',
+          description: `No account exists for ${addEmail}. Click "Create User" button below to create an account first.`,
+          variant: 'destructive',
+        });
+        // Automatically show the create user dialog
+        setTimeout(() => setShowCreateUserDialog(true), 1500);
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsAdding(false);
     }

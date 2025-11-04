@@ -54,6 +54,18 @@ export function MqttConfigDialog({
   useEffect(() => {
     if (integrationId && open) {
       loadConfig()
+    } else if (!integrationId && open) {
+      // Reset to default config when opening dialog for new integration
+      setConfig({
+        name: 'MQTT Broker Integration',
+        broker_url: '',
+        port: 1883,
+        username: '',
+        password: '',
+        client_id: '',
+        use_tls: false,
+        topics: '',
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [integrationId, open])
@@ -133,11 +145,19 @@ export function MqttConfigDialog({
       }
 
       toast.success('MQTT configuration saved successfully')
-      onSaved?.()
+      
+      // Call onSaved callback first (triggers refresh in parent)
+      if (onSaved) {
+        onSaved()
+      }
+      
+      // Close dialog - parent component handles this via onSaved
+      // but we also call it here as a fallback
       onOpenChange(false)
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Unknown error occurred';
-      const errorDetails = error?.details || error?.hint || '';
+    } catch (error: unknown) {
+      const err = error as { message?: string; details?: string; hint?: string }
+      const errorMessage = err?.message || 'Unknown error occurred';
+      const errorDetails = err?.details || err?.hint || '';
       
       console.error('MQTT Config Save Error:', {
         error,

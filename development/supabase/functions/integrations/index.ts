@@ -1,3 +1,4 @@
+// Deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { 
   getUserContext, 
@@ -9,7 +10,50 @@ import {
 } from '../_shared/auth.ts'
 
 // Test helper functions
-async function testGoliothIntegration(settings: any) {
+interface IntegrationSettings {
+  apiKey?: string
+  projectId?: string
+  region?: string
+  accessKeyId?: string
+  secretAccessKey?: string
+  connectionString?: string
+  hubName?: string
+  registryId?: string
+  smtpHost?: string
+  smtpPort?: number
+  smtpUsername?: string
+  webhookUrl?: string
+  channel?: string
+  url?: string
+  brokerUrl?: string
+  port?: number
+  clientId?: string
+  [key: string]: unknown
+}
+
+interface DbIntegration {
+  id: string
+  integration_type: string
+  name: string
+  status: string
+  project_id?: string
+  base_url?: string
+  settings?: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+interface UpdateFields {
+  name?: string
+  settings?: Record<string, unknown>
+  api_key_encrypted?: string
+  project_id?: string
+  base_url?: string
+  status?: string
+  updated_at?: string
+}
+
+async function testGoliothIntegration(settings: IntegrationSettings) {
   // Validate required fields
   if (!settings?.apiKey || !settings?.projectId) {
     return { success: false, message: 'Missing API Key or Project ID', details: {} }
@@ -23,7 +67,7 @@ async function testGoliothIntegration(settings: any) {
   }
 }
 
-async function testAwsIotIntegration(settings: any) {
+async function testAwsIotIntegration(settings: IntegrationSettings) {
   if (!settings?.region || !settings?.accessKeyId || !settings?.secretAccessKey) {
     return { success: false, message: 'Missing AWS IoT credentials', details: {} }
   }
@@ -35,7 +79,7 @@ async function testAwsIotIntegration(settings: any) {
   }
 }
 
-async function testAzureIotIntegration(settings: any) {
+async function testAzureIotIntegration(settings: IntegrationSettings) {
   if (!settings?.connectionString || !settings?.hubName) {
     return { success: false, message: 'Missing Azure IoT Hub credentials', details: {} }
   }
@@ -47,7 +91,7 @@ async function testAzureIotIntegration(settings: any) {
   }
 }
 
-async function testGoogleIotIntegration(settings: any) {
+async function testGoogleIotIntegration(settings: IntegrationSettings) {
   if (!settings?.projectId || !settings?.region || !settings?.registryId) {
     return { success: false, message: 'Missing Google Cloud IoT credentials', details: {} }
   }
@@ -59,7 +103,7 @@ async function testGoogleIotIntegration(settings: any) {
   }
 }
 
-async function testEmailIntegration(settings: any) {
+async function testEmailIntegration(settings: IntegrationSettings) {
   if (!settings?.smtpHost || !settings?.smtpPort || !settings?.smtpUsername) {
     return { success: false, message: 'Missing SMTP configuration', details: {} }
   }
@@ -71,7 +115,7 @@ async function testEmailIntegration(settings: any) {
   }
 }
 
-async function testSlackIntegration(settings: any) {
+async function testSlackIntegration(settings: IntegrationSettings) {
   if (!settings?.webhookUrl) {
     return { success: false, message: 'Missing Slack webhook URL', details: {} }
   }
@@ -94,11 +138,11 @@ async function testSlackIntegration(settings: any) {
       details: { channel: settings.channel || 'default' }
     }
   } catch (error) {
-    return { success: false, message: `Slack webhook error: ${error.message}`, details: {} }
+    return { success: false, message: `Slack webhook error: ${(error as Error).message}`, details: {} }
   }
 }
 
-async function testWebhookIntegration(settings: any) {
+async function testWebhookIntegration(settings: IntegrationSettings) {
   if (!settings?.url) {
     return { success: false, message: 'Missing webhook URL', details: {} }
   }
@@ -117,11 +161,11 @@ async function testWebhookIntegration(settings: any) {
       details: { url: settings.url, status: response.status }
     }
   } catch (error) {
-    return { success: false, message: `Webhook error: ${error.message}`, details: {} }
+    return { success: false, message: `Webhook error: ${(error as Error).message}`, details: {} }
   }
 }
 
-async function testMqttIntegration(settings: any) {
+async function testMqttIntegration(settings: IntegrationSettings) {
   if (!settings?.brokerUrl || !settings?.port) {
     return { success: false, message: 'Missing MQTT broker configuration', details: {} }
   }
@@ -133,7 +177,7 @@ async function testMqttIntegration(settings: any) {
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -184,7 +228,7 @@ serve(async (req) => {
 
       // Enrich integrations with device counts
       const enrichedIntegrations = await Promise.all(
-        (integrations || []).map(async (integration: any) => {
+        (integrations || []).map(async (integration: DbIntegration) => {
           // Get device count for this integration
           const { count: deviceCount } = await supabase
             .from('devices')
@@ -233,13 +277,14 @@ serve(async (req) => {
 
       // Check if user has permission to create integrations for this org
       const canCreate = userContext.isSuperAdmin || 
-                       userContext.organizationIds.includes(organization_id)
+                       userContext.organizationId === organization_id
       
       if (!canCreate) {
         return createAuthErrorResponse('Not authorized to create integrations for this organization', 403)
       }
 
       // Create integration - RLS will enforce permissions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newIntegration, error } = await supabase
         .from('device_integrations')
         .insert({
@@ -251,7 +296,7 @@ serve(async (req) => {
           project_id,
           base_url,
           status: 'active'
-        })
+        } as any)
         .select()
         .single()
 
@@ -279,7 +324,17 @@ serve(async (req) => {
       const { name, settings, api_key, project_id, base_url, status } = body
 
       // Build update object
-      const updates: any = {
+      interface UpdateFields {
+        updated_at: string
+        name?: string
+        settings?: Record<string, unknown>
+        api_key_encrypted?: string
+        project_id?: string
+        base_url?: string
+        status?: string
+      }
+
+      const updates: UpdateFields = {
         updated_at: new Date().toISOString()
       }
       
@@ -297,9 +352,10 @@ serve(async (req) => {
       }
 
       // Update integration - RLS will enforce permissions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: updatedIntegration, error } = await supabase
         .from('device_integrations')
-        .update(updates)
+        .update(updates as any)
         .eq('id', integrationId)
         .select()
         .single()
@@ -364,51 +420,54 @@ serve(async (req) => {
         return createAuthErrorResponse('Integration not found or access denied', 404)
       }
 
+      // Type the integration result
+      const typedIntegration = integration as DbIntegration
+
       // Test based on integration type
       let testResult = { success: true, message: '', details: {} }
 
       try {
-        switch (integration.integration_type) {
+        switch (typedIntegration.integration_type) {
           case 'golioth':
             // Test Golioth API connection
-            testResult = await testGoliothIntegration(integration.settings)
+            testResult = await testGoliothIntegration(typedIntegration.settings || {})
             break
           
           case 'aws_iot':
-            testResult = await testAwsIotIntegration(integration.settings)
+            testResult = await testAwsIotIntegration(typedIntegration.settings || {})
             break
           
           case 'azure_iot':
-            testResult = await testAzureIotIntegration(integration.settings)
+            testResult = await testAzureIotIntegration(typedIntegration.settings || {})
             break
           
           case 'google_iot':
-            testResult = await testGoogleIotIntegration(integration.settings)
+            testResult = await testGoogleIotIntegration(typedIntegration.settings || {})
             break
           
           case 'email':
-            testResult = await testEmailIntegration(integration.settings)
+            testResult = await testEmailIntegration(typedIntegration.settings || {})
             break
           
           case 'slack':
-            testResult = await testSlackIntegration(integration.settings)
+            testResult = await testSlackIntegration(typedIntegration.settings || {})
             break
           
           case 'webhook':
-            testResult = await testWebhookIntegration(integration.settings)
+            testResult = await testWebhookIntegration(typedIntegration.settings || {})
             break
           
           case 'mqtt':
-            testResult = await testMqttIntegration(integration.settings)
+            testResult = await testMqttIntegration(typedIntegration.settings || {})
             break
           
           default:
-            return createAuthErrorResponse(`Unsupported integration type: ${integration.integration_type}`, 400)
+            return createAuthErrorResponse(`Unsupported integration type: ${typedIntegration.integration_type}`, 400)
         }
 
         if (testResult.success) {
           return createSuccessResponse({
-            message: testResult.message || `${integration.name} connection verified successfully`,
+            message: testResult.message || `${typedIntegration.name} connection verified successfully`,
             details: testResult.details
           })
         } else {

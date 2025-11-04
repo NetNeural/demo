@@ -19,12 +19,21 @@ export function formatDate(
   date: Date | string,
   options: Intl.DateTimeFormatOptions = {}
 ): string {
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    ...options,
-  }).format(new Date(date))
+  try {
+    const dateObj = new Date(date)
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid Date"
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      ...options,
+    }).format(dateObj)
+  } catch {
+    return "Invalid Date"
+  }
 }
 
 export function truncateText(text: string, length: number): string {
@@ -33,8 +42,13 @@ export function truncateText(text: string, length: number): string {
 }
 
 export function getInitials(name: string): string {
+  if (!name || name.trim().length === 0) {
+    return "??"
+  }
   return name
+    .trim()
     .split(" ")
+    .filter(word => word.length > 0)
     .map((word) => word[0])
     .join("")
     .toUpperCase()
