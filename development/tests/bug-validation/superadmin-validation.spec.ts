@@ -85,7 +85,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     console.log('✅ Bug #18: Change password section is visible');
     
     // Check for active sessions
-    const sessionsSection = page.getByText(/active sessions/i, /sessions/i).first();
+    const sessionsSection = page.getByText(/active sessions/i).first();
     await expect(sessionsSection).toBeVisible();
     console.log('✅ Bug #20: Active sessions section is visible');
     
@@ -105,7 +105,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     await page.waitForTimeout(1000);
     
     // Check for 2FA section
-    const twoFASection = page.getByText(/two-factor authentication/i, /2fa/i).first();
+    const twoFASection = page.getByText(/two-factor authentication/i).first();
     await expect(twoFASection).toBeVisible();
     console.log('✅ Bug #19: 2FA section is visible');
   });

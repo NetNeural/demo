@@ -315,7 +315,7 @@ test.describe('Bug Hunting - Comprehensive Page Traversal', () => {
     // Check for broken internal links
     const brokenLinks: string[] = [];
     for (let i = 0; i < Math.min(links.length, 20); i++) {
-      const href = await links[i].getAttribute('href');
+      const href = await links[i]?.getAttribute('href');
       if (href && href.startsWith('/') && !href.startsWith('//')) {
         const response = await page.request.get(BASE_URL + href).catch(() => null);
         if (response && response.status() >= 400) {

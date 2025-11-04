@@ -698,13 +698,16 @@ describe('Alert System - Complete Coverage', () => {
         { id: 'alert-3', device_id: 'device-789', alert_type: 'offline' },
       ]
 
-      const grouped = alerts.reduce((acc: { offline: typeof alerts }, alert) => {
+      type AlertType = typeof alerts[0]
+      type GroupedAlerts = Record<string, AlertType[]>
+
+      const grouped = alerts.reduce((acc: GroupedAlerts, alert) => {
         if (!acc[alert.alert_type]) {
           acc[alert.alert_type] = []
         }
-        acc[alert.alert_type].push(alert)
+        acc[alert.alert_type]!.push(alert)
         return acc
-      }, {} as { offline: typeof alerts })
+      }, {} as GroupedAlerts)
 
       expect(grouped.offline).toHaveLength(3)
     })

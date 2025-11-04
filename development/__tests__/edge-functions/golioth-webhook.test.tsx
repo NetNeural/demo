@@ -47,7 +47,7 @@ describe('Golioth Webhook Edge Function', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
-    global.fetch = jest.fn() as jest.Mock;
+    global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
   });
 
   // =========================================================================
