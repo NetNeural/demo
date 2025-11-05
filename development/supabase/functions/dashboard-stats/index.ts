@@ -97,30 +97,71 @@ serve(async (req) => {
         systemStatus = 'degraded'
       }
 
+      // Get additional stats for complete dashboard
+      let membersQuery = supabase
+        .from('organization_members')
+        .select('id', { count: 'exact', head: true })
+      
+      if (organizationId) {
+        membersQuery = membersQuery.eq('organization_id', organizationId)
+      }
+
+      let locationsQuery = supabase
+        .from('locations')
+        .select('id', { count: 'exact', head: true })
+      
+      if (organizationId) {
+        locationsQuery = locationsQuery.eq('organization_id', organizationId)
+      }
+
+      let integrationsQuery = supabase
+        .from('device_integrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+      
+      if (organizationId) {
+        integrationsQuery = integrationsQuery.eq('organization_id', organizationId)
+      }
+
+      const [membersResult, locationsResult, integrationsResult] = await Promise.all([
+        membersQuery,
+        locationsQuery,
+        integrationsQuery
+      ])
+
+      const totalUsers = membersResult.count || 0
+      const totalLocations = locationsResult.count || 0
+      const activeIntegrations = integrationsResult.count || 0
+
+      // Return flat structure matching frontend expectations
       const stats = {
-        devices: {
-          total: totalDevices,
-          online: onlineDevices,
-          offline: offlineDevices,
-          warning: warningDevices,
-          uptimePercentage: parseFloat(uptimePercentage)
-        },
-        alerts: {
-          total: totalAlerts,
-          critical: criticalAlerts,
-          high: highAlerts,
-          unresolved: unresolvedAlerts,
-          last24h: totalAlerts
-        },
-        system: {
-          status: systemStatus,
-          lastUpdated: new Date().toISOString()
-        },
-        metadata: {
-          organizationId,
-          queriedBy: userContext.email,
-          isSuperAdmin: userContext.isSuperAdmin
-        }
+        // Device stats (flat structure)
+        totalDevices,
+        onlineDevices,
+        offlineDevices,
+        warningDevices,
+        uptimePercentage: parseFloat(uptimePercentage),
+        
+        // Alert stats (flat structure)
+        totalAlerts,
+        criticalAlerts,
+        highAlerts,
+        activeAlerts: unresolvedAlerts, // Frontend expects 'activeAlerts'
+        unresolvedAlerts,
+        
+        // Organization stats
+        totalUsers,
+        totalLocations,
+        activeIntegrations,
+        
+        // System status
+        systemStatus,
+        lastUpdated: new Date().toISOString(),
+        
+        // Metadata
+        organizationId,
+        queriedBy: userContext.email,
+        isSuperAdmin: userContext.isSuperAdmin
       }
 
       return createSuccessResponse(stats)
