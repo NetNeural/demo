@@ -286,6 +286,12 @@ serve(async (req: Request) => {
         return createAuthErrorResponse('Not authorized to create integrations for this organization', 403)
       }
 
+      // Extract credentials from settings if they're there (frontend sends them in settings)
+      // This handles both old format (api_key/project_id as separate fields) and new format (in settings)
+      const finalApiKey = api_key || settings?.apiKey || settings?.api_key
+      const finalProjectId = project_id || settings?.projectId || settings?.project_id
+      const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
+
       // Create integration - RLS will enforce permissions
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newIntegration, error } = await supabase
@@ -295,9 +301,9 @@ serve(async (req: Request) => {
           integration_type,
           name,
           settings: settings || {},
-          api_key_encrypted: api_key, // TODO: Encrypt this properly
-          project_id,
-          base_url,
+          api_key_encrypted: finalApiKey, // TODO: Encrypt this properly
+          project_id: finalProjectId,
+          base_url: finalBaseUrl,
           status: 'active'
         } as any)
         .select()
@@ -343,9 +349,16 @@ serve(async (req: Request) => {
       
       if (name !== undefined) updates.name = name
       if (settings !== undefined) updates.settings = settings
-      if (api_key !== undefined) updates.api_key_encrypted = api_key // TODO: Encrypt properly
-      if (project_id !== undefined) updates.project_id = project_id
-      if (base_url !== undefined) updates.base_url = base_url
+      
+      // Extract credentials from settings if they're there (frontend sends them in settings)
+      const finalApiKey = api_key || settings?.apiKey || settings?.api_key
+      const finalProjectId = project_id || settings?.projectId || settings?.project_id
+      const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
+      
+      if (finalApiKey !== undefined) updates.api_key_encrypted = finalApiKey // TODO: Encrypt properly
+      if (finalProjectId !== undefined) updates.project_id = finalProjectId
+      if (finalBaseUrl !== undefined) updates.base_url = finalBaseUrl
+      
       if (status !== undefined) {
         const validStatuses = ['active', 'inactive', 'error']
         if (!validStatuses.includes(status)) {
@@ -426,42 +439,70 @@ serve(async (req: Request) => {
       // Type the integration result
       const typedIntegration = integration as DbIntegration
 
+      // Merge credentials from both database columns and settings object
+      // This handles both old format (separate columns) and new format (in settings)
+      const mergedSettings: IntegrationSettings = {
+        ...(typedIntegration.settings || {}),
+        // Override with database columns if they exist (preferred source of truth)
+        ...(typedIntegration.project_id && { projectId: typedIntegration.project_id }),
+      }
+
+      // Get api_key from database if available
+      // The database query should have returned api_key_encrypted, but it's not in our select
+      // Let's fetch the full row including api_key_encrypted
+      const { data: fullIntegration, error: fullFetchError } = await supabase
+        .from('device_integrations')
+        .select('api_key_encrypted, project_id')
+        .eq('id', integrationId)
+        .single()
+
+      if (!fullFetchError && fullIntegration) {
+        // Add credentials from database columns to merged settings
+        const fullIntegrationData = fullIntegration as { api_key_encrypted?: string; project_id?: string }
+        if (fullIntegrationData.api_key_encrypted) {
+          mergedSettings.apiKey = fullIntegrationData.api_key_encrypted
+        }
+        if (fullIntegrationData.project_id) {
+          mergedSettings.projectId = fullIntegrationData.project_id
+        }
+      }
+
       // Test based on integration type
       let testResult = { success: true, message: '', details: {} }
 
       try {
         switch (typedIntegration.integration_type) {
           case 'golioth':
-            // Test Golioth API connection
-            testResult = await testGoliothIntegration(typedIntegration.settings || {})
+            // Test Golioth API connection with merged settings
+            testResult = await testGoliothIntegration(mergedSettings)
             break
           
           case 'aws_iot':
-            testResult = await testAwsIotIntegration(typedIntegration.settings || {})
+            testResult = await testAwsIotIntegration(mergedSettings)
             break
           
           case 'azure_iot':
-            testResult = await testAzureIotIntegration(typedIntegration.settings || {})
+            testResult = await testAzureIotIntegration(mergedSettings)
             break
           
           case 'google_iot':
-            testResult = await testGoogleIotIntegration(typedIntegration.settings || {})
+            testResult = await testGoogleIotIntegration(mergedSettings)
             break
           
           case 'email':
-            testResult = await testEmailIntegration(typedIntegration.settings || {})
+            testResult = await testEmailIntegration(mergedSettings)
             break
           
           case 'slack':
-            testResult = await testSlackIntegration(typedIntegration.settings || {})
+            testResult = await testSlackIntegration(mergedSettings)
             break
           
           case 'webhook':
-            testResult = await testWebhookIntegration(typedIntegration.settings || {})
+            testResult = await testWebhookIntegration(mergedSettings)
             break
           
           case 'mqtt':
-            testResult = await testMqttIntegration(typedIntegration.settings || {})
+            testResult = await testMqttIntegration(mergedSettings)
             break
           
           default:
