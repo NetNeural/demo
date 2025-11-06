@@ -53,6 +53,7 @@
     ".next",
     "out",
     "supabase/functions",
-    "supabase/functions/**/*"
+    "supabase/functions/**/*",
+    "scripts"
   ]
 }
