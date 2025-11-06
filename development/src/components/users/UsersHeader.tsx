@@ -7,7 +7,7 @@ import { CreateUserDialog } from '../organizations/CreateUserDialog'
 
 export function UsersHeader() {
   const [importOpen, setImportOpen] = useState(false)
-  const [inviteOpen, setInviteOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
 
   return (
     <>
@@ -20,8 +20,8 @@ export function UsersHeader() {
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             Import Users
           </Button>
-          <Button onClick={() => setInviteOpen(true)}>
-            Invite User
+          <Button onClick={() => setCreateOpen(true)}>
+            Create User
           </Button>
         </div>
       </div>
@@ -32,10 +32,10 @@ export function UsersHeader() {
         onOpenChange={setImportOpen}
       />
 
-      {/* Invite User Dialog */}
+      {/* Create User Dialog */}
       <CreateUserDialog
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         onUserCreated={() => {
           // Optionally refresh user list
         }}

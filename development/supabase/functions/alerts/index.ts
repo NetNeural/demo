@@ -97,6 +97,72 @@ serve(async (req) => {
       })
     }
 
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      // Handle alert acknowledgement/update
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const alertId = pathParts[pathParts.length - 2] // .../alerts/{id}/acknowledge
+      const action = pathParts[pathParts.length - 1] // acknowledge, resolve, etc.
+
+      if (!alertId) {
+        return createAuthErrorResponse('Alert ID is required', 400)
+      }
+
+      // Verify user has access to this alert's organization
+      const { data: alert, error: fetchError } = await supabase
+        .from('alerts')
+        .select('organization_id')
+        .eq('id', alertId)
+        .single()
+
+      if (fetchError || !alert) {
+        return createAuthErrorResponse('Alert not found', 404)
+      }
+
+      // Check if user has access to this organization
+      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
+        return createAuthErrorResponse('You do not have access to this alert', 403)
+      }
+
+      let updateData: any = {}
+
+      if (action === 'acknowledge') {
+        updateData = {
+          is_acknowledged: true,
+          acknowledged_by: userContext.userId,
+          acknowledged_at: new Date().toISOString()
+        }
+      } else if (action === 'resolve') {
+        updateData = {
+          is_resolved: true,
+          resolved_by: userContext.userId,
+          resolved_at: new Date().toISOString()
+        }
+      } else {
+        // Generic update from request body
+        const body = await req.json()
+        updateData = body
+      }
+
+      // Update the alert
+      const { data: updated, error: updateError } = await supabase
+        .from('alerts')
+        .update(updateData)
+        .eq('id', alertId)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Failed to update alert:', updateError)
+        return createAuthErrorResponse(`Failed to update alert: ${updateError.message}`, 500)
+      }
+
+      return createSuccessResponse({ 
+        alert: updated,
+        message: `Alert ${action || 'updated'} successfully`
+      })
+    }
+
     return createAuthErrorResponse('Method not allowed', 405)
     
   } catch (error) {

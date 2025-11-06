@@ -4,6 +4,7 @@ import {
   createAuthenticatedClient,
   corsHeaders 
 } from '../_shared/auth.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,8 +15,13 @@ serve(async (req) => {
     // Get authenticated user context
     const userContext = await getUserContext(req)
     
-    // Create authenticated Supabase client (respects RLS)
+    // Create authenticated Supabase client for checking existing users
     const supabaseClient = createAuthenticatedClient(req)
+    
+    // Create service_role client for bypassing RLS when creating users
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
     // Only admins, owners, and super admins can create users
     if (!['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
@@ -56,9 +62,6 @@ serve(async (req) => {
     }
 
     // Create user in auth.users using Supabase admin API
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
     if (!supabaseServiceKey) {
       throw new Error('Missing service role key')
     }
@@ -88,22 +91,39 @@ serve(async (req) => {
 
     const authUser = await authResponse.json()
 
-    // Create user in public.users table
-    const { data: newUser, error: userError } = await supabaseClient
+    // Create user in public.users table using admin client (bypasses RLS)
+    const { data: newUser, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
         id: authUser.id,
         email: email,
         full_name: fullName,
         role: role || 'user',
+        organization_id: userContext.organizationId, // Assign to admin's organization
       })
       .select()
       .single()
 
     if (userError) {
-      // If public user creation fails, we should clean up the auth user
-      // But for now, just throw the error
+      console.error('Failed to create user record:', userError)
       throw new Error(`Failed to create user record: ${userError.message}`)
+    }
+
+    // Create organization membership if user has an organization
+    if (userContext.organizationId) {
+      const { error: memberError } = await supabaseAdmin
+        .from('organization_members')
+        .insert({
+          organization_id: userContext.organizationId,
+          user_id: authUser.id,
+          role: 'member',
+          permissions: {},
+        })
+
+      if (memberError) {
+        console.error('Failed to create organization membership:', memberError)
+        // Don't fail the whole operation, just log the error
+      }
     }
 
     return new Response(

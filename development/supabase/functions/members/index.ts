@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { 
   getUserContext, 
-  createAuthenticatedClient,
   corsHeaders 
 } from '../_shared/auth.ts'
 
@@ -15,10 +14,8 @@ serve(async (req) => {
     // Get authenticated user context
     const userContext = await getUserContext(req)
     
-    // Create authenticated Supabase client (respects RLS)
-    const supabaseClient = createAuthenticatedClient(req)
-    
-    // Create service role client for admin operations (bypasses RLS)
+    // Create service role client for all operations (bypasses RLS)
+    // Authorization is handled in Edge Function code
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
@@ -32,14 +29,19 @@ serve(async (req) => {
     }
 
     // Verify user has access to this organization
-    const { data: membership, error: membershipError } = await supabaseClient
+    // Use service_role client to bypass RLS (permissions checked in Edge Function logic)
+    const { data: membership, error: membershipError } = await supabaseAdmin
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)
       .eq('user_id', userContext.userId)
       .single()
 
-    if (membershipError || !membership) {
+    if (membershipError) {
+      throw new Error(`Failed to verify membership: ${membershipError.message}`)
+    }
+
+    if (!membership) {
       throw new Error('User does not have access to this organization')
     }
 

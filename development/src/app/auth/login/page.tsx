@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,21 +9,57 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
   // Pre-fill credentials only in development mode for convenience
   const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : '')
   const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'password123' : '')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // Prevent redirect loops
+  const hasCheckedAuth = useRef(false)
+
+  // Check for error messages in URL parameters
+  useEffect(() => {
+    const errorParam = searchParams?.get('error')
+    if (errorParam) {
+      // Decode and display the error message
+      setError(decodeURIComponent(errorParam))
+      
+      // Clear the URL parameter to prevent showing error after refresh
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [searchParams])
 
   // Check if user is already authenticated and redirect
   useEffect(() => {
+    // Only check once to prevent loops
+    if (hasCheckedAuth.current) return
+    
     const checkAuth = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session) {
-        router.replace('/dashboard')
+      try {
+        const supabase = createClient()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        // If there's a session error or no session, just stay on login page
+        if (sessionError || !session) {
+          hasCheckedAuth.current = true
+          return
+        }
+        
+        // Only redirect if we have a valid session
+        if (session) {
+          hasCheckedAuth.current = true
+          router.replace('/dashboard')
+        }
+      } catch (err) {
+        console.error('Auth check error:', err)
+        // Mark as checked to prevent loops
+        hasCheckedAuth.current = true
+        // Don't show error to user, just stay on login page
       }
     }
     
@@ -73,6 +109,9 @@ export default function LoginPage() {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (session) {
+        // Mark that we've successfully authenticated
+        hasCheckedAuth.current = true
+        
         // Use Next.js router for client-side navigation
         router.push('/dashboard')
         // Small delay then force refresh to ensure all auth state is synced
@@ -122,7 +161,26 @@ export default function LoginPage() {
 
               {error && (
                 <Alert variant="destructive" className="mb-6">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    <div className="flex items-start justify-between">
+                      <span>{error}</span>
+                      {error.includes('unexpected error') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setError('')
+                            setEmail('')
+                            setPassword('')
+                            hasCheckedAuth.current = false
+                          }}
+                          className="ml-2 h-auto py-0 px-2 text-xs"
+                        >
+                          Reset
+                        </Button>
+                      )}
+                    </div>
+                  </AlertDescription>
                 </Alert>
               )}
 

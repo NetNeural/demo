@@ -3,15 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import {
   Table,
@@ -23,10 +20,10 @@ import {
 } from '@/components/ui/table';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
-import { UserPlus, Mail, Trash2, Shield, UserCog } from 'lucide-react';
+import { UserPlus, Trash2, Shield } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CreateUserDialog } from '@/components/organizations/CreateUserDialog';
+import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
 import { handleApiError } from '@/lib/sentry-utils';
 
 interface OrganizationMember {
@@ -49,10 +46,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addEmail, setAddEmail] = useState('');
-  const [addRole, setAddRole] = useState<OrganizationRole>('member');
-  const [isAdding, setIsAdding] = useState(false);
-  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     if (!organizationId) {
@@ -125,77 +119,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
-
-  const handleAddMember = async () => {
-    if (!addEmail || !addRole) {
-      toast({
-        title: 'Error',
-        description: 'Please enter an email and select a role',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsAdding(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email: addEmail, role: addRole })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add member');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Member added successfully',
-      });
-      
-      setAddEmail('');
-      setAddRole('member');
-      await fetchMembers();
-    } catch (error) {
-      console.error('Error adding member:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add member';
-      const isUserNotFound = errorMessage.toLowerCase().includes('not found') || 
-                             errorMessage.toLowerCase().includes('does not exist');
-      
-      if (isUserNotFound) {
-        toast({
-          title: 'User Not Found',
-          description: `No account exists for ${addEmail}. Click "Create User" button below to create an account first.`,
-          variant: 'destructive',
-        });
-        // Automatically show the create user dialog
-        setTimeout(() => setShowCreateUserDialog(true), 1500);
-      } else {
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      setIsAdding(false);
-    }
-  };
 
   const handleRemoveMember = async (memberId: string) => {
     if (!confirm('Are you sure you want to remove this member from the organization?')) {
@@ -285,15 +208,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     }
   };
 
-  const handleUserCreated = (email: string) => {
-    // Auto-fill the email field with the newly created user's email
-    setAddEmail(email);
-    toast({
-      title: 'User Created',
-      description: `Now you can add ${email} to this organization`,
-    });
-  };
-
   if (!canManageMembers) {
     return (
       <Card>
@@ -325,80 +239,23 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Add New Member */}
-      {canManageMembers && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="w-5 h-5" />
-                  Add Member
-                </CardTitle>
-                <CardDescription>
-                  Add an existing user to this organization by their email.
-                </CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowCreateUserDialog(true)}
-              >
-                <UserCog className="w-4 h-4 mr-2" />
-                Create New User
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="add-email">Email Address</Label>
-                <div className="flex gap-2">
-                  <Mail className="w-4 h-4 mt-3 text-muted-foreground" />
-                  <Input
-                    id="add-email"
-                    type="email"
-                    placeholder="user@example.com"
-                    value={addEmail}
-                    onChange={(e) => setAddEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="add-role">Role</Label>
-                <Select value={addRole} onValueChange={(val) => setAddRole(val as OrganizationRole)}>
-                  <SelectTrigger id="add-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member - Manage devices & alerts</SelectItem>
-                    <SelectItem value="admin">Admin - Full management access</SelectItem>
-                    {userRole === 'owner' && (
-                      <SelectItem value="owner">Owner - Complete control</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>&nbsp;</Label>
-                <Button onClick={handleAddMember} className="w-full" disabled={isAdding}>
-                  {isAdding ? 'Adding...' : 'Add Member'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Members List */}
       <Card>
         <CardHeader>
-          <CardTitle>Organization Members ({members.length})</CardTitle>
-          <CardDescription>
-            Users who have access to this organization
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Organization Members ({members.length})</CardTitle>
+              <CardDescription>
+                Users who have access to this organization
+              </CardDescription>
+            </div>
+            {canManageMembers && (
+              <Button onClick={() => setShowAddMemberDialog(true)}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Member
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
@@ -469,11 +326,13 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         </CardContent>
       </Card>
 
-      {/* Create User Dialog */}
-      <CreateUserDialog 
-        open={showCreateUserDialog}
-        onOpenChange={setShowCreateUserDialog}
-        onUserCreated={handleUserCreated}
+      {/* Add Member Dialog */}
+      <AddMemberDialog
+        organizationId={organizationId}
+        open={showAddMemberDialog}
+        onOpenChange={setShowAddMemberDialog}
+        onMemberAdded={fetchMembers}
+        userRole={userRole || 'member'}
       />
     </div>
   );

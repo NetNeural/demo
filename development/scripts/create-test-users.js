@@ -121,6 +121,32 @@ async function createTestUsers() {
       } else {
         console.log(`   ✅ Created users table entry`)
       }
+
+      // Create organization membership for non-super-admin users
+      if (userData.role !== 'super_admin') {
+        const memberRole = userData.role === 'org_owner' ? 'owner' : 
+                          userData.role === 'org_admin' ? 'admin' : 'member'
+        
+        const { error: memberError } = await supabase
+          .from('organization_members')
+          .insert({
+            organization_id: '00000000-0000-0000-0000-000000000001',
+            user_id: userData.id,
+            role: memberRole,
+            permissions: {
+              canManageMembers: ['owner', 'admin'].includes(memberRole),
+              canManageDevices: ['owner', 'admin'].includes(memberRole),
+              canManageAlerts: true
+            }
+          })
+
+        if (memberError) {
+          console.error(`   ⚠️  Failed to create organization membership:`, memberError.message)
+        } else {
+          console.log(`   ✅ Created organization membership (role: ${memberRole})`)
+        }
+      }
+
       console.log('')
 
     } catch (err) {

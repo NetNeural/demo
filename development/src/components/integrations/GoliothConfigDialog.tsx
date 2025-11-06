@@ -112,19 +112,29 @@ export function GoliothConfigDialog({
   }, [integrationId, open, loadConfig])
 
   const testConnection = async () => {
+    // Validate required fields
+    if (!config.api_key || !config.project_id) {
+      toast.error('Please fill in API Key and Project ID before testing')
+      return
+    }
+
+    // Must have saved integration first
+    if (!integrationId) {
+      toast.error('Please save the configuration first before testing the connection')
+      return
+    }
+
     setTesting(true)
     setTestResult(null)
     
     try {
-      if (integrationId) {
-        const result = await goliothSyncService.testConnection(integrationId, organizationId)
-        setTestResult(result)
-        
-        if (result) {
-          toast.success('Connection test successful')
-        } else {
-          toast.error('Connection test failed')
-        }
+      const result = await goliothSyncService.testConnection(integrationId, organizationId)
+      setTestResult(result)
+      
+      if (result) {
+        toast.success('Connection test successful')
+      } else {
+        toast.error('Connection test failed')
       }
     } catch (error) {
       setTestResult(false)
@@ -137,6 +147,22 @@ export function GoliothConfigDialog({
   }
 
   const saveConfig = async () => {
+    // Validate required fields
+    if (!config.name.trim()) {
+      toast.error('Please enter an integration name')
+      return
+    }
+    
+    if (!config.api_key.trim()) {
+      toast.error('Please enter an API Key')
+      return
+    }
+    
+    if (!config.project_id.trim()) {
+      toast.error('Please enter a Project ID')
+      return
+    }
+
     setLoading(true)
     
     try {
@@ -157,29 +183,52 @@ export function GoliothConfigDialog({
         status: config.status,
       }
 
+      console.log('[GoliothConfigDialog] Saving config:', { integrationId, organizationId, payload })
+
       if (integrationId) {
         // Update existing
-        const { error } = await supabase
+        console.log('[GoliothConfigDialog] Performing UPDATE with ID:', integrationId)
+        
+        const { data, error } = await supabase
           .from('device_integrations')
           .update(payload)
           .eq('id', integrationId)
+          .select()
 
-        if (error) throw error
+        console.log('[GoliothConfigDialog] Update result:', { data, error, rowCount: data?.length })
+
+        if (error) {
+          console.error('[GoliothConfigDialog] Update error:', error)
+          throw new Error(error.message || 'Failed to update integration')
+        }
+
+        // Check if any rows were updated
+        if (!data || data.length === 0) {
+          console.warn('[GoliothConfigDialog] No rows updated - integration might not exist or RLS blocking')
+          // Still treat as success since no error occurred
+        }
       } else {
         // Create new
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('device_integrations')
           .insert(payload)
+          .select()
 
-        if (error) throw error
+        console.log('[GoliothConfigDialog] Insert result:', { data, error })
+
+        if (error) {
+          console.error('[GoliothConfigDialog] Insert error:', error)
+          throw new Error(error.message || 'Failed to create integration')
+        }
       }
 
       toast.success('Configuration saved successfully')
       onSaved?.()
       onOpenChange(false)
     } catch (error: any) {
-      toast.error('Failed to save configuration')
-      console.error(error)
+      const errorMessage = error?.message || 'Failed to save configuration'
+      toast.error(errorMessage)
+      console.error('[GoliothConfigDialog] Save error:', error)
     } finally {
       setLoading(false)
     }
@@ -212,6 +261,7 @@ export function GoliothConfigDialog({
                 value={config.name}
                 onChange={(e) => setConfig({ ...config, name: e.target.value })}
                 placeholder="e.g., Golioth Production"
+                className={!config.name.trim() ? 'border-red-300' : ''}
               />
               <p className="text-sm text-muted-foreground">
                 A friendly name to identify this integration
@@ -226,6 +276,7 @@ export function GoliothConfigDialog({
                 value={config.api_key}
                 onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
                 placeholder="Enter your Golioth API key"
+                className={!config.api_key.trim() ? 'border-red-300' : ''}
               />
             </div>
 
@@ -236,6 +287,7 @@ export function GoliothConfigDialog({
                 value={config.project_id}
                 onChange={(e) => setConfig({ ...config, project_id: e.target.value })}
                 placeholder="your-project-id"
+                className={!config.project_id.trim() ? 'border-red-300' : ''}
               />
             </div>
 
@@ -252,19 +304,26 @@ export function GoliothConfigDialog({
             <IntegrationStatusToggle
               status={config.status}
               onStatusChange={(status) => setConfig({ ...config, status })}
-              disabled={!config.api_key || !config.project_id}
-              disabledMessage="Configure API key and Project ID to enable"
+              disabled={!config.name.trim() || !config.api_key.trim() || !config.project_id.trim()}
+              disabledMessage="Fill in required fields (Name, API Key, Project ID) to enable"
             />
 
             <div className="flex items-center justify-between pt-4">
-              <Button
-                variant="outline"
-                onClick={testConnection}
-                disabled={testing || !config.api_key || !config.project_id}
-              >
-                {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Test Connection
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="outline"
+                  onClick={testConnection}
+                  disabled={testing || !integrationId || !config.api_key || !config.project_id}
+                >
+                  {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Test Connection
+                </Button>
+                {!integrationId && (
+                  <p className="text-xs text-muted-foreground">
+                    Save configuration first to enable testing
+                  </p>
+                )}
+              </div>
 
               {testResult !== null && (
                 <div className="flex items-center gap-2">
@@ -445,7 +504,10 @@ export function GoliothConfigDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={saveConfig} disabled={loading}>
+          <Button 
+            onClick={saveConfig} 
+            disabled={loading || !config.name.trim() || !config.api_key.trim() || !config.project_id.trim()}
+          >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Configuration
           </Button>

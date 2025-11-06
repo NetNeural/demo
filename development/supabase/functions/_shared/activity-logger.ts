@@ -119,7 +119,7 @@ export async function logActivityComplete(
  * Log a complete activity (start and finish in one call)
  * Useful for simple activities that complete synchronously
  */
-export async function logActivityComplete(
+export async function logActivity(
   supabase: ReturnType<typeof createClient>,
   params: ActivityLogParams & ActivityLogUpdate
 ): Promise<void> {

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { UserProfile, getCurrentUser } from '@/lib/auth'
 import { useRouter, usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 interface UserContextType {
   user: UserProfile | null
@@ -24,25 +25,66 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const loadUser = async () => {
     try {
+      // First check if we have a valid session
+      const supabase = createClient()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      // If no session or session error, clear session and redirect to login
+      if (!session || sessionError) {
+        // Clear any stale session data
+        await supabase.auth.signOut()
+        
+        const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route))
+        if (!isPublicRoute && !hasRedirected.current) {
+          hasRedirected.current = true
+          router.push('/auth/login?error=session_expired')
+        }
+        setUser(null)
+        return
+      }
+      
+      // We have a valid session, try to get user profile
       const userProfile = await getCurrentUser()
+      
+      // If getCurrentUser fails but we have a session, the API might be down
+      // or the user doesn't have proper permissions/profile
+      if (!userProfile) {
+        console.error('Failed to load user profile despite valid session')
+        
+        // Clear the session since we can't get a valid user profile
+        await supabase.auth.signOut()
+        
+        const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route))
+        if (!isPublicRoute && !hasRedirected.current) {
+          hasRedirected.current = true
+          router.push('/auth/login?error=profile_load_failed')
+        }
+        setUser(null)
+        return
+      }
+      
+      // Success! We have both a valid session and user profile
       setUser(userProfile)
+      hasRedirected.current = false
       
-      // Check if current route is public
-      const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route))
-      
-      // Only redirect once per session to prevent loops
-      if (!userProfile && !isPublicRoute && !hasRedirected.current) {
-        hasRedirected.current = true
-        router.push('/auth/login')
-      }
-      
-      // Reset redirect flag if user is authenticated (for logout scenarios)
-      if (userProfile) {
-        hasRedirected.current = false
-      }
     } catch (error) {
       console.error('Failed to load user:', error)
+      
+      // Clear session on any error
+      try {
+        const supabase = createClient()
+        await supabase.auth.signOut()
+      } catch (signOutError) {
+        console.error('Failed to sign out:', signOutError)
+      }
+      
       setUser(null)
+      
+      const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route))
+      if (!isPublicRoute && !hasRedirected.current) {
+        hasRedirected.current = true
+        router.push('/auth/login?error=auth_error')
+      }
     } finally {
       setLoading(false)
     }
