@@ -98,7 +98,13 @@ export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabP
               Recent Alerts ({alerts.length})
             </CardTitle>
             <CardDescription>
-              Recent alerts from devices in this organization
+              Organization-specific alerts for quick reference.{' '}
+              <button
+                onClick={() => router.push('/dashboard/alerts')}
+                className="text-primary hover:underline font-medium"
+              >
+                View all alerts →
+              </button>
             </CardDescription>
           </div>
           <Button onClick={() => router.push(`/dashboard/alerts?organization=${organizationId}`)}>

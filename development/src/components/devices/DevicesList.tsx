@@ -180,6 +180,48 @@ export function DevicesList() {
     setEditOpen(true)
   }
 
+  const handleDeleteDevice = async (device: Device) => {
+    if (!confirm(`Are you sure you want to delete "${device.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        toast.error('Not authenticated. Please log in.')
+        return
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${device.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id: currentOrganization?.id
+          })
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete device')
+      }
+
+      toast.success('Device deleted successfully')
+      setDetailsOpen(false)
+      fetchDevices()
+    } catch (err) {
+      console.error('Error deleting device:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to delete device')
+    }
+  }
+
   const getStatusIcon = (status: Device['status']) => {
     switch (status) {
       case 'online': return '🟢'
@@ -413,18 +455,26 @@ export function DevicesList() {
               <div className="border-t border-border pt-4"></div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDetailsOpen(false)}>
-                  Close
-                </Button>
+              <div className="flex justify-between gap-2">
                 <Button 
-                  onClick={() => {
-                    openEditDialog(selectedDevice)
-                    setDetailsOpen(false)
-                  }}
+                  variant="destructive"
+                  onClick={() => handleDeleteDevice(selectedDevice)}
                 >
-                  Edit Device
+                  Delete Device
                 </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setDetailsOpen(false)}>
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      openEditDialog(selectedDevice)
+                      setDetailsOpen(false)
+                    }}
+                  >
+                    Edit Device
+                  </Button>
+                </div>
               </div>
             </div>
           )}

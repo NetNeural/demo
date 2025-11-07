@@ -260,7 +260,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     } finally {
       setIsLoadingStats(false);
     }
-  }, [currentOrgId, userOrganizations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrgId]);  // Only depend on currentOrgId to prevent infinite loop from userOrganizations updates
 
   // Load organizations on mount or user change
   useEffect(() => {

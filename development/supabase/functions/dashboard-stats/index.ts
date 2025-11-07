@@ -32,10 +32,11 @@ serve(async (req) => {
         return createAuthErrorResponse('User has no organization access', 403)
       }
 
-      // Build device query
+      // Build device query - exclude soft-deleted devices
       let deviceQuery = supabase
         .from('devices')
         .select('id, status, last_seen')
+        .is('deleted_at', null)
       
       if (organizationId) {
         deviceQuery = deviceQuery.eq('organization_id', organizationId)

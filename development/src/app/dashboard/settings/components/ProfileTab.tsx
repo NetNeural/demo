@@ -36,6 +36,11 @@ export function ProfileTab({
   const [department, setDepartment] = useState('');
   const [notifications, setNotifications] = useState(initialNotifications);
   const [marketing, setMarketing] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState(initialEmail);
+  const [notificationPhone, setNotificationPhone] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('all');
+  const [quietHoursStart, setQuietHoursStart] = useState('22:00');
+  const [quietHoursEnd, setQuietHoursEnd] = useState('08:00');
   const [isLoading, setIsLoading] = useState(false);
 
   // Load profile from Supabase on mount
@@ -258,6 +263,92 @@ export function ProfileTab({
               checked={marketing}
               onCheckedChange={setMarketing}
             />
+          </div>
+
+          {/* Email Configuration */}
+          <div className="space-y-2 py-3 border-b">
+            <Label htmlFor="notification-email" className="text-base font-medium">
+              Notification Email
+            </Label>
+            <Input
+              id="notification-email"
+              type="email"
+              placeholder="notifications@example.com"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Email address for receiving system notifications
+            </p>
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-2 py-3 border-b">
+            <Label htmlFor="notification-phone" className="text-base font-medium">
+              Phone Number (SMS Alerts)
+            </Label>
+            <Input
+              id="notification-phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={notificationPhone}
+              onChange={(e) => setNotificationPhone(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Phone number for critical alert SMS notifications
+            </p>
+          </div>
+
+          {/* Alert Severity Filter */}
+          <div className="space-y-2 py-3 border-b">
+            <Label htmlFor="alert-severity" className="text-base font-medium">
+              Alert Severity Level
+            </Label>
+            <Select value={alertSeverity} onValueChange={setAlertSeverity}>
+              <SelectTrigger id="alert-severity">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Alerts</SelectItem>
+                <SelectItem value="high-critical">High & Critical Only</SelectItem>
+                <SelectItem value="critical">Critical Only</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Minimum severity level for notifications
+            </p>
+          </div>
+
+          {/* Quiet Hours */}
+          <div className="space-y-2 py-3">
+            <Label className="text-base font-medium">Quiet Hours</Label>
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <Label htmlFor="quiet-start" className="text-xs text-muted-foreground">
+                  From
+                </Label>
+                <Input
+                  id="quiet-start"
+                  type="time"
+                  value={quietHoursStart}
+                  onChange={(e) => setQuietHoursStart(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="quiet-end" className="text-xs text-muted-foreground">
+                  To
+                </Label>
+                <Input
+                  id="quiet-end"
+                  type="time"
+                  value={quietHoursEnd}
+                  onChange={(e) => setQuietHoursEnd(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              No non-critical notifications during these hours
+            </p>
           </div>
         </div>
       </SettingsSection>

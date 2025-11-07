@@ -33,6 +33,7 @@ serve(async (req) => {
       }
 
       // Build query - RLS will enforce access automatically
+      // Exclude soft-deleted devices
       let query = supabase
         .from('devices')
         .select(`
@@ -41,6 +42,7 @@ serve(async (req) => {
           departments!department_id(name),
           device_integrations!integration_id(name)
         `)
+        .is('deleted_at', null)
       
       // Only filter by org if specified (super admins can query all orgs)
       if (organizationId) {
