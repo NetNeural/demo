@@ -46,8 +46,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE OR REPLACE FUNCTION generate_webhook_secret()
 RETURNS TEXT AS $$
 BEGIN
-  -- Generate a secure random secret (32 bytes hex = 64 characters)
-  RETURN encode(gen_random_bytes(32), 'hex');
+  -- Use gen_random_uuid() which is always available in Postgres
+  RETURN replace(gen_random_uuid()::TEXT, '-', '') || replace(gen_random_uuid()::TEXT, '-', '');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
