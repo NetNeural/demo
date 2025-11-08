@@ -116,6 +116,7 @@ interface Integration {
   name: string;
   status: 'active' | 'pending' | 'inactive' | 'not-configured';
   config: Record<string, unknown>;
+  organization_id?: string;
 }
 
 interface Organization {
@@ -194,6 +195,7 @@ export default function IntegrationsTab({
         name: string;
         status: 'active' | 'inactive' | 'not-configured';
         settings?: Record<string, unknown>;
+        organization_id?: string;
       }
 
       // Transform API response to match Integration interface
@@ -202,7 +204,8 @@ export default function IntegrationsTab({
         type: integration.type,
         name: integration.name,
         status: integration.status,
-        config: integration.settings || {}
+        config: integration.settings || {},
+        organization_id: integration.organization_id || selectedOrganization
       }));
 
       setIntegrations(transformedIntegrations);
@@ -228,7 +231,8 @@ export default function IntegrationsTab({
           type: integration.integration_type,
           name: integration.name,
           status: (integration.status as Integration['status']) || 'not-configured',
-          config: (integration.settings as Record<string, unknown>) || {}
+          config: (integration.settings as Record<string, unknown>) || {},
+          organization_id: integration.organization_id
         }));
 
         setIntegrations(fallbackIntegrations);
@@ -265,7 +269,6 @@ export default function IntegrationsTab({
         description: `Testing connection to ${integration.name}...`,
       });
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabase = createClient();
       
       let session;
@@ -292,19 +295,38 @@ export default function IntegrationsTab({
         return;
       }
 
-      // Call test endpoint
-      const testUrl = `${supabaseUrl}/functions/v1/integrations/test?id=${integration.id}`;
-      console.log('[TEST] Calling:', testUrl);
+      // Call device-sync with operation='test'
+      console.log('[TEST] Calling device-sync for integration:', integration.id);
       
       let response;
       try {
-        response = await fetch(testUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
+        const { data, error } = await supabase.functions.invoke('device-sync', {
+          body: {
+            integrationId: integration.id,
+            organizationId: integration.organization_id,
+            operation: 'test',
+            deviceIds: []
           }
         });
+
+        if (error) {
+          console.error('[TEST] Supabase function error:', error);
+          toast({
+            title: '❌ Test Failed',
+            description: error.message || 'Could not test integration',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Simulate response for consistent handling below
+        response = {
+          ok: data?.success !== false,
+          status: data?.success !== false ? 200 : 400,
+          statusText: data?.success !== false ? 'OK' : 'Bad Request',
+          json: async () => data
+        } as Response;
+        
       } catch (fetchError) {
         console.error('[TEST] Fetch error:', fetchError);
         toast({

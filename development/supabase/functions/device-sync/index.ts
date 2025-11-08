@@ -1,10 +1,46 @@
+// ============================================================================
+// DEVICE SYNC EDGE FUNCTION - UNIFIED
+// ============================================================================
+// Handles bidirectional sync between NetNeural and all IoT platforms
+// Uses the unified BaseIntegrationClient pattern for consistency
+//
+// Supported Platforms:
+// - Golioth
+// - AWS IoT Core
+// - Azure IoT Hub
+// - Google Cloud IoT Core
+// - MQTT Brokers
+//
+// Operations:
+// - test: Verify connection to integration
+// - import: Import devices from external platform to NetNeural
+// - export: Export devices from NetNeural to external platform
+// - bidirectional: Two-way sync (import + export)
+//
+// Version: 2.0.0 (Unified Pattern)
+// Date: 2025-11-07
+// ============================================================================
+// deno-lint-ignore-file no-explicit-any
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { logActivityStart, logActivityComplete } from '../_shared/activity-logger.ts'
+import { GoliothClient } from '../_shared/golioth-client.ts'
+import { AwsIotClient } from '../_shared/aws-iot-client.ts'
+import { AzureIotClient } from '../_shared/azure-iot-client.ts'
+import { GoogleIotClient } from '../_shared/google-iot-client.ts'
+import { MqttClient } from '../_shared/mqtt-client.ts'
+import type { BaseIntegrationClient, SyncResult, TestResult } from '../_shared/base-integration-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface SyncRequest {
+  integrationId: string
+  organizationId: string
+  operation: 'test' | 'import' | 'export' | 'bidirectional'
+  deviceIds?: string[]
 }
 
 serve(async (req: Request) => {
@@ -24,7 +60,7 @@ serve(async (req: Request) => {
       )
     }
 
-    const { integrationId, organizationId, operation, deviceIds } = await req.json()
+    const { integrationId, organizationId, operation, deviceIds }: SyncRequest = await req.json()
 
     if (!integrationId || !organizationId) {
       return new Response(
@@ -33,11 +69,21 @@ serve(async (req: Request) => {
       )
     }
 
+    if (!['test', 'import', 'export', 'bidirectional'].includes(operation)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid operation. Must be: test, import, export, or bidirectional' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // Fetch integration from database
     const { data: integration, error: integrationError } = await supabase
       .from('device_integrations')
       .select('*')
       .eq('id', integrationId)
+      .eq('organization_id', organizationId)
       .single()
 
     if (integrationError || !integration) {
@@ -48,234 +94,185 @@ serve(async (req: Request) => {
       )
     }
 
-    // Test connection by validating Golioth API credentials
-    if (operation === 'test' || !deviceIds || deviceIds.length === 0) {
-      console.log('[device-sync] Testing Golioth API connection...')
-      const testStartTime = Date.now()
-      
-      // Build the actual URL that was tested
-      let baseUrl = (integration.base_url || 'https://api.golioth.io').replace(/\/$/, '')
-      if (!baseUrl.includes('/v1')) {
-        baseUrl = baseUrl + '/v1'
-      }
-      const endpoint = `${baseUrl}/projects/${integration.project_id}`
-      
-      // Start activity logging
-      const logId = await logActivityStart(supabase, {
-        organizationId,
-        integrationId,
-        direction: 'outgoing',
-        activityType: 'test_connection',
-        method: 'GET',
-        endpoint,
-        metadata: {
-          integration_name: integration.name,
-          project_id: integration.project_id,
-        }
-      })
-      
-      const testResult = await testGoliothConnection(integration)
-      const testDuration = Date.now() - testStartTime
-      
-      if (!testResult.success) {
-        console.error('[device-sync] Golioth API test failed:', testResult.error)
-        
-        // Log failure
-        if (logId) {
-          await logActivityComplete(supabase, logId, {
-            status: 'failed',
-            responseStatus: testResult.statusCode,
-            responseTimeMs: testDuration,
-            errorMessage: testResult.error,
-            responseBody: testResult.apiResponse,
-          })
-        }
-        
-        // Return 200 with success:false so Supabase client can read the error details
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: testResult.error,
-            message: 'Failed to connect to Golioth API' 
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      console.log('[device-sync] Golioth API test successful')
-      
-      // Log success
-      if (logId) {
-        await logActivityComplete(supabase, logId, {
-          status: 'success',
-          responseStatus: testResult.statusCode,
-          responseTimeMs: testDuration,
-          responseBody: testResult.apiResponse,
-        })
-      }
-      
+    // Create the appropriate client based on integration type
+    const client = createIntegrationClient(integration, supabase, organizationId, integrationId)
+    
+    if (!client) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Successfully connected to Golioth API',
-          projectId: testResult.projectId
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `Unsupported integration type: ${integration.integration_type}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    let result
+    // Execute the requested operation
+    let result: TestResult | SyncResult
+
     switch (operation) {
+      case 'test':
+        console.log(`[device-sync] Testing ${integration.integration_type} connection...`)
+        result = await client.test()
+        break
+
       case 'import':
-        result = await performImport(supabase, integration, deviceIds)
+        console.log(`[device-sync] Importing from ${integration.integration_type}...`)
+        result = await client.import()
         break
+
       case 'export':
-        result = await performExport(supabase, integration, deviceIds)
+        console.log(`[device-sync] Exporting to ${integration.integration_type}...`)
+        // Fetch devices from NetNeural to export
+        const devicesToExport = await getDevicesForExport(supabase, organizationId, deviceIds)
+        result = await client.export(devicesToExport)
         break
+
       case 'bidirectional':
-        result = await performBidirectional(supabase, integration, deviceIds)
+        console.log(`[device-sync] Bidirectional sync with ${integration.integration_type}...`)
+        // Fetch devices from NetNeural for bidirectional sync
+        const devicesForSync = await getDevicesForExport(supabase, organizationId, deviceIds)
+        result = await client.bidirectionalSync(devicesForSync)
         break
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid operation' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
     }
 
     console.log(`[device-sync] ${operation} completed:`, result)
-    return new Response(
-      JSON.stringify({ success: true, result }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    
+    // Format response based on operation type
+    if (operation === 'test') {
+      const testResult = result as TestResult
+      return new Response(
+        JSON.stringify(testResult),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } else {
+      const syncResult = result as SyncResult
+      return new Response(
+        JSON.stringify({ success: true, ...syncResult }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
   } catch (error) {
     console.error('[device-sync] Error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, success: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
 
-async function performImport(supabase: any, integration: any, deviceIds: string[]) {
-  console.log('[device-sync] Performing import for', deviceIds.length, 'devices')
-  return { imported: deviceIds.length, message: 'Import functionality coming soon' }
-}
+/**
+ * Create the appropriate integration client based on the integration type
+ */
+function createIntegrationClient(
+  integration: any,
+  supabase: ReturnType<typeof createClient>,
+  organizationId: string,
+  integrationId: string
+): BaseIntegrationClient | null {
+  const settings = integration.config || {}
+  
+  switch (integration.integration_type) {
+    case 'golioth':
+      return new GoliothClient({
+        type: 'golioth',
+        settings: {
+          apiKey: integration.api_key_encrypted || settings.apiKey,
+          projectId: integration.project_id || settings.projectId,
+          baseUrl: integration.base_url || settings.baseUrl,
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
 
-async function performExport(supabase: any, integration: any, deviceIds: string[]) {
-  console.log('[device-sync] Performing export for', deviceIds.length, 'devices')
-  return { exported: deviceIds.length, message: 'Export functionality coming soon' }
-}
+    case 'aws_iot':
+    case 'aws-iot':
+      return new AwsIotClient({
+        type: 'aws-iot',
+        settings: {
+          region: settings.region,
+          accessKeyId: settings.accessKeyId || settings.access_key_id,
+          secretAccessKey: settings.secretAccessKey || settings.secret_access_key,
+          endpoint: settings.endpoint,
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
 
-async function performBidirectional(supabase: any, integration: any, deviceIds: string[]) {
-  console.log('[device-sync] Performing bidirectional sync for', deviceIds.length, 'devices')
-  return { synced: deviceIds.length, message: 'Bidirectional sync functionality coming soon' }
-}
+    case 'azure_iot':
+    case 'azure-iot':
+      return new AzureIotClient({
+        type: 'azure-iot',
+        settings: {
+          connectionString: settings.connectionString || settings.connection_string,
+          hubName: settings.hubName || settings.hub_name,
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
 
-async function testGoliothConnection(integration: any): Promise<{ 
-  success: boolean; 
-  error?: string; 
-  projectId?: string;
-  apiResponse?: any;
-  statusCode?: number;
-}> {
-  try {
-    // Extract credentials from integration record
-    const apiKey = integration.api_key_encrypted || integration.config?.apiKey
-    const projectId = integration.project_id || integration.config?.projectId
-    const baseUrl = integration.base_url || integration.config?.apiUrl || 'https://api.golioth.io'
-    
-    if (!apiKey || !projectId) {
-      console.error('[device-sync] Missing credentials:', { hasApiKey: !!apiKey, hasProjectId: !!projectId })
-      return { 
-        success: false, 
-        error: 'Missing API key or Project ID in integration configuration',
-        statusCode: 400
-      }
-    }
+    case 'google_iot':
+    case 'google-iot':
+      return new GoogleIotClient({
+        type: 'google-iot',
+        settings: {
+          projectId: settings.projectId || settings.project_id,
+          region: settings.region,
+          registryId: settings.registryId || settings.registry_id,
+          serviceAccountKey: settings.serviceAccountKey || settings.service_account_key || '',
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
 
-    // Log API key info (masked for security)
-    const keyPrefix = apiKey.substring(0, 8)
-    const keyLength = apiKey.length
-    console.log(`[device-sync] Using API key: ${keyPrefix}... (length: ${keyLength})`)
+    case 'mqtt':
+      return new MqttClient({
+        type: 'mqtt',
+        settings: {
+          brokerUrl: settings.brokerUrl || settings.broker_url,
+          port: settings.port,
+          clientId: settings.clientId || settings.client_id,
+          username: settings.username,
+          password: settings.password,
+          useTls: settings.useTls || settings.use_tls,
+          topicPrefix: settings.topicPrefix || settings.topic_prefix,
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
 
-    // Ensure base URL doesn't have trailing slash and has /v1
-    let apiUrl = baseUrl.replace(/\/$/, '')
-    if (!apiUrl.includes('/v1')) {
-      apiUrl = apiUrl + '/v1'
-    }
-    
-    const projectsUrl = `${apiUrl}/projects/${projectId}`
-    
-    console.log(`[device-sync] Testing connection to Golioth project: ${projectId}`)
-    console.log(`[device-sync] API URL: ${projectsUrl}`)
-    
-    // Make a simple API call to verify credentials
-    const response = await fetch(projectsUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      let apiResponse
-      try {
-        apiResponse = JSON.parse(errorText)
-      } catch {
-        apiResponse = errorText
-      }
-      
-      console.error(`[device-sync] Golioth API error (${response.status}):`, errorText)
-      
-      if (response.status === 401) {
-        return { 
-          success: false, 
-          error: 'Invalid API key - authentication failed',
-          apiResponse,
-          statusCode: response.status
-        }
-      } else if (response.status === 403) {
-        return { 
-          success: false, 
-          error: `Access denied - The API key does not have permission to access project '${projectId}'. Verify: 1) The project ID is correct, 2) The API key belongs to this project, 3) The API key has read permissions`,
-          apiResponse,
-          statusCode: response.status
-        }
-      } else if (response.status === 404) {
-        return { 
-          success: false, 
-          error: `Project not found: ${projectId}`,
-          apiResponse,
-          statusCode: response.status
-        }
-      } else {
-        return { 
-          success: false, 
-          error: `API error: ${response.status} ${response.statusText}`,
-          apiResponse,
-          statusCode: response.status
-        }
-      }
-    }
-
-    const projectData = await response.json()
-    console.log('[device-sync] Successfully connected to Golioth project:', projectData.name || projectId)
-    
-    return { 
-      success: true, 
-      projectId: projectId,
-      apiResponse: projectData,
-      statusCode: response.status
-    }
-  } catch (error) {
-    console.error('[device-sync] Connection test exception:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      statusCode: 500
-    }
+    default:
+      console.error(`[device-sync] Unsupported integration type: ${integration.integration_type}`)
+      return null
   }
+}
+
+/**
+ * Fetch devices from NetNeural database for export operations
+ */
+async function getDevicesForExport(
+  supabase: ReturnType<typeof createClient>,
+  organizationId: string,
+  deviceIds?: string[]
+): Promise<any[]> {
+  let query = supabase
+    .from('devices')
+    .select('*')
+    .eq('organization_id', organizationId)
+
+  if (deviceIds && deviceIds.length > 0) {
+    query = query.in('id', deviceIds)
+  }
+
+  const { data: devices, error } = await query
+
+  if (error) {
+    console.error('[device-sync] Error fetching devices:', error)
+    throw new Error(`Failed to fetch devices: ${error.message}`)
+  }
+
+  return devices || []
 }

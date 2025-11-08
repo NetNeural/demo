@@ -132,6 +132,7 @@ export const integrationService = {
 
   /**
    * Sync devices with AWS IoT Core
+   * Now uses unified device-sync endpoint
    */
   async syncAwsIot(options: SyncOptions) {
     const supabase = createClient()
@@ -142,7 +143,7 @@ export const integrationService = {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/aws-iot-sync`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/device-sync`,
       {
         method: 'POST',
         headers: {
@@ -150,10 +151,10 @@ export const integrationService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organization_id: options.organizationId,
-          integration_id: options.integrationId,
+          organizationId: options.organizationId,
+          integrationId: options.integrationId,
           operation: options.operation,
-          device_ids: options.deviceIds,
+          deviceIds: options.deviceIds,
         }),
       }
     )
@@ -176,7 +177,7 @@ export const integrationService = {
   },
 
   /**
-   * Sync devices with Golioth (uses existing device-sync function)
+   * Sync devices with Golioth (uses unified device-sync function)
    */
   async syncGolioth(options: SyncOptions) {
     const supabase = createClient()
@@ -195,10 +196,10 @@ export const integrationService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organization_id: options.organizationId,
-          integration_id: options.integrationId,
+          organizationId: options.organizationId,
+          integrationId: options.integrationId,
           operation: options.operation,
-          device_ids: options.deviceIds,
+          deviceIds: options.deviceIds,
         }),
       }
     )
@@ -222,6 +223,7 @@ export const integrationService = {
 
   /**
    * Sync devices with Azure IoT Hub
+   * Now uses unified device-sync endpoint
    */
   async syncAzureIot(options: SyncOptions) {
     const supabase = createClient()
@@ -232,7 +234,7 @@ export const integrationService = {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/azure-iot-sync`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/device-sync`,
       {
         method: 'POST',
         headers: {
@@ -240,10 +242,10 @@ export const integrationService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organization_id: options.organizationId,
-          integration_id: options.integrationId,
+          organizationId: options.organizationId,
+          integrationId: options.integrationId,
           operation: options.operation,
-          device_ids: options.deviceIds,
+          deviceIds: options.deviceIds,
         }),
       }
     )
@@ -267,6 +269,7 @@ export const integrationService = {
 
   /**
    * Sync devices with Google Cloud IoT Core
+   * Now uses unified device-sync endpoint
    */
   async syncGoogleIot(options: SyncOptions) {
     const supabase = createClient()
@@ -277,7 +280,7 @@ export const integrationService = {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/google-iot-sync`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/device-sync`,
       {
         method: 'POST',
         headers: {
@@ -285,10 +288,10 @@ export const integrationService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organization_id: options.organizationId,
-          integration_id: options.integrationId,
+          organizationId: options.organizationId,
+          integrationId: options.integrationId,
           operation: options.operation,
-          device_ids: options.deviceIds,
+          deviceIds: options.deviceIds,
         }),
       }
     )
@@ -415,48 +418,63 @@ export const integrationService = {
    */
   async testIntegration(integrationId: string, integrationType: string) {
     const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      throw new Error('Not authenticated')
+    }
     
     switch (integrationType) {
-      case 'email':
-        // Send test email
-        return this.sendNotification({
-          organizationId: '', // Will be fetched from integration
-          integrationType: 'email',
-          integrationId,
-          subject: 'Test Email from NetNeural',
-          message: 'This is a test email to verify your email integration is working correctly.',
-          recipients: ['test@example.com'], // Should be configurable
-        })
-      
-      case 'slack':
-        // Send test Slack message
-        return this.sendNotification({
-          organizationId: '',
-          integrationType: 'slack',
-          integrationId,
-          message: '🧪 Test message from NetNeural - your Slack integration is working!',
-        })
-      
-      case 'webhook':
-        // Trigger test webhook
-        return this.sendNotification({
-          organizationId: '',
-          integrationType: 'webhook',
-          integrationId,
-          message: 'Test webhook trigger',
-          data: { test: true, timestamp: new Date().toISOString() },
-        })
-      
+      case 'golioth':
+      case 'aws_iot':
+      case 'azure_iot':
+      case 'google_iot':
       case 'mqtt':
-        // Test MQTT connection
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
+        // Test IoT platform connection using integration-test endpoint
+        const testResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/integration-test/${integrationId}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+
+        const testErrorResult = handleApiError(testResponse, {
+          errorPrefix: `Failed to test ${integrationType} connection`,
+          throwOnError: false,
+        })
+
+        if (testErrorResult.isAuthError) {
           throw new Error('Not authenticated')
         }
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/mqtt-broker`,
+        if (!testResponse.ok) {
+          const error = await testResponse.json().catch(() => ({}))
+          throw new Error(error.error || `Failed to test ${integrationType} connection`)
+        }
+
+        return await testResponse.json()
+      
+      case 'email':
+      case 'slack':
+      case 'webhook':
+        // Test notification integrations using send-notification with test flag
+        // First fetch the integration to get organization_id
+        const { data: integration, error: integrationError } = await supabase
+          .from('device_integrations')
+          .select('organization_id')
+          .eq('id', integrationId)
+          .single()
+
+        if (integrationError || !integration) {
+          throw new Error('Integration not found')
+        }
+
+        const notificationResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-notification?test=true`,
           {
             method: 'POST',
             headers: {
@@ -464,28 +482,32 @@ export const integrationService = {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              organization_id: '',
+              organization_id: integration.organization_id,
+              integration_type: integrationType,
               integration_id: integrationId,
-              operation: 'test',
+              subject: integrationType === 'email' ? 'NetNeural Test Message' : undefined,
+              message: `This is a test ${integrationType} notification from NetNeural.`,
+              recipients: integrationType === 'email' ? ['test@example.com'] : undefined,
+              data: { test: true, timestamp: new Date().toISOString() },
             }),
           }
         )
 
-        const errorResult6 = handleApiError(response, {
-          errorPrefix: 'MQTT test failed',
+        const notificationErrorResult = handleApiError(notificationResponse, {
+          errorPrefix: `Failed to send test ${integrationType}`,
           throwOnError: false,
         })
 
-        if (errorResult6.isAuthError) {
+        if (notificationErrorResult.isAuthError) {
           throw new Error('Not authenticated')
         }
 
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}))
-          throw new Error(error.error || 'MQTT test failed')
+        if (!notificationResponse.ok) {
+          const error = await notificationResponse.json().catch(() => ({}))
+          throw new Error(error.error || `Failed to send test ${integrationType}`)
         }
 
-        return response.json()
+        return await notificationResponse.json()
       
       default:
         throw new Error(`Testing not implemented for ${integrationType}`)

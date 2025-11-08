@@ -1,5 +1,6 @@
 // Deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { 
   getUserContext, 
   getTargetOrganizationId,
@@ -8,6 +9,15 @@ import {
   createSuccessResponse,
   corsHeaders 
 } from '../_shared/auth.ts'
+import { logActivity, getIpAddress, sanitizeHeaders } from '../_shared/activity-logger.ts'
+import { GoliothClient } from '../_shared/golioth-client.ts'
+import { AwsIotClient } from '../_shared/aws-iot-client.ts'
+import { AzureIotClient } from '../_shared/azure-iot-client.ts'
+import { GoogleIotClient } from '../_shared/google-iot-client.ts'
+import { MqttClient } from '../_shared/mqtt-client.ts'
+import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
+
+type SupabaseClient = ReturnType<typeof createClient>
 
 // Test helper functions
 interface IntegrationSettings {
@@ -33,6 +43,7 @@ interface IntegrationSettings {
 
 interface DbIntegration {
   id: string
+  organization_id: string
   integration_type: string
   name: string
   status: string
@@ -43,68 +54,124 @@ interface DbIntegration {
   updated_at: string
 }
 
-interface UpdateFields {
-  name?: string
-  settings?: Record<string, unknown>
-  api_key_encrypted?: string
-  project_id?: string
-  base_url?: string
-  status?: string
-  updated_at?: string
+// ===========================================================================
+// Unified Integration Test Function
+// ===========================================================================
+// Uses the new BaseIntegrationClient pattern for all integrations
+// ===========================================================================
+
+async function testIntegrationUnified(
+  supabase: SupabaseClient,
+  integrationType: string,
+  settings: IntegrationSettings,
+  organizationId: string,
+  integrationId: string
+): Promise<{ success: boolean; message: string; details: Record<string, unknown> }> {
+  try {
+    let client: BaseIntegrationClient
+
+    // Map integration type to client class
+    switch (integrationType) {
+      case 'golioth':
+        client = new GoliothClient({
+          type: 'golioth',
+          settings: {
+            apiKey: settings.apiKey,
+            projectId: settings.projectId,
+            baseUrl: settings.baseUrl as string | undefined,
+          },
+          organizationId,
+          integrationId,
+          supabase,
+        })
+        break
+
+      case 'aws_iot':
+        client = new AwsIotClient({
+          type: 'aws-iot',
+          settings: {
+            region: settings.region,
+            accessKeyId: settings.accessKeyId,
+            secretAccessKey: settings.secretAccessKey,
+            endpoint: settings.endpoint as string | undefined,
+          },
+          organizationId,
+          integrationId,
+          supabase,
+        })
+        break
+
+      case 'azure_iot':
+        client = new AzureIotClient({
+          type: 'azure-iot',
+          settings: {
+            connectionString: settings.connectionString,
+            hubName: settings.hubName,
+          },
+          organizationId,
+          integrationId,
+          supabase,
+        })
+        break
+
+      case 'google_iot':
+        client = new GoogleIotClient({
+          type: 'google-iot',
+          settings: {
+            projectId: settings.projectId,
+            region: settings.region,
+            registryId: settings.registryId,
+            serviceAccountKey: settings.serviceAccountKey as string || '',
+          },
+          organizationId,
+          integrationId,
+          supabase,
+        })
+        break
+
+      case 'mqtt':
+        client = new MqttClient({
+          type: 'mqtt',
+          settings: {
+            brokerUrl: settings.brokerUrl,
+            port: settings.port,
+            clientId: settings.clientId as string | undefined,
+            username: settings.username as string | undefined,
+            password: settings.password as string | undefined,
+            useTls: settings.useTls as boolean | undefined,
+            topicPrefix: settings.topicPrefix as string | undefined,
+          },
+          organizationId,
+          integrationId,
+          supabase,
+        })
+        break
+
+      default:
+        // Fall back to legacy test functions for non-migrated integrations
+        return {
+          success: false,
+          message: `Integration type '${integrationType}' not yet migrated to unified client pattern`,
+          details: {},
+        }
+    }
+
+    // Call unified test() method
+    const result = await client.test()
+    return result
+
+  } catch (error) {
+    return {
+      success: false,
+      message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      details: { error: String(error) },
+    }
+  }
 }
 
-async function testGoliothIntegration(settings: IntegrationSettings) {
-  // Validate required fields
-  if (!settings?.apiKey) {
-    return { success: false, message: 'Golioth integration requires an API Key. Please configure the integration first.', details: {} }
-  }
-  if (!settings?.projectId) {
-    return { success: false, message: 'Golioth integration requires a Project ID. Please configure the integration first.', details: {} }
-  }
-  
-  // In production, this would call Golioth API
-  return { 
-    success: true, 
-    message: 'Golioth API credentials validated', 
-    details: { apiKey: '***' + settings.apiKey.slice(-4), projectId: settings.projectId }
-  }
-}
-
-async function testAwsIotIntegration(settings: IntegrationSettings) {
-  if (!settings?.region || !settings?.accessKeyId || !settings?.secretAccessKey) {
-    return { success: false, message: 'Missing AWS IoT credentials', details: {} }
-  }
-  
-  return { 
-    success: true, 
-    message: 'AWS IoT credentials validated', 
-    details: { region: settings.region, accessKeyId: '***' + settings.accessKeyId.slice(-4) }
-  }
-}
-
-async function testAzureIotIntegration(settings: IntegrationSettings) {
-  if (!settings?.connectionString || !settings?.hubName) {
-    return { success: false, message: 'Missing Azure IoT Hub credentials', details: {} }
-  }
-  
-  return { 
-    success: true, 
-    message: 'Azure IoT Hub connection validated', 
-    details: { hubName: settings.hubName }
-  }
-}
-
-async function testGoogleIotIntegration(settings: IntegrationSettings) {
-  if (!settings?.projectId || !settings?.region || !settings?.registryId) {
-    return { success: false, message: 'Missing Google Cloud IoT credentials', details: {} }
-  }
-  
-  return { 
-    success: true, 
-    message: 'Google Cloud IoT credentials validated', 
-    details: { projectId: settings.projectId, region: settings.region, registryId: settings.registryId }
-  }
-}
+// ===========================================================================
+// Legacy Test Functions (Email, Slack, Webhook - not yet migrated to unified pattern)
+// ===========================================================================
 
 async function testEmailIntegration(settings: IntegrationSettings) {
   if (!settings?.smtpHost || !settings?.smtpPort || !settings?.smtpUsername) {
@@ -165,18 +232,6 @@ async function testWebhookIntegration(settings: IntegrationSettings) {
     }
   } catch (error) {
     return { success: false, message: `Webhook error: ${(error as Error).message}`, details: {} }
-  }
-}
-
-async function testMqttIntegration(settings: IntegrationSettings) {
-  if (!settings?.brokerUrl || !settings?.port) {
-    return { success: false, message: 'Missing MQTT broker configuration', details: {} }
-  }
-  
-  return { 
-    success: true, 
-    message: 'MQTT broker configuration validated', 
-    details: { broker: settings.brokerUrl, port: settings.port, clientId: settings.clientId }
   }
 }
 
@@ -261,6 +316,144 @@ serve(async (req: Request) => {
           type: integrationTypeFilter
         }
       })
+    }
+
+    // POST /integrations/test - Test integration connection (MUST come before general POST handler!)
+    if (req.method === 'POST' && req.url.includes('/test')) {
+      const url = new URL(req.url)
+      const integrationId = url.searchParams.get('id')
+      const startTime = Date.now()
+      
+      if (!integrationId) {
+        return createAuthErrorResponse('Missing integration id parameter', 400)
+      }
+
+      // Get integration details - RLS will enforce permissions
+      const { data: integration, error: fetchError } = await supabase
+        .from('device_integrations')
+        .select('*')
+        .eq('id', integrationId)
+        .single()
+
+      if (fetchError || !integration) {
+        return createAuthErrorResponse('Integration not found or access denied', 404)
+      }
+
+      // Type the integration result
+      const typedIntegration = integration as DbIntegration
+
+      // Merge credentials from both database columns and settings object
+      // This handles both old format (separate columns) and new format (in settings)
+      const mergedSettings: IntegrationSettings = {
+        ...(typedIntegration.settings || {}),
+        // Override with database columns if they exist (preferred source of truth)
+        ...(typedIntegration.project_id && { projectId: typedIntegration.project_id }),
+      }
+
+      // Get api_key from database if available
+      // The database query should have returned api_key_encrypted, but it's not in our select
+      // Let's fetch the full row including api_key_encrypted
+      const { data: fullIntegration, error: fullFetchError } = await supabase
+        .from('device_integrations')
+        .select('api_key_encrypted, project_id')
+        .eq('id', integrationId)
+        .single()
+
+      if (!fullFetchError && fullIntegration) {
+        // Add credentials from database columns to merged settings
+        const fullIntegrationData = fullIntegration as { api_key_encrypted?: string; project_id?: string }
+        if (fullIntegrationData.api_key_encrypted) {
+          mergedSettings.apiKey = fullIntegrationData.api_key_encrypted
+        }
+        if (fullIntegrationData.project_id) {
+          mergedSettings.projectId = fullIntegrationData.project_id
+        }
+      }
+
+      // Test based on integration type
+      let testResult = { success: true, message: '', details: {} }
+
+      try {
+        // Use unified client pattern for supported integrations
+        const unifiedIntegrations = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'mqtt']
+        
+        if (unifiedIntegrations.includes(typedIntegration.integration_type)) {
+          testResult = await testIntegrationUnified(
+            supabase,
+            typedIntegration.integration_type,
+            mergedSettings,
+            typedIntegration.organization_id,
+            typedIntegration.id
+          )
+        } else {
+          // Fall back to legacy test functions for non-migrated integrations
+          switch (typedIntegration.integration_type) {
+            case 'email':
+              testResult = await testEmailIntegration(mergedSettings)
+              break
+            
+            case 'slack':
+              testResult = await testSlackIntegration(mergedSettings)
+              break
+            
+            case 'webhook':
+              testResult = await testWebhookIntegration(mergedSettings)
+              break
+            
+            default:
+              testResult = {
+                success: false,
+                message: `Testing not implemented for ${typedIntegration.integration_type}`,
+                details: {}
+              }
+          }
+        }
+      } catch (testError) {
+        console.error('Test execution error:', testError)
+        testResult = {
+          success: false,
+          message: testError instanceof Error ? testError.message : 'Test execution failed',
+          details: {}
+        }
+      }
+
+      // Log activity for this test
+      const responseTime = Date.now() - startTime
+      await logActivity(supabase, {
+        organizationId: typedIntegration.organization_id,
+        integrationId: integrationId,
+        direction: 'outgoing',
+        activityType: 'test_connection',
+        method: 'TEST',
+        endpoint: `${typedIntegration.integration_type} test connection`,
+        requestHeaders: sanitizeHeaders(req.headers),
+        status: testResult.success ? 'success' : 'failed',
+        responseStatus: testResult.success ? 200 : 400,
+        responseBody: testResult.details,
+        responseTimeMs: responseTime,
+        errorMessage: testResult.success ? undefined : testResult.message,
+        userId: userContext.userId,
+        ipAddress: getIpAddress(req),
+        userAgent: req.headers.get('user-agent') || undefined,
+        metadata: {
+          integrationType: typedIntegration.integration_type,
+          integrationName: typedIntegration.name,
+          testMessage: testResult.message
+        }
+      })
+
+      if (testResult.success) {
+        return createSuccessResponse({ 
+          ...testResult,
+          integration: {
+            id: typedIntegration.id,
+            name: typedIntegration.name,
+            type: typedIntegration.integration_type
+          }
+        })
+      } else {
+        return createAuthErrorResponse(testResult.message, 400)
+      }
     }
 
     if (req.method === 'POST') {
@@ -414,114 +607,6 @@ serve(async (req: Request) => {
       return createSuccessResponse({ 
         message: 'Integration deleted successfully'
       })
-    }
-
-    // POST /integrations/test - Test integration connection
-    if (req.method === 'POST' && req.url.includes('/test')) {
-      const url = new URL(req.url)
-      const integrationId = url.searchParams.get('id')
-      
-      if (!integrationId) {
-        return createAuthErrorResponse('Missing integration id parameter', 400)
-      }
-
-      // Get integration details - RLS will enforce permissions
-      const { data: integration, error: fetchError } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
-
-      if (fetchError || !integration) {
-        return createAuthErrorResponse('Integration not found or access denied', 404)
-      }
-
-      // Type the integration result
-      const typedIntegration = integration as DbIntegration
-
-      // Merge credentials from both database columns and settings object
-      // This handles both old format (separate columns) and new format (in settings)
-      const mergedSettings: IntegrationSettings = {
-        ...(typedIntegration.settings || {}),
-        // Override with database columns if they exist (preferred source of truth)
-        ...(typedIntegration.project_id && { projectId: typedIntegration.project_id }),
-      }
-
-      // Get api_key from database if available
-      // The database query should have returned api_key_encrypted, but it's not in our select
-      // Let's fetch the full row including api_key_encrypted
-      const { data: fullIntegration, error: fullFetchError } = await supabase
-        .from('device_integrations')
-        .select('api_key_encrypted, project_id')
-        .eq('id', integrationId)
-        .single()
-
-      if (!fullFetchError && fullIntegration) {
-        // Add credentials from database columns to merged settings
-        const fullIntegrationData = fullIntegration as { api_key_encrypted?: string; project_id?: string }
-        if (fullIntegrationData.api_key_encrypted) {
-          mergedSettings.apiKey = fullIntegrationData.api_key_encrypted
-        }
-        if (fullIntegrationData.project_id) {
-          mergedSettings.projectId = fullIntegrationData.project_id
-        }
-      }
-
-      // Test based on integration type
-      let testResult = { success: true, message: '', details: {} }
-
-      try {
-        switch (typedIntegration.integration_type) {
-          case 'golioth':
-            // Test Golioth API connection with merged settings
-            testResult = await testGoliothIntegration(mergedSettings)
-            break
-          
-          case 'aws_iot':
-            testResult = await testAwsIotIntegration(mergedSettings)
-            break
-          
-          case 'azure_iot':
-            testResult = await testAzureIotIntegration(mergedSettings)
-            break
-          
-          case 'google_iot':
-            testResult = await testGoogleIotIntegration(mergedSettings)
-            break
-          
-          case 'email':
-            testResult = await testEmailIntegration(mergedSettings)
-            break
-          
-          case 'slack':
-            testResult = await testSlackIntegration(mergedSettings)
-            break
-          
-          case 'webhook':
-            testResult = await testWebhookIntegration(mergedSettings)
-            break
-          
-          case 'mqtt':
-            testResult = await testMqttIntegration(mergedSettings)
-            break
-          
-          default:
-            return createAuthErrorResponse(`Unsupported integration type: ${typedIntegration.integration_type}`, 400)
-        }
-
-        if (testResult.success) {
-          return createSuccessResponse({
-            message: testResult.message || `${typedIntegration.name} connection verified successfully`,
-            details: testResult.details
-          })
-        } else {
-          // Return 400 for configuration issues (bad request), not 500 (server error)
-          return createAuthErrorResponse(testResult.message || 'Integration test failed', 400)
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        return createAuthErrorResponse(`Test failed: ${errorMessage}`, 500)
-      }
     }
 
     return createAuthErrorResponse('Method not allowed', 405)

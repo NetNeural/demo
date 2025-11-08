@@ -183,6 +183,10 @@ serve(async (req) => {
   }
 
   try {
+    // Check if this is a test request
+    const url = new URL(req.url)
+    const isTest = url.searchParams.get('test') === 'true'
+    
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -269,14 +273,21 @@ serve(async (req) => {
         priority,
         recipient_count: recipients?.length || 0,
         has_subject: !!subject,
+        is_test: isTest,
       }
     })
     
     try {
+      // If test mode, use test data
+      const testRecipients = isTest ? ['test@example.com'] : recipients
+      const testSubject = isTest ? '[TEST] NetNeural Test Notification' : subject
+      const testMessage = isTest ? `This is a test notification.\n\nActual message would be:\n${message}` : message
+      
       // Send notification based on integration type
       switch (integration_type) {
         case 'email': {
-          if (!recipients || recipients.length === 0) {
+          const effectiveRecipients = testRecipients || recipients
+          if (!effectiveRecipients || effectiveRecipients.length === 0) {
             return new Response(
               JSON.stringify({ error: 'Recipients required for email notifications' }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -284,7 +295,7 @@ serve(async (req) => {
           }
           
           const emailConfig: EmailConfig = JSON.parse(integrations.api_key_encrypted || '{}')
-          result = await sendEmail(emailConfig, subject || 'NetNeural Notification', message, recipients)
+          result = await sendEmail(emailConfig, testSubject || 'NetNeural Notification', testMessage, effectiveRecipients)
           break
         }
         
@@ -293,7 +304,7 @@ serve(async (req) => {
             webhook_url: integrations.webhook_url || '',
             channel: integrations.webhook_secret || '#general',
           }
-          result = await sendSlack(slackConfig, message, data)
+          result = await sendSlack(slackConfig, testMessage, { ...data, is_test: isTest })
           break
         }
         
@@ -304,7 +315,7 @@ serve(async (req) => {
             method: 'POST',
             content_type: 'application/json',
           }
-          result = await sendWebhook(webhookConfig, message, data)
+          result = await sendWebhook(webhookConfig, testMessage, { ...data, is_test: isTest })
           break
         }
         

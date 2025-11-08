@@ -7,6 +7,7 @@ import {
   createSuccessResponse,
   corsHeaders 
 } from '../_shared/auth.ts'
+import { logActivity, getIpAddress } from '../_shared/activity-logger.ts'
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -111,8 +112,8 @@ serve(async (req) => {
         return createAuthErrorResponse('User has no organization access', 403)
       }
 
-      // Build update object
-      const updates: any = {
+      // Build update object with proper typing
+      const updates: Record<string, unknown> = {
         updated_at: new Date().toISOString()
       }
 
@@ -121,6 +122,7 @@ serve(async (req) => {
       if (model !== undefined) updates.model = model
       if (serial_number !== undefined) updates.serial_number = serial_number
       if (firmware_version !== undefined) updates.firmware_version = firmware_version
+      if (location !== undefined) updates.location = location
 
       // Update device - RLS will enforce access automatically
       const { data: updatedDevice, error: updateError } = await supabase

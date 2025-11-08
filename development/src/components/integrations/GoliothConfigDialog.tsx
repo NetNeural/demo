@@ -458,31 +458,31 @@ export function GoliothConfigDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="webhook-url">Webhook URL</Label>
+              <Label htmlFor="webhook-url">Webhook URL (Auto-generated)</Label>
               <Input
                 id="webhook-url"
                 value={config.webhook_url}
-                onChange={(e) => setConfig({ ...config, webhook_url: e.target.value })}
-                placeholder="https://your-domain.com/functions/v1/golioth-webhook"
-                disabled={!config.webhook_enabled}
+                readOnly
+                className="bg-muted cursor-default"
+                placeholder="Will be auto-generated when saved"
               />
               <p className="text-sm text-muted-foreground">
-                Configure this URL in your Golioth project settings
+                ✨ This URL is automatically generated. Configure it in your Golioth project settings.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="webhook-secret">Webhook Secret</Label>
+              <Label htmlFor="webhook-secret">Webhook Secret (Auto-generated)</Label>
               <Input
                 id="webhook-secret"
                 type="password"
                 value={config.webhook_secret}
-                onChange={(e) => setConfig({ ...config, webhook_secret: e.target.value })}
-                placeholder="Enter webhook secret for signature verification"
-                disabled={!config.webhook_enabled}
+                readOnly
+                className="bg-muted cursor-default"
+                placeholder="Will be auto-generated when saved"
               />
               <p className="text-sm text-muted-foreground">
-                Used to verify webhook authenticity (HMAC SHA-256)
+                ✨ Securely generated for HMAC SHA-256 signature verification
               </p>
             </div>
           </TabsContent>

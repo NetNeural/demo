@@ -68,8 +68,9 @@ export class GoliothClient {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'x-api-key': this.apiKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...options.headers,
       },
     })
@@ -92,8 +93,9 @@ export class GoliothClient {
   async getDevices(projectId: string): Promise<GoliothDevice[]> {
     const response = await fetch(`${this.baseUrl}/projects/${projectId}/devices`, {
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'x-api-key': this.apiKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     })
 
@@ -120,8 +122,9 @@ export class GoliothClient {
       `${this.baseUrl}/projects/${projectId}/devices/${deviceId}/telemetry?${params}`,
       {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'x-api-key': this.apiKey,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       }
     )
@@ -144,8 +147,9 @@ export class GoliothClient {
     const response = await fetch(`${this.baseUrl}/projects/${projectId}/devices`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'x-api-key': this.apiKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(deviceData),
     })
@@ -170,8 +174,9 @@ export class GoliothClient {
       {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'x-api-key': this.apiKey,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(deviceData),
       }
@@ -193,8 +198,9 @@ export class GoliothClient {
       {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'x-api-key': this.apiKey,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       }
     )

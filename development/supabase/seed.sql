@@ -1,18 +1,177 @@
 -- Seed data for development
 
+-- ===========================================================================
+-- Test Users Creation
+-- ===========================================================================
+-- Create test users directly in auth.users and users tables
+-- These are automatically created on every db reset for easy local development
+
+-- Create auth users (Supabase authentication)
+INSERT INTO auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  last_sign_in_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  is_super_admin,
+  created_at,
+  updated_at,
+  confirmation_token,
+  recovery_token,
+  email_change,
+  email_change_token_new,
+  email_change_token_current,
+  phone_change,
+  phone_change_token,
+  reauthentication_token,
+  is_sso_user
+) VALUES
+  -- Super Admin
+  ('00000000-0000-0000-0000-000000000000', 
+   '11111111-1111-1111-1111-111111111111', 
+   'authenticated', 
+   'authenticated',
+   'superadmin@netneural.ai',
+   crypt('SuperSecure123!', gen_salt('bf')),
+   NOW(),
+   NOW(),
+   '{"provider": "email", "providers": ["email"]}',
+   '{"name": "Super Admin", "role": "super_admin"}',
+   NULL,
+   NOW(),
+   NOW(),
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   false),
+  -- Organization Admin
+  ('00000000-0000-0000-0000-000000000000',
+   '22222222-2222-2222-2222-222222222222',
+   'authenticated',
+   'authenticated', 
+   'admin@netneural.ai',
+   crypt('password123', gen_salt('bf')),
+   NOW(),
+   NOW(),
+   '{"provider": "email", "providers": ["email"]}',
+   '{"name": "Admin User", "role": "org_owner"}',
+   NULL,
+   NOW(),
+   NOW(),
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   false),
+  -- Regular User
+  ('00000000-0000-0000-0000-000000000000',
+   '33333333-3333-3333-3333-333333333333',
+   'authenticated',
+   'authenticated',
+   'user@netneural.ai',
+   crypt('password123', gen_salt('bf')),
+   NOW(),
+   NOW(),
+   '{"provider": "email", "providers": ["email"]}',
+   '{"name": "Regular User", "role": "user"}',
+   NULL,
+   NOW(),
+   NOW(),
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   false),
+  -- Viewer
+  ('00000000-0000-0000-0000-000000000000',
+   '44444444-4444-4444-4444-444444444444',
+   'authenticated',
+   'authenticated',
+   'viewer@netneural.ai',
+   crypt('password123', gen_salt('bf')),
+   NOW(),
+   NOW(),
+   '{"provider": "email", "providers": ["email"]}',
+   '{"name": "Viewer User", "role": "viewer"}',
+   NULL,
+   NOW(),
+   NOW(),
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   '',
+   false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create identities for the auth users (required for Supabase auth)
+INSERT INTO auth.identities (
+  id,
+  user_id,
+  provider_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at
+) VALUES
+  (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', '{"sub": "11111111-1111-1111-1111-111111111111", "email": "superadmin@netneural.ai"}', 'email', NOW(), NOW(), NOW()),
+  (gen_random_uuid(), '22222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', '{"sub": "22222222-2222-2222-2222-222222222222", "email": "admin@netneural.ai"}', 'email', NOW(), NOW(), NOW()),
+  (gen_random_uuid(), '33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333', '{"sub": "33333333-3333-3333-3333-333333333333", "email": "user@netneural.ai"}', 'email', NOW(), NOW(), NOW()),
+  (gen_random_uuid(), '44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', '{"sub": "44444444-4444-4444-4444-444444444444", "email": "viewer@netneural.ai"}', 'email', NOW(), NOW(), NOW())
+ON CONFLICT (provider, provider_id) DO NOTHING;
+
+-- ===========================================================================
+-- Organizations
+-- ===========================================================================
+
 -- Insert default organization
 INSERT INTO organizations (id, name, slug, description, subscription_tier, is_active, settings) VALUES
 ('00000000-0000-0000-0000-000000000001', 'NetNeural Demo', 'netneural-demo', 'Demo organization for NetNeural IoT Platform', 'enterprise', true, '{}');
 
--- Note: Test users are created via scripts/create-test-users.js
--- This is because auth.users must exist BEFORE the users table entries
--- The setup:dev script handles this in the correct order
--- 
--- Test credentials:
--- - superadmin@netneural.ai / SuperSecure123! (super_admin - platform wide)
--- - admin@netneural.ai / password123 (org_owner)
--- - user@netneural.ai / password123 (user)
--- - viewer@netneural.ai / password123 (viewer)
+-- Create users in public.users table (application data)
+INSERT INTO users (id, email, full_name, role, organization_id) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'superadmin@netneural.ai', 'Super Admin', 'super_admin', NULL),
+  ('22222222-2222-2222-2222-222222222222', 'admin@netneural.ai', 'Admin User', 'org_owner', '00000000-0000-0000-0000-000000000001'),
+  ('33333333-3333-3333-3333-333333333333', 'user@netneural.ai', 'Regular User', 'user', '00000000-0000-0000-0000-000000000001'),
+  ('44444444-4444-4444-4444-444444444444', 'viewer@netneural.ai', 'Viewer User', 'viewer', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (id) DO NOTHING;
+
+-- Create organization memberships
+-- Super admin doesn't need organization membership (platform-wide access)
+-- Admin is owner, user is member, viewer is also member but with limited permissions
+INSERT INTO organization_members (organization_id, user_id, role) VALUES
+  ('00000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'owner'),
+  ('00000000-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333', 'member'),
+  ('00000000-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444', 'member')
+ON CONFLICT (organization_id, user_id) DO NOTHING;
+
+-- Test credentials (for reference):
+-- ✅ superadmin@netneural.ai / SuperSecure123! (super_admin - platform-wide access, no org needed)
+-- ✅ admin@netneural.ai / password123 (owner - full organization access)
+-- ✅ user@netneural.ai / password123 (member - standard user access)
+-- ✅ viewer@netneural.ai / password123 (member - read-only via user role, not org role)
 
 -- Insert demo locations
 INSERT INTO locations (id, organization_id, name, description, address, city, state, country, postal_code, latitude, longitude) VALUES

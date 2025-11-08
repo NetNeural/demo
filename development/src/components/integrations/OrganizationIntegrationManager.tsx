@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { organizationIntegrationService, OrganizationIntegration } from "@/lib/integrations/organization-integrations";
 import { organizationGoliothSyncService, SyncResult } from "@/lib/sync/organization-golioth-sync";
+import { createClient } from "@/lib/supabase/client";
 
 interface LocalDevice {
   id: string;
@@ -30,7 +31,11 @@ interface LocalDevice {
   integration_id?: string | null;
 }
 
-export function OrganizationIntegrationManager() {
+interface OrganizationIntegrationManagerProps {
+  organizationId: string;
+}
+
+export function OrganizationIntegrationManager({ organizationId }: OrganizationIntegrationManagerProps) {
   const [integrations, setIntegrations] = useState<OrganizationIntegration[]>([]);
   const [devices, setDevices] = useState<LocalDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
@@ -54,8 +59,6 @@ export function OrganizationIntegrationManager() {
     project_id: '',
     base_url: 'https://api.golioth.io'
   });
-
-  const organizationId = '00000000-0000-0000-0000-000000000000'; // TODO: Get from session
 
   useEffect(() => {
     loadData();
@@ -119,15 +122,33 @@ export function OrganizationIntegrationManager() {
   const testIntegration = async (integrationId: string) => {
     try {
       setLoading(true);
-      const result = await organizationIntegrationService.testIntegration(integrationId);
       
+      // Call device-sync with operation='test' to create proper activity log entries
+      // This matches the behavior of the test button in the integration modal
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke('device-sync', {
+        body: {
+          integrationId,
+          organizationId,
+          operation: 'test',
+          deviceIds: []
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Test failed');
+      }
+
       setMessage({ 
-        type: result.success ? 'success' : 'error', 
-        text: result.message 
+        type: data?.success ? 'success' : 'error', 
+        text: data?.message || 'Test completed'
       });
     } catch (error) {
       console.error('Error testing integration:', error);
-      setMessage({ type: 'error', text: 'Failed to test integration' });
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to test integration' 
+      });
     } finally {
       setLoading(false);
     }

@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { integrationService } from '@/services/integration.service'
 
 interface SlackConfig {
   id?: string
@@ -35,6 +36,8 @@ export function SlackConfigDialog({
 }: Props) {
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   
   const [config, setConfig] = useState<SlackConfig>({
     name: 'Slack Integration',
@@ -79,6 +82,36 @@ export function SlackConfigDialog({
       console.error(error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleTest = async () => {
+    if (!integrationId) {
+      toast.error('Please save the configuration before testing')
+      return
+    }
+
+    setTesting(true)
+    setTestResult(null)
+
+    try {
+      const result: any = await integrationService.testIntegration(integrationId, 'slack')
+      setTestResult({
+        success: result.success,
+        message: result.message || 'Test message sent successfully'
+      })
+      
+      if (result.success) {
+        toast.success('Test message sent successfully!')
+      } else {
+        toast.error(result.message || 'Failed to send test message')
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send test message'
+      setTestResult({ success: false, message })
+      toast.error(message)
+    } finally {
+      setTesting(false)
     }
   }
 
@@ -195,7 +228,30 @@ export function SlackConfigDialog({
           </div>
         </div>
 
+        {testResult && (
+          <div className={`p-3 rounded-md flex items-start gap-2 ${
+            testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}>
+            {testResult.success ? (
+              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+            ) : (
+              <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+            )}
+            <div className="text-sm">{testResult.message}</div>
+          </div>
+        )}
+
         <DialogFooter>
+          {integrationId && (
+            <Button 
+              variant="secondary" 
+              onClick={handleTest} 
+              disabled={testing || loading}
+            >
+              {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Test Message
+            </Button>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
