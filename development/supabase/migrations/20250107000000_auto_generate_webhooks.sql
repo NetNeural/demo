@@ -2,6 +2,9 @@
 -- Description: Automatically populate webhook_url and webhook_secret fields when integration is created/updated
 -- Date: 2025-01-07
 
+-- Enable pgcrypto extension for gen_random_bytes function
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Function to generate webhook URL based on integration type and ID
 CREATE OR REPLACE FUNCTION generate_webhook_url(
   integration_id UUID,
