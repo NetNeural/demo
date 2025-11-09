@@ -122,7 +122,7 @@ serve(async (req) => {
       if (model !== undefined) updates.model = model
       if (serial_number !== undefined) updates.serial_number = serial_number
       if (firmware_version !== undefined) updates.firmware_version = firmware_version
-      if (location !== undefined) updates.location = location
+      // Note: location is read-only display field; use location_id to change device location
 
       // Update device - RLS will enforce access automatically
       const { data: updatedDevice, error: updateError } = await supabase
@@ -193,6 +193,45 @@ serve(async (req) => {
         device: newDevice,
         message: 'Device created successfully'
       }, 201)
+    }
+
+    if (req.method === 'DELETE') {
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const deviceId = pathParts[pathParts.length - 1]
+      
+      if (!deviceId || deviceId === 'devices') {
+        return createAuthErrorResponse('Device ID is required for deletion', 400)
+      }
+
+      const body = await req.json()
+      const { organization_id } = body
+
+      // Verify user has access to this device's organization
+      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      
+      if (!targetOrgId && !userContext.isSuperAdmin) {
+        return createAuthErrorResponse('User has no organization access', 403)
+      }
+
+      // Soft delete: set deleted_at timestamp instead of hard delete
+      // This preserves device history and relationships
+      const { error: deleteError } = await supabase
+        .from('devices')
+        // @ts-expect-error - deleted_at column exists but not in generated types
+        .update({ 
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', deviceId)
+
+      if (deleteError) {
+        console.error('Delete error:', deleteError)
+        return createAuthErrorResponse(`Failed to delete device: ${deleteError.message}`, 500)
+      }
+
+      return createSuccessResponse({ 
+        message: 'Device deleted successfully'
+      })
     }
 
     return createAuthErrorResponse('Method not allowed', 405)

@@ -162,19 +162,31 @@ export function MqttConfigDialog({
         status: 'active',
       }
 
+      console.log('[MQTT Save] Payload:', { ...payload, api_key_encrypted: '[REDACTED]' });
+
       if (integrationId) {
+        console.log('[MQTT Save] Updating integration:', integrationId);
         const { error } = await supabase
           .from('device_integrations')
           .update(payload)
           .eq('id', integrationId)
 
-        if (error) throw error
+        if (error) {
+          console.error('[MQTT Save] Update error:', error);
+          throw error;
+        }
+        console.log('[MQTT Save] Update successful');
       } else {
+        console.log('[MQTT Save] Inserting new integration');
         const { error } = await supabase
           .from('device_integrations')
           .insert(payload)
 
-        if (error) throw error
+        if (error) {
+          console.error('[MQTT Save] Insert error:', error);
+          throw error;
+        }
+        console.log('[MQTT Save] Insert successful');
       }
 
       toast.success('MQTT configuration saved successfully')

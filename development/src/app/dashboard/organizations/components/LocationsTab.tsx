@@ -36,8 +36,11 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -159,6 +162,8 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         ? formData
         : { ...formData, organization_id: organizationId };
 
+      console.log(`[Location ${method}] Starting request:`, { url, payload, locationId: editingLocation?.id });
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -168,8 +173,11 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         body: JSON.stringify(payload),
       });
 
+      console.log(`[Location ${method}] Response:`, response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error(`[Location ${method}] Failed:`, errorData);
         const error = new Error(errorData.error || `HTTP ${response.status}`);
         
         handleApiError(error, {
@@ -183,6 +191,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         toast.error(`Failed to ${editingLocation ? 'update' : 'create'} location`);
         return;
       }
+
+      const result = await response.json();
+      console.log(`[Location ${method}] Success:`, result);
 
       toast.success(`Location ${editingLocation ? 'updated' : 'created'} successfully`);
       setShowDialog(false);
@@ -201,11 +212,15 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
   };
 
   const handleDelete = async (location: Location) => {
-    if (!confirm(`Are you sure you want to delete "${location.name}"? This action cannot be undone.`)) {
-      return;
-    }
+    setDeletingLocation(location);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingLocation) return;
 
     try {
+      setDeleting(true);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -216,7 +231,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       }
 
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/locations?id=${location.id}`,
+        `${supabaseUrl}/functions/v1/locations?id=${deletingLocation.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -235,7 +250,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
           method: 'DELETE',
           status: response.status,
           errorData,
-          context: { organizationId, locationId: location.id, locationName: location.name },
+          context: { organizationId, locationId: deletingLocation.id, locationName: deletingLocation.name },
         });
         
         toast.error('Failed to delete location');
@@ -243,15 +258,19 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       }
 
       toast.success('Location deleted successfully');
+      setShowDeleteDialog(false);
+      setDeletingLocation(null);
       fetchLocations();
     } catch (error) {
       console.error('Error deleting location:', error);
       handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
         endpoint: `/functions/v1/locations`,
         method: 'DELETE',
-        context: { organizationId, locationId: location.id },
+        context: { organizationId, locationId: deletingLocation.id },
       });
       toast.error('Failed to delete location');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -443,6 +462,38 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editingLocation ? 'Update Location' : 'Create Location'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Location</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;{deletingLocation?.name}&quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeletingLocation(null);
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Delete Location
             </Button>
           </DialogFooter>
         </DialogContent>

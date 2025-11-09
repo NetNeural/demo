@@ -12,10 +12,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Device {
@@ -53,6 +55,9 @@ export function DevicesList() {
   const [editFirmwareVersion, setEditFirmwareVersion] = useState('')
   const [editLocation, setEditLocation] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingDevice, setDeletingDevice] = useState<Device | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { currentOrganization } = useOrganization()
 
   const fetchDevices = useCallback(async () => {
@@ -133,6 +138,17 @@ export function DevicesList() {
         return
       }
 
+      console.log('[Device Edit] Starting update for device:', selectedDevice.id)
+      console.log('[Device Edit] Update payload:', {
+        organization_id: currentOrganization.id,
+        name: editName,
+        device_type: editType,
+        model: editModel || null,
+        serial_number: editSerialNumber || null,
+        firmware_version: editFirmwareVersion || null,
+        location: editLocation
+      })
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${selectedDevice.id}`,
         {
@@ -153,10 +169,16 @@ export function DevicesList() {
         }
       )
 
+      console.log('[Device Edit] Response status:', response.status, response.statusText)
+
       if (!response.ok) {
         const error = await response.json()
+        console.error('[Device Edit] Update failed:', error)
         throw new Error(error.error || 'Failed to update device')
       }
+
+      const result = await response.json()
+      console.log('[Device Edit] Update successful:', result)
 
       toast.success('Device updated successfully')
       setEditOpen(false)
@@ -181,11 +203,15 @@ export function DevicesList() {
   }
 
   const handleDeleteDevice = async (device: Device) => {
-    if (!confirm(`Are you sure you want to delete "${device.name}"? This action cannot be undone.`)) {
-      return
-    }
+    setDeletingDevice(device)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteDevice = async () => {
+    if (!deletingDevice) return
 
     try {
+      setDeleting(true)
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -195,7 +221,7 @@ export function DevicesList() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${device.id}`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${deletingDevice.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -214,11 +240,15 @@ export function DevicesList() {
       }
 
       toast.success('Device deleted successfully')
+      setShowDeleteDialog(false)
+      setDeletingDevice(null)
       setDetailsOpen(false)
       fetchDevices()
     } catch (err) {
       console.error('Error deleting device:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to delete device')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -295,7 +325,7 @@ export function DevicesList() {
                   <span className="text-muted-foreground">Last Seen:</span>
                   <span className="text-foreground">{device.lastSeen}</span>
                 </div>
-                {device.batteryLevel !== undefined && (
+                {device.batteryLevel != null && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Battery:</span>
                     <span className="text-foreground">{device.batteryLevel}%</span>
@@ -407,7 +437,7 @@ export function DevicesList() {
                       {new Date(selectedDevice.lastSeen).toLocaleString()}
                     </p>
                   </div>
-                  {selectedDevice.batteryLevel !== undefined && (
+                  {selectedDevice.batteryLevel != null && (
                     <div>
                       <p className="text-sm text-muted-foreground">Battery Level</p>
                       <div className="flex items-center gap-2 mt-1">
@@ -624,6 +654,35 @@ export function DevicesList() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Device</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &ldquo;{deletingDevice?.name}&rdquo;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteDevice}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Delete Device
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

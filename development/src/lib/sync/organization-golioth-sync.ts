@@ -143,23 +143,52 @@ export class OrganizationGoliothSyncService {
       if (createMissingDevices && goliothDeviceMap.size > 0) {
         for (const [goliothId, goliothDevice] of goliothDeviceMap) {
           try {
-            await databaseDeviceService.createDevice({
-              organization_id: organizationId,
-              integration_id: integrationId,
-              external_device_id: goliothId,
-              name: goliothDevice.name,
-              device_type: this.inferDeviceType(goliothDevice),
-              status: this.mapGoliothStatus(goliothDevice.status),
-              last_seen: goliothDevice.last_seen || null,
-              battery_level: goliothDevice.metadata?.battery_level ? 
-                parseInt(String(goliothDevice.metadata.battery_level)) : null,
-              metadata: JSON.parse(JSON.stringify(goliothDevice.metadata || {}))
-            });
-            result.syncedDevices++;
+            // Check if an orphaned device exists with this external_device_id
+            // Orphaned = integration_id IS NULL but external_device_id matches
+            const { data: orphanedDevices } = await databaseDeviceService['supabase']
+              .from('devices')
+              .select('id, name')
+              .eq('organization_id', organizationId)
+              .eq('external_device_id', goliothId)
+              .is('integration_id', null)
+              .is('deleted_at', null); // Exclude deleted devices
+
+            if (orphanedDevices && orphanedDevices.length > 0) {
+              // Re-associate orphaned device to new integration
+              const orphanedDevice = orphanedDevices[0];
+              if (orphanedDevice) {
+                await databaseDeviceService.updateDevice(orphanedDevice.id, {
+                  integration_id: integrationId,
+                  name: goliothDevice.name, // Update name in case it changed
+                  device_type: this.inferDeviceType(goliothDevice),
+                  status: this.mapGoliothStatus(goliothDevice.status),
+                  last_seen: goliothDevice.last_seen || null,
+                  battery_level: goliothDevice.metadata?.battery_level ? 
+                    parseInt(String(goliothDevice.metadata.battery_level)) : null,
+                  metadata: JSON.parse(JSON.stringify(goliothDevice.metadata || {}))
+                });
+                result.syncedDevices++;
+              }
+            } else {
+              // Create new device
+              await databaseDeviceService.createDevice({
+                organization_id: organizationId,
+                integration_id: integrationId,
+                external_device_id: goliothId,
+                name: goliothDevice.name,
+                device_type: this.inferDeviceType(goliothDevice),
+                status: this.mapGoliothStatus(goliothDevice.status),
+                last_seen: goliothDevice.last_seen || null,
+                battery_level: goliothDevice.metadata?.battery_level ? 
+                  parseInt(String(goliothDevice.metadata.battery_level)) : null,
+                metadata: JSON.parse(JSON.stringify(goliothDevice.metadata || {}))
+              });
+              result.syncedDevices++;
+            }
           } catch (error) {
             result.errors.push({
               deviceId: goliothId,
-              error: `Failed to create local device: ${error instanceof Error ? error.message : 'Unknown error'}`
+              error: `Failed to create/reassociate local device: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
           }
         }
