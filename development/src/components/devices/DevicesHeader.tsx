@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { GoliothSyncButton } from '@/components/integrations/GoliothSyncButton'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 
 export function DevicesHeader() {
   const { toast } = useToast()
@@ -34,16 +34,19 @@ export function DevicesHeader() {
   const loadGoliothIntegration = useCallback(async () => {
     if (!currentOrganization) return
 
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('device_integrations')
-      .select('id')
-      .eq('organization_id', currentOrganization.id)
-      .eq('integration_type', 'golioth')
-      .eq('status', 'active')
-      .maybeSingle()
-
-    setGoliothIntegration(data?.id || null)
+    try {
+      const response = await edgeFunctions.integrations.list(currentOrganization.id);
+      if (response.success) {
+        const responseData = response.data as any;
+        const golioth = responseData?.integrations?.find(
+          (i: any) => i.type === 'golioth' && i.status === 'active'
+        );
+        setGoliothIntegration(golioth?.id || null);
+      }
+    } catch (error) {
+      console.error('Error loading Golioth integration:', error);
+      setGoliothIntegration(null);
+    }
   }, [currentOrganization])
 
   useEffect(() => {
@@ -72,42 +75,20 @@ export function DevicesHeader() {
     }
 
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        toast({
-          title: "Error",
-          description: "Not authenticated. Please log in.",
-          variant: "destructive",
-        })
-        return
-      }
+      const response = await edgeFunctions.devices.create({
+        organization_id: currentOrganization.id,
+        device_id: deviceId,
+        name: deviceName,
+        device_type: deviceType,
+        model: model || null,
+        serial_number: serialNumber || null,
+        firmware_version: firmwareVersion || null,
+        location: location || null
+      })
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            organization_id: currentOrganization.id,
-            device_id: deviceId,
-            name: deviceName,
-            device_type: deviceType,
-            model: model || null,
-            serial_number: serialNumber || null,
-            firmware_version: firmwareVersion || null,
-            location: location || null
-          })
-        }
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create device')
+      if (!response.success) {
+        const errorMsg = response.error?.message || 'Failed to create device';
+        throw new Error(errorMsg);
       }
 
       toast({

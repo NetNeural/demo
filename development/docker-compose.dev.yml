@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Next.js Development Server
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: netneural-nextjs
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env.local
+    command: npm run dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      supabase:
+        condition: service_healthy
+
+  # Supabase (managed by supabase CLI in separate docker network)
+  # Note: Supabase runs its own docker-compose, so we just reference it
+  supabase:
+    image: tianon/true
+    container_name: netneural-supabase-ref
+    external_links:
+      - supabase_db_netneural:db
+      - supabase_kong_netneural:api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:54321/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Edge Functions Server (deno)
+  edge-functions:
+    image: denoland/deno:latest
+    container_name: netneural-edge-functions
+    working_dir: /app
+    volumes:
+      - ./supabase/functions:/app/functions
+      - ./.env.local:/app/.env
+    environment:
+      - SUPABASE_URL=http://127.0.0.1:54321
+      - DENO_DIR=/app/.deno
+    command: >
+      sh -c "deno run --allow-all --watch
+      https://deno.land/x/supabase_functions@v1.0.0/cli.ts serve"
+    ports:
+      - "54321:54321"
+    restart: unless-stopped
+    depends_on:
+      - supabase
+
+networks:
+  default:
+    name: netneural-dev
+    driver: bridge

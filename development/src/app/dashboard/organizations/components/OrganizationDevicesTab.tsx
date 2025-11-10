@@ -7,7 +7,7 @@ import { Smartphone, Plus, Power, AlertCircle } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions';
 
 interface Device {
   id: string;
@@ -36,28 +36,14 @@ export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTa
 
     try {
       setLoading(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
+      const response = await edgeFunctions.devices.list(organizationId);
+
+      if (!response.success) {
+        const errorMsg = response.error?.message || 'Failed to fetch devices';
+        throw new Error(errorMsg);
       }
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setDevices(data.devices || []);
+      setDevices((response.data?.devices as Device[]) || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
       setDevices([]);

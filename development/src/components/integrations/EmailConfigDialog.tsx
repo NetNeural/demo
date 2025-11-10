@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { integrationService } from '@/services/integration.service'
 
@@ -37,7 +37,6 @@ export function EmailConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -65,26 +64,27 @@ export function EmailConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
-
-      if (data && data.api_key_encrypted) {
-        const cfg = JSON.parse(data.api_key_encrypted)
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
+      
+      if (integration?.config) {
+        const cfg = integration.config as any
         setConfig({
-          id: data.id,
-          name: data.name,
-          smtp_host: cfg?.smtp_host || '',
-          smtp_port: cfg?.smtp_port || 587,
-          username: cfg?.username || '',
-          password: cfg?.password || '',
-          from_email: cfg?.from_email || '',
-          from_name: cfg?.from_name || '',
-          use_tls: cfg?.use_tls ?? true,
+          id: integration.id,
+          name: integration.name,
+          smtp_host: cfg.smtpHost || '',
+          smtp_port: cfg.smtpPort || 587,
+          username: cfg.username || '',
+          password: cfg.password || '',
+          from_email: cfg.fromEmail || '',
+          from_name: cfg.fromName || '',
+          use_tls: cfg.useTls ?? true,
         })
       }
     } catch (error) {
@@ -133,35 +133,40 @@ export function EmailConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'email',
-        name: config.name,
-        api_key_encrypted: JSON.stringify({
-          smtp_host: config.smtp_host,
-          smtp_port: config.smtp_port,
-          username: config.username,
-          password: config.password,
-          from_email: config.from_email,
-          from_name: config.from_name,
-          use_tls: config.use_tls,
-        }),
-        status: 'active',
+      const emailConfig = {
+        smtpHost: config.smtp_host,
+        smtpPort: config.smtp_port,
+        username: config.username,
+        password: config.password,
+        fromEmail: config.from_email,
+        fromName: config.from_name,
+        useTls: config.use_tls,
       }
 
+      let response
       if (integrationId) {
-        const { error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-
-        if (error) throw error
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: emailConfig,
+          status: 'active',
+        })
       } else {
-        const { error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'email',
+          name: config.name,
+          settings: emailConfig,
+        } as any)
+      }
 
-        if (error) throw error
+      if (!response.success) {
+        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
+        
+        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+          errorMsg = `An email integration with the name "${config.name}" already exists. Please choose a different name.`
+        }
+        
+        throw new Error(errorMsg)
       }
 
       toast.success('Email configuration saved successfully')

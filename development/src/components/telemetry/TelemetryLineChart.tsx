@@ -1,0 +1,186 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { Loader2 } from 'lucide-react'
+
+interface TelemetryDataPoint {
+  timestamp: string
+  value: number
+  integration_type?: string
+}
+
+interface TelemetryLineChartProps {
+  deviceId?: string
+  organizationId?: string
+  metric: string
+  metricLabel?: string
+  timeRange?: '1h' | '6h' | '24h' | '7d' | '30d'
+  unit?: string
+  showIntegrationColors?: boolean
+  height?: number
+}
+
+const TIME_RANGE_INTERVALS = {
+  '1h': '1 hour',
+  '6h': '6 hours',
+  '24h': '24 hours',
+  '7d': '7 days',
+  '30d': '30 days',
+}
+
+export function TelemetryLineChart({
+  deviceId,
+  organizationId,
+  metric,
+  metricLabel,
+  timeRange = '24h',
+  unit = '',
+  showIntegrationColors = false,
+  height = 300,
+}: TelemetryLineChartProps) {
+  const [data, setData] = useState<TelemetryDataPoint[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
+
+  const fetchTelemetryData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const interval = TIME_RANGE_INTERVALS[timeRange]
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabase as any)
+        .from('device_telemetry_history')
+        .select(`
+          device_timestamp,
+          telemetry,
+          integration:integration_id (
+            type
+          )
+        `)
+        .gte('device_timestamp', `now() - interval '${interval}'`)
+        .order('device_timestamp', { ascending: true })
+
+      if (deviceId) {
+        query = query.eq('device_id', deviceId)
+      }
+
+      if (organizationId) {
+        query = query.in('device_id', 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from('devices')
+            .select('id')
+            .eq('organization_id', organizationId)
+        )
+      }
+
+      const { data: telemetryData, error: fetchError } = await query
+
+      if (fetchError) {
+        console.error('[Telemetry Chart] Fetch error:', fetchError)
+        setError('Failed to load telemetry data')
+        return
+      }
+
+      if (!telemetryData || telemetryData.length === 0) {
+        setData([])
+        return
+      }
+
+      // Extract metric values from telemetry JSON
+      const processedData: TelemetryDataPoint[] = telemetryData
+        .map((item: { device_timestamp: string; telemetry: Record<string, unknown>; integration?: { type: string } }) => {
+          const value = item.telemetry?.[metric]
+          if (value === undefined || value === null) return null
+
+          return {
+            timestamp: new Date(item.device_timestamp).toLocaleString(),
+            value: parseFloat(String(value)),
+            integration_type: item.integration?.type || 'unknown',
+          }
+        })
+        .filter(Boolean) as TelemetryDataPoint[]
+
+      setData(processedData)
+    } catch (err) {
+      console.error('[Telemetry Chart] Error:', err)
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }, [deviceId, organizationId, metric, timeRange, supabase])
+
+  useEffect(() => {
+    fetchTelemetryData()
+  }, [fetchTelemetryData])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-sm text-gray-500">No telemetry data available</p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="timestamp"
+          tick={{ fontSize: 12 }}
+          angle={-45}
+          textAnchor="end"
+          height={80}
+        />
+        <YAxis
+          label={{ value: unit ? `${metricLabel || metric} (${unit})` : metricLabel || metric, angle: -90, position: 'insideLeft' }}
+          tick={{ fontSize: 12 }}
+        />
+        <Tooltip
+          labelFormatter={(label) => `Time: ${label}`}
+          formatter={(value: number) => [`${value}${unit}`, metricLabel || metric]}
+        />
+        {showIntegrationColors && <Legend />}
+        <Line
+          type="monotone"
+          dataKey="value"
+          stroke={showIntegrationColors ? undefined : '#3b82f6'}
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}

@@ -21,7 +21,7 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
 import { UserPlus, Trash2, Shield } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
 import { handleApiError } from '@/lib/sentry-utils';
@@ -57,33 +57,20 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
     try {
       setLoading(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        throw new Error('No active session');
-      }
+      const response = await edgeFunctions.members.list(organizationId);
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Members API Error:', response.status, errorData);
+      if (!response.success) {
+        const error = new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to fetch members'
+        );
         
-        // Send to Sentry with context - feedback dialog shown automatically
-        const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        // Send to Sentry with context
         handleApiError(error, {
           endpoint: `/api/organizations/${organizationId}/members`,
           method: 'GET',
-          status: response.status,
-          errorData,
           context: {
             organization_id: organizationId,
           },
@@ -92,7 +79,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         throw error;
       }
 
-      const data = await response.json();
+      const data = response.data as { members?: OrganizationMember[] };
       setMembers(data.members || []);
     } catch (error) {
       console.error('Error fetching members:', error);
@@ -126,28 +113,14 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     }
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
+      const response = await edgeFunctions.members.remove(organizationId, memberId);
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ memberId })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove member');
+      if (!response.success) {
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to remove member'
+        );
       }
 
       toast({
@@ -168,28 +141,14 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
   const handleChangeRole = async (memberId: string, newRole: OrganizationRole) => {
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
+      const response = await edgeFunctions.members.updateRole(organizationId, memberId, newRole);
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ memberId, role: newRole })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update role');
+      if (!response.success) {
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to update role'
+        );
       }
 
       toast({

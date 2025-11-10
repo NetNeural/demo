@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Loader2, Check, X, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { goliothSyncService } from '@/services/golioth-sync.service'
+import { edgeFunctions } from '@/lib/edge-functions'
+import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
 import { IntegrationActivityLog } from './IntegrationActivityLog'
 import { IntegrationStatusToggle } from './IntegrationStatusToggle'
+import { IntegrationSyncTab } from './IntegrationSyncTab'
+import { IntegrationAutoSync } from './IntegrationAutoSync'
 
 interface GoliothConfig {
   id?: string
@@ -46,7 +48,6 @@ export function GoliothConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
@@ -71,23 +72,24 @@ export function GoliothConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
 
-      if (error) throw error
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to load integration')
+      }
+
+      const responseData = response.data as any
+      const data = responseData?.integrations?.find((i: any) => i.id === integrationId)
 
       if (data) {
         setConfig({
           id: data.id,
           name: data.name,
-          api_key: data.api_key_encrypted || '',
-          project_id: data.project_id || '',
-          base_url: data.base_url || 'https://api.golioth.io/v1',
+          api_key: data.settings?.apiKey || '',
+          project_id: data.projectId || '',
+          base_url: data.baseUrl || 'https://api.golioth.io/v1',
           status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
-          sync_enabled: data.sync_enabled || false,
+          sync_enabled: data.settings?.syncEnabled || false,
           sync_interval_seconds: data.sync_interval_seconds || 300,
           sync_direction: (data.sync_direction as 'import' | 'export' | 'bidirectional') || 'bidirectional',
           conflict_resolution: (data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
@@ -96,13 +98,13 @@ export function GoliothConfigDialog({
           webhook_url: data.webhook_url || '',
         })
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Failed to load configuration')
       console.error(error)
     } finally {
       setLoading(false)
     }
-  }, [integrationId])
+  }, [integrationId, organizationId])
 
   // Load existing config
   useEffect(() => {
@@ -128,7 +130,7 @@ export function GoliothConfigDialog({
     setTestResult(null)
     
     try {
-      const result = await goliothSyncService.testConnection(integrationId, organizationId)
+      const result = await integrationSyncService.testConnection(integrationId, organizationId)
       setTestResult(result)
       
       if (result) {
@@ -166,67 +168,69 @@ export function GoliothConfigDialog({
     setLoading(true)
     
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'golioth',
-        name: config.name,
-        api_key_encrypted: config.api_key,
-        project_id: config.project_id,
-        base_url: config.base_url,
-        sync_enabled: config.sync_enabled,
-        sync_interval_seconds: config.sync_interval_seconds,
-        sync_direction: config.sync_direction,
-        conflict_resolution: config.conflict_resolution,
-        webhook_enabled: config.webhook_enabled,
-        webhook_secret: config.webhook_secret,
-        webhook_url: config.webhook_url,
-        status: config.status,
-      }
-
-      console.log('[GoliothConfigDialog] Saving config:', { integrationId, organizationId, payload })
+      console.log('[GoliothConfigDialog] Saving config:', { integrationId, organizationId })
 
       if (integrationId) {
         // Update existing
         console.log('[GoliothConfigDialog] Performing UPDATE with ID:', integrationId)
         
-        const { data, error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-          .select()
+        const response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: {
+            apiKey: config.api_key,
+            projectId: config.project_id,
+            baseUrl: config.base_url,
+            syncEnabled: config.sync_enabled,
+            syncIntervalSeconds: config.sync_interval_seconds,
+            syncDirection: config.sync_direction,
+            conflictResolution: config.conflict_resolution,
+            webhookEnabled: config.webhook_enabled,
+            webhookSecret: config.webhook_secret,
+            webhookUrl: config.webhook_url,
+          },
+          status: config.status,
+        })
 
-        console.log('[GoliothConfigDialog] Update result:', { data, error, rowCount: data?.length })
-
-        if (error) {
-          console.error('[GoliothConfigDialog] Update error:', error)
-          throw new Error(error.message || 'Failed to update integration')
-        }
-
-        // Check if any rows were updated
-        if (!data || data.length === 0) {
-          console.warn('[GoliothConfigDialog] No rows updated - integration might not exist or RLS blocking')
-          // Still treat as success since no error occurred
+        if (!response.success) {
+          throw new Error(response.error?.message || 'Failed to update integration')
         }
       } else {
         // Create new
-        const { data, error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
-          .select()
+        const response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'golioth',
+          name: config.name,
+          settings: {
+            apiKey: config.api_key,
+            projectId: config.project_id,
+            baseUrl: config.base_url,
+            syncEnabled: config.sync_enabled,
+            syncIntervalSeconds: config.sync_interval_seconds,
+            syncDirection: config.sync_direction,
+            conflictResolution: config.conflict_resolution,
+            webhookEnabled: config.webhook_enabled,
+            webhookSecret: config.webhook_secret,
+            webhookUrl: config.webhook_url,
+          },
+        } as any)
 
-        console.log('[GoliothConfigDialog] Insert result:', { data, error })
-
-        if (error) {
-          console.error('[GoliothConfigDialog] Insert error:', error)
-          throw new Error(error.message || 'Failed to create integration')
+        if (!response.success) {
+          // Provide user-friendly error messages for common issues
+          let errorMsg = response.error?.message || 'Failed to create integration'
+          
+          if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+            errorMsg = `An integration with the name "${config.name}" already exists. Please choose a different name.`
+          }
+          
+          throw new Error(errorMsg)
         }
       }
 
       toast.success('Configuration saved successfully')
       onSaved?.()
       onOpenChange(false)
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Failed to save configuration'
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save configuration'
       toast.error(errorMessage)
       console.error('[GoliothConfigDialog] Save error:', error)
     } finally {
@@ -244,12 +248,14 @@ export function GoliothConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="sync">Sync Settings</TabsTrigger>
-            <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
+            <TabsTrigger value="sync-settings">Sync Settings</TabsTrigger>
+            <TabsTrigger value="sync" disabled={!integrationId}>Run Sync</TabsTrigger>
+            <TabsTrigger value="auto-sync" disabled={!integrationId}>Auto-Sync</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="activity">Activity Log</TabsTrigger>
+            <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
+            <TabsTrigger value="activity" disabled={!integrationId}>Activity Log</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
@@ -343,8 +349,8 @@ export function GoliothConfigDialog({
             </div>
           </TabsContent>
 
-          {/* Sync Settings Tab */}
-          <TabsContent value="sync" className="space-y-4">
+          {/* Sync Settings Tab - Configuration Only */}
+          <TabsContent value="sync-settings" className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Enable Automatic Sync</Label>
@@ -486,6 +492,30 @@ export function GoliothConfigDialog({
               </p>
             </div>
           </TabsContent>
+
+          {/* Run Sync Tab - Execute sync operations */}
+          {integrationId && (
+            <TabsContent value="sync" className="space-y-4">
+              <IntegrationSyncTab
+                integrationId={integrationId}
+                organizationId={organizationId}
+                integrationType="golioth"
+                integrationName={config.name}
+              />
+            </TabsContent>
+          )}
+
+          {/* Auto-Sync Tab */}
+          {integrationId && (
+            <TabsContent value="auto-sync" className="space-y-4">
+              <IntegrationAutoSync
+                integrationId={integrationId}
+                organizationId={organizationId}
+                integrationType="golioth"
+                availableDirections={['import', 'export', 'bidirectional']}
+              />
+            </TabsContent>
+          )}
 
           {/* Activity Log Tab */}
           {integrationId && (

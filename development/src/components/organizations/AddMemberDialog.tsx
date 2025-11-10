@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 import { OrganizationRole } from '@/types/organization';
 import { UserPlus, Mail, Shield, CheckCircle2, Copy, Check } from 'lucide-react';
@@ -83,59 +83,40 @@ export function AddMemberDialog({
 
     try {
       setIsProcessing(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('No active session');
-      }
 
       // If we already know user needs to be created and we have the full name, create them first
       if (needsUserCreation && fullName) {
-        const createUserUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-user`;
-        
         // Generate a temporary password (user will be required to change it)
         const tempPassword = `Temp${Math.random().toString(36).substring(2, 10)}!`;
 
-        const createResponse = await fetch(createUserUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            fullName,
-            password: tempPassword,
-            role: 'user',
-          }),
+        const createResponse = await edgeFunctions.users.create({
+          email,
+          name: fullName,
+          password: tempPassword,
+          role: 'user',
         });
 
-        const createData = await createResponse.json();
-
-        if (!createResponse.ok) {
+        if (!createResponse.success) {
           // Check if user already exists (they might have been created in a previous attempt)
-          const errorMsg = createData.error?.toLowerCase() || '';
+          const errorObj = createResponse.error as { message?: string } | string | undefined;
+          const errorMsg = typeof errorObj === 'string' 
+            ? errorObj.toLowerCase() 
+            : (errorObj?.message || '').toLowerCase();
           const userExists = errorMsg.includes('already exists') || errorMsg.includes('already registered');
           
           if (userExists) {
             // User already exists, just try to add them to the organization
-            const addMemberUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-            
-            const addResponse = await fetch(addMemberUrl, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email, role }),
+            const addResponse = await edgeFunctions.members.add(organizationId, {
+              userId: email,
+              role,
             });
 
-            const addData = await addResponse.json();
-
-            if (!addResponse.ok) {
+            if (!addResponse.success) {
               // Check if already a member
-              const addErrorMsg = addData.error?.toLowerCase() || '';
+              const addErrorObj = addResponse.error as { message?: string } | string | undefined;
+              const addErrorMsg = typeof addErrorObj === 'string'
+                ? addErrorObj.toLowerCase()
+                : (addErrorObj?.message || '').toLowerCase();
               const alreadyMember = addErrorMsg.includes('already a member') || addErrorMsg.includes('already exists');
               
               if (alreadyMember) {
@@ -154,7 +135,7 @@ export function AddMemberDialog({
                 return;
               }
               
-              throw new Error(addData.error || 'User exists but failed to add to organization');
+              throw new Error(addErrorMsg || 'User exists but failed to add to organization');
             }
 
             toast({
@@ -172,7 +153,7 @@ export function AddMemberDialog({
             return;
           }
           
-          throw new Error(createData.error || 'Failed to create user account');
+          throw new Error(errorMsg || 'Failed to create user account');
         }
 
         // User created successfully, store the password and show success
@@ -181,23 +162,18 @@ export function AddMemberDialog({
         setIsProcessing(false);
         
         // Now add to organization
-        const addMemberUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-        
-        const addResponse = await fetch(addMemberUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, role }),
+        const addResponse2 = await edgeFunctions.members.add(organizationId, {
+          userId: email,
+          role,
         });
 
-        const addData = await addResponse.json();
-
-        if (!addResponse.ok) {
+        if (!addResponse2.success) {
           // Check if user is already a member (they might have been added in a previous attempt)
-          const errorMsg = addData.error?.toLowerCase() || '';
-          const alreadyMember = errorMsg.includes('already a member') || errorMsg.includes('already exists');
+          const errorObj2 = addResponse2.error as { message?: string } | string | undefined;
+          const errorMsg2 = typeof errorObj2 === 'string'
+            ? errorObj2.toLowerCase()
+            : (errorObj2?.message || '').toLowerCase();
+          const alreadyMember = errorMsg2.includes('already a member') || errorMsg2.includes('already exists');
           
           if (alreadyMember) {
             // User was already added - just keep showing the password screen
@@ -205,7 +181,7 @@ export function AddMemberDialog({
             return;
           }
           
-          throw new Error(addData.error || 'User created but failed to add to organization');
+          throw new Error(errorMsg2 || 'User created but failed to add to organization');
         }
 
         // All done - password screen is already showing
@@ -213,20 +189,12 @@ export function AddMemberDialog({
       }
 
       // Try to add existing user to organization
-      const addMemberUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/members?organization_id=${organizationId}`;
-      
-      const addResponse = await fetch(addMemberUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, role }),
+      const addResponse = await edgeFunctions.members.add(organizationId, {
+        userId: email,
+        role,
       });
 
-      const addData = await addResponse.json();
-
-      if (addResponse.ok) {
+      if (addResponse.success) {
         // User exists and was added successfully
         toast({
           title: 'Member Added',
@@ -242,7 +210,10 @@ export function AddMemberDialog({
         onMemberAdded();
       } else {
         // Check if error is because user doesn't exist
-        const errorMsg = addData.error?.toLowerCase() || '';
+        const errorObj = addResponse.error as { message?: string } | string | undefined;
+        const errorMsg = typeof errorObj === 'string'
+          ? errorObj.toLowerCase()
+          : (errorObj?.message || '').toLowerCase();
         const userNotFound = errorMsg.includes('not found') || errorMsg.includes('does not exist');
 
         if (userNotFound) {
@@ -252,7 +223,7 @@ export function AddMemberDialog({
           return; // Don't close dialog, let user fill in details
         } else {
           // Some other error
-          throw new Error(addData.error || 'Failed to add member');
+          throw new Error(errorMsg || 'Failed to add member');
         }
       }
     } catch (error) {

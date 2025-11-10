@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button'
 import { MapPin, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client';
-import { handleApiError } from '@/lib/api-error-handler';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 
 interface Location {
   id: string;
@@ -27,48 +26,17 @@ export function LocationsCard() {
 
     try {
       setLoading(true);
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        console.log('[Auth] No session found for locations fetch');
-        setLocations([]);
-        return;
-      }
+      const response = await edgeFunctions.locations.list(currentOrganization.id);
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/locations?organization_id=${currentOrganization.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const errorResult = handleApiError(response, { 
-        throwOnError: false,
-        silentAuthErrors: true,
-        logErrors: response.status !== 404 // Don't log 404s - endpoint may not exist yet
-      });
-      
-      if (errorResult.isAuthError) {
+      if (!response.success || !response.data) {
+        console.log('[LocationsCard] Failed to fetch locations:', response.error);
         setLocations([]);
         return;
       }
       
-      if (errorResult.statusCode === 404) {
-        // Locations endpoint doesn't exist yet - this is expected in development
-        console.log('[LocationsCard] Locations endpoint not available (404)');
-        setLocations([]);
-        return;
-      }
-      
-      if (!errorResult.isError) {
-        const data = await response.json();
-        setLocations(data);
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setLocations(response.data as any);
     } catch (error) {
       console.error('Error fetching locations:', error);
       setLocations([]);

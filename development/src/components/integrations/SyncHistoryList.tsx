@@ -14,7 +14,7 @@ import {
   ArrowLeftRight,
   Clock
 } from 'lucide-react'
-import { goliothSyncService } from '@/services/golioth-sync.service'
+import { integrationSyncService } from '@/services/integration-sync.service'
 import type { Database } from '@/types/supabase'
 
 type SyncLog = Database['public']['Tables']['golioth_sync_log']['Row']
@@ -38,7 +38,7 @@ export function SyncHistoryList({
   const loadLogs = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await goliothSyncService.getSyncHistory(organizationId, limit)
+      const data = await integrationSyncService.getSyncHistory(organizationId, limit)
       const filtered = integrationId
         ? data.filter((log) => log.integration_id === integrationId)
         : data
@@ -54,7 +54,7 @@ export function SyncHistoryList({
     loadLogs()
 
     if (autoRefresh) {
-      const channel = goliothSyncService.subscribeSyncUpdates(
+      const channel = integrationSyncService.subscribeSyncUpdates(
         organizationId,
         (newLog) => {
           setLogs((prev) => [newLog, ...prev].slice(0, limit))

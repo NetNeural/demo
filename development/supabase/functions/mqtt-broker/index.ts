@@ -8,13 +8,8 @@
 // Date: 2025-10-27
 // ============================================================================
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 interface MqttConfig {
   broker_url: string
@@ -348,108 +343,73 @@ async function testConnection(
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+export default createEdgeFunction(async ({ req }) => {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    throw new DatabaseError('Missing authorization header', 401)
   }
 
-  try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  )
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const payload: PublishOperation = await req.json()
-    const { organization_id, integration_id, operation, messages, topics, callback_url } = payload
-
-    if (!organization_id || !integration_id || !operation) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get MQTT integration config
-    const { data: integration, error: intError } = await supabase
-      .from('device_integrations')
-      .select('*')
-      .eq('id', integration_id)
-      .eq('integration_type', 'mqtt')
-      .single()
-
-    if (intError || !integration) {
-      return new Response(
-        JSON.stringify({ error: 'MQTT integration not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const mqttConfig: MqttConfig = JSON.parse(integration.api_key_encrypted || '{}')
-
-    let results
-    const startTime = Date.now()
-
-    switch (operation) {
-      case 'publish':
-        if (!messages || messages.length === 0) {
-          return new Response(
-            JSON.stringify({ error: 'No messages provided' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-        results = await publishMessages(mqttConfig, messages, supabase, organization_id, integration_id)
-        break
-      
-      case 'subscribe':
-        if (!topics || topics.length === 0) {
-          return new Response(
-            JSON.stringify({ error: 'No topics provided' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-        results = await subscribeToTopics(mqttConfig, topics, callback_url, supabase, organization_id, integration_id)
-        break
-      
-      case 'test':
-        results = await testConnection(mqttConfig, supabase, organization_id, integration_id)
-        break
-      
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid operation' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-    }
-
-    const duration = Date.now() - startTime
-
-    return new Response(
-      JSON.stringify({ success: true, results, duration_ms: duration }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('MQTT integration error:', error)
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new DatabaseError('Unauthorized', 401)
   }
+
+  const payload: PublishOperation = await req.json()
+  const { organization_id, integration_id, operation, messages, topics, callback_url } = payload
+
+  if (!organization_id || !integration_id || !operation) {
+    throw new Error('Missing required fields')
+  }
+
+  // Get MQTT integration config
+  const { data: integration, error: intError } = await supabase
+    .from('device_integrations')
+    .select('*')
+    .eq('id', integration_id)
+    .eq('integration_type', 'mqtt')
+    .single()
+
+  if (intError || !integration) {
+    throw new DatabaseError('MQTT integration not found', 404)
+  }
+
+  const mqttConfig: MqttConfig = JSON.parse(integration.api_key_encrypted || '{}')
+
+  let results
+  const startTime = Date.now()
+
+  switch (operation) {
+    case 'publish':
+      if (!messages || messages.length === 0) {
+        throw new Error('No messages provided')
+      }
+      results = await publishMessages(mqttConfig, messages, supabase, organization_id, integration_id)
+      break
+    
+    case 'subscribe':
+      if (!topics || topics.length === 0) {
+        throw new Error('No topics provided')
+      }
+      results = await subscribeToTopics(mqttConfig, topics, callback_url, supabase, organization_id, integration_id)
+      break
+    
+    case 'test':
+      results = await testConnection(mqttConfig, supabase, organization_id, integration_id)
+      break
+    
+    default:
+      throw new Error('Invalid operation')
+  }
+
+  const duration = Date.now() - startTime
+
+  return createSuccessResponse({ success: true, results, duration_ms: duration })
+}, {
+  allowedMethods: ['POST']
 })

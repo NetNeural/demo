@@ -14,7 +14,7 @@ import { RefreshCw, Download, Upload, ArrowLeftRight, Loader2 } from 'lucide-rea
 import { integrationService } from '@/services/integration.service'
 import { toast } from 'sonner'
 
-type IntegrationType = 'golioth' | 'aws_iot' | 'aws-iot' | 'azure_iot' | 'azure-iot' | 'google_iot' | 'google-iot' | 'mqtt'
+type IntegrationType = 'golioth' | 'aws_iot' | 'aws-iot' | 'azure_iot' | 'azure-iot' | 'mqtt'
 type SyncOperation = 'import' | 'export' | 'bidirectional'
 
 interface Props {
@@ -36,7 +36,7 @@ export function IntegrationSyncButton({
   const [operation, setOperation] = useState<string | null>(null)
 
   // Normalize integration type for service calls
-  const normalizedType = integrationType.replace('-', '_') as 'aws_iot' | 'azure_iot' | 'google_iot'
+  const normalizedType = integrationType.replace('-', '_') as 'aws_iot' | 'azure_iot'
   
   // Get display name for platform
   const displayName = platformName || (() => {
@@ -46,8 +46,6 @@ export function IntegrationSyncButton({
       case 'aws-iot': return 'AWS IoT Core'
       case 'azure_iot':
       case 'azure-iot': return 'Azure IoT Hub'
-      case 'google_iot':
-      case 'google-iot': return 'Google Cloud IoT'
       case 'mqtt': return 'MQTT Broker'
       default: return 'Platform'
     }
@@ -64,22 +62,23 @@ export function IntegrationSyncButton({
         operation: op,
       }
 
-      let result
+      let result: {
+        status?: string
+        devicesSucceeded?: number
+        devicesFailed?: number
+      } = {}
 
       // Call appropriate service method based on integration type
       switch (normalizedType) {
         case 'aws_iot':
-          result = await integrationService.syncAwsIot(options)
+          result = await integrationService.syncAwsIot(options) as typeof result
           break
         case 'azure_iot':
-          result = await integrationService.syncAzureIot(options)
-          break
-        case 'google_iot':
-          result = await integrationService.syncGoogleIot(options)
+          result = await integrationService.syncAzureIot(options) as typeof result
           break
         default:
           // For Golioth and MQTT, use the unified device-sync endpoint
-          result = await integrationService.syncGolioth(options)
+          result = await integrationService.syncGolioth(options) as typeof result
       }
 
       if (result.status === 'completed') {

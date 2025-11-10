@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreateUserDialogProps {
@@ -42,34 +42,20 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
 
     try {
       setIsCreating(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-user`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          email, 
-          fullName, 
-          password,
-          role: 'user' 
-        })
+      const response = await edgeFunctions.users.create({
+        email,
+        name: fullName,
+        password,
+        role: 'user',
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create user');
+      if (!response.success) {
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to create user'
+        );
       }
 
       toast({

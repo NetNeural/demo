@@ -2,8 +2,6 @@
  * Authentication and authorization utilities for Edge Functions
  */
 
-/// <reference types="https://deno.land/x/types/index.d.ts" />
-
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.ts'
 

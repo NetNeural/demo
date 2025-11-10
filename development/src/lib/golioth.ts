@@ -8,9 +8,13 @@
 export interface GoliothDevice {
   id: string;
   name: string;
-  hardware_id: string;
+  hardware_id: string;  // Keep for backward compatibility
+  hardwareIds?: string[];  // NEW - array support
   status: 'online' | 'offline' | 'unknown';
-  last_seen?: string;
+  last_seen?: string;  // Keep for backward compatibility
+  lastSeenOnline?: string;  // NEW - specific online timestamp
+  lastSeenOffline?: string;  // NEW - specific offline timestamp
+  cohortId?: string;  // NEW - OTA update group
   created_at: string;
   updated_at: string;
   project_id: string;

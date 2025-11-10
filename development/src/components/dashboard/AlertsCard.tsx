@@ -4,11 +4,10 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { handleApiError } from '@/lib/api-error-handler'
 
 interface AlertItem {
   id: string
@@ -50,66 +49,41 @@ export function AlertsCard() {
     }
 
     try {
-      // Get authenticated user's session
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const response = await edgeFunctions.alerts.list(currentOrganization.id);
       
-      if (!session) {
-        throw new Error('No active session')
+      if (!response.success || !response.data) {
+        console.error('Failed to fetch alerts:', response.error);
+        setAlerts([])
+        setLoading(false)
+        return
       }
+        
+      // Define API response type
+      interface AlertApiResponse {
+        id: string;
+        title: string;
+        message: string;
+        severity: 'low' | 'medium' | 'high' | 'critical';
+        deviceName: string;
+        timestamp: string;
+        isResolved: boolean;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = response.data as any;
+
+      // Transform API response to match AlertItem interface
+      const transformedAlerts: AlertItem[] = (data.alerts || []).map((alert: AlertApiResponse) => ({
+        id: alert.id,
+        title: alert.title,
+        description: alert.message,
+        severity: alert.severity,
+        device: alert.deviceName,
+        timestamp: formatTimestamp(alert.timestamp),
+        acknowledged: alert.isResolved
+      }));
       
-      // Filter by current organization
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts?organization_id=${currentOrganization.id}`;
-      
-      const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        const errorResult = handleApiError(response, {
-          errorPrefix: 'Failed to fetch alerts',
-          throwOnError: false,
-        })
-
-        if (errorResult.isAuthError) {
-          setAlerts([])
-          setLoading(false)
-          return
-        }
-
-        if (!response.ok) {
-          setAlerts([])
-          setLoading(false)
-          return
-        }
-        
-        const data = await response.json();
-
-        // Define API response type
-        interface AlertApiResponse {
-          id: string;
-          title: string;
-          message: string;
-          severity: 'low' | 'medium' | 'high' | 'critical';
-          deviceName: string;
-          timestamp: string;
-          isResolved: boolean;
-        }
-
-        // Transform API response to match AlertItem interface
-        const transformedAlerts: AlertItem[] = (data.alerts || []).map((alert: AlertApiResponse) => ({
-          id: alert.id,
-          title: alert.title,
-          description: alert.message,
-          severity: alert.severity,
-          device: alert.deviceName,
-          timestamp: formatTimestamp(alert.timestamp),
-          acknowledged: alert.isResolved
-        }));
-        
-        setAlerts(transformedAlerts);
+      setAlerts(transformedAlerts);
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
       // Show empty state instead of mock data
@@ -125,36 +99,10 @@ export function AlertsCard() {
 
   const handleAcknowledgeAlert = async (alertId: string) => {
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        toast.error('No active session')
-        return
-      }
+      const response = await edgeFunctions.alerts.acknowledge(alertId);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts/${alertId}/acknowledge`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      const errorResult = handleApiError(response, {
-        errorPrefix: 'Failed to acknowledge alert',
-        throwOnError: false,
-      })
-
-      if (errorResult.isAuthError) {
-        toast.error('Not authenticated')
-        return
-      }
-
-      if (!response.ok) {
+      if (!response.success) {
+        console.error('Failed to acknowledge alert:', response.error);
         toast.error('Failed to acknowledge alert')
         return
       }

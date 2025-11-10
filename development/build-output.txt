@@ -1,0 +1,146 @@
+
+> netneural-iot-platform@1.1.0 build
+> next build
+
+   ▲ Next.js 15.5.5
+   - Environments: .env.local, .env.production
+   - Experiments (use with caution):
+     · clientTraceMetadata
+
+   Creating an optimized production build ...
+
+
+Source path: C:\Development\NetNeural\SoftwareMono\development\src\app\globals.css
+Setting up new context...
+Finding changed files: 16.266ms
+Reading changed files: 247.273ms
+Sorting candidates: 7.292ms
+Generate rules: 165.209ms
+Build stylesheet: 2.498ms
+Potential classes:  9501
+Active contexts:  1
+JIT TOTAL: 774.008ms
+
+
+ ✓ Compiled successfully in 9.2s
+   Linting and checking validity of types ...
+
+./src/app/dashboard/integrations/page.tsx
+47:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+51:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/dashboard/settings/components/IntegrationsTab.tsx
+213:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+214:88  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/dashboard/settings/components/UsersTab.tsx
+74:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/dashboard/DashboardOverview.tsx
+45:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/devices/DevicesHeader.tsx
+40:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+42:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/AwsIotConfigDialog.tsx
+95:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+96:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+212:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/AzureIotConfigDialog.tsx
+4:60  Warning: 'DialogFooter' is defined but never used.  @typescript-eslint/no-unused-vars
+71:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+72:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+103:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/EmailConfigDialog.tsx
+73:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+74:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+77:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+108:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/GoliothConfigDialog.tsx
+80:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+381:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+413:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/GoliothSyncButton.tsx
+51:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/IntegrationActivityLog.tsx
+70:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/MqttConfigDialog.tsx
+4:60  Warning: 'DialogFooter' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/integrations/OrganizationIntegrationManager.tsx
+23:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+76:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/SlackConfigDialog.tsx
+67:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+68:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+98:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/SyncHistoryList.tsx
+98:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/integrations/WebhookConfigDialog.tsx
+70:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+102:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useDeviceStatus.ts
+59:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/database/devices.ts
+144:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+167:71  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/integrations/aws-iot-integration-provider.ts
+20:3  Warning: 'TelemetryQuery' is defined but never used.  @typescript-eslint/no-unused-vars
+212:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/integrations/golioth-integration-provider.ts
+179:24  Warning: '_query' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+   Exporting (0/2) ...
+ ✓ Exporting (2/2)
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      310 B         218 kB
+├ ○ /_not-found                          1.16 kB         219 kB
+├ ○ /auth/login                          4.38 kB         285 kB
+├ ○ /dashboard                           6.05 kB         291 kB
+├ ○ /dashboard/alerts                    6.05 kB         296 kB
+├ ○ /dashboard/analytics                  4.6 kB         289 kB
+├ ○ /dashboard/devices                   6.78 kB         332 kB
+├ ○ /dashboard/integrations              3.18 kB         349 kB
+├ ○ /dashboard/organizations             24.6 kB         370 kB
+├ ○ /dashboard/settings                  10.7 kB         324 kB
+├ ○ /dashboard/users                      9.2 kB         327 kB
+├ ○ /test-notifications                  3.85 kB         248 kB
+└ ○ /test-sentry                         5.01 kB         231 kB
++ First Load JS shared by all             218 kB
+  ├ chunks/4bd1b696-68dbe0eda9aa9b96.js  54.4 kB
+  ├ chunks/52774a7f-8294d6eefce656b8.js    38 kB
+  ├ chunks/629-7ededb9cdf12c746.js        122 kB
+  └ other shared chunks (total)          3.25 kB
+
+
+○  (Static)  prerendered as static content
+

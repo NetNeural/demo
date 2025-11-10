@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings, Trash2, AlertTriangle } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { handleApiError } from '@/lib/sentry-utils';
 import { toast } from 'sonner';
 
@@ -31,44 +31,19 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setIsSaving(true);
       setSaveMessage('');
 
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        toast.error('Authentication required');
-        setSaveMessage('Authentication required');
-        return;
-      }
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        toast.error('Configuration error');
-        setSaveMessage('Configuration error');
-        return;
-      }
-
-      // Call edge function to update organization
-      const response = await fetch(`${supabaseUrl}/functions/v1/organizations/${currentOrganization.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: orgName.trim(),
-        }),
+      const response = await edgeFunctions.organizations.update(currentOrganization.id, {
+        name: orgName.trim(),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(errorData.error || `HTTP ${response.status}`);
+      if (!response.success) {
+        const errorMessage = typeof response.error === 'string' 
+          ? response.error 
+          : 'Failed to update organization';
         
-        // Send to Sentry with context and show feedback dialog
-        handleApiError(error, {
+        // Send to Sentry with context
+        handleApiError(new Error(errorMessage), {
           endpoint: `/functions/v1/organizations/${currentOrganization.id}`,
           method: 'PATCH',
-          status: response.status,
-          errorData,
           context: {
             organizationId: currentOrganization.id,
             organizationName: currentOrganization.name,
@@ -76,8 +51,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           },
         });
         
-        setSaveMessage(errorData.error || 'Failed to update organization');
-        toast.error(errorData.error || 'Failed to update organization');
+        setSaveMessage(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
@@ -113,32 +88,13 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     try {
       setIsDeleting(true);
 
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const response = await edgeFunctions.organizations.delete(currentOrganization.id);
 
-      if (!session?.access_token) {
-        alert('Authentication required');
-        return;
-      }
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        alert('Configuration error');
-        return;
-      }
-
-      // Call edge function to delete organization
-      const response = await fetch(`${supabaseUrl}/functions/v1/organizations/${currentOrganization.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(errorData.error || 'Failed to delete organization');
+      if (!response.success) {
+        const errorMessage = typeof response.error === 'string'
+          ? response.error
+          : 'Failed to delete organization';
+        alert(errorMessage);
         return;
       }
 

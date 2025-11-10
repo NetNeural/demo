@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { RefreshCw, Download, Upload, ArrowLeftRight, Loader2 } from 'lucide-react'
-import { goliothSyncService } from '@/services/golioth-sync.service'
+import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
 
 interface Props {
@@ -29,7 +29,7 @@ export function GoliothSyncButton({ integrationId, organizationId, onSyncComplet
     setOperation(op)
 
     try {
-      const result = await goliothSyncService.triggerSync({
+      const result = await integrationSyncService.triggerSync({
         integrationId,
         organizationId,
         operation: op,

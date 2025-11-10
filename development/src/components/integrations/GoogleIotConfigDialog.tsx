@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { IntegrationStatusToggle } from './IntegrationStatusToggle'
+import { IntegrationSyncTab } from './IntegrationSyncTab'
 import { integrationService } from '@/services/integration.service'
 
 interface GoogleIotConfig {
@@ -36,7 +38,6 @@ export function GoogleIotConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -62,24 +63,25 @@ export function GoogleIotConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
-
-      if (data && data.api_key_encrypted) {
-        const cfg = JSON.parse(data.api_key_encrypted)
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
+      
+      if (integration?.config) {
+        const cfg = integration.config as any
         setConfig({
-          id: data.id,
-          name: data.name,
-          project_id: cfg?.project_id || '',
-          region: cfg?.region || 'us-central1',
-          registry_id: cfg?.registry_id || '',
-          service_account_key: cfg?.service_account_key || '',
-          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
+          id: integration.id,
+          name: integration.name,
+          project_id: cfg.projectId || '',
+          region: cfg.region || 'us-central1',
+          registry_id: cfg.registryId || '',
+          service_account_key: cfg.serviceAccountKey || '',
+          status: integration.status || 'not-configured',
         })
       }
     } catch (error) {
@@ -128,32 +130,37 @@ export function GoogleIotConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'google_iot',
-        name: config.name,
-        api_key_encrypted: JSON.stringify({
-          project_id: config.project_id,
-          region: config.region,
-          registry_id: config.registry_id,
-          service_account_key: config.service_account_key,
-        }),
-        status: config.status,
+      const googleConfig = {
+        projectId: config.project_id,
+        region: config.region,
+        registryId: config.registry_id,
+        serviceAccountKey: config.service_account_key,
       }
 
+      let response
       if (integrationId) {
-        const { error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-
-        if (error) throw error
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: googleConfig,
+          status: config.status,
+        })
       } else {
-        const { error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'google_iot',
+          name: config.name,
+          settings: googleConfig,
+        } as any)
+      }
 
-        if (error) throw error
+      if (!response.success) {
+        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
+        
+        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+          errorMsg = `A Google IoT integration with the name "${config.name}" already exists. Please choose a different name.`
+        }
+        
+        throw new Error(errorMsg)
       }
 
       toast.success('Google Cloud IoT configuration saved successfully')

@@ -91,6 +91,7 @@ export class GoliothClient extends BaseIntegrationClient {
   public async import(): Promise<SyncResult> {
     return this.withActivityLog('import', async () => {
       const result = this.createSyncResult()
+      let telemetryRecorded = 0
       
       try {
         // Fetch all devices from Golioth
@@ -100,8 +101,78 @@ export class GoliothClient extends BaseIntegrationClient {
         // Convert to NetNeural device format
         for (const goliothDevice of goliothDevices) {
           try {
+            // First, upsert the device to get/create NetNeural device ID
+            const { data: existingDevice } = await this.config.supabase
+              .from('devices')
+              .select('id')
+              .eq('organization_id', this.config.organizationId)
+              .or(`hardware_id.eq.${goliothDevice.hardwareId},external_id.eq.${goliothDevice.id}`)
+              .single()
+
+            let localDeviceId = existingDevice?.id
+
+            // If device doesn't exist, create it
+            if (!localDeviceId) {
+              const { data: newDevice, error: createError } = await this.config.supabase
+                .from('devices')
+                .insert({
+                  organization_id: this.config.organizationId,
+                  name: goliothDevice.name,
+                  hardware_id: goliothDevice.hardwareId,
+                  status: goliothDevice.status,
+                  last_seen: goliothDevice.lastSeen,
+                  metadata: goliothDevice.metadata,
+                  tags: goliothDevice.tags,
+                  external_id: goliothDevice.id,
+                })
+                .select('id')
+                .single()
+
+              if (createError || !newDevice) {
+                throw new Error(`Failed to create device: ${createError?.message}`)
+              }
+              localDeviceId = newDevice.id
+            } else {
+              // Update existing device
+              await this.config.supabase
+                .from('devices')
+                .update({
+                  name: goliothDevice.name,
+                  hardware_id: goliothDevice.hardwareId,
+                  status: goliothDevice.status,
+                  last_seen: goliothDevice.lastSeen,
+                  metadata: goliothDevice.metadata,
+                  tags: goliothDevice.tags,
+                  external_id: goliothDevice.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', localDeviceId)
+            }
+
+            // NEW: Fetch and record telemetry from Golioth
+            try {
+              // Get last 24 hours of telemetry
+              const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+              const telemetryData = await this.getDeviceTelemetry(goliothDevice.id, since)
+
+              // Record each telemetry point
+              if (telemetryData && telemetryData.length > 0) {
+                const recordCount = await this.recordTelemetryBatch(
+                  telemetryData.map(point => ({
+                    deviceId: localDeviceId!,
+                    telemetry: point.data,
+                    timestamp: point.timestamp,
+                  }))
+                )
+                telemetryRecorded += recordCount
+              }
+            } catch (telemetryError) {
+              // Don't fail device import if telemetry fetch fails
+              console.warn(`Failed to fetch telemetry for ${goliothDevice.name}:`, telemetryError)
+            }
+
             const device: Device = {
-              id: goliothDevice.id,
+              id: localDeviceId,
               name: goliothDevice.name,
               hardware_id: goliothDevice.hardwareId,
               status: goliothDevice.status,
@@ -118,13 +189,19 @@ export class GoliothClient extends BaseIntegrationClient {
             
             result.devices_succeeded++
             result.details = result.details || {}
-            const details = result.details as { devices?: Device[] }
+            const details = result.details as { devices?: Device[]; telemetry_points?: number }
             details.devices = details.devices || []
             details.devices.push(device)
           } catch (error) {
             result.devices_failed++
             result.errors.push(`${goliothDevice.name}: ${(error as Error).message}`)
           }
+        }
+
+        // Add telemetry stats to result
+        if (telemetryRecorded > 0) {
+          const details = result.details as { telemetry_points?: number }
+          details.telemetry_points = telemetryRecorded
         }
         
         return result

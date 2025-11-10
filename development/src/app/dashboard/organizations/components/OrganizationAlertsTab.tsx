@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Plus } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions';
 
 interface Alert {
   id: string;
@@ -35,28 +35,14 @@ export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabP
 
     try {
       setLoading(true);
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
+      const response = await edgeFunctions.alerts.list(organizationId);
+
+      if (!response.success) {
+        const errorMsg = response.error?.message || 'Failed to fetch alerts';
+        throw new Error(errorMsg);
       }
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts?organization_id=${organizationId}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setAlerts(data.alerts || []);
+      setAlerts((response.data?.alerts as Alert[]) || []);
     } catch (error) {
       console.error('Error fetching alerts:', error);
       setAlerts([]);

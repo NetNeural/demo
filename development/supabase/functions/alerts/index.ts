@@ -1,25 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { 
   getUserContext, 
   getTargetOrganizationId,
-  createAuthenticatedClient,
-  createAuthErrorResponse,
-  createSuccessResponse,
-  corsHeaders 
+  createAuthenticatedClient
 } from '../_shared/auth.ts'
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    // Get authenticated user context
-    const userContext = await getUserContext(req)
-    
-    // Create authenticated Supabase client (respects RLS)
-    const supabase = createAuthenticatedClient(req)
+export default createEdgeFunction(async ({ req }) => {
+  // Get authenticated user context
+  const userContext = await getUserContext(req)
+  
+  // Create authenticated Supabase client (respects RLS)
+  const supabase = createAuthenticatedClient(req)
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -32,7 +23,7 @@ serve(async (req) => {
       const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
       
       if (!organizationId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
       // Build query - RLS will enforce access automatically
@@ -65,10 +56,11 @@ serve(async (req) => {
 
       if (error) {
         console.error('Database error:', error)
-        return createAuthErrorResponse(`Failed to fetch alerts: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to fetch alerts: ${error.message}`)
       }
 
       // Transform alerts for response
+      // deno-lint-ignore no-explicit-any
       const transformedAlerts = alerts?.map((alert: any) => ({
         id: alert.id,
         title: alert.title,
@@ -105,7 +97,7 @@ serve(async (req) => {
       const action = pathParts[pathParts.length - 1] // acknowledge, resolve, etc.
 
       if (!alertId) {
-        return createAuthErrorResponse('Alert ID is required', 400)
+        throw new Error('Alert ID is required')
       }
 
       // Verify user has access to this alert's organization
@@ -116,22 +108,44 @@ serve(async (req) => {
         .single()
 
       if (fetchError || !alert) {
-        return createAuthErrorResponse('Alert not found', 404)
+        throw new DatabaseError('Alert not found', 404)
       }
 
       // Check if user has access to this organization
       if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
-        return createAuthErrorResponse('You do not have access to this alert', 403)
+        throw new DatabaseError('You do not have access to this alert', 403)
       }
 
+      // deno-lint-ignore no-explicit-any
       let updateData: any = {}
 
       if (action === 'acknowledge') {
-        updateData = {
-          is_acknowledged: true,
-          acknowledged_by: userContext.userId,
-          acknowledged_at: new Date().toISOString()
+        // Insert into alert_acknowledgements table instead of updating alerts
+        const body = await req.json()
+        const acknowledgementType = body.acknowledgement_type || 'acknowledged'
+        const notes = body.notes || null
+
+        const { data: acknowledgement, error: ackError } = await supabase
+          .from('alert_acknowledgements')
+          .insert({
+            alert_id: alertId,
+            user_id: userContext.userId,
+            organization_id: alert.organization_id,
+            acknowledgement_type: acknowledgementType,
+            notes: notes
+          })
+          .select()
+          .single()
+
+        if (ackError) {
+          console.error('Failed to acknowledge alert:', ackError)
+          throw new DatabaseError(`Failed to acknowledge alert: ${ackError.message}`)
         }
+
+        return createSuccessResponse({ 
+          acknowledgement,
+          message: 'Alert acknowledged successfully'
+        })
       } else if (action === 'resolve') {
         updateData = {
           is_resolved: true,
@@ -147,14 +161,14 @@ serve(async (req) => {
       // Update the alert
       const { data: updated, error: updateError } = await supabase
         .from('alerts')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', alertId)
         .select()
         .single()
 
       if (updateError) {
         console.error('Failed to update alert:', updateError)
-        return createAuthErrorResponse(`Failed to update alert: ${updateError.message}`, 500)
+        throw new DatabaseError(`Failed to update alert: ${updateError.message}`)
       }
 
       return createSuccessResponse({ 
@@ -163,17 +177,7 @@ serve(async (req) => {
       })
     }
 
-    return createAuthErrorResponse('Method not allowed', 405)
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('Edge function error:', errorMessage, error)
-    
-    // Handle auth errors specifically
-    if (errorMessage.includes('Unauthorized') || errorMessage.includes('authorization')) {
-      return createAuthErrorResponse(errorMessage, 401)
-    }
-    
-    return createAuthErrorResponse(errorMessage, 500)
-  }
+  throw new Error('Method not allowed')
+}, {
+  allowedMethods: ['GET', 'PATCH', 'PUT']
 })

@@ -31,6 +31,16 @@ CREATE TABLE IF NOT EXISTS integration_activity_log (
         'device_create',
         'device_update',
         'device_delete',
+        -- MQTT-specific activity types
+        'mqtt_message_received',
+        'mqtt_device_discovered',
+        'mqtt_device_online',
+        'mqtt_device_offline',
+        'mqtt_connection_established',
+        'mqtt_connection_lost',
+        'mqtt_subscription_created',
+        'mqtt_publish_success',
+        'mqtt_publish_failed',
         'other'
     )),
     

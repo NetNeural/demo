@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Plug, Check, AlertCircle, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,6 @@ import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDial
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog';
 import { AwsIotConfigDialog } from '@/components/integrations/AwsIotConfigDialog';
 import { AzureIotConfigDialog } from '@/components/integrations/AzureIotConfigDialog';
-import { GoogleIotConfigDialog } from '@/components/integrations/GoogleIotConfigDialog';
 import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog';
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog';
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog';
@@ -62,15 +62,6 @@ const INTEGRATION_TYPES = [
     purpose: 'Microsoft Cloud Integration',
     requiredFields: ['Connection String', 'Hub Name'],
     useCases: 'Device twins, direct methods, Azure service integration, enterprise IoT'
-  },
-  {
-    value: 'google_iot',
-    label: '🔷 Google Cloud IoT',
-    icon: '🔷',
-    description: 'Integrate with Google Cloud IoT Core for device management and telemetry',
-    purpose: 'Google Cloud Services',
-    requiredFields: ['Project ID', 'Region', 'Registry ID'],
-    useCases: 'Device registry, telemetry processing, Google Cloud integration'
   },
   {
     value: 'email',
@@ -146,7 +137,6 @@ export default function IntegrationsTab({
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [showAwsIotConfig, setShowAwsIotConfig] = useState(false);
   const [showAzureIotConfig, setShowAzureIotConfig] = useState(false);
-  const [showGoogleIotConfig, setShowGoogleIotConfig] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [showSlackConfig, setShowSlackConfig] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
@@ -199,7 +189,9 @@ export default function IntegrationsTab({
       }
 
       // Transform API response to match Integration interface
-      const transformedIntegrations: Integration[] = (data.integrations || []).map((integration: IntegrationApiResponse) => ({
+      // API returns { success, data: { integrations: [...] } }
+      const integrationsData = data.data?.integrations || data.integrations || [];
+      const transformedIntegrations: Integration[] = integrationsData.map((integration: IntegrationApiResponse) => ({
         id: integration.id,
         type: integration.type,
         name: integration.name,
@@ -212,27 +204,22 @@ export default function IntegrationsTab({
     } catch (error) {
       console.error('Error loading integrations:', error);
       
-      // Try fallback to direct database query
+      // Try fallback using edgeFunctions client
       try {
-        const supabase = createClient();
-        const { data: directData, error: directError } = await supabase
-          .from('device_integrations')
-          .select('*')
-          .eq('organization_id', selectedOrganization)
-          .order('created_at', { ascending: false });
-
-        if (directError) throw directError;
-
-        console.log('Loaded integrations via fallback query:', directData);
+        const response = await edgeFunctions.integrations.list(selectedOrganization);
         
-        // Transform direct database results to match Integration interface
-        const fallbackIntegrations: Integration[] = (directData || []).map((integration) => ({
+        if (!response.success) throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations');
+
+        console.log('Loaded integrations via fallback edgeFunctions client');
+        
+        const integrationsList = (response.data as any)?.integrations || [];
+        const fallbackIntegrations: Integration[] = integrationsList.map((integration: any) => ({
           id: integration.id,
-          type: integration.integration_type,
+          type: integration.type || integration.integrationType,
           name: integration.name,
-          status: (integration.status as Integration['status']) || 'not-configured',
-          config: (integration.settings as Record<string, unknown>) || {},
-          organization_id: integration.organization_id
+          status: integration.status || 'not-configured',
+          config: integration.config || integration.settings || {},
+          organization_id: integration.organizationId || integration.organization_id || selectedOrganization
         }));
 
         setIntegrations(fallbackIntegrations);
@@ -728,9 +715,6 @@ export default function IntegrationsTab({
                               case 'azure_iot':
                                 setShowAzureIotConfig(true);
                                 break;
-                              case 'google_iot':
-                                setShowGoogleIotConfig(true);
-                                break;
                               case 'email':
                                 setShowEmailConfig(true);
                                 break;
@@ -1024,47 +1008,6 @@ export default function IntegrationsTab({
                 </div>
               </>
             )}
-
-            {selectedIntegration?.type === 'google_iot' && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Project ID</label>
-                  <Input
-                    defaultValue={String(selectedIntegration.config.projectId || '')}
-                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, projectId: e.target.value })}
-                    placeholder="my-iot-project"
-                  />
-                  <p className="text-xs text-gray-500">Google Cloud Platform project ID</p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Region</label>
-                  <Input
-                    defaultValue={String(selectedIntegration.config.region || '')}
-                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, region: e.target.value })}
-                    placeholder="us-central1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Registry ID</label>
-                  <Input
-                    defaultValue={String(selectedIntegration.config.registryId || '')}
-                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, registryId: e.target.value })}
-                    placeholder="my-device-registry"
-                  />
-                  <p className="text-xs text-gray-500">IoT device registry identifier</p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Service Account Key (JSON)</label>
-                  <textarea
-                    className="w-full min-h-[100px] p-2 border rounded-md text-sm font-mono"
-                    defaultValue={String(selectedIntegration.config.serviceAccountKey || '')}
-                    onChange={(e) => setIntegrationConfig({ ...integrationConfig, serviceAccountKey: e.target.value })}
-                    placeholder='{"type": "service_account", "project_id": "...", ...}'
-                  />
-                  <p className="text-xs text-gray-500">Google Cloud service account credentials in JSON format</p>
-                </div>
-              </>
-            )}
           </div>
 
           <DialogFooter>
@@ -1189,10 +1132,6 @@ export default function IntegrationsTab({
                     setSelectedIntegration(null);
                     setShowAzureIotConfig(true);
                     break;
-                  case 'google_iot':
-                    setSelectedIntegration(null);
-                    setShowGoogleIotConfig(true);
-                    break;
                   case 'email':
                     setSelectedIntegration(null);
                     setShowEmailConfig(true);
@@ -1264,17 +1203,6 @@ export default function IntegrationsTab({
             organizationId={selectedOrganization}
             onSaved={() => {
               setShowAzureIotConfig(false);
-              loadIntegrations();
-            }}
-          />
-
-          <GoogleIotConfigDialog
-            open={showGoogleIotConfig}
-            onOpenChange={setShowGoogleIotConfig}
-            integrationId={selectedIntegration?.id}
-            organizationId={selectedOrganization}
-            onSaved={() => {
-              setShowGoogleIotConfig(false);
               loadIntegrations();
             }}
           />

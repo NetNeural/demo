@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MapPin, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { toast } from 'sonner';
 import { handleApiError } from '@/lib/sentry-utils';
 
@@ -54,34 +54,17 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
   const fetchLocations = useCallback(async () => {
     try {
       setLoading(true);
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('Please log in to view locations');
-        return;
-      }
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/locations?organization_id=${organizationId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await edgeFunctions.locations.list(organizationId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(errorData.error || `HTTP ${response.status}`);
+      if (!response.success) {
+        const error = new Error(response.error?.message || 'Failed to load locations');
         
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
           method: 'GET',
-          status: response.status,
-          errorData,
+          status: response.error?.status || 500,
+          errorData: response.error,
           context: { organizationId },
         });
         
@@ -89,8 +72,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         return;
       }
 
-      const data = await response.json();
-      setLocations(data);
+      setLocations((response.data as Location[]) || []);
     } catch (error) {
       console.error('Error fetching locations:', error);
       handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
@@ -144,47 +126,30 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
 
     try {
       setSaving(true);
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        toast.error('Please log in to save location');
-        return;
-      }
-
-      const url = editingLocation
-        ? `${supabaseUrl}/functions/v1/locations?id=${editingLocation.id}`
-        : `${supabaseUrl}/functions/v1/locations`;
-      
-      const method = editingLocation ? 'PATCH' : 'POST';
-      const payload = editingLocation
-        ? formData
-        : { ...formData, organization_id: organizationId };
-
-      console.log(`[Location ${method}] Starting request:`, { url, payload, locationId: editingLocation?.id });
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Starting request:`, { 
+        formData, 
+        locationId: editingLocation?.id 
       });
 
-      console.log(`[Location ${method}] Response:`, response.status, response.statusText);
+      const response = editingLocation
+        ? await edgeFunctions.locations.update(editingLocation.id, formData)
+        : await edgeFunctions.locations.create({ 
+            ...formData, 
+            organization_id: organizationId 
+          });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(`[Location ${method}] Failed:`, errorData);
-        const error = new Error(errorData.error || `HTTP ${response.status}`);
+      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Response:`, response);
+
+      if (!response.success) {
+        console.error(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Failed:`, response.error);
+        const error = new Error(response.error?.message || 'Failed to save location');
         
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
-          method,
-          status: response.status,
-          errorData,
+          method: editingLocation ? 'PATCH' : 'POST',
+          status: response.error?.status || 500,
+          errorData: response.error,
           context: { organizationId, locationId: editingLocation?.id, formData },
         });
         
@@ -192,8 +157,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         return;
       }
 
-      const result = await response.json();
-      console.log(`[Location ${method}] Success:`, result);
+      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Success:`, response.data);
 
       toast.success(`Location ${editingLocation ? 'updated' : 'created'} successfully`);
       setShowDialog(false);
@@ -221,35 +185,17 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
 
     try {
       setDeleting(true);
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('Please log in to delete location');
-        return;
-      }
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/locations?id=${deletingLocation.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await edgeFunctions.locations.delete(deletingLocation.id);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(errorData.error || `HTTP ${response.status}`);
+      if (!response.success) {
+        const error = new Error(response.error?.message || 'Failed to delete location');
         
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
           method: 'DELETE',
-          status: response.status,
-          errorData,
+          status: response.error?.status || 500,
+          errorData: response.error,
           context: { organizationId, locationId: deletingLocation.id, locationName: deletingLocation.name },
         });
         

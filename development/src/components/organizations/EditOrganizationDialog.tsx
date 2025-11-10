@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import type { UserOrganization } from '@/types/organization';
 
 interface EditOrganizationDialogProps {
@@ -101,39 +102,19 @@ export function EditOrganizationDialog({
     setIsLoading(true);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      // Get the current session token
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/organizations/${organization.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim() || null,
-          subscriptionTier,
-          isActive,
-        }),
+      const response = await edgeFunctions.organizations.update(organization.id, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        subscriptionTier,
+        isActive,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to update organization' }));
-        throw new Error(errorData.error || 'Failed to update organization');
+      if (!response.success) {
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to update organization'
+        );
       }
 
       toast({

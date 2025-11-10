@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
 import { Plus, ExternalLink, Settings, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
-import { databaseDeviceService } from "@/lib/database/devices";
+import { edgeFunctions } from "@/lib/edge-functions";
 import { MqttConfigDialog } from "@/components/integrations/MqttConfigDialog";
 import { useOrganization } from "@/contexts/OrganizationContext";
 
@@ -84,12 +84,15 @@ export function DeviceIntegrationManager() {
     try {
       setLoading(true);
       
-      // In a real implementation, this would call the API
-      await databaseDeviceService.mapDeviceToExternal(
+      const response = await edgeFunctions.devices.mapToExternal(
         selectedDevice,
         selectedIntegration,
         externalDeviceId
       );
+
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to map device');
+      }
 
       setMessage({ type: 'success', text: 'Device successfully mapped to external system' });
       setSelectedDevice(null);
@@ -108,7 +111,11 @@ export function DeviceIntegrationManager() {
     try {
       setLoading(true);
       
-      await databaseDeviceService.unmapDeviceFromExternal(deviceId);
+      const response = await edgeFunctions.devices.unmapFromExternal(deviceId);
+      
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to unmap device');
+      }
       
       setMessage({ type: 'success', text: 'Device unmapped from external system' });
       loadData(); // Refresh data

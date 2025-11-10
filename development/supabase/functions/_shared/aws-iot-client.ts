@@ -107,6 +107,7 @@ export class AwsIotClient extends BaseIntegrationClient {
   public async import(): Promise<SyncResult> {
     return this.withActivityLog('import', async () => {
       const result = this.createSyncResult()
+      let telemetryRecorded = 0
       
       try {
         // List all things (devices) from AWS IoT
@@ -118,9 +119,80 @@ export class AwsIotClient extends BaseIntegrationClient {
           try {
             // Get thing shadow for detailed state
             const shadow = await this.getThingShadow(thing.thingName).catch(() => null)
+
+            // First, upsert the device to get/create NetNeural device ID
+            const { data: existingDevice } = await this.config.supabase
+              .from('devices')
+              .select('id')
+              .eq('organization_id', this.config.organizationId)
+              .or(`hardware_id.eq.${thing.thingName},external_id.eq.${thing.thingName}`)
+              .single()
+
+            let localDeviceId = existingDevice?.id
+
+            // If device doesn't exist, create it
+            if (!localDeviceId) {
+              const { data: newDevice, error: createError } = await this.config.supabase
+                .from('devices')
+                .insert({
+                  organization_id: this.config.organizationId,
+                  name: thing.thingName,
+                  hardware_id: thing.thingName,
+                  status: thing.connectivity?.connected ? 'online' : 'offline',
+                  last_seen: thing.connectivity?.timestamp 
+                    ? new Date(thing.connectivity.timestamp).toISOString()
+                    : undefined,
+                  metadata: {
+                    device_type: thing.thingTypeName || 'unknown',
+                    aws_attributes: thing.attributes,
+                  },
+                  external_id: thing.thingName,
+                })
+                .select('id')
+                .single()
+
+              if (createError || !newDevice) {
+                throw new Error(`Failed to create device: ${createError?.message}`)
+              }
+              localDeviceId = newDevice.id
+            } else {
+              // Update existing device
+              await this.config.supabase
+                .from('devices')
+                .update({
+                  name: thing.thingName,
+                  status: thing.connectivity?.connected ? 'online' : 'offline',
+                  last_seen: thing.connectivity?.timestamp 
+                    ? new Date(thing.connectivity.timestamp).toISOString()
+                    : undefined,
+                  metadata: {
+                    device_type: thing.thingTypeName || 'unknown',
+                    aws_attributes: thing.attributes,
+                  },
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', localDeviceId)
+            }
+
+            // NEW: Extract and record telemetry from Thing Shadow
+            if (shadow?.state?.reported) {
+              try {
+                const telemetryId = await this.recordTelemetry(
+                  localDeviceId,
+                  shadow.state.reported,
+                  shadow.metadata?.timestamp
+                    ? new Date(shadow.metadata.timestamp * 1000).toISOString()
+                    : undefined
+                )
+                if (telemetryId) telemetryRecorded++
+              } catch (telemetryError) {
+                // Don't fail device import if telemetry recording fails
+                console.warn(`Failed to record Shadow telemetry for ${thing.thingName}:`, telemetryError)
+              }
+            }
             
             const device: Device = {
-              id: thing.thingName,
+              id: localDeviceId,
               name: thing.thingName,
               hardware_id: thing.thingName,
               status: thing.connectivity?.connected ? 'online' : 'offline',
@@ -141,11 +213,18 @@ export class AwsIotClient extends BaseIntegrationClient {
             
             result.devices_succeeded++
             result.details = result.details || { devices: [] }
+            ;(result.details as Record<string, unknown>).devices = (result.details as Record<string, Device[]>).devices || []
             ;(result.details as Record<string, Device[]>).devices.push(device)
           } catch (error) {
             result.devices_failed++
             result.errors.push(`${thing.thingName}: ${(error as Error).message}`)
           }
+        }
+
+        // Add telemetry stats to result
+        if (telemetryRecorded > 0) {
+          const details = result.details as Record<string, unknown>
+          details.telemetry_points = telemetryRecorded
         }
         
         return result

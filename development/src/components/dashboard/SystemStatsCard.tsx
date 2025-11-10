@@ -2,9 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { handleApiError } from '@/lib/api-error-handler'
 
 interface SystemStats {
   totalDevices: number
@@ -42,79 +41,45 @@ export function SystemStatsCard() {
     }
 
     try {
-      // Get authenticated user's session
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error('No active session')
+      const response = await edgeFunctions.organizations.stats(currentOrganization.id);
+
+      if (!response.success || !response.data) {
+        console.error('Failed to fetch system stats:', response.error);
+        setStats({
+          totalDevices: 0,
+          activeDevices: 0,
+          offlineDevices: 0,
+          alertsCount: 0,
+          connectivityRate: 0,
+          dataPoints: 0
+        })
+        setLoading(false)
+        return
       }
+        
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = response.data as any;
       
-      // Filter by current organization
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dashboard-stats?organization_id=${currentOrganization.id}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
+      // Convert API response to component format
+      setStats({
+        totalDevices: data.totalDevices || 0,
+        activeDevices: data.onlineDevices || 0,
+        offlineDevices: (data.totalDevices || 0) - (data.onlineDevices || 0),
+        alertsCount: data.activeAlerts || 0,
+        connectivityRate: data.totalDevices > 0 ? Math.round((data.onlineDevices / data.totalDevices) * 100) : 0,
+        dataPoints: 0 // TODO: Implement sensor data aggregation for accurate count
       });
-        
-      const errorResult = handleApiError(response, {
-        errorPrefix: 'Failed to fetch system stats',
-        throwOnError: false,
-        logErrors: true,
-      })
-
-      if (errorResult.isAuthError) {
-        console.log('User not authenticated - showing empty stats')
-        setStats({
-          totalDevices: 0,
-          activeDevices: 0,
-          offlineDevices: 0,
-          alertsCount: 0,
-          connectivityRate: 0,
-          dataPoints: 0
-        })
-        setLoading(false)
-        return
-      }
-
-      if (!response.ok) {
-        setStats({
-          totalDevices: 0,
-          activeDevices: 0,
-          offlineDevices: 0,
-          alertsCount: 0,
-          connectivityRate: 0,
-          dataPoints: 0
-        })
-        setLoading(false)
-        return
-      }
-        
-        const data = await response.json();
-        
-        // Convert API response to component format
-        setStats({
-          totalDevices: data.devices.total,
-          activeDevices: data.devices.online,
-          offlineDevices: data.devices.offline,
-          alertsCount: data.alerts.unresolved || data.alerts.total,
-          connectivityRate: Math.round((data.devices.online / data.devices.total) * 100) || 0,
-          dataPoints: 0 // TODO: Implement sensor data aggregation for accurate count
-        });
-      } catch (error) {
-        console.error('Failed to fetch system stats:', error);
-        // Show empty state on error instead of mock data
-        setStats({
-          totalDevices: 0,
-          activeDevices: 0,
-          offlineDevices: 0,
-          alertsCount: 0,
-          connectivityRate: 0,
-          dataPoints: 0
-        });
+    } catch (error) {
+      console.error('Failed to fetch system stats:', error);
+      // Show empty state on error instead of mock data
+      setStats({
+        totalDevices: 0,
+        activeDevices: 0,
+        offlineDevices: 0,
+        alertsCount: 0,
+        connectivityRate: 0,
+        dataPoints: 0
+      });
     } finally {
       setLoading(false)
     }

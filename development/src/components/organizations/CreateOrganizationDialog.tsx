@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 
 interface CreateOrganizationDialogProps {
   onSuccess?: (organizationId: string) => void;
@@ -108,42 +109,20 @@ export function CreateOrganizationDialog({
     setIsLoading(true);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      // Get the current session token
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/organizations`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          slug: slug.trim(),
-          description: description.trim() || null,
-          subscriptionTier,
-        }),
+      const response = await edgeFunctions.organizations.create({
+        name: name.trim(),
+        slug: slug.trim(),
+        description: description.trim() || undefined,
+        subscriptionTier,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create organization' }));
-        throw new Error(errorData.error || 'Failed to create organization');
+      if (!response.success) {
+        throw new Error(
+          typeof response.error === 'string' 
+            ? response.error 
+            : 'Failed to create organization'
+        );
       }
-
-      const data = await response.json();
 
       toast({
         title: 'Success!',
@@ -158,9 +137,12 @@ export function CreateOrganizationDialog({
       setErrors({});
       setOpen(false);
 
-      // Call success callback
-      if (onSuccess && data.organization?.id) {
-        onSuccess(data.organization.id);
+      // Call success callback with organization ID
+      if (onSuccess && response.data) {
+        const orgData = response.data as { organization?: { id: string } };
+        if (orgData.organization?.id) {
+          onSuccess(orgData.organization.id);
+        }
       }
     } catch (error) {
       console.error('Error creating organization:', error);

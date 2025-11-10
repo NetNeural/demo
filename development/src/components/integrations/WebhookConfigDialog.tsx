@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { integrationService } from '@/services/integration.service'
 
@@ -36,7 +36,6 @@ export function WebhookConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -62,20 +61,21 @@ export function WebhookConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
 
-      if (data) {
+      if (integration) {
         setConfig({
-          id: data.id,
-          name: data.name,
-          url: data.webhook_url || '',
-          secret: data.webhook_secret || '',
+          id: integration.id,
+          name: integration.name,
+          url: integration.webhookUrl || '',
+          secret: integration.webhookSecret || '',
           method: 'POST',
           content_type: 'application/json',
           custom_headers: '',
@@ -127,29 +127,36 @@ export function WebhookConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'webhook',
-        name: config.name,
-        webhook_url: config.url,
-        webhook_secret: config.secret,
-        webhook_enabled: true,
-        status: 'active',
+      const webhookConfig = {
+        url: config.url,
+        secret: config.secret,
+        webhookEnabled: true,
       }
 
+      let response
       if (integrationId) {
-        const { error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-
-        if (error) throw error
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: webhookConfig,
+          status: 'active',
+        })
       } else {
-        const { error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'webhook',
+          name: config.name,
+          settings: webhookConfig,
+        } as any)
+      }
 
-        if (error) throw error
+      if (!response.success) {
+        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
+        
+        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+          errorMsg = `A webhook integration with the name "${config.name}" already exists. Please choose a different name.`
+        }
+        
+        throw new Error(errorMsg)
       }
 
       toast.success('Webhook configuration saved successfully')

@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { logActivityStart, logActivityComplete, getIpAddress } from '../_shared/activity-logger.ts'
 import { GoliothClient } from '../_shared/golioth-client.ts'
@@ -8,33 +8,23 @@ import { GoogleIotClient } from '../_shared/google-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+export default createEdgeFunction(async ({ req }) => {
+  const url = new URL(req.url)
+  const integrationId = url.pathname.split('/').pop()
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  )
+
+  const authHeader = req.headers.get('Authorization')
+  if (authHeader) {
+    supabaseClient.auth.setAuth(authHeader.replace('Bearer ', ''))
   }
 
-  try {
-    const url = new URL(req.url)
-    const integrationId = url.pathname.split('/').pop()
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
-
-    const authHeader = req.headers.get('Authorization')
-    if (authHeader) {
-      supabaseClient.auth.setAuth(authHeader.replace('Bearer ', ''))
-    }
-
-    if (req.method === 'POST') {
-      const startTime = Date.now()
-      
+  if (req.method === 'POST') {
+    const startTime = Date.now()
+    
       const { data: integration, error } = await supabaseClient
         .from('device_integrations')
         .select(`
@@ -45,10 +35,7 @@ serve(async (req) => {
         .single()
 
       if (error || !integration) {
-        return new Response(
-          JSON.stringify({ error: 'Integration not found' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-        )
+        throw new DatabaseError('Integration not found', 404)
       }
 
       // Log test activity start
@@ -100,34 +87,27 @@ serve(async (req) => {
         await logActivityComplete(supabaseClient, logId, {
           status: testResult.success ? 'success' : 'failed',
           responseTimeMs: responseTime,
+          // @ts-expect-error - TestResult shape compatible with responseBody
           responseBody: testResult,
           errorMessage: testResult.success ? undefined : testResult.message,
         })
       }
 
-      return new Response(
-        JSON.stringify(testResult),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return createSuccessResponse(testResult)
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 405 }
-    )
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
-  }
+    throw new Error('Method not allowed')
+}, {
+  allowedMethods: ['POST']
 })
 
 /**
  * Create the appropriate integration client based on the integration type
  * This ensures each integration has its own isolated client instance
  */
+// deno-lint-ignore no-explicit-any
 function createIntegrationClient(
+  // deno-lint-ignore no-explicit-any
   integration: any,
   supabase: ReturnType<typeof createClient>,
   organizationId: string,

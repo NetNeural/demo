@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useState, useEffect, useCallback } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { handleApiError } from '@/lib/sentry-utils'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -33,41 +33,29 @@ export function AlertsList() {
   const [showDetails, setShowDetails] = useState(false)
 
   const fetchAlerts = useCallback(async () => {
+    console.log('[AlertsList] fetchAlerts called, currentOrganization:', currentOrganization)
+    
     if (!currentOrganization) {
+      console.log('[AlertsList] No organization, returning early')
       setAlerts([])
       setLoading(false)
       return
     }
 
     try {
+      console.log('[AlertsList] Fetching alerts for organization:', currentOrganization.id)
       setLoading(true)
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
       
-      if (!session) {
-        toast.error('Authentication required')
-        setAlerts([])
-        return
-      }
+      // Fetch alerts using edge function client
+      const response = await edgeFunctions.alerts.list(currentOrganization.id)
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts?organization_id=${currentOrganization.id}`
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const error = new Error(errorData.error || `HTTP ${response.status}`)
+      if (!response.success || !response.data) {
+        console.error('[AlertsList] Failed to fetch alerts:', response.error)
         
-        handleApiError(error, {
+        handleApiError(new Error(response.error?.message || 'Failed to load alerts'), {
           endpoint: `/functions/v1/alerts`,
           method: 'GET',
-          status: response.status,
-          errorData,
+          status: response.error?.status || 500,
           context: {
             organizationId: currentOrganization.id,
           },
@@ -78,11 +66,12 @@ export function AlertsList() {
         return
       }
 
-      const data = await response.json()
+      const data = response.data
+      console.log('[AlertsList] API response:', data)
       
       // Transform API response to match AlertItem format
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const transformedAlerts = (data.alerts || []).map((alert: any) => ({
+      const transformedAlerts = ((data as any).alerts || []).map((alert: any) => ({
         id: alert.id,
         title: alert.title || alert.message || 'Alert',
         description: alert.description || alert.message || '',
@@ -97,6 +86,7 @@ export function AlertsList() {
         category: alert.category || 'system'
       }))
       
+      console.log('[AlertsList] Transformed alerts:', transformedAlerts.length, 'alerts')
       setAlerts(transformedAlerts)
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -115,33 +105,16 @@ export function AlertsList() {
     if (!currentOrganization) return
 
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        toast.error('Authentication required')
-        return
-      }
+      // Acknowledge alert using user-actions edge function
+      const response = await edgeFunctions.userActions.acknowledgeAlert(alertId, 'acknowledged')
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts/${alertId}/acknowledge`
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const error = new Error(errorData.error || `HTTP ${response.status}`)
+      if (!response.success) {
+        console.error('[AlertsList] Failed to acknowledge alert:', response.error)
         
-        handleApiError(error, {
-          endpoint: `/functions/v1/alerts/${alertId}/acknowledge`,
+        handleApiError(new Error(response.error?.message || 'Failed to acknowledge alert'), {
+          endpoint: `/functions/v1/user-actions`,
           method: 'POST',
-          status: response.status,
-          errorData,
+          status: response.error?.status || 500,
           context: {
             alertId,
             organizationId: currentOrganization.id,
@@ -156,7 +129,7 @@ export function AlertsList() {
       setAlerts(prevAlerts => 
         prevAlerts.map(alert => 
           alert.id === alertId 
-            ? { 
+            ? {
                 ...alert, 
                 acknowledged: true, 
                 acknowledgedBy: 'Current User',
@@ -167,6 +140,9 @@ export function AlertsList() {
       )
       
       toast.success('Alert acknowledged successfully')
+      
+      // Refresh alerts to get updated list
+      await fetchAlerts()
     } catch (error) {
       console.error('Error acknowledging alert:', error)
       toast.error('Failed to acknowledge alert')

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { handleApiError } from '@/lib/api-error-handler';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import type { 
   UserOrganization, 
   OrganizationPermissions, 
@@ -84,60 +84,21 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         throw new Error('Missing Supabase configuration');
       }
 
-      // Get session token for authenticated API calls
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      // Fetch organizations using edge function client
+      const response = await edgeFunctions.organizations.list();
 
-      if (!session?.access_token) {
-        console.error('No active session');
+      if (!response.success || !response.data) {
+        console.error('Failed to fetch organizations:', response.error);
         setUserOrganizations([]);
         setIsLoading(false);
         return;
       }
 
-      // Fetch organizations from edge function
-      const response = await fetch(`${supabaseUrl}/functions/v1/organizations`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const errorResult = handleApiError(response, {
-        errorPrefix: 'Failed to fetch organizations',
-        throwOnError: false,
-      });
-
-      if (errorResult.isAuthError) {
-        setUserOrganizations([]);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!response.ok) {
-        setUserOrganizations([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      const data = response.data;
       
       // Transform API response to UserOrganization format
-      const organizations: UserOrganization[] = data.organizations?.map((org: {
-        id: string;
-        name: string;
-        slug: string;
-        description?: string;
-        subscriptionTier?: string;
-        isActive: boolean;
-        userCount: number;
-        deviceCount: number;
-        alertCount: number;
-        createdAt: string;
-        updatedAt: string;
-      }) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const organizations: UserOrganization[] = (data.organizations as any[] || []).map((org: any) => ({
         id: org.id,
         name: org.name,
         slug: org.slug,
@@ -152,20 +113,38 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         deviceCount: org.deviceCount,
         userCount: org.userCount,
         activeAlertsCount: org.alertCount,
-      })) || [];
+      }));
 
       setUserOrganizations(organizations);
 
       // Auto-select first org if none selected AND none saved in localStorage
       const savedOrgId = localStorage.getItem('netneural_current_org');
+      
+      console.log('🔍 Organization auto-selection:', {
+        savedOrgId,
+        currentOrgId,
+        organizationsCount: organizations.length,
+        firstOrgId: organizations[0]?.id,
+        firstOrgName: organizations[0]?.name
+      });
+      
       if (!savedOrgId && organizations.length > 0 && organizations[0]) {
+        // No saved org, select first one
+        console.log('✅ Auto-selecting first organization:', organizations[0].name);
         setCurrentOrgId(organizations[0].id);
         localStorage.setItem('netneural_current_org', organizations[0].id);
       } else if (savedOrgId && organizations.some(org => org.id === savedOrgId)) {
         // Ensure the saved org is set
+        console.log('✅ Using saved organization:', savedOrgId);
         setCurrentOrgId(savedOrgId);
       } else if (savedOrgId && organizations.length > 0 && organizations[0]) {
         // Saved org not found, select first available
+        console.log('⚠️ Saved org not found, selecting first available:', organizations[0].name);
+        setCurrentOrgId(organizations[0].id);
+        localStorage.setItem('netneural_current_org', organizations[0].id);
+      } else if (!currentOrgId && organizations.length > 0 && organizations[0]) {
+        // Edge case: currentOrgId is null but we have orgs - force selection
+        console.log('🔧 Force-selecting first organization:', organizations[0].name);
         setCurrentOrgId(organizations[0].id);
         localStorage.setItem('netneural_current_org', organizations[0].id);
       }
@@ -175,7 +154,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, currentOrgId]);
 
   // Fetch organization stats
   const fetchOrganizationStats = useCallback(async () => {
@@ -187,57 +166,25 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoadingStats(true);
       
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Missing Supabase configuration');
-      }
+      // Fetch dashboard stats using edge function client
+      const response = await edgeFunctions.organizations.stats(currentOrgId);
 
-      // Get session token
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
+      if (!response.success || !response.data) {
+        console.error('Failed to fetch stats:', response.error);
         setStats(null);
         return;
       }
 
-      // Fetch dashboard stats from edge function
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/dashboard-stats?organization_id=${currentOrgId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const errorResult = handleApiError(response, {
-        errorPrefix: 'Failed to fetch stats',
-        throwOnError: false,
-      });
-
-      if (errorResult.isAuthError) {
-        setStats(null);
-        return;
-      }
-
-      if (!response.ok) {
-        setStats(null);
-        return;
-      }
-
-      const data = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const statsData = response.data as any;
       
       const fetchedStats: OrganizationStats = {
-        totalDevices: data.totalDevices || 0,
-        onlineDevices: data.onlineDevices || 0,
-        totalUsers: data.totalUsers || 0,
-        activeAlerts: data.activeAlerts || 0,
-        totalLocations: data.totalLocations || 0,
-        activeIntegrations: data.activeIntegrations || 0,
+        totalDevices: statsData.totalDevices || 0,
+        onlineDevices: statsData.onlineDevices || 0,
+        totalUsers: statsData.totalUsers || 0,
+        activeAlerts: statsData.activeAlerts || 0,
+        totalLocations: statsData.totalLocations || 0,
+        activeIntegrations: statsData.activeIntegrations || 0,
       };
 
       setStats(fetchedStats);

@@ -16,6 +16,7 @@ export interface ActivityLogParams {
     | 'sync_import'
     | 'sync_export'
     | 'sync_bidirectional'
+    | 'device_sync'
     | 'webhook_received'
     | 'notification_email'
     | 'notification_slack'

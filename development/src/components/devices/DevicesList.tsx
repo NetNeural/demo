@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { handleApiError } from '@/lib/api-error-handler'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import {
   Dialog,
   DialogContent,
@@ -71,45 +70,17 @@ export function DevicesList() {
       setLoading(true)
       setError(null)
       
-      // Get authenticated user's session
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      // Use edge function client SDK
+      const response = await edgeFunctions.devices.list(currentOrganization.id)
       
-      if (!session) {
-        throw new Error('No active session. Please log in.')
-      }
-      
-      // Filter by current organization
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices?organization_id=${currentOrganization.id}`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const errorResult = handleApiError(response, {
-        errorPrefix: 'Failed to fetch devices',
-        throwOnError: false,
-      })
-
-      if (errorResult.isAuthError) {
-        setError('Not authenticated. Please log in.')
-        setDevices([])
-        setLoading(false)
-        return
-      }
-
-      if (!response.ok) {
-        setError('Failed to fetch devices')
+      if (!response.success) {
+        setError(response.error?.message || 'Failed to fetch devices')
         setDevices([])
         setLoading(false)
         return
       }
       
-      const data = await response.json();
-      setDevices(data.devices || [])
+      setDevices((response.data?.devices as Device[]) || [])
       
     } catch (err) {
       console.error('Error fetching devices:', err)
@@ -130,13 +101,6 @@ export function DevicesList() {
 
     try {
       setSaving(true)
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        toast.error('Not authenticated. Please log in.')
-        return
-      }
 
       console.log('[Device Edit] Starting update for device:', selectedDevice.id)
       console.log('[Device Edit] Update payload:', {
@@ -149,15 +113,11 @@ export function DevicesList() {
         location: editLocation
       })
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${selectedDevice.id}`,
+      const response = await edgeFunctions.call(
+        `devices/${selectedDevice.id}`,
         {
           method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+          body: {
             organization_id: currentOrganization.id,
             name: editName,
             device_type: editType,
@@ -165,20 +125,18 @@ export function DevicesList() {
             serial_number: editSerialNumber || null,
             firmware_version: editFirmwareVersion || null,
             location: editLocation
-          })
+          }
         }
       )
 
-      console.log('[Device Edit] Response status:', response.status, response.statusText)
+      console.log('[Device Edit] Response:', response)
 
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('[Device Edit] Update failed:', error)
-        throw new Error(error.error || 'Failed to update device')
+      if (!response.success) {
+        console.error('[Device Edit] Update failed:', response.error)
+        throw new Error(response.error?.message || 'Failed to update device')
       }
 
-      const result = await response.json()
-      console.log('[Device Edit] Update successful:', result)
+      console.log('[Device Edit] Update successful:', response.data)
 
       toast.success('Device updated successfully')
       setEditOpen(false)
@@ -212,31 +170,19 @@ export function DevicesList() {
 
     try {
       setDeleting(true)
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        toast.error('Not authenticated. Please log in.')
-        return
-      }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices/${deletingDevice.id}`,
+      const response = await edgeFunctions.call(
+        `devices/${deletingDevice.id}`,
         {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+          body: {
             organization_id: currentOrganization?.id
-          })
+          }
         }
       )
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete device')
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to delete device')
       }
 
       toast.success('Device deleted successfully')

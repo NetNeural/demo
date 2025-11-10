@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
+import { IntegrationActivityLog } from './IntegrationActivityLog'
 import { IntegrationStatusToggle } from './IntegrationStatusToggle'
+import { IntegrationSyncTab } from './IntegrationSyncTab'
 import { integrationService } from '@/services/integration.service'
 
 interface AzureIotConfig {
@@ -35,7 +38,6 @@ export function AzureIotConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -60,23 +62,24 @@ export function AzureIotConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
-
-      if (data && data.api_key_encrypted) {
-        const cfg = JSON.parse(data.api_key_encrypted)
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
+      
+      if (integration?.config) {
+        const cfg = integration.config as any
         setConfig({
-          id: data.id,
-          name: data.name,
-          connection_string: cfg?.connection_string || '',
-          hub_name: cfg?.hub_name || '',
-          shared_access_key: cfg?.shared_access_key || '',
-          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
+          id: integration.id,
+          name: integration.name,
+          connection_string: cfg.connectionString || '',
+          hub_name: cfg.hubName || '',
+          shared_access_key: cfg.sharedAccessKey || '',
+          status: integration.status || 'not-configured',
         })
       }
     } catch (error) {
@@ -125,31 +128,36 @@ export function AzureIotConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'azure_iot',
-        name: config.name,
-        api_key_encrypted: JSON.stringify({
-          connection_string: config.connection_string,
-          hub_name: config.hub_name,
-          shared_access_key: config.shared_access_key,
-        }),
-        status: config.status,
+      const azureConfig = {
+        connectionString: config.connection_string,
+        hubName: config.hub_name,
+        sharedAccessKey: config.shared_access_key,
       }
 
+      let response
       if (integrationId) {
-        const { error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-
-        if (error) throw error
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: azureConfig,
+          status: config.status,
+        })
       } else {
-        const { error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'azure_iot',
+          name: config.name,
+          settings: azureConfig,
+        } as any)
+      }
 
-        if (error) throw error
+      if (!response.success) {
+        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
+        
+        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+          errorMsg = `An Azure IoT integration with the name "${config.name}" already exists. Please choose a different name.`
+        }
+        
+        throw new Error(errorMsg)
       }
 
       toast.success('Azure IoT Hub configuration saved successfully')
@@ -165,81 +173,114 @@ export function AzureIotConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-900">
-            {integrationId ? 'Edit' : 'Add'} Azure IoT Hub Integration
+            Azure IoT Hub Integration
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Integration Name *</Label>
-            <Input
-              id="name"
-              value={config.name}
-              onChange={(e) => setConfig({ ...config, name: e.target.value })}
-              placeholder="e.g., Azure IoT Production"
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-100">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
+            <TabsTrigger value="activity">Activity Log</TabsTrigger>
+          </TabsList>
+
+          {/* General Tab */}
+          <TabsContent value="general" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Integration Name *</Label>
+              <Input
+                id="name"
+                value={config.name}
+                onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                placeholder="e.g., Azure IoT Production"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hub-name">IoT Hub Name *</Label>
+              <Input
+                id="hub-name"
+                value={config.hub_name}
+                onChange={(e) => setConfig({ ...config, hub_name: e.target.value })}
+                placeholder="my-iot-hub"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="connection-string">Connection String *</Label>
+              <Input
+                id="connection-string"
+                type="password"
+                value={config.connection_string}
+                onChange={(e) => setConfig({ ...config, connection_string: e.target.value })}
+                placeholder="HostName=...;SharedAccessKeyName=...;SharedAccessKey=..."
+              />
+              <p className="text-sm text-muted-foreground">
+                Get this from your Azure IoT Hub → Shared access policies
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="shared-key">Shared Access Key (Optional)</Label>
+              <Input
+                id="shared-key"
+                type="password"
+                value={config.shared_access_key}
+                onChange={(e) => setConfig({ ...config, shared_access_key: e.target.value })}
+                placeholder="Additional access key if needed"
+              />
+            </div>
+
+            <IntegrationStatusToggle
+              status={config.status}
+              onStatusChange={(status) => setConfig({ ...config, status })}
+              disabled={!config.connection_string || !config.hub_name}
+              disabledMessage="Configure connection string and hub name to enable"
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="hub-name">IoT Hub Name *</Label>
-            <Input
-              id="hub-name"
-              value={config.hub_name}
-              onChange={(e) => setConfig({ ...config, hub_name: e.target.value })}
-              placeholder="my-iot-hub"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="connection-string">Connection String *</Label>
-            <Input
-              id="connection-string"
-              type="password"
-              value={config.connection_string}
-              onChange={(e) => setConfig({ ...config, connection_string: e.target.value })}
-              placeholder="HostName=...;SharedAccessKeyName=...;SharedAccessKey=..."
-            />
-            <p className="text-sm text-muted-foreground">
-              Get this from your Azure IoT Hub → Shared access policies
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="shared-key">Shared Access Key (Optional)</Label>
-            <Input
-              id="shared-key"
-              type="password"
-              value={config.shared_access_key}
-              onChange={(e) => setConfig({ ...config, shared_access_key: e.target.value })}
-              placeholder="Additional access key if needed"
-            />
-          </div>
-        </div>
-
-        <IntegrationStatusToggle
-          status={config.status}
-          onStatusChange={(status) => setConfig({ ...config, status })}
-          disabled={!config.connection_string || !config.hub_name}
-          disabledMessage="Configure connection string and hub name to enable"
-        />
-
-        {testResult && (
-          <div className={`p-3 rounded-md flex items-start gap-2 ${
-            testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
-            {testResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            ) : (
-              <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+            {testResult && (
+              <div className={`p-3 rounded-md flex items-start gap-2 ${
+                testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+              }`}>
+                {testResult.success ? (
+                  <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                )}
+                <div className="text-sm">{testResult.message}</div>
+              </div>
             )}
-            <div className="text-sm">{testResult.message}</div>
-          </div>
-        )}
+          </TabsContent>
 
-        <DialogFooter>
+          {/* Run Sync Tab - Execute sync operations */}
+          {integrationId && (
+            <TabsContent value="run-sync" className="space-y-4">
+              <IntegrationSyncTab
+                integrationId={integrationId}
+                organizationId={organizationId}
+                integrationType="azure_iot"
+                integrationName={config.name}
+              />
+            </TabsContent>
+          )}
+
+          {/* Activity Log Tab */}
+          {integrationId && (
+            <TabsContent value="activity" className="space-y-4">
+              <IntegrationActivityLog
+                integrationId={integrationId}
+                organizationId={organizationId}
+                limit={50}
+                autoRefresh={true}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
+
+        <div className="flex justify-end gap-2 pt-4 border-t">
           {integrationId && (
             <Button 
               variant="secondary" 
@@ -257,7 +298,7 @@ export function AzureIotConfigDialog({
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Configuration
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )

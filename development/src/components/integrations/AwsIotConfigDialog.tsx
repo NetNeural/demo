@@ -9,10 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Loader2, Check, X, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { IntegrationActivityLog } from './IntegrationActivityLog'
 import { IntegrationStatusToggle } from './IntegrationStatusToggle'
+import { IntegrationSyncTab } from './IntegrationSyncTab'
 import { integrationService } from '@/services/integration.service'
 
 interface AwsIotConfig {
@@ -59,7 +60,6 @@ export function AwsIotConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
@@ -86,32 +86,33 @@ export function AwsIotConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
-
-      if (data) {
-        const cfg = data.settings as Record<string, unknown>
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
+      
+      if (integration) {
+        const cfg = integration.config as any
         setConfig({
-          id: data.id,
-          name: data.name,
-          region: (cfg?.region as string) || 'us-east-1',
-          access_key_id: (cfg?.access_key_id as string) || '',
-          secret_access_key: (cfg?.secret_access_key as string) || '',
-          endpoint: (cfg?.endpoint as string) || '',
-          certificate: (cfg?.certificate as string) || '',
-          status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
-          sync_enabled: data.sync_enabled || false,
-          sync_interval_seconds: data.sync_interval_seconds || 300,
-          sync_direction: (data.sync_direction as 'import' | 'export' | 'bidirectional') || 'bidirectional',
-          conflict_resolution: (data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
-          webhook_enabled: data.webhook_enabled || false,
-          webhook_secret: data.webhook_secret || '',
-          webhook_url: data.webhook_url || '',
+          id: integration.id,
+          name: integration.name,
+          region: cfg?.region || 'us-east-1',
+          access_key_id: cfg?.accessKeyId || '',
+          secret_access_key: cfg?.secretAccessKey || '',
+          endpoint: cfg?.endpoint || '',
+          certificate: cfg?.certificate || '',
+          status: integration.status || 'not-configured',
+          sync_enabled: integration.syncEnabled || false,
+          sync_interval_seconds: integration.syncIntervalSeconds || 300,
+          sync_direction: integration.syncDirection || 'bidirectional',
+          conflict_resolution: integration.conflictResolution || 'manual',
+          webhook_enabled: integration.webhookEnabled || false,
+          webhook_secret: integration.webhookSecret || '',
+          webhook_url: integration.webhookUrl || '',
         })
       }
     } catch (error) {
@@ -120,7 +121,7 @@ export function AwsIotConfigDialog({
     } finally {
       setLoading(false)
     }
-  }, [integrationId, supabase])
+  }, [integrationId, organizationId])
 
   useEffect(() => {
     if (open) {
@@ -160,65 +161,64 @@ export function AwsIotConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        name: config.name,
-        integration_type: 'aws_iot',
-        organization_id: organizationId,
-        status: config.status,
-        settings: {
-          region: config.region,
-          access_key_id: config.access_key_id,
-          secret_access_key: config.secret_access_key,
-          endpoint: config.endpoint,
-          certificate: config.certificate,
-        },
-        sync_enabled: config.sync_enabled,
-        sync_interval_seconds: config.sync_interval_seconds,
-        sync_direction: config.sync_direction,
-        conflict_resolution: config.conflict_resolution,
-        webhook_enabled: config.webhook_enabled,
+      const awsConfig = {
+        region: config.region,
+        accessKeyId: config.access_key_id,
+        secretAccessKey: config.secret_access_key,
+        endpoint: config.endpoint,
+        certificate: config.certificate,
+        syncEnabled: config.sync_enabled,
+        syncIntervalSeconds: config.sync_interval_seconds,
+        syncDirection: config.sync_direction,
+        conflictResolution: config.conflict_resolution,
+        webhookEnabled: config.webhook_enabled,
       }
 
-      console.log('[AwsIotConfigDialog] Saving config:', { integrationId, organizationId, payload })
+      console.log('[AwsIotConfigDialog] Saving config:', { integrationId, organizationId })
 
+      let response
       if (integrationId) {
         console.log('[AwsIotConfigDialog] Performing UPDATE with ID:', integrationId)
         
-        const { data, error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-          .eq('organization_id', organizationId)
-          .select()
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: awsConfig,
+          status: config.status,
+        })
 
-        console.log('[AwsIotConfigDialog] Update result:', { data, error, rowCount: data?.length })
+        console.log('[AwsIotConfigDialog] Update result:', { success: response.success })
 
-        if (error) {
-          console.error('[AwsIotConfigDialog] Update error:', error)
-          throw error
-        }
-
-        if (!data || data.length === 0) {
-          console.warn('[AwsIotConfigDialog] No rows updated - integration might not exist or RLS blocking')
-          throw new Error('Failed to update integration. Please check permissions.')
+        if (!response.success) {
+          console.error('[AwsIotConfigDialog] Update error:', response.error)
+          throw new Error(typeof response.error === 'string' ? response.error : 'Failed to update integration')
         }
 
         toast.success('Configuration updated successfully')
       } else {
-        const { data, error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
-          .select()
-          .single()
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'aws_iot',
+          name: config.name,
+          settings: awsConfig,
+        } as any)
 
-        console.log('[AwsIotConfigDialog] Insert result:', { data, error })
+        console.log('[AwsIotConfigDialog] Create result:', { success: response.success })
 
-        if (error) {
-          console.error('[AwsIotConfigDialog] Insert error:', error)
-          throw error
+        if (!response.success) {
+          console.error('[AwsIotConfigDialog] Create error:', response.error)
+          let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to create integration'
+          
+          if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+            errorMsg = `An AWS IoT integration with the name "${config.name}" already exists. Please choose a different name.`
+          }
+          
+          throw new Error(errorMsg)
         }
 
-        setConfig({ ...config, id: data.id })
+        const createdIntegration = (response.data as any)?.integration
+        if (createdIntegration?.id) {
+          setConfig({ ...config, id: createdIntegration.id })
+        }
         toast.success('Configuration created successfully')
       }
 
@@ -240,11 +240,12 @@ export function AwsIotConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="sync">Sync Settings</TabsTrigger>
             <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+            <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
           </TabsList>
 
@@ -499,6 +500,18 @@ export function AwsIotConfigDialog({
               </p>
             </div>
           </TabsContent>
+
+          {/* Run Sync Tab - Execute sync operations */}
+          {integrationId && (
+            <TabsContent value="run-sync" className="space-y-4">
+              <IntegrationSyncTab
+                integrationId={integrationId}
+                organizationId={organizationId}
+                integrationType="aws_iot"
+                integrationName={config.name}
+              />
+            </TabsContent>
+          )}
 
           {/* Activity Log Tab */}
           {integrationId && (

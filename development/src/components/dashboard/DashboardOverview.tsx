@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -15,6 +16,7 @@ interface DashboardStats {
 }
 
 export function DashboardOverview() {
+  const { currentOrganization } = useOrganization()
   const [stats, setStats] = useState<DashboardStats>({
     totalDevices: 0,
     onlineDevices: 0,
@@ -28,55 +30,27 @@ export function DashboardOverview() {
 
   useEffect(() => {
     async function fetchDashboardStats() {
+      if (!currentOrganization?.id) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const supabase = createClient()
+        const response = await edgeFunctions.organizations.stats(currentOrganization.id)
         
-        // Fetch device statistics
-        const { data: devices, error: devicesError } = await supabase
-          .from('devices')
-          .select('status')
-        
-        if (devicesError) throw devicesError
+        if (!response.success) {
+          throw new Error(response.error?.message || 'Failed to fetch dashboard stats')
+        }
 
-        // Fetch active alerts
-        const { data: alerts, error: alertsError } = await supabase
-          .from('alerts')
-          .select('id')
-          .eq('is_resolved', false)
-        
-        if (alertsError) throw alertsError
-
-        // Fetch organizations
-        const { data: organizations, error: orgsError } = await supabase
-          .from('organizations')
-          .select('id')
-          .eq('is_active', true)
-        
-        if (orgsError) throw orgsError
-
-        // Fetch users
-        const { data: users, error: usersError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('is_active', true)
-        
-        if (usersError) throw usersError
-
-        // Calculate statistics
-        const totalDevices = devices?.length || 0
-        const onlineDevices = devices?.filter(d => d.status === 'online').length || 0
-        const offlineDevices = devices?.filter(d => d.status === 'offline').length || 0
-        const activeAlerts = alerts?.length || 0
-        const totalOrganizations = organizations?.length || 0
-        const totalUsers = users?.length || 0
+        const data = response.data as any
 
         setStats({
-          totalDevices,
-          onlineDevices,
-          offlineDevices,
-          activeAlerts,
-          totalOrganizations,
-          totalUsers,
+          totalDevices: data.totalDevices || 0,
+          onlineDevices: data.onlineDevices || 0,
+          offlineDevices: data.offlineDevices || 0,
+          activeAlerts: data.activeAlerts || 0,
+          totalOrganizations: 1, // Current organization
+          totalUsers: data.totalUsers || 0,
         })
       } catch (err) {
         console.error('Error fetching dashboard stats:', err)
@@ -87,7 +61,7 @@ export function DashboardOverview() {
     }
 
     fetchDashboardStats()
-  }, [])
+  }, [currentOrganization?.id])
 
   if (loading) {
     return (

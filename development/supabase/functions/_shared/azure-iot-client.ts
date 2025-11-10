@@ -118,6 +118,7 @@ export class AzureIotClient extends BaseIntegrationClient {
   public async import(): Promise<SyncResult> {
     return this.withActivityLog('import', async () => {
       const result = this.createSyncResult()
+      let telemetryRecorded = 0
       
       try {
         // List all devices from Azure IoT Hub
@@ -129,9 +130,78 @@ export class AzureIotClient extends BaseIntegrationClient {
           try {
             // Get device twin for detailed state
             const twin = await this.getDeviceTwin(azureDevice.deviceId).catch(() => null)
+
+            // First, upsert the device to get/create NetNeural device ID
+            const { data: existingDevice } = await this.config.supabase
+              .from('devices')
+              .select('id')
+              .eq('organization_id', this.config.organizationId)
+              .or(`hardware_id.eq.${azureDevice.deviceId},external_id.eq.${azureDevice.deviceId}`)
+              .single()
+
+            let localDeviceId = existingDevice?.id
+
+            // If device doesn't exist, create it
+            if (!localDeviceId) {
+              const { data: newDevice, error: createError } = await this.config.supabase
+                .from('devices')
+                .insert({
+                  organization_id: this.config.organizationId,
+                  name: azureDevice.deviceId,
+                  hardware_id: azureDevice.deviceId,
+                  status: azureDevice.connectionState === 'Connected' ? 'online' : 'offline',
+                  last_seen: azureDevice.lastActivityTime,
+                  metadata: {
+                    device_type: twin?.tags?.deviceType || 'unknown',
+                    azure_status: azureDevice.status,
+                    azure_status_reason: azureDevice.statusReason,
+                    azure_pending_messages: azureDevice.cloudToDeviceMessageCount,
+                  },
+                  external_id: azureDevice.deviceId,
+                })
+                .select('id')
+                .single()
+
+              if (createError || !newDevice) {
+                throw new Error(`Failed to create device: ${createError?.message}`)
+              }
+              localDeviceId = newDevice.id
+            } else {
+              // Update existing device
+              await this.config.supabase
+                .from('devices')
+                .update({
+                  name: azureDevice.deviceId,
+                  status: azureDevice.connectionState === 'Connected' ? 'online' : 'offline',
+                  last_seen: azureDevice.lastActivityTime,
+                  metadata: {
+                    device_type: twin?.tags?.deviceType || 'unknown',
+                    azure_status: azureDevice.status,
+                    azure_status_reason: azureDevice.statusReason,
+                    azure_pending_messages: azureDevice.cloudToDeviceMessageCount,
+                  },
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', localDeviceId)
+            }
+
+            // NEW: Extract and record telemetry from Device Twin reported properties
+            if (twin?.properties?.reported) {
+              try {
+                const telemetryId = await this.recordTelemetry(
+                  localDeviceId,
+                  twin.properties.reported,
+                  twin.lastActivityTime
+                )
+                if (telemetryId) telemetryRecorded++
+              } catch (telemetryError) {
+                // Don't fail device import if telemetry recording fails
+                console.warn(`Failed to record Twin telemetry for ${azureDevice.deviceId}:`, telemetryError)
+              }
+            }
             
             const device: Device = {
-              id: azureDevice.deviceId,
+              id: localDeviceId,
               name: azureDevice.deviceId,
               hardware_id: azureDevice.deviceId,
               status: azureDevice.connectionState === 'Connected' ? 'online' : 'offline',
@@ -151,11 +221,18 @@ export class AzureIotClient extends BaseIntegrationClient {
             
             result.devices_succeeded++
             result.details = result.details || { devices: [] }
+            ;(result.details as Record<string, unknown>).devices = (result.details as Record<string, Device[]>).devices || []
             ;(result.details as Record<string, Device[]>).devices.push(device)
           } catch (error) {
             result.devices_failed++
             result.errors.push(`${azureDevice.deviceId}: ${(error as Error).message}`)
           }
+        }
+
+        // Add telemetry stats to result
+        if (telemetryRecorded > 0) {
+          const details = result.details as Record<string, unknown>
+          details.telemetry_points = telemetryRecorded
         }
         
         return result

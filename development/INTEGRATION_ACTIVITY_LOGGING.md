@@ -262,7 +262,7 @@ ORDER BY failure_count DESC;
 
 Add logging to:
 - ✅ `integration-test` - DONE
-- ⏳ `golioth-webhook` - Incoming webhooks
+- ⏳ `integration-webhook` - Incoming webhooks (unified for all providers)
 - ⏳ `device-sync` - Sync operations
 - ⏳ `send-notification` - Notifications
 - ⏳ `aws-iot-sync` - AWS IoT syncs

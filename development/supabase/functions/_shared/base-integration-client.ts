@@ -394,4 +394,152 @@ export abstract class BaseIntegrationClient {
       errors: [],
     }
   }
+
+  // ===========================================================================
+  // Telemetry Recording (Universal for All Integrations)
+  // ===========================================================================
+
+  /**
+   * Record telemetry data during sync operations
+   * This ensures ALL integrations (Golioth, AWS IoT, Azure IoT, MQTT, etc.)
+   * consistently record telemetry to device_telemetry_history
+   * 
+   * Use this whenever you sync devices that have telemetry data (temperature,
+   * battery, signal strength, custom sensor data, etc.)
+   * 
+   * @param deviceId - NetNeural device UUID
+   * @param telemetry - Telemetry data as JSON object
+   * @param deviceTimestamp - Optional device-reported timestamp
+   * @returns UUID of created telemetry record, or null if failed
+   * 
+   * @example
+   * // In Golioth sync:
+   * const goliothTelemetry = await this.getDeviceTelemetry(goliothDeviceId)
+   * await this.recordTelemetry(localDeviceId, goliothTelemetry, goliothTelemetry.timestamp)
+   * 
+   * @example
+   * // In AWS IoT sync:
+   * const shadow = await this.getThingShadow(thingName)
+   * if (shadow?.state?.reported) {
+   *   await this.recordTelemetry(localDeviceId, shadow.state.reported, shadow.metadata?.timestamp)
+   * }
+   */
+  protected async recordTelemetry(
+    deviceId: string,
+    telemetry: Record<string, unknown>,
+    deviceTimestamp?: string
+  ): Promise<string | null> {
+    try {
+      // Skip if telemetry is empty
+      if (!telemetry || Object.keys(telemetry).length === 0) {
+        return null
+      }
+
+      const { data, error } = await this.config.supabase.rpc('record_device_telemetry', {
+        p_device_id: deviceId,
+        p_organization_id: this.config.organizationId,
+        p_telemetry: telemetry,
+        p_device_timestamp: deviceTimestamp || new Date().toISOString(),
+        p_activity_log_id: this.activityLogId || null,
+        p_integration_id: this.config.integrationId,
+      })
+
+      if (error) {
+        console.error('[BaseIntegrationClient] Failed to record telemetry:', error)
+        return null
+      }
+
+      return data as string
+    } catch (error) {
+      console.error('[BaseIntegrationClient] recordTelemetry exception:', error)
+      return null
+    }
+  }
+
+  /**
+   * Record multiple telemetry points in batch
+   * More efficient for syncing historical telemetry data
+   * 
+   * @param records - Array of telemetry records
+   * @returns Number of successfully recorded entries
+   * 
+   * @example
+   * const goliothHistory = await this.getDeviceTelemetryHistory(deviceId, { since: last24Hours })
+   * await this.recordTelemetryBatch(goliothHistory.map(point => ({
+   *   deviceId: localDeviceId,
+   *   telemetry: point.data,
+   *   timestamp: point.timestamp
+   * })))
+   */
+  protected async recordTelemetryBatch(
+    records: Array<{
+      deviceId: string
+      telemetry: Record<string, unknown>
+      timestamp?: string
+    }>
+  ): Promise<number> {
+    let successCount = 0
+
+    // Insert in batches of 50 to avoid overwhelming database
+    const batchSize = 50
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize)
+      
+      const promises = batch.map(record =>
+        this.recordTelemetry(record.deviceId, record.telemetry, record.timestamp)
+      )
+      
+      const results = await Promise.allSettled(promises)
+      successCount += results.filter(r => r.status === 'fulfilled' && r.value !== null).length
+    }
+
+    return successCount
+  }
+
+  /**
+   * Extract telemetry from device metadata
+   * Helper function to pull telemetry fields from device metadata JSON
+   * 
+   * Common fields across all integrations:
+   * - battery_level, battery, battery_percentage
+   * - temperature, temp
+   * - humidity
+   * - rssi, signal_strength
+   * - firmware_version
+   * - uptime, uptime_seconds
+   * 
+   * @param metadata - Device metadata JSON
+   * @returns Extracted telemetry fields
+   */
+  protected extractTelemetryFromMetadata(
+    metadata: Record<string, unknown>
+  ): Record<string, unknown> {
+    const telemetry: Record<string, unknown> = {}
+
+    // Battery (check multiple field names)
+    if ('battery_level' in metadata) telemetry.battery = metadata.battery_level
+    else if ('battery' in metadata) telemetry.battery = metadata.battery
+    else if ('battery_percentage' in metadata) telemetry.battery = metadata.battery_percentage
+
+    // Temperature
+    if ('temperature' in metadata) telemetry.temperature = metadata.temperature
+    else if ('temp' in metadata) telemetry.temperature = metadata.temp
+
+    // Humidity
+    if ('humidity' in metadata) telemetry.humidity = metadata.humidity
+
+    // Signal strength
+    if ('rssi' in metadata) telemetry.rssi = metadata.rssi
+    else if ('signal_strength' in metadata) telemetry.rssi = metadata.signal_strength
+
+    // Firmware version
+    if ('firmware_version' in metadata) telemetry.firmware_version = metadata.firmware_version
+    else if ('firmware' in metadata) telemetry.firmware_version = metadata.firmware
+
+    // Uptime
+    if ('uptime' in metadata) telemetry.uptime = metadata.uptime
+    else if ('uptime_seconds' in metadata) telemetry.uptime = metadata.uptime_seconds
+
+    return telemetry
+  }
 }

@@ -59,7 +59,7 @@ describe('Integration Components', () => {
 
   test('OrganizationIntegrationManager renders', async () => {
     const { OrganizationIntegrationManager } = await import('@/components/integrations/OrganizationIntegrationManager')
-    const { container } = render(<OrganizationIntegrationManager />)
+    const { container } = render(<OrganizationIntegrationManager organizationId="test-org-id" />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 })

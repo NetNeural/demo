@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle } from 'lucide-react'
-import { goliothSyncService } from '@/services/golioth-sync.service'
+import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
 
 interface Conflict {
@@ -45,7 +45,7 @@ export function ConflictResolutionDialog({
   const loadConflicts = async () => {
     setLoading(true)
     try {
-      const data = await goliothSyncService.getPendingConflicts(organizationId)
+      const data = await integrationSyncService.getPendingConflicts(organizationId)
       setConflicts(data as unknown as Conflict[])
       setCurrentIndex(0)
     } catch (error) {
@@ -71,7 +71,7 @@ export function ConflictResolutionDialog({
       const value = strategy === 'remote_wins' ? currentConflict.remote_value : currentConflict.local_value
       const resolvedValue = typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined
       
-      await goliothSyncService.resolveConflict(
+      await integrationSyncService.resolveConflict(
         currentConflict.id,
         strategy,
         resolvedValue

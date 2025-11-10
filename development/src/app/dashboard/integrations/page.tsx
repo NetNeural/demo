@@ -9,8 +9,8 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
 import { SyncHistoryList } from '@/components/integrations/SyncHistoryList'
-import { createClient } from '@/lib/supabase/client'
-import { goliothSyncService } from '@/services/golioth-sync.service'
+import { edgeFunctions } from '@/lib/edge-functions'
+import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
 
 interface Integration {
@@ -25,7 +25,6 @@ interface Integration {
 
 export default function IntegrationsPage() {
   const { currentOrganization } = useOrganization()
-  const supabase = createClient()
   
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,27 +38,40 @@ export default function IntegrationsPage() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('organization_id', currentOrganization.id)
-        .eq('integration_type', 'golioth')
-
-      if (error) throw error
-      setIntegrations((data || []) as Integration[])
+      const response = await edgeFunctions.integrations.list(currentOrganization.id)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
+      
+      const allIntegrations = (response.data as any)?.integrations || []
+      // Filter for Golioth integrations
+      const goliothIntegrations = allIntegrations.filter((i: any) => 
+        i.type === 'golioth' || i.integrationType === 'golioth'
+      ).map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        integration_type: i.type || i.integrationType,
+        status: i.status,
+        created_at: i.createdAt || i.created_at,
+        last_sync_at: i.lastSyncAt || i.last_sync_at,
+        last_sync_status: i.lastSyncStatus || i.last_sync_status
+      }))
+      
+      setIntegrations(goliothIntegrations)
     } catch (error) {
       console.error('Failed to load integrations:', error)
       toast.error('Failed to load integrations')
     } finally {
       setLoading(false)
     }
-  }, [currentOrganization, supabase])
+  }, [currentOrganization])
 
   const loadPendingConflicts = useCallback(async () => {
     if (!currentOrganization) return
 
     try {
-      const conflicts = await goliothSyncService.getPendingConflicts(currentOrganization.id)
+      const conflicts = await integrationSyncService.getPendingConflicts(currentOrganization.id)
       setPendingConflicts(conflicts.length)
     } catch (error) {
       console.error('Failed to load conflicts:', error)
@@ -87,12 +99,11 @@ export default function IntegrationsPage() {
     if (!confirm('Are you sure you want to delete this integration?')) return
 
     try {
-      const { error } = await supabase
-        .from('device_integrations')
-        .delete()
-        .eq('id', integrationId)
+      const response = await edgeFunctions.integrations.delete(integrationId)
 
-      if (error) throw error
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to delete integration')
+      }
 
       toast.success('Integration deleted successfully')
       loadIntegrations()

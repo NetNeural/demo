@@ -1,26 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { 
   getUserContext, 
   getTargetOrganizationId,
-  createAuthenticatedClient,
-  createAuthErrorResponse,
-  createSuccessResponse,
-  corsHeaders 
+  createAuthenticatedClient
 } from '../_shared/auth.ts'
-import { logActivity, getIpAddress } from '../_shared/activity-logger.ts'
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    // Get authenticated user context
-    const userContext = await getUserContext(req)
-    
-    // Create authenticated Supabase client (respects RLS)
-    const supabase = createAuthenticatedClient(req)
+export default createEdgeFunction(async ({ req }) => {
+  // Get authenticated user context
+  const userContext = await getUserContext(req)
+  
+  // Create authenticated Supabase client (respects RLS)
+  const supabase = createAuthenticatedClient(req)
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -30,7 +20,7 @@ serve(async (req) => {
       const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
       
       if (!organizationId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
       // Build query - RLS will enforce access automatically
@@ -55,11 +45,23 @@ serve(async (req) => {
 
       if (error) {
         console.error('Database error:', error)
-        return createAuthErrorResponse(`Failed to fetch devices: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to fetch devices: ${error.message}`)
       }
 
       // Transform devices for response
-      const transformedDevices = devices?.map((device: any) => ({
+      interface DeviceWithRelations {
+        id: string
+        name: string
+        device_type: string
+        status: string
+        last_seen: string | null
+        locations?: { name: string } | null
+        departments?: { name: string } | null
+        device_integrations?: { name: string } | null
+        [key: string]: unknown
+      }
+      
+      const transformedDevices = devices?.map((device: DeviceWithRelations) => ({
         id: device.id,
         name: device.name,
         device_name: device.name, // Alias for compatibility
@@ -91,7 +93,7 @@ serve(async (req) => {
       const deviceId = pathParts[pathParts.length - 1]
       
       if (!deviceId || deviceId === 'devices') {
-        return createAuthErrorResponse('Device ID is required for updates', 400)
+        throw new Error('Device ID is required for updates')
       }
 
       const body = await req.json()
@@ -101,15 +103,14 @@ serve(async (req) => {
         device_type, 
         model, 
         serial_number, 
-        firmware_version,
-        location 
+        firmware_version
       } = body
 
       // Verify user has access to this device's organization
       const targetOrgId = getTargetOrganizationId(userContext, organization_id)
       
       if (!targetOrgId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
       // Build update object with proper typing
@@ -127,14 +128,14 @@ serve(async (req) => {
       // Update device - RLS will enforce access automatically
       const { data: updatedDevice, error: updateError } = await supabase
         .from('devices')
-        .update(updates)
+        .update(updates as any)
         .eq('id', deviceId)
         .select()
         .single()
 
       if (updateError) {
         console.error('Update error:', updateError)
-        return createAuthErrorResponse(`Failed to update device: ${updateError.message}`, 500)
+        throw new DatabaseError(`Failed to update device: ${updateError.message}`)
       }
 
       return createSuccessResponse({ 
@@ -152,23 +153,22 @@ serve(async (req) => {
         device_type, 
         model, 
         serial_number, 
-        firmware_version,
-        location 
+        firmware_version
       } = body
 
       // Verify required fields
       if (!name || !device_type) {
-        return createAuthErrorResponse('Name and device type are required', 400)
+        throw new Error('Name and device type are required')
       }
 
       // Verify user has access to this organization
       const targetOrgId = getTargetOrganizationId(userContext, organization_id)
       
       if (!targetOrgId) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
-      // Create device - RLS will enforce access automatically
+      // Create new device - RLS will enforce access automatically
       const { data: newDevice, error: createError } = await supabase
         .from('devices')
         .insert({
@@ -180,19 +180,19 @@ serve(async (req) => {
           serial_number: serial_number || null,
           firmware_version: firmware_version || null,
           status: 'offline'
-        })
+        } as any)
         .select()
         .single()
 
       if (createError) {
         console.error('Create error:', createError)
-        return createAuthErrorResponse(`Failed to create device: ${createError.message}`, 500)
+        throw new DatabaseError(`Failed to create device: ${createError.message}`)
       }
 
       return createSuccessResponse({ 
         device: newDevice,
         message: 'Device created successfully'
-      }, 201)
+      }, { status: 201 })
     }
 
     if (req.method === 'DELETE') {
@@ -201,7 +201,7 @@ serve(async (req) => {
       const deviceId = pathParts[pathParts.length - 1]
       
       if (!deviceId || deviceId === 'devices') {
-        return createAuthErrorResponse('Device ID is required for deletion', 400)
+        throw new Error('Device ID is required for deletion')
       }
 
       const body = await req.json()
@@ -211,7 +211,7 @@ serve(async (req) => {
       const targetOrgId = getTargetOrganizationId(userContext, organization_id)
       
       if (!targetOrgId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
       // Soft delete: set deleted_at timestamp instead of hard delete
@@ -226,7 +226,7 @@ serve(async (req) => {
 
       if (deleteError) {
         console.error('Delete error:', deleteError)
-        return createAuthErrorResponse(`Failed to delete device: ${deleteError.message}`, 500)
+        throw new DatabaseError(`Failed to delete device: ${deleteError.message}`)
       }
 
       return createSuccessResponse({ 
@@ -234,17 +234,150 @@ serve(async (req) => {
       })
     }
 
-    return createAuthErrorResponse('Method not allowed', 405)
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('Edge function error:', errorMessage, error)
-    
-    // Handle auth errors specifically
-    if (errorMessage.includes('Unauthorized') || errorMessage.includes('authorization')) {
-      return createAuthErrorResponse(errorMessage, 401)
+    if (req.method === 'PATCH') {
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const deviceId = pathParts[pathParts.indexOf('devices') + 1]
+      const action = pathParts[pathParts.length - 1]
+      
+      if (!deviceId || deviceId === 'devices') {
+        throw new Error('Device ID is required')
+      }
+
+      // Handle device-integration mapping actions
+      if (action === 'map-external') {
+        const body = await req.json()
+        const { integration_id, external_device_id } = body
+
+        if (!integration_id || !external_device_id) {
+          throw new Error('integration_id and external_device_id are required')
+        }
+
+        // Update device with external mapping
+        const { data: updatedDevice, error: mapError } = await supabase
+          .from('devices')
+          .update({
+            integration_id,
+            external_device_id,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq('id', deviceId)
+          .select()
+          .single()
+
+        if (mapError) {
+          console.error('Map external error:', mapError)
+          throw new DatabaseError(`Failed to map device: ${mapError.message}`)
+        }
+
+        return createSuccessResponse({
+          device: updatedDevice,
+          message: 'Device mapped to external system successfully'
+        })
+      }
+
+      if (action === 'unmap-external') {
+        // Remove external mapping
+        const { data: updatedDevice, error: unmapError } = await supabase
+          .from('devices')
+          .update({
+            integration_id: null,
+            external_device_id: null,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq('id', deviceId)
+          .select()
+          .single()
+
+        if (unmapError) {
+          console.error('Unmap external error:', unmapError)
+          throw new DatabaseError(`Failed to unmap device: ${unmapError.message}`)
+        }
+
+        return createSuccessResponse({
+          device: updatedDevice,
+          message: 'Device unmapped from external system successfully'
+        })
+      }
+
+      if (action === 'status') {
+        // Get device status with full integration info
+        const { data: device, error: statusError } = await supabase
+          .from('devices')
+          .select(`
+            *,
+            device_integrations!integration_id (
+              id,
+              name,
+              integration_type
+            ),
+            locations!location_id(name, description),
+            departments!department_id(name, description)
+          `)
+          .eq('id', deviceId)
+          .single()
+
+        if (statusError) {
+          console.error('Status error:', statusError)
+          throw new DatabaseError(`Failed to fetch device status: ${statusError.message}`)
+        }
+
+        if (!device) {
+          throw new DatabaseError('Device not found', 404)
+        }
+
+        // Transform to unified status format
+        interface DeviceStatusData {
+          id: string
+          external_device_id: string | null
+          organization_id: string
+          name: string
+          device_type: string
+          status: string
+          last_seen: string | null
+          battery_level: number | null
+          signal_strength: number | null
+          integration_id: string | null
+          firmware_version: string | null
+          updated_at: string
+          metadata: unknown
+          locations?: { name: string } | null
+          departments?: { name: string } | null
+          device_integrations?: { id: string; name: string; integration_type: string } | null
+          [key: string]: unknown
+        }
+        
+        const deviceData = device as unknown as DeviceStatusData
+        const deviceStatus = {
+          deviceId: deviceData.id,
+          externalDeviceId: deviceData.external_device_id || '',
+          organizationId: deviceData.organization_id,
+          name: deviceData.name,
+          deviceType: deviceData.device_type,
+          status: deviceData.status || 'offline',
+          lastSeen: deviceData.last_seen,
+          batteryLevel: deviceData.battery_level,
+          signalStrength: deviceData.signal_strength,
+          firmwareVersion: deviceData.firmware_version,
+          location: deviceData.locations?.name || deviceData.departments?.name || null,
+          integration: deviceData.device_integrations ? {
+            id: deviceData.device_integrations.id,
+            name: deviceData.device_integrations.name,
+            type: deviceData.device_integrations.integration_type
+          } : null,
+          metadata: deviceData.metadata,
+          updatedAt: deviceData.updated_at
+        }
+
+        return createSuccessResponse({
+          status: deviceStatus
+        })
+      }
+
+      throw new Error(`Unknown action: ${action}`)
     }
-    
-    return createAuthErrorResponse(errorMessage, 500)
-  }
+
+  throw new Error('Method not allowed')
+}, {
+  allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 })

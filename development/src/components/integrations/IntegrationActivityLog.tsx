@@ -25,7 +25,7 @@ import {
   Filter,
   Download
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { formatDistanceToNow } from 'date-fns'
 import type { Database } from '@/types/supabase'
 
@@ -50,92 +50,50 @@ export function IntegrationActivityLog({
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [filterDirection, setFilterDirection] = useState<'all' | 'outgoing' | 'incoming'>('all')
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all')
-  const supabase = createClient()
 
   const loadLogs = useCallback(async () => {
     setLoading(true)
     try {
       console.log('[ActivityLog] Loading logs for integration:', integrationId)
-      console.log('[ActivityLog] Organization ID:', organizationId)
       
-      // Check current user
-      const { data: userData } = await supabase.auth.getUser()
-      console.log('[ActivityLog] Current user ID:', userData?.user?.id)
-      
-      // Check organization_members
-      const { data: memberData } = await supabase
-        .from('organization_members')
-        .select('*')
-        .eq('user_id', userData?.user?.id || '')
-      console.log('[ActivityLog] Organization memberships:', memberData)
-      
-      let query = supabase
-        .from('integration_activity_log')
-        .select('*')
-        .eq('integration_id', integrationId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
+      // Use edge function to fetch activity logs
+      const response = await edgeFunctions.integrations.getActivityLog(integrationId, {
+        limit,
+        direction: filterDirection,
+        status: filterStatus,
+      })
 
-      if (filterDirection !== 'all') {
-        query = query.eq('direction', filterDirection)
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load activity logs')
       }
 
-      if (filterStatus !== 'all') {
-        if (filterStatus === 'failed') {
-          query = query.in('status', ['failed', 'error', 'timeout'])
-        } else {
-          query = query.eq('status', 'success')
-        }
-      }
-
-      const { data, error } = await query
+      const logs = (response.data as any)?.logs || []
+      console.log('[ActivityLog] Loaded logs:', logs.length)
       
-      console.log('[ActivityLog] Query result:', { data, error, count: data?.length })
-      
-      // Also try querying by organization_id to debug RLS
-      const { data: orgData, error: orgError } = await supabase
-        .from('integration_activity_log')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .limit(5)
-      
-      console.log('[ActivityLog] Org query result:', { orgData, orgError, count: orgData?.length })
-
-      if (error) throw error
-      setLogs(data || [])
+      setLogs(logs)
     } catch (error) {
       console.error('Failed to load activity logs:', error)
     } finally {
       setLoading(false)
     }
-  }, [integrationId, organizationId, limit, filterDirection, filterStatus, supabase])
+  }, [integrationId, limit, filterDirection, filterStatus])
 
   useEffect(() => {
     loadLogs()
 
+    // Real-time updates would require direct Supabase client
+    // For now, we'll just poll if autoRefresh is enabled
     if (autoRefresh) {
-      const channel = supabase
-        .channel(`activity-log-${integrationId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'integration_activity_log',
-            filter: `integration_id=eq.${integrationId}`,
-          },
-          (payload) => {
-            setLogs((prev) => [payload.new as ActivityLog, ...prev].slice(0, limit))
-          }
-        )
-        .subscribe()
+      const interval = setInterval(() => {
+        loadLogs()
+      }, 30000) // Refresh every 30 seconds
 
       return () => {
-        channel.unsubscribe()
+        clearInterval(interval)
       }
     }
     return undefined
-  }, [integrationId, limit, autoRefresh, loadLogs, supabase])
+  }, [integrationId, limit, autoRefresh, loadLogs])
 
   const getStatusIcon = (status: string) => {
     switch (status) {

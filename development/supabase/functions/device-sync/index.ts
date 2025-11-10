@@ -22,7 +22,7 @@
 // ============================================================================
 // deno-lint-ignore-file no-explicit-any
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
@@ -31,11 +31,6 @@ import { GoogleIotClient } from '../_shared/google-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient, SyncResult, TestResult } from '../_shared/base-integration-client.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 interface SyncRequest {
   integrationId: string
   organizationId: string
@@ -43,126 +38,96 @@ interface SyncRequest {
   deviceIds?: string[]
 }
 
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders })
+export default createEdgeFunction(async ({ req }) => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[device-sync] Missing environment variables')
+    throw new DatabaseError('Server configuration error', 500)
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const { integrationId, organizationId, operation, deviceIds }: SyncRequest = await req.json()
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('[device-sync] Missing environment variables')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { integrationId, organizationId, operation, deviceIds }: SyncRequest = await req.json()
-
-    if (!integrationId || !organizationId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: integrationId, organizationId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!['test', 'import', 'export', 'bidirectional'].includes(operation)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid operation. Must be: test, import, export, or bidirectional' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
-    // Fetch integration from database
-    const { data: integration, error: integrationError } = await supabase
-      .from('device_integrations')
-      .select('*')
-      .eq('id', integrationId)
-      .eq('organization_id', organizationId)
-      .single()
-
-    if (integrationError || !integration) {
-      console.error('[device-sync] Integration not found:', integrationError)
-      return new Response(
-        JSON.stringify({ error: 'Integration not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Create the appropriate client based on integration type
-    const client = createIntegrationClient(integration, supabase, organizationId, integrationId)
-    
-    if (!client) {
-      return new Response(
-        JSON.stringify({ error: `Unsupported integration type: ${integration.integration_type}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Execute the requested operation
-    let result: TestResult | SyncResult
-
-    switch (operation) {
-      case 'test':
-        console.log(`[device-sync] Testing ${integration.integration_type} connection...`)
-        result = await client.test()
-        break
-
-      case 'import':
-        console.log(`[device-sync] Importing from ${integration.integration_type}...`)
-        result = await client.import()
-        break
-
-      case 'export':
-        console.log(`[device-sync] Exporting to ${integration.integration_type}...`)
-        // Fetch devices from NetNeural to export
-        const devicesToExport = await getDevicesForExport(supabase, organizationId, deviceIds)
-        result = await client.export(devicesToExport)
-        break
-
-      case 'bidirectional':
-        console.log(`[device-sync] Bidirectional sync with ${integration.integration_type}...`)
-        // Fetch devices from NetNeural for bidirectional sync
-        const devicesForSync = await getDevicesForExport(supabase, organizationId, deviceIds)
-        result = await client.bidirectionalSync(devicesForSync)
-        break
-    }
-
-    console.log(`[device-sync] ${operation} completed:`, result)
-    
-    // Format response based on operation type
-    if (operation === 'test') {
-      const testResult = result as TestResult
-      return new Response(
-        JSON.stringify(testResult),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } else {
-      const syncResult = result as SyncResult
-      return new Response(
-        JSON.stringify({ success: true, ...syncResult }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-  } catch (error) {
-    console.error('[device-sync] Error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
-    return new Response(
-      JSON.stringify({ error: errorMessage, success: false }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  if (!integrationId || !organizationId) {
+    throw new Error('Missing required fields: integrationId, organizationId')
   }
+
+  if (!['test', 'import', 'export', 'bidirectional'].includes(operation)) {
+    throw new Error('Invalid operation. Must be: test, import, export, or bidirectional')
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+  
+  // Fetch integration from database
+  const { data: integration, error: integrationError } = await supabase
+    .from('device_integrations')
+    .select('*')
+    .eq('id', integrationId)
+    .eq('organization_id', organizationId)
+    .single()
+
+  if (integrationError || !integration) {
+    console.error('[device-sync] Integration not found:', integrationError)
+    throw new DatabaseError('Integration not found', 404)
+  }
+
+  // Create the appropriate client based on integration type
+  const client = createIntegrationClient(integration, supabase, organizationId, integrationId)
+  
+  if (!client) {
+    throw new Error(`Unsupported integration type: ${integration.integration_type}`)
+  }
+
+  // Execute the requested operation
+  let result: TestResult | SyncResult
+
+  switch (operation) {
+    case 'test':
+      console.log(`[device-sync] Testing ${integration.integration_type} connection...`)
+      result = await client.test()
+      break
+
+    case 'import':
+      console.log(`[device-sync] Importing from ${integration.integration_type}...`)
+      result = await client.import()
+      break
+
+    case 'export':
+      console.log(`[device-sync] Exporting to ${integration.integration_type}...`)
+      // Fetch devices from NetNeural to export
+      const devicesToExport = await getDevicesForExport(supabase, organizationId, deviceIds)
+      result = await client.export(devicesToExport)
+      break
+
+    case 'bidirectional':
+      console.log(`[device-sync] Bidirectional sync with ${integration.integration_type}...`)
+      // Fetch devices from NetNeural for bidirectional sync
+      const devicesForSync = await getDevicesForExport(supabase, organizationId, deviceIds)
+      result = await client.bidirectionalSync(devicesForSync)
+      break
+  }
+
+  console.log(`[device-sync] ${operation} completed:`, result)
+  
+  // Format response based on operation type
+  if (operation === 'test') {
+    const testResult = result as TestResult
+    return createSuccessResponse(testResult)
+  } else {
+    const syncResult = result as SyncResult
+    return createSuccessResponse({ success: true, ...syncResult })
+  }
+}, {
+  allowedMethods: ['POST']
 })
 
 /**
  * Create the appropriate integration client based on the integration type
  */
+// deno-lint-ignore no-explicit-any
 function createIntegrationClient(
+  // deno-lint-ignore no-explicit-any
   integration: any,
   supabase: ReturnType<typeof createClient>,
   organizationId: string,

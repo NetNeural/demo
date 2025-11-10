@@ -1,19 +1,15 @@
 // Deno-lint-ignore-file no-explicit-any
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { 
   getUserContext, 
   getTargetOrganizationId,
-  createAuthenticatedClient,
-  createAuthErrorResponse,
-  createSuccessResponse,
-  corsHeaders 
+  createAuthenticatedClient
 } from '../_shared/auth.ts'
 import { logActivity, getIpAddress, sanitizeHeaders } from '../_shared/activity-logger.ts'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
-import { GoogleIotClient } from '../_shared/google-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
@@ -107,21 +103,6 @@ async function testIntegrationUnified(
           settings: {
             connectionString: settings.connectionString,
             hubName: settings.hubName,
-          },
-          organizationId,
-          integrationId,
-          supabase,
-        })
-        break
-
-      case 'google_iot':
-        client = new GoogleIotClient({
-          type: 'google-iot',
-          settings: {
-            projectId: settings.projectId,
-            region: settings.region,
-            registryId: settings.registryId,
-            serviceAccountKey: settings.serviceAccountKey as string || '',
           },
           organizationId,
           integrationId,
@@ -235,30 +216,24 @@ async function testWebhookIntegration(settings: IntegrationSettings) {
   }
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+export default createEdgeFunction(async ({ req }) => {
+  // Get authenticated user context
+  const userContext = await getUserContext(req)
+  
+  // Create authenticated Supabase client (respects RLS)
+  const supabase = createAuthenticatedClient(req)
 
-  try {
-    // Get authenticated user context
-    const userContext = await getUserContext(req)
+  if (req.method === 'GET') {
+    const url = new URL(req.url)
+    const requestedOrgId = url.searchParams.get('organization_id')
+    const integrationTypeFilter = url.searchParams.get('type') // Filter by integration type
     
-    // Create authenticated Supabase client (respects RLS)
-    const supabase = createAuthenticatedClient(req)
-
-    if (req.method === 'GET') {
-      const url = new URL(req.url)
-      const requestedOrgId = url.searchParams.get('organization_id')
-      const integrationTypeFilter = url.searchParams.get('type') // Filter by integration type
-      
-      // Determine which organization to query based on user's role
-      const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
-      
-      if (!organizationId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
-      }
+    // Determine which organization to query based on user's role
+    const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
+    
+    if (!organizationId && !userContext.isSuperAdmin) {
+      throw new DatabaseError('User has no organization access', 403)
+    }
 
       // Build query - RLS will enforce access automatically
       let query = supabase
@@ -281,7 +256,7 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Database error:', error)
-        return createAuthErrorResponse(`Failed to fetch integrations: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to fetch integrations: ${error.message}`, 500)
       }
 
       // Enrich integrations with device counts
@@ -325,7 +300,7 @@ serve(async (req: Request) => {
       const startTime = Date.now()
       
       if (!integrationId) {
-        return createAuthErrorResponse('Missing integration id parameter', 400)
+        throw new DatabaseError('Missing integration id parameter', 400)
       }
 
       // Get integration details - RLS will enforce permissions
@@ -336,7 +311,7 @@ serve(async (req: Request) => {
         .single()
 
       if (fetchError || !integration) {
-        return createAuthErrorResponse('Integration not found or access denied', 404)
+        throw new DatabaseError('Integration not found or access denied', 404)
       }
 
       // Type the integration result
@@ -452,7 +427,245 @@ serve(async (req: Request) => {
           }
         })
       } else {
-        return createAuthErrorResponse(testResult.message, 400)
+        throw new DatabaseError(testResult.message, 400)
+      }
+    }
+
+    // POST /integrations/:id/sync - Execute device synchronization
+    if (req.method === 'POST' && req.url.includes('/sync')) {
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const integrationId = pathParts[pathParts.indexOf('integrations') + 1]
+      
+      if (!integrationId || integrationId === 'sync') {
+        throw new DatabaseError('Missing integration ID in path', 400)
+      }
+
+      const body = await req.json()
+      const { operation = 'bidirectional', deviceIds } = body
+      
+      // Get integration details - RLS will enforce permissions
+      const { data: integration, error: fetchError } = await supabase
+        .from('device_integrations')
+        .select('*')
+        .eq('id', integrationId)
+        .single()
+
+      if (fetchError || !integration) {
+        throw new DatabaseError('Integration not found or access denied', 404)
+      }
+
+      const typedIntegration = integration as DbIntegration
+
+      // Initialize sync result
+      const syncResult = {
+        summary: {
+          syncedDevices: 0,
+          createdDevices: 0,
+          updatedDevices: 0,
+          skippedDevices: 0,
+          errorCount: 0
+        },
+        details: [] as Array<{
+          success: boolean
+          deviceId: string
+          deviceName?: string
+          action: string
+          error?: string
+        }>,
+        errors: [] as Array<{
+          deviceId: string
+          error: string
+        }>
+      }
+
+      try {
+        // Create provider client
+        let client: BaseIntegrationClient
+
+        switch (typedIntegration.integration_type) {
+          case 'golioth':
+            const goliothKey = typedIntegration.settings?.apiKey || typedIntegration.project_id
+            client = new GoliothClient({
+              type: 'golioth',
+              settings: {
+                apiKey: goliothKey as string,
+                projectId: typedIntegration.project_id || '',
+                baseUrl: typedIntegration.base_url as string | undefined,
+              },
+              organizationId: typedIntegration.organization_id,
+              integrationId: integration.id,
+              supabase,
+            })
+            break
+
+          case 'aws_iot':
+            client = new AwsIotClient({
+              type: 'aws-iot',
+              settings: typedIntegration.settings as any,
+              organizationId: typedIntegration.organization_id,
+              integrationId: integration.id,
+              supabase,
+            })
+            break
+
+          case 'azure_iot':
+            client = new AzureIotClient({
+              type: 'azure-iot',
+              settings: typedIntegration.settings as any,
+              organizationId: typedIntegration.organization_id,
+              integrationId: integration.id,
+              supabase,
+            })
+            break
+
+          default:
+            throw new DatabaseError(`Sync not implemented for ${typedIntegration.integration_type}`, 501)
+        }
+
+        // Get devices from remote provider
+        const remoteDevicesResult = await client.listDevices()
+        const remoteDevices = remoteDevicesResult.devices
+
+        // Get local devices for this integration
+        const { data: localDevices, error: localDevicesError } = await supabase
+          .from('devices')
+          .select('*')
+          .eq('organization_id', typedIntegration.organization_id)
+          .eq('integration_id', integrationId)
+
+        if (localDevicesError) {
+          throw new DatabaseError(`Failed to fetch local devices: ${localDevicesError.message}`)
+        }
+
+        // Create a map of local devices by external_device_id
+        const localDeviceMap = new Map(
+          (localDevices || [])
+            .filter(d => d.external_device_id)
+            .map(d => [d.external_device_id!, d])
+        )
+
+        // Sync devices based on operation
+        if (operation === 'import' || operation === 'bidirectional') {
+          // Import: Remote → Local
+          for (const remoteDevice of remoteDevices) {
+            try {
+              const localDevice = localDeviceMap.get(remoteDevice.externalId)
+
+              if (localDevice) {
+                // Update existing device
+                const { error: updateError } = await supabase
+                  .from('devices')
+                  .update({
+                    name: remoteDevice.name,
+                    status: remoteDevice.status || 'offline',
+                    last_seen: remoteDevice.lastSeen || null,
+                    updated_at: new Date().toISOString()
+                  } as any)
+                  .eq('id', localDevice.id)
+
+                if (updateError) {
+                  syncResult.errors.push({
+                    deviceId: remoteDevice.externalId,
+                    error: updateError.message
+                  })
+                  syncResult.summary.errorCount++
+                } else {
+                  syncResult.details.push({
+                    success: true,
+                    deviceId: remoteDevice.externalId,
+                    deviceName: remoteDevice.name,
+                    action: 'Updated local device from remote'
+                  })
+                  syncResult.summary.updatedDevices++
+                  syncResult.summary.syncedDevices++
+                }
+              } else {
+                // Create new device
+                const { error: createError } = await supabase
+                  .from('devices')
+                  .insert({
+                    organization_id: typedIntegration.organization_id,
+                    integration_id: integrationId,
+                    external_device_id: remoteDevice.externalId,
+                    name: remoteDevice.name,
+                    device_type: remoteDevice.type || 'unknown',
+                    status: remoteDevice.status || 'offline',
+                    last_seen: remoteDevice.lastSeen || null,
+                  } as any)
+
+                if (createError) {
+                  syncResult.errors.push({
+                    deviceId: remoteDevice.externalId,
+                    error: createError.message
+                  })
+                  syncResult.summary.errorCount++
+                } else {
+                  syncResult.details.push({
+                    success: true,
+                    deviceId: remoteDevice.externalId,
+                    deviceName: remoteDevice.name,
+                    action: 'Created local device from remote'
+                  })
+                  syncResult.summary.createdDevices++
+                  syncResult.summary.syncedDevices++
+                }
+              }
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+              syncResult.errors.push({
+                deviceId: remoteDevice.externalId,
+                error: errorMsg
+              })
+              syncResult.summary.errorCount++
+            }
+          }
+        }
+
+        // Log sync activity
+        await logActivity(supabase, {
+          organizationId: typedIntegration.organization_id,
+          integrationId: integrationId,
+          direction: 'outgoing',
+          activityType: 'device_sync',
+          method: 'POST',
+          endpoint: `/integrations/${integrationId}/sync`,
+          requestHeaders: sanitizeHeaders(req.headers),
+          requestBody: { operation, deviceIds },
+          responseStatus: 200,
+          responseTime: 0,
+          status: 'success',
+          metadata: {
+            syncSummary: syncResult.summary,
+            operation
+          }
+        })
+
+        return createSuccessResponse(syncResult)
+
+      } catch (error) {
+        console.error('Sync error:', error)
+        const errorMsg = error instanceof Error ? error.message : 'Unknown sync error'
+        
+        // Log failed sync
+        await logActivity(supabase, {
+          organizationId: typedIntegration.organization_id,
+          integrationId: integrationId,
+          direction: 'outgoing',
+          activityType: 'device_sync',
+          method: 'POST',
+          endpoint: `/integrations/${integrationId}/sync`,
+          requestHeaders: sanitizeHeaders(req.headers),
+          requestBody: { operation, deviceIds },
+          responseStatus: 500,
+          responseTime: 0,
+          status: 'failed',
+          metadata: {
+            error: errorMsg
+          }
+        })
+
+        throw new DatabaseError(`Sync failed: ${errorMsg}`, 500)
       }
     }
 
@@ -462,13 +675,13 @@ serve(async (req: Request) => {
       const { organization_id, integration_type, name, settings, api_key, project_id, base_url } = body
 
       if (!organization_id || !integration_type || !name) {
-        return createAuthErrorResponse('Missing required fields: organization_id, integration_type, name', 400)
+        throw new DatabaseError('Missing required fields: organization_id, integration_type, name', 400)
       }
 
       // Validate integration type
       const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt']
       if (!validTypes.includes(integration_type)) {
-        return createAuthErrorResponse(`Invalid integration_type. Must be one of: ${validTypes.join(', ')}`, 400)
+        throw new DatabaseError(`Invalid integration_type. Must be one of: ${validTypes.join(', ')}`, 400)
       }
 
       // Check if user has permission to create integrations for this org
@@ -476,7 +689,7 @@ serve(async (req: Request) => {
                        userContext.organizationId === organization_id
       
       if (!canCreate) {
-        return createAuthErrorResponse('Not authorized to create integrations for this organization', 403)
+        throw new DatabaseError('Not authorized to create integrations for this organization', 403)
       }
 
       // Extract credentials from settings if they're there (frontend sends them in settings)
@@ -486,7 +699,6 @@ serve(async (req: Request) => {
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
 
       // Create integration - RLS will enforce permissions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newIntegration, error } = await supabase
         .from('device_integrations')
         .insert({
@@ -504,13 +716,13 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Create integration error:', error)
-        return createAuthErrorResponse(`Failed to create integration: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to create integration: ${error.message}`, 500)
       }
 
       return createSuccessResponse({ 
         integration: newIntegration,
         message: 'Integration created successfully'
-      }, 201)
+      }, { status: 201 })
     }
 
     if (req.method === 'PUT') {
@@ -519,7 +731,7 @@ serve(async (req: Request) => {
       const integrationId = url.searchParams.get('id')
       
       if (!integrationId) {
-        return createAuthErrorResponse('Missing integration id parameter', 400)
+        throw new DatabaseError('Missing integration id parameter', 400)
       }
 
       const body = await req.json()
@@ -555,13 +767,12 @@ serve(async (req: Request) => {
       if (status !== undefined) {
         const validStatuses = ['active', 'inactive', 'error']
         if (!validStatuses.includes(status)) {
-          return createAuthErrorResponse(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400)
+          throw new DatabaseError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400)
         }
         updates.status = status
       }
 
       // Update integration - RLS will enforce permissions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: updatedIntegration, error } = await supabase
         .from('device_integrations')
         .update(updates as any)
@@ -571,16 +782,82 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Update integration error:', error)
-        return createAuthErrorResponse(`Failed to update integration: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to update integration: ${error.message}`, 500)
       }
 
       if (!updatedIntegration) {
-        return createAuthErrorResponse('Integration not found or access denied', 404)
+        throw new DatabaseError('Integration not found or access denied', 404)
       }
 
       return createSuccessResponse({ 
         integration: updatedIntegration,
         message: 'Integration updated successfully'
+      })
+    }
+
+    // GET /integrations/activity - Get activity logs for an integration
+    if (req.method === 'GET' && req.url.includes('/activity')) {
+      const url = new URL(req.url)
+      const integrationId = url.searchParams.get('integration_id')
+      const limitParam = url.searchParams.get('limit')
+      const directionFilter = url.searchParams.get('direction') // 'incoming', 'outgoing', or 'all'
+      const statusFilter = url.searchParams.get('status') // 'success', 'failed', or 'all'
+      
+      if (!integrationId) {
+        throw new DatabaseError('Missing integration_id parameter', 400)
+      }
+
+      // Verify user has access to this integration
+      const { data: integration, error: integrationError } = await supabase
+        .from('device_integrations')
+        .select('organization_id')
+        .eq('id', integrationId)
+        .single()
+
+      if (integrationError || !integration) {
+        throw new DatabaseError('Integration not found or access denied', 404)
+      }
+
+      // Build activity log query
+      let query = supabase
+        .from('integration_activity_log')
+        .select('*')
+        .eq('integration_id', integrationId)
+        .order('created_at', { ascending: false })
+
+      // Apply filters
+      if (directionFilter && directionFilter !== 'all') {
+        query = query.eq('direction', directionFilter)
+      }
+
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'failed') {
+          query = query.in('status', ['failed', 'error', 'timeout'])
+        } else {
+          query = query.eq('status', 'success')
+        }
+      }
+
+      // Apply limit (default 100)
+      const limit = limitParam ? parseInt(limitParam, 10) : 100
+      query = query.limit(limit)
+
+      const { data: logs, error: logsError } = await query
+
+      if (logsError) {
+        console.error('Activity log query error:', logsError)
+        throw new DatabaseError(`Failed to fetch activity logs: ${logsError.message}`, 500)
+      }
+
+      return createSuccessResponse({ 
+        logs: logs || [],
+        count: logs?.length || 0,
+        integrationId,
+        filters: {
+          direction: directionFilter || 'all',
+          status: statusFilter || 'all',
+          limit
+        }
       })
     }
 
@@ -590,7 +867,7 @@ serve(async (req: Request) => {
       const integrationId = url.searchParams.get('id')
       
       if (!integrationId) {
-        return createAuthErrorResponse('Missing integration id parameter', 400)
+        throw new DatabaseError('Missing integration id parameter', 400)
       }
 
       // Delete integration - RLS will enforce permissions
@@ -601,7 +878,7 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Delete integration error:', error)
-        return createAuthErrorResponse(`Failed to delete integration: ${error.message}`, 500)
+        throw new DatabaseError(`Failed to delete integration: ${error.message}`, 500)
       }
 
       return createSuccessResponse({ 
@@ -609,17 +886,7 @@ serve(async (req: Request) => {
       })
     }
 
-    return createAuthErrorResponse('Method not allowed', 405)
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('Edge function error:', errorMessage, error)
-    
-    // Handle auth errors specifically
-    if (errorMessage.includes('Unauthorized') || errorMessage.includes('authorization')) {
-      return createAuthErrorResponse(errorMessage, 401)
-    }
-    
-    return createAuthErrorResponse(errorMessage, 500)
-  }
+    throw new Error('Method not allowed')
+}, {
+  allowedMethods: ['GET', 'POST', 'PUT', 'DELETE']
 })

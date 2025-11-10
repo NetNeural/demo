@@ -1,42 +1,25 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+export default createEdgeFunction(async ({ req }) => {
+  const { email, password, fullName } = await req.json()
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  // Validate input
+  if (!email || !password || !fullName) {
+    throw new Error('Email, password, and full name are required')
   }
 
-  try {
-    const { email, password, fullName } = await req.json()
-
-    // Validate input
-    if (!email || !password || !fullName) {
-      return new Response(
-        JSON.stringify({ error: 'Email, password, and full name are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    // Create Supabase admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+  // Create Supabase admin client
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    )
+    }
+  )
 
     // Check if any super admin already exists
     const { data: existingSuperAdmins, error: checkError } = await supabaseAdmin
@@ -89,6 +72,7 @@ serve(async (req) => {
     }
 
     // Create user record in public.users
+    // @ts-expect-error - Insert object not fully typed in generated types
     const { error: userError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -106,16 +90,11 @@ serve(async (req) => {
       // Cleanup: delete the auth user if user record creation failed
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       
-      return new Response(
-        JSON.stringify({ error: 'Failed to create user profile' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+      throw new DatabaseError('Failed to create user profile', 500)
     }
 
     // Log the creation
+    // @ts-expect-error - Insert object not fully typed in generated types
     await supabaseAdmin
       .from('audit_logs')
       .insert({
@@ -127,30 +106,15 @@ serve(async (req) => {
         metadata: { source: 'bootstrap' }
       })
 
-    return new Response(
-      JSON.stringify({ 
-        message: 'Super admin created successfully',
-        user: {
-          id: authUser.user.id,
-          email,
-          full_name: fullName,
-          role: 'super_admin'
-        }
-      }),
-      { 
-        status: 201, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return createSuccessResponse({ 
+      message: 'Super admin created successfully',
+      user: {
+        id: authUser.user.id,
+        email,
+        full_name: fullName,
+        role: 'super_admin'
       }
-    )
-
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-  }
+    }, { status: 201 })
+}, {
+  allowedMethods: ['POST']
 })

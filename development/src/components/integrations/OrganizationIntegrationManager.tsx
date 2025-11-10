@@ -8,17 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { Plus, Trash2, CheckCircle, RefreshCw } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { organizationIntegrationService, OrganizationIntegration } from "@/lib/integrations/organization-integrations";
-import { organizationGoliothSyncService, SyncResult } from "@/lib/sync/organization-golioth-sync";
-import { createClient } from "@/lib/supabase/client";
+import { Plus, Trash2, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { edgeFunctions } from "@/lib/edge-functions/client";
+
+interface OrganizationIntegration {
+  id: string;
+  organization_id: string;
+  integration_type: string;
+  name: string;
+  api_key_encrypted?: string | null;
+  project_id?: string | null;
+  base_url?: string | null;
+  settings: any;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
 
 interface LocalDevice {
   id: string;
@@ -42,9 +48,7 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [externalDeviceId, setExternalDeviceId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [syncLoading, setSyncLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [syncResults, setSyncResults] = useState<{ [integrationId: string]: SyncResult }>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ open: boolean; integrationId: string | null }>({ 
     open: false, 
     integrationId: null 
@@ -60,22 +64,22 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
     base_url: 'https://api.golioth.io'
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Load integrations for the organization
-      const orgIntegrations = await organizationIntegrationService.getIntegrations(organizationId);
-      setIntegrations(orgIntegrations);
+      // Load integrations for the organization using edge function
+      const response = await edgeFunctions.integrations.list(organizationId);
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to load integrations');
+      }
+      const responseData = response.data as any;
+      setIntegrations((responseData?.integrations as OrganizationIntegration[]) || []);
       
       // Load devices
-      const response = await fetch('/api/devices');
-      if (response.ok) {
-        const data = await response.json();
+      const devicesResponse = await fetch('/api/devices');
+      if (devicesResponse.ok) {
+        const data = await devicesResponse.json();
         setDevices(data.devices || []);
       }
     } catch (error) {
@@ -86,22 +90,34 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
     }
   };
 
+  useEffect(() => {
+    loadData();
+    // loadData depends on organizationId, but we don't want to reload on every change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId]);
+
   const createIntegration = async () => {
     try {
       setLoading(true);
       
-      const integration = await organizationIntegrationService.createIntegration({
-        organization_id: organizationId,
-        integration_type: newIntegration.integration_type,
+      const response = await edgeFunctions.integrations.create({
+        organizationId: organizationId,
+        integrationType: newIntegration.integration_type,
         name: newIntegration.name,
-        api_key_encrypted: btoa(newIntegration.api_key), // Basic encoding - use proper encryption in production
-        project_id: newIntegration.project_id,
-        base_url: newIntegration.base_url,
-        settings: {},
-        status: 'active'
+        config: {
+          api_key: newIntegration.api_key,
+          project_id: newIntegration.project_id,
+          base_url: newIntegration.base_url,
+        }
       });
 
-      setIntegrations([...integrations, integration]);
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to create integration');
+      }
+
+      // Reload integrations to get the new one
+      await loadData();
+      
       setNewIntegration({
         name: '',
         integration_type: 'golioth',
@@ -123,25 +139,21 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
     try {
       setLoading(true);
       
-      // Call device-sync with operation='test' to create proper activity log entries
-      // This matches the behavior of the test button in the integration modal
-      const supabase = createClient();
-      const { data, error } = await supabase.functions.invoke('device-sync', {
-        body: {
-          integrationId,
-          organizationId,
-          operation: 'test',
-          deviceIds: []
-        }
+      // Call device-sync with operation='test' using SDK
+      const response = await edgeFunctions.integrations.sync({
+        integrationId,
+        organizationId,
+        operation: 'test',
+        deviceIds: []
       });
 
-      if (error) {
-        throw new Error(error.message || 'Test failed');
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Test failed');
       }
 
       setMessage({ 
-        type: data?.success ? 'success' : 'error', 
-        text: data?.message || 'Test completed'
+        type: 'success', 
+        text: 'Test completed successfully'
       });
     } catch (error) {
       console.error('Error testing integration:', error);
@@ -154,48 +166,15 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
     }
   };
 
-  const syncIntegration = async (integrationId: string) => {
-    try {
-      setSyncLoading(true);
-      const result = await organizationGoliothSyncService.syncDevices(
-        organizationId,
-        integrationId,
-        {
-          syncStatus: true,
-          syncBattery: true,
-          syncLastSeen: true,
-          createMissingDevices: true
-        }
-      );
-
-      setSyncResults({ ...syncResults, [integrationId]: result });
-      
-      if (result.errors.length === 0) {
-        setMessage({ 
-          type: 'success', 
-          text: `Sync completed: ${result.syncedDevices} devices synced` 
-        });
-      } else {
-        setMessage({ 
-          type: 'error', 
-          text: `Sync completed with ${result.errors.length} errors` 
-        });
-      }
-
-      // Reload devices to show updated data
-      await loadData();
-    } catch (error) {
-      console.error('Error syncing integration:', error);
-      setMessage({ type: 'error', text: 'Failed to sync integration' });
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-
   const deleteIntegration = async (integrationId: string) => {
     try {
       setLoading(true);
-      await organizationIntegrationService.deleteIntegration(integrationId);
+      const response = await edgeFunctions.integrations.delete(integrationId);
+      
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to delete integration');
+      }
+      
       setIntegrations(integrations.filter(i => i.id !== integrationId));
       setMessage({ type: 'success', text: 'Integration deleted successfully' });
       setDeleteConfirmation({ open: false, integrationId: null });
@@ -258,7 +237,6 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
         <TabsList>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="device-mapping">Device Mapping</TabsTrigger>
-          <TabsTrigger value="sync-status">Sync Status</TabsTrigger>
         </TabsList>
 
         <TabsContent value="integrations" className="space-y-4">
@@ -378,15 +356,6 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => syncIntegration(integration.id)}
-                        disabled={syncLoading}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-1" />
-                        Sync
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
                         onClick={() => setDeleteConfirmation({ open: true, integrationId: integration.id })}
                         disabled={loading}
                       >
@@ -488,59 +457,6 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sync-status" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Synchronization Status</CardTitle>
-              <CardDescription>
-                View the results of recent device synchronizations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(syncResults).length === 0 ? (
-                <p className="text-gray-500">No sync results available. Run a sync to see results.</p>
-              ) : (
-                <div className="space-y-4">
-                  {Object.entries(syncResults).map(([integrationId, result]) => {
-                    const integration = integrations.find(i => i.id === integrationId);
-                    return (
-                      <div key={integrationId} className="border rounded p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-semibold">{integration?.name || 'Unknown Integration'}</h4>
-                          <Badge variant={result.errors.length === 0 ? 'default' : 'destructive'}>
-                            {result.errors.length === 0 ? 'Success' : 'Errors'}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium">Synced Devices:</span> {result.syncedDevices}
-                          </div>
-                          <div>
-                            <span className="font-medium">Unmapped Devices:</span> {result.unmappedGoliothDevices}
-                          </div>
-                          <div>
-                            <span className="font-medium">Errors:</span> {result.errors.length}
-                          </div>
-                        </div>
-                        {result.errors.length > 0 && (
-                          <div className="mt-2">
-                            <h5 className="font-medium text-red-600">Errors:</h5>
-                            <ul className="text-sm text-red-600 list-disc list-inside">
-                              {result.errors.map((error, index) => (
-                                <li key={index}>{error.deviceId}: {error.error}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

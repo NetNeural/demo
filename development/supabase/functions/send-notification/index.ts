@@ -8,14 +8,9 @@
 // Date: 2025-10-27
 // ============================================================================
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { logActivityStart, logActivityComplete } from '../_shared/activity-logger.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 interface NotificationPayload {
   organization_id: string
@@ -176,191 +171,159 @@ async function createWebhookSignature(payload: string, secret: string): Promise<
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+export default createEdgeFunction(async ({ req }) => {
+  // Check if this is a test request
+  const url = new URL(req.url)
+  const isTest = url.searchParams.get('test') === 'true'
+  
+  // Verify authentication
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    throw new DatabaseError('Missing authorization header', 401)
   }
 
-  try {
-    // Check if this is a test request
-    const url = new URL(req.url)
-    const isTest = url.searchParams.get('test') === 'true'
-    
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  )
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
+  // Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new DatabaseError('Unauthorized', 401)
+  }
 
-    // Verify user is authenticated
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+  // Parse request body
+  const payload: NotificationPayload = await req.json()
+  const {
+    organization_id,
+    integration_type,
+    integration_id,
+    subject,
+    message,
+    priority = 'medium',
+    data,
+    recipients,
+  } = payload
 
-    // Parse request body
-    const payload: NotificationPayload = await req.json()
-    const {
-      organization_id,
-      integration_type,
-      integration_id,
-      subject,
-      message,
-      priority = 'medium',
-      data,
-      recipients,
-    } = payload
+  if (!organization_id || !integration_type || !message) {
+    throw new Error('Missing required fields: organization_id, integration_type, message')
+  }
 
-    if (!organization_id || !integration_type || !message) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: organization_id, integration_type, message' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get integration configuration
-    let integrationQuery = supabase
+  // Get integration configuration
+  let integrationQuery = supabase
       .from('device_integrations')
       .select('*')
       .eq('organization_id', organization_id)
       .eq('integration_type', integration_type)
-      .eq('status', 'active')
+    .eq('status', 'active')
 
-    if (integration_id) {
-      integrationQuery = integrationQuery.eq('id', integration_id)
-    }
-
-    const { data: integrations, error: intError } = await integrationQuery.limit(1).single()
-
-    if (intError || !integrations) {
-      return new Response(
-        JSON.stringify({ error: `No active ${integration_type} integration found for this organization` }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    let result
-    const startTime = Date.now()
-    
-    // Start activity logging
-    const activityType = integration_type === 'email' ? 'notification_email' :
-                        integration_type === 'slack' ? 'notification_slack' :
-                        'notification_webhook'
-    
-    const logId = await logActivityStart(supabase, {
-      organizationId: organization_id,
-      integrationId: integrations.id,
-      direction: 'outgoing',
-      activityType,
-      method: 'POST',
-      endpoint: integration_type === 'email' ? 'smtp' : 
-                integration_type === 'slack' ? integrations.webhook_url || '' :
-                integrations.webhook_url || '',
-      metadata: {
-        priority,
-        recipient_count: recipients?.length || 0,
-        has_subject: !!subject,
-        is_test: isTest,
-      }
-    })
-    
-    try {
-      // If test mode, use test data
-      const testRecipients = isTest ? ['test@example.com'] : recipients
-      const testSubject = isTest ? '[TEST] NetNeural Test Notification' : subject
-      const testMessage = isTest ? `This is a test notification.\n\nActual message would be:\n${message}` : message
-      
-      // Send notification based on integration type
-      switch (integration_type) {
-        case 'email': {
-          const effectiveRecipients = testRecipients || recipients
-          if (!effectiveRecipients || effectiveRecipients.length === 0) {
-            return new Response(
-              JSON.stringify({ error: 'Recipients required for email notifications' }),
-              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-          }
-          
-          const emailConfig: EmailConfig = JSON.parse(integrations.api_key_encrypted || '{}')
-          result = await sendEmail(emailConfig, testSubject || 'NetNeural Notification', testMessage, effectiveRecipients)
-          break
-        }
-        
-        case 'slack': {
-          const slackConfig: SlackConfig = {
-            webhook_url: integrations.webhook_url || '',
-            channel: integrations.webhook_secret || '#general',
-          }
-          result = await sendSlack(slackConfig, testMessage, { ...data, is_test: isTest })
-          break
-        }
-        
-        case 'webhook': {
-          const webhookConfig: WebhookConfig = {
-            url: integrations.webhook_url || '',
-            secret: integrations.webhook_secret,
-            method: 'POST',
-            content_type: 'application/json',
-          }
-          result = await sendWebhook(webhookConfig, testMessage, { ...data, is_test: isTest })
-          break
-        }
-        
-        default:
-          return new Response(
-            JSON.stringify({ error: `Unsupported integration type: ${integration_type}` }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-      }
-
-      const duration = Date.now() - startTime
-
-      // Log activity completion
-      if (logId) {
-        await logActivityComplete(supabase, logId, {
-          status: 'success',
-          responseTimeMs: duration,
-          responseBody: result,
-        })
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, result }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } catch (sendError) {
-      const duration = Date.now() - startTime
-      
-      // Log failure
-      if (logId) {
-        await logActivityComplete(supabase, logId, {
-          status: 'failed',
-          responseTimeMs: duration,
-          errorMessage: sendError instanceof Error ? sendError.message : 'Notification send failed',
-        })
-      }
-      
-      throw sendError
-    }
-
-  } catch (error) {
-    console.error('Notification error:', error)
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  if (integration_id) {
+    integrationQuery = integrationQuery.eq('id', integration_id)
   }
+
+  const { data: integrations, error: intError } = await integrationQuery.limit(1).single()
+
+  if (intError || !integrations) {
+    throw new DatabaseError(`No active ${integration_type} integration found for this organization`, 404)
+  }
+
+  let result
+  const startTime = Date.now()
+  
+  // Start activity logging
+  const activityType = integration_type === 'email' ? 'notification_email' :
+                      integration_type === 'slack' ? 'notification_slack' :
+                      'notification_webhook'
+  
+  const logId = await logActivityStart(supabase, {
+    organizationId: organization_id,
+    integrationId: integrations.id,
+    direction: 'outgoing',
+    activityType,
+    method: 'POST',
+    endpoint: integration_type === 'email' ? 'smtp' : 
+              integration_type === 'slack' ? integrations.webhook_url || '' :
+              integrations.webhook_url || '',
+    metadata: {
+      priority,
+      recipient_count: recipients?.length || 0,
+      has_subject: !!subject,
+      is_test: isTest,
+    }
+  })
+  
+  try {
+    // If test mode, use test data
+    const testRecipients = isTest ? ['test@example.com'] : recipients
+    const testSubject = isTest ? '[TEST] NetNeural Test Notification' : subject
+    const testMessage = isTest ? `This is a test notification.\n\nActual message would be:\n${message}` : message
+    
+    // Send notification based on integration type
+    switch (integration_type) {
+      case 'email': {
+        const effectiveRecipients = testRecipients || recipients
+        if (!effectiveRecipients || effectiveRecipients.length === 0) {
+          throw new Error('Recipients required for email notifications')
+        }
+        
+        const emailConfig: EmailConfig = JSON.parse(integrations.api_key_encrypted || '{}')
+        result = await sendEmail(emailConfig, testSubject || 'NetNeural Notification', testMessage, effectiveRecipients)
+        break
+      }
+      
+      case 'slack': {
+        const slackConfig: SlackConfig = {
+          webhook_url: integrations.webhook_url || '',
+          channel: integrations.webhook_secret || '#general',
+        }
+        result = await sendSlack(slackConfig, testMessage, { ...data, is_test: isTest })
+        break
+      }
+      
+      case 'webhook': {
+        const webhookConfig: WebhookConfig = {
+          url: integrations.webhook_url || '',
+          secret: integrations.webhook_secret,
+          method: 'POST',
+          content_type: 'application/json',
+        }
+        result = await sendWebhook(webhookConfig, testMessage, { ...data, is_test: isTest })
+        break
+      }
+      
+      default:
+        throw new Error(`Unsupported integration type: ${integration_type}`)
+    }
+
+    const duration = Date.now() - startTime
+
+    // Log activity completion
+    if (logId) {
+      // @ts-expect-error - responseBody accepts result shape
+      await logActivityComplete(supabase, logId, {
+        status: 'success',
+        responseTimeMs: duration,
+        responseBody: result,
+      })
+    }
+
+    return createSuccessResponse({ success: true, result })
+  } catch (sendError) {
+    const duration = Date.now() - startTime
+    
+    // Log failure
+    if (logId) {
+      await logActivityComplete(supabase, logId, {
+        status: 'failed',
+        responseTimeMs: duration,
+        errorMessage: sendError instanceof Error ? sendError.message : 'Notification send failed',
+      })
+    }
+    
+    throw sendError
+  }
+}, {
+  allowedMethods: ['POST']
 })

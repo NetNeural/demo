@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { integrationService } from '@/services/integration.service'
 
@@ -34,7 +34,6 @@ export function SlackConfigDialog({
   organizationId,
   onSaved 
 }: Props) {
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -59,20 +58,21 @@ export function SlackConfigDialog({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('*')
-        .eq('id', integrationId)
-        .single()
+      const response = await edgeFunctions.integrations.list(organizationId)
+      
+      if (!response.success) {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+      }
 
-      if (error) throw error
+      const integrations = (response.data as any)?.integrations || []
+      const integration = integrations.find((i: any) => i.id === integrationId)
 
-      if (data && data.webhook_url) {
+      if (integration?.webhookUrl) {
         setConfig({
-          id: data.id,
-          name: data.name,
-          webhook_url: data.webhook_url,
-          channel: data.webhook_secret || '',
+          id: integration.id,
+          name: integration.name,
+          webhook_url: integration.webhookUrl,
+          channel: integration.webhookSecret || '',
           username: 'NetNeural Bot',
           icon_emoji: ':robot_face:',
         })
@@ -123,28 +123,37 @@ export function SlackConfigDialog({
 
     setLoading(true)
     try {
-      const payload = {
-        organization_id: organizationId,
-        integration_type: 'slack',
-        name: config.name,
-        webhook_url: config.webhook_url,
-        webhook_secret: config.channel,
-        status: 'active',
+      const slackConfig = {
+        webhookUrl: config.webhook_url,
+        channel: config.channel,
+        username: config.username,
+        iconEmoji: config.icon_emoji,
       }
 
+      let response
       if (integrationId) {
-        const { error } = await supabase
-          .from('device_integrations')
-          .update(payload)
-          .eq('id', integrationId)
-
-        if (error) throw error
+        response = await edgeFunctions.integrations.update(integrationId, {
+          name: config.name,
+          config: slackConfig,
+          status: 'active',
+        })
       } else {
-        const { error } = await supabase
-          .from('device_integrations')
-          .insert(payload)
+        response = await edgeFunctions.integrations.create({
+          organization_id: organizationId,
+          integration_type: 'slack',
+          name: config.name,
+          settings: slackConfig,
+        } as any)
+      }
 
-        if (error) throw error
+      if (!response.success) {
+        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
+        
+        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+          errorMsg = `A Slack integration with the name "${config.name}" already exists. Please choose a different name.`
+        }
+        
+        throw new Error(errorMsg)
       }
 
       toast.success('Slack configuration saved successfully')

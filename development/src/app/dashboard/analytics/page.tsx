@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, Zap, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import { edgeFunctions } from "@/lib/edge-functions/client";
 
 interface Device {
   id: string;
@@ -53,29 +54,11 @@ export default function AnalyticsPage() {
         
         if (!currentOrganization) return;
         
-        // Get auth session
-        const supabase = (await import('@/lib/supabase/client')).createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        // Fetch devices data using SDK
+        const devicesResponse = await edgeFunctions.devices.list(currentOrganization.id);
         
-        if (!session) {
-          console.error('[Analytics] No session found');
-          throw new Error('Not authenticated');
-        }
-        
-        // Fetch devices data to calculate analytics
-        const devicesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices?organization_id=${currentOrganization.id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        if (devicesResponse.ok) {
-          const devicesData = await devicesResponse.json();
-          const devices: Device[] = devicesData.devices || [];
+        if (devicesResponse.success) {
+          const devices: Device[] = (devicesResponse.data?.devices as Device[]) || [];
           
           console.log('[Analytics] Devices loaded:', devices.length, 'devices');
           

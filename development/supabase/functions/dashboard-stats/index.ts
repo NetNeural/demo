@@ -1,25 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { 
   getUserContext, 
   getTargetOrganizationId,
-  createAuthenticatedClient,
-  createAuthErrorResponse,
-  createSuccessResponse,
-  corsHeaders 
+  createAuthenticatedClient
 } from '../_shared/auth.ts'
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    // Get authenticated user context
-    const userContext = await getUserContext(req)
-    
-    // Create authenticated Supabase client (respects RLS)
-    const supabase = createAuthenticatedClient(req)
+export default createEdgeFunction(async ({ req }) => {
+  // Get authenticated user context
+  const userContext = await getUserContext(req)
+  
+  // Create authenticated Supabase client (respects RLS)
+  const supabase = createAuthenticatedClient(req)
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -29,7 +20,7 @@ serve(async (req) => {
       const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
       
       if (!organizationId && !userContext.isSuperAdmin) {
-        return createAuthErrorResponse('User has no organization access', 403)
+        throw new DatabaseError('User has no organization access', 403)
       }
 
       // Build device query - exclude soft-deleted devices
@@ -61,26 +52,34 @@ serve(async (req) => {
 
       if (devicesResult.error) {
         console.error('Database error fetching devices:', devicesResult.error)
-        return createAuthErrorResponse(`Failed to fetch devices: ${devicesResult.error.message}`, 500)
+        throw new DatabaseError(`Failed to fetch devices: ${devicesResult.error.message}`)
       }
 
       if (alertsResult.error) {
         console.error('Database error fetching alerts:', alertsResult.error)
-        return createAuthErrorResponse(`Failed to fetch alerts: ${alertsResult.error.message}`, 500)
+        throw new DatabaseError(`Failed to fetch alerts: ${alertsResult.error.message}`)
       }
 
       const devices = devicesResult.data || []
       const alerts = alertsResult.data || []
 
       // Calculate stats
+      // deno-lint-ignore no-explicit-any
       const totalDevices = devices.length
+      // deno-lint-ignore no-explicit-any
       const onlineDevices = devices.filter((d: any) => d.status === 'online').length
+      // deno-lint-ignore no-explicit-any
       const offlineDevices = devices.filter((d: any) => d.status === 'offline').length
+      // deno-lint-ignore no-explicit-any
       const warningDevices = devices.filter((d: any) => d.status === 'warning').length
       
+      // deno-lint-ignore no-explicit-any
       const totalAlerts = alerts.length
+      // deno-lint-ignore no-explicit-any
       const criticalAlerts = alerts.filter((a: any) => a.severity === 'critical').length
+      // deno-lint-ignore no-explicit-any
       const highAlerts = alerts.filter((a: any) => a.severity === 'high').length
+      // deno-lint-ignore no-explicit-any
       const unresolvedAlerts = alerts.filter((a: any) => !a.is_resolved).length
 
       // Calculate uptime percentage
@@ -168,17 +167,7 @@ serve(async (req) => {
       return createSuccessResponse(stats)
     }
 
-    return createAuthErrorResponse('Method not allowed', 405)
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('Edge function error:', errorMessage, error)
-    
-    // Handle auth errors specifically
-    if (errorMessage.includes('Unauthorized') || errorMessage.includes('authorization')) {
-      return createAuthErrorResponse(errorMessage, 401)
-    }
-    
-    return createAuthErrorResponse(errorMessage, 500)
-  }
+  throw new Error('Method not allowed')
+}, {
+  allowedMethods: ['GET']
 })
