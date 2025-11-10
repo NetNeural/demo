@@ -4,7 +4,6 @@ import { logActivityStart, logActivityComplete, getIpAddress } from '../_shared/
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
-import { GoogleIotClient } from '../_shared/google-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
@@ -152,21 +151,6 @@ function createIntegrationClient(
           settings: {
             connectionString: integration.connection_string || settings.connectionString || settings.connection_string,
             hubName: integration.hub_name || settings.hubName || settings.hub_name,
-          },
-          organizationId,
-          integrationId,
-          supabase,
-        })
-
-      case 'google_iot':
-      case 'google-iot':
-        return new GoogleIotClient({
-          type: 'google-iot',
-          settings: {
-            projectId: integration.project_id || settings.projectId || settings.project_id,
-            region: integration.region || settings.region,
-            registryId: integration.registry_id || settings.registryId || settings.registry_id,
-            serviceAccountKey: integration.service_account_key || settings.serviceAccountKey || settings.service_account_key || '',
           },
           organizationId,
           integrationId,
