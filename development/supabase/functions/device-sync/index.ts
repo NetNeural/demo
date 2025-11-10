@@ -27,7 +27,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
-import { GoogleIotClient } from '../_shared/google-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient, SyncResult, TestResult } from '../_shared/base-integration-client.ts'
 
@@ -171,21 +170,6 @@ function createIntegrationClient(
         settings: {
           connectionString: settings.connectionString || settings.connection_string,
           hubName: settings.hubName || settings.hub_name,
-        },
-        organizationId,
-        integrationId,
-        supabase,
-      })
-
-    case 'google_iot':
-    case 'google-iot':
-      return new GoogleIotClient({
-        type: 'google-iot',
-        settings: {
-          projectId: settings.projectId || settings.project_id,
-          region: settings.region,
-          registryId: settings.registryId || settings.registry_id,
-          serviceAccountKey: settings.serviceAccountKey || settings.service_account_key || '',
         },
         organizationId,
         integrationId,
