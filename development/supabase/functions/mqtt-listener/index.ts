@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { connect } from 'https://deno.land/x/mqtt@0.1.2/mod.ts'
+// MQTT library temporarily disabled - function handles HTTP webhooks instead
+// import { connect } from 'https://deno.land/x/mqtt@0.1.2/mod.ts'
 
 /**
  * MQTT Listener Service
@@ -408,8 +409,24 @@ async function generateDeviceOfflineAlert(
 // ============================================================================
 // Main Service
 // ============================================================================
+// NOTE: This function requires persistent MQTT connections which are not
+// supported in serverless edge functions. This is a placeholder implementation.
+// For production, use mqtt-broker function with webhook/polling instead.
 
-serve(async (req) => {
+serve(async (_req) => {
+  return new Response(
+    JSON.stringify({ 
+      error: 'MQTT Listener requires persistent connections - not supported in edge functions',
+      message: 'Use mqtt-broker function with webhook/polling instead',
+      status: 'disabled'
+    }),
+    { 
+      status: 501,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  )
+  
+  /* DISABLED - Requires persistent connections
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -496,4 +513,5 @@ serve(async (req) => {
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
+  */
 })
