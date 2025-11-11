@@ -152,23 +152,24 @@ INSERT INTO organizations (id, name, slug, description, subscription_tier, is_ac
 
 -- Create users in public.users table (application data)
 INSERT INTO users (id, email, full_name, role, organization_id) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'superadmin@netneural.ai', 'Super Admin', 'super_admin', NULL),
+  ('11111111-1111-1111-1111-111111111111', 'superadmin@netneural.ai', 'Super Admin', 'super_admin', '00000000-0000-0000-0000-000000000001'),
   ('22222222-2222-2222-2222-222222222222', 'admin@netneural.ai', 'Admin User', 'org_owner', '00000000-0000-0000-0000-000000000001'),
   ('33333333-3333-3333-3333-333333333333', 'user@netneural.ai', 'Regular User', 'user', '00000000-0000-0000-0000-000000000001'),
   ('44444444-4444-4444-4444-444444444444', 'viewer@netneural.ai', 'Viewer User', 'viewer', '00000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create organization memberships
--- Super admin doesn't need organization membership (platform-wide access)
--- Admin is owner, user is member, viewer is also member but with limited permissions
+-- Super admin gets owner role in all orgs (handled by migration for existing users)
+-- But for seed data, we explicitly add them to the demo org
 INSERT INTO organization_members (organization_id, user_id, role) VALUES
+  ('00000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'owner'),
   ('00000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'owner'),
   ('00000000-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333', 'member'),
   ('00000000-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444', 'member')
 ON CONFLICT (organization_id, user_id) DO NOTHING;
 
 -- Test credentials (for reference):
--- ✅ superadmin@netneural.ai / SuperSecure123! (super_admin - platform-wide access, no org needed)
+-- ✅ superadmin@netneural.ai / SuperSecure123! (super_admin - platform-wide access, owner in all orgs)
 -- ✅ admin@netneural.ai / password123 (owner - full organization access)
 -- ✅ user@netneural.ai / password123 (member - standard user access)
 -- ✅ viewer@netneural.ai / password123 (member - read-only via user role, not org role)
