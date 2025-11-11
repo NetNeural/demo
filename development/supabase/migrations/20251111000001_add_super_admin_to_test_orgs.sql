@@ -25,7 +25,9 @@ WHERE u.organization_id IS NOT NULL
     SELECT 1 FROM organization_members om 
     WHERE om.organization_id = u.organization_id 
     AND om.user_id = u.id
-  );
+  )
+ON CONFLICT (organization_id, user_id) DO UPDATE
+SET role = EXCLUDED.role, joined_at = EXCLUDED.joined_at;
 
 -- =====================================================
 -- STEP 2: Add super admin to all existing organizations
@@ -47,7 +49,9 @@ WHERE u.role = 'super_admin'
     SELECT 1 FROM organization_members om 
     WHERE om.organization_id = o.id 
     AND om.user_id = u.id
-  );
+  )
+ON CONFLICT (organization_id, user_id) DO UPDATE
+SET role = 'owner', joined_at = NOW();
 
 -- =====================================================
 -- Verification query (commented out for migration)
