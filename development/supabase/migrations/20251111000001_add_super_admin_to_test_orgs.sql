@@ -17,17 +17,11 @@ SELECT
     WHEN u.role IN ('org_admin', 'org_owner') THEN 'admin'
     ELSE 'member'
   END as role,
-  u.created_at  -- Use their account creation date as join date
+  COALESCE(u.created_at, NOW())  -- Use account creation date or NOW if null
 FROM users u
 WHERE u.organization_id IS NOT NULL
-  AND NOT EXISTS (
-    -- Only insert if membership doesn't exist
-    SELECT 1 FROM organization_members om 
-    WHERE om.organization_id = u.organization_id 
-    AND om.user_id = u.id
-  )
 ON CONFLICT (organization_id, user_id) DO UPDATE
-SET role = EXCLUDED.role, joined_at = EXCLUDED.joined_at;
+SET role = EXCLUDED.role;
 
 -- =====================================================
 -- STEP 2: Add super admin to all existing organizations
@@ -44,14 +38,8 @@ SELECT
 FROM organizations o
 CROSS JOIN users u
 WHERE u.role = 'super_admin'
-  AND NOT EXISTS (
-    -- Don't insert if membership already exists
-    SELECT 1 FROM organization_members om 
-    WHERE om.organization_id = o.id 
-    AND om.user_id = u.id
-  )
 ON CONFLICT (organization_id, user_id) DO UPDATE
-SET role = 'owner', joined_at = NOW();
+SET role = 'owner';
 
 -- =====================================================
 -- Verification query (commented out for migration)
