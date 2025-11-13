@@ -73,7 +73,4 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.acknowledge_alert IS 
-  'Acknowledges an alert and marks it as resolved. ' ||
-  'Sets is_resolved=true, resolved_by, and resolved_at fields. ' ||
-  'Creates an acknowledgement record and logs the user action.';
+COMMENT ON FUNCTION public.acknowledge_alert IS 'Acknowledges an alert and marks it as resolved. Sets is_resolved=true, resolved_by, and resolved_at fields. Creates an acknowledgement record and logs the user action.';
