@@ -154,6 +154,7 @@ export function createErrorResponse(
 export function createSuccessResponse(data: any, status: number = 200) {
   return new Response(
     JSON.stringify({
+      success: true,
       data,
       timestamp: new Date().toISOString(),
     }),

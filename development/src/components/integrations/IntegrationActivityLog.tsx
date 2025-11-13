@@ -55,28 +55,36 @@ export function IntegrationActivityLog({
     setLoading(true)
     try {
       console.log('[ActivityLog] Loading logs for integration:', integrationId)
+      console.log('[ActivityLog] Filters:', { filterDirection, filterStatus, limit })
       
-      // Use edge function to fetch activity logs
+      // Use edge function to fetch activity logs (include org scope)
       const response = await edgeFunctions.integrations.getActivityLog(integrationId, {
+        organizationId,
         limit,
         direction: filterDirection,
         status: filterStatus,
       })
 
+      console.log('[ActivityLog] Raw response:', response)
+
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load activity logs')
+        console.error('[ActivityLog] Request failed:', response.error)
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load activity logs')
       }
 
+      console.log('[ActivityLog] Response data:', response.data)
+      
+      // Extract logs from response
       const logs = (response.data as any)?.logs || []
-      console.log('[ActivityLog] Loaded logs:', logs.length)
+      console.log('[ActivityLog] Loaded logs:', logs.length, logs)
       
       setLogs(logs)
     } catch (error) {
-      console.error('Failed to load activity logs:', error)
+      console.error('[ActivityLog] Failed to load activity logs:', error)
     } finally {
       setLoading(false)
     }
-  }, [integrationId, limit, filterDirection, filterStatus])
+  }, [integrationId, organizationId, limit, filterDirection, filterStatus])
 
   useEffect(() => {
     loadLogs()

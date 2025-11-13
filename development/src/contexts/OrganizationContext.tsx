@@ -170,7 +170,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       const response = await edgeFunctions.organizations.stats(currentOrgId);
 
       if (!response.success || !response.data) {
-        console.error('Failed to fetch stats:', response.error);
+        // Only log error if we're authenticated (not on login page)
+        if (user) {
+          console.error('Failed to fetch stats:', response.error);
+        }
         setStats(null);
         return;
       }

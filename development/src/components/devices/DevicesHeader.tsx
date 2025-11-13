@@ -11,12 +11,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { GoliothSyncButton } from '@/components/integrations/GoliothSyncButton'
 import { edgeFunctions } from '@/lib/edge-functions'
+
+interface Location {
+  id: string
+  name: string
+  description?: string
+  city?: string
+  state?: string
+}
 
 export function DevicesHeader() {
   const { toast } = useToast()
@@ -28,8 +43,27 @@ export function DevicesHeader() {
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [firmwareVersion, setFirmwareVersion] = useState('')
-  const [location, setLocation] = useState('')
+  const [locationId, setLocationId] = useState<string>('')
+  const [locations, setLocations] = useState<Location[]>([])
   const [goliothIntegration, setGoliothIntegration] = useState<string | null>(null)
+
+  const fetchLocations = useCallback(async () => {
+    if (!currentOrganization) {
+      setLocations([])
+      return
+    }
+
+    try {
+      const response = await edgeFunctions.locations.list(currentOrganization.id)
+      if (response.success) {
+        // The locations endpoint returns data directly as an array, not wrapped in {locations: [...]}
+        const locationsData = (Array.isArray(response.data) ? response.data : []) as Location[]
+        setLocations(locationsData)
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err)
+    }
+  }, [currentOrganization])
 
   const loadGoliothIntegration = useCallback(async () => {
     if (!currentOrganization) return
@@ -49,11 +83,13 @@ export function DevicesHeader() {
     }
   }, [currentOrganization])
 
+  
   useEffect(() => {
     if (currentOrganization?.id) {
       loadGoliothIntegration()
+      fetchLocations()
     }
-  }, [currentOrganization?.id, loadGoliothIntegration])
+  }, [currentOrganization?.id, loadGoliothIntegration, fetchLocations])
 
   const handleAddDevice = async () => {
     if (!deviceName || !deviceId || !deviceType) {
@@ -83,7 +119,7 @@ export function DevicesHeader() {
         model: model || null,
         serial_number: serialNumber || null,
         firmware_version: firmwareVersion || null,
-        location: location || null
+        location_id: locationId || null
       })
 
       if (!response.success) {
@@ -102,10 +138,8 @@ export function DevicesHeader() {
       setModel('')
       setSerialNumber('')
       setFirmwareVersion('')
-      setLocation('')
-      setOpen(false)
-      
-      // Trigger a refresh of the devices list
+      setLocationId('')
+      setOpen(false)      // Trigger a refresh of the devices list
       window.location.reload()
     } catch (err) {
       console.error('Error creating device:', err)
@@ -250,13 +284,23 @@ export function DevicesHeader() {
                     <Label htmlFor="location" className="text-sm text-muted-foreground">
                       Location
                     </Label>
-                    <Input
-                      id="location"
-                      placeholder="e.g., Building A, Floor 2, Room 203"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className="font-medium"
-                    />
+                    <Select 
+                      value={locationId || 'none'} 
+                      onValueChange={(value) => setLocationId(value === 'none' ? '' : value)}
+                    >
+                      <SelectTrigger id="location" className="font-medium">
+                        <SelectValue placeholder="Select a location (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {locations.map((location) => (
+                          <SelectItem key={location.id} value={location.id}>
+                            {location.name}
+                            {location.city && location.state && ` - ${location.city}, ${location.state}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

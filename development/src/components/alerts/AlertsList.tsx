@@ -46,8 +46,10 @@ export function AlertsList() {
       console.log('[AlertsList] Fetching alerts for organization:', currentOrganization.id)
       setLoading(true)
       
-      // Fetch alerts using edge function client
-      const response = await edgeFunctions.alerts.list(currentOrganization.id)
+      // Fetch only unresolved (active) alerts
+      const response = await edgeFunctions.alerts.list(currentOrganization.id, {
+        resolved: false
+      })
 
       if (!response.success || !response.data) {
         console.error('[AlertsList] Failed to fetch alerts:', response.error)

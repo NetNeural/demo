@@ -204,7 +204,7 @@ export function MqttConfigDialog({
         console.log('[MQTT Save] Updating integration:', integrationId);
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: mqttConfig,
+          settings: mqttConfig,
           status: 'active',
         })
         

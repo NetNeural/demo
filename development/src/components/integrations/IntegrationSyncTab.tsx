@@ -152,10 +152,27 @@ export function IntegrationSyncTab({
           deviceId: string
           error: string
         }>
+        logs?: string[] // Detailed log messages from edge function
       }
       
       const result = response.data as SyncResult
       addLogEntry('success', 'Sync endpoint responded successfully')
+      
+      // Log detailed logs from edge function (if available)
+      if (result.logs && Array.isArray(result.logs)) {
+        result.logs.forEach((log) => {
+          // Determine log level based on emoji/content
+          if (log.includes('✅') || log.includes('SUCCESS')) {
+            addLogEntry('success', log)
+          } else if (log.includes('⚠️') || log.includes('WARNING') || log.includes('ℹ️')) {
+            addLogEntry('warning', log)
+          } else if (log.includes('✗') || log.includes('ERROR') || log.includes('Failed')) {
+            addLogEntry('error', log)
+          } else {
+            addLogEntry('info', log)
+          }
+        })
+      }
       
       // Log summary
       if (result.summary) {
@@ -182,7 +199,12 @@ export function IntegrationSyncTab({
       // Log errors
       if (result.errors && Array.isArray(result.errors)) {
         result.errors.forEach((error) => {
-          addLogEntry('error', `✗ ${error.deviceId}: ${error.error}`)
+          // Handle both string errors and object errors
+          if (typeof error === 'string') {
+            addLogEntry('error', `✗ ${error}`)
+          } else {
+            addLogEntry('error', `✗ ${error.deviceId}: ${error.error}`)
+          }
         })
       }
 

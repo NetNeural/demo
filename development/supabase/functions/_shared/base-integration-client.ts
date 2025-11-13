@@ -56,6 +56,7 @@ export interface SyncResult {
   devices_failed: number
   errors: string[]
   details?: Record<string, unknown>
+  logs?: string[] // Detailed log messages for UI display
 }
 
 export interface Device {

@@ -79,8 +79,16 @@ export class EdgeFunctionClient {
       'Content-Type': 'application/json',
     }
 
+    // Use user session token if available, otherwise fall back to anon key
+    // Supabase edge functions require SOME authorization header
     if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`
+    } else {
+      // Fall back to anon key for functions that don't require user auth
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      if (anonKey) {
+        headers['Authorization'] = `Bearer ${anonKey}`
+      }
     }
 
     return headers

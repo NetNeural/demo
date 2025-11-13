@@ -118,6 +118,7 @@ export default createEdgeFunction(async ({ req }) => {
     return createSuccessResponse({ success: true, ...syncResult })
   }
 }, {
+  requireAuth: false, // Using service role key, no user auth needed
   allowedMethods: ['POST']
 })
 
@@ -136,6 +137,14 @@ function createIntegrationClient(
   
   switch (integration.integration_type) {
     case 'golioth':
+      console.log('[device-sync] Creating Golioth client with:', {
+        hasApiKey: !!(integration.api_key_encrypted || settings.apiKey),
+        apiKeySource: integration.api_key_encrypted ? 'integration.api_key_encrypted' : 'settings.apiKey',
+        apiKeyLength: (integration.api_key_encrypted || settings.apiKey)?.length,
+        projectId: integration.project_id || settings.projectId,
+        projectIdSource: integration.project_id ? 'integration.project_id' : 'settings.projectId',
+        baseUrl: integration.base_url || settings.baseUrl,
+      })
       return new GoliothClient({
         type: 'golioth',
         settings: {

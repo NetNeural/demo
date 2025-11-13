@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import {
@@ -15,8 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Device {
@@ -40,8 +47,17 @@ interface Device {
   location?: string
 }
 
+interface Location {
+  id: string
+  name: string
+  description?: string
+  city?: string
+  state?: string
+}
+
 export function DevicesList() {
   const [devices, setDevices] = useState<Device[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
@@ -52,11 +68,19 @@ export function DevicesList() {
   const [editModel, setEditModel] = useState('')
   const [editSerialNumber, setEditSerialNumber] = useState('')
   const [editFirmwareVersion, setEditFirmwareVersion] = useState('')
-  const [editLocation, setEditLocation] = useState('')
+  const [editLocationId, setEditLocationId] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingDevice, setDeletingDevice] = useState<Device | null>(null)
   const [deleting, setDeleting] = useState(false)
+  
+  // Filter and Sort states
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterLocation, setFilterLocation] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<string>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  
   const { currentOrganization } = useOrganization()
 
   const fetchDevices = useCallback(async () => {
@@ -92,9 +116,96 @@ export function DevicesList() {
     }
   }, [currentOrganization])
 
+  const fetchLocations = useCallback(async () => {
+    if (!currentOrganization) {
+      setLocations([])
+      return
+    }
+
+    try {
+      console.log('[DevicesList] Fetching locations for org:', currentOrganization.id)
+      const response = await edgeFunctions.locations.list(currentOrganization.id)
+      console.log('[DevicesList] Locations response:', response)
+      if (response.success) {
+        // The locations endpoint returns data directly as an array, not wrapped in {locations: [...]}
+        const locationsData = Array.isArray(response.data) ? response.data : []
+        console.log('[DevicesList] Locations data:', locationsData)
+        setLocations(locationsData as Location[])
+      } else {
+        console.error('[DevicesList] Failed to fetch locations:', response.error)
+      }
+    } catch (err) {
+      console.error('[DevicesList] Error fetching locations:', err)
+    }
+  }, [currentOrganization])
+
   useEffect(() => {
     fetchDevices()
-  }, [fetchDevices])
+    fetchLocations()
+  }, [fetchDevices, fetchLocations])
+
+  // Compute unique device types for filter
+  const deviceTypes = useMemo(() => {
+    const types = new Set(devices.map(d => d.device_type || d.type || 'unknown'))
+    return Array.from(types).sort()
+  }, [devices])
+
+  // Filter and sort devices
+  const filteredAndSortedDevices = useMemo(() => {
+    let filtered = [...devices]
+
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(d => d.status === filterStatus)
+    }
+
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(d => (d.device_type || d.type) === filterType)
+    }
+
+    // Apply location filter
+    if (filterLocation !== 'all') {
+      if (filterLocation === 'none') {
+        filtered = filtered.filter(d => !d.location_id)
+      } else {
+        filtered = filtered.filter(d => d.location_id === filterLocation)
+      }
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal: string | number
+      let bVal: string | number
+
+      switch (sortBy) {
+        case 'name':
+          aVal = a.name?.toLowerCase() || ''
+          bVal = b.name?.toLowerCase() || ''
+          break
+        case 'type':
+          aVal = (a.device_type || a.type || '')?.toLowerCase()
+          bVal = (b.device_type || b.type || '')?.toLowerCase()
+          break
+        case 'status':
+          aVal = a.status || ''
+          bVal = b.status || ''
+          break
+        case 'lastSeen':
+          aVal = new Date(a.lastSeen || 0).getTime()
+          bVal = new Date(b.lastSeen || 0).getTime()
+          break
+        default:
+          return 0
+      }
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return filtered
+  }, [devices, filterStatus, filterType, filterLocation, sortBy, sortOrder])
 
   const handleEditDevice = async () => {
     if (!selectedDevice || !currentOrganization) return
@@ -102,7 +213,10 @@ export function DevicesList() {
     try {
       setSaving(true)
 
+      const locationIdToSend = editLocationId || null
       console.log('[Device Edit] Starting update for device:', selectedDevice.id)
+      console.log('[Device Edit] editLocationId value:', editLocationId, 'type:', typeof editLocationId)
+      console.log('[Device Edit] locationIdToSend value:', locationIdToSend)
       console.log('[Device Edit] Update payload:', {
         organization_id: currentOrganization.id,
         name: editName,
@@ -110,7 +224,7 @@ export function DevicesList() {
         model: editModel || null,
         serial_number: editSerialNumber || null,
         firmware_version: editFirmwareVersion || null,
-        location: editLocation
+        location_id: locationIdToSend
       })
 
       const response = await edgeFunctions.call(
@@ -124,7 +238,7 @@ export function DevicesList() {
             model: editModel || null,
             serial_number: editSerialNumber || null,
             firmware_version: editFirmwareVersion || null,
-            location: editLocation
+            location_id: locationIdToSend
           }
         }
       )
@@ -156,7 +270,7 @@ export function DevicesList() {
     setEditModel(device.model || '')
     setEditSerialNumber(device.serial_number || '')
     setEditFirmwareVersion(device.firmware_version || '')
-    setEditLocation(device.location || '')
+    setEditLocationId(device.location_id || '')
     setEditOpen(true)
   }
 
@@ -244,8 +358,118 @@ export function DevicesList() {
         </Card>
       )}
       
+      {/* Filter and Sort Controls */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-5">
+            {/* Status Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="filter-status">Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger id="filter-status">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Type Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="filter-type">Type</Label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger id="filter-type">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {deviceTypes.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="filter-location">Location</Label>
+              <Select value={filterLocation} onValueChange={setFilterLocation}>
+                <SelectTrigger id="filter-location">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="none">No Location</SelectItem>
+                  {locations.map(loc => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name} {loc.city ? `(${loc.city})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort By */}
+            <div className="space-y-2">
+              <Label htmlFor="sort-by">Sort By</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger id="sort-by">
+                  <SelectValue placeholder="Name" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="type">Type</SelectItem>
+                  <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="lastSeen">Last Seen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort Order */}
+            <div className="space-y-2">
+              <Label htmlFor="sort-order">Order</Label>
+              <Button
+                id="sort-order"
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              >
+                {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="mt-4 flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">
+              Showing {filteredAndSortedDevices.length} of {devices.length} devices
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterStatus('all')
+                setFilterType('all')
+                setFilterLocation('all')
+                setSortBy('name')
+                setSortOrder('asc')
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {devices.map((device) => (
+        {filteredAndSortedDevices.map((device) => (
           <Card key={device.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -554,15 +778,31 @@ export function DevicesList() {
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="edit-device-location" className="text-sm text-muted-foreground">
-                    Location
+                    Location {locations.length > 0 && `(${locations.length} available)`}
                   </Label>
-                  <Input
-                    id="edit-device-location"
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    className="font-medium"
-                    placeholder="e.g., Building A, Floor 2, Room 203"
-                  />
+                  <Select 
+                    value={editLocationId || 'none'} 
+                    onValueChange={(value) => {
+                      console.log('[DevicesList] Location selected:', value)
+                      setEditLocationId(value === 'none' ? '' : value)
+                    }}
+                  >
+                    <SelectTrigger id="edit-device-location" className="font-medium">
+                      <SelectValue placeholder="Select a location (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {locations.map((location) => {
+                        console.log('[DevicesList] Rendering location:', location)
+                        return (
+                          <SelectItem key={location.id} value={location.id}>
+                            {location.name}
+                            {location.city && location.state && ` - ${location.city}, ${location.state}`}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

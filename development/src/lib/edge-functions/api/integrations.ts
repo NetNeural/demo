@@ -14,6 +14,7 @@ export interface IntegrationsAPI {
   }) => Promise<EdgeFunctionResponse<unknown>>
   update: (integrationId: string, data: {
     name?: string
+    settings?: Record<string, unknown>
     config?: Record<string, unknown>
     status?: string
   }) => Promise<EdgeFunctionResponse<unknown>>
@@ -26,6 +27,7 @@ export interface IntegrationsAPI {
     deviceIds?: string[]
   }) => Promise<EdgeFunctionResponse<unknown>>
   getActivityLog: (integrationId: string, options?: {
+    organizationId?: string
     limit?: number
     direction?: 'incoming' | 'outgoing' | 'all'
     status?: 'success' | 'failed' | 'all'
@@ -78,8 +80,9 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
      * Update an integration
      */
     update: (integrationId, data) =>
-      call(`integrations/${integrationId}`, {
+      call('integrations', {
         method: 'PUT',
+        params: { id: integrationId },
         body: data,
       }),
     
@@ -87,8 +90,9 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
      * Delete an integration
      */
     delete: (integrationId) =>
-      call(`integrations/${integrationId}`, {
+      call('integrations', {
         method: 'DELETE',
+        params: { id: integrationId },
       }),
     
     /**
@@ -116,6 +120,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
       call('integrations/activity', {
         params: {
           integration_id: integrationId,
+          organization_id: options.organizationId,
           limit: options.limit?.toString(),
           direction: options.direction,
           status: options.status,

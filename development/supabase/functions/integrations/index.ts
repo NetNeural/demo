@@ -1,6 +1,7 @@
 // Deno-lint-ignore-file no-explicit-any
 import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createServiceClient } from '../_shared/database.ts'
 import { 
   getUserContext, 
   getTargetOrganizationId,
@@ -45,6 +46,7 @@ interface DbIntegration {
   status: string
   project_id?: string
   base_url?: string
+  api_key_encrypted?: string
   settings?: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -223,6 +225,72 @@ export default createEdgeFunction(async ({ req }) => {
   // Create authenticated Supabase client (respects RLS)
   const supabase = createAuthenticatedClient(req)
 
+  // GET /integrations/activity - Get activity logs for an integration (MUST BE BEFORE general GET)
+  if (req.method === 'GET' && req.url.includes('/activity')) {
+    const url = new URL(req.url)
+    const integrationId = url.searchParams.get('integration_id')
+    const limitParam = url.searchParams.get('limit')
+    const directionFilter = url.searchParams.get('direction') // 'incoming', 'outgoing', or 'all'
+    const statusFilter = url.searchParams.get('status') // 'success', 'failed', or 'all'
+    
+    if (!integrationId) {
+      throw new DatabaseError('Missing integration_id parameter', 400)
+    }
+
+    // Verify user has access to this integration
+    const { data: integration, error: integrationError } = await supabase
+      .from('device_integrations')
+      .select('organization_id')
+      .eq('id', integrationId)
+      .single()
+
+    if (integrationError || !integration) {
+      throw new DatabaseError('Integration not found or access denied', 404)
+    }
+
+    // Build activity log query
+    let query = supabase
+      .from('integration_activity_log')
+      .select('*')
+      .eq('integration_id', integrationId)
+      .order('created_at', { ascending: false })
+
+    // Apply filters
+    if (directionFilter && directionFilter !== 'all') {
+      query = query.eq('direction', directionFilter)
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'failed') {
+        query = query.in('status', ['failed', 'error', 'timeout'])
+      } else {
+        query = query.eq('status', 'success')
+      }
+    }
+
+    // Apply limit (default 100)
+    const limit = limitParam ? parseInt(limitParam, 10) : 100
+    query = query.limit(limit)
+
+    const { data: logs, error: logsError } = await query
+
+    if (logsError) {
+      console.error('Activity log query error:', logsError)
+      throw new DatabaseError(`Failed to fetch activity logs: ${logsError.message}`, 500)
+    }
+
+    return createSuccessResponse({ 
+      logs: logs || [],
+      count: logs?.length || 0,
+      integrationId,
+      filters: {
+        direction: directionFilter || 'all',
+        status: statusFilter || 'all',
+        limit
+      }
+    })
+  }
+
   if (req.method === 'GET') {
     const url = new URL(req.url)
     const requestedOrgId = url.searchParams.get('organization_id')
@@ -276,7 +344,11 @@ export default createEdgeFunction(async ({ req }) => {
             projectId: integration.project_id,
             baseUrl: integration.base_url,
             deviceCount: deviceCount || 0,
-            settings: integration.settings || {},
+            settings: {
+              ...(integration.settings || {}),
+              // Include API key for frontend (TODO: Consider security implications for production)
+              apiKey: integration.api_key_encrypted || '',
+            },
             createdAt: integration.created_at,
             updatedAt: integration.updated_at
           }
@@ -524,11 +596,35 @@ export default createEdgeFunction(async ({ req }) => {
         }
 
         // Get devices from remote provider
-        const remoteDevicesResult = await client.listDevices()
-        const remoteDevices = remoteDevicesResult.devices
+        let remoteDevices: Array<{
+          externalId: string
+          name: string
+          type?: string
+          status?: string
+          lastSeen?: string
+        }> = []
+
+        // Handle different client types
+        if (client instanceof GoliothClient) {
+          const goliothDevices = await client.getDevices()
+          remoteDevices = goliothDevices.map(d => ({
+            externalId: d.id,
+            name: d.name,
+            type: 'golioth',
+            status: d.status,
+            lastSeen: d.lastSeen
+          }))
+        } else {
+          // For other clients that implement listDevices
+          const remoteDevicesResult = await (client as any).listDevices?.()
+          remoteDevices = remoteDevicesResult?.devices || []
+        }
+
+        // Create service role client for device operations (bypass RLS)
+        const serviceClient = createServiceClient()
 
         // Get local devices for this integration
-        const { data: localDevices, error: localDevicesError } = await supabase
+        const { data: localDevices, error: localDevicesError } = await serviceClient
           .from('devices')
           .select('*')
           .eq('organization_id', typedIntegration.organization_id)
@@ -554,7 +650,7 @@ export default createEdgeFunction(async ({ req }) => {
 
               if (localDevice) {
                 // Update existing device
-                const { error: updateError } = await supabase
+                const { error: updateError } = await serviceClient
                   .from('devices')
                   .update({
                     name: remoteDevice.name,
@@ -582,7 +678,7 @@ export default createEdgeFunction(async ({ req }) => {
                 }
               } else {
                 // Create new device
-                const { error: createError } = await supabase
+                const { error: createError } = await serviceClient
                   .from('devices')
                   .insert({
                     organization_id: typedIntegration.organization_id,
@@ -792,72 +888,6 @@ export default createEdgeFunction(async ({ req }) => {
       return createSuccessResponse({ 
         integration: updatedIntegration,
         message: 'Integration updated successfully'
-      })
-    }
-
-    // GET /integrations/activity - Get activity logs for an integration
-    if (req.method === 'GET' && req.url.includes('/activity')) {
-      const url = new URL(req.url)
-      const integrationId = url.searchParams.get('integration_id')
-      const limitParam = url.searchParams.get('limit')
-      const directionFilter = url.searchParams.get('direction') // 'incoming', 'outgoing', or 'all'
-      const statusFilter = url.searchParams.get('status') // 'success', 'failed', or 'all'
-      
-      if (!integrationId) {
-        throw new DatabaseError('Missing integration_id parameter', 400)
-      }
-
-      // Verify user has access to this integration
-      const { data: integration, error: integrationError } = await supabase
-        .from('device_integrations')
-        .select('organization_id')
-        .eq('id', integrationId)
-        .single()
-
-      if (integrationError || !integration) {
-        throw new DatabaseError('Integration not found or access denied', 404)
-      }
-
-      // Build activity log query
-      let query = supabase
-        .from('integration_activity_log')
-        .select('*')
-        .eq('integration_id', integrationId)
-        .order('created_at', { ascending: false })
-
-      // Apply filters
-      if (directionFilter && directionFilter !== 'all') {
-        query = query.eq('direction', directionFilter)
-      }
-
-      if (statusFilter && statusFilter !== 'all') {
-        if (statusFilter === 'failed') {
-          query = query.in('status', ['failed', 'error', 'timeout'])
-        } else {
-          query = query.eq('status', 'success')
-        }
-      }
-
-      // Apply limit (default 100)
-      const limit = limitParam ? parseInt(limitParam, 10) : 100
-      query = query.limit(limit)
-
-      const { data: logs, error: logsError } = await query
-
-      if (logsError) {
-        console.error('Activity log query error:', logsError)
-        throw new DatabaseError(`Failed to fetch activity logs: ${logsError.message}`, 500)
-      }
-
-      return createSuccessResponse({ 
-        logs: logs || [],
-        count: logs?.length || 0,
-        integrationId,
-        filters: {
-          direction: directionFilter || 'all',
-          status: statusFilter || 'all',
-          limit
-        }
       })
     }
 

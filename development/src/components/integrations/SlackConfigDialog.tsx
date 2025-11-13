@@ -134,7 +134,7 @@ export function SlackConfigDialog({
       if (integrationId) {
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: slackConfig,
+          settings: slackConfig,
           status: 'active',
         })
       } else {

@@ -147,7 +147,7 @@ export function EmailConfigDialog({
       if (integrationId) {
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: emailConfig,
+          settings: emailConfig,
           status: 'active',
         })
       } else {

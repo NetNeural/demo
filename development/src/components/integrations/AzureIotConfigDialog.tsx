@@ -138,7 +138,7 @@ export function AzureIotConfigDialog({
       if (integrationId) {
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: azureConfig,
+          settings: azureConfig,
           status: config.status,
         })
       } else {

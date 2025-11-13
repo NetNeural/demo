@@ -49,7 +49,9 @@ export function AlertsCard() {
     }
 
     try {
-      const response = await edgeFunctions.alerts.list(currentOrganization.id);
+      const response = await edgeFunctions.alerts.list(currentOrganization.id, {
+        resolved: false
+      });
       
       if (!response.success || !response.data) {
         console.error('Failed to fetch alerts:', response.error);
@@ -174,7 +176,7 @@ export function AlertsCard() {
             {alerts.map((alert) => (
               <Alert 
                 key={alert.id} 
-                className={`${getSeverityColor(alert.severity)} ${alert.acknowledged ? 'opacity-60' : ''}`}
+                className={`${getSeverityColor(alert.severity)}`}
               >
                 <div className="flex items-start justify-between w-full">
                   <div className="flex items-start space-x-2">

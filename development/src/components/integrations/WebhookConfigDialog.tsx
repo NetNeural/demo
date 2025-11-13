@@ -137,7 +137,7 @@ export function WebhookConfigDialog({
       if (integrationId) {
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: webhookConfig,
+          settings: webhookConfig,
           status: 'active',
         })
       } else {

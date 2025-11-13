@@ -1,0 +1,1521 @@
+🧪 DEBUGGING LOCAL DEVICES ISSUE
+
+🔐 Logging in...
+[BROWSER verbose]: [DOM] Input elements should have autocomplete attributes (suggested: "username"): (More info: https://goo.gl/9p2vKq) %o
+[BROWSER log]: [Sentry] Client config loading...
+[BROWSER log]: [Sentry] DSN: Configured
+[BROWSER info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[BROWSER error]: Failed to load resource: the server responded with a status of 404 (Not Found)
+[BROWSER log]: [Sentry] Initializing client...
+[BROWSER log]: [Sentry] DSN: Configured ✅
+[BROWSER log]: Sentry Logger [log]: Integration installed: InboundFilters
+[BROWSER log]: Sentry Logger [log]: Integration installed: FunctionToString
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserApiErrors
+[BROWSER log]: Sentry Logger [log]: Integration installed: Breadcrumbs
+[BROWSER log]: Sentry Logger [log]: Global Handler attached: onerror
+[BROWSER log]: Sentry Logger [log]: Global Handler attached: onunhandledrejection
+[BROWSER log]: Sentry Logger [log]: Integration installed: GlobalHandlers
+[BROWSER log]: Sentry Logger [log]: Integration installed: LinkedErrors
+[BROWSER log]: Sentry Logger [log]: Integration installed: Dedupe
+[BROWSER log]: Sentry Logger [log]: Integration installed: HttpContext
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserSession
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserTracing
+[BROWSER log]: Sentry Logger [log]: Integration installed: NextjsClientStackFrameNormalization
+[BROWSER log]: Sentry Logger [log]: Integration installed: Replay
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: pageload
+  name: /auth/login/
+  ID: 85154d2e5769a076
+  parent ID: d157bde048497a33
+[BROWSER log]: Sentry Logger [log]: [Tracing] Started span is an idle span
+[BROWSER log]: Sentry Logger [log]: [Replay]  Creating new session
+[BROWSER log]: Sentry Logger [log]: [Replay]  Starting replay in buffer mode
+[BROWSER log]: Sentry Logger [log]: [Replay]  Using compression worker
+[BROWSER log]: Sentry Logger [log]: [Replay]  Updating session start time to earliest event in buffer to Tue Nov 11 2025 07:27:10 GMT-0800 (Pacific Standard Time)
+[BROWSER log]: [Sentry] Client initialized! ✅
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: ui.long-animation-frame
+  name: Main UI thread blocked
+  ID: 9eacfbaafe45dbeb
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "ui.long-animation-frame" span "Main UI thread blocked" with ID 9eacfbaafe45dbeb
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: ui.long-animation-frame
+  name: Main UI thread blocked
+  ID: bd27ead7d17c5a68
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "ui.long-animation-frame" span "Main UI thread blocked" with ID bd27ead7d17c5a68
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: POST http://127.0.0.1:54321/auth/v1/token
+  ID: a5c5b4b0a898f049
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "POST http://127.0.0.1:54321/auth/v1/token" with ID a5c5b4b0a898f049
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/auth/v1/user
+  ID: 91460323d9fce966
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/auth/v1/user" with ID 91460323d9fce966
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing current active span with op: pageload
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.redirect
+  name: http://localhost:3000/auth/login/
+  ID: 90650b99b8de9d3c
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.redirect" span "http://localhost:3000/auth/login/" with ID 90650b99b8de9d3c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.domContentLoadedEvent
+  name: http://localhost:3000/auth/login/
+  ID: a2671420f544fa87
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.domContentLoadedEvent" span "http://localhost:3000/auth/login/" with ID a2671420f544fa87
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.loadEvent
+  name: http://localhost:3000/auth/login/
+  ID: a7e6b3564c1312c8
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.loadEvent" span "http://localhost:3000/auth/login/" with ID a7e6b3564c1312c8
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.connect
+  name: http://localhost:3000/auth/login/
+  ID: 919e2b0380275bef
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.connect" span "http://localhost:3000/auth/login/" with ID 919e2b0380275bef
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.cache
+  name: http://localhost:3000/auth/login/
+  ID: 93f5d2ed83b99425
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.cache" span "http://localhost:3000/auth/login/" with ID 93f5d2ed83b99425
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.DNS
+  name: http://localhost:3000/auth/login/
+  ID: b161ce067199e507
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.DNS" span "http://localhost:3000/auth/login/" with ID b161ce067199e507
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.request
+  name: http://localhost:3000/auth/login/
+  ID: 885526c4f0e3ecc1
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.request" span "http://localhost:3000/auth/login/" with ID 885526c4f0e3ecc1
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.response
+  name: http://localhost:3000/auth/login/
+  ID: b3660240737b73ff
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.response" span "http://localhost:3000/auth/login/" with ID b3660240737b73ff
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2
+  ID: 96780777c5cf326a
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2" with ID 96780777c5cf326a
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/chunks/%5Broot-of-the-server%5D__808363aa._.css
+  ID: 90ed4ab68ca1ce7b
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/chunks/%5Broot-of-the-server%5D__808363aa._.css" with ID 90ed4ab68ca1ce7b
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_41979f17._.js
+  ID: b8f67006790c08a5
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_41979f17._.js" with ID b8f67006790c08a5
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js
+  ID: 8f0bfe458af69b70
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js" with ID 8f0bfe458af69b70
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_b1d87949._.js
+  ID: 85f3eb70f343dfd7
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_b1d87949._.js" with ID 85f3eb70f343dfd7
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js
+  ID: 9896872ecd5085a6
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js" with ID 9896872ecd5085a6
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_client_7dd460f2._.js
+  ID: 8225246d12890d74
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_client_7dd460f2._.js" with ID 8225246d12890d74
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_shared_lib_5975d31c._.js
+  ID: 9887b23556fdbd45
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_shared_lib_5975d31c._.js" with ID 9887b23556fdbd45
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_router_9e4be07f.js
+  ID: afe0e480d8ae0e49
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_router_9e4be07f.js" with ID afe0e480d8ae0e49
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_53b9775f._.js
+  ID: b2ee4408444e084a
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_53b9775f._.js" with ID b2ee4408444e084a
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js
+  ID: 8a333b91ebe37d1e
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js" with ID 8a333b91ebe37d1e
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js
+  ID: bf95d8dcdcbd3585
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js" with ID bf95d8dcdcbd3585
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js
+  ID: 9a148fc2b2c51a11
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js" with ID 9a148fc2b2c51a11
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_074b1aa8._.js
+  ID: 9d7060dce79840f6
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_074b1aa8._.js" with ID 9d7060dce79840f6
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry-internal_replay_build_npm_esm_index_32be9d39.js
+  ID: 888e646bcc52dea3
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry-internal_replay_build_npm_esm_index_32be9d39.js" with ID 888e646bcc52dea3
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/instrumentation-client_ts_15a74a80._.js
+  ID: 9c04b7a8439ebea1
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/instrumentation-client_ts_15a74a80._.js" with ID 9c04b7a8439ebea1
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/_a0ff3932._.js
+  ID: 9392c36ff40e8c49
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/_a0ff3932._.js" with ID 9392c36ff40e8c49
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/turbopack-_8f00ac08._.js
+  ID: ba33177ea7e3dc51
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/turbopack-_8f00ac08._.js" with ID ba33177ea7e3dc51
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_icon_svg_mjs_74c873b6._.js
+  ID: 88f501d791000b96
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_icon_svg_mjs_74c873b6._.js" with ID 88f501d791000b96
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_abffcd14._.js
+  ID: 840cdd50f0517ecd
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_abffcd14._.js" with ID 840cdd50f0517ecd
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_880228d0._.js
+  ID: b8c3c07d9e55c486
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_880228d0._.js" with ID b8c3c07d9e55c486
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_e3f51c3f._.js
+  ID: 9bd04d6b83d45902
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_e3f51c3f._.js" with ID 9bd04d6b83d45902
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_layout_tsx_0e26c253._.js
+  ID: a60ab0720455d083
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_layout_tsx_0e26c253._.js" with ID a60ab0720455d083
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_auth_error_tsx_773dcd8d._.js
+  ID: 9912f2ee6244b1fa
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_auth_error_tsx_773dcd8d._.js" with ID 9912f2ee6244b1fa
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/_6d094926._.js
+  ID: 9729f83865a1f427
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/_6d094926._.js" with ID 9729f83865a1f427
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_auth_login_page_tsx_773dcd8d._.js
+  ID: b223809bad68d143
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_auth_login_page_tsx_773dcd8d._.js" with ID b223809bad68d143
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_f38acca6._.js
+  ID: bc1f719a2d020e44
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_f38acca6._.js" with ID bc1f719a2d020e44
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_abea62c5._.js
+  ID: badd7f72479541b7
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_abea62c5._.js" with ID badd7f72479541b7
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_global-error_tsx_773dcd8d._.js
+  ID: bf98504aad8aa1c3
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_global-error_tsx_773dcd8d._.js" with ID bf98504aad8aa1c3
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/_8df63018._.js
+  ID: a4d2ae6b6b8f7303
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/_8df63018._.js" with ID a4d2ae6b6b8f7303
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: paint
+  name: first-paint
+  ID: a3b857ddc5af7862
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "paint" span "first-paint" with ID a3b857ddc5af7862
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: paint
+  name: first-contentful-paint
+  ID: b03db91564ca33c7
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "paint" span "first-contentful-paint" with ID b03db91564ca33c7
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.other
+  name: /favicon.ico
+  ID: a80095d99099d938
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.other" span "/favicon.ico" with ID a80095d99099d938
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: mark
+  name: sentry-tracing-init
+  ID: a32d5216b43e6923
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "mark" span "sentry-tracing-init" with ID a32d5216b43e6923
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js
+  ID: b59d6b07bad7200e
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js" with ID b59d6b07bad7200e
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_bb766d6b._.js
+  ID: 8264cd1d345c2b00
+  parent ID: 85154d2e5769a076
+  root ID: 85154d2e5769a076
+  root op: pageload
+  root description: /auth/login/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_bb766d6b._.js" with ID 8264cd1d345c2b00
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: lcp = 304 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: lcp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: ttfb = 182.30000000074506 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: ttfb
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: fp = 304 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: fp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: fcp = 304 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: fcp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: connection.rtt = 100 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: connection.rtt
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: ttfb.requestTime = 177.40000000223517 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: ttfb.requestTime
+[BROWSER log]: Sentry Logger [log]: [Tracing] Idle span "pageload" finished
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "pageload" root span "/auth/login/" with ID 85154d2e5769a076
+[BROWSER log]: Sentry Logger [log]: [Measurements] Adding measurements to transaction event {
+  "lcp": {
+    "value": 304,
+    "unit": "millisecond"
+  },
+  "ttfb": {
+    "value": 182.30000000074506,
+    "unit": "millisecond"
+  },
+  "fp": {
+    "value": 304,
+    "unit": "millisecond"
+  },
+  "fcp": {
+    "value": 304,
+    "unit": "millisecond"
+  },
+  "connection.rtt": {
+    "value": 100,
+    "unit": "millisecond"
+  },
+  "ttfb.requestTime": {
+    "value": 177.40000000223517,
+    "unit": "millisecond"
+  }
+}
+[BROWSER log]: Sentry Logger [log]: Adding previous_trace [object Object] link to span [object Object]
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: navigation
+  name: /dashboard
+  ID: a490dfa27fcab581
+[BROWSER log]: Sentry Logger [log]: [Tracing] Started span is an idle span
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://localhost:3000/dashboard/
+  ID: b8d4ffbd2d39af33
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://localhost:3000/dashboard/" with ID b8d4ffbd2d39af33
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://localhost:3000/dashboard/
+  ID: 808bc72c24f61cde
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: [Fast Refresh] rebuilding
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://localhost:3000/dashboard/" with ID 808bc72c24f61cde
+[BROWSER log]: [Fast Refresh] done in 166ms
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/auth/v1/user
+  ID: 9a56f65d815680e6
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/auth/v1/user" with ID 9a56f65d815680e6
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/auth/v1/user
+  ID: 94d312cf10b3c5d2
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/auth/v1/user" with ID 94d312cf10b3c5d2
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/users
+  ID: b4d48b258aa0a600
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/users
+  ID: 92a34c95eef14e34
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/users" with ID b4d48b258aa0a600
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/organizations
+  ID: 9763f14e400e176e
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/users" with ID 92a34c95eef14e34
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/organizations
+  ID: 8f9aa3cee0f6e9ac
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/organizations" with ID 9763f14e400e176e
+[BROWSER log]: 🔍 getCurrentUser Debug: {email: superadmin@netneural.ai, role: super_admin, organizationId: 00000000-0000-0000-0000-000000000001, isSuperAdmin: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/organizations" with ID 8f9aa3cee0f6e9ac
+[BROWSER log]: [EdgeFunction organizations-1762874832240-u3tzun5] → GET organizations {params: undefined, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/organizations
+  ID: b14b5df87d659f67
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: 🔍 getCurrentUser Debug: {email: superadmin@netneural.ai, role: super_admin, organizationId: 00000000-0000-0000-0000-000000000001, isSuperAdmin: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: ui.long-animation-frame
+  name: Main UI thread blocked
+  ID: 8b3c82a46b30f835
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "ui.long-animation-frame" span "Main UI thread blocked" with ID 8b3c82a46b30f835
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/organizations" with ID b14b5df87d659f67
+[BROWSER log]: [EdgeFunction organizations-1762874832240-u3tzun5] ← 200 (257ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: 🔍 Organization auto-selection: {savedOrgId: null, currentOrgId: null, organizationsCount: 1, firstOrgId: 00000000-0000-0000-0000-000000000001, firstOrgName: NetNeural Demo}
+[BROWSER log]: ✅ Auto-selecting first organization: NetNeural Demo
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: [EdgeFunction organizations-1762874832510-sj1equn] → GET organizations {params: undefined, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/organizations
+  ID: ab58d4fc3560c75b
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: [EdgeFunction dashboard-stats-1762874832511-k3pfp68] → GET dashboard-stats {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/dashboard-stats
+  ID: ae187e18dda82a4e
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/dashboard-stats" with ID ae187e18dda82a4e
+[BROWSER log]: [EdgeFunction dashboard-stats-1762874832511-k3pfp68] ← 200 (181ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/organizations" with ID ab58d4fc3560c75b
+[BROWSER log]: [EdgeFunction organizations-1762874832510-sj1equn] ← 200 (202ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: 🔍 Organization auto-selection: {savedOrgId: 00000000-0000-0000-0000-000000000001, currentOrgId: 00000000-0000-0000-0000-000000000001, organizationsCount: 1, firstOrgId: 00000000-0000-0000-0000-000000000001, firstOrgName: NetNeural Demo}
+[BROWSER log]: ✅ Using saved organization: 00000000-0000-0000-0000-000000000001
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: [EdgeFunction locations-1762874833269-7vz5sks] → GET locations {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/locations
+  ID: b8d6600f76143981
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: [EdgeFunction locations-1762874833271-vahfhu6] → GET locations {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/locations
+  ID: abb67c1fbd4f9ce2
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/locations" with ID b8d6600f76143981
+[BROWSER log]: [EdgeFunction locations-1762874833269-7vz5sks] ← 200 (144ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/locations" with ID abb67c1fbd4f9ce2
+[BROWSER log]: [EdgeFunction locations-1762874833271-vahfhu6] ← 200 (261ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_228d32cf._.js
+  ID: a389696c702bb52c
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_228d32cf._.js" with ID a389696c702bb52c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js
+  ID: 97cfe4302b02df6e
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js" with ID 97cfe4302b02df6e
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js
+  ID: 8ec37786646f825d
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js" with ID 8ec37786646f825d
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_700466af._.js
+  ID: 803043c0dbb26811
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_700466af._.js" with ID 803043c0dbb26811
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js
+  ID: be2c2d3007cccd34
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js" with ID be2c2d3007cccd34
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_error_tsx_35664051._.js
+  ID: beb0aa248c6e0f59
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_error_tsx_35664051._.js" with ID beb0aa248c6e0f59
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_error_tsx_cfa10d27._.js
+  ID: b31037be8dd0e4a9
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_error_tsx_cfa10d27._.js" with ID b31037be8dd0e4a9
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_17569a83._.js
+  ID: b9979c2372278aa8
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_17569a83._.js" with ID b9979c2372278aa8
+✅ Login successful
+
+📱 Navigating to devices page...
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_lucide-react_dist_esm_icons_b2a55acc._.js
+  ID: bcad70cad4f9fc0c
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_lucide-react_dist_esm_icons_b2a55acc._.js" with ID bcad70cad4f9fc0c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_page_tsx_cfa10d27._.js
+  ID: 8aaf16ea48b701a4
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_page_tsx_cfa10d27._.js" with ID 8aaf16ea48b701a4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_228d32cf._.js
+  ID: a722b4d22a13a404
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_228d32cf._.js" with ID a722b4d22a13a404
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js
+  ID: a72f2bb0203ce120
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js" with ID a72f2bb0203ce120
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js
+  ID: 97c8a07eb07bd2cf
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js" with ID 97c8a07eb07bd2cf
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_700466af._.js
+  ID: a9ad760a86c8af64
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_700466af._.js" with ID a9ad760a86c8af64
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js
+  ID: 9160ca62b782ed29
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js" with ID 9160ca62b782ed29
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_17569a83._.js
+  ID: 82dbcec4bf2802a4
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_17569a83._.js" with ID 82dbcec4bf2802a4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_lucide-react_dist_esm_icons_b2a55acc._.js
+  ID: 9cd5109bf3517894
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_lucide-react_dist_esm_icons_b2a55acc._.js" with ID 9cd5109bf3517894
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_page_tsx_cfa10d27._.js
+  ID: abb2fa66a531fd3e
+  parent ID: a490dfa27fcab581
+  root ID: a490dfa27fcab581
+  root op: navigation
+  root description: /dashboard
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_page_tsx_cfa10d27._.js" with ID abb2fa66a531fd3e
+[BROWSER log]: Sentry Logger [log]: [Tracing] Idle span "navigation" finished
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "navigation" root span "/dashboard" with ID a490dfa27fcab581
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: ui.interaction.click
+  name: button.inline-flex.items-center.justify-center.whitespace-nowrap.select-none.no-underline.border.border-transparent.cursor-pointer.transition-all.duration-150.ease-in-out.disabled:opacity-50.disabled:cursor-not-allowed.focus-visible:outline-none.focus-visible:ring-2.focus-visible:ring-blue-500.focus-visible:ring-offset-2.bg-gradient-to-br.from-blue-600.to-blue-500.text-white.shadow-sm.rounded-lg.hover:from-blue-700.hover:to-blue-600.hover:shadow.hover:-translate-y-px.active:translate-y-0.disabled:hover:from-blue-600.disabled:hover:to-blue-500.disabled:hover:translate-y-0.disabled:hover:shadow-sm.px-4.py-3.w-full.h-12.text-base.font-medium[type="submit"]
+  ID: ae7cd170dd87f870
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: inp
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "ui.interaction.click" root span "button.inline-flex.items-center.justify-center.whitespace-nowrap.select-none.no-underline.border.border-transparent.cursor-pointer.transition-all.duration-150.ease-in-out.disabled:opacity-50.disabled:cursor-not-allowed.focus-visible:outline-none.focus-visible:ring-2.focus-visible:ring-blue-500.focus-visible:ring-offset-2.bg-gradient-to-br.from-blue-600.to-blue-500.text-white.shadow-sm.rounded-lg.hover:from-blue-700.hover:to-blue-600.hover:shadow.hover:-translate-y-px.active:translate-y-0.disabled:hover:from-blue-600.disabled:hover:to-blue-500.disabled:hover:translate-y-0.disabled:hover:shadow-sm.px-4.py-3.w-full.h-12.text-base.font-medium[type="submit"]" with ID ae7cd170dd87f870
+[BROWSER log]: Sentry Logger [log]: Flushing outcomes...
+[BROWSER log]: Sentry Logger [log]: No outcomes to send
+[BROWSER log]: Sentry Logger [log]: Recording outcome: "network_error:span"
+[BROWSER error]: Sentry Logger [error]: Encountered error running transport request: TypeError: Failed to fetch
+    at makeRequest (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js:2753:36)
+    at requestTask (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:11166:33)
+    at Object.add (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:10973:22)
+    at Object.send (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:11180:23)
+    at BrowserClient.sendEnvelope (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:10231:46)
+    at sendSpanEnvelope (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:6121:12)
+    at SentrySpan._onSpanEnded (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:6019:17)
+    at SentrySpan.end (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:5948:14)
+    at _onInp (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1985:14)
+    at triggerHandlers (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1551:13)
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1591:9
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:152:21
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1213:17
+    at onHiddenOrPageHide (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1022:13)
+    at sentryWrapped (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js:95:23)
+[BROWSER error]: Sentry Logger [error]: Error while sending envelope: TypeError: Failed to fetch
+    at makeRequest (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js:2753:36)
+    at requestTask (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:11166:33)
+    at Object.add (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:10973:22)
+    at Object.send (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:11180:23)
+    at BrowserClient.sendEnvelope (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:10231:46)
+    at sendSpanEnvelope (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:6121:12)
+    at SentrySpan._onSpanEnded (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:6019:17)
+    at SentrySpan.end (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js:5948:14)
+    at _onInp (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1985:14)
+    at triggerHandlers (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1551:13)
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1591:9
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:152:21
+    at http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1213:17
+    at onHiddenOrPageHide (http://localhost:3000/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js:1022:13)
+    at sentryWrapped (http://localhost:3000/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js:95:23)
+[BROWSER log]: [Sentry] Client config loading...
+[BROWSER log]: [Sentry] DSN: Configured
+[BROWSER info]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[BROWSER log]: [Sentry] Initializing client...
+[BROWSER log]: [Sentry] DSN: Configured ✅
+[BROWSER log]: Sentry Logger [log]: Integration installed: InboundFilters
+[BROWSER log]: Sentry Logger [log]: Integration installed: FunctionToString
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserApiErrors
+[BROWSER log]: Sentry Logger [log]: Integration installed: Breadcrumbs
+[BROWSER log]: Sentry Logger [log]: Global Handler attached: onerror
+[BROWSER log]: Sentry Logger [log]: Global Handler attached: onunhandledrejection
+[BROWSER log]: Sentry Logger [log]: Integration installed: GlobalHandlers
+[BROWSER log]: Sentry Logger [log]: Integration installed: LinkedErrors
+[BROWSER log]: Sentry Logger [log]: Integration installed: Dedupe
+[BROWSER log]: Sentry Logger [log]: Integration installed: HttpContext
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserSession
+[BROWSER log]: Sentry Logger [log]: Integration installed: BrowserTracing
+[BROWSER log]: Sentry Logger [log]: Integration installed: NextjsClientStackFrameNormalization
+[BROWSER log]: Sentry Logger [log]: Integration installed: Replay
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled root span
+  op: pageload
+  name: /dashboard/devices/
+  ID: 90e6ee00dea9a435
+  parent ID: 1c89a30159418582
+[BROWSER log]: Sentry Logger [log]: [Tracing] Started span is an idle span
+[BROWSER log]: Sentry Logger [log]: [Replay]  Loading existing session
+[BROWSER log]: Sentry Logger [log]: [Replay]  Starting replay in buffer mode
+[BROWSER log]: Sentry Logger [log]: [Replay]  Using compression worker
+[BROWSER log]: Sentry Logger [log]: [Replay]  Updating session start time to earliest event in buffer to Tue Nov 11 2025 07:27:14 GMT-0800 (Pacific Standard Time)
+[BROWSER log]: [Sentry] Client initialized! ✅
+[BROWSER log]: [EdgeFunction dashboard-stats-1762874834865-jzcnxby] → GET dashboard-stats {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/dashboard-stats
+  ID: 9b30c54da66b888d
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/auth/v1/user
+  ID: 8f2c4d0dd5931b14
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/auth/v1/user" with ID 8f2c4d0dd5931b14
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/users
+  ID: 93153d1172edcf26
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/users" with ID 93153d1172edcf26
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/rest/v1/organizations
+  ID: 8bfeda0047209898
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/rest/v1/organizations" with ID 8bfeda0047209898
+[BROWSER log]: 🔍 getCurrentUser Debug: {email: superadmin@netneural.ai, role: super_admin, organizationId: 00000000-0000-0000-0000-000000000001, isSuperAdmin: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: [EdgeFunction organizations-1762874834921-c39du0k] → GET organizations {params: undefined, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/organizations
+  ID: 965d28af95c2083d
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/dashboard-stats" with ID 9b30c54da66b888d
+[BROWSER log]: [EdgeFunction dashboard-stats-1762874834865-jzcnxby] ← 200 (151ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/organizations" with ID 965d28af95c2083d
+[BROWSER log]: [EdgeFunction organizations-1762874834921-c39du0k] ← 200 (147ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: 🔍 Organization auto-selection: {savedOrgId: 00000000-0000-0000-0000-000000000001, currentOrgId: 00000000-0000-0000-0000-000000000001, organizationsCount: 1, firstOrgId: 00000000-0000-0000-0000-000000000001, firstOrgName: NetNeural Demo}
+[BROWSER log]: ✅ Using saved organization: 00000000-0000-0000-0000-000000000001
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: 🔍 OrganizationSwitcher Debug: {userEmail: superadmin@netneural.ai, userRole: super_admin, isSuperAdminFromUser: true, calculatedIsSuperAdmin: true, showCreateButton: true}
+[BROWSER log]: [EdgeFunction integrations-1762874835089-keb0eww] → GET integrations {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/integrations
+  ID: b1255ac6d77530ab
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: [EdgeFunction devices-1762874835090-mdhdgvc] → GET devices {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/devices
+  ID: a391b22387fedef9
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: [EdgeFunction integrations-1762874835091-w5hvj1i] → GET integrations {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/integrations
+  ID: bcd07a792159bae4
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: [EdgeFunction devices-1762874835092-cyslyhk] → GET devices {params: Object, hasBody: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: http.client
+  name: GET http://127.0.0.1:54321/functions/v1/devices
+  ID: 87b63a2f4ec1035c
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/devices" with ID a391b22387fedef9
+[BROWSER log]: [EdgeFunction devices-1762874835090-mdhdgvc] ← 200 (128ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/integrations" with ID b1255ac6d77530ab
+[BROWSER log]: [EdgeFunction integrations-1762874835089-keb0eww] ← 200 (211ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: ui.long-animation-frame
+  name: Main UI thread blocked
+  ID: a70a45aa64c7398d
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "ui.long-animation-frame" span "Main UI thread blocked" with ID a70a45aa64c7398d
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/devices" with ID 87b63a2f4ec1035c
+[BROWSER log]: [EdgeFunction devices-1762874835092-cyslyhk] ← 200 (277ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "http.client" span "GET http://127.0.0.1:54321/functions/v1/integrations" with ID bcd07a792159bae4
+[BROWSER log]: [EdgeFunction integrations-1762874835091-w5hvj1i] ← 200 (317ms) {success: true, hasData: true, hasError: false}
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.unloadEvent
+  name: http://localhost:3000/dashboard/devices/
+  ID: 92f97c498a895bf0
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.unloadEvent" span "http://localhost:3000/dashboard/devices/" with ID 92f97c498a895bf0
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.redirect
+  name: http://localhost:3000/dashboard/devices/
+  ID: 8685d42c4cfc0b22
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.redirect" span "http://localhost:3000/dashboard/devices/" with ID 8685d42c4cfc0b22
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.domContentLoadedEvent
+  name: http://localhost:3000/dashboard/devices/
+  ID: 8291c9a082723dc3
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.domContentLoadedEvent" span "http://localhost:3000/dashboard/devices/" with ID 8291c9a082723dc3
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.loadEvent
+  name: http://localhost:3000/dashboard/devices/
+  ID: a551f86d0f80fa97
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.loadEvent" span "http://localhost:3000/dashboard/devices/" with ID a551f86d0f80fa97
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.connect
+  name: http://localhost:3000/dashboard/devices/
+  ID: 9aabcef2dfac7671
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.connect" span "http://localhost:3000/dashboard/devices/" with ID 9aabcef2dfac7671
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.cache
+  name: http://localhost:3000/dashboard/devices/
+  ID: a12e8b5611ed66f8
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.cache" span "http://localhost:3000/dashboard/devices/" with ID a12e8b5611ed66f8
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.DNS
+  name: http://localhost:3000/dashboard/devices/
+  ID: bf1ba37690d758c5
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.DNS" span "http://localhost:3000/dashboard/devices/" with ID bf1ba37690d758c5
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.request
+  name: http://localhost:3000/dashboard/devices/
+  ID: 95fb582fee484c46
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.request" span "http://localhost:3000/dashboard/devices/" with ID 95fb582fee484c46
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: browser.response
+  name: http://localhost:3000/dashboard/devices/
+  ID: b8c4a9ec02bd7f4c
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "browser.response" span "http://localhost:3000/dashboard/devices/" with ID b8c4a9ec02bd7f4c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2
+  ID: a08cd81a5e584b5b
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2" with ID a08cd81a5e584b5b
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/chunks/%5Broot-of-the-server%5D__808363aa._.css
+  ID: 98f5d9024f7d43b3
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/chunks/%5Broot-of-the-server%5D__808363aa._.css" with ID 98f5d9024f7d43b3
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.link
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_41979f17._.js
+  ID: b048f0358c689ff1
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.link" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_41979f17._.js" with ID b048f0358c689ff1
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js
+  ID: 8b5c40455b77333f
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js" with ID 8b5c40455b77333f
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js
+  ID: 97e85d9b153c7c09
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js" with ID 97e85d9b153c7c09
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_53b9775f._.js
+  ID: 9c08bfb36948790c
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_53b9775f._.js" with ID 9c08bfb36948790c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_shared_lib_5975d31c._.js
+  ID: 8abfa4b642f19a8a
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_shared_lib_5975d31c._.js" with ID 8abfa4b642f19a8a
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_router_9e4be07f.js
+  ID: bbdefc3b2bdc4a35
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_router_9e4be07f.js" with ID bbdefc3b2bdc4a35
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_compiled_b1d87949._.js
+  ID: 8d40849f6c057700
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_compiled_b1d87949._.js" with ID 8d40849f6c057700
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_client_7dd460f2._.js
+  ID: 8a3427feeca6e9b7
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_client_7dd460f2._.js" with ID 8a3427feeca6e9b7
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js
+  ID: 8b42687272c8afcb
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry_core_build_esm_9b766af5._.js" with ID 8b42687272c8afcb
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js
+  ID: a05e2bc4401d1cc9
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry_browser_build_npm_esm_b5586271._.js" with ID a05e2bc4401d1cc9
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js
+  ID: a6e07b2c8de246f8
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry-internal_browser-utils_build_esm_e0caadb1._.js" with ID a6e07b2c8de246f8
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/instrumentation-client_ts_15a74a80._.js
+  ID: 8a2880da20f6ddd2
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/instrumentation-client_ts_15a74a80._.js" with ID 8a2880da20f6ddd2
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_074b1aa8._.js
+  ID: a38dc4235547d3fb
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_074b1aa8._.js" with ID a38dc4235547d3fb
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/_a0ff3932._.js
+  ID: 9fa917037ff4de37
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/_a0ff3932._.js" with ID 9fa917037ff4de37
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40sentry-internal_replay_build_npm_esm_index_32be9d39.js
+  ID: ad87719543087f58
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40sentry-internal_replay_build_npm_esm_index_32be9d39.js" with ID ad87719543087f58
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/turbopack-_8f00ac08._.js
+  ID: 8966250f52f51df9
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/turbopack-_8f00ac08._.js" with ID 8966250f52f51df9
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_next_dist_abffcd14._.js
+  ID: b06626cbe674e1c4
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_next_dist_abffcd14._.js" with ID b06626cbe674e1c4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_icon_svg_mjs_74c873b6._.js
+  ID: a373939258e8ac92
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_icon_svg_mjs_74c873b6._.js" with ID a373939258e8ac92
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_layout_tsx_0e26c253._.js
+  ID: 956d912dd92fa7f2
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_layout_tsx_0e26c253._.js" with ID 956d912dd92fa7f2
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_880228d0._.js
+  ID: b5cb70cb9e71ff4b
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_880228d0._.js" with ID b5cb70cb9e71ff4b
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_e3f51c3f._.js
+  ID: 9ac74833a04568af
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_e3f51c3f._.js" with ID 9ac74833a04568af
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_228d32cf._.js
+  ID: b6ba3c7c8d114efa
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_228d32cf._.js" with ID b6ba3c7c8d114efa
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js
+  ID: a9b45003c966fcc4
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_storage-js_dist_module_434fd12f._.js" with ID a9b45003c966fcc4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js
+  ID: ad124d22ae17c7b1
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_%40supabase_auth-js_dist_module_e6c70351._.js" with ID ad124d22ae17c7b1
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_700466af._.js
+  ID: bf3f26593bfd9255
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_700466af._.js" with ID bf3f26593bfd9255
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js
+  ID: 9568299f416808b4
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_layout_tsx_773dcd8d._.js" with ID 9568299f416808b4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_error_tsx_cfa10d27._.js
+  ID: b3583a65fa9f5a92
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_error_tsx_cfa10d27._.js" with ID b3583a65fa9f5a92
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_error_tsx_35664051._.js
+  ID: 9cee283aec4ff7c4
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_error_tsx_35664051._.js" with ID 9cee283aec4ff7c4
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/node_modules_aad7f6a9._.js
+  ID: 98762e2fdbd9bc51
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/node_modules_aad7f6a9._.js" with ID 98762e2fdbd9bc51
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_51ffaedb._.js
+  ID: 8ccf032aec555d7c
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_51ffaedb._.js" with ID 8ccf032aec555d7c
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_dashboard_devices_page_tsx_cfa10d27._.js
+  ID: b398ff437ab9d2b3
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_dashboard_devices_page_tsx_cfa10d27._.js" with ID b398ff437ab9d2b3
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/_8df63018._.js
+  ID: 904a9241de2184f0
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/_8df63018._.js" with ID 904a9241de2184f0
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/src_app_global-error_tsx_773dcd8d._.js
+  ID: a49ac82838914c72
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/src_app_global-error_tsx_773dcd8d._.js" with ID a49ac82838914c72
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: paint
+  name: first-paint
+  ID: 9fa7d19b47a27c06
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "paint" span "first-paint" with ID 9fa7d19b47a27c06
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: paint
+  name: first-contentful-paint
+  ID: b5f7d8ee9e20f1af
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "paint" span "first-contentful-paint" with ID b5f7d8ee9e20f1af
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: mark
+  name: sentry-tracing-init
+  ID: b6651517b801ea02
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "mark" span "sentry-tracing-init" with ID b6651517b801ea02
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js
+  ID: 908264ecf729f461
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js" with ID 908264ecf729f461
+[BROWSER log]: Sentry Logger [log]: [Tracing] Starting sampled span
+  op: resource.script
+  name: /_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_bb766d6b._.js
+  ID: b074d22afdbe7aaa
+  parent ID: 90e6ee00dea9a435
+  root ID: 90e6ee00dea9a435
+  root op: pageload
+  root description: /dashboard/devices/
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "resource.script" span "/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_bb766d6b._.js" with ID b074d22afdbe7aaa
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: lcp = 552 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: lcp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: ttfb = 119.69999999925494 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: ttfb
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: cls = 0.0024704334848023083 
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: cls
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: fp = 152 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: fp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: fcp = 152 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: fcp
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: connection.rtt = 100 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: connection.rtt
+[BROWSER log]: Sentry Logger [log]: [Measurement] Setting measurement on root span: ttfb.requestTime = 116.80000000074506 millisecond
+[BROWSER log]: Sentry Logger [log]: [Tracing] Adding an event to span: ttfb.requestTime
+[BROWSER log]: Sentry Logger [log]: [Tracing] Idle span "pageload" finished
+[BROWSER log]: Sentry Logger [log]: [Tracing] Finishing "pageload" root span "/dashboard/devices/" with ID 90e6ee00dea9a435
+[BROWSER log]: Sentry Logger [log]: [Measurements] Adding measurements to transaction event {
+  "lcp": {
+    "value": 552,
+    "unit": "millisecond"
+  },
+  "ttfb": {
+    "value": 119.69999999925494,
+    "unit": "millisecond"
+  },
+  "cls": {
+    "value": 0.0024704334848023083,
+    "unit": ""
+  },
+  "fp": {
+    "value": 152,
+    "unit": "millisecond"
+  },
+  "fcp": {
+    "value": 152,
+    "unit": "millisecond"
+  },
+  "connection.rtt": {
+    "value": 100,
+    "unit": "millisecond"
+  },
+  "ttfb.requestTime": {
+    "value": 116.80000000074506,
+    "unit": "millisecond"
+  }
+}
+
+🔍 Checking organization context...
+Organization Context: {
+  currentOrgId: '00000000-0000-0000-0000-000000000001',
+  allLocalStorage: [ 'netneural_current_org' ]
+}
+DevicesList rendered: false
+
+📸 Screenshot saved: debug-local-devices.png
+
+⏸️  Browser will stay open for 30 seconds for inspection...

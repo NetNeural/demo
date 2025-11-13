@@ -62,21 +62,31 @@ export default createEdgeFunction(async ({ req }) => {
       }
       
       const transformedDevices = devices?.map((device: DeviceWithRelations) => ({
+        // Database fields
         id: device.id,
         name: device.name,
-        device_name: device.name, // Alias for compatibility
-        type: device.device_type,
+        device_type: device.device_type,
+        model: device.model,
+        serial_number: device.serial_number,
         status: device.status || 'offline',
-        location: device.locations?.name || device.departments?.name || 'Unknown',
+        firmware_version: device.firmware_version,
+        location_id: device.location_id,
+        department_id: device.department_id,
         last_seen: device.last_seen,
-        lastSeen: device.last_seen ? new Date(device.last_seen).toLocaleString() : 'Never',
         battery_level: device.battery_level,
-        batteryLevel: device.battery_level,
         signal_strength: device.signal_strength,
+        external_device_id: device.external_device_id,
+        integration_id: device.integration_id,
+        updated_at: device.updated_at,
+        
+        // Transformed/computed fields for display
+        type: device.device_type, // Alias for compatibility
+        location: device.locations?.name || device.departments?.name || 'Unknown',
+        lastSeen: device.last_seen ? new Date(device.last_seen).toLocaleString() : 'Never',
+        batteryLevel: device.battery_level,
         isExternallyManaged: device.external_device_id !== null,
         externalDeviceId: device.external_device_id,
-        integrationName: device.device_integrations?.name || null,
-        updated_at: device.updated_at
+        integrationName: device.device_integrations?.name || null
       })) || []
 
       return createSuccessResponse({ 
@@ -103,7 +113,8 @@ export default createEdgeFunction(async ({ req }) => {
         device_type, 
         model, 
         serial_number, 
-        firmware_version
+        firmware_version,
+        location_id
       } = body
 
       // Verify user has access to this device's organization
@@ -123,7 +134,7 @@ export default createEdgeFunction(async ({ req }) => {
       if (model !== undefined) updates.model = model
       if (serial_number !== undefined) updates.serial_number = serial_number
       if (firmware_version !== undefined) updates.firmware_version = firmware_version
-      // Note: location is read-only display field; use location_id to change device location
+      if (location_id !== undefined) updates.location_id = location_id
 
       // Update device - RLS will enforce access automatically
       const { data: updatedDevice, error: updateError } = await supabase
@@ -153,7 +164,8 @@ export default createEdgeFunction(async ({ req }) => {
         device_type, 
         model, 
         serial_number, 
-        firmware_version
+        firmware_version,
+        location_id
       } = body
 
       // Verify required fields
@@ -179,6 +191,7 @@ export default createEdgeFunction(async ({ req }) => {
           model: model || null,
           serial_number: serial_number || null,
           firmware_version: firmware_version || null,
+          location_id: location_id || null,
           status: 'offline'
         } as any)
         .select()

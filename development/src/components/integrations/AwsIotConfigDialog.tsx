@@ -182,7 +182,7 @@ export function AwsIotConfigDialog({
         
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: awsConfig,
+          settings: awsConfig,
           status: config.status,
         })
 

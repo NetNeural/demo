@@ -141,7 +141,7 @@ export function GoogleIotConfigDialog({
       if (integrationId) {
         response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: googleConfig,
+          settings: googleConfig,
           status: config.status,
         })
       } else {

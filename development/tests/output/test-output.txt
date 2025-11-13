@@ -1,0 +1,397 @@
+🔄 TESTING ORGANIZATION SWITCHING
+
+🔐 Logging in...
+✅ Login successful
+
+📡 API CALL #1 (Initial Load - NetNeural Org):
+  URL: https://bldojxpockljyivldxwf.supabase.co/functions/v1/devices?organization_id=00000000-0000-0000-0000-000000000001
+  Org ID: 00000000-0000-0000-0000-000000000001
+  Response Status: 200
+  Response Body: {
+  "success": true,
+  "data": {
+    "devices": [],
+    "count": 0,
+    "organizationId": "00000000-0000-0000-0000-000000000001",
+    "queriedBy": "kaidream78@gmail.com"
+  },
+  "timestamp": "2025-11-11T14:17:32.555Z"
+}
+
+🔄 Opening organization switcher...
+  Dropdown visible: true
+  Available options: NetNeuralOwner0 devices, Tes OrgOwner3 devices, Test Company 2Owner0 devices
+🎯 Selecting "Tes Org"...
+
+📡 API CALL #2 (After Switching to Tes Org):
+  URL: https://bldojxpockljyivldxwf.supabase.co/functions/v1/devices?organization_id=11ec1e5c-a9df-4313-8ca3-15675f35f673
+  Org ID: 11ec1e5c-a9df-4313-8ca3-15675f35f673
+  ✅ CORRECT! Switched to Tes Org ID
+  Response Status: 200
+  Response Body: {
+  "success": true,
+  "data": {
+    "devices": [
+      {
+        "id": "6449970a-3912-4ea1-9b18-10fa64beb240",
+        "name": "HVAC Temp Device",
+        "device_name": "HVAC Temp Device",
+        "type": "Test Device",
+        "status": "offline",
+        "location": "Unknown",
+        "last_seen": null,
+        "lastSeen": "Never",
+        "battery_level": null,
+        "batteryLevel": null,
+        "signal_strength": null,
+        "isExternallyManaged": true,
+        "externalDeviceId": "23425phs6",
+        "integrationName": null,
+        "updated_at": "2025-11-07T14:39:07.701904+00:00"
+      }
+    ],
+    "count": 1,
+    "organizationId": "11ec1e5c-a9df-4313-8ca3-15675f35f673",
+    "queriedBy": "kaidream78@gmail.com"
+  },
+  "timestamp": "2025-11-11T14:17:37.430Z"
+}
+
+📊 Table rows found: 0
+📊 Device cards/items: 0
+📊 Device text visible: true
+📊 "No devices found" messages: 0
+📸 Screenshot saved: tes-org-devices.png
+
+📋 TOTAL API CALLS: 3
+  1. Org ID: 00000000-0000-0000-0000-000000000001
+  2. Org ID: 11ec1e5c-a9df-4313-8ca3-15675f35f673
+  3. Org ID: 11ec1e5c-a9df-4313-8ca3-15675f35f673
+
+🖥️  BROWSER CONSOLE MESSAGES:
+  [error] Sentry Logger [error]: Encountered error running transport request: TypeError: Failed to fetch
+    at a (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8110)
+    at https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8657
+    at Object.add (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:7607)
+    at Object.send (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8649)
+    at eE.sendEnvelope (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:7:146570)
+    at eE._flushOutcomes (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:715)
+    at HTMLDocument.<anonymous> (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:4634)
+  [error] [EdgeFunction locations-1762870648549-wndhxgq] ✖ Error (828ms) TypeError: Failed to fetch (bldojxpockljyivldxwf.supabase.co)
+    at https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:18:20364
+    at s.call (https://demo.netneural.ai/_next/static/chunks/883-170ab4ddbf7c97ea.js:1:1242)
+    at async https://demo.netneural.ai/_next/static/chunks/app/dashboard/page-15f355adf0bf6eb7.js:1:981
+  [error] Sentry Logger [error]: Error while sending envelope: TypeError: Failed to fetch
+    at a (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8110)
+    at https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8657
+    at Object.add (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:7607)
+    at Object.send (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:8649)
+    at eE.sendEnvelope (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:7:146570)
+    at eE._flushOutcomes (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:715)
+    at HTMLDocument.<anonymous> (https://demo.netneural.ai/_next/static/chunks/629-36073f427b851fb0.js:8:4634)
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled root span
+  op: pageload
+  name: /dashboard/devices/
+  ID: b5d895036884f578
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9d382ce9e37f108d
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: b0c2a69daf2c7302
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 972f54e02f39685c
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 8d2a5ae855aebf96
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: b46ab685c8aa0aa7
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: baf2f3bce92d7c30
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bdcb337df80c5f73
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bca06c7d7756f6a0
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 948c92da5a57c723
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 8ee8f7db28b1e71c
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9061bb8e3063ac14
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: b5fd44fc41cf6f84
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bd6c6efcd7a0e087
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: a376a2f120f5c419
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 8d46eb09924fa53f
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 8a2cba5fffd0f572
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: a7978e7a6b502b36
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: a7ba9906c262d559
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9bc0b5fc8a5e5884
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bd9a5bde09e43999
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 97a0ae62332a853b
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: a38d891d74380dd9
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9e944b5a7b6886ac
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: afa11df044ef8da5
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: ac7521a55ad4cf30
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9b95bbf42cdb5be6
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 8ffdbfdf65c44d5f
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: b25e7e9e715185e3
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bf403863c281d5f1
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 81bdb9fbe78f9ab0
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: aea1b923d1529fbe
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 81ed6bd690d6876e
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 871b85c72cac0c82
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9baec62151653a76
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: be415abc5f240759
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: ab86a49526ac2def
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9c13f1596abea805
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bc0b2172c2982b9f
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 83b3f33b250431ba
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 9b67035de2093a9c
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: bdbaa14d8636804f
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: 832ca813f91ed9fa
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Starting unsampled span
+  op: < unknown op >
+  name: < unknown name >
+  ID: a81c01958ca3fe03
+  root ID: b5d895036884f578
+  root op: pageload
+  root description: /dashboard/devices/
+  [log] Sentry Logger [log]: [Tracing] Finishing "pageload" root span "/dashboard/devices/" with ID b5d895036884f578

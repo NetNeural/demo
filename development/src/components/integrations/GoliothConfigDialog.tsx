@@ -176,7 +176,7 @@ export function GoliothConfigDialog({
         
         const response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
-          config: {
+          settings: {
             apiKey: config.api_key,
             projectId: config.project_id,
             baseUrl: config.base_url,
