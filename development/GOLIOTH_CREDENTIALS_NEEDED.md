@@ -4,7 +4,7 @@
 The Golioth API credentials in `.env.local` are **NOT WORKING**:
 
 ```
-GOLIOTH_API_KEY=DAf7enB249brtg8EAX7nWnMqWlyextWY
+GOLIOTH_API_KEY=<from-github-secrets-or-golioth-console>
 GOLIOTH_PROJECT_ID=nn-cellular-alerts
 ```
 

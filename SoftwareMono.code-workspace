@@ -1,7 +1,45 @@
 {
     "folders": [
-        {
-            "path": "."
+        { "path": "development", "name": "🚀 Active Development" },
+        { "path": "docs", "name": "📚 Docs" },
+        { "path": ".github", "name": "⚙️ CI-CD" },
+        { "path": "scripts", "name": "🔧 Scripts" }
+    ],
+    "settings": {
+        "files.exclude": {
+            // Hide legacy/reference microservices & unused roots (can still search via Ctrl+P / global search)
+            "account-manager": true,
+            "alert-listener": true,
+            "api-slurper": true,
+            "bundle-*": true,
+            "cellular-*": true,
+            "cloud-*": true,
+            "core-*": true,
+            "data-manager": true,
+            "device-ingress": true,
+            "digital-twin": true,
+            "edge-*": true,
+            "hydrant": true,
+            "iot-common": true,
+            "merchandising": true,
+            "mod-edge-core": true,
+            "mqtt2db": true,
+            "nn-alerts-ios": true,
+            "notifications": true,
+            "origin-ui": true,
+            "react-components": true,
+            "recall-ingest": true,
+            "sso": true,
+            "sso-ui": true,
+            "store-ui": true,
+            "supabase": true,
+            "test-stripe-backend": true,
+            "ui-dev-server": true,
+            "vmark-cloud-gateway": true,
+            // Common build/cache directories
+            "**/node_modules": true,
+            "**/.next": true,
+            "**/dist": true
         }
-    ]
+    }
 }

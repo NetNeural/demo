@@ -5,13 +5,23 @@
  * 
  * This script creates a super admin user in your production Supabase instance.
  * Run this once to set up initial admin access.
+ * 
+ * Requires: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
  */
 
+require('dotenv').config({ path: '../.env.production' })
 const { createClient } = require('@supabase/supabase-js')
 
-// Production Supabase credentials
-const PROD_URL = 'https://bldojxpockljyivldxwf.supabase.co'
-const PROD_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ'
+// Production Supabase credentials from environment
+const PROD_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const PROD_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!PROD_URL || !PROD_ANON_KEY) {
+  console.error('❌ Missing required environment variables:')
+  console.error('   NEXT_PUBLIC_SUPABASE_URL')
+  console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  process.exit(1)
+}
 
 console.log('🚀 Creating admin user in PRODUCTION Supabase...\n')
 console.log('Project:', PROD_URL)

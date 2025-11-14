@@ -1,7 +1,17 @@
 // Golioth API Deep Dive - Device-Specific Features
-const GOLIOTH_API_KEY = 'DAf7enB249brtg8EAX7nWnMqWlyextWY';
-const GOLIOTH_PROJECT_ID = 'nn-cellular-alerts';
-const GOLIOTH_BASE_URL = 'https://api.golioth.io/v1';
+// Requires: GOLIOTH_API_KEY in environment variables
+
+require('dotenv').config({ path: '.env.local' });
+
+const GOLIOTH_API_KEY = process.env.GOLIOTH_API_KEY;
+const GOLIOTH_PROJECT_ID = process.env.GOLIOTH_PROJECT_ID || 'nn-cellular-alerts';
+const GOLIOTH_BASE_URL = process.env.GOLIOTH_BASE_URL || 'https://api.golioth.io/v1';
+
+if (!GOLIOTH_API_KEY) {
+  console.error('❌ GOLIOTH_API_KEY not found in environment variables');
+  console.error('Please set it in .env.local or export it before running this script');
+  process.exit(1);
+}
 
 // Using one of the active devices from the list
 const DEVICE_ID = '68bf1cc5425dd2ea93f248a3'; // C253700003 - most recently active

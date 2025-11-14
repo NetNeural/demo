@@ -1,9 +1,18 @@
 // Golioth API Explorer
 // This script investigates the Golioth API to discover all available endpoints and features
+// Requires: GOLIOTH_API_KEY in environment variables
 
-const GOLIOTH_API_KEY = 'DAf7enB249brtg8EAX7nWnMqWlyextWY';
-const GOLIOTH_PROJECT_ID = 'nn-cellular-alerts';
-const GOLIOTH_BASE_URL = 'https://api.golioth.io/v1';
+require('dotenv').config({ path: '.env.local' });
+
+const GOLIOTH_API_KEY = process.env.GOLIOTH_API_KEY;
+const GOLIOTH_PROJECT_ID = process.env.GOLIOTH_PROJECT_ID || 'nn-cellular-alerts';
+const GOLIOTH_BASE_URL = process.env.GOLIOTH_BASE_URL || 'https://api.golioth.io/v1';
+
+if (!GOLIOTH_API_KEY) {
+  console.error('❌ GOLIOTH_API_KEY not found in environment variables');
+  console.error('Please set it in .env.local or export it before running this script');
+  process.exit(1);
+}
 
 async function goliothRequest(endpoint, method = 'GET', body = null) {
   const url = `${GOLIOTH_BASE_URL}${endpoint}`;
