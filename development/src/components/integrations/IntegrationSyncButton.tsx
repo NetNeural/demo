@@ -14,7 +14,7 @@ import { RefreshCw, Download, Upload, ArrowLeftRight, Loader2 } from 'lucide-rea
 import { integrationService } from '@/services/integration.service'
 import { toast } from 'sonner'
 
-type IntegrationType = 'golioth' | 'aws_iot' | 'aws-iot' | 'azure_iot' | 'azure-iot' | 'mqtt'
+type IntegrationType = 'golioth' | 'aws_iot' | 'aws-iot' | 'azure_iot' | 'azure-iot' | 'mqtt' | 'netneural_hub'
 type SyncOperation = 'import' | 'export' | 'bidirectional'
 
 interface Props {

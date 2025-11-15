@@ -250,34 +250,47 @@ export class GoliothClient extends BaseIntegrationClient {
               logs.push(logMsg)
               console.log(logMsg)
               
+              const devicePayload = {
+                id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
+                organization_id: this.config.organizationId,
+                integration_id: this.config.integrationId,
+                name: goliothDevice.name,
+                device_type: this.determineDeviceType(goliothDevice),
+                hardware_ids: goliothDevice.hardwareIds || [],
+                status: this.normalizeDeviceStatus(goliothDevice.status),
+                last_seen: lastSeen,
+                metadata: {
+                  ...goliothDevice.metadata,
+                  golioth_project_id: this.projectId,
+                  golioth_project_name: projectMetadata?.name,
+                  golioth_original_status: goliothDevice.status,
+                  golioth_blueprint_id: goliothDevice.blueprintId,
+                  golioth_cohort_id: goliothDevice.cohortId,
+                  golioth_enabled: goliothDevice.enabled,
+                  golioth_tag_ids: goliothDevice.tagIds || [],
+                  imported_at: new Date().toISOString(),
+                },
+                external_device_id: goliothDevice.id,
+              }
+              
+              console.log('[GoliothClient] *** ATTEMPTING INSERT with payload:', JSON.stringify(devicePayload, null, 2))
+              
               const { data: newDevice, error: createError } = await this.config.supabase
                 .from('devices')
-                .insert({
-                  organization_id: this.config.organizationId,
-                  integration_id: this.config.integrationId,
-                  name: goliothDevice.name,
-                  device_type: this.determineDeviceType(goliothDevice),
-                  hardware_ids: goliothDevice.hardwareIds || [],
-                  status: this.normalizeDeviceStatus(goliothDevice.status),
-                  last_seen: lastSeen,
-                  metadata: {
-                    ...goliothDevice.metadata,
-                    golioth_project_id: this.projectId,
-                    golioth_project_name: projectMetadata?.name,
-                    golioth_original_status: goliothDevice.status,
-                    golioth_blueprint_id: goliothDevice.blueprintId,
-                    golioth_cohort_id: goliothDevice.cohortId,
-                    golioth_enabled: goliothDevice.enabled,
-                    golioth_tag_ids: goliothDevice.tagIds || [],
-                    imported_at: new Date().toISOString(),
-                  },
-                  external_device_id: goliothDevice.id,
-                })
+                .insert(devicePayload)
                 .select('id')
                 .single()
 
+              console.log('[GoliothClient] *** INSERT RESULT:', { 
+                success: !!newDevice, 
+                error: createError ? { message: createError.message, code: createError.code, details: createError.details, hint: createError.hint } : null,
+                deviceId: newDevice?.id 
+              })
+              
               if (createError || !newDevice) {
-                throw new Error(`Failed to create device: ${createError?.message}`)
+                const errorMsg = `Failed to create device: ${createError?.message} (code: ${createError?.code}, details: ${JSON.stringify(createError?.details)})`
+                console.error('[GoliothClient] *** INSERT FAILED:', errorMsg)
+                throw new Error(errorMsg)
               }
               localDeviceId = newDevice.id
               const successMsg = `✅ Device created: ${goliothDevice.name}`
@@ -341,6 +354,7 @@ export class GoliothClient extends BaseIntegrationClient {
 
                   // Insert new alert with unique golioth_key (timestamp makes each instance unique)
                   const toInsert = {
+                    id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
                     organization_id: this.config.organizationId,
                     device_id: localDeviceId,
                     title: alertData.title,

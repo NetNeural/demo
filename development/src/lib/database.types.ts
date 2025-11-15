@@ -34,6 +34,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          acknowledgement_type: string
+          alert_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledgement_type?: string
+          alert_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledgement_type?: string
+          alert_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_acknowledgements_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_acknowledgements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alerts: {
         Row: {
           alert_type: string
@@ -164,6 +212,93 @@ export type Database = {
           },
         ]
       }
+      auto_sync_schedules: {
+        Row: {
+          conflict_resolution: string
+          created_at: string
+          created_by: string | null
+          device_filter: string
+          device_tags: string[] | null
+          direction: string
+          enabled: boolean
+          frequency_minutes: number
+          id: string
+          integration_id: string
+          last_run_at: string | null
+          last_run_status: string | null
+          last_run_summary: Json | null
+          next_run_at: string | null
+          only_online: boolean
+          organization_id: string
+          time_window_enabled: boolean
+          time_window_end: string | null
+          time_window_start: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          conflict_resolution?: string
+          created_at?: string
+          created_by?: string | null
+          device_filter?: string
+          device_tags?: string[] | null
+          direction?: string
+          enabled?: boolean
+          frequency_minutes?: number
+          id?: string
+          integration_id: string
+          last_run_at?: string | null
+          last_run_status?: string | null
+          last_run_summary?: Json | null
+          next_run_at?: string | null
+          only_online?: boolean
+          organization_id: string
+          time_window_enabled?: boolean
+          time_window_end?: string | null
+          time_window_start?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          conflict_resolution?: string
+          created_at?: string
+          created_by?: string | null
+          device_filter?: string
+          device_tags?: string[] | null
+          direction?: string
+          enabled?: boolean
+          frequency_minutes?: number
+          id?: string
+          integration_id?: string
+          last_run_at?: string | null
+          last_run_status?: string | null
+          last_run_summary?: Json | null
+          next_run_at?: string | null
+          only_online?: boolean
+          organization_id?: string
+          time_window_enabled?: boolean
+          time_window_end?: string | null
+          time_window_start?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_sync_schedules_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_sync_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           area_square_feet: number | null
@@ -207,6 +342,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      device_capabilities: {
+        Row: {
+          capability: string
+          created_at: string | null
+          device_type: string
+          id: string
+          metadata: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          capability: string
+          created_at?: string | null
+          device_type: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          capability?: string
+          created_at?: string | null
+          device_type?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       device_conflicts: {
         Row: {
@@ -466,6 +628,71 @@ export type Database = {
           },
         ]
       }
+      device_telemetry_history: {
+        Row: {
+          activity_log_id: string | null
+          created_at: string
+          device_id: string
+          device_timestamp: string | null
+          id: string
+          integration_id: string | null
+          organization_id: string
+          received_at: string
+          telemetry: Json
+        }
+        Insert: {
+          activity_log_id?: string | null
+          created_at?: string
+          device_id: string
+          device_timestamp?: string | null
+          id?: string
+          integration_id?: string | null
+          organization_id: string
+          received_at?: string
+          telemetry: Json
+        }
+        Update: {
+          activity_log_id?: string | null
+          created_at?: string
+          device_id?: string
+          device_timestamp?: string | null
+          id?: string
+          integration_id?: string | null
+          organization_id?: string
+          received_at?: string
+          telemetry?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_telemetry_history_activity_log_id_fkey"
+            columns: ["activity_log_id"]
+            isOneToOne: false
+            referencedRelation: "integration_activity_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_telemetry_history_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_telemetry_history_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_telemetry_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           battery_level: number | null
@@ -573,88 +800,6 @@ export type Database = {
           },
         ]
       }
-      golioth_sync_log: {
-        Row: {
-          completed_at: string | null
-          conflicts_detected: number | null
-          created_at: string
-          created_by: string | null
-          details: Json | null
-          device_id: string | null
-          devices_failed: number | null
-          devices_processed: number | null
-          devices_succeeded: number | null
-          duration_ms: number | null
-          error_message: string | null
-          id: string
-          integration_id: string
-          operation: string
-          organization_id: string
-          started_at: string
-          status: string
-        }
-        Insert: {
-          completed_at?: string | null
-          conflicts_detected?: number | null
-          created_at?: string
-          created_by?: string | null
-          details?: Json | null
-          device_id?: string | null
-          devices_failed?: number | null
-          devices_processed?: number | null
-          devices_succeeded?: number | null
-          duration_ms?: number | null
-          error_message?: string | null
-          id?: string
-          integration_id: string
-          operation: string
-          organization_id: string
-          started_at?: string
-          status: string
-        }
-        Update: {
-          completed_at?: string | null
-          conflicts_detected?: number | null
-          created_at?: string
-          created_by?: string | null
-          details?: Json | null
-          device_id?: string | null
-          devices_failed?: number | null
-          devices_processed?: number | null
-          devices_succeeded?: number | null
-          duration_ms?: number | null
-          error_message?: string | null
-          id?: string
-          integration_id?: string
-          operation?: string
-          organization_id?: string
-          started_at?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golioth_sync_log_device_id_fkey"
-            columns: ["device_id"]
-            isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golioth_sync_log_integration_id_fkey"
-            columns: ["integration_id"]
-            isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golioth_sync_log_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golioth_sync_log_2025_10: {
         Row: {
           completed_at: string | null
@@ -668,10 +813,12 @@ export type Database = {
           devices_succeeded: number | null
           duration_ms: number | null
           error_message: string | null
+          external_device_id: string | null
           id: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type: string | null
           started_at: string
           status: string
         }
@@ -687,10 +834,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type?: string | null
           started_at?: string
           status: string
         }
@@ -706,10 +855,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id?: string
           operation?: string
           organization_id?: string
+          provider_type?: string | null
           started_at?: string
           status?: string
         }
@@ -728,10 +879,12 @@ export type Database = {
           devices_succeeded: number | null
           duration_ms: number | null
           error_message: string | null
+          external_device_id: string | null
           id: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type: string | null
           started_at: string
           status: string
         }
@@ -747,10 +900,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type?: string | null
           started_at?: string
           status: string
         }
@@ -766,10 +921,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id?: string
           operation?: string
           organization_id?: string
+          provider_type?: string | null
           started_at?: string
           status?: string
         }
@@ -788,10 +945,12 @@ export type Database = {
           devices_succeeded: number | null
           duration_ms: number | null
           error_message: string | null
+          external_device_id: string | null
           id: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type: string | null
           started_at: string
           status: string
         }
@@ -807,10 +966,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type?: string | null
           started_at?: string
           status: string
         }
@@ -826,10 +987,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id?: string
           operation?: string
           organization_id?: string
+          provider_type?: string | null
           started_at?: string
           status?: string
         }
@@ -848,10 +1011,12 @@ export type Database = {
           devices_succeeded: number | null
           duration_ms: number | null
           error_message: string | null
+          external_device_id: string | null
           id: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type: string | null
           started_at: string
           status: string
         }
@@ -867,10 +1032,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id: string
           operation: string
           organization_id: string
+          provider_type?: string | null
           started_at?: string
           status: string
         }
@@ -886,10 +1053,12 @@ export type Database = {
           devices_succeeded?: number | null
           duration_ms?: number | null
           error_message?: string | null
+          external_device_id?: string | null
           id?: string
           integration_id?: string
           operation?: string
           organization_id?: string
+          provider_type?: string | null
           started_at?: string
           status?: string
         }
@@ -975,6 +1144,94 @@ export type Database = {
           },
           {
             foreignKeyName: "integration_activity_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_sync_log: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number | null
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          device_id: string | null
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
+          duration_ms: number | null
+          error_message: string | null
+          external_device_id: string | null
+          id: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          provider_type: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          external_device_id?: string | null
+          id?: string
+          integration_id: string
+          operation: string
+          organization_id: string
+          provider_type?: string | null
+          started_at?: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          device_id?: string | null
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          external_device_id?: string | null
+          id?: string
+          integration_id?: string
+          operation?: string
+          organization_id?: string
+          provider_type?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golioth_sync_log_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golioth_sync_log_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golioth_sync_log_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1085,6 +1342,47 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      netneural_hub_endpoints: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          enabled: boolean | null
+          endpoint_url: string
+          id: string
+          integration_id: string
+          protocol: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          endpoint_url: string
+          id?: string
+          integration_id: string
+          protocol: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          endpoint_url?: string
+          id?: string
+          integration_id?: string
+          protocol?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "netneural_hub_endpoints_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
             referencedColumns: ["id"]
           },
         ]
@@ -1390,6 +1688,92 @@ export type Database = {
           },
         ]
       }
+      user_actions: {
+        Row: {
+          action_category: string
+          action_type: string
+          alert_id: string | null
+          alert_rule_id: string | null
+          created_at: string
+          description: string | null
+          device_id: string | null
+          error_message: string | null
+          id: string
+          integration_id: string | null
+          ip_address: unknown
+          metadata: Json | null
+          organization_id: string
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_category: string
+          action_type: string
+          alert_id?: string | null
+          alert_rule_id?: string | null
+          created_at?: string
+          description?: string | null
+          device_id?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          ip_address?: unknown
+          metadata?: Json | null
+          organization_id: string
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_category?: string
+          action_type?: string
+          alert_id?: string | null
+          alert_rule_id?: string | null
+          created_at?: string
+          description?: string | null
+          device_id?: string | null
+          error_message?: string | null
+          id?: string
+          integration_id?: string | null
+          ip_address?: unknown
+          metadata?: Json | null
+          organization_id?: string
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_actions_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_actions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_actions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_actions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -1446,6 +1830,50 @@ export type Database = {
       }
     }
     Views: {
+      alert_acknowledgement_stats: {
+        Row: {
+          acknowledged_alerts: number | null
+          avg_acknowledgement_time_seconds: number | null
+          date: string | null
+          dismissed_alerts: number | null
+          false_positive_alerts: number | null
+          organization_id: string | null
+          resolved_alerts: number | null
+          severity: Database["public"]["Enums"]["alert_severity"] | null
+          total_alerts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_action_history: {
+        Row: {
+          action_category: string | null
+          action_type: string | null
+          created_at: string | null
+          description: string | null
+          device_id: string | null
+          metadata: Json | null
+          success: boolean | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_actions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_activity_summary: {
         Row: {
           activity_date: string | null
@@ -1477,9 +1905,55 @@ export type Database = {
           },
         ]
       }
+      user_action_summary: {
+        Row: {
+          action_category: string | null
+          action_count: number | null
+          date: string | null
+          failed_actions: number | null
+          organization_id: string | null
+          successful_actions: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_actions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      acknowledge_alert: {
+        Args: {
+          p_acknowledgement_type?: string
+          p_alert_id: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      calculate_next_run: {
+        Args: {
+          p_frequency_minutes: number
+          p_time_window_enabled: boolean
+          p_time_window_end: string
+          p_time_window_start: string
+        }
+        Returns: string
+      }
       cleanup_old_integration_logs: { Args: never; Returns: number }
+      cleanup_old_telemetry: {
+        Args: { p_retention_days?: number }
+        Returns: number
+      }
+      cleanup_old_user_actions: {
+        Args: { p_days_to_keep?: number }
+        Returns: number
+      }
       complete_integration_activity: {
         Args: {
           p_error_code?: string
@@ -1491,6 +1965,10 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      extract_telemetry_from_metadata: {
+        Args: { p_metadata: Json }
+        Returns: Json
       }
       generate_webhook_secret: { Args: never; Returns: string }
       generate_webhook_url: {
@@ -1534,6 +2012,45 @@ export type Database = {
           p_organization_id: string
           p_status?: string
           p_user_id?: string
+        }
+        Returns: string
+      }
+      record_device_telemetry:
+        | {
+            Args: {
+              p_activity_log_id?: string
+              p_device_id: string
+              p_device_timestamp?: string
+              p_integration_id?: string
+              p_organization_id: string
+              p_telemetry: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_activity_log_id?: string
+              p_device_id: string
+              p_device_timestamp?: string
+              p_organization_id: string
+              p_telemetry: Json
+            }
+            Returns: string
+          }
+      record_user_action: {
+        Args: {
+          p_action_category: string
+          p_action_type: string
+          p_alert_id?: string
+          p_alert_rule_id?: string
+          p_description?: string
+          p_device_id?: string
+          p_error_message?: string
+          p_integration_id?: string
+          p_metadata?: Json
+          p_organization_id: string
+          p_success?: boolean
+          p_user_id: string
         }
         Returns: string
       }

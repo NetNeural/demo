@@ -3,9 +3,45 @@
         { "path": "development", "name": "🚀 Active Development" },
         { "path": "docs", "name": "📚 Docs" },
         { "path": ".github", "name": "⚙️ CI-CD" },
-        { "path": "scripts", "name": "🔧 Scripts" }
+        { "path": "scripts", "name": "🔧 Scripts" },
+        { "path": "." }
     ],
     "settings": {
+        // SQLTools Database Connections
+        "sqltools.useNodeRuntime": true,
+        "sqltools.connections": [
+            {
+                "name": "Supabase Local",
+                "driver": "PostgreSQL",
+                "previewLimit": 50,
+                "server": "localhost",
+                "port": 54322,
+                "database": "postgres",
+                "username": "postgres",
+                "password": "postgres",
+                "connectionTimeout": 30
+            },
+            {
+                "name": "Supabase Production",
+                "driver": "PostgreSQL",
+                "previewLimit": 50,
+                "server": "db.bldojxpockljyivldxwf.supabase.co",
+                "port": 6543,
+                "database": "postgres",
+                "username": "postgres.bldojxpockljyivldxwf",
+                "password": "${env:SUPABASE_DB_PASSWORD}",
+                "ssl": {
+                    "rejectUnauthorized": false
+                },
+                "connectionTimeout": 60,
+                "pgOptions": {
+                    "ssl": {
+                        "rejectUnauthorized": false
+                    }
+                }
+            }
+        ],
+        
         "files.exclude": {
             // Hide legacy/reference microservices & unused roots (can still search via Ctrl+P / global search)
             "account-manager": true,
@@ -36,10 +72,16 @@
             "test-stripe-backend": true,
             "ui-dev-server": true,
             "vmark-cloud-gateway": true,
+            // Hide folders that are already visible as separate workspace folders
+            "development": true,
+            "docs": true,
+            ".github": true,
+            "scripts": true,
             // Common build/cache directories
             "**/node_modules": true,
             "**/.next": true,
             "**/dist": true
-        }
+        },
+        "powershell.cwd": "🚀 Active Development"
     }
 }

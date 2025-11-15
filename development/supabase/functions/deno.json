@@ -15,12 +15,15 @@
   },
   "compilerOptions": {
     "allowJs": true,
-    "lib": ["deno.window", "dom"],
+    "lib": ["deno.window", "dom", "es2020"],
     "strict": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "allowImportingTsExtensions": true,
+    "downlevelIteration": true,
+    "target": "es2020"
   },
   "lint": {
     "rules": {

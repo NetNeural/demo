@@ -135,6 +135,7 @@ export class AwsIotClient extends BaseIntegrationClient {
               const { data: newDevice, error: createError } = await this.config.supabase
                 .from('devices')
                 .insert({
+                  id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
                   organization_id: this.config.organizationId,
                   name: thing.thingName,
                   hardware_id: thing.thingName,

@@ -349,6 +349,7 @@ async function checkTelemetryAlerts(
     if (triggered) {
       // Create alert
       await supabase.from('alerts').insert({
+        id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
         organization_id: organizationId,
         device_id: deviceId,
         rule_id: rule.id,
@@ -394,6 +395,7 @@ async function generateDeviceOfflineAlert(
   supabase: any
 ) {
   await supabase.from('alerts').insert({
+    id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
     organization_id: organizationId,
     device_id: deviceId,
     severity: 'warning',

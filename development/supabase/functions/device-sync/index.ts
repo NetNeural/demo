@@ -10,6 +10,7 @@
 // - Azure IoT Hub
 // - Google Cloud IoT Core
 // - MQTT Brokers
+// - NetNeural Hub (Multi-Protocol)
 //
 // Operations:
 // - test: Verify connection to integration
@@ -17,7 +18,7 @@
 // - export: Export devices from NetNeural to external platform
 // - bidirectional: Two-way sync (import + export)
 //
-// Version: 2.0.0 (Unified Pattern)
+// Version: 2.0.1 (UUID fix deployed 2025-11-14)
 // Date: 2025-11-07
 // ============================================================================
 // deno-lint-ignore-file no-explicit-any
@@ -28,6 +29,7 @@ import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
+import { NetNeuralHubClient } from '../_shared/netneural-hub-client.ts'
 import type { BaseIntegrationClient, SyncResult, TestResult } from '../_shared/base-integration-client.ts'
 
 interface SyncRequest {
@@ -71,8 +73,23 @@ export default createEdgeFunction(async ({ req }) => {
     throw new DatabaseError('Integration not found', 404)
   }
 
-  // Create the appropriate client based on integration type
-  const client = createIntegrationClient(integration, supabase, organizationId, integrationId)
+  // Determine settings source (schema uses 'settings', older code used 'config')
+  // Prefer integration.settings if present; fall back to integration.config
+  const rawSettings = (integration as any).settings || (integration as any).config || {}
+
+  console.log('[device-sync] Integration record snapshot (sanitized):', {
+    id: integration.id,
+    type: integration.integration_type,
+    hasEncryptedKey: !!integration.api_key_encrypted,
+    encryptedKeyLength: integration.api_key_encrypted?.length || 0,
+    project_id: integration.project_id,
+    settingsKeys: Object.keys(rawSettings),
+    settingsContainsApiKey: !!rawSettings.apiKey,
+    settingsContainsProjectId: !!rawSettings.projectId,
+  })
+
+  // Create the appropriate client based on integration type (pass merged settings)
+  const client = createIntegrationClient({ ...integration, config: rawSettings }, supabase, organizationId, integrationId)
   
   if (!client) {
     throw new Error(`Unsupported integration type: ${integration.integration_type}`)
@@ -128,7 +145,7 @@ export default createEdgeFunction(async ({ req }) => {
 // deno-lint-ignore no-explicit-any
 function createIntegrationClient(
   // deno-lint-ignore no-explicit-any
-  integration: any,
+  integration: any, // expects merged config in integration.config
   supabase: ReturnType<typeof createClient>,
   organizationId: string,
   integrationId: string
@@ -139,11 +156,11 @@ function createIntegrationClient(
     case 'golioth':
       console.log('[device-sync] Creating Golioth client with:', {
         hasApiKey: !!(integration.api_key_encrypted || settings.apiKey),
-        apiKeySource: integration.api_key_encrypted ? 'integration.api_key_encrypted' : 'settings.apiKey',
-        apiKeyLength: (integration.api_key_encrypted || settings.apiKey)?.length,
+        apiKeySource: integration.api_key_encrypted ? 'integration.api_key_encrypted' : (settings.apiKey ? 'settings.apiKey' : 'missing'),
+        apiKeyLength: (integration.api_key_encrypted || settings.apiKey)?.length || 0,
         projectId: integration.project_id || settings.projectId,
-        projectIdSource: integration.project_id ? 'integration.project_id' : 'settings.projectId',
-        baseUrl: integration.base_url || settings.baseUrl,
+        projectIdSource: integration.project_id ? 'integration.project_id' : (settings.projectId ? 'settings.projectId' : 'missing'),
+        baseUrl: integration.base_url || settings.baseUrl || 'https://api.golioth.io/v1'
       })
       return new GoliothClient({
         type: 'golioth',
@@ -196,6 +213,28 @@ function createIntegrationClient(
           password: settings.password,
           useTls: settings.useTls || settings.use_tls,
           topicPrefix: settings.topicPrefix || settings.topic_prefix,
+        },
+        organizationId,
+        integrationId,
+        supabase,
+      })
+
+    case 'netneural_hub':
+      console.log('[device-sync] Creating NetNeural Hub client with:', {
+        protocolsEnabled: Object.keys(settings.protocols || {}).filter(p => settings.protocols?.[p]?.enabled),
+        deviceTypesSupported: Object.keys(settings.device_routing || {}),
+        globalSettings: settings.global_settings
+      })
+      return new NetNeuralHubClient({
+        type: 'netneural_hub' as any,
+        settings: {
+          protocols: settings.protocols || {},
+          device_routing: settings.device_routing || {},
+          global_settings: settings.global_settings || {
+            max_retry_attempts: 3,
+            device_discovery_enabled: true,
+            auto_capability_detection: true
+          }
         },
         organizationId,
         integrationId,

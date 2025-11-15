@@ -775,7 +775,7 @@ export default createEdgeFunction(async ({ req }) => {
       }
 
       // Validate integration type
-      const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt']
+      const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt', 'netneural_hub']
       if (!validTypes.includes(integration_type)) {
         throw new DatabaseError(`Invalid integration_type. Must be one of: ${validTypes.join(', ')}`, 400)
       }

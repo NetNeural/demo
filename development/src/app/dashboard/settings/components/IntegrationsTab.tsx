@@ -17,6 +17,7 @@ import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog';
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog';
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog';
 import { MqttConfigDialog } from '@/components/integrations/MqttConfigDialog';
+import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog';
 import {
   Select,
   SelectContent,
@@ -98,6 +99,15 @@ const INTEGRATION_TYPES = [
     purpose: 'Device Messaging',
     requiredFields: ['Broker URL', 'Port'],
     useCases: 'Real-time device communication, telemetry streaming, command & control'
+  },
+  {
+    value: 'netneural_hub',
+    label: '🚀 NetNeural Hub',
+    icon: '🚀',
+    description: 'Multi-protocol hub for NetNeural custom devices (nRF9151, nRF52840, VMark, Universal Sensor)',
+    purpose: 'Custom Device Management',
+    requiredFields: ['Protocol Endpoints'],
+    useCases: 'Direct device communication, protocol optimization, custom firmware support, edge processing'
   }
 ] as const;
 
@@ -141,6 +151,7 @@ export default function IntegrationsTab({
   const [showSlackConfig, setShowSlackConfig] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const [showMqttConfig, setShowMqttConfig] = useState(false);
+  const [showNetNeuralHubConfig, setShowNetNeuralHubConfig] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -245,149 +256,6 @@ export default function IntegrationsTab({
       loadIntegrations();
     }
   }, [selectedOrganization, loadIntegrations]);
-
-  const handleTestIntegration = async (integration: Integration) => {
-    // Wrap everything in try-catch to prevent Next.js errors
-    try {
-      console.log('[TEST] Starting integration test for:', integration.name, integration.id);
-      
-      toast({
-        title: '🔍 Testing Integration',
-        description: `Testing connection to ${integration.name}...`,
-      });
-
-      const supabase = createClient();
-      
-      let session;
-      try {
-        const { data: { session: sessionData } } = await supabase.auth.getSession();
-        session = sessionData;
-      } catch (authError) {
-        console.error('[TEST] Auth error:', authError);
-        toast({
-          title: '❌ Authentication Error',
-          description: 'Could not verify authentication. Please refresh and try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (!session) {
-        console.error('[TEST] No active session');
-        toast({
-          title: '❌ Authentication Required',
-          description: 'Please log in to test integrations.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Call device-sync with operation='test'
-      console.log('[TEST] Calling device-sync for integration:', integration.id);
-      
-      let response;
-      try {
-        const { data, error } = await supabase.functions.invoke('device-sync', {
-          body: {
-            integrationId: integration.id,
-            organizationId: integration.organization_id,
-            operation: 'test',
-            deviceIds: []
-          }
-        });
-
-        if (error) {
-          console.error('[TEST] Supabase function error:', error);
-          toast({
-            title: '❌ Test Failed',
-            description: error.message || 'Could not test integration',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        // Simulate response for consistent handling below
-        response = {
-          ok: data?.success !== false,
-          status: data?.success !== false ? 200 : 400,
-          statusText: data?.success !== false ? 'OK' : 'Bad Request',
-          json: async () => data
-        } as Response;
-        
-      } catch (fetchError) {
-        console.error('[TEST] Fetch error:', fetchError);
-        toast({
-          title: '❌ Connection Error',
-          description: 'Could not connect to server. Please check your network.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      console.log('[TEST] Response status:', response.status, response.statusText);
-
-      // Check if response is ok before parsing JSON
-      if (!response.ok) {
-        let errorMessage = `Test failed (HTTP ${response.status})`;
-        
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-          console.log('[TEST] Error response:', errorData);
-        } catch {
-          errorMessage = response.statusText || errorMessage;
-          console.log('[TEST] Could not parse error response, using status text');
-        }
-        
-        // Add helpful context based on status code
-        if (response.status === 404) {
-          errorMessage = '⚠️ Test feature not available: The integration test endpoint needs to be deployed to Supabase. For now, integrations will work in production once configured.';
-        } else if (response.status === 401 || response.status === 403) {
-          errorMessage = 'Authentication failed. Please refresh and try again.';
-        } else if (response.status >= 500) {
-          errorMessage = `Server error (${response.status}). The integration test service may be experiencing issues.`;
-        }
-        
-        console.log('[TEST] Showing error toast:', errorMessage);
-        toast({
-          title: response.status === 404 ? '⚠️ Feature Not Deployed' : '❌ Test Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Parse successful response
-      let result;
-      try {
-        result = await response.json();
-        console.log('[TEST] Success response:', result);
-      } catch {
-        console.error('[TEST] Could not parse success response');
-        toast({
-          title: '❌ Test Failed',
-          description: 'Invalid response from server',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Show success with details
-      console.log('[TEST] Showing success toast');
-      toast({
-        title: '✅ Test Successful',
-        description: result.message || `${integration.name} is configured correctly and responding.`,
-      });
-    } catch (error) {
-      // Catch ANY error and show toast instead of letting Next.js handle it
-      console.error('[TEST] Unexpected error:', error);
-      toast({
-        title: '❌ Test Error',
-        description: error instanceof Error ? error.message : 'An unexpected error occurred during testing.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleDeleteIntegration = async (integration: Integration) => {
     setIntegrationToDelete(integration);
@@ -727,6 +595,9 @@ export default function IntegrationsTab({
                               case 'mqtt':
                                 setShowMqttConfig(true);
                                 break;
+                              case 'netneural_hub':
+                                setShowNetNeuralHubConfig(true);
+                                break;
                               default:
                                 // Fallback to generic modal for unknown types
                                 setIntegrationConfig(integration.config as Record<string, string>);
@@ -737,15 +608,6 @@ export default function IntegrationsTab({
                         >
                           {integration.status === 'not-configured' ? 'Configure' : 'Edit'}
                         </Button>
-                        {integration.status === 'active' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleTestIntegration(integration)}
-                          >
-                            Test
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="destructive"
@@ -1148,6 +1010,10 @@ export default function IntegrationsTab({
                     setSelectedIntegration(null);
                     setShowMqttConfig(true);
                     break;
+                  case 'netneural_hub':
+                    setSelectedIntegration(null);
+                    setShowNetNeuralHubConfig(true);
+                    break;
                   default:
                     // Fallback to old method for unknown types
                     handleAddIntegration();
@@ -1247,6 +1113,17 @@ export default function IntegrationsTab({
             organizationId={selectedOrganization}
             onSaved={() => {
               setShowMqttConfig(false);
+              loadIntegrations();
+            }}
+          />
+
+          <NetNeuralHubConfigDialog
+            open={showNetNeuralHubConfig}
+            onOpenChange={setShowNetNeuralHubConfig}
+            integrationId={selectedIntegration?.id}
+            organizationId={selectedOrganization}
+            onSaved={() => {
+              setShowNetNeuralHubConfig(false);
               loadIntegrations();
             }}
           />
