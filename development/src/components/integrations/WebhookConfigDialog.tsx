@@ -594,7 +594,7 @@ export function WebhookConfigDialog({
             <h4 className="font-semibold text-sm mb-2 text-blue-900 dark:text-blue-100">How to Configure</h4>
             <ol className="text-sm space-y-1 text-blue-800 dark:text-blue-200 list-decimal list-inside">
               <li>Copy the NetNeural Webhook URL above</li>
-              <li>Go to your external IoT platform's webhook settings</li>
+              <li>Go to your external IoT platform&apos;s webhook settings</li>
               <li>Add our webhook URL as the destination</li>
               <li>Add X-Integration-ID header with the value shown above</li>
               <li>If your platform requires signature verification, enter the secret key</li>
