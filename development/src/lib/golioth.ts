@@ -15,6 +15,9 @@ export interface GoliothDevice {
   lastSeenOnline?: string;  // NEW - specific online timestamp
   lastSeenOffline?: string;  // NEW - specific offline timestamp
   cohortId?: string;  // NEW - OTA update group
+  parentDeviceId?: string;  // NEW - parent/gateway device ID
+  gatewayId?: string;  // NEW - gateway device ID (alias)
+  isGateway?: boolean;  // NEW - is this device a gateway?
   created_at: string;
   updated_at: string;
   project_id: string;

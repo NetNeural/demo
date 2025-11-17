@@ -316,7 +316,7 @@ export default function SettingsPage() {
       )}
 
       <Tabs defaultValue="organization" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="golioth">Golioth Integration</TabsTrigger>
           <TabsTrigger value="devices">Device Management</TabsTrigger>

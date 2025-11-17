@@ -5,10 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
-  Smartphone, 
   MapPin, 
   Plug, 
-  Bell, 
   Settings,
   Building2
 } from 'lucide-react';
@@ -17,10 +15,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { OverviewTab } from './components/OverviewTab';
 import { MembersTab } from './components/MembersTab';
-import { OrganizationDevicesTab } from './components/OrganizationDevicesTab';
 import { LocationsTab } from './components/LocationsTab';
 import { OrganizationIntegrationsTab } from './components/OrganizationIntegrationsTab';
-import { OrganizationAlertsTab } from './components/OrganizationAlertsTab';
 import { OrganizationSettingsTab } from './components/OrganizationSettingsTab';
 
 export default function OrganizationsPage() {
@@ -67,41 +63,31 @@ export default function OrganizationsPage() {
       />
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-2">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4" />
-            <span className="hidden sm:inline">Overview</span>
+            <span>Overview</span>
           </TabsTrigger>
           
           <TabsTrigger value="members" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
-            <span className="hidden sm:inline">Members</span>
-          </TabsTrigger>
-          
-          <TabsTrigger value="devices" className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4" />
-            <span className="hidden sm:inline">Devices</span>
+            <span>Members</span>
           </TabsTrigger>
           
           <TabsTrigger value="locations" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            <span className="hidden sm:inline">Locations</span>
+            <span>Locations</span>
           </TabsTrigger>
           
           <TabsTrigger value="integrations" className="flex items-center gap-2">
             <Plug className="w-4 h-4" />
-            <span className="hidden sm:inline">Integrations</span>
-          </TabsTrigger>
-          
-          <TabsTrigger value="alerts" className="flex items-center gap-2">
-            <Bell className="w-4 h-4" />
-            <span className="hidden sm:inline">Alerts</span>
+            <span>Integrations</span>
           </TabsTrigger>
           
           {isOwner && (
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Settings</span>
+              <span>Settings</span>
             </TabsTrigger>
           )}
         </TabsList>
@@ -114,20 +100,12 @@ export default function OrganizationsPage() {
           <MembersTab organizationId={currentOrganization.id} />
         </TabsContent>
 
-        <TabsContent value="devices">
-          <OrganizationDevicesTab organizationId={currentOrganization.id} />
-        </TabsContent>
-
         <TabsContent value="locations">
           <LocationsTab organizationId={currentOrganization.id} />
         </TabsContent>
 
         <TabsContent value="integrations">
           <OrganizationIntegrationsTab organizationId={currentOrganization.id} />
-        </TabsContent>
-
-        <TabsContent value="alerts">
-          <OrganizationAlertsTab organizationId={currentOrganization.id} />
         </TabsContent>
 
         {isOwner && (

@@ -180,11 +180,11 @@ export function AlertsList() {
 
   const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return 'border-red-500 bg-red-50'
-      case 'high': return 'border-orange-500 bg-orange-50'
-      case 'medium': return 'border-yellow-500 bg-yellow-50'
-      case 'low': return 'border-blue-500 bg-blue-50'
-      default: return 'border-gray-500 bg-gray-50'
+      case 'critical': return 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-800'
+      case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-800'
+      case 'medium': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800'
+      case 'low': return 'border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800'
+      default: return 'border-gray-500 bg-gray-50 dark:bg-gray-900 dark:border-gray-700'
     }
   }
 
@@ -231,23 +231,23 @@ export function AlertsList() {
                         <span className="text-sm">{getCategoryIcon(alert.category)}</span>
                       </div>
                       <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-900">
+                        <AlertDescription className="font-medium text-base text-gray-900 dark:text-gray-100">
                           {alert.title}
                         </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-600 mt-1">
+                        <AlertDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {alert.description}
                         </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-500 mt-2">
+                        <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                           <span className="font-medium">{alert.device}</span> • {alert.timestamp}
                         </AlertDescription>
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
                       <span className={`text-xs px-2 py-1 rounded font-medium ${
-                        alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                        alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
+                        alert.severity === 'critical' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                        alert.severity === 'high' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
+                        alert.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                        'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
                       }`}>
                         {alert.severity.toUpperCase()}
                       </span>
@@ -272,8 +272,8 @@ export function AlertsList() {
                 </Alert>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-green-600 text-lg">🎉 No active alerts</p>
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-green-600 dark:text-green-500 text-lg">🎉 No active alerts</p>
                 <p className="text-sm mt-1">All systems operating normally</p>
               </div>
             )}
@@ -296,24 +296,24 @@ export function AlertsList() {
                         <span className="text-sm">{getCategoryIcon(alert.category)}</span>
                       </div>
                       <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-700">
+                        <AlertDescription className="font-medium text-base text-gray-700 dark:text-gray-300">
                           {alert.title}
                         </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-500 mt-1">
+                        <AlertDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                           {alert.description}
                         </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-400 mt-2">
+                        <AlertDescription className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                           <span className="font-medium">{alert.device}</span> • {alert.timestamp}
                         </AlertDescription>
                         {alert.acknowledgedBy && (
-                          <AlertDescription className="text-xs text-green-600 mt-1">
+                          <AlertDescription className="text-xs text-green-600 dark:text-green-500 mt-1">
                             ✓ Acknowledged by {alert.acknowledgedBy}
                           </AlertDescription>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-green-100 text-green-800">
+                      <span className="text-xs px-2 py-1 rounded font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
                         ACKNOWLEDGED
                       </span>
                       <Button 

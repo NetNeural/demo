@@ -67,16 +67,19 @@ export function MembersTab({ organizationId }: MembersTabProps) {
             : 'Failed to fetch members'
         );
         
-        // Send to Sentry with context
+        // Send to Sentry with context but don't show popup
         handleApiError(error, {
           endpoint: `/api/organizations/${organizationId}/members`,
           method: 'GET',
           context: {
             organization_id: organizationId,
           },
+          skipUserNotification: true, // Prevent Sentry popup
         });
         
-        throw error;
+        // Don't throw - just set empty members array and continue
+        setMembers([]);
+        return;
       }
 
       const data = response.data as { members?: OrganizationMember[] };
@@ -84,9 +87,10 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     } catch (error) {
       console.error('Error fetching members:', error);
       
-      // Send to Sentry if not already sent
-      if (error instanceof Error && !error.message.includes('HTTP error')) {
-        handleApiError(error, {
+      // Send to Sentry but don't show popup to user
+      handleApiError(
+        error instanceof Error ? error : new Error('Unknown error'),
+        {
           endpoint: `/api/organizations/${organizationId}/members`,
           method: 'GET',
           context: {
@@ -94,8 +98,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
             action: 'fetchMembers',
             organization_id: organizationId,
           },
-        });
-      }
+          skipUserNotification: true, // Prevent Sentry popup
+        }
+      );
       
       setMembers([]);
     } finally {

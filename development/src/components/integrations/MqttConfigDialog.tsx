@@ -279,7 +279,7 @@ export function MqttConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>

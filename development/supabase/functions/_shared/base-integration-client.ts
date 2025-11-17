@@ -68,9 +68,20 @@ export interface Device {
   location?: string
   metadata?: Record<string, unknown>
   tags?: string[]
+  updated_at?: string
   // Integration-specific fields
   external_id?: string // ID in external system (Golioth, AWS, Azure, etc.)
   external_metadata?: Record<string, unknown>
+}
+
+export interface DeviceConflict {
+  deviceId: string
+  conflictType: 'data_mismatch' | 'timestamp_conflict' | 'status_conflict'
+  fieldName: string
+  localValue: unknown
+  remoteValue: unknown
+  localUpdatedAt?: string
+  remoteUpdatedAt?: string
 }
 
 // ===========================================================================
@@ -542,5 +553,143 @@ export abstract class BaseIntegrationClient {
     else if ('uptime_seconds' in metadata) telemetry.uptime = metadata.uptime_seconds
 
     return telemetry
+  }
+}
+
+// ===========================================================================
+// Conflict Detection Helpers
+// ===========================================================================
+
+/**
+ * Detect conflicts between local and remote device data
+ * Compares timestamps and values to determine if a conflict exists
+ * 
+ * @param localDevice - Device from NetNeural database
+ * @param remoteDevice - Device from external integration
+ * @param strategy - Resolution strategy to apply
+ * @returns DeviceConflict if conflict detected, null otherwise
+ */
+export function detectConflict(
+  localDevice: Device,
+  remoteDevice: Device,
+  strategy: 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins'
+): DeviceConflict[] {
+  const conflicts: DeviceConflict[] = []
+  
+  // Fields to check for conflicts
+  const fieldsToCompare = ['name', 'status', 'hardware_id', 'location']
+  
+  for (const field of fieldsToCompare) {
+    const localValue = (localDevice as Record<string, unknown>)[field]
+    const remoteValue = (remoteDevice as Record<string, unknown>)[field]
+    
+    // Skip if both values are the same or both undefined
+    if (localValue === remoteValue) continue
+    if (localValue === undefined && remoteValue === undefined) continue
+    
+    // For manual strategy, create conflict if values differ
+    if (strategy === 'manual') {
+      conflicts.push({
+        deviceId: localDevice.id,
+        conflictType: field === 'status' ? 'status_conflict' : 'data_mismatch',
+        fieldName: field,
+        localValue,
+        remoteValue,
+        localUpdatedAt: localDevice.updated_at,
+        remoteUpdatedAt: remoteDevice.updated_at,
+      })
+      continue
+    }
+    
+    // For automatic strategies, only create conflict if we can't auto-resolve
+    if (strategy === 'newest_wins') {
+      // Need timestamps to auto-resolve
+      if (!localDevice.updated_at || !remoteDevice.updated_at) {
+        conflicts.push({
+          deviceId: localDevice.id,
+          conflictType: 'timestamp_conflict',
+          fieldName: field,
+          localValue,
+          remoteValue,
+          localUpdatedAt: localDevice.updated_at,
+          remoteUpdatedAt: remoteDevice.updated_at,
+        })
+      }
+      // If timestamps exist, newest_wins will auto-resolve (no conflict record needed)
+    }
+    // local_wins and remote_wins always auto-resolve (no conflict record needed)
+  }
+  
+  return conflicts
+}
+
+/**
+ * Resolve conflict automatically based on strategy
+ * Returns the value to use based on the resolution strategy
+ * 
+ * @param localValue - Value from NetNeural
+ * @param remoteValue - Value from external integration
+ * @param localTimestamp - When local was updated
+ * @param remoteTimestamp - When remote was updated
+ * @param strategy - How to resolve the conflict
+ * @returns Resolved value
+ */
+export function autoResolveConflict(
+  localValue: unknown,
+  remoteValue: unknown,
+  localTimestamp: string | undefined,
+  remoteTimestamp: string | undefined,
+  strategy: 'local_wins' | 'remote_wins' | 'newest_wins'
+): unknown {
+  switch (strategy) {
+    case 'local_wins':
+      return localValue
+    
+    case 'remote_wins':
+      return remoteValue
+    
+    case 'newest_wins':
+      if (!localTimestamp || !remoteTimestamp) {
+        // Fall back to remote if timestamps missing
+        return remoteValue
+      }
+      const localTime = new Date(localTimestamp).getTime()
+      const remoteTime = new Date(remoteTimestamp).getTime()
+      return remoteTime > localTime ? remoteValue : localValue
+    
+    default:
+      return remoteValue
+  }
+}
+
+/**
+ * Log conflict to database
+ * Creates a record in device_conflicts table for manual review
+ * 
+ * @param supabase - Supabase client
+ * @param syncLogId - ID of the sync operation
+ * @param conflict - Conflict details
+ */
+export async function logConflict(
+  supabase: ReturnType<typeof createClient>,
+  syncLogId: string | undefined,
+  conflict: DeviceConflict
+): Promise<void> {
+  const { error } = await supabase
+    .from('device_conflicts')
+    .insert({
+      device_id: conflict.deviceId,
+      sync_log_id: syncLogId || null,
+      conflict_type: conflict.conflictType,
+      field_name: conflict.fieldName,
+      local_value: conflict.localValue,
+      remote_value: conflict.remoteValue,
+      local_updated_at: conflict.localUpdatedAt,
+      remote_updated_at: conflict.remoteUpdatedAt,
+      resolution_status: 'pending',
+    })
+  
+  if (error) {
+    console.error('[Conflict Detection] Failed to log conflict:', error)
   }
 }

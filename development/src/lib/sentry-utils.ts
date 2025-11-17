@@ -7,6 +7,7 @@ interface ApiErrorOptions {
   errorData?: unknown;
   context?: Record<string, unknown>;
   showFeedbackDialog?: boolean; // Optional: override default behavior
+  skipUserNotification?: boolean; // Optional: skip showing the feedback dialog entirely
 }
 
 /**
@@ -37,7 +38,9 @@ export function handleApiError(error: unknown, options: ApiErrorOptions): string
   });
 
   // Show feedback dialog in production for critical errors
-  const shouldShowDialog = options.showFeedbackDialog !== false && 
+  // Skip if explicitly requested via skipUserNotification
+  const shouldShowDialog = !options.skipUserNotification &&
+                           options.showFeedbackDialog !== false && 
                            process.env.NODE_ENV === 'production' &&
                            options.status && 
                            (options.status >= 400 && options.status < 600); // All 4xx and 5xx errors

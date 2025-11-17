@@ -248,7 +248,7 @@ export function GoliothConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="sync-settings">Sync Settings</TabsTrigger>
             <TabsTrigger value="sync" disabled={!integrationId}>Run Sync</TabsTrigger>

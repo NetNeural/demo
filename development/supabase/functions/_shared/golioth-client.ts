@@ -14,6 +14,9 @@ import {
   SyncResult,
   Device,
   IntegrationError,
+  detectConflict,
+  logConflict,
+  autoResolveConflict,
 } from './base-integration-client.ts'
 
 // ===========================================================================
@@ -301,6 +304,57 @@ export class GoliothClient extends BaseIntegrationClient {
               logs.push(updateMsg)
               console.log(updateMsg)
               
+              // Get conflict resolution strategy from settings
+              const settings = this.getSettings<GoliothSettings & { conflictResolution?: string }>()
+              const conflictStrategy = (settings.conflictResolution || 'remote_wins') as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins'
+              
+              // Prepare local and remote device data for conflict detection
+              const localDevice: Device = {
+                id: localDeviceId!,
+                name: existingDevice.metadata?.name || 'Unknown',
+                hardware_id: existingDevice.metadata?.hardware_ids?.[0],
+                status: existingDevice.metadata?.status || 'offline',
+                updated_at: existingDevice.metadata?.updated_at,
+                metadata: existingDevice.metadata,
+              }
+              
+              const remoteDevice: Device = {
+                id: localDeviceId!,
+                name: goliothDevice.name,
+                hardware_id: goliothDevice.hardwareIds?.[0],
+                status: this.normalizeDeviceStatus(goliothDevice.status),
+                updated_at: goliothDevice.updatedAt,
+                metadata: goliothDevice.metadata,
+              }
+              
+              // Detect conflicts
+              const conflicts = detectConflict(localDevice, remoteDevice, conflictStrategy)
+              
+              if (conflicts.length > 0) {
+                console.log(`[GoliothClient] Detected ${conflicts.length} conflicts for device ${goliothDevice.name}`)
+                logs.push(`⚠️  Detected ${conflicts.length} conflicts for ${goliothDevice.name}`)
+                
+                // Log conflicts to database if strategy is manual
+                if (conflictStrategy === 'manual') {
+                  for (const conflict of conflicts) {
+                    await logConflict(this.config.supabase, undefined, conflict)
+                  }
+                  // Skip update for manual resolution
+                  result.devices_failed++
+                  errors.push(`${goliothDevice.name}: Conflicts require manual resolution`)
+                  continue
+                }
+              }
+              
+              // For automatic strategies, resolve conflicts and update
+              const resolvedName = conflicts.find(c => c.fieldName === 'name')
+                ? autoResolveConflict(localDevice.name, remoteDevice.name, localDevice.updated_at, remoteDevice.updated_at, conflictStrategy as any)
+                : goliothDevice.name
+              
+              const resolvedStatus = conflicts.find(c => c.fieldName === 'status')
+                ? autoResolveConflict(localDevice.status, remoteDevice.status, localDevice.updated_at, remoteDevice.updated_at, conflictStrategy as any)
+                : this.normalizeDeviceStatus(goliothDevice.status)
+              
               // Check if device_type was manually changed (not auto-detected)
               const autoDetectedType = this.determineDeviceType(goliothDevice)
               const wasManuallySet = existingDevice.metadata?.device_type_manually_set === true
@@ -311,11 +365,11 @@ export class GoliothClient extends BaseIntegrationClient {
               await this.config.supabase
                 .from('devices')
                 .update({
-                  name: goliothDevice.name,
+                  name: String(resolvedName),
                   // Only update device_type if it wasn't manually set
                   ...(shouldPreserveType ? {} : { device_type: autoDetectedType }),
                   hardware_ids: goliothDevice.hardwareIds || [],
-                  status: this.normalizeDeviceStatus(goliothDevice.status),
+                  status: String(resolvedStatus),
                   last_seen: lastSeen,
                   metadata: {
                     ...goliothDevice.metadata,
@@ -327,13 +381,17 @@ export class GoliothClient extends BaseIntegrationClient {
                     golioth_enabled: goliothDevice.enabled,
                     golioth_tag_ids: goliothDevice.tagIds || [],
                     last_synced_at: new Date().toISOString(),
+                    ...(conflicts.length > 0 && { 
+                      last_conflict_resolution: conflictStrategy,
+                      last_conflict_count: conflicts.length 
+                    }),
                   },
                   external_device_id: goliothDevice.id,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', localDeviceId)
               
-              const updatedMsg = `✅ Device updated: ${goliothDevice.name}`
+              const updatedMsg = `✅ Device updated: ${goliothDevice.name}${conflicts.length > 0 ? ` (${conflicts.length} conflicts auto-resolved: ${conflictStrategy})` : ''}`
               logs.push(updatedMsg)
               console.log(updatedMsg)
             }

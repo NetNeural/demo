@@ -393,7 +393,7 @@ export function NetNeuralHubConfigDialog({
           </Alert>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="w-full justify-start">
               <TabsTrigger value="protocols">Protocol Configuration</TabsTrigger>
               <TabsTrigger value="routing">Device Routing</TabsTrigger>
               <TabsTrigger value="settings">Global Settings</TabsTrigger>
@@ -402,7 +402,7 @@ export function NetNeuralHubConfigDialog({
             {/* Protocol Configuration Tab */}
             <TabsContent value="protocols" className="space-y-6">
               <Tabs defaultValue="coap" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="w-full justify-start">
                   {Object.entries(PROTOCOL_INFO).map(([protocolKey, info]) => (
                     <TabsTrigger key={protocolKey} value={protocolKey} className="flex items-center gap-2">
                       {info.icon}
@@ -627,11 +627,11 @@ export function NetNeuralHubConfigDialog({
               </div>
 
               <Tabs defaultValue={DEVICE_TYPES[0]?.id} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="w-full justify-start">
                   {DEVICE_TYPES.map((deviceType) => (
                     <TabsTrigger key={deviceType.id} value={deviceType.id} className="flex items-center gap-2">
                       {deviceType.icon}
-                      <span className="hidden sm:inline">{deviceType.name.split(' ')[0]}</span>
+                      <span>{deviceType.name}</span>
                     </TabsTrigger>
                   ))}
                 </TabsList>

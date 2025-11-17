@@ -205,19 +205,78 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
    * Map Golioth device to generic DeviceData format
    */
   private mapToGenericDevice(goliothDevice: GoliothDevice): DeviceData {
+    // Extract device type from tags or metadata, default to 'iot_device'
+    const deviceType = 
+      goliothDevice.tags?.find(tag => tag.startsWith('type:'))?.replace('type:', '') ||
+      (goliothDevice.metadata?.device_type as string) ||
+      (goliothDevice.metadata?.type as string) ||
+      'iot_device';
+    
+    // Extract model from metadata
+    const model = (goliothDevice.metadata?.model as string) || undefined;
+    
+    // Extract serial number from metadata or hardware ID
+    const serialNumber = 
+      (goliothDevice.metadata?.serial_number as string) ||
+      (goliothDevice.metadata?.serialNumber as string) ||
+      undefined;
+    
+    // Extract firmware version
+    const firmwareVersion = 
+      (goliothDevice.metadata?.firmware_version as string) ||
+      (goliothDevice.metadata?.firmwareVersion as string) ||
+      undefined;
+    
+    // Extract battery level and signal strength
+    const batteryLevel = (goliothDevice.metadata?.battery_level as number) || undefined;
+    const signalStrength = (goliothDevice.metadata?.signal_strength as number) || undefined;
+    
+    // Extract gateway/parent information from tags and metadata
+    const parentDeviceId = 
+      goliothDevice.parentDeviceId ||
+      goliothDevice.gatewayId ||
+      (goliothDevice.metadata?.parentId as string) ||
+      (goliothDevice.metadata?.parent_id as string) ||
+      (goliothDevice.metadata?.gatewayId as string) ||
+      (goliothDevice.metadata?.gateway_id as string) ||
+      goliothDevice.tags?.find(tag => tag.startsWith('gateway:'))?.replace('gateway:', '') ||
+      goliothDevice.tags?.find(tag => tag.startsWith('parent:'))?.replace('parent:', '') ||
+      undefined;
+    
+    // Determine if this is a gateway device
+    const isGateway = 
+      goliothDevice.isGateway ||
+      (goliothDevice.metadata?.isGateway as boolean) ||
+      (goliothDevice.metadata?.is_gateway as boolean) ||
+      goliothDevice.tags?.includes('gateway') ||
+      goliothDevice.tags?.includes('type:gateway') ||
+      goliothDevice.name?.toLowerCase().includes('gateway') ||
+      false;
+    
     return {
       id: goliothDevice.id,
       name: goliothDevice.name,
       externalId: goliothDevice.id,
       status: goliothDevice.status,
+      deviceType, // Add device type
+      model, // Add model
+      serialNumber, // Add serial number
+      firmwareVersion, // Add firmware version
       hardwareIds: goliothDevice.hardwareIds || (goliothDevice.hardware_id ? [goliothDevice.hardware_id] : undefined),
+      cohortId: goliothDevice.cohortId, // Add cohort ID for OTA updates
+      parentDeviceId, // Add parent/gateway device ID
+      isGateway, // Add gateway indicator
       tags: goliothDevice.tags,
       metadata: goliothDevice.metadata,
+      batteryLevel, // Add battery level
+      signalStrength, // Add signal strength
       lastSeen: goliothDevice.lastSeenOnline 
         ? new Date(goliothDevice.lastSeenOnline)
         : goliothDevice.last_seen 
           ? new Date(goliothDevice.last_seen)
           : undefined,
+      lastSeenOnline: goliothDevice.lastSeenOnline ? new Date(goliothDevice.lastSeenOnline) : undefined,
+      lastSeenOffline: goliothDevice.lastSeenOffline ? new Date(goliothDevice.lastSeenOffline) : undefined,
       createdAt: new Date(goliothDevice.created_at),
       updatedAt: new Date(goliothDevice.updated_at),
     };

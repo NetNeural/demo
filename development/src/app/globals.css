@@ -1,6 +1,218 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
+
+/* Tailwind Dark Mode CSS Variables */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+
+  /* Slate - Professional Dark */
+  .theme-slate {
+    --background: 215 28% 7%;
+    --foreground: 210 40% 98%;
+    --card: 215 28% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 215 28% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 215 20% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 215 20% 20%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 215 20% 20%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Navy - Corporate Blue */
+  .theme-navy {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 221 39% 14%;
+    --card-foreground: 210 40% 98%;
+    --popover: 221 39% 14%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 30% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 20%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 222 30% 20%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
+    --ring: 199 89% 48%;
+  }
+
+  /* Emerald - Professional Green */
+  .theme-emerald {
+    --background: 160 84% 8%;
+    --foreground: 160 10% 98%;
+    --card: 160 84% 10%;
+    --card-foreground: 160 10% 98%;
+    --popover: 160 84% 10%;
+    --popover-foreground: 160 10% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 160 10% 98%;
+    --secondary: 160 30% 18%;
+    --secondary-foreground: 160 10% 98%;
+    --muted: 160 30% 18%;
+    --muted-foreground: 160 10% 65%;
+    --accent: 160 30% 18%;
+    --accent-foreground: 160 10% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 160 10% 98%;
+    --border: 160 30% 18%;
+    --input: 160 30% 18%;
+    --ring: 160 84% 39%;
+  }
+
+  /* Neutral - Minimal Contrast */
+  .theme-neutral {
+    --background: 240 6% 10%;
+    --foreground: 240 5% 96%;
+    --card: 240 6% 12%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 6% 12%;
+    --popover-foreground: 240 5% 96%;
+    --primary: 240 5% 84%;
+    --primary-foreground: 240 6% 10%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 96%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 240 5% 96%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 240 5% 96%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 240 5% 84%;
+  }
+
+  /* High Contrast - Maximum Accessibility */
+  .theme-high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 85%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 30%;
+    --input: 0 0% 30%;
+    --ring: 210 100% 50%;
+  }
+
+  /* Twilight - Purple/Indigo */
+  .theme-twilight {
+    --background: 250 50% 12%;
+    --foreground: 250 10% 98%;
+    --card: 250 50% 14%;
+    --card-foreground: 250 10% 98%;
+    --popover: 250 50% 14%;
+    --popover-foreground: 250 10% 98%;
+    --primary: 270 91% 65%;
+    --primary-foreground: 250 10% 98%;
+    --secondary: 250 30% 20%;
+    --secondary-foreground: 250 10% 98%;
+    --muted: 250 30% 20%;
+    --muted-foreground: 250 10% 70%;
+    --accent: 250 30% 20%;
+    --accent-foreground: 250 10% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 250 10% 98%;
+    --border: 250 30% 20%;
+    --input: 250 30% 20%;
+    --ring: 270 91% 65%;
+  }
+
+  /* Crimson - Executive Red */
+  .theme-crimson {
+    --background: 0 50% 10%;
+    --foreground: 0 10% 98%;
+    --card: 0 50% 12%;
+    --card-foreground: 0 10% 98%;
+    --popover: 0 50% 12%;
+    --popover-foreground: 0 10% 98%;
+    --primary: 346 77% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 30% 18%;
+    --secondary-foreground: 0 10% 98%;
+    --muted: 0 30% 18%;
+    --muted-foreground: 0 10% 70%;
+    --accent: 0 30% 18%;
+    --accent-foreground: 0 10% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 10% 98%;
+    --border: 0 30% 18%;
+    --input: 0 30% 18%;
+    --ring: 346 77% 50%;
+  }
+}
 
 /* Reset and base styles */
 * {
@@ -87,6 +299,233 @@ body {
   --radius-base: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+}
+
+/* Dark Mode Color System */
+.dark {
+  /* Brand Colors - Adjusted for dark backgrounds */
+  --primary-50: #1e3a8a;
+  --primary-100: #1e40af;
+  --primary-500: #60a5fa;
+  --primary-600: #3b82f6;
+  --primary-700: #2563eb;
+  
+  /* Neutral Colors - Inverted for dark mode */
+  --gray-50: #18181b;
+  --gray-100: #27272a;
+  --gray-200: #3f3f46;
+  --gray-300: #52525b;
+  --gray-400: #71717a;
+  --gray-500: #a1a1aa;
+  --gray-600: #d4d4d8;
+  --gray-700: #e4e4e7;
+  --gray-800: #f4f4f5;
+  --gray-900: #fafafa;
+  
+  /* Status Colors - Adjusted brightness */
+  --success-50: #14532d;
+  --success-100: #166534;
+  --success-500: #4ade80;
+  --success-600: #22c55e;
+  
+  --warning-50: #78350f;
+  --warning-100: #92400e;
+  --warning-500: #fbbf24;
+  --warning-600: #f59e0b;
+  
+  --error-50: #7f1d1d;
+  --error-100: #991b1b;
+  --error-500: #f87171;
+  --error-600: #ef4444;
+}
+
+.dark html,
+.dark body {
+  color: #e4e4e7;
+  background-color: #18181b;
+}
+
+/* Dark Mode Component Overrides */
+.dark .nav-sidebar {
+  background: var(--gray-100);
+  border-right-color: var(--gray-200);
+}
+
+.dark .nav-header {
+  border-bottom-color: var(--gray-200);
+}
+
+.dark .nav-brand {
+  color: var(--gray-900);
+}
+
+.dark .nav-item {
+  color: var(--gray-600);
+}
+
+.dark .nav-item:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.dark .nav-item.active {
+  background: var(--primary-700);
+  color: white;
+}
+
+.dark .nav-user {
+  border-top-color: var(--gray-200);
+  background: var(--gray-100);
+}
+
+.dark .user-info p {
+  color: var(--gray-700);
+}
+
+.dark .main-content {
+  background: var(--gray-50);
+}
+
+.dark .main-header {
+  background: var(--gray-100);
+  border-bottom-color: var(--gray-200);
+}
+
+.dark .card {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+.dark .btn-secondary {
+  background: var(--gray-200);
+  color: var(--gray-900);
+  border-color: var(--gray-300);
+}
+
+.dark .btn-secondary:hover:not(:disabled) {
+  background: var(--gray-300);
+  border-color: var(--gray-400);
+}
+
+.dark .btn-ghost:hover:not(:disabled) {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.dark .input {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+  color: var(--gray-900);
+}
+
+.dark .input:focus {
+  border-color: var(--primary-500);
+  background: var(--gray-100);
+}
+
+.dark .input::placeholder {
+  color: var(--gray-500);
+}
+
+.dark .label {
+  color: var(--gray-700);
+}
+
+.dark .badge {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.dark .alert {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+}
+
+.dark .table {
+  background: var(--gray-100);
+}
+
+.dark .table th {
+  background: var(--gray-200);
+  color: var(--gray-900);
+  border-bottom-color: var(--gray-300);
+}
+
+.dark .table td {
+  border-bottom-color: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.dark .table tbody tr:hover {
+  background: var(--gray-200);
+}
+
+.dark .modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.dark .modal-content {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+.dark .tabs {
+  border-bottom-color: var(--gray-200);
+}
+
+.dark .tab-button {
+  color: var(--gray-600);
+}
+
+.dark .tab-button:hover {
+  color: var(--gray-800);
+}
+
+.dark .tab-button.active {
+  color: var(--primary-500);
+  border-bottom-color: var(--primary-500);
+}
+
+.dark .dropdown-menu {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+.dark .dropdown-item:hover {
+  background: var(--gray-200);
+}
+
+.dark .sidebar-section {
+  border-bottom-color: var(--gray-200);
+}
+
+.dark .stat-card {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+.dark .chart-container {
+  background: var(--gray-100);
+}
+
+.dark .form-group label {
+  color: var(--gray-700);
+}
+
+.dark .form-error {
+  color: var(--error-500);
+}
+
+.dark select {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+  color: var(--gray-900);
+}
+
+.dark textarea {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+  color: var(--gray-900);
 }
 
 /* Modern Button System */
@@ -273,6 +712,35 @@ body {
 .gap-4 { gap: var(--space-4); }
 .gap-6 { gap: var(--space-6); }
 
+/* Mobile-Friendly Utility Classes */
+.mobile-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-hidden {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .mobile-hidden {
+    display: block;
+  }
+  
+  .desktop-hidden {
+    display: none;
+  }
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.text-base-mobile {
+  font-size: 16px; /* Prevents iOS zoom */
+}
+
 /* Spacing Utilities */
 .p-4 { padding: var(--space-4); }
 .p-6 { padding: var(--space-6); }
@@ -432,6 +900,7 @@ body {
   background: white;
   border-bottom: 1px solid var(--gray-200);
   padding: var(--space-4) var(--space-6);
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -445,14 +914,250 @@ body {
 @media (max-width: 1024px) {
   .nav-sidebar {
     transform: translateX(-100%);
+    box-shadow: none;
   }
   
   .nav-sidebar.mobile-open {
     transform: translateX(0);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
   }
   
   .main-content {
     margin-left: 0;
+  }
+}
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 150;
+  padding: 0.75rem;
+  background: var(--primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--primary-700);
+  transform: scale(1.05);
+}
+
+.mobile-menu-toggle:active {
+  transform: scale(0.95);
+}
+
+.dark .mobile-menu-toggle {
+  background: var(--primary-500);
+}
+
+.dark .mobile-menu-toggle:hover {
+  background: var(--primary-600);
+}
+
+@media (max-width: 1024px) {
+  .mobile-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  animation: fadeIn 0.2s ease;
+}
+
+@media (max-width: 1024px) {
+  .mobile-overlay {
+    display: block;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mobile-Specific Improvements */
+@media (max-width: 768px) {
+  .page-content {
+    padding: var(--space-4) var(--space-3);
+  }
+  
+  .main-header {
+    padding: var(--space-3) var(--space-4);
+    padding-left: 4rem; /* Space for menu button */
+  }
+  
+  /* Mobile-friendly buttons */
+  .btn {
+    min-height: 44px; /* iOS touch target size */
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .btn-sm {
+    min-height: 36px;
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  /* Mobile-friendly inputs */
+  .input {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    min-height: 44px;
+  }
+  
+  /* Mobile-friendly cards */
+  .card {
+    border-radius: var(--radius-base);
+  }
+  
+  /* Mobile navigation adjustments */
+  .nav-sidebar {
+    width: 280px;
+    max-width: 85vw;
+  }
+  
+  .nav-item {
+    min-height: 44px;
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  /* Stack elements vertically on mobile */
+  .responsive-stack {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  
+  /* Mobile tables - horizontal scroll */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 calc(-1 * var(--space-3));
+    padding: 0 var(--space-3);
+  }
+  
+  .table {
+    min-width: 600px; /* Ensure table doesn't squish */
+  }
+  
+  /* Hide non-essential columns on mobile */
+  .hide-mobile {
+    display: none;
+  }
+  
+  /* Mobile typography adjustments */
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+  
+  /* Mobile modal adjustments */
+  .modal-content {
+    width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* Improve touch targets for links */
+  .nav-menu a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Mobile stats/metrics */
+  .stat-card {
+    padding: var(--space-4);
+  }
+  
+  /* Better spacing for mobile forms */
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+  
+  /* Full-screen dialog on mobile - page-like experience */
+  [data-radix-scroll-area-viewport] {
+    max-height: calc(100vh - 120px) !important;
+  }
+}
+
+/* Dialog mobile page-like styles */
+@media (max-width: 768px) {
+  /* Make dialog content scrollable with fixed header/footer */
+  .dialog-body-scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding: var(--space-6);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  
+  /* Full width buttons in dialog footer on mobile */
+  .dialog-footer-mobile button {
+    width: 100%;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .page-content {
+    padding: var(--space-6) var(--space-5);
+  }
+  
+  .main-header {
+    padding-left: 4rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .page-content {
+    padding: var(--space-3) var(--space-2);
+  }
+  
+  .card {
+    padding: var(--space-3);
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .btn-sm {
+    width: auto;
+  }
+  
+  /* Stack buttons vertically on very small screens */
+  .button-group {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .button-group .btn {
+    width: 100%;
   }
 }
 
@@ -943,6 +1648,32 @@ body.modal-open {
 
 .tabs-nav::-webkit-scrollbar {
   display: none;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Tabs mobile improvements */
+@media (max-width: 768px) {
+  /* Ensure tabs don't wrap and scroll smoothly */
+  [role="tablist"] {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+  
+  [role="tab"] {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
 }
 
 .tab-button {

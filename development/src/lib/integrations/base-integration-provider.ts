@@ -64,12 +64,23 @@ export interface DeviceData {
   name: string;
   externalId: string;
   status: 'online' | 'offline' | 'unknown';
-  hardwareIds?: string[];
-  tags?: string[];
-  metadata?: Record<string, unknown>;
-  lastSeen?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  deviceType?: string; // Device type/category
+  model?: string; // Device model
+  serialNumber?: string; // Serial number
+  firmwareVersion?: string; // Firmware version
+  hardwareIds?: string[]; // Hardware identifiers
+  cohortId?: string; // OTA update group/cohort
+  parentDeviceId?: string; // Parent/gateway device ID for hierarchical relationships
+  isGateway?: boolean; // Is this device a gateway for other devices?
+  tags?: string[]; // Tags for categorization
+  metadata?: Record<string, unknown>; // Additional metadata
+  batteryLevel?: number; // Battery percentage (0-100)
+  signalStrength?: number; // Signal strength (dBm or percentage)
+  lastSeen?: Date; // Last activity timestamp
+  lastSeenOnline?: Date; // Last seen online timestamp
+  lastSeenOffline?: Date; // Last seen offline timestamp
+  createdAt: Date; // Creation timestamp
+  updatedAt: Date; // Last update timestamp
 }
 
 export interface DeviceUpdate {

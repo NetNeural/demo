@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +9,6 @@ import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
-import { SyncHistoryList } from '@/components/integrations/SyncHistoryList'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ interface Integration {
 }
 
 export default function IntegrationsPage() {
+  const router = useRouter()
   const { currentOrganization } = useOrganization()
   
   const [integrations, setIntegrations] = useState<Integration[]>([])
@@ -45,10 +46,8 @@ export default function IntegrationsPage() {
       }
       
       const allIntegrations = (response.data as any)?.integrations || []
-      // Filter for Golioth integrations
-      const goliothIntegrations = allIntegrations.filter((i: any) => 
-        i.type === 'golioth' || i.integrationType === 'golioth'
-      ).map((i: any) => ({
+      // Map all integrations
+      const mappedIntegrations = allIntegrations.map((i: any) => ({
         id: i.id,
         name: i.name,
         integration_type: i.type || i.integrationType,
@@ -58,7 +57,7 @@ export default function IntegrationsPage() {
         last_sync_status: i.lastSyncStatus || i.last_sync_status
       }))
       
-      setIntegrations(goliothIntegrations)
+      setIntegrations(mappedIntegrations)
     } catch (error) {
       console.error('Failed to load integrations:', error)
       toast.error('Failed to load integrations')
@@ -85,9 +84,9 @@ export default function IntegrationsPage() {
     }
   }, [currentOrganization?.id, loadIntegrations, loadPendingConflicts])
 
-  const handleEdit = (integrationId: string) => {
-    setSelectedIntegration(integrationId)
-    setConfigOpen(true)
+  const handleEdit = (integration: Integration) => {
+    if (!currentOrganization) return
+    router.push(`/dashboard/integrations/view?id=${integration.id}&organizationId=${currentOrganization.id}&type=${integration.integration_type}`)
   }
 
   const handleAdd = () => {
@@ -133,9 +132,9 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Golioth Integrations</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Integrations</h2>
           <p className="text-muted-foreground">
-            Manage Golioth IoT platform integrations for {currentOrganization.name}
+            Manage platform integrations for {currentOrganization.name}
           </p>
         </div>
         <Button onClick={handleAdd}>
@@ -182,7 +181,7 @@ export default function IntegrationsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-3">
-                <p className="text-muted-foreground">No Golioth integrations configured</p>
+                <p className="text-muted-foreground">No integrations configured</p>
                 <Button onClick={handleAdd} variant="outline">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Integration
@@ -224,7 +223,7 @@ export default function IntegrationsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleEdit(integration.id)}
+                      onClick={() => handleEdit(integration)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Configure
@@ -243,15 +242,6 @@ export default function IntegrationsPage() {
           ))
         )}
       </div>
-
-      {/* Sync History */}
-      {integrations.length > 0 && currentOrganization && (
-        <SyncHistoryList
-          organizationId={currentOrganization.id}
-          limit={20}
-          autoRefresh={true}
-        />
-      )}
 
       {/* Dialogs */}
       {currentOrganization && (

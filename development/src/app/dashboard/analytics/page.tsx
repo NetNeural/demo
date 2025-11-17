@@ -252,7 +252,7 @@ export default function AnalyticsPage() {
 
       {/* Analytics Tabs */}
       <Tabs defaultValue="devices" className="space-y-4">
-        <TabsList>
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="devices">Device Performance</TabsTrigger>
           <TabsTrigger value="alerts">Alert Analytics</TabsTrigger>
         </TabsList>

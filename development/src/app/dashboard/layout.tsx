@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider } from '@/contexts/OrganizationContext'
@@ -30,22 +31,26 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
         
         <div className="nav-menu">
-          <a href="/dashboard" className="nav-item">
+          <Link href="/dashboard" className="nav-item">
             <span className="nav-icon">📊</span>
             Dashboard
-          </a>
-          <a href="/dashboard/devices" className="nav-item">
+          </Link>
+          <Link href="/dashboard/devices" className="nav-item">
             <span className="nav-icon">📱</span>
             Devices
-          </a>
-          <a href="/dashboard/alerts" className="nav-item">
+          </Link>
+          <Link href="/dashboard/integrations" className="nav-item">
+            <span className="nav-icon">🔌</span>
+            Integrations
+          </Link>
+          <Link href="/dashboard/alerts" className="nav-item">
             <span className="nav-icon">🚨</span>
             Alerts
-          </a>
-          <a href="/dashboard/analytics" className="nav-item">
+          </Link>
+          <Link href="/dashboard/analytics" className="nav-item">
             <span className="nav-icon">📈</span>
             Analytics
-          </a>
+          </Link>
           <a href="/dashboard/organizations" className="nav-item">
             <span className="nav-icon">🏢</span>
             Organization

@@ -55,10 +55,10 @@ export function OrganizationSwitcher({
   if (isLoading) {
     return (
       <div className={cn('flex items-center gap-2 px-3 py-2 animate-pulse', className)}>
-        <div className="w-8 h-8 bg-gray-200 rounded" />
+        <div className="w-8 h-8 bg-muted rounded" />
         <div className="flex-1">
-          <div className="h-4 bg-gray-200 rounded w-32 mb-1" />
-          <div className="h-3 bg-gray-100 rounded w-20" />
+          <div className="h-4 bg-muted rounded w-32 mb-1" />
+          <div className="h-3 bg-muted/50 rounded w-20" />
         </div>
       </div>
     );
@@ -72,14 +72,14 @@ export function OrganizationSwitcher({
           <Button
             variant="outline"
             className={cn(
-              'w-full justify-between gap-2 hover:bg-gray-50',
+              'w-full justify-between gap-2 hover:bg-accent',
               compact ? 'h-10' : 'h-auto py-3',
               className
             )}
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={cn(
-                'flex items-center justify-center rounded-md bg-gradient-to-br from-gray-400 to-gray-500 text-white flex-shrink-0',
+                'flex items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0',
                 compact ? 'w-8 h-8' : 'w-10 h-10'
               )}>
                 <Building2 className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
@@ -87,25 +87,25 @@ export function OrganizationSwitcher({
               
               <div className="flex-1 min-w-0 text-left">
                 <span className={cn(
-                  'font-medium text-gray-600',
+                  'font-medium text-muted-foreground',
                   compact ? 'text-sm' : 'text-base'
                 )}>
                   No Organization
                 </span>
                 {!compact && (
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Create your first organization
                   </p>
                 )}
               </div>
             </div>
             
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-[320px] z-[200]">
-          <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wide">
+          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wide">
             Get Started
           </DropdownMenuLabel>
           
@@ -121,7 +121,7 @@ export function OrganizationSwitcher({
                 trigger={
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="w-full justify-start text-primary hover:text-primary hover:bg-primary/10"
                   >
                     <Building2 className="w-4 h-4 mr-2" />
                     Create Organization
@@ -138,7 +138,7 @@ export function OrganizationSwitcher({
   // Regular users without org (shouldn't happen but handle gracefully)
   if (!currentOrganization) {
     return (
-      <div className={cn('flex items-center gap-2 px-3 py-2 text-gray-500', className)}>
+      <div className={cn('flex items-center gap-2 px-3 py-2 text-muted-foreground', className)}>
         <Building2 className="w-5 h-5" />
         <span className="text-sm">No organization selected</span>
       </div>
@@ -153,14 +153,14 @@ export function OrganizationSwitcher({
         <Button
           variant="outline"
           className={cn(
-            'w-full justify-between gap-2 hover:bg-gray-50',
+            'w-full justify-between gap-2 hover:bg-accent',
             compact ? 'h-10' : 'h-auto py-3',
             className
           )}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className={cn(
-              'flex items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-blue-600 text-white flex-shrink-0',
+              'flex items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0',
               compact ? 'w-8 h-8' : 'w-10 h-10'
             )}>
               <Building2 className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
@@ -169,7 +169,7 @@ export function OrganizationSwitcher({
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  'font-medium text-gray-900 truncate',
+                  'font-medium text-foreground truncate',
                   compact ? 'text-sm' : 'text-base'
                 )}>
                   {currentOrganization.name}
@@ -190,19 +190,19 @@ export function OrganizationSwitcher({
               </div>
               
               {!compact && currentOrganization.deviceCount !== undefined && (
-                <p className="text-xs text-gray-500 mt-0.5 truncate">
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                   {currentOrganization.deviceCount} devices • {currentOrganization.userCount} users
                 </p>
               )}
             </div>
           </div>
           
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" className="w-[320px] z-[200]">
-        <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wide">
+        <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wide">
           Your Organizations
         </DropdownMenuLabel>
         
@@ -222,19 +222,19 @@ export function OrganizationSwitcher({
               <div className={cn(
                 'flex items-center justify-center w-10 h-10 rounded-md flex-shrink-0',
                 isSelected 
-                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
               )}>
                 <Building2 className="w-5 h-5" />
               </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 truncate">
+                  <span className="font-medium text-foreground truncate">
                     {org.name}
                   </span>
                   {isSelected && (
-                    <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
                   )}
                 </div>
                 
@@ -253,7 +253,7 @@ export function OrganizationSwitcher({
                   </Badge>
                   
                   {org.deviceCount !== undefined && (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {org.deviceCount} devices
                     </span>
                   )}
@@ -278,7 +278,7 @@ export function OrganizationSwitcher({
                 trigger={
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="w-full justify-start text-primary hover:text-primary hover:bg-primary/10"
                   >
                     <Building2 className="w-4 h-4 mr-2" />
                     Create Organization
@@ -311,10 +311,10 @@ export function OrganizationIndicator({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center">
+      <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center">
         <Building2 className="w-3.5 h-3.5" />
       </div>
-      <span className="text-sm font-medium text-gray-700 truncate">
+      <span className="text-sm font-medium text-foreground truncate">
         {currentOrganization.name}
       </span>
     </div>

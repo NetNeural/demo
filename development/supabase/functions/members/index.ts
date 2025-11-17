@@ -29,10 +29,10 @@ export default createEdgeFunction(async ({ req }) => {
     .select('role')
     .eq('organization_id', organizationId)
     .eq('user_id', userContext.userId)
-    .single()
+    .maybeSingle()
 
   if (membershipError) {
-    throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`)
+    throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
   }
 
   if (!membership) {
@@ -86,10 +86,15 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
     const body = await req.json()
-    const { email, role } = body
+    const { email, userId, role } = body
 
-    if (!email || !role) {
-      throw new Error('email and role are required')
+    // Accept either email or userId
+    if (!email && !userId) {
+      throw new Error('Either email or userId is required')
+    }
+
+    if (!role) {
+      throw new Error('role is required')
     }
 
     // Validate role (only roles that exist in database)
@@ -103,24 +108,41 @@ export default createEdgeFunction(async ({ req }) => {
       throw new DatabaseError('Only owners can add other owners', 403)
     }
 
-    // Find user by email using admin client (bypasses RLS)
-    const { data: targetUser, error: userLookupError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single()
+    let targetUserId: string
 
-    if (userLookupError || !targetUser) {
-      throw new DatabaseError('User not found with that email', 404)
+    // If userId provided, use it directly; otherwise look up by email
+    if (userId) {
+      targetUserId = userId
+    } else {
+      // Find user by email using admin client (bypasses RLS)
+      const { data: targetUser, error: userLookupError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (userLookupError) {
+        throw new DatabaseError(`Failed to find user: ${userLookupError.message}`, 500)
+      }
+
+      if (!targetUser) {
+        throw new DatabaseError('User not found with that email', 404)
+      }
+
+      targetUserId = targetUser.id
     }
 
     // Check if user is already a member using admin client
-    const { data: existingMember } = await supabaseAdmin
+    const { data: existingMember, error: existingError } = await supabaseAdmin
       .from('organization_members')
       .select('id')
       .eq('organization_id', organizationId)
-      .eq('user_id', targetUser.id)
-      .single()
+      .eq('user_id', targetUserId)
+      .maybeSingle()
+
+    if (existingError) {
+      throw new DatabaseError(`Failed to check existing membership: ${existingError.message}`, 500)
+    }
 
     if (existingMember) {
       throw new Error('User is already a member of this organization')
@@ -131,7 +153,7 @@ export default createEdgeFunction(async ({ req }) => {
       .from('organization_members')
       .insert({
         organization_id: organizationId,
-        user_id: targetUser.id,
+        user_id: targetUserId,
         role: role,
       })
       .select(`

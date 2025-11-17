@@ -19,18 +19,18 @@ export default function SettingsPage() {
       />
 
       <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-1 lg:grid-cols-3 gap-2">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Profile</span>
+            <span>Profile</span>
           </TabsTrigger>
           <TabsTrigger value="preferences" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Preferences</span>
+            <span>Preferences</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            <span className="hidden sm:inline">Security</span>
+            <span>Security</span>
           </TabsTrigger>
         </TabsList>
 

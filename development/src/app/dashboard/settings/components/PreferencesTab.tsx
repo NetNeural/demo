@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Moon, Sun, Monitor, Globe, Layout, Bell } from 'lucide-react';
+import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette } from 'lucide-react';
 
 export function PreferencesTab() {
   const { toast } = useToast();
@@ -44,21 +44,24 @@ export function PreferencesTab() {
     // Save to localStorage for persistence
     localStorage.setItem('theme', theme);
     
+    // Remove all theme classes
+    root.classList.remove('dark', 'light', 'theme-slate', 'theme-navy', 'theme-emerald', 'theme-neutral', 'theme-high-contrast', 'theme-twilight', 'theme-crimson');
+    
     if (theme === 'dark') {
       root.classList.add('dark');
-      root.classList.remove('light');
     } else if (theme === 'light') {
       root.classList.add('light');
-      root.classList.remove('dark');
-    } else {
+    } else if (theme === 'system') {
       // System theme - respect OS preference
-      root.classList.remove('dark', 'light');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
         root.classList.add('dark');
       } else {
         root.classList.add('light');
       }
+    } else {
+      // Custom theme
+      root.classList.add(theme);
     }
   }, [theme]);
 
@@ -192,6 +195,48 @@ export function PreferencesTab() {
                   <div className="flex items-center gap-2">
                     <Monitor className="w-4 h-4" />
                     System
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-slate">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Slate (Professional Dark)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-navy">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Navy (Corporate Blue)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-emerald">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Emerald (Professional Green)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-neutral">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Neutral (Minimal Contrast)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-high-contrast">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    High Contrast (Accessibility)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-twilight">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Twilight (Purple/Indigo)
+                  </div>
+                </SelectItem>
+                <SelectItem value="theme-crimson">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Crimson (Executive Red)
                   </div>
                 </SelectItem>
               </SelectContent>

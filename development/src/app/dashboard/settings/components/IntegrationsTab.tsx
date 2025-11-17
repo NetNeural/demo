@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plug, Check, AlertCircle, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { edgeFunctions } from '@/lib/edge-functions';
@@ -137,6 +138,7 @@ export default function IntegrationsTab({
   initialOrganization = '',
   hideOrganizationSelector = false,
 }: IntegrationsTabProps) {
+  const router = useRouter();
   const [selectedOrganization, setSelectedOrganization] = useState(initialOrganization);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -571,38 +573,7 @@ export default function IntegrationsTab({
                           size="sm"
                           variant={integration.status === 'not-configured' ? 'default' : 'outline'}
                           onClick={() => {
-                            setSelectedIntegration(integration);
-                            // Route to appropriate config dialog based on type
-                            switch (integration.type) {
-                              case 'golioth':
-                                setShowGoliothConfig(true);
-                                break;
-                              case 'aws_iot':
-                                setShowAwsIotConfig(true);
-                                break;
-                              case 'azure_iot':
-                                setShowAzureIotConfig(true);
-                                break;
-                              case 'email':
-                                setShowEmailConfig(true);
-                                break;
-                              case 'slack':
-                                setShowSlackConfig(true);
-                                break;
-                              case 'webhook':
-                                setShowWebhookConfig(true);
-                                break;
-                              case 'mqtt':
-                                setShowMqttConfig(true);
-                                break;
-                              case 'netneural_hub':
-                                setShowNetNeuralHubConfig(true);
-                                break;
-                              default:
-                                // Fallback to generic modal for unknown types
-                                setIntegrationConfig(integration.config as Record<string, string>);
-                                setShowConfigModal(true);
-                            }
+                            router.push(`/dashboard/integrations/view?id=${integration.id}&organizationId=${selectedOrganization}&type=${integration.type}`);
                           }}
                           className="flex-1"
                         >

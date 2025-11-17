@@ -240,7 +240,7 @@ export function AwsIotConfigDialog({
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-100">
+          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="sync">Sync Settings</TabsTrigger>
             <TabsTrigger value="conflicts">Conflicts</TabsTrigger>

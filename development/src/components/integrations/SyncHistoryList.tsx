@@ -45,6 +45,8 @@ export function SyncHistoryList({
       setLogs(filtered)
     } catch (error) {
       console.error('Failed to load sync history:', error)
+      // Set empty array on error to prevent showing loading state forever
+      setLogs([])
     } finally {
       setLoading(false)
     }

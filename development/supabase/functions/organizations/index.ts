@@ -180,13 +180,18 @@ export default createEdgeFunction(async ({ req }) => {
       // Organization owners can update their own organization
       if (!userContext.isSuperAdmin) {
         // Check if user is owner of this organization
+        // Use maybeSingle() to handle cases where membership might not exist
         // @ts-expect-error - role exists
-        const { data: membership } = await supabase
+        const { data: membership, error: membershipError } = await supabase
           .from('organization_members')
           .select('role')
           .eq('organization_id', orgId)
           .eq('user_id', userContext.userId)
-          .single()
+          .maybeSingle()
+
+        if (membershipError) {
+          throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
+        }
 
         // @ts-expect-error - role exists
         if (!membership || membership.role !== 'owner') {
@@ -253,29 +258,51 @@ export default createEdgeFunction(async ({ req }) => {
         throw new Error('Organization ID is required')
       }
 
-      // Only super admins can delete organizations
+      // Check if user has permission to delete this organization
+      // Super admins can delete any organization
+      // Organization owners can delete their own organization
       if (!userContext.isSuperAdmin) {
-        throw new DatabaseError('Only super admins can delete organizations', 403)
+        // Check if user is owner of this organization
+        // @ts-expect-error - role exists
+        const { data: membership, error: membershipError } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('organization_id', orgId)
+          .eq('user_id', userContext.userId)
+          .maybeSingle()
+
+        if (membershipError) {
+          throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
+        }
+
+        // @ts-expect-error - role exists
+        if (!membership || membership.role !== 'owner') {
+          throw new DatabaseError('You do not have permission to delete this organization', 403)
+        }
       }
 
       // Check if organization exists
       // @ts-expect-error - Properties exist
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from('organizations')
         .select('id, name')
         .eq('id', orgId)
-        .single()
+        .maybeSingle()
+
+      if (orgError) {
+        throw new DatabaseError(`Failed to fetch organization: ${orgError.message}`, 500)
+      }
 
       if (!org) {
         throw new DatabaseError('Organization not found', 404)
       }
 
-      // Soft delete by marking as inactive (safer than hard delete)
-      // Hard delete would cascade and remove all related data
-      // @ts-expect-error - Dynamic update
+      // Perform actual deletion (CASCADE will handle related records)
+      // This includes organization_members, devices, locations, etc.
+      // @ts-expect-error - Dynamic delete
       const { error: deleteError } = await supabase
         .from('organizations')
-        .update({ is_active: false })
+        .delete()
         .eq('id', orgId)
 
       if (deleteError) {
@@ -286,8 +313,9 @@ export default createEdgeFunction(async ({ req }) => {
       // @ts-expect-error - name exists
       return createSuccessResponse({
         // @ts-expect-error - name exists
-        message: `Organization "${org.name}" has been deactivated`,
-        organizationId: orgId
+        message: `Organization "${org.name}" has been deleted successfully`,
+        organizationId: orgId,
+        success: true
       })
     }
 

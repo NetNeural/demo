@@ -14,6 +14,74 @@ export default createEdgeFunction(async ({ req }) => {
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const deviceId = pathParts[pathParts.indexOf('devices') + 1]
+      
+      // GET /devices/{id} - Get single device
+      if (deviceId && deviceId !== 'devices') {
+        const { data: device, error: deviceError } = await supabase
+          .from('devices')
+          .select(`
+            *,
+            locations!location_id(name),
+            departments!department_id(name),
+            device_integrations!integration_id(name, integration_type)
+          `)
+          .eq('id', deviceId)
+          .is('deleted_at', null)
+          .single()
+
+        if (deviceError) {
+          console.error('Database error:', deviceError)
+          throw new DatabaseError(`Failed to fetch device: ${deviceError.message}`, 404)
+        }
+
+        if (!device) {
+          throw new DatabaseError('Device not found', 404)
+        }
+
+        // Transform device for response
+        const transformedDevice = {
+          id: device.id,
+          name: device.name,
+          device_type: device.device_type,
+          model: device.model,
+          serial_number: device.serial_number,
+          status: device.status || 'offline',
+          firmware_version: device.firmware_version,
+          location_id: device.location_id,
+          department_id: device.department_id,
+          last_seen: device.last_seen,
+          last_seen_online: device.last_seen_online,
+          last_seen_offline: device.last_seen_offline,
+          battery_level: device.battery_level,
+          signal_strength: device.signal_strength,
+          external_device_id: device.external_device_id,
+          integration_id: device.integration_id,
+          hardware_ids: device.hardware_ids,
+          cohort_id: device.cohort_id,
+          metadata: device.metadata,
+          organization_id: device.organization_id,
+          created_at: device.created_at,
+          updated_at: device.updated_at,
+          
+          // Aliases for compatibility
+          type: device.device_type,
+          location: device.locations?.name || device.departments?.name || null,
+          lastSeen: device.last_seen,
+          batteryLevel: device.battery_level,
+          isExternallyManaged: device.external_device_id !== null,
+          externalDeviceId: device.external_device_id,
+          integrationName: device.device_integrations?.name || null,
+          integrationType: device.device_integrations?.integration_type || null
+        }
+
+        return createSuccessResponse({ 
+          device: transformedDevice
+        })
+      }
+      
+      // GET /devices - List all devices
       const requestedOrgId = url.searchParams.get('organization_id')
       
       // Determine which organization to query based on user's role
@@ -114,7 +182,10 @@ export default createEdgeFunction(async ({ req }) => {
         model, 
         serial_number, 
         firmware_version,
-        location_id
+        location_id,
+        department_id,
+        status,
+        metadata
       } = body
 
       // Verify user has access to this device's organization
@@ -135,6 +206,9 @@ export default createEdgeFunction(async ({ req }) => {
       if (serial_number !== undefined) updates.serial_number = serial_number
       if (firmware_version !== undefined) updates.firmware_version = firmware_version
       if (location_id !== undefined) updates.location_id = location_id
+      if (department_id !== undefined) updates.department_id = department_id
+      if (status !== undefined) updates.status = status
+      if (metadata !== undefined) updates.metadata = metadata
 
       // Update device - RLS will enforce access automatically
       const { data: updatedDevice, error: updateError } = await supabase

@@ -329,6 +329,17 @@ supabase db push
 npm run supabase:functions:deploy
 ```
 
+### ⚠️ One-Time Setup: Supabase Edge Cron
+
+Auto-sync functionality requires a **one-time** Supabase Edge Cron configuration:
+
+1. See [docs/SUPABASE_EDGE_CRON_SETUP.md](./docs/SUPABASE_EDGE_CRON_SETUP.md) for detailed instructions
+2. Quick setup: Dashboard → Functions → `auto-sync-cron` → Cron tab → Enable with `* * * * *`
+3. This is **project-level infrastructure** (not per integration)
+4. Run script for checklist: `./scripts/setup-supabase-cron.sh`
+
+**Note:** This setup is done ONCE per Supabase project. All Golioth integrations will automatically use the same cron job.
+
 ---
 
 ## 🔍 Troubleshooting

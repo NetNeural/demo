@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -56,20 +57,11 @@ interface Location {
 }
 
 export function DevicesList() {
+  const router = useRouter()
   const [devices, setDevices] = useState<Device[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
-  const [editName, setEditName] = useState('')
-  const [editType, setEditType] = useState('')
-  const [editModel, setEditModel] = useState('')
-  const [editSerialNumber, setEditSerialNumber] = useState('')
-  const [editFirmwareVersion, setEditFirmwareVersion] = useState('')
-  const [editLocationId, setEditLocationId] = useState<string>('')
-  const [saving, setSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingDevice, setDeletingDevice] = useState<Device | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -207,71 +199,8 @@ export function DevicesList() {
     return filtered
   }, [devices, filterStatus, filterType, filterLocation, sortBy, sortOrder])
 
-  const handleEditDevice = async () => {
-    if (!selectedDevice || !currentOrganization) return
-
-    try {
-      setSaving(true)
-
-      const locationIdToSend = editLocationId || null
-      console.log('[Device Edit] Starting update for device:', selectedDevice.id)
-      console.log('[Device Edit] editLocationId value:', editLocationId, 'type:', typeof editLocationId)
-      console.log('[Device Edit] locationIdToSend value:', locationIdToSend)
-      console.log('[Device Edit] Update payload:', {
-        organization_id: currentOrganization.id,
-        name: editName,
-        device_type: editType,
-        model: editModel || null,
-        serial_number: editSerialNumber || null,
-        firmware_version: editFirmwareVersion || null,
-        location_id: locationIdToSend
-      })
-
-      const response = await edgeFunctions.call(
-        `devices/${selectedDevice.id}`,
-        {
-          method: 'PUT',
-          body: {
-            organization_id: currentOrganization.id,
-            name: editName,
-            device_type: editType,
-            model: editModel || null,
-            serial_number: editSerialNumber || null,
-            firmware_version: editFirmwareVersion || null,
-            location_id: locationIdToSend
-          }
-        }
-      )
-
-      console.log('[Device Edit] Response:', response)
-
-      if (!response.success) {
-        console.error('[Device Edit] Update failed:', response.error)
-        throw new Error(response.error?.message || 'Failed to update device')
-      }
-
-      console.log('[Device Edit] Update successful:', response.data)
-
-      toast.success('Device updated successfully')
-      setEditOpen(false)
-      setDetailsOpen(false)
-      fetchDevices()
-    } catch (err) {
-      console.error('Error updating device:', err)
-      toast.error(err instanceof Error ? err.message : 'Failed to update device')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const openEditDialog = (device: Device) => {
-    setEditName(device.name)
-    setEditType(device.device_type || device.type || '')
-    setEditModel(device.model || '')
-    setEditSerialNumber(device.serial_number || '')
-    setEditFirmwareVersion(device.firmware_version || '')
-    setEditLocationId(device.location_id || '')
-    setEditOpen(true)
+  const openDeviceDetailsPage = (deviceId: string) => {
+    router.push(`/dashboard/devices/view?id=${deviceId}`)
   }
 
   const handleDeleteDevice = async (device: Device) => {
@@ -302,7 +231,6 @@ export function DevicesList() {
       toast.success('Device deleted successfully')
       setShowDeleteDialog(false)
       setDeletingDevice(null)
-      setDetailsOpen(false)
       fetchDevices()
     } catch (err) {
       console.error('Error deleting device:', err)
@@ -524,10 +452,7 @@ export function DevicesList() {
                   variant="outline" 
                   size="sm" 
                   className="flex-1"
-                  onClick={() => {
-                    setSelectedDevice(device)
-                    setDetailsOpen(true)
-                  }}
+                  onClick={() => openDeviceDetailsPage(device.id)}
                 >
                   View Details
                 </Button>
@@ -545,303 +470,6 @@ export function DevicesList() {
           </CardContent>
         </Card>
       )}
-
-      {/* Device Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Device Details</DialogTitle>
-            <DialogDescription>
-              Comprehensive information about {selectedDevice?.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedDevice && (
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Device Name</p>
-                    <p className="font-medium text-foreground">{selectedDevice.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Device ID</p>
-                    <p className="font-mono text-sm text-foreground">{selectedDevice.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="font-medium text-foreground">{selectedDevice.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-medium text-foreground">{selectedDevice.location}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4"></div>
-
-              {/* Status Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Status</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Current Status</p>
-                    <Badge 
-                      variant={
-                        selectedDevice.status === 'online' ? 'default' :
-                        selectedDevice.status === 'warning' ? 'secondary' :
-                        selectedDevice.status === 'error' ? 'destructive' :
-                        'outline'
-                      }
-                      className="mt-1"
-                    >
-                      {selectedDevice.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Last Seen</p>
-                    <p className="font-medium text-foreground">
-                      {new Date(selectedDevice.lastSeen).toLocaleString()}
-                    </p>
-                  </div>
-                  {selectedDevice.batteryLevel != null && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Battery Level</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all ${
-                              selectedDevice.batteryLevel > 50 ? 'bg-green-500' :
-                              selectedDevice.batteryLevel > 20 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}
-                            style={{ width: `${selectedDevice.batteryLevel}%` } as React.CSSProperties}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">{selectedDevice.batteryLevel}%</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Integration Information */}
-              {selectedDevice.isExternallyManaged && (
-                <>
-                  <div className="border-t border-border pt-4"></div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Integration Details</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Managed By</p>
-                        <Badge variant="outline" className="mt-1">
-                          {selectedDevice.integrationName || 'External Integration'}
-                        </Badge>
-                      </div>
-                      {selectedDevice.externalDeviceId && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">External Device ID</p>
-                          <p className="font-mono text-sm text-foreground">{selectedDevice.externalDeviceId}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="border-t border-border pt-4"></div>
-
-              {/* Actions */}
-              <div className="flex justify-between gap-2">
-                <Button 
-                  variant="destructive"
-                  onClick={() => handleDeleteDevice(selectedDevice)}
-                >
-                  Delete Device
-                </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setDetailsOpen(false)}>
-                    Close
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      openEditDialog(selectedDevice)
-                      setDetailsOpen(false)
-                    }}
-                  >
-                    Edit Device
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Device Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Device</DialogTitle>
-            <DialogDescription>
-              Update device information for {selectedDevice?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            {/* Basic Information */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-device-name" className="text-sm text-muted-foreground">
-                    Device Name *
-                  </Label>
-                  <Input
-                    id="edit-device-name"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="font-medium"
-                    placeholder="e.g., Office Sensor 1"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-device-type" className="text-sm text-muted-foreground">
-                    Device Type *
-                  </Label>
-                  <Input
-                    id="edit-device-type"
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value)}
-                    className="font-medium"
-                    placeholder="e.g., Temperature Sensor"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-border"></div>
-
-            {/* Hardware Details */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Hardware Details</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-device-model" className="text-sm text-muted-foreground">
-                    Model
-                  </Label>
-                  <Input
-                    id="edit-device-model"
-                    value={editModel}
-                    onChange={(e) => setEditModel(e.target.value)}
-                    className="font-medium"
-                    placeholder="e.g., DHT22-PRO"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-serial-number" className="text-sm text-muted-foreground">
-                    Serial Number
-                  </Label>
-                  <Input
-                    id="edit-serial-number"
-                    value={editSerialNumber}
-                    onChange={(e) => setEditSerialNumber(e.target.value)}
-                    className="font-mono text-sm"
-                    placeholder="e.g., SN123456789"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-firmware-version" className="text-sm text-muted-foreground">
-                    Firmware Version
-                  </Label>
-                  <Input
-                    id="edit-firmware-version"
-                    value={editFirmwareVersion}
-                    onChange={(e) => setEditFirmwareVersion(e.target.value)}
-                    className="font-mono text-sm"
-                    placeholder="e.g., v1.2.3"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-border"></div>
-
-            {/* Location Information */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Location Information</h3>
-              <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-device-location" className="text-sm text-muted-foreground">
-                    Location {locations.length > 0 && `(${locations.length} available)`}
-                  </Label>
-                  <Select 
-                    value={editLocationId || 'none'} 
-                    onValueChange={(value) => {
-                      console.log('[DevicesList] Location selected:', value)
-                      setEditLocationId(value === 'none' ? '' : value)
-                    }}
-                  >
-                    <SelectTrigger id="edit-device-location" className="font-medium">
-                      <SelectValue placeholder="Select a location (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {locations.map((location) => {
-                        console.log('[DevicesList] Rendering location:', location)
-                        return (
-                          <SelectItem key={location.id} value={location.id}>
-                            {location.name}
-                            {location.city && location.state && ` - ${location.city}, ${location.state}`}
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {selectedDevice?.isExternallyManaged && (
-              <>
-                <div className="border-t border-border"></div>
-                <div className="p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="text-blue-600 dark:text-blue-400 mt-0.5">ℹ️</div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-1">
-                        Externally Managed Device
-                      </p>
-                      <p className="text-sm text-blue-800 dark:text-blue-300">
-                        This device is managed by <strong>{selectedDevice.integrationName}</strong>. 
-                        Changes to basic information will be synced, but hardware-specific details 
-                        may be overridden during the next sync.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="border-t border-border pt-4"></div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditDevice} disabled={saving || !editName.trim() || !editType.trim()}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
