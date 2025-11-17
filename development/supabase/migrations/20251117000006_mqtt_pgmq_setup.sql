@@ -138,8 +138,13 @@ $$;
 DO $cron$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-    -- Remove existing job if it exists
-    PERFORM cron.unschedule('process-mqtt-queue');
+    -- Remove existing job if it exists (ignore error if doesn't exist)
+    BEGIN
+      PERFORM cron.unschedule('process-mqtt-queue');
+    EXCEPTION WHEN OTHERS THEN
+      -- Job doesn't exist, that's OK
+      NULL;
+    END;
     
     -- Schedule new job
     PERFORM cron.schedule(
