@@ -51,7 +51,8 @@ export async function logUserAction(entry: AuditLogEntry): Promise<string | null
       entry.userEmail = entry.userEmail || user?.email
     }
     
-    const { data, error } = await supabase.rpc('log_user_action', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('log_user_action', {
       p_user_id: entry.userId || null,
       p_user_email: entry.userEmail || null,
       p_organization_id: entry.organizationId || null,
