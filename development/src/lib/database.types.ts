@@ -483,6 +483,7 @@ export type Database = {
         Row: {
           api_key_encrypted: string | null
           base_url: string | null
+          broker_type: string | null
           conflict_resolution: string | null
           created_at: string | null
           id: string
@@ -506,6 +507,7 @@ export type Database = {
         Insert: {
           api_key_encrypted?: string | null
           base_url?: string | null
+          broker_type?: string | null
           conflict_resolution?: string | null
           created_at?: string | null
           id?: string
@@ -529,6 +531,7 @@ export type Database = {
         Update: {
           api_key_encrypted?: string | null
           base_url?: string | null
+          broker_type?: string | null
           conflict_resolution?: string | null
           created_at?: string | null
           id?: string
@@ -1298,6 +1301,69 @@ export type Database = {
           },
         ]
       }
+      mqtt_credentials: {
+        Row: {
+          allowed_topics: string[]
+          broker_url: string
+          client_id: string
+          connection_count: number | null
+          created_at: string
+          id: string
+          integration_id: string
+          last_connected_at: string | null
+          organization_id: string
+          password_hash: string
+          topic_prefix: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          allowed_topics?: string[]
+          broker_url?: string
+          client_id: string
+          connection_count?: number | null
+          created_at?: string
+          id?: string
+          integration_id: string
+          last_connected_at?: string | null
+          organization_id: string
+          password_hash: string
+          topic_prefix: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          allowed_topics?: string[]
+          broker_url?: string
+          client_id?: string
+          connection_count?: number | null
+          created_at?: string
+          id?: string
+          integration_id?: string
+          last_connected_at?: string | null
+          organization_id?: string
+          password_hash?: string
+          topic_prefix?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mqtt_credentials_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mqtt_credentials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mqtt_messages: {
         Row: {
           created_at: string | null
@@ -1339,6 +1405,60 @@ export type Database = {
           },
           {
             foreignKeyName: "mqtt_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mqtt_subscriptions: {
+        Row: {
+          active: boolean
+          callback_url: string | null
+          created_at: string
+          id: string
+          integration_id: string
+          last_message_at: string | null
+          message_count: number | null
+          organization_id: string
+          topics: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          callback_url?: string | null
+          created_at?: string
+          id?: string
+          integration_id: string
+          last_message_at?: string | null
+          message_count?: number | null
+          organization_id: string
+          topics: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          callback_url?: string | null
+          created_at?: string
+          id?: string
+          integration_id?: string
+          last_message_at?: string | null
+          message_count?: number | null
+          organization_id?: string
+          topics?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mqtt_subscriptions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mqtt_subscriptions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1619,6 +1739,27 @@ export type Database = {
           },
         ]
       }
+      pg_cron_secrets: {
+        Row: {
+          created_at: string | null
+          name: string
+          secret: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          name: string
+          secret: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          name?: string
+          secret?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sync_queue: {
         Row: {
           completed_at: string | null
@@ -1774,6 +1915,80 @@ export type Database = {
           },
         ]
       }
+      user_audit_log: {
+        Row: {
+          action_category: string
+          action_type: string
+          changes: Json | null
+          created_at: string
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          method: string | null
+          organization_id: string | null
+          resource_id: string | null
+          resource_name: string | null
+          resource_type: string | null
+          session_id: string | null
+          status: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_category: string
+          action_type: string
+          changes?: Json | null
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method?: string | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          status: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_category?: string
+          action_type?: string
+          changes?: Json | null
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          method?: string | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type?: string | null
+          session_id?: string | null
+          status?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -1905,6 +2120,83 @@ export type Database = {
           },
         ]
       }
+      recent_user_activity: {
+        Row: {
+          action_category: string | null
+          action_type: string | null
+          created_at: string | null
+          current_user_email: string | null
+          id: string | null
+          ip_address: string | null
+          organization_id: string | null
+          organization_name: string | null
+          resource_id: string | null
+          resource_name: string | null
+          resource_type: string | null
+          status: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_events: {
+        Row: {
+          action_type: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string | null
+          ip_address: string | null
+          organization_id: string | null
+          severity: string | null
+          status: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          ip_address?: string | null
+          organization_id?: string | null
+          severity?: never
+          status?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string | null
+          ip_address?: string | null
+          organization_id?: string | null
+          severity?: never
+          status?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_action_summary: {
         Row: {
           action_category: string | null
@@ -1970,6 +2262,16 @@ export type Database = {
         Args: { p_metadata: Json }
         Returns: Json
       }
+      generate_mqtt_credentials: {
+        Args: { p_integration_id: string; p_organization_id: string }
+        Returns: {
+          broker_url: string
+          client_id: string
+          password: string
+          topic_prefix: string
+          username: string
+        }[]
+      }
       generate_webhook_secret: { Args: never; Returns: string }
       generate_webhook_url: {
         Args: {
@@ -2015,6 +2317,28 @@ export type Database = {
         }
         Returns: string
       }
+      log_user_action: {
+        Args: {
+          p_action_category: string
+          p_action_type: string
+          p_changes?: Json
+          p_endpoint?: string
+          p_error_message?: string
+          p_ip_address?: string
+          p_metadata?: Json
+          p_method?: string
+          p_organization_id: string
+          p_resource_id?: string
+          p_resource_name?: string
+          p_resource_type?: string
+          p_session_id?: string
+          p_status?: string
+          p_user_agent?: string
+          p_user_email: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       record_device_telemetry:
         | {
             Args: {
@@ -2054,11 +2378,16 @@ export type Database = {
         }
         Returns: string
       }
+      update_mqtt_connection_stats: {
+        Args: { p_username: string }
+        Returns: undefined
+      }
       uuid_generate_v4: { Args: never; Returns: string }
     }
     Enums: {
       alert_severity: "low" | "medium" | "high" | "critical"
       device_status: "online" | "offline" | "warning" | "error"
+      integration_broker_type: "hosted" | "external"
       notification_method: "email" | "sms" | "webhook" | "in_app"
       notification_status: "pending" | "sent" | "delivered" | "failed"
       user_role: "super_admin" | "org_admin" | "org_owner" | "user" | "viewer"
@@ -2194,6 +2523,7 @@ export const Constants = {
     Enums: {
       alert_severity: ["low", "medium", "high", "critical"],
       device_status: ["online", "offline", "warning", "error"],
+      integration_broker_type: ["hosted", "external"],
       notification_method: ["email", "sms", "webhook", "in_app"],
       notification_status: ["pending", "sent", "delivered", "failed"],
       user_role: ["super_admin", "org_admin", "org_owner", "user", "viewer"],
