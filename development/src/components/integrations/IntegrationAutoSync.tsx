@@ -180,7 +180,7 @@ export function IntegrationAutoSync({
             </Label>
             <p className="text-sm text-muted-foreground">
               {config.enabled ? 'Running' : 'Disabled'} - Syncs every{' '}
-              {FREQUENCY_OPTIONS.find((opt) => opt.value === config.frequencyMinutes)?.label.toLowerCase()}
+              {FREQUENCY_OPTIONS.find((opt) => opt.value === (config.frequencyMinutes || 15))?.label.toLowerCase() || '15 minutes'}
             </p>
           </div>
           <Switch
@@ -194,7 +194,7 @@ export function IntegrationAutoSync({
           <div className="space-y-2">
             <Label htmlFor="frequency">Sync Frequency</Label>
             <Select
-              value={config.frequencyMinutes.toString()}
+              value={(config.frequencyMinutes || 15).toString()}
               onValueChange={(value) => updateConfig({ frequencyMinutes: parseInt(value) })}
             >
               <SelectTrigger id="frequency">

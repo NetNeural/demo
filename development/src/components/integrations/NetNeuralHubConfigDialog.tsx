@@ -32,6 +32,7 @@ interface NetNeuralHubConfigProps {
   integrationId?: string
   organizationId?: string
   onSaved: () => void
+  mode?: 'dialog' | 'page'
 }
 
 interface ProtocolConfig {
@@ -219,7 +220,8 @@ export function NetNeuralHubConfigDialog({
   onOpenChange, 
   integrationId, 
   organizationId, 
-  onSaved 
+  onSaved,
+  mode = 'dialog'
 }: NetNeuralHubConfigProps) {
   const [config, setConfig] = useState<NetNeuralHubConfig>(DEFAULT_CONFIG)
   const [activeTab, setActiveTab] = useState('protocols')
@@ -373,17 +375,10 @@ export function NetNeuralHubConfigDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            NetNeural Hub Configuration
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6">
+  // Extract content into reusable component for both dialog and page modes
+  const renderContent = () => (
+    <>
+      <div className="space-y-6">
           {/* Hub Integration Brief */}
           <Alert>
             <Info className="h-4 w-4" />
@@ -840,22 +835,59 @@ export function NetNeuralHubConfigDialog({
           </Tabs>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !config.name?.trim()}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                integrationId ? 'Update Integration' : 'Create Integration'
-              )}
-            </Button>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving || !config.name?.trim()}>
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              integrationId ? 'Update Integration' : 'Create Integration'
+            )}
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+
+  // Render as page or dialog based on mode
+  if (mode === 'page') {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Settings className="h-8 w-8" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {integrationId ? 'Edit' : 'Configure'} NetNeural Hub
+            </h2>
+            <p className="text-muted-foreground">Auto-discover devices via CoAP, MQTT, or HTTPS</p>
           </div>
         </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            NetNeural Hub Configuration
+          </DialogTitle>
+        </DialogHeader>
+
+        {renderContent()}
       </DialogContent>
     </Dialog>
   )

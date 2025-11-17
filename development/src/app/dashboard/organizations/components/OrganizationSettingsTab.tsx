@@ -77,7 +77,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
     // Require user to type organization name to confirm
     if (deleteConfirmation !== currentOrganization.name) {
-      alert('Please type the organization name exactly to confirm deletion');
+      toast.error('Please type the organization name exactly to confirm deletion');
       return;
     }
 
@@ -94,18 +94,23 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         const errorMessage = typeof response.error === 'string'
           ? response.error
           : 'Failed to delete organization';
-        alert(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
-      alert('Organization deleted successfully');
+      toast.success('Organization deleted successfully');
+      
+      // Refresh organizations list
       await refreshOrganizations();
       
-      // Redirect to dashboard after deletion
-      window.location.href = '/dashboard';
+      // Redirect to dashboard after short delay to allow state updates
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
     } catch (error) {
       console.error('Error deleting organization:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete organization');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete organization';
+      toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
     }

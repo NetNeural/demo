@@ -52,7 +52,7 @@ export function createOrganizationsAPI(call: <T>(functionName: string, options?:
      */
     update: (organizationId, data) =>
       call(`organizations/${organizationId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
     

@@ -1,26 +1,35 @@
-# Supabase Edge Cron Setup
+# PostgreSQL pg_cron Setup for Auto-Sync
 
 ## Overview
 
-The auto-sync functionality requires a Supabase Edge Cron job to trigger the `auto-sync-cron` function every minute. This checks for scheduled syncs that are due to run and executes them.
+The auto-sync functionality uses **PostgreSQL's pg_cron extension** to trigger the `auto-sync-cron` Edge Function every 5 minutes. This checks for scheduled syncs that are due to run and executes them.
 
 **Important:** This is a **ONE-TIME** setup per Supabase project, not per integration. Once configured, all Golioth integrations automatically use it.
+
+**Requirements:**
+- ✅ Available on all Supabase plans (Free, Pro, Enterprise)
+- ✅ `auto-sync-cron` Edge Function deployed (completed in v3.4.0)
+- ✅ `pg_cron` + `pg_net` extensions enabled (completed in v3.4.0)
+- ✅ **Fully automated** - No manual steps required!
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Supabase Edge Cron (Project-Level Infrastructure)     │
-│  Runs: * * * * * (every minute)                         │
+│  PostgreSQL pg_cron Extension                           │
+│  Schedule: */5 * * * * (every 5 minutes, UTC)           │
+│  Job: auto-sync-cron-job                                │
 └─────────────────────┬───────────────────────────────────┘
                       │
-                      ▼
+                      ▼ (pg_net HTTP POST)
 ┌─────────────────────────────────────────────────────────┐
 │  Edge Function: auto-sync-cron                          │
+│  URL: /functions/v1/auto-sync-cron                      │
+│  Auth: Service role key from Vault                      │
 │  • Queries auto_sync_schedules for enabled schedules    │
 │  • Checks if next_run_at <= NOW()                       │
 │  • Validates time windows                               │
-│  • Executes due syncs                                   │
+│  • Executes due syncs via device-sync function          │
 │  • Updates last_run_at and next_run_at                  │
 └─────────────────────┬───────────────────────────────────┘
                       │
@@ -33,62 +42,109 @@ The auto-sync functionality requires a Supabase Edge Cron job to trigger the `au
 └─────────────────────────────────────────────────────────┘
 ```
 
+**Key Components:**
+- **pg_cron**: PostgreSQL extension for scheduling (built-in, no extra cost)
+- **pg_net**: PostgreSQL extension for HTTP requests
+- **pg_cron_secrets**: Custom secure table for storing credentials (bypasses Vault permission issues)
+
 ## Setup Options
 
-### Option 1: Supabase Dashboard (Current Recommended)
+### ✅ Option 1: PostgreSQL pg_cron (Recommended - Fully Configured!)
 
-**Steps:**
+**Status: Complete! No manual steps required.**
 
-1. Go to your Supabase project dashboard: `https://supabase.com/dashboard/project/YOUR_PROJECT_REF/functions`
+The database migrations have already:
+- ✅ Enabled `pg_cron` and `pg_net` extensions
+- ✅ Created `pg_cron_secrets` table with RLS protection
+- ✅ Stored service role key securely
+- ✅ Created and fixed the cron job `auto-sync-cron-job` (runs every 5 minutes)
+- ✅ Verified cron job is executing successfully
 
-2. Click on the `auto-sync-cron` function
+**Migrations Applied:**
+- `20251117000000_setup_auto_sync_cron.sql` - Initial setup with extensions
+- `20251117000001_fix_cron_secrets.sql` - Custom secrets table (Vault bypass)
+- `20251117000002_fix_cron_query.sql` - Fix cron job to use pg_cron_secrets
 
-3. Navigate to the **"Cron"** tab
+**Verification (Optional):**
 
-4. Enable cron scheduling with:
-   - **Schedule:** `* * * * *` (every minute)
-   - **Enabled:** ✅ Yes
+Run this in Supabase Dashboard SQL Editor to confirm everything is working:
+https://supabase.com/dashboard/project/bldojxpockljyivldxwf/sql/new
 
-5. Save configuration
+```sql
+-- Check secrets are stored
+SELECT name, created_at, updated_at FROM public.pg_cron_secrets;
 
-**When:** Required for production deployment
+-- Check cron job exists and shows correct query
+SELECT jobid, jobname, schedule, active, command FROM cron.job 
+WHERE jobname = 'auto-sync-cron-job';
 
-**Frequency:** ONE-TIME per Supabase project
-
-### Option 2: Supabase CLI (Future - Check Availability)
-
-```bash
-# Check if CLI supports cron scheduling
-supabase functions deploy auto-sync-cron \
-  --project-ref YOUR_PROJECT_REF \
-  --schedule "* * * * *"
+-- Check recent successful runs
+SELECT jobname, status, return_message, start_time, end_time
+FROM cron.job_run_details
+JOIN cron.job ON job.jobid = job_run_details.jobid
+WHERE jobname = 'auto-sync-cron-job'
+ORDER BY start_time DESC
+LIMIT 5;
 ```
 
-**Status:** Not yet verified if supported by Supabase CLI. Check Supabase documentation for latest CLI capabilities.
+**How It Works:**
+- Every 5 minutes, pg_cron triggers the Edge Function via HTTP POST
+- Credentials are retrieved from `pg_cron_secrets` table (not Vault)
+- RLS policies prevent user access (service role only)
+- More reliable than Supabase Vault (no permission issues)
 
-### Option 3: Local Development (Manual Testing)
+**Frequency:** ONE-TIME setup per Supabase project (already done!)
 
-For local development, the cron job doesn't need to be running. You can:
+**Advantages:**
+- ✅ Works on all Supabase plans (Free, Pro, Enterprise)
+- ✅ No manual configuration required
+- ✅ Automatically runs every 5 minutes
+- ✅ Secrets stored securely with RLS
+- ✅ No Vault permission issues
+- ✅ No additional costs
+- ✅ Cron job actively running and tested
 
-1. **Test manually:**
-   ```bash
-   curl http://127.0.0.1:54321/functions/v1/auto-sync-cron
-   ```
+### Option 2: Local Development Testing
 
-2. **Use UI:** Auto-sync schedules are created automatically when you enable sync in the "Sync Settings" tab
+For local development, you can test manually:
+
+```bash
+# Test the function locally
+curl -X POST http://127.0.0.1:54321/functions/v1/auto-sync-cron
+
+# Check auto-sync schedules
+SELECT * FROM auto_sync_schedules WHERE enabled = true;
+```
+
+Auto-sync schedules are created automatically when you enable sync in the Integration "Sync Settings" tab.
 
 3. **Verify schedules:**
    ```sql
    SELECT * FROM auto_sync_schedules WHERE enabled = true;
    ```
 
+4. **Simulate cron locally** (run every minute):
+   ```bash
+   # Linux/Mac
+   watch -n 60 'curl -X POST http://127.0.0.1:54321/functions/v1/auto-sync-cron'
+   
+   # Windows PowerShell
+   while($true) { curl -Method POST http://127.0.0.1:54321/functions/v1/auto-sync-cron; Start-Sleep 60 }
+   ```
+
 ## Verification
 
-### Check if Cron is Running (Production)
+### Check if Scheduler is Running (Production)
 
-1. Go to Supabase Dashboard → Functions → auto-sync-cron → Logs
-2. You should see execution logs every minute
-3. Look for entries like: `"Processing X enabled schedules"`
+1. Go to Supabase Dashboard → Project Settings → Scheduled Jobs
+2. Verify your `auto-sync-cron` job is **Enabled**
+3. Check **Last Run** timestamp updates every minute (or per your schedule)
+
+### Check Function Logs (Production)
+
+1. Go to Supabase Dashboard → Edge Functions → Logs
+2. Filter by function: `auto-sync-cron`
+3. Look for entries like: `"Processing X enabled schedules"` or `"No schedules due to run"`
 
 ### Check Schedule Execution (Database)
 

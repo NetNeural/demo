@@ -25,7 +25,7 @@ import {
   Filter,
   Download
 } from 'lucide-react'
-import { edgeFunctions } from '@/lib/edge-functions'
+import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 import type { Database } from '@/types/supabase'
 
@@ -57,28 +57,35 @@ export function IntegrationActivityLog({
       console.log('[ActivityLog] Loading logs for integration:', integrationId)
       console.log('[ActivityLog] Filters:', { filterDirection, filterStatus, limit })
       
-      // Use edge function to fetch activity logs (include org scope)
-      const response = await edgeFunctions.integrations.getActivityLog(integrationId, {
-        organizationId,
-        limit,
-        direction: filterDirection,
-        status: filterStatus,
-      })
+      // Query database directly using Supabase client
+      const supabase = createClient()
+      let query = supabase
+        .from('integration_activity_log')
+        .select('*')
+        .eq('integration_id', integrationId)
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
 
-      console.log('[ActivityLog] Raw response:', response)
-
-      if (!response.success) {
-        console.error('[ActivityLog] Request failed:', response.error)
-        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load activity logs')
+      // Apply direction filter
+      if (filterDirection !== 'all') {
+        query = query.eq('direction', filterDirection)
       }
 
-      console.log('[ActivityLog] Response data:', response.data)
-      
-      // Extract logs from response
-      const logs = (response.data as any)?.logs || []
-      console.log('[ActivityLog] Loaded logs:', logs.length, logs)
-      
-      setLogs(logs)
+      // Apply status filter
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('[ActivityLog] Database query failed:', error)
+        throw new Error(error.message || 'Failed to load activity logs')
+      }
+
+      console.log('[ActivityLog] Loaded logs:', data?.length || 0, data)
+      setLogs(data || [])
     } catch (error) {
       console.error('[ActivityLog] Failed to load activity logs:', error)
     } finally {

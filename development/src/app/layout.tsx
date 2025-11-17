@@ -2,7 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from 'sonner'
 import { SentryInit } from '@/components/SentryInit'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -33,7 +33,7 @@ export default function RootLayout({
         <SentryInit />
         <Providers>
           {children}
-          <Toaster />
+          <Toaster theme="system" richColors />
         </Providers>
       </body>
     </html>

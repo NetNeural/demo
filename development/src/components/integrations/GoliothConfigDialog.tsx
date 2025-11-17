@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,6 @@ import { toast } from 'sonner'
 import { IntegrationActivityLog } from './IntegrationActivityLog'
 import { IntegrationStatusToggle } from './IntegrationStatusToggle'
 import { IntegrationSyncTab } from './IntegrationSyncTab'
-import { IntegrationAutoSync } from './IntegrationAutoSync'
 
 interface GoliothConfig {
   id?: string
@@ -39,6 +39,7 @@ interface Props {
   integrationId?: string
   organizationId: string
   onSaved?: () => void
+  mode?: 'dialog' | 'page' // 'dialog' for modal overlay, 'page' for inline rendering
 }
 
 export function GoliothConfigDialog({ 
@@ -46,7 +47,8 @@ export function GoliothConfigDialog({
   onOpenChange, 
   integrationId, 
   organizationId,
-  onSaved 
+  onSaved,
+  mode = 'dialog' // Default to dialog mode for backward compatibility
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -82,20 +84,25 @@ export function GoliothConfigDialog({
       const data = responseData?.integrations?.find((i: any) => i.id === integrationId)
 
       if (data) {
+        console.log('[GoliothConfigDialog] Loaded integration data:', data)
+        console.log('[GoliothConfigDialog] webhook_url:', data.webhook_url)
+        console.log('[GoliothConfigDialog] webhook_secret:', data.webhook_secret)
+        console.log('[GoliothConfigDialog] settings:', data.settings)
+        
         setConfig({
           id: data.id,
           name: data.name,
           api_key: data.settings?.apiKey || '',
-          project_id: data.projectId || '',
-          base_url: data.baseUrl || 'https://api.golioth.io/v1',
+          project_id: data.settings?.projectId || data.projectId || '',
+          base_url: data.settings?.baseUrl || data.baseUrl || 'https://api.golioth.io/v1',
           status: (data.status as 'active' | 'inactive' | 'not-configured') || 'not-configured',
           sync_enabled: data.settings?.syncEnabled || false,
-          sync_interval_seconds: data.sync_interval_seconds || 300,
-          sync_direction: (data.sync_direction as 'import' | 'export' | 'bidirectional') || 'bidirectional',
-          conflict_resolution: (data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
-          webhook_enabled: data.webhook_enabled || false,
-          webhook_secret: data.webhook_secret || '',
-          webhook_url: data.webhook_url || '',
+          sync_interval_seconds: data.settings?.syncIntervalSeconds || data.sync_interval_seconds || 300,
+          sync_direction: (data.settings?.syncDirection || data.sync_direction as 'import' | 'export' | 'bidirectional') || 'bidirectional',
+          conflict_resolution: (data.settings?.conflictResolution || data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
+          webhook_enabled: data.settings?.webhookEnabled || data.webhook_enabled || false,
+          webhook_secret: data.settings?.webhookSecret || data.webhook_secret || '',
+          webhook_url: data.settings?.webhookUrl || data.webhook_url || '',
         })
       }
     } catch (error) {
@@ -224,11 +231,26 @@ export function GoliothConfigDialog({
           
           throw new Error(errorMsg)
         }
+
+        // Update local state with the newly created integration data
+        const newIntegration = response.data as any
+        if (newIntegration) {
+          setConfig({
+            ...config,
+            id: newIntegration.id,
+            webhook_url: newIntegration.webhook_url || '',
+            webhook_secret: newIntegration.webhook_secret || '',
+          })
+          
+          // Update the URL to reflect the new integration ID
+          const url = new URL(window.location.href)
+          url.searchParams.set('id', newIntegration.id)
+          window.history.replaceState({}, '', url.toString())
+        }
       }
 
       toast.success('Configuration saved successfully')
       onSaved?.()
-      onOpenChange(false)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save configuration'
       toast.error(errorMessage)
@@ -238,24 +260,17 @@ export function GoliothConfigDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-900">
-            {integrationId ? 'Edit' : 'Add'} Golioth Integration
-          </DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
+  // Extract content into reusable component for both dialog and page modes
+  const renderContent = () => (
+    <>
+      <Tabs defaultValue="general" className="w-full">
+          <TabsList className="w-full justify-start">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="sync-settings">Sync Settings</TabsTrigger>
-            <TabsTrigger value="sync" disabled={!integrationId}>Run Sync</TabsTrigger>
-            <TabsTrigger value="auto-sync" disabled={!integrationId}>Auto-Sync</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+            <TabsTrigger value="sync-settings">Sync Settings</TabsTrigger>
+            <TabsTrigger value="sync">Run Sync</TabsTrigger>
             <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
-            <TabsTrigger value="activity" disabled={!integrationId}>Activity Log</TabsTrigger>
+            <TabsTrigger value="activity">Activity Log</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
@@ -404,6 +419,29 @@ export function GoliothConfigDialog({
                 Choose how devices should be synchronized
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="conflict-resolution">Conflict Resolution</Label>
+              <Select
+                value={config.conflict_resolution}
+                onValueChange={(value: any) => 
+                  setConfig({ ...config, conflict_resolution: value })
+                }
+              >
+                <SelectTrigger id="conflict-resolution">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Manual (Require user resolution)</SelectItem>
+                  <SelectItem value="local_wins">Local Wins (NetNeural takes priority)</SelectItem>
+                  <SelectItem value="remote_wins">Remote Wins (Golioth takes priority)</SelectItem>
+                  <SelectItem value="newest_wins">Newest Wins (Latest update wins)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                How to handle conflicts when a device is modified in both systems
+              </p>
+            </div>
           </TabsContent>
 
           {/* Conflicts Tab */}
@@ -447,49 +485,116 @@ export function GoliothConfigDialog({
           </TabsContent>
 
           {/* Webhooks Tab */}
-          <TabsContent value="webhooks" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Enable Webhooks</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive real-time updates from Golioth
-                </p>
+          <TabsContent value="webhooks" className="space-y-6">
+            {/* Golioth Pipeline Configuration */}
+            <div className="space-y-3 rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-full bg-primary/10 p-1.5">
+                    <AlertCircle className="h-4 w-4 text-primary" />
+                  </div>
+                  <Label className="text-base font-semibold">🔧 Golioth Pipeline Configuration</Label>
+                </div>
+                {(integrationId || config.id) && config.webhook_url && config.webhook_secret && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const pipelineConfig = `# Golioth Pipeline Configuration for ${config.name}
+# Add this to your Golioth project pipeline settings
+
+name: netneural-integration
+description: Send device events to NetNeural IoT Platform
+
+# Webhook Configuration
+webhook:
+  url: ${config.webhook_url}
+  method: POST
+  headers:
+    Content-Type: application/json
+    X-Integration-ID: ${integrationId || config.id}
+    X-Golioth-Signature: "{{hmac_sha256}}"
+  
+# Event Triggers (customize as needed)
+triggers:
+  - device.created
+  - device.updated
+  - device.deleted
+  - device.status_changed
+  - device.online
+  - device.offline
+  - device.telemetry
+
+# Payload Template
+payload:
+  event: "{{event.type}}"
+  device_id: "{{device.id}}"
+  device_name: "{{device.name}}"
+  timestamp: "{{event.timestamp}}"
+  data: "{{event.data}}"
+
+# Security
+signing_secret: ${config.webhook_secret}
+signature_header: X-Golioth-Signature
+signature_algorithm: HMAC-SHA256`
+                      
+                      navigator.clipboard.writeText(pipelineConfig)
+                      toast.success('Pipeline configuration copied to clipboard!')
+                    }}
+                  >
+                    📋 Copy Pipeline Config
+                  </Button>
+                )}
               </div>
-              <Switch
-                checked={config.webhook_enabled}
-                onCheckedChange={(checked) => 
-                  setConfig({ ...config, webhook_enabled: checked })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="webhook-url">Webhook URL (Auto-generated)</Label>
-              <Input
-                id="webhook-url"
-                value={config.webhook_url}
-                readOnly
-                className="bg-muted cursor-default"
-                placeholder="Will be auto-generated when saved"
-              />
               <p className="text-sm text-muted-foreground">
-                ✨ This URL is automatically generated. Configure it in your Golioth project settings.
+                {(integrationId || config.id) && config.webhook_url && config.webhook_secret 
+                  ? 'Copy the complete pipeline configuration for your Golioth project. This includes webhook URL, authentication, and event triggers.'
+                  : 'Save this integration first to generate your webhook URL and secret, then copy the pipeline configuration.'}
               </p>
-            </div>
+              <pre className="rounded-lg bg-slate-950 p-4 text-xs text-slate-50 overflow-x-auto">
+{(integrationId || config.id) && config.webhook_url && config.webhook_secret ? (
+`# Golioth Pipeline Configuration for ${config.name}
 
-            <div className="space-y-2">
-              <Label htmlFor="webhook-secret">Webhook Secret (Auto-generated)</Label>
-              <Input
-                id="webhook-secret"
-                type="password"
-                value={config.webhook_secret}
-                readOnly
-                className="bg-muted cursor-default"
-                placeholder="Will be auto-generated when saved"
-              />
-              <p className="text-sm text-muted-foreground">
-                ✨ Securely generated for HMAC SHA-256 signature verification
-              </p>
+webhook:
+  url: ${config.webhook_url}
+  method: POST
+  headers:
+    Content-Type: application/json
+    X-Integration-ID: ${integrationId || config.id}
+    X-Golioth-Signature: "{{hmac_sha256}}"
+  
+triggers:
+  - device.created
+  - device.updated
+  - device.deleted
+  - device.status_changed
+  - device.online
+  - device.offline
+  - device.telemetry
+  
+signing_secret: ${config.webhook_secret}
+signature_algorithm: HMAC-SHA256`
+) : (
+`# Golioth Pipeline Configuration for ${config.name || 'NetNeural Integration'}
+
+webhook:
+  url: <WILL_BE_GENERATED_AFTER_SAVE>
+  method: POST
+  headers:
+    Content-Type: application/json
+    X-Integration-ID: <WILL_BE_GENERATED_AFTER_SAVE>
+    X-Golioth-Signature: "{{hmac_sha256}}"
+  
+triggers:
+  - device.created
+  - device.updated  
+  - device.telemetry
+  - device.state_changed
+  
+signing_secret: <WILL_BE_GENERATED_AFTER_SAVE>
+signature_algorithm: HMAC-SHA256`
+)}
+              </pre>
             </div>
           </TabsContent>
 
@@ -501,18 +606,6 @@ export function GoliothConfigDialog({
                 organizationId={organizationId}
                 integrationType="golioth"
                 integrationName={config.name}
-              />
-            </TabsContent>
-          )}
-
-          {/* Auto-Sync Tab */}
-          {integrationId && (
-            <TabsContent value="auto-sync" className="space-y-4">
-              <IntegrationAutoSync
-                integrationId={integrationId}
-                organizationId={organizationId}
-                integrationType="golioth"
-                availableDirections={['import', 'export', 'bidirectional']}
               />
             </TabsContent>
           )}
@@ -530,18 +623,53 @@ export function GoliothConfigDialog({
           )}
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={saveConfig} 
-            disabled={loading || !config.name.trim() || !config.api_key.trim() || !config.project_id.trim()}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Configuration
-          </Button>
+      <div className="flex justify-end gap-2 pt-4 border-t">
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={saveConfig} 
+          disabled={loading || !config.name.trim() || !config.api_key.trim() || !config.project_id.trim()}
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Configuration
+        </Button>
+      </div>
+    </>
+  )
+
+  // Render as page or dialog based on mode
+  if (mode === 'page') {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {integrationId ? 'Edit' : 'Add'} Golioth Integration
+            </h2>
+            <p className="text-muted-foreground">Configure your Golioth integration settings</p>
+          </div>
         </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-white">
+        <DialogHeader>
+          <DialogTitle className="text-gray-900 dark:text-gray-900">
+            {integrationId ? 'Edit' : 'Add'} Golioth Integration
+          </DialogTitle>
+        </DialogHeader>
+
+        {renderContent()}
       </DialogContent>
     </Dialog>
   )

@@ -1,6 +1,6 @@
 -- Create device_conflicts table for bidirectional sync conflict management
 CREATE TABLE IF NOT EXISTS "public"."device_conflicts" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL PRIMARY KEY,
     "device_id" "uuid" NOT NULL,
     "sync_log_id" "uuid",
     "conflict_type" character varying(100) NOT NULL,
@@ -30,25 +30,45 @@ COMMENT ON TABLE "public"."device_conflicts" IS 'Stores conflicts detected durin
 -- Add column comment
 COMMENT ON COLUMN "public"."device_conflicts"."resolution_strategy" IS 'How conflict was resolved: local_wins, remote_wins, merge, manual';
 
--- Add primary key
-ALTER TABLE ONLY "public"."device_conflicts"
-    ADD CONSTRAINT "device_conflicts_pkey" PRIMARY KEY ("id");
-
 -- Add foreign keys
-ALTER TABLE ONLY "public"."device_conflicts"
-    ADD CONSTRAINT "device_conflicts_device_id_fkey" FOREIGN KEY ("device_id") REFERENCES "public"."devices"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE ONLY "public"."device_conflicts"
+        ADD CONSTRAINT "device_conflicts_device_id_fkey" FOREIGN KEY ("device_id") REFERENCES "public"."devices"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN
+    NULL;
+END $$;
 
-ALTER TABLE ONLY "public"."device_conflicts"
-    ADD CONSTRAINT "device_conflicts_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+DO $$ BEGIN
+    ALTER TABLE ONLY "public"."device_conflicts"
+        ADD CONSTRAINT "device_conflicts_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN
+    NULL;
+END $$;
 
 -- Create indexes for performance
-CREATE INDEX "idx_conflicts_created" ON "public"."device_conflicts" USING "btree" ("created_at" DESC);
+DO $$ BEGIN
+    CREATE INDEX "idx_conflicts_created" ON "public"."device_conflicts" USING "btree" ("created_at" DESC);
+EXCEPTION WHEN duplicate_table THEN
+    NULL;
+END $$;
 
-CREATE INDEX "idx_conflicts_device" ON "public"."device_conflicts" USING "btree" ("device_id", "resolution_status");
+DO $$ BEGIN
+    CREATE INDEX "idx_conflicts_device" ON "public"."device_conflicts" USING "btree" ("device_id", "resolution_status");
+EXCEPTION WHEN duplicate_table THEN
+    NULL;
+END $$;
 
-CREATE INDEX "idx_conflicts_pending" ON "public"."device_conflicts" USING "btree" ("resolution_status") WHERE (("resolution_status")::"text" = 'pending'::"text");
+DO $$ BEGIN
+    CREATE INDEX "idx_conflicts_pending" ON "public"."device_conflicts" USING "btree" ("resolution_status") WHERE (("resolution_status")::"text" = 'pending'::"text");
+EXCEPTION WHEN duplicate_table THEN
+    NULL;
+END $$;
 
-CREATE INDEX "idx_conflicts_sync_log" ON "public"."device_conflicts" USING "btree" ("sync_log_id") WHERE ("sync_log_id" IS NOT NULL);
+DO $$ BEGIN
+    CREATE INDEX "idx_conflicts_sync_log" ON "public"."device_conflicts" USING "btree" ("sync_log_id") WHERE ("sync_log_id" IS NOT NULL);
+EXCEPTION WHEN duplicate_table THEN
+    NULL;
+END $$;
 
 -- Enable RLS
 ALTER TABLE "public"."device_conflicts" ENABLE ROW LEVEL SECURITY;

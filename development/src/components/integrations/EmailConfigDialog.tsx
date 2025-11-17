@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,6 +29,7 @@ interface Props {
   integrationId?: string
   organizationId: string
   onSaved?: () => void
+  mode?: 'dialog' | 'page'
 }
 
 export function EmailConfigDialog({ 
@@ -35,7 +37,8 @@ export function EmailConfigDialog({
   onOpenChange, 
   integrationId, 
   organizationId,
-  onSaved 
+  onSaved,
+  mode = 'dialog'
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -180,16 +183,10 @@ export function EmailConfigDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-900">
-            {integrationId ? 'Edit' : 'Add'} Email (SMTP) Integration
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
+  // Extract content into reusable component for both dialog and page modes
+  const renderContent = () => (
+    <>
+      <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Integration Name *</Label>
             <Input
@@ -292,25 +289,60 @@ export function EmailConfigDialog({
           </div>
         )}
 
-        <DialogFooter>
-          {integrationId && (
-            <Button 
-              variant="secondary" 
-              onClick={handleTest} 
-              disabled={testing || loading}
-            >
-              {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send Test Email
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+      <div className="flex justify-end gap-2 pt-4 border-t">
+        {integrationId && (
+          <Button 
+            variant="secondary" 
+            onClick={handleTest} 
+            disabled={testing || loading}
+          >
+            {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Test Email
           </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Configuration
-          </Button>
-        </DialogFooter>
+        )}
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Configuration
+        </Button>
+      </div>
+    </>
+  )
+
+  // Render as page or dialog based on mode
+  if (mode === 'page') {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {integrationId ? 'Edit' : 'Add'} Email (SMTP) Integration
+            </h2>
+            <p className="text-muted-foreground">Configure your email notification settings</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-white dark:bg-white">
+        <DialogHeader>
+          <DialogTitle className="text-gray-900 dark:text-gray-900">
+            {integrationId ? 'Edit' : 'Add'} Email (SMTP) Integration
+          </DialogTitle>
+        </DialogHeader>
+
+        {renderContent()}
       </DialogContent>
     </Dialog>
   )

@@ -81,8 +81,18 @@ export function AddMemberDialog({
       return;
     }
 
-    try {
+      try {
       setIsProcessing(true);
+
+      // Validate organization exists and user has permission
+      if (!organizationId) {
+        toast({
+          title: 'Error',
+          description: 'Organization ID is required',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       // If we already know user needs to be created and we have the full name, create them first
       if (needsUserCreation && fullName) {

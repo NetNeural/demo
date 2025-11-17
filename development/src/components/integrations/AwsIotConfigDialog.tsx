@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +41,7 @@ interface Props {
   integrationId?: string
   organizationId: string
   onSaved?: () => void
+  mode?: 'dialog' | 'page' // 'dialog' for modal overlay, 'page' for inline rendering
 }
 
 const AWS_REGIONS = [
@@ -58,7 +60,8 @@ export function AwsIotConfigDialog({
   onOpenChange, 
   integrationId, 
   organizationId,
-  onSaved 
+  onSaved,
+  mode = 'dialog' // Default to dialog mode for backward compatibility
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -232,22 +235,18 @@ export function AwsIotConfigDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>AWS IoT Core Integration</DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="sync">Sync Settings</TabsTrigger>
-            <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
-            <TabsTrigger value="activity">Activity Log</TabsTrigger>
-          </TabsList>
+  // Extract content into reusable component for both dialog and page modes
+  const renderContent = () => (
+    <>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="sync">Sync Settings</TabsTrigger>
+          <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+          <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+        </TabsList>
 
           {/* General Tab */}
           <TabsContent value="general" className="space-y-4">
@@ -526,18 +525,51 @@ export function AwsIotConfigDialog({
           )}
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={saveConfig} 
-            disabled={loading || !config.name.trim() || !config.access_key_id.trim() || !config.secret_access_key.trim()}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Configuration
-          </Button>
+      <div className="flex justify-end gap-2 pt-4 border-t">
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={saveConfig} 
+          disabled={loading || !config.name.trim() || !config.access_key_id.trim() || !config.secret_access_key.trim()}
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Configuration
+        </Button>
+      </div>
+    </>
+  )
+
+  // Render as page or dialog based on mode
+  if (mode === 'page') {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {integrationId ? 'Edit' : 'Add'} AWS IoT Core Integration
+            </h2>
+            <p className="text-muted-foreground">Configure your AWS IoT Core integration settings</p>
+          </div>
         </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            {renderContent()}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>AWS IoT Core Integration</DialogTitle>
+        </DialogHeader>
+
+        {renderContent()}
       </DialogContent>
     </Dialog>
   )

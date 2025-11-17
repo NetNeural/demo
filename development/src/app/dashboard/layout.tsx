@@ -39,10 +39,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <span className="nav-icon">📱</span>
             Devices
           </Link>
-          <Link href="/dashboard/integrations" className="nav-item">
-            <span className="nav-icon">🔌</span>
-            Integrations
-          </Link>
           <Link href="/dashboard/alerts" className="nav-item">
             <span className="nav-icon">🚨</span>
             Alerts

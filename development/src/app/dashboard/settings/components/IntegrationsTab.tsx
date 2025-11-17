@@ -42,6 +42,7 @@ const INTEGRATION_TYPES = [
     value: 'golioth',
     label: '🌐 Golioth',
     icon: '🌐',
+    category: 'device',
     description: 'Connect to Golioth IoT platform for device management, OTA updates, and cloud services',
     purpose: 'Device Management & Cloud Sync',
     requiredFields: ['API Key', 'Project ID'],
@@ -51,6 +52,7 @@ const INTEGRATION_TYPES = [
     value: 'aws_iot',
     label: '☁️ AWS IoT Core',
     icon: '☁️',
+    category: 'device',
     description: 'Integrate with Amazon Web Services IoT Core for scalable device connectivity',
     purpose: 'Enterprise Cloud IoT',
     requiredFields: ['Region', 'Access Key ID', 'Secret Access Key'],
@@ -60,6 +62,7 @@ const INTEGRATION_TYPES = [
     value: 'azure_iot',
     label: '🔵 Azure IoT Hub',
     icon: '🔵',
+    category: 'device',
     description: 'Connect to Microsoft Azure IoT Hub for enterprise-grade IoT solutions',
     purpose: 'Microsoft Cloud Integration',
     requiredFields: ['Connection String', 'Hub Name'],
@@ -69,6 +72,7 @@ const INTEGRATION_TYPES = [
     value: 'email',
     label: '📧 Email (SMTP)',
     icon: '📧',
+    category: 'notification',
     description: 'Send email notifications and alerts via SMTP server',
     purpose: 'Email Notifications',
     requiredFields: ['SMTP Host', 'Port', 'Username', 'Password'],
@@ -78,6 +82,7 @@ const INTEGRATION_TYPES = [
     value: 'slack',
     label: '💬 Slack',
     icon: '💬',
+    category: 'notification',
     description: 'Send real-time notifications to Slack channels for team collaboration',
     purpose: 'Team Messaging',
     requiredFields: ['Webhook URL', 'Channel'],
@@ -87,6 +92,7 @@ const INTEGRATION_TYPES = [
     value: 'webhook',
     label: '🔗 Custom Webhook',
     icon: '🔗',
+    category: 'custom',
     description: 'Send HTTP POST requests to custom endpoints for event-driven integrations',
     purpose: 'Custom Integrations',
     requiredFields: ['Webhook URL'],
@@ -96,6 +102,7 @@ const INTEGRATION_TYPES = [
     value: 'mqtt',
     label: '📡 MQTT Broker',
     icon: '📡',
+    category: 'device',
     description: 'Connect to MQTT broker for pub/sub messaging with IoT devices',
     purpose: 'Device Messaging',
     requiredFields: ['Broker URL', 'Port'],
@@ -105,7 +112,8 @@ const INTEGRATION_TYPES = [
     value: 'netneural_hub',
     label: '🚀 NetNeural Hub',
     icon: '🚀',
-    description: 'Multi-protocol hub for NetNeural custom devices (nRF9151, nRF52840, VMark, Universal Sensor)',
+    category: 'device',
+    description: 'Multi-protocol hub for NetNeural custom devices (nRF9161, nRF52840, VMark, Universal Sensor)',
     purpose: 'Custom Device Management',
     requiredFields: ['Protocol Endpoints'],
     useCases: 'Direct device communication, protocol optimization, custom firmware support, edge processing'
@@ -573,6 +581,7 @@ export default function IntegrationsTab({
                           size="sm"
                           variant={integration.status === 'not-configured' ? 'default' : 'outline'}
                           onClick={() => {
+                            // All integrations use view page for consistency
                             router.push(`/dashboard/integrations/view?id=${integration.id}&organizationId=${selectedOrganization}&type=${integration.type}`);
                           }}
                           className="flex-1"
@@ -854,9 +863,9 @@ export default function IntegrationsTab({
 
       {/* Add Integration Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="bg-white dark:bg-white">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-gray-900">Add New Integration</DialogTitle>
+            <DialogTitle>Add New Integration</DialogTitle>
             <DialogDescription>
               Select an integration type and configure it for your organization
             </DialogDescription>
@@ -870,7 +879,31 @@ export default function IntegrationsTab({
                   <SelectValue placeholder="Select integration type..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {INTEGRATION_TYPES.map((type) => (
+                  {/* Device Integrations */}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                    📱 Device Integrations
+                  </div>
+                  {INTEGRATION_TYPES.filter(t => t.category === 'device').map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                  
+                  {/* Notification Integrations */}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                    🔔 Notifications
+                  </div>
+                  {INTEGRATION_TYPES.filter(t => t.category === 'notification').map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                  
+                  {/* Custom Integrations */}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                    ⚙️ Custom
+                  </div>
+                  {INTEGRATION_TYPES.filter(t => t.category === 'custom').map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -881,7 +914,7 @@ export default function IntegrationsTab({
 
             {/* Show integration description when type is selected */}
             {newIntegrationType && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
                 {(() => {
                   const selectedType = INTEGRATION_TYPES.find(t => t.value === newIntegrationType);
                   if (!selectedType) return null;
@@ -891,25 +924,25 @@ export default function IntegrationsTab({
                       <div className="flex items-start gap-2">
                         <span className="text-2xl">{selectedType.icon}</span>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-blue-900">{selectedType.label}</h4>
-                          <p className="text-sm text-blue-800 mt-1">{selectedType.description}</p>
+                          <h4 className="font-semibold text-blue-900 dark:text-blue-100">{selectedType.label}</h4>
+                          <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">{selectedType.description}</p>
                         </div>
                       </div>
                       
-                      <div className="mt-3 pt-3 border-t border-blue-300">
+                      <div className="mt-3 pt-3 border-t border-blue-300 dark:border-blue-700">
                         <div className="grid grid-cols-2 gap-3 text-xs">
                           <div>
-                            <span className="font-medium text-blue-900">Purpose:</span>
-                            <p className="text-blue-700">{selectedType.purpose}</p>
+                            <span className="font-medium text-blue-900 dark:text-blue-100">Purpose:</span>
+                            <p className="text-blue-700 dark:text-blue-300">{selectedType.purpose}</p>
                           </div>
                           <div>
-                            <span className="font-medium text-blue-900">Required Fields:</span>
-                            <p className="text-blue-700">{selectedType.requiredFields.join(', ')}</p>
+                            <span className="font-medium text-blue-900 dark:text-blue-100">Required Fields:</span>
+                            <p className="text-blue-700 dark:text-blue-300">{selectedType.requiredFields.join(', ')}</p>
                           </div>
                         </div>
                         <div className="mt-2">
-                          <span className="font-medium text-blue-900">Use Cases:</span>
-                          <p className="text-blue-700">{selectedType.useCases}</p>
+                          <span className="font-medium text-blue-900 dark:text-blue-100">Use Cases:</span>
+                          <p className="text-blue-700 dark:text-blue-300">{selectedType.useCases}</p>
                         </div>
                       </div>
                     </>
@@ -948,47 +981,11 @@ export default function IntegrationsTab({
             </Button>
             <Button 
               onClick={() => {
-                // Close the add modal and open the appropriate config dialog
+                // Close the add modal and navigate directly to configuration page
                 setShowAddModal(false);
                 
-                // Route to appropriate config dialog based on type
-                switch (newIntegrationType) {
-                  case 'golioth':
-                    setSelectedIntegration(null); // null means creating new
-                    setShowGoliothConfig(true);
-                    break;
-                  case 'aws_iot':
-                    setSelectedIntegration(null);
-                    setShowAwsIotConfig(true);
-                    break;
-                  case 'azure_iot':
-                    setSelectedIntegration(null);
-                    setShowAzureIotConfig(true);
-                    break;
-                  case 'email':
-                    setSelectedIntegration(null);
-                    setShowEmailConfig(true);
-                    break;
-                  case 'slack':
-                    setSelectedIntegration(null);
-                    setShowSlackConfig(true);
-                    break;
-                  case 'webhook':
-                    setSelectedIntegration(null);
-                    setShowWebhookConfig(true);
-                    break;
-                  case 'mqtt':
-                    setSelectedIntegration(null);
-                    setShowMqttConfig(true);
-                    break;
-                  case 'netneural_hub':
-                    setSelectedIntegration(null);
-                    setShowNetNeuralHubConfig(true);
-                    break;
-                  default:
-                    // Fallback to old method for unknown types
-                    handleAddIntegration();
-                }
+                // All integrations use view page for consistency
+                router.push(`/dashboard/integrations/view?id=new&organizationId=${selectedOrganization}&type=${newIntegrationType}`);
               }}
               disabled={!newIntegrationType}
             >
@@ -1082,9 +1079,14 @@ export default function IntegrationsTab({
             onOpenChange={setShowMqttConfig}
             integrationId={selectedIntegration?.id}
             organizationId={selectedOrganization}
-            onSaved={() => {
+            onSaved={(integrationId) => {
               setShowMqttConfig(false);
-              loadIntegrations();
+              if (integrationId) {
+                // Navigate to dedicated MQTT page
+                router.push(`/dashboard/integrations/mqtt/${integrationId}?organizationId=${selectedOrganization}`);
+              } else {
+                loadIntegrations();
+              }
             }}
           />
 

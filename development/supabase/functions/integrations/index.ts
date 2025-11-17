@@ -343,6 +343,12 @@ export default createEdgeFunction(async ({ req }) => {
             status: integration.status,
             projectId: integration.project_id,
             baseUrl: integration.base_url,
+            webhook_url: integration.webhook_url,
+            webhook_secret: integration.webhook_secret,
+            webhook_enabled: integration.webhook_enabled,
+            sync_direction: integration.sync_direction,
+            sync_interval_seconds: integration.sync_interval_seconds,
+            conflict_resolution: integration.conflict_resolution,
             deviceCount: deviceCount || 0,
             settings: {
               ...(integration.settings || {}),
@@ -768,14 +774,14 @@ export default createEdgeFunction(async ({ req }) => {
     if (req.method === 'POST') {
       // Create new integration
       const body = await req.json()
-      const { organization_id, integration_type, name, settings, api_key, project_id, base_url } = body
+      const { organization_id, integration_type, name, settings, api_key, project_id, base_url, broker_type } = body
 
       if (!organization_id || !integration_type || !name) {
         throw new DatabaseError('Missing required fields: organization_id, integration_type, name', 400)
       }
 
       // Validate integration type
-      const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt', 'netneural_hub']
+      const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt', 'mqtt_hosted', 'mqtt_external', 'netneural_hub']
       if (!validTypes.includes(integration_type)) {
         throw new DatabaseError(`Invalid integration_type. Must be one of: ${validTypes.join(', ')}`, 400)
       }
@@ -794,19 +800,22 @@ export default createEdgeFunction(async ({ req }) => {
       const finalProjectId = project_id || settings?.projectId || settings?.project_id
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
 
+      // Build insert object
+      const insertData: any = {
+        organization_id,
+        integration_type,
+        name,
+        settings: settings || {},
+        api_key_encrypted: finalApiKey, // TODO: Encrypt this properly
+        project_id: finalProjectId,
+        base_url: finalBaseUrl,
+        status: 'active'
+      }
+
       // Create integration - RLS will enforce permissions
       const { data: newIntegration, error } = await supabase
         .from('device_integrations')
-        .insert({
-          organization_id,
-          integration_type,
-          name,
-          settings: settings || {},
-          api_key_encrypted: finalApiKey, // TODO: Encrypt this properly
-          project_id: finalProjectId,
-          base_url: finalBaseUrl,
-          status: 'active'
-        } as any)
+        .insert(insertData)
         .select()
         .single()
 

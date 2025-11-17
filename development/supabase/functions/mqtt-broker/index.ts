@@ -154,6 +154,22 @@ async function publishMessages(
         
         results.messages_succeeded++
         
+        // Log to activity log
+        await supabase.from('integration_activity_log').insert({
+          organization_id: organizationId,
+          integration_id: integrationId,
+          type: 'mqtt_publish',
+          direction: 'outgoing',
+          status: 'completed',
+          message: `Published message to ${msg.topic}`,
+          metadata: {
+            topic: msg.topic,
+            qos: msg.qos || 0,
+            retain: msg.retain || false,
+            payload_length: payload.length,
+          },
+        })
+        
         // Log message to notification_log
         await supabase.from('notification_log').insert({
           organization_id: organizationId,
@@ -172,6 +188,20 @@ async function publishMessages(
         results.messages_failed++
         const errorMsg = error instanceof Error ? error.message : 'Unknown error'
         results.errors.push(`${msg.topic}: ${errorMsg}`)
+        
+        // Log to activity log
+        await supabase.from('integration_activity_log').insert({
+          organization_id: organizationId,
+          integration_id: integrationId,
+          type: 'mqtt_publish',
+          direction: 'outgoing',
+          status: 'failed',
+          message: `Failed to publish to ${msg.topic}`,
+          metadata: {
+            topic: msg.topic,
+            error: errorMsg,
+          },
+        })
         
         // Log error
         await supabase.from('notification_log').insert({
@@ -249,6 +279,21 @@ async function subscribeToTopics(
           })
         }
         
+        // Log receipt to activity log
+        await supabase.from('integration_activity_log').insert({
+          organization_id: organizationId,
+          integration_id: integrationId,
+          type: 'mqtt_message',
+          direction: 'incoming',
+          status: 'completed',
+          message: `Received message on ${topic}`,
+          metadata: {
+            topic,
+            payload_length: message.length,
+            payload_preview: message.substring(0, 100),
+          },
+        })
+        
         // Log receipt
         await supabase.from('notification_log').insert({
           organization_id: organizationId,
@@ -267,6 +312,20 @@ async function subscribeToTopics(
     })
     
     results.topics_succeeded = topics.length
+    
+    // Log to activity log
+    await supabase.from('integration_activity_log').insert({
+      organization_id: organizationId,
+      integration_id: integrationId,
+      activity_type: 'mqtt_subscription_created',
+      direction: 'incoming',
+      status: 'success',
+      message: `Subscribed to ${topics.length} topic(s)`,
+      metadata: {
+        topics,
+        topics_count: topics.length,
+      },
+    })
     
     // Log subscription
     await supabase.from('notification_log').insert({

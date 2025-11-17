@@ -75,15 +75,11 @@ export function WebhookConfigDialog({
     : 'https://your-project.supabase.co/functions/v1/integration-webhook'
 
   const openApiSpec = {
-    openapi: '3.0.3',
+    openapi: '3.0.0',
     info: {
       title: 'NetNeural Webhook Receiver API',
       version: '1.0.0',
-      description: 'Webhook endpoint on NetNeural platform to receive events from external IoT platforms like Golioth, AWS IoT, Azure IoT Hub, and custom MQTT brokers.',
-      contact: {
-        name: 'NetNeural Support',
-        url: 'https://netneural.io/support',
-      },
+      description: 'Webhook endpoint on NetNeural platform to receive events from external IoT platforms',
     },
     servers: [
       {
@@ -95,27 +91,38 @@ export function WebhookConfigDialog({
       '/': {
         post: {
           summary: 'Receive webhook from external platform',
-          description: `This endpoint receives webhook events from external IoT platforms and automatically manages device lifecycle.
-          
-**Device Management:**
-- **Auto-create**: If device ID hasn't been seen before, a new device will be created automatically
-- **Auto-update**: If device ID exists, the device will be updated with new data
-- **Upsert behavior**: All event types support create-if-not-exists functionality
-
-**Supported Event Types:**
-- \`device.created\`: Explicitly create a new device
-- \`device.updated\`: Update existing device or create if not found
-- \`device.deleted\`: Mark device as offline
-- \`device.status_changed\`: Update device status (creates if not found)
-- \`device.telemetry\`: Update device with telemetry data (creates if not found)
-- \`device.online\`: Set device status to online
-- \`device.offline\`: Set device status to offline
-
-**Headers:**
-- **X-Integration-ID** (required): Your integration ID to route webhook to correct integration
-- **X-Webhook-Signature** (optional): HMAC SHA-256 signature for verification if secret is configured`,
-          operationId: 'receiveWebhook',
-          tags: ['Webhooks'],
+          description: 'This endpoint receives webhook events from external IoT platforms (Golioth, AWS IoT, etc.)',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    event: {
+                      type: 'string',
+                      enum: ['device.created', 'device.updated', 'device.deleted', 'device.status_changed', 'device.telemetry'],
+                      description: 'Event type',
+                    },
+                    timestamp: {
+                      type: 'string',
+                      format: 'date-time',
+                      description: 'Event timestamp',
+                    },
+                    device: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', description: 'Device ID' },
+                        name: { type: 'string', description: 'Device name' },
+                        status: { type: 'string', description: 'Device status' },
+                        metadata: { type: 'object', description: 'Device metadata' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           parameters: [
             {
               name: 'X-Integration-ID',
@@ -123,8 +130,6 @@ export function WebhookConfigDialog({
               required: true,
               schema: {
                 type: 'string',
-                format: 'uuid',
-                example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
               },
               description: 'Your integration ID from NetNeural (required to route webhook to correct integration)',
             },
@@ -134,182 +139,22 @@ export function WebhookConfigDialog({
               required: false,
               schema: {
                 type: 'string',
-                example: 'a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5',
               },
               description: 'HMAC SHA-256 signature of request body (required only if webhook secret is configured)',
             },
           ],
-          requestBody: {
-            required: true,
-            description: 'Webhook payload containing event data',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/WebhookEvent',
-                },
-                examples: {
-                  deviceCreated: {
-                    summary: 'Device Created Event',
-                    description: 'Creates a new device in the system',
-                    value: {
-                      event: 'device.created',
-                      timestamp: '2025-11-16T10:30:00Z',
-                      device: {
-                        id: 'dev_abc123',
-                        name: 'Temperature Sensor 001',
-                        status: 'online',
-                        metadata: {
-                          location: 'Building A - Floor 2',
-                          type: 'temperature',
-                          firmwareVersion: '1.2.3',
-                        },
-                      },
-                    },
-                  },
-                  deviceUpdated: {
-                    summary: 'Device Updated Event',
-                    description: 'Updates existing device or creates if not found',
-                    value: {
-                      event: 'device.updated',
-                      timestamp: '2025-11-16T10:35:00Z',
-                      device: {
-                        id: 'dev_abc123',
-                        name: 'Temperature Sensor 001',
-                        status: 'online',
-                        metadata: {
-                          temperature: 22.5,
-                          humidity: 65,
-                          lastMaintenance: '2025-11-15',
-                        },
-                      },
-                    },
-                  },
-                  deviceTelemetry: {
-                    summary: 'Telemetry Data Event',
-                    description: 'Updates device with telemetry data (creates if not found)',
-                    value: {
-                      event: 'device.telemetry',
-                      timestamp: '2025-11-16T10:40:00Z',
-                      device: {
-                        id: 'dev_abc123',
-                        name: 'Temperature Sensor 001',
-                        status: 'online',
-                        metadata: {
-                          temperature: 23.1,
-                          humidity: 63,
-                          battery: 87,
-                          rssi: -65,
-                        },
-                      },
-                    },
-                  },
-                  deviceStatusChanged: {
-                    summary: 'Device Status Changed',
-                    description: 'Updates device status (creates if not found)',
-                    value: {
-                      event: 'device.status_changed',
-                      timestamp: '2025-11-16T10:45:00Z',
-                      device: {
-                        id: 'dev_abc123',
-                        name: 'Temperature Sensor 001',
-                        status: 'offline',
-                        metadata: {
-                          reason: 'connection_lost',
-                        },
-                      },
-                    },
-                  },
-                  minimalPayload: {
-                    summary: 'Minimal Required Fields',
-                    description: 'Minimum required fields - device will be created with defaults',
-                    value: {
-                      event: 'device.updated',
-                      timestamp: '2025-11-16T10:50:00Z',
-                      device: {
-                        id: 'dev_xyz789',
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
           responses: {
             '200': {
-              description: 'Webhook received and processed successfully',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      success: {
-                        type: 'boolean',
-                        example: true,
-                      },
-                      message: {
-                        type: 'string',
-                        example: 'Webhook processed successfully',
-                      },
-                    },
-                  },
-                },
-              },
+              description: 'Webhook received successfully',
             },
             '400': {
-              description: 'Bad Request - Missing integration ID or malformed request',
-              content: {
-                'application/json': {
-                  schema: {
-                    $ref: '#/components/schemas/Error',
-                  },
-                  example: {
-                    error: 'Missing integration ID',
-                    message: 'X-Integration-ID header is required',
-                  },
-                },
-              },
+              description: 'Missing integration ID or malformed request',
             },
             '401': {
-              description: 'Unauthorized - Invalid webhook signature',
-              content: {
-                'application/json': {
-                  schema: {
-                    $ref: '#/components/schemas/Error',
-                  },
-                  example: {
-                    error: 'Invalid signature',
-                    message: 'HMAC SHA-256 signature verification failed',
-                  },
-                },
-              },
+              description: 'Invalid signature (if secret is configured)',
             },
             '404': {
-              description: 'Not Found - Integration not found or webhook not enabled',
-              content: {
-                'application/json': {
-                  schema: {
-                    $ref: '#/components/schemas/Error',
-                  },
-                  example: {
-                    error: 'Webhook not configured',
-                    message: 'No active integration found with the provided ID',
-                  },
-                },
-              },
-            },
-            '500': {
-              description: 'Internal Server Error',
-              content: {
-                'application/json': {
-                  schema: {
-                    $ref: '#/components/schemas/Error',
-                  },
-                  example: {
-                    error: 'Internal server error',
-                    message: 'An unexpected error occurred while processing the webhook',
-                  },
-                },
-              },
+              description: 'Integration not found or webhook not enabled',
             },
           },
         },
@@ -319,72 +164,24 @@ export function WebhookConfigDialog({
       schemas: {
         WebhookEvent: {
           type: 'object',
-          required: ['event', 'timestamp', 'device'],
+          required: ['event', 'timestamp'],
           properties: {
             event: {
               type: 'string',
-              enum: ['device.created', 'device.updated', 'device.deleted', 'device.status_changed', 'device.telemetry', 'device.online', 'device.offline'],
-              description: 'Type of event being reported. All events support auto-create if device not found.',
+              enum: ['device.created', 'device.updated', 'device.deleted', 'device.status_changed', 'device.telemetry'],
             },
             timestamp: {
               type: 'string',
               format: 'date-time',
-              description: 'ISO 8601 timestamp when the event occurred',
-              example: '2025-11-16T10:30:00Z',
             },
             device: {
-              $ref: '#/components/schemas/Device',
-            },
-          },
-          description: 'Webhook event payload. The webhook will automatically create devices if they don\'t exist, or update them if they do.',
-        },
-        Device: {
-          type: 'object',
-          required: ['id'],
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Unique device identifier (required). This is used to match devices in the system.',
-              example: 'dev_abc123',
-            },
-            name: {
-              type: 'string',
-              description: 'Human-readable device name (optional). If not provided, device ID will be used as the name.',
-              example: 'Temperature Sensor 001',
-            },
-            status: {
-              type: 'string',
-              enum: ['online', 'offline', 'unknown'],
-              description: 'Current device status (optional). Defaults to "unknown" if not provided.',
-              example: 'online',
-            },
-            metadata: {
               type: 'object',
-              additionalProperties: true,
-              description: 'Custom key-value pairs with device-specific data (optional). Can include telemetry, configuration, or any custom fields. All values are preserved.',
-              example: {
-                temperature: 22.5,
-                humidity: 65,
-                battery: 87,
-                location: 'Building A - Floor 2',
-                firmwareVersion: '1.2.3',
-                model: 'TS-1000',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                status: { type: 'string' },
+                metadata: { type: 'object', additionalProperties: true },
               },
-            },
-          },
-          description: 'Device information. Only "id" is required - all other fields are optional.',
-        },
-        Error: {
-          type: 'object',
-          required: ['error', 'message'],
-          properties: {
-            error: {
-              type: 'string',
-              description: 'Error type identifier',
-            },
-            message: {
-              type: 'string',
-              description: 'Human-readable error message',
             },
           },
         },
@@ -602,6 +399,216 @@ export function WebhookConfigDialog({
           </div>
         </TabsContent>
 
+        <TabsContent value="openapi" className="space-y-4 py-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Webhook Integration Guide</CardTitle>
+              <CardDescription>How to receive and verify webhook events</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">1. Endpoint Requirements</h4>
+                <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                  <li>HTTPS endpoint (required for production)</li>
+                  <li>Return 200-299 status code for successful receipt</li>
+                  <li>Respond within timeout period (default 30 seconds)</li>
+                  <li>Handle idempotency - events may be delivered more than once</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">2. Payload Format</h4>
+                <pre className="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto">
+{`{
+  "event": "device.updated",
+  "timestamp": "2025-11-16T10:30:00Z",
+  "device": {
+    "id": "device-uuid",
+    "name": "Sensor 001",
+    "status": "online",
+    "last_seen": "2025-11-16T10:29:55Z",
+    "metadata": {
+      "temperature": 22.5,
+      "humidity": 45
+    }
+  },
+  "organization_id": "org-uuid",
+  "integration_id": "integration-uuid"
+}`}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => copyToClipboard(JSON.stringify({
+                    event: "device.updated",
+                    timestamp: new Date().toISOString(),
+                    device: {
+                      id: "device-uuid",
+                      name: "Sensor 001",
+                      status: "online"
+                    }
+                  }, null, 2))}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Example
+                </Button>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">3. Signature Verification (HMAC SHA-256)</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Verify the X-Webhook-Signature header to ensure authenticity:
+                </p>
+                <Tabs defaultValue="nodejs" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="nodejs">Node.js</TabsTrigger>
+                    <TabsTrigger value="python">Python</TabsTrigger>
+                    <TabsTrigger value="go">Go</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="nodejs">
+                    <pre className="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto">
+{`const crypto = require('crypto');
+
+function verifySignature(payload, signature, secret) {
+  const hmac = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(hmac)
+  );
+}
+
+// Express.js example
+app.post('/webhook', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const isValid = verifySignature(
+    req.body, 
+    signature, 
+    process.env.WEBHOOK_SECRET
+  );
+  
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  // Process webhook...
+  res.json({ received: true });
+});`}
+                    </pre>
+                  </TabsContent>
+                  <TabsContent value="python">
+                    <pre className="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto">
+{`import hmac
+import hashlib
+import json
+
+def verify_signature(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode(),
+        json.dumps(payload).encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, expected)
+
+# Flask example
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Webhook-Signature')
+    is_valid = verify_signature(
+        request.json,
+        signature,
+        os.environ['WEBHOOK_SECRET']
+    )
+    
+    if not is_valid:
+        return {'error': 'Invalid signature'}, 401
+    
+    # Process webhook...
+    return {'received': True}`}
+                    </pre>
+                  </TabsContent>
+                  <TabsContent value="go">
+                    <pre className="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto">
+{`package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+)
+
+func verifySignature(payload []byte, signature, secret string) bool {
+    h := hmac.New(sha256.New, []byte(secret))
+    h.Write(payload)
+    expected := hex.EncodeToString(h.Sum(nil))
+    
+    return hmac.Equal(
+        []byte(signature),
+        []byte(expected),
+    )
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    signature := r.Header.Get("X-Webhook-Signature")
+    body, _ := ioutil.ReadAll(r.Body)
+    
+    if !verifySignature(body, signature, secret) {
+        http.Error(w, "Invalid signature", 401)
+        return
+    }
+    
+    // Process webhook...
+    json.NewEncoder(w).Encode(map[string]bool{
+        "received": true,
+    })
+}`}
+                    </pre>
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">4. Event Types</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                    <code className="bg-muted px-2 py-1 rounded">device.created</code>
+                    <span>New device added</span>
+                    <code className="bg-muted px-2 py-1 rounded">device.updated</code>
+                    <span>Device metadata changed</span>
+                    <code className="bg-muted px-2 py-1 rounded">device.deleted</code>
+                    <span>Device removed</span>
+                    <code className="bg-muted px-2 py-1 rounded">device.status_changed</code>
+                    <span>Online/offline status</span>
+                    <code className="bg-muted px-2 py-1 rounded">device.telemetry</code>
+                    <span>New sensor data</span>
+                    <code className="bg-muted px-2 py-1 rounded">alert.triggered</code>
+                    <span>Alert condition met</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">5. Testing Your Endpoint</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Use tools like ngrok for local development:
+                </p>
+                <pre className="bg-muted p-4 rounded-lg text-xs font-mono">
+{`# Start ngrok tunnel
+ngrok http 3000
+
+# Update webhook URL to:
+https://your-id.ngrok.io/api/webhooks/netneural`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="openapi" className="space-y-4 py-4">
           <Card>

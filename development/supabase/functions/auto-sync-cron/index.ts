@@ -33,23 +33,29 @@ interface SyncResult {
 
 serve(async (req) => {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    // Environment variables are automatically available in Supabase Edge Functions
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://bldojxpockljyivldxwf.supabase.co'
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseServiceKey) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Configuration error: SUPABASE_SERVICE_ROLE_KEY not set',
+          message: 'Please set the SUPABASE_SERVICE_ROLE_KEY environment variable'
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    console.log('Auto-sync cron triggered', { url: supabaseUrl, time: new Date().toISOString() })
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get all enabled schedules that are due to run
     const { data: schedules, error: schedulesError } = await supabase
       .from('auto_sync_schedules')
-      .select(`
-        *,
-        integration:device_integrations (
-          id,
-          type,
-          config,
-          organization_id
-        )
-      `)
+      .select('*')
       .eq('enabled', true)
       .lte('next_run_at', new Date().toISOString())
 
@@ -64,90 +70,113 @@ serve(async (req) => {
       )
     }
 
-    const results = []
+    console.log(`Processing ${schedules.length} schedule(s) in parallel`)
 
-    // Process each schedule
-    for (const schedule of schedules as any[]) {
-      try {
-        // Check if we're within time window (if enabled)
-        if (schedule.time_window_enabled) {
-          const now = new Date()
-          const currentTime = now.toTimeString().slice(0, 5) // HH:MM
-          
-          if (
-            currentTime < schedule.time_window_start ||
-            currentTime > schedule.time_window_end
-          ) {
-            console.log(`Skipping schedule ${schedule.id} - outside time window`)
-            continue
+    // Process all schedules concurrently using Promise.all
+    const results = await Promise.all(
+      (schedules as any[]).map(async (schedule) => {
+        try {
+          // Check if we're within time window (if enabled)
+          if (schedule.time_window_enabled) {
+            const now = new Date()
+            const currentTime = now.toTimeString().slice(0, 5) // HH:MM
+            
+            if (
+              currentTime < schedule.time_window_start ||
+              currentTime > schedule.time_window_end
+            ) {
+              console.log(`Skipping schedule ${schedule.id} - outside time window`)
+              return {
+                schedule_id: schedule.id,
+                integration_id: schedule.integration_id,
+                status: 'skipped',
+                reason: 'outside_time_window',
+              }
+            }
+          }
+
+          // Execute the sync
+          const syncResult = await executeSync(supabase, schedule)
+
+          // Update schedule with results
+          const { error: updateError } = await supabase
+            .from('auto_sync_schedules')
+            .update({
+              last_run_at: new Date().toISOString(),
+              last_run_status: syncResult.success
+                ? syncResult.summary.errors > 0
+                  ? 'partial'
+                  : 'success'
+                : 'failed',
+              last_run_summary: syncResult.summary,
+              // next_run_at is auto-calculated by trigger
+            })
+            .eq('id', schedule.id)
+
+          if (updateError) {
+            console.error(`Failed to update schedule ${schedule.id}:`, updateError)
+          }
+
+          // Log to integration_activity_log (don't await, fire and forget)
+          supabase.from('integration_activity_log').insert({
+            integration_id: schedule.integration_id,
+            organization_id: schedule.organization_id,
+            type: 'device_sync',
+            direction: schedule.direction === 'export' ? 'outgoing' : 'incoming',
+            status: syncResult.success ? 'success' : 'error',
+            message: `Auto-sync completed: ${syncResult.summary.synced} device(s) synced`,
+            metadata: {
+              trigger: 'auto_sync',
+              schedule_id: schedule.id,
+              direction: schedule.direction,
+              summary: syncResult.summary,
+            },
+          }).catch(err => console.error(`Failed to log activity for ${schedule.id}:`, err))
+
+          return {
+            schedule_id: schedule.id,
+            integration_id: schedule.integration_id,
+            status: syncResult.success ? 'success' : 'failed',
+            summary: syncResult.summary,
+          }
+        } catch (error) {
+          console.error(`Error processing schedule ${schedule.id}:`, error)
+          return {
+            schedule_id: schedule.id,
+            integration_id: schedule.integration_id,
+            status: 'error',
+            error: error.message,
           }
         }
+      })
+    )
 
-        // Execute the sync
-        const syncResult = await executeSync(supabase, schedule)
-
-        // Update schedule with results
-        const { error: updateError } = await supabase
-          .from('auto_sync_schedules')
-          .update({
-            last_run_at: new Date().toISOString(),
-            last_run_status: syncResult.success
-              ? syncResult.summary.errors > 0
-                ? 'partial'
-                : 'success'
-              : 'failed',
-            last_run_summary: syncResult.summary,
-            // next_run_at is auto-calculated by trigger
-          })
-          .eq('id', schedule.id)
-
-        if (updateError) {
-          console.error(`Failed to update schedule ${schedule.id}:`, updateError)
-        }
-
-        results.push({
-          schedule_id: schedule.id,
-          integration_id: schedule.integration_id,
-          status: syncResult.success ? 'success' : 'failed',
-          summary: syncResult.summary,
-        })
-
-        // Log to integration_activity_log
-        await supabase.from('integration_activity_log').insert({
-          integration_id: schedule.integration_id,
-          organization_id: schedule.organization_id,
-          type: 'device_sync',
-          status: syncResult.success ? 'success' : 'error',
-          message: `Auto-sync completed: ${syncResult.summary.synced} device(s) synced`,
-          metadata: {
-            trigger: 'auto_sync',
-            schedule_id: schedule.id,
-            direction: schedule.direction,
-            summary: syncResult.summary,
-          },
-        })
-      } catch (error) {
-        console.error(`Error processing schedule ${schedule.id}:`, error)
-        results.push({
-          schedule_id: schedule.id,
-          integration_id: schedule.integration_id,
-          status: 'error',
-          error: error.message,
-        })
-      }
-    }
+    const successCount = results.filter(r => r.status === 'success').length
+    const failedCount = results.filter(r => r.status === 'failed' || r.status === 'error').length
+    const skippedCount = results.filter(r => r.status === 'skipped').length
 
     return new Response(
       JSON.stringify({
-        message: `Processed ${results.length} schedule(s)`,
+        message: `Processed ${results.length} schedule(s): ${successCount} succeeded, ${failedCount} failed, ${skippedCount} skipped`,
+        summary: { total: results.length, success: successCount, failed: failedCount, skipped: skippedCount },
         results,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Auto-sync cron error:', error)
+    const errorDetails = {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      cause: error.cause,
+    }
+    console.error('Auto-sync cron error:', JSON.stringify(errorDetails, null, 2))
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        type: error.name,
+        details: errorDetails
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
@@ -155,10 +184,8 @@ serve(async (req) => {
 
 async function executeSync(
   supabase: any,
-  schedule: AutoSyncSchedule & { integration: any }
+  schedule: AutoSyncSchedule
 ): Promise<SyncResult> {
-  const { integration } = schedule
-
   // Build sync request
   const syncRequest = {
     direction: schedule.direction,
@@ -183,8 +210,8 @@ async function executeSync(
       'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
     },
     body: JSON.stringify({
-      integration_id: integration.id,
-      organization_id: integration.organization_id,
+      integration_id: schedule.integration_id,
+      organization_id: schedule.organization_id,
       ...syncRequest,
     }),
   })

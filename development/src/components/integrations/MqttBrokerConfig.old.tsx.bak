@@ -1,0 +1,776 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Copy, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface MqttBrokerConfigProps {
+  integrationId: string
+  organizationId: string
+  currentConfig?: any
+  onSave: (config: any) => Promise<void>
+}
+
+export function MqttBrokerConfig({ integrationId, organizationId, currentConfig, onSave }: MqttBrokerConfigProps) {
+  const [brokerType, setBrokerType] = useState<'hosted' | 'external'>(
+    currentConfig?.broker_type || 'hosted'
+  )
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  // Hosted broker state
+  const [credentials, setCredentials] = useState<any>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [generatingCreds, setGeneratingCreds] = useState(false)
+
+  // External broker state
+  const [externalConfig, setExternalConfig] = useState({
+    broker_url: currentConfig?.config?.broker_url || '',
+    port: currentConfig?.config?.port || 1883,
+    protocol: currentConfig?.config?.protocol || 'mqtt',
+    username: currentConfig?.config?.username || '',
+    password: currentConfig?.config?.password || '',
+    use_tls: currentConfig?.config?.use_tls || false,
+  })
+
+  useEffect(() => {
+    if (brokerType === 'hosted') {
+      loadCredentials()
+    }
+  }, [brokerType])
+
+  async function loadCredentials() {
+    try {
+      const response = await fetch('/api/mqtt/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          integration_id: integrationId,
+          organization_id: organizationId,
+          action: 'get',
+        }),
+      })
+      const data = await response.json()
+      if (data.credentials) {
+        setCredentials(data.credentials)
+      }
+    } catch (error) {
+      console.error('Failed to load credentials:', error)
+    }
+  }
+
+  async function generateCredentials() {
+    setGeneratingCreds(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/mqtt-hybrid/credentials`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          integration_id: integrationId,
+          organization_id: organizationId,
+          action: 'generate',
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setCredentials(data.credentials)
+        toast.success('Credentials generated successfully')
+        toast.warning(data.warning)
+      } else {
+        throw new Error(data.error || 'Failed to generate credentials')
+      }
+    } catch (error) {
+      toast.error('Failed to generate credentials: ' + error.message)
+    } finally {
+      setGeneratingCreds(false)
+    }
+  }
+
+  async function testConnection() {
+    setTesting(true)
+    setTestResult(null)
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/mqtt-hybrid/test`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          integration_id: integrationId,
+          organization_id: organizationId,
+        }),
+      })
+      
+      const data = await response.json()
+      
+      setTestResult({
+        success: data.success,
+        message: data.message || (data.error || 'Connection failed'),
+      })
+      
+      if (data.success) {
+        toast.success('Connection test successful!')
+      } else {
+        toast.error('Connection test failed')
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: error.message,
+      })
+      toast.error('Connection test failed: ' + error.message)
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  async function handleSave() {
+    const config = {
+      broker_type: brokerType,
+      config: brokerType === 'external' ? externalConfig : { use_hosted: true },
+    }
+    
+    await onSave(config)
+    toast.success('MQTT configuration saved')
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text)
+    toast.success(`${label} copied to clipboard`)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Broker Type Selection - Clear Cards */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card 
+          className={`cursor-pointer transition-all ${brokerType === 'hosted' ? 'ring-2 ring-primary' : 'hover:border-primary/50'}`}
+          onClick={() => setBrokerType('hosted')}
+        >
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">🚀 Quick Setup</CardTitle>
+              <Badge variant="default">Recommended</Badge>
+            </div>
+            <CardDescription className="text-base">
+              Use NetNeural&apos;s managed broker - ready in 1 minute
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                No broker setup required
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                Auto-generated credentials
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                Secure WebSocket connection
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                Perfect for getting started
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer transition-all ${brokerType === 'external' ? 'ring-2 ring-primary' : 'hover:border-primary/50'}`}
+          onClick={() => setBrokerType('external')}
+        >
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">🔧 Advanced Setup</CardTitle>
+              <Badge variant="outline">Enterprise</Badge>
+            </div>
+            <CardDescription className="text-base">
+              Connect your existing MQTT broker infrastructure
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Use your own broker
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Full control over infrastructure
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Custom security policies
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Works with existing setup
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Configuration Card - Dynamic based on selection */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>
+                {brokerType === 'hosted' ? '🚀 Quick Setup Configuration' : '🔧 External Broker Configuration'}
+              </CardTitle>
+              <CardDescription>
+                {brokerType === 'hosted' 
+                  ? 'Generate credentials and start connecting your devices' 
+                  : 'Enter your broker connection details'}
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setBrokerType(brokerType === 'hosted' ? 'external' : 'hosted')}
+            >
+              Switch to {brokerType === 'hosted' ? 'External' : 'Quick Setup'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+
+        <CardContent className="space-y-6">
+          {brokerType === 'hosted' ? (
+            /* HOSTED BROKER UI */
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  We&apos;ll generate secure credentials for you. No MQTT broker knowledge required!
+                </AlertDescription>
+              </Alert>
+
+              {!credentials ? (
+                <div className="text-center py-8 space-y-4">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <RefreshCw className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium mb-2">Ready to generate credentials</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click below to create your unique MQTT credentials
+                    </p>
+                    <Button onClick={generateCredentials} disabled={generatingCreds} size="lg">
+                      {generatingCreds && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                      Generate Credentials Now
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Your MQTT Credentials</h3>
+                      <Badge variant="success">Active</Badge>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Broker URL</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input value={credentials.broker_url} readOnly className="font-mono text-sm" />
+                          <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.broker_url, 'Broker URL')}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Username</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Input value={credentials.username} readOnly className="font-mono text-sm" />
+                            <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.username, 'Username')}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Client ID</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Input value={credentials.client_id} readOnly className="font-mono text-sm" />
+                            <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.client_id, 'Client ID')}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Password</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input 
+                            type={showPassword ? 'text' : 'password'} 
+                            value={credentials.password || '••••••••••••••••'} 
+                            readOnly 
+                            className="font-mono text-sm"
+                          />
+                          <Button size="icon" variant="outline" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                          {credentials.password && (
+                            <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.password, 'Password')}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Your Topic Prefix</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input value={credentials.topic_prefix + 'devices/#'} readOnly className="font-mono text-sm" />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Publish to: <code className="bg-muted px-1 rounded">{credentials.topic_prefix}devices/YOUR_DEVICE_ID/telemetry</code>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Alert variant="warning">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Important:</strong> Save these credentials securely. The password cannot be retrieved again.
+                    </AlertDescription>
+                  </Alert>
+
+                  <Button variant="outline" onClick={generateCredentials} disabled={generatingCreds}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate New Credentials
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* EXTERNAL BROKER UI */
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  Connect to your existing MQTT broker. Make sure you have admin access to your broker.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="broker_url" className="text-sm font-medium">Broker Hostname *</Label>
+                    <Input
+                      id="broker_url"
+                      placeholder="mqtt.example.com"
+                      value={externalConfig.broker_url}
+                      onChange={(e) => setExternalConfig({ ...externalConfig, broker_url: e.target.value })}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your MQTT broker address (without protocol)
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="port" className="text-sm font-medium">Port *</Label>
+                    <Input
+                      id="port"
+                      type="number"
+                      placeholder="1883"
+                      value={externalConfig.port}
+                      onChange={(e) => setExternalConfig({ ...externalConfig, port: parseInt(e.target.value) || 1883 })}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Default: 1883 (MQTT), 8883 (MQTTS), 9001 (WebSocket)
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="protocol" className="text-sm font-medium">Protocol *</Label>
+                  <select
+                    id="protocol"
+                    title="Select MQTT protocol"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 mt-1"
+                    value={externalConfig.protocol}
+                    onChange={(e) => setExternalConfig({ ...externalConfig, protocol: e.target.value })}
+                  >
+                    <option value="mqtt">MQTT (TCP) - Standard</option>
+                    <option value="mqtts">MQTTS (TLS) - Encrypted TCP</option>
+                    <option value="ws">WebSocket - HTTP-based</option>
+                    <option value="wss">WebSocket Secure - HTTPS-based</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Choose the protocol your broker supports
+                  </p>
+                </div>
+
+                <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                  <h3 className="font-semibold text-sm">Authentication</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="username" className="text-sm">Username</Label>
+                      <Input
+                        id="username"
+                        placeholder="mqtt_user"
+                        value={externalConfig.username}
+                        onChange={(e) => setExternalConfig({ ...externalConfig, username: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password" className="text-sm">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={externalConfig.password}
+                        onChange={(e) => setExternalConfig({ ...externalConfig, password: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="use_tls"
+                      checked={externalConfig.use_tls}
+                      onCheckedChange={(checked) => setExternalConfig({ ...externalConfig, use_tls: checked })}
+                    />
+                    <Label htmlFor="use_tls" className="text-sm">Enable TLS/SSL encryption</Label>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">📋 Connection String Preview:</p>
+                  <code className="text-xs bg-background px-2 py-1 rounded border">
+                    {externalConfig.protocol}://{externalConfig.username ? `${externalConfig.username}:***@` : ''}{externalConfig.broker_url || 'broker.example.com'}:{externalConfig.port}
+                  </code>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Test Connection Section - Same for both */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Test Connection</h3>
+                <p className="text-sm text-muted-foreground">
+                  Verify your broker connection before saving
+                </p>
+              </div>
+              <Button onClick={testConnection} disabled={testing} variant="outline">
+                {testing && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                {testing ? 'Testing...' : 'Test Connection'}
+              </Button>
+            </div>
+
+            {testResult && (
+              <Alert variant={testResult.success ? 'default' : 'destructive'}>
+                {testResult.success ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <AlertDescription>{testResult.message}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              {brokerType === 'hosted' 
+                ? credentials ? 'Credentials generated and ready' : 'Generate credentials first' 
+                : 'Make sure to test connection before saving'}
+            </p>
+            <Button onClick={handleSave} size="lg">
+              Save Configuration
+            </Button>
+          </div>
+
+              {!credentials ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    No credentials generated yet
+                  </p>
+                  <Button onClick={generateCredentials} disabled={generatingCreds}>
+                    {generatingCreds && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                    Generate Credentials
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Broker URL</Label>
+                      <div className="flex gap-2">
+                        <Input value={credentials.broker_url} readOnly />
+                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.broker_url, 'Broker URL')}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Client ID</Label>
+                      <div className="flex gap-2">
+                        <Input value={credentials.client_id} readOnly />
+                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.client_id, 'Client ID')}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Username</Label>
+                      <div className="flex gap-2">
+                        <Input value={credentials.username} readOnly />
+                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.username, 'Username')}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Password</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type={showPassword ? 'text' : 'password'} 
+                          value={credentials.password || '••••••••••••••••'} 
+                          readOnly 
+                        />
+                        <Button size="icon" variant="outline" onClick={() => setShowPassword(!showPassword)}>
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        {credentials.password && (
+                          <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.password, 'Password')}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Topic Prefix</Label>
+                    <Input value={credentials.topic_prefix} readOnly />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your devices can publish/subscribe to: {credentials.topic_prefix}devices/#
+                    </p>
+                  </div>
+
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Save these credentials securely. The password cannot be retrieved again. You can regenerate credentials if needed.
+                    </AlertDescription>
+                  </Alert>
+
+                  <Button variant="outline" onClick={generateCredentials} disabled={generatingCreds}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate Credentials
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="external" className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  Connect to your own MQTT broker. Requires broker URL, port, and authentication credentials.
+                </AlertDescription>
+              </Alert>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="broker_url">Broker URL</Label>
+                  <Input
+                    id="broker_url"
+                    placeholder="mqtt.example.com"
+                    value={externalConfig.broker_url}
+                    onChange={(e) => setExternalConfig({ ...externalConfig, broker_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="port">Port</Label>
+                  <Input
+                    id="port"
+                    type="number"
+                    placeholder="1883"
+                    value={externalConfig.port}
+                    onChange={(e) => setExternalConfig({ ...externalConfig, port: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="protocol">Protocol</Label>
+                <select
+                  id="protocol"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={externalConfig.protocol}
+                  onChange={(e) => setExternalConfig({ ...externalConfig, protocol: e.target.value })}
+                >
+                  <option value="mqtt">MQTT (TCP)</option>
+                  <option value="mqtts">MQTTS (TLS)</option>
+                  <option value="ws">WebSocket</option>
+                  <option value="wss">WebSocket Secure</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="mqtt_user"
+                    value={externalConfig.username}
+                    onChange={(e) => setExternalConfig({ ...externalConfig, username: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={externalConfig.password}
+                    onChange={(e) => setExternalConfig({ ...externalConfig, password: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="use_tls"
+                  checked={externalConfig.use_tls}
+                  onCheckedChange={(checked) => setExternalConfig({ ...externalConfig, use_tls: checked })}
+                />
+                <Label htmlFor="use_tls">Use TLS/SSL</Label>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Test Connection */}
+          <div className="space-y-4 pt-4 border-t">
+            <Button onClick={testConnection} disabled={testing} variant="outline">
+              {testing && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+              Test Connection
+            </Button>
+
+            {testResult && (
+              <Alert variant={testResult.success ? 'default' : 'destructive'}>
+                {testResult.success ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <AlertDescription>{testResult.message}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-4 border-t">
+            <Button onClick={handleSave}>
+              Save Configuration
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Connection Examples */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Connection Examples</CardTitle>
+          <CardDescription>
+            Sample code for connecting your devices
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="arduino">
+            <TabsList>
+              <TabsTrigger value="arduino">Arduino/ESP32</TabsTrigger>
+              <TabsTrigger value="python">Python</TabsTrigger>
+              <TabsTrigger value="nodejs">Node.js</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="arduino" className="mt-4">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{`#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* mqtt_server = "${credentials?.broker_url || 'wss://mqtt.netneural.io:9001/mqtt'}";
+const char* mqtt_user = "${credentials?.username || 'your_username'}";
+const char* mqtt_password = "${credentials?.password ? '********' : 'your_password'}";
+const char* client_id = "${credentials?.client_id || 'your_client_id'}";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void setup() {
+  client.setServer(mqtt_server, 9001);
+  if (client.connect(client_id, mqtt_user, mqtt_password)) {
+    client.publish("${credentials?.topic_prefix || 'org_xxx/'}devices/esp32/telemetry", "{\\"temp\\": 25.5}");
+  }
+}`}</code>
+              </pre>
+            </TabsContent>
+
+            <TabsContent value="python" className="mt-4">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{`import paho.mqtt.client as mqtt
+
+client = mqtt.Client(client_id="${credentials?.client_id || 'your_client_id'}")
+client.username_pw_set("${credentials?.username || 'your_username'}", "${credentials?.password ? '********' : 'your_password'}")
+client.connect("${credentials?.broker_url?.replace('wss://', '').replace(':9001/mqtt', '') || 'mqtt.netneural.io'}", 9001)
+
+client.publish("${credentials?.topic_prefix || 'org_xxx/'}devices/sensor01/telemetry", '{"temp": 25.5}')
+client.loop()`}</code>
+              </pre>
+            </TabsContent>
+
+            <TabsContent value="nodejs" className="mt-4">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{`const mqtt = require('mqtt');
+
+const client = mqtt.connect('${credentials?.broker_url || 'wss://mqtt.netneural.io:9001/mqtt'}', {
+  clientId: '${credentials?.client_id || 'your_client_id'}',
+  username: '${credentials?.username || 'your_username'}',
+  password: '${credentials?.password ? '********' : 'your_password'}'
+});
+
+client.on('connect', () => {
+  client.publish('${credentials?.topic_prefix || 'org_xxx/'}devices/node01/telemetry', JSON.stringify({ temp: 25.5 }));
+});`}</code>
+              </pre>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

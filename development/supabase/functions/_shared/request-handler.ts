@@ -137,10 +137,18 @@ export function createEdgeFunction(
 export function handleEdgeFunctionError(error: unknown): Response {
   console.error('[Edge Function Error]:', error)
 
+  // Handle DatabaseError with status code
+  if (error instanceof DatabaseError) {
+    return createErrorResponse(error.message, error.status, {
+      error: getErrorType(error.status),
+      ...(error.details && { details: error.details }),
+    })
+  }
+
   // Handle IntegrationError (from providers)
   if (error instanceof IntegrationError) {
     return createErrorResponse(error.message, error.status || 500, {
-      code: error.code,
+      error: error.code || getErrorType(error.status || 500),
       details: error.details,
     })
   }
@@ -149,30 +157,45 @@ export function handleEdgeFunctionError(error: unknown): Response {
   if (error instanceof Error) {
     // Authentication errors
     if (error.message.includes('Unauthorized') || error.message.includes('expired token')) {
-      return createErrorResponse(error.message, 401)
+      return createErrorResponse(error.message, 401, { error: 'Unauthorized' })
     }
 
     // Validation errors
     if (error.message.includes('required') || error.message.includes('Invalid')) {
-      return createErrorResponse(error.message, 400)
+      return createErrorResponse(error.message, 400, { error: 'Bad Request' })
     }
 
     // Permission errors
     if (error.message.includes('permission') || error.message.includes('Forbidden')) {
-      return createErrorResponse(error.message, 403)
+      return createErrorResponse(error.message, 403, { error: 'Forbidden' })
     }
 
     // Not found errors
     if (error.message.includes('not found')) {
-      return createErrorResponse(error.message, 404)
+      return createErrorResponse(error.message, 404, { error: 'Not Found' })
     }
 
     // Generic error
-    return createErrorResponse(error.message, 500)
+    return createErrorResponse(error.message, 500, { error: 'Internal server error' })
   }
 
   // Unknown error
-  return createErrorResponse('Internal server error', 500)
+  return createErrorResponse('Internal server error', 500, { error: 'Internal server error' })
+}
+
+/**
+ * Get error type string from status code
+ */
+function getErrorType(status: number): string {
+  switch (status) {
+    case 400: return 'Bad Request'
+    case 401: return 'Unauthorized'
+    case 403: return 'Forbidden'
+    case 404: return 'Not Found'
+    case 405: return 'Method Not Allowed'
+    case 500: return 'Internal Server Error'
+    default: return 'Error'
+  }
 }
 
 /**
@@ -206,22 +229,24 @@ export function createSuccessResponse<T>(
 
 /**
  * Standardized error response
- * Always returns JSON with consistent structure
+ * Returns format matching OpenAPI spec: { error: string, message: string }
  */
 export function createErrorResponse(
   message: string,
   status: number = 400,
   details?: Record<string, unknown>
 ): Response {
+  const errorType = details?.error || getErrorType(status)
+  
   return new Response(
     JSON.stringify({
-      success: false,
-      error: {
-        message,
-        status,
-        ...details,
-      },
-      timestamp: new Date().toISOString(),
+      error: errorType,
+      message,
+      ...(details && Object.keys(details).length > 1 && { 
+        details: Object.fromEntries(
+          Object.entries(details).filter(([key]) => key !== 'error')
+        )
+      }),
     }),
     {
       status,
@@ -231,12 +256,15 @@ export function createErrorResponse(
 }
 
 /**
- * Database error helper
+ * Database error helper with status code
  */
 export class DatabaseError extends Error {
-  constructor(message: string, public details?: unknown) {
+  public status: number
+  
+  constructor(message: string, status: number = 500, public details?: unknown) {
     super(message)
     this.name = 'DatabaseError'
+    this.status = status
   }
 }
 

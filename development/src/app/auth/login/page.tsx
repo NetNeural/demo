@@ -133,7 +133,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding (Desktop only) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-600 to-blue-500 text-white p-12 flex-col justify-center">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-12 flex-col justify-center">
         <div className="opacity-95">
           <h1 className="text-3xl font-bold mb-4">NetNeural IoT</h1>
           <p className="text-xl mb-8">Enterprise IoT Management Platform</p>
@@ -143,20 +143,20 @@ function LoginForm() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-950">
         <div className="w-full max-w-[400px]">
           {/* Mobile Brand (Mobile only) */}
           <div className="text-center mb-8 lg:hidden">
-            <h1 className="text-2xl font-bold text-gray-900">NetNeural IoT</h1>
-            <p className="text-gray-600">Enterprise Platform</p>
+            <h1 className="text-2xl font-bold text-foreground">NetNeural IoT</h1>
+            <p className="text-muted-foreground">Enterprise Platform</p>
           </div>
 
           {/* Login Card */}
           <Card>
             <CardContent className="p-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back</h2>
-                <p className="text-gray-600">Sign in to your enterprise account</p>
+                <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
+                <p className="text-muted-foreground">Sign in to your enterprise account</p>
               </div>
 
               {error && (
@@ -186,7 +186,7 @@ function LoginForm() {
 
               <form onSubmit={handleSubmit} className="mb-6">
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
+                  <label className="block text-sm font-medium mb-1" htmlFor="email">
                     Email address
                   </label>
                   <input
@@ -196,12 +196,12 @@ function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="w-full px-4 py-2 border rounded-md bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:border-input outline-none transition-all"
                   />
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
+                  <label className="block text-sm font-medium mb-1" htmlFor="password">
                     Password
                   </label>
                   <input
@@ -212,7 +212,7 @@ function LoginForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="w-full px-4 py-2 border rounded-md bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:border-input outline-none transition-all"
                   />
                 </div>
 
@@ -222,9 +222,9 @@ function LoginForm() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary border-input rounded focus:ring-ring"
                   />
-                  <label htmlFor="remember-me" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="remember-me" className="ml-2 text-sm">
                     Remember me (keep me signed in)
                   </label>
                 </div>
@@ -239,7 +239,7 @@ function LoginForm() {
               </form>
 
               <div className="text-center">
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   Forgot your password? Contact your system administrator
                 </p>
               </div>
@@ -248,7 +248,7 @@ function LoginForm() {
 
           {/* Development Mode Helper */}
           {process.env.NODE_ENV === 'development' && (
-            <Alert className="mt-4 bg-blue-50 border-blue-200">
+            <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
               <AlertDescription>
                 <strong>Development Mode:</strong> Test accounts available
                 <div className="text-sm mt-2 space-y-1">
@@ -263,7 +263,7 @@ function LoginForm() {
           )}
 
           {/* Security Notice */}
-          <Alert className="mt-4 bg-green-50 border-green-200">
+          <Alert className="mt-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
             <AlertDescription>
               <strong>Enterprise Security:</strong> This platform uses advanced security measures.
             </AlertDescription>

@@ -8,79 +8,99 @@
 
 import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { mapWebhookPayload, type RawWebhookPayload, type NormalizedWebhookPayload } from '../_shared/webhook-mappers.ts'
 
-interface WebhookPayload {
-  event: string
-  timestamp: string
-  data: {
-    deviceId: string
-    status?: string
-    lastSeen?: string
-    metadata?: Record<string, unknown>
-    [key: string]: unknown
-  }
-}
+type SupabaseClient = ReturnType<typeof createClient>
 
 export default createEdgeFunction(async ({ req }) => {
-  // Get webhook signature and integration ID from headers
-  // Header format varies by provider:
-  // - Golioth: X-Golioth-Signature
-  // - AWS IoT: X-Amz-Sns-Message-Id
-  // - Azure: X-Azure-Signature
-  const signature = req.headers.get('X-Golioth-Signature') || 
-                   req.headers.get('X-Amz-Sns-Message-Id') ||
-                   req.headers.get('X-Azure-Signature') ||
-                   req.headers.get('X-Webhook-Signature')
-  const integrationId = req.headers.get('X-Integration-ID')
-  const body = await req.text()
+  let activityLogId: string | null = null
+  let integrationId: string | null = null
+  let supabase: any = null
   
-  if (!signature) {
-    throw new DatabaseError('Missing signature', 401)
-  }
+  try {
+    // Get webhook signature and integration ID from headers
+    // Header format varies by provider:
+    // - Golioth: X-Golioth-Signature
+    // - AWS IoT: X-Amz-Sns-Message-Id
+    // - Azure: X-Azure-Signature
+    // - Custom: X-Webhook-Signature
+    const signature = req.headers.get('X-Golioth-Signature') || 
+                     req.headers.get('X-Amz-Sns-Message-Id') ||
+                     req.headers.get('X-Azure-Signature') ||
+                     req.headers.get('X-Webhook-Signature')
+    integrationId = req.headers.get('X-Integration-ID')
+    const body = await req.text()
+    
+    if (!integrationId) {
+      throw new DatabaseError('Missing integration ID', 400)
+    }
 
-  if (!integrationId) {
-    throw new Error('Missing integration ID')
-  }
+    // Initialize Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    supabase = createClient(supabaseUrl, supabaseKey)
 
-  // Initialize Supabase
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const supabase = createClient(supabaseUrl, supabaseKey)
+      // Get integration and verify webhook is enabled
+      const { data: integration, error: intError } = await supabase
+        .from('device_integrations')
+        .select('*')
+        .eq('id', integrationId)
+      .eq('webhook_enabled', true)
+      .single()
 
-    // Get integration and verify webhook is enabled
-    const { data: integration, error: intError } = await supabase
-      .from('device_integrations')
-      .select('*')
-      .eq('id', integrationId)
-    .eq('webhook_enabled', true)
-    .single()
+    if (intError || !integration) {
+      throw new DatabaseError('Webhook not configured', 404)
+    }
 
-  if (intError || !integration) {
-    throw new Error('Webhook not configured')
-  }
-
-  // Verify signature
-  if (integration.webhook_secret) {
+    // Verify signature if secret is configured
+    if (integration.webhook_secret) {
+    if (!signature) {
+      throw new DatabaseError('Missing signature', 401)
+    }
     const expectedSignature = await generateSignature(body, integration.webhook_secret)
     if (signature !== expectedSignature) {
       throw new DatabaseError('Invalid signature', 401)
     }
   }
 
-  // Parse payload
-  const payload: WebhookPayload = JSON.parse(body)
+  // Parse and normalize payload
+  const rawPayload: RawWebhookPayload = JSON.parse(body)
+  const normalized = mapWebhookPayload(integration.integration_type, rawPayload)
   
-  // Log webhook event to integration_sync_log (renamed from golioth_sync_log)
-  // @ts-expect-error - Insert object not fully typed in generated types
+  console.log('[Integration Webhook] Received event:', {
+    event: normalized.event,
+    integration_type: integration.integration_type,
+    integration_id: integrationId,
+    device_id: normalized.deviceId,
+    payload_keys: Object.keys(rawPayload)
+  })
+  
+    // Log webhook event to integration_activity_log
+    const { data: activityLog } = await supabase.from('integration_activity_log').insert({
+      integration_id: integrationId,
+      organization_id: integration.organization_id,
+      type: 'webhook',
+      direction: 'incoming',
+      status: 'processing',
+      message: `Received ${normalized.event} event from ${integration.integration_type}`,
+      metadata: { 
+        event: normalized.event,
+        deviceId: normalized.deviceId,
+        integration_type: integration.integration_type,
+        raw_payload: rawPayload
+      },
+    }).select('id').single()
+    
+    activityLogId = activityLog?.id || null  // Log webhook event to integration_sync_log (legacy table)
   await supabase.from('integration_sync_log').insert({
     organization_id: integration.organization_id,
     integration_id: integrationId,
     operation: 'webhook',
     status: 'processing',
     details: { 
-      event: payload.event, 
-      deviceId: payload.data.deviceId,
-      providerType: integration.type 
+      event: normalized.event, 
+      deviceId: normalized.deviceId,
+      providerType: integration.integration_type 
     },
   })
 
@@ -90,25 +110,49 @@ export default createEdgeFunction(async ({ req }) => {
   // - AWS IoT: Uses SNS notifications, not direct webhooks (subscribe to SNS topics)
   // - Azure IoT Hub: Uses Event Grid, not direct webhooks (subscribe to Event Grid)
   // - MQTT: Custom implementation via broker events
-  switch (payload.event) {
+  switch (normalized.event) {
     case 'device.updated':
-      await handleDeviceUpdate(supabase, integration, payload)
+      await handleDeviceUpdate(supabase, integration, normalized)
       break
     case 'device.created':
-      await handleDeviceCreate(supabase, integration, payload)
+      await handleDeviceCreate(supabase, integration, normalized)
       break
     case 'device.deleted':
-      await handleDeviceDelete(supabase, payload)
+      await handleDeviceDelete(supabase, normalized)
       break
     case 'device.status_changed':
-      await handleStatusChange(supabase, payload)
+    case 'device.online':
+    case 'device.offline':
+      await handleStatusChange(supabase, integration, normalized)
+      break
+    case 'device.telemetry':
+    case 'device.data':
+      // Telemetry events - treat as device update with new data
+      await handleDeviceUpdate(supabase, integration, normalized)
       break
     default:
-      console.log('Unknown event type:', payload.event, 'from provider:', integration.type)
+      console.log('Unknown event type:', normalized.event, 'from provider:', integration.type)
   }
 
-  // Update sync log status
-  // @ts-expect-error - Update object not fully typed in generated types
+  // Update activity log status to completed
+  if (activityLog?.id) {
+    await supabase
+      .from('integration_activity_log')
+      .update({ 
+        status: 'completed',
+        message: `Successfully processed ${normalized.event} event`,
+        metadata: {
+          event: normalized.event,
+          deviceId: normalized.deviceId,
+          integration_type: integration.integration_type,
+          processed_at: new Date().toISOString()
+        }
+      })
+      .eq('id', activityLog.id)
+  }
+
+  // Update sync log status (legacy)
+  // Update sync log status (legacy)
   await supabase
     .from('integration_sync_log')
     .update({ status: 'completed', completed_at: new Date().toISOString() })
@@ -117,7 +161,31 @@ export default createEdgeFunction(async ({ req }) => {
     .order('created_at', { ascending: false })
     .limit(1)
 
-  return createSuccessResponse({ message: 'OK' })
+  return createSuccessResponse({ 
+    success: true, 
+    message: 'Webhook processed successfully' 
+  })
+  } catch (error) {
+    // Log error to activity log if we have the necessary context
+    if (supabase && integrationId && activityLogId) {
+      await supabase
+        .from('integration_activity_log')
+        .update({ 
+          status: 'failed',
+          message: error instanceof Error ? error.message : 'Webhook processing failed',
+          metadata: {
+            error: error instanceof Error ? error.message : String(error),
+            error_stack: error instanceof Error ? error.stack : undefined,
+            failed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', activityLogId)
+        .catch(console.error) // Don't fail if logging fails
+    }
+    
+    // Re-throw the error to be handled by the edge function error handler
+    throw error
+  }
 }, {
   allowedMethods: ['POST']
 })
@@ -149,26 +217,56 @@ async function handleDeviceUpdate(
   supabase: any, 
   // deno-lint-ignore no-explicit-any
   integration: any, 
-  payload: WebhookPayload
+  payload: NormalizedWebhookPayload
 ) {
+  if (!payload.deviceId) {
+    console.error('[Webhook] No device ID found in payload')
+    return
+  }
+  
   const { data: device } = await supabase
     .from('devices')
     .select('*')
-    .eq('external_device_id', payload.data.deviceId)
+    .eq('external_device_id', payload.deviceId)
     .eq('organization_id', integration.organization_id)
     .maybeSingle()
 
   if (device) {
-    // @ts-expect-error - Update object not fully typed in generated types
+    // Update existing device
     await supabase
       .from('devices')
       .update({
-        status: payload.data.status || device.status,
-        last_seen: payload.data.lastSeen || device.last_seen,
-        metadata: payload.data.metadata || device.metadata,
+        status: payload.status || device.status,
+        last_seen: payload.lastSeen || new Date().toISOString(),
+        metadata: payload.metadata || device.metadata,
         updated_at: new Date().toISOString(),
       })
       .eq('id', device.id)
+    
+    console.log('[Webhook] Updated device:', device.id)
+  } else {
+    // Create new device if it doesn't exist (upsert behavior)
+    const { data: newDevice, error } = await supabase
+      .from('devices')
+      .insert({
+        organization_id: integration.organization_id,
+        integration_id: integration.id,
+        external_device_id: payload.deviceId,
+        name: payload.deviceName || payload.deviceId,
+        status: payload.status || 'unknown',
+        last_seen: payload.lastSeen || new Date().toISOString(),
+        metadata: payload.metadata || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('[Webhook] Failed to create device:', error)
+    } else {
+      console.log('[Webhook] Created new device:', newDevice?.id)
+    }
   }
 }
 
@@ -178,25 +276,56 @@ async function handleDeviceCreate(
   supabase: any, 
   // deno-lint-ignore no-explicit-any
   integration: any, 
-  payload: WebhookPayload
+  payload: NormalizedWebhookPayload
 ) {
+  if (!payload.deviceId) {
+    console.error('[Webhook] No device ID found in payload')
+    return
+  }
+  
   const { data: existing } = await supabase
     .from('devices')
     .select('id')
-    .eq('external_device_id', payload.data.deviceId)
+    .eq('external_device_id', payload.deviceId)
     .eq('organization_id', integration.organization_id)
     .maybeSingle()
 
   if (!existing) {
-    // Queue for import
-    // @ts-expect-error - Insert object not fully typed in generated types
-    await supabase.from('sync_queue').insert({
-      organization_id: integration.organization_id,
-      integration_id: integration.id,
-      operation: 'sync_device',
-      priority: 8,
-      payload: { deviceId: payload.data.deviceId },
-    })
+    // For custom webhooks, create device directly
+    // For platform integrations (golioth, aws_iot, etc), queue for sync to fetch full details
+    if (integration.integration_type === 'custom_webhook' || integration.integration_type === 'webhook') {
+      const { data: newDevice, error } = await supabase
+        .from('devices')
+        .insert({
+          organization_id: integration.organization_id,
+          integration_id: integration.id,
+          external_device_id: payload.deviceId,
+          name: payload.deviceName || payload.deviceId,
+          status: payload.status || 'unknown',
+          last_seen: payload.lastSeen || new Date().toISOString(),
+          metadata: payload.metadata || {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('[Webhook] Failed to create device:', error)
+      } else {
+        console.log('[Webhook] Created new device:', newDevice?.id)
+      }
+    } else {
+      // Queue for import from platform API to get full device details
+      await supabase.from('sync_queue').insert({
+        organization_id: integration.organization_id,
+        integration_id: integration.id,
+        operation: 'sync_device',
+        priority: 8,
+        payload: { deviceId: payload.deviceId },
+      })
+      console.log('[Webhook] Queued device for sync:', payload.deviceId)
+    }
   }
 }
 
@@ -204,30 +333,70 @@ async function handleDeviceCreate(
 async function handleDeviceDelete(
   // deno-lint-ignore no-explicit-any
   supabase: any, 
-  payload: WebhookPayload
+  payload: NormalizedWebhookPayload
 ) {
-  // @ts-expect-error - Update object not fully typed in generated types
   await supabase
     .from('devices')
     .update({ 
       status: 'offline', 
       updated_at: new Date().toISOString() 
     })
-    .eq('external_device_id', payload.data.deviceId)
+    .eq('external_device_id', payload.deviceId)
 }
 
 // deno-lint-ignore no-explicit-any
 async function handleStatusChange(
   // deno-lint-ignore no-explicit-any
-  supabase: any, 
-  payload: WebhookPayload
+  supabase: any,
+  // deno-lint-ignore no-explicit-any
+  integration: any, 
+  payload: NormalizedWebhookPayload
 ) {
-  // @ts-expect-error - Update object not fully typed in generated types
-  await supabase
+  if (!payload.deviceId) {
+    console.error('[Webhook] No device ID found in payload')
+    return
+  }
+  
+  const { data: device } = await supabase
     .from('devices')
-    .update({ 
-      status: payload.data.status,
-      last_seen: new Date().toISOString() 
-    })
-    .eq('external_device_id', payload.data.deviceId)
+    .select('id')
+    .eq('external_device_id', payload.deviceId)
+    .eq('organization_id', integration.organization_id)
+    .maybeSingle()
+  
+  if (device) {
+    // Update existing device status
+    await supabase
+      .from('devices')
+      .update({ 
+        status: payload.status,
+        last_seen: new Date().toISOString() 
+      })
+      .eq('id', device.id)
+    
+    console.log('[Webhook] Updated device status:', device.id)
+  } else if (integration.integration_type === 'custom_webhook' || integration.integration_type === 'webhook') {
+    // Create device if it doesn't exist (for custom webhooks)
+    const { data: newDevice, error } = await supabase
+      .from('devices')
+      .insert({
+        organization_id: integration.organization_id,
+        integration_id: integration.id,
+        external_device_id: payload.deviceId,
+        name: payload.deviceName || payload.deviceId,
+        status: payload.status || 'unknown',
+        last_seen: new Date().toISOString(),
+        metadata: payload.metadata || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('[Webhook] Failed to create device:', error)
+    } else {
+      console.log('[Webhook] Created new device from status change:', newDevice?.id)
+    }
+  }
 }
