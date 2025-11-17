@@ -135,7 +135,7 @@ $$;
 
 -- Create cron job to process queue every 10 seconds
 -- (Requires pg_cron extension - check if enabled in Supabase)
-DO $$
+DO $cron$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     -- Remove existing job if it exists
@@ -145,10 +145,10 @@ BEGIN
     PERFORM cron.schedule(
       'process-mqtt-queue',
       '*/10 * * * * *', -- Every 10 seconds
-      $$SELECT process_mqtt_queue_messages()$$
+      $job$SELECT process_mqtt_queue_messages()$job$
     );
   END IF;
-END $$;
+END $cron$;
 
 -- Comments
 COMMENT ON TABLE public.mqtt_message_archive IS 'Archive of processed MQTT messages from PGMQ';
