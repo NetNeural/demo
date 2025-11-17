@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1319,7 +1324,7 @@ export type Database = {
         }
         Insert: {
           allowed_topics?: string[]
-          broker_url?: string
+          broker_url: string
           client_id: string
           connection_count?: number | null
           created_at?: string
@@ -1357,6 +1362,129 @@ export type Database = {
           },
           {
             foreignKeyName: "mqtt_credentials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mqtt_message_archive: {
+        Row: {
+          client_id: string | null
+          id: number
+          integration_id: string
+          msg_id: number
+          organization_id: string
+          payload: Json
+          processed_at: string
+          qos: number | null
+          received_at: string
+          topic: string
+          username: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          id?: number
+          integration_id: string
+          msg_id: number
+          organization_id: string
+          payload: Json
+          processed_at?: string
+          qos?: number | null
+          received_at?: string
+          topic: string
+          username?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          id?: number
+          integration_id?: string
+          msg_id?: number
+          organization_id?: string
+          payload?: Json
+          processed_at?: string
+          qos?: number | null
+          received_at?: string
+          topic?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mqtt_message_archive_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mqtt_message_archive_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mqtt_message_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          integration_id: string
+          max_attempts: number | null
+          next_retry_at: string | null
+          organization_id: string
+          payload: Json
+          processed_at: string | null
+          qos: number | null
+          status: string
+          topic: string
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          integration_id: string
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          organization_id: string
+          payload: Json
+          processed_at?: string | null
+          qos?: number | null
+          status?: string
+          topic: string
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          integration_id?: string
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          organization_id?: string
+          payload?: Json
+          processed_at?: string | null
+          qos?: number | null
+          status?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mqtt_message_queue_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "device_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mqtt_message_queue_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2237,6 +2365,7 @@ export type Database = {
         }
         Returns: string
       }
+      cleanup_mqtt_queue: { Args: never; Returns: number }
       cleanup_old_integration_logs: { Args: never; Returns: number }
       cleanup_old_telemetry: {
         Args: { p_retention_days?: number }
@@ -2257,6 +2386,16 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      enqueue_mqtt_message: {
+        Args: {
+          p_integration_id: string
+          p_organization_id: string
+          p_payload: Json
+          p_qos?: number
+          p_topic: string
+        }
+        Returns: string
       }
       extract_telemetry_from_metadata: {
         Args: { p_metadata: Json }
@@ -2280,6 +2419,16 @@ export type Database = {
           supabase_url?: string
         }
         Returns: string
+      }
+      get_mqtt_queue_stats: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          avg_processing_time: unknown
+          completed_count: number
+          failed_count: number
+          pending_count: number
+          processing_count: number
+        }[]
       }
       get_pending_conflicts: {
         Args: { org_id: string }
@@ -2339,6 +2488,11 @@ export type Database = {
         }
         Returns: string
       }
+      process_mqtt_queue_message: {
+        Args: { p_message_id: string }
+        Returns: boolean
+      }
+      process_mqtt_queue_messages: { Args: never; Returns: undefined }
       record_device_telemetry:
         | {
             Args: {
@@ -2530,4 +2684,3 @@ export const Constants = {
     },
   },
 } as const
-
