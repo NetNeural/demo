@@ -42,6 +42,7 @@ import {
   ProviderCapabilities,
   PaginationOptions,
 } from './base-integration-provider';
+import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
 // ============================================================================
 // MQTT Types
@@ -79,6 +80,9 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
   private client: mqtt.MqttClient | null = null;
   private config: MqttConfig;
   private topicPrefix: string;
+  private activityLogger: FrontendActivityLogger;
+  private organizationId: string;
+  private integrationId: string;
   
   // In-memory device cache (MQTT doesn't have a registry)
   private deviceCache = new Map<string, {
@@ -87,9 +91,12 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     lastUpdate: Date;
   }>();
 
-  constructor(config: MqttConfig, providerId: string) {
+  constructor(config: MqttConfig, providerId: string, organizationId?: string) {
     super();
     this.providerId = providerId;
+    this.integrationId = providerId;
+    this.organizationId = organizationId || '';
+    this.activityLogger = new FrontendActivityLogger();
     this.config = config;
     this.topicPrefix = config.topicPrefix || 'devices/';
   }
@@ -98,6 +105,22 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    * Test connection to MQTT broker
    */
   override async testConnection(): Promise<TestConnectionResult> {
+    if (!this.organizationId || !this.integrationId) {
+      return this._testConnectionInternal();
+    }
+
+    return this.activityLogger.withLog({
+      organizationId: this.organizationId,
+      integrationId: this.integrationId,
+      direction: 'outgoing',
+      activityType: 'test_connection',
+      endpoint: this.config.brokerUrl,
+    }, async () => {
+      return this._testConnectionInternal();
+    });
+  }
+
+  private async _testConnectionInternal(): Promise<TestConnectionResult> {
     return new Promise((resolve) => {
       const testClient = mqtt.connect(this.config.brokerUrl, {
         username: this.config.username,

@@ -67,31 +67,30 @@ export default createEdgeFunction(async ({ req }) => {
   const rawPayload: RawWebhookPayload = JSON.parse(body)
   const normalized = mapWebhookPayload(integration.integration_type, rawPayload)
   
-  console.log('[Integration Webhook] Received event:', {
-    event: normalized.event,
-    integration_type: integration.integration_type,
-    integration_id: integrationId,
-    device_id: normalized.deviceId,
-    payload_keys: Object.keys(rawPayload)
-  })
-  
-    // Log webhook event to integration_activity_log
-    const { data: activityLog } = await supabase.from('integration_activity_log').insert({
+  // Log webhook event to integration_activity_log
+  const { data: activityLog, error: logError } = await supabase.from('integration_activity_log').insert({
       integration_id: integrationId,
       organization_id: integration.organization_id,
-      type: 'webhook',
+      activity_type: 'webhook_received',
       direction: 'incoming',
-      status: 'processing',
-      message: `Received ${normalized.event} event from ${integration.integration_type}`,
-      metadata: { 
-        event: normalized.event,
-        deviceId: normalized.deviceId,
-        integration_type: integration.integration_type,
-        raw_payload: rawPayload
+      status: 'started',
+      method: 'POST',
+      endpoint: '/functions/v1/integration-webhook',
+      request_headers: {
+        'X-Integration-ID': integrationId,
+        'X-Golioth-Signature': signature ? '***' : null,
       },
-    }).select('id').single()
-    
-    activityLogId = activityLog?.id || null  // Log webhook event to integration_sync_log (legacy table)
+      request_body: rawPayload,
+      error_message: null,
+  }).select('id').single()
+  
+  if (logError) {
+    console.error('[Webhook] Failed to create activity log:', logError)
+  }
+  
+  activityLogId = activityLog?.id || null
+  
+  // Log webhook event to integration_sync_log (legacy table)
   await supabase.from('integration_sync_log').insert({
     organization_id: integration.organization_id,
     integration_id: integrationId,
@@ -135,20 +134,20 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   // Update activity log status to completed
-  if (activityLog?.id) {
+  if (activityLogId) {
     await supabase
       .from('integration_activity_log')
       .update({ 
-        status: 'completed',
-        message: `Successfully processed ${normalized.event} event`,
-        metadata: {
+        status: 'success',
+        response_status: 200,
+        response_body: {
+          success: true,
           event: normalized.event,
           deviceId: normalized.deviceId,
-          integration_type: integration.integration_type,
-          processed_at: new Date().toISOString()
-        }
+        },
+        error_message: null,
       })
-      .eq('id', activityLog.id)
+      .eq('id', activityLogId)
   }
 
   // Update sync log status (legacy)
@@ -172,12 +171,11 @@ export default createEdgeFunction(async ({ req }) => {
         .from('integration_activity_log')
         .update({ 
           status: 'failed',
-          message: error instanceof Error ? error.message : 'Webhook processing failed',
-          metadata: {
+          response_status: error instanceof DatabaseError ? error.status : 500,
+          response_body: {
             error: error instanceof Error ? error.message : String(error),
-            error_stack: error instanceof Error ? error.stack : undefined,
-            failed_at: new Date().toISOString()
-          }
+          },
+          error_message: error instanceof Error ? error.message : 'Webhook processing failed',
         })
         .eq('id', activityLogId)
         .catch(console.error) // Don't fail if logging fails
@@ -187,6 +185,7 @@ export default createEdgeFunction(async ({ req }) => {
     throw error
   }
 }, {
+  requireAuth: false,  // Webhooks from external services don't send auth headers
   allowedMethods: ['POST']
 })
 
@@ -253,6 +252,7 @@ async function handleDeviceUpdate(
         integration_id: integration.id,
         external_device_id: payload.deviceId,
         name: payload.deviceName || payload.deviceId,
+        device_type: 'sensor',  // Default type for webhook-created devices
         status: payload.status || 'unknown',
         last_seen: payload.lastSeen || new Date().toISOString(),
         metadata: payload.metadata || {},
@@ -384,6 +384,7 @@ async function handleStatusChange(
         integration_id: integration.id,
         external_device_id: payload.deviceId,
         name: payload.deviceName || payload.deviceId,
+        device_type: 'sensor',  // Default type for webhook-created devices
         status: payload.status || 'unknown',
         last_seen: new Date().toISOString(),
         metadata: payload.metadata || {},

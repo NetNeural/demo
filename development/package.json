@@ -32,6 +32,7 @@
     "dev:full:debug": "concurrently -n SUPA,NEXT \"npm run supabase:start\" \"sleep 5 && npm run dev:debug\"",
     "dev:functions": "concurrently -n SUPA,FUNC \"npm run supabase:start\" \"sleep 5 && npm run supabase:functions:serve\"",
     "dev:functions:debug": "concurrently -n SUPA,FUNC \"npm run supabase:start\" \"sleep 5 && supabase functions serve --inspect-brk\"",
+    "dev:codespaces": "bash start-dev.sh",
     "build": "next build",
     "build:static": "next build && next export",
     "build:analyze": "ANALYZE=true next build",

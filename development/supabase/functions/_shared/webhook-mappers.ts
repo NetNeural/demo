@@ -63,11 +63,11 @@ export function mapGoliothWebhook(payload: RawWebhookPayload): NormalizedWebhook
   
   return {
     event: payload.event || 'unknown',
-    deviceId: device.id || device.deviceId || '',
+    deviceId: device.id || device.deviceId || device.device_id || payload.device_id || payload.deviceId || '',
     deviceName: device.name as string,
-    status: device.status || device.state,
+    status: device.status || device.state || payload.status,
     lastSeen: device.lastSeen || device.last_seen || payload.timestamp,
-    metadata: device.metadata || device.tags || device,
+    metadata: device.metadata || device.tags || payload.metadata || device,
     timestamp: payload.timestamp,
   }
 }

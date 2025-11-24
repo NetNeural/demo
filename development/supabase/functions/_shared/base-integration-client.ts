@@ -7,6 +7,7 @@
 // Key Features:
 // - Standardized interface (test, import, export, bidirectionalSync)
 // - Built-in activity logging via withActivityLog()
+// - Structured logging for debugging and monitoring
 // - Common error handling with IntegrationError
 // - Retry logic with exponential backoff
 // - Type-safe configuration validation
@@ -21,6 +22,7 @@
 // ===========================================================================
 
 import { logActivityStart, logActivityComplete } from './activity-logger.ts'
+import { createIntegrationLogger, StructuredLogger, PerformanceTimer } from './structured-logger.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // ===========================================================================
@@ -117,9 +119,26 @@ export class IntegrationError extends Error {
 export abstract class BaseIntegrationClient {
   protected config: IntegrationConfig
   protected activityLogId?: string
+  protected logger: StructuredLogger
+  protected requestId: string
 
   constructor(config: IntegrationConfig) {
     this.config = config
+    this.requestId = crypto.randomUUID()
+    
+    // Initialize structured logger
+    this.logger = createIntegrationLogger(
+      config.type,
+      config.integrationId,
+      config.organizationId,
+      { requestId: this.requestId }
+    )
+    
+    this.logger.info('client_initialized', {
+      type: config.type,
+      hasSettings: !!config.settings,
+    })
+    
     this.validateConfig()
   }
 
@@ -199,29 +218,48 @@ export abstract class BaseIntegrationClient {
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        this.logger.debug('retry_attempt', {
+          attempt: attempt + 1,
+          maxRetries,
+        })
+        
         return await fn()
       } catch (error) {
         lastError = error as Error
         
+        this.logger.warn('retry_failed', {
+          attempt: attempt + 1,
+          maxRetries,
+          error: (error as Error).message,
+        })
+        
         // Don't retry on authentication errors (4xx)
         if (error instanceof IntegrationError && error.status && error.status >= 400 && error.status < 500) {
+          this.logger.error('retry_aborted_auth_error', error as Error, {
+            status: error.status,
+          })
           throw error
         }
         
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries - 1) {
           const delay = baseDelay * Math.pow(2, attempt)
+          this.logger.debug('retry_backoff', { delay_ms: delay })
           await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
     }
     
+    this.logger.error('retry_exhausted', lastError!, {
+      maxRetries,
+    })
     throw lastError
   }
 
   /**
    * Wrap an async operation with activity logging
    * Automatically logs start, success, and failure to integration_activity_log
+   * ALSO logs structured logs for debugging and monitoring
    * 
    * @param action - Action name (e.g., 'test', 'import', 'export')
    * @param fn - Async function to execute
@@ -237,6 +275,10 @@ export abstract class BaseIntegrationClient {
       action === 'export' ? 'sync_export' :
       action === 'bidirectionalSync' ? 'sync_bidirectional' : 'other'
     
+    // Start performance timer
+    const timer = new PerformanceTimer(this.logger, action)
+    
+    // Log to activity log table
     const logId = await logActivityStart(
       supabase,
       {
@@ -247,16 +289,25 @@ export abstract class BaseIntegrationClient {
         metadata: { 
           type: this.config.type,
           timestamp: new Date().toISOString(),
+          requestId: this.requestId,
         }
       }
     )
     
     this.activityLogId = logId || undefined
+    
+    // Log structured event
+    this.logger.info(`${action}_started`, {
+      activityType,
+      activityLogId: this.activityLogId,
+    })
+    
     const startTime = Date.now()
     try {
       const result = await fn()
       const responseTimeMs = Date.now() - startTime
       
+      // Complete activity log
       if (this.activityLogId) {
         await logActivityComplete(
           supabase,
@@ -268,6 +319,13 @@ export abstract class BaseIntegrationClient {
           }
         )
       }
+      
+      // Log structured success
+      this.logger.info(`${action}_completed`, {
+        duration_ms: timer.end(),
+        activityLogId: this.activityLogId,
+      })
+      
       return result
     } catch (error) {
       const responseTimeMs = Date.now() - startTime
@@ -275,6 +333,7 @@ export abstract class BaseIntegrationClient {
         ? error.toJSON()
         : { message: (error as Error).message }
       
+      // Complete activity log
       if (this.activityLogId) {
         await logActivityComplete(
           supabase,
@@ -286,6 +345,13 @@ export abstract class BaseIntegrationClient {
           }
         )
       }
+      
+      // Log structured error
+      this.logger.error(`${action}_failed`, error as Error, {
+        duration_ms: timer.endWithError(error as Error),
+        activityLogId: this.activityLogId,
+      })
+      
       throw error
     }
   }
@@ -293,6 +359,7 @@ export abstract class BaseIntegrationClient {
   /**
    * Make HTTP request with standardized error handling
    * Automatically converts HTTP errors to IntegrationError
+   * Adds correlation headers and structured logging
    * 
    * @param url - Request URL
    * @param options - Fetch options
@@ -303,20 +370,52 @@ export abstract class BaseIntegrationClient {
     url: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Add correlation header
+    const headers = new Headers(options.headers)
+    headers.set('X-Request-ID', this.requestId)
+    headers.set('X-Integration-ID', this.config.integrationId)
+    headers.set('X-Organization-ID', this.config.organizationId)
+    
+    const method = (options.method || 'GET').toUpperCase()
+    
+    // Log request
+    this.logger.info('http_request', {
+      requestId: this.requestId,
+      method,
+      url,
+      hasBody: !!options.body,
+    })
+    
     try {
-      const response = await fetch(url, options)
+      const response = await fetch(url, { ...options, headers })
+      
+      // Log response
+      this.logger.info('http_response', {
+        requestId: this.requestId,
+        status: response.status,
+        statusText: response.statusText,
+      })
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
           message: response.statusText
         }))
         
-        throw new IntegrationError(
+        const error = new IntegrationError(
           errorData.message || `HTTP ${response.status}: ${response.statusText}`,
           errorData.code || 'HTTP_ERROR',
           response.status,
           errorData
         )
+        
+        this.logger.error('http_error', error, {
+          requestId: this.requestId,
+          url,
+          method,
+          status: response.status,
+        })
+        
+        throw error
       }
       
       // Some endpoints return empty responses (204 No Content)
@@ -331,12 +430,20 @@ export abstract class BaseIntegrationClient {
       }
       
       // Network errors, timeout errors, etc.
-      throw new IntegrationError(
+      const networkError = new IntegrationError(
         `Request failed: ${(error as Error).message}`,
         'NETWORK_ERROR',
         undefined,
         { url, error: (error as Error).message }
       )
+      
+      this.logger.error('network_error', networkError, {
+        requestId: this.requestId,
+        url,
+        method,
+      })
+      
+      throw networkError
     }
   }
 

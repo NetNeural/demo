@@ -8,27 +8,39 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Function to generate webhook URL based on integration type and ID
 CREATE OR REPLACE FUNCTION generate_webhook_url(
   integration_id UUID,
-  integration_type TEXT,
-  supabase_url TEXT DEFAULT current_setting('app.settings.supabase_url', TRUE)
+  integration_type TEXT
 )
 RETURNS TEXT AS $$
 DECLARE
   base_url TEXT;
   webhook_endpoint TEXT;
 BEGIN
-  -- Get Supabase URL from settings or use default
-  base_url := COALESCE(supabase_url, 'http://localhost:54321');
+  -- Get Supabase URL from runtime settings
+  -- In production: This will be your actual Supabase URL
+  -- In Codespaces: This will be the public forwarded domain
+  -- In local dev: Falls back to localhost
+  base_url := COALESCE(
+    current_setting('app.settings.supabase_url', TRUE),
+    current_setting('request.headers', TRUE)::json->>'x-forwarded-host',
+    'http://localhost:54321'
+  );
+  
+  -- If we got a host without protocol, add https
+  IF base_url !~ '^https?://' THEN
+    base_url := 'https://' || base_url;
+  END IF;
   
   -- Determine webhook endpoint based on integration type
+  -- All types now use unified integration-webhook endpoint
   webhook_endpoint := CASE integration_type
-    WHEN 'golioth' THEN 'golioth-webhook'
-    WHEN 'aws_iot' THEN 'aws-iot-webhook'
-    WHEN 'aws-iot' THEN 'aws-iot-webhook'
-    WHEN 'azure_iot' THEN 'azure-iot-webhook'
-    WHEN 'azure-iot' THEN 'azure-iot-webhook'
-    WHEN 'google_iot' THEN 'google-iot-webhook'
-    WHEN 'google-iot' THEN 'google-iot-webhook'
-    WHEN 'mqtt' THEN 'mqtt-webhook'
+    WHEN 'golioth' THEN 'integration-webhook'
+    WHEN 'aws_iot' THEN 'integration-webhook'
+    WHEN 'aws-iot' THEN 'integration-webhook'
+    WHEN 'azure_iot' THEN 'integration-webhook'
+    WHEN 'azure-iot' THEN 'integration-webhook'
+    WHEN 'google_iot' THEN 'integration-webhook'
+    WHEN 'google-iot' THEN 'integration-webhook'
+    WHEN 'mqtt' THEN 'integration-webhook'
     ELSE NULL
   END;
   
@@ -38,9 +50,10 @@ BEGIN
   END IF;
   
   -- Construct full webhook URL
-  RETURN base_url || '/functions/v1/' || webhook_endpoint || '?integration_id=' || integration_id::TEXT;
+  -- Note: We don't include integration_id in query string because it's sent in X-Integration-ID header
+  RETURN base_url || '/functions/v1/' || webhook_endpoint;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 -- Function to generate secure webhook secret
 CREATE OR REPLACE FUNCTION generate_webhook_secret()
@@ -61,12 +74,8 @@ BEGIN
   needs_webhook := NEW.integration_type IN ('golioth', 'aws_iot', 'aws-iot', 'azure_iot', 'azure-iot', 'google_iot', 'google-iot', 'mqtt');
   
   IF needs_webhook THEN
-    -- Generate webhook URL if not set
-    IF NEW.webhook_url IS NULL OR NEW.webhook_url = '' THEN
-      NEW.webhook_url := generate_webhook_url(NEW.id, NEW.integration_type);
-    END IF;
-    
-    -- Generate webhook secret if not set
+    -- Only generate webhook secret if not set
+    -- DO NOT generate webhook_url here - let the Edge Function handle it with proper SUPABASE_URL
     IF NEW.webhook_secret IS NULL OR NEW.webhook_secret = '' THEN
       NEW.webhook_secret := generate_webhook_secret();
     END IF;

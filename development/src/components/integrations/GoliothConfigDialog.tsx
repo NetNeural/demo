@@ -53,6 +53,8 @@ export function GoliothConfigDialog({
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<boolean | null>(null)
+  const [testingWebhook, setTestingWebhook] = useState(false)
+  const [webhookTestResult, setWebhookTestResult] = useState<{ success: boolean; message: string } | null>(null)
   
   const [config, setConfig] = useState<GoliothConfig>({
     name: 'Golioth Integration',
@@ -84,10 +86,6 @@ export function GoliothConfigDialog({
       const data = responseData?.integrations?.find((i: any) => i.id === integrationId)
 
       if (data) {
-        console.log('[GoliothConfigDialog] Loaded integration data:', data)
-        console.log('[GoliothConfigDialog] webhook_url:', data.webhook_url)
-        console.log('[GoliothConfigDialog] webhook_secret:', data.webhook_secret)
-        console.log('[GoliothConfigDialog] settings:', data.settings)
         
         setConfig({
           id: data.id,
@@ -102,7 +100,7 @@ export function GoliothConfigDialog({
           conflict_resolution: (data.settings?.conflictResolution || data.conflict_resolution as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins') || 'manual',
           webhook_enabled: data.settings?.webhookEnabled || data.webhook_enabled || false,
           webhook_secret: data.settings?.webhookSecret || data.webhook_secret || '',
-          webhook_url: data.settings?.webhookUrl || data.webhook_url || '',
+          webhook_url: data.webhook_url || data.settings?.webhookUrl || '',  // Prioritize computed webhook_url over old settings value
         })
       }
     } catch (error) {
@@ -149,9 +147,89 @@ export function GoliothConfigDialog({
       setTestResult(false)
       const errorMessage = error instanceof Error ? error.message : 'Connection test failed'
       toast.error(errorMessage)
-      console.error('[GoliothConfigDialog] Test connection error:', error)
     } finally {
       setTesting(false)
+    }
+  }
+
+  const testWebhook = async () => {
+    if (!integrationId) {
+      toast.error('No integration ID - please save first')
+      return
+    }
+
+    if (!config.webhook_url) {
+      toast.error('No webhook URL found - try refreshing the page')
+      return
+    }
+
+    setTestingWebhook(true)
+    setWebhookTestResult(null)
+
+    try {
+      // Create a mock Golioth webhook payload (matches Golioth's actual format)
+      const mockPayload = {
+        event: 'device.updated',
+        timestamp: new Date().toISOString(),
+        device: {
+          id: 'test-device-' + Date.now(),
+          name: 'Test Device',
+          status: 'online',
+          metadata: {
+            test: true,
+            source: 'webhook_test_button'
+          }
+        }
+      }
+
+      // Generate HMAC signature
+      const encoder = new TextEncoder()
+      const payloadString = JSON.stringify(mockPayload)
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(config.webhook_secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+      
+      const signature = await crypto.subtle.sign(
+        'HMAC',
+        key,
+        encoder.encode(payloadString)
+      )
+      
+      const signatureHex = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+
+      // Send test webhook
+      const response = await fetch(config.webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,  // Required for Kong gateway
+          'X-Integration-ID': integrationId,
+          'X-Golioth-Signature': signatureHex,
+        },
+        body: payloadString,
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setWebhookTestResult({ success: true, message: 'Webhook test successful!' })
+        toast.success('Webhook endpoint is working correctly')
+      } else {
+        const error = await response.text()
+        setWebhookTestResult({ success: false, message: `Failed: ${response.status} - ${error}` })
+        toast.error(`Webhook test failed: ${response.status}`)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Webhook test failed'
+      setWebhookTestResult({ success: false, message: errorMessage })
+      toast.error(errorMessage)
+    } finally {
+      setTestingWebhook(false)
     }
   }
 
@@ -175,11 +253,9 @@ export function GoliothConfigDialog({
     setLoading(true)
     
     try {
-      console.log('[GoliothConfigDialog] Saving config:', { integrationId, organizationId })
 
       if (integrationId) {
         // Update existing
-        console.log('[GoliothConfigDialog] Performing UPDATE with ID:', integrationId)
         
         const response = await edgeFunctions.integrations.update(integrationId, {
           name: config.name,
@@ -254,7 +330,6 @@ export function GoliothConfigDialog({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save configuration'
       toast.error(errorMessage)
-      console.error('[GoliothConfigDialog] Save error:', error)
     } finally {
       setLoading(false)
     }
@@ -486,14 +561,249 @@ export function GoliothConfigDialog({
 
           {/* Webhooks Tab */}
           <TabsContent value="webhooks" className="space-y-6">
-            {/* Golioth Pipeline Configuration */}
+            {/* Enable Webhooks Toggle */}
+            <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border-2 border-blue-200 dark:border-blue-900">
+              <div>
+                <Label htmlFor="webhook-enabled" className="text-base font-semibold text-blue-900 dark:text-blue-100">
+                  Enable Webhooks
+                </Label>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  Receive real-time events from Golioth when devices update
+                </p>
+              </div>
+              <Switch
+                id="webhook-enabled"
+                checked={config.webhook_enabled}
+                onCheckedChange={(checked) => 
+                  setConfig({ ...config, webhook_enabled: checked })
+                }
+              />
+            </div>
+
+            {/* Test Webhook Button */}
+            {(integrationId || config.id) && config.webhook_url && config.webhook_secret && (
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-slate-200 dark:border-slate-800">
+                <div>
+                  <p className="font-medium text-sm">Test Your Webhook Endpoint</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Send a mock Golioth event to verify your webhook is configured correctly
+                  </p>
+                </div>
+                <Button
+                  onClick={testWebhook}
+                  disabled={testingWebhook}
+                  variant="outline"
+                >
+                  {testingWebhook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  🧪 Test Webhook
+                </Button>
+              </div>
+            )}
+
+            {/* Webhook Test Result */}
+            {webhookTestResult && (
+              <div className={`p-4 rounded-lg border-2 ${
+                webhookTestResult.success 
+                  ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900' 
+                  : 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-900'
+              }`}>
+                <div className="flex items-start gap-2">
+                  {webhookTestResult.success ? (
+                    <Check className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                  ) : (
+                    <X className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+                  )}
+                  <div>
+                    <p className={`font-medium text-sm ${
+                      webhookTestResult.success 
+                        ? 'text-green-900 dark:text-green-100' 
+                        : 'text-red-900 dark:text-red-100'
+                    }`}>
+                      {webhookTestResult.success ? 'Webhook Test Passed!' : 'Webhook Test Failed'}
+                    </p>
+                    <p className={`text-xs mt-1 ${
+                      webhookTestResult.success 
+                        ? 'text-green-700 dark:text-green-300' 
+                        : 'text-red-700 dark:text-red-300'
+                    }`}>
+                      {webhookTestResult.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Copy Values - Show actual URLs first */}
+            {(integrationId || config.id) && config.webhook_url && config.webhook_secret && (
+              <div className="space-y-3 rounded-lg border-2 border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 p-4">
+                <Label className="text-base font-semibold text-green-900 dark:text-green-100">
+                  ✅ Your Webhook Configuration Values
+                </Label>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Copy these exact values to your Golioth Pipeline configuration
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium text-green-900 dark:text-green-100">Webhook URL:</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(config.webhook_url)
+                          toast.success('Webhook URL copied!')
+                        }}
+                        className="h-6 text-xs"
+                      >
+                        📋 Copy
+                      </Button>
+                    </div>
+                    <div className="rounded bg-white dark:bg-slate-900 p-2 font-mono text-xs break-all border border-green-300 dark:border-green-800">
+                      {config.webhook_url}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium text-green-900 dark:text-green-100">Integration ID:</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(integrationId || config.id || '')
+                          toast.success('Integration ID copied!')
+                        }}
+                        className="h-6 text-xs"
+                      >
+                        📋 Copy
+                      </Button>
+                    </div>
+                    <div className="rounded bg-white dark:bg-slate-900 p-2 font-mono text-xs break-all border border-green-300 dark:border-green-800">
+                      {integrationId || config.id}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium text-green-900 dark:text-green-100">Signing Secret:</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(config.webhook_secret)
+                          toast.success('Signing secret copied!')
+                        }}
+                        className="h-6 text-xs"
+                      >
+                        📋 Copy
+                      </Button>
+                    </div>
+                    <div className="rounded bg-white dark:bg-slate-900 p-2 font-mono text-xs break-all border border-green-300 dark:border-green-800">
+                      {config.webhook_secret}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* What's Used vs Not Used */}
+            <div className="space-y-3 rounded-lg border-2 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 p-4">
+              <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">
+                📖 How Golioth Webhooks Work with NetNeural
+              </Label>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    ✅ What You Configure in Golioth:
+                  </p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside ml-2">
+                    <li><strong>URL:</strong> The webhook endpoint URL (shown above)</li>
+                    <li><strong>Headers:</strong> Content-Type, X-Integration-ID, X-Golioth-Signature</li>
+                    <li><strong>Signing Secret:</strong> Used to generate HMAC-SHA256 signature</li>
+                    <li><strong>Events:</strong> device.created, device.updated, device.deleted, device.status_changed, device.telemetry</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    🔄 What NetNeural Does Automatically:
+                  </p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside ml-2">
+                    <li><strong>Verifies signature:</strong> Ensures webhook came from Golioth</li>
+                    <li><strong>Logs activity:</strong> Records all webhook events in activity log</li>
+                    <li><strong>Updates devices:</strong> Syncs device status, metadata, and telemetry</li>
+                    <li><strong>Creates devices:</strong> Automatically adds new devices when Golioth sends device.created</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    ❌ What You Don't Need (Handled Automatically):
+                  </p>
+                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside ml-2">
+                    <li><strong>No API keys in webhook:</strong> Authentication uses HMAC signature only</li>
+                    <li><strong>No custom payload transformation:</strong> NetNeural normalizes different formats</li>
+                    <li><strong>No manual device sync:</strong> Webhooks keep devices in sync automatically</li>
+                    <li><strong>No retry logic:</strong> Golioth handles webhook delivery retries</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Example Payloads */}
+            <div className="space-y-3 rounded-lg border-2 border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950 p-4">
+              <Label className="text-base font-semibold text-purple-900 dark:text-purple-100">
+                📝 Example Golioth Webhook Payloads
+              </Label>
+              
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs font-medium text-purple-900 dark:text-purple-100 mb-1">
+                    Device Updated Event:
+                  </p>
+                  <pre className="rounded bg-purple-100 dark:bg-purple-900 p-2 text-xs overflow-x-auto border border-purple-300 dark:border-purple-800">
+{`{
+  "event": "device.updated",
+  "device_id": "your-device-id",
+  "device_name": "Sensor-01",
+  "timestamp": "2025-11-24T12:00:00Z",
+  "status": "online",
+  "metadata": {
+    "temperature": 25.5,
+    "battery": 85
+  }
+}`}
+                  </pre>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-purple-900 dark:text-purple-100 mb-1">
+                    Device Status Changed Event:
+                  </p>
+                  <pre className="rounded bg-purple-100 dark:bg-purple-900 p-2 text-xs overflow-x-auto border border-purple-300 dark:border-purple-800">
+{`{
+  "event": "device.status_changed",
+  "device_id": "your-device-id",
+  "device_name": "Sensor-01",
+  "timestamp": "2025-11-24T12:05:00Z",
+  "status": "offline",
+  "previous_status": "online"
+}`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Golioth Pipeline Configuration Template */}
             <div className="space-y-3 rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="rounded-full bg-primary/10 p-1.5">
                     <AlertCircle className="h-4 w-4 text-primary" />
                   </div>
-                  <Label className="text-base font-semibold">🔧 Golioth Pipeline Configuration</Label>
+                  <Label className="text-base font-semibold">📋 Complete Golioth Pipeline Template</Label>
                 </div>
                 {(integrationId || config.id) && config.webhook_url && config.webhook_secret && (
                   <Button
@@ -501,7 +811,7 @@ export function GoliothConfigDialog({
                     variant="outline"
                     onClick={() => {
                       const pipelineConfig = `# Golioth Pipeline Configuration for ${config.name}
-# Add this to your Golioth project pipeline settings
+# Copy the values from above into this template
 
 name: netneural-integration
 description: Send device events to NetNeural IoT Platform
@@ -525,76 +835,61 @@ triggers:
   - device.offline
   - device.telemetry
 
-# Payload Template
-payload:
-  event: "{{event.type}}"
-  device_id: "{{device.id}}"
-  device_name: "{{device.name}}"
-  timestamp: "{{event.timestamp}}"
-  data: "{{event.data}}"
-
-# Security
+# Security - HMAC SHA-256 signature
 signing_secret: ${config.webhook_secret}
-signature_header: X-Golioth-Signature
-signature_algorithm: HMAC-SHA256`
+signature_algorithm: HMAC-SHA256
+signature_header: X-Golioth-Signature`
                       
                       navigator.clipboard.writeText(pipelineConfig)
-                      toast.success('Pipeline configuration copied to clipboard!')
+                      toast.success('Complete pipeline template copied!')
                     }}
                   >
-                    📋 Copy Pipeline Config
+                    📋 Copy Complete Template
                   </Button>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {(integrationId || config.id) && config.webhook_url && config.webhook_secret 
-                  ? 'Copy the complete pipeline configuration for your Golioth project. This includes webhook URL, authentication, and event triggers.'
-                  : 'Save this integration first to generate your webhook URL and secret, then copy the pipeline configuration.'}
+                  ? 'This template includes all required headers and authentication. Copy this complete configuration into your Golioth Pipeline.'
+                  : 'Save this integration first to generate your webhook URL and secret.'}
               </p>
-              <pre className="rounded-lg bg-slate-950 p-4 text-xs text-slate-50 overflow-x-auto">
-{(integrationId || config.id) && config.webhook_url && config.webhook_secret ? (
-`# Golioth Pipeline Configuration for ${config.name}
-
-webhook:
-  url: ${config.webhook_url}
-  method: POST
-  headers:
-    Content-Type: application/json
-    X-Integration-ID: ${integrationId || config.id}
-    X-Golioth-Signature: "{{hmac_sha256}}"
-  
-triggers:
-  - device.created
-  - device.updated
-  - device.deleted
-  - device.status_changed
-  - device.online
-  - device.offline
-  - device.telemetry
-  
-signing_secret: ${config.webhook_secret}
-signature_algorithm: HMAC-SHA256`
-) : (
-`# Golioth Pipeline Configuration for ${config.name || 'NetNeural Integration'}
-
-webhook:
-  url: <WILL_BE_GENERATED_AFTER_SAVE>
-  method: POST
-  headers:
-    Content-Type: application/json
-    X-Integration-ID: <WILL_BE_GENERATED_AFTER_SAVE>
-    X-Golioth-Signature: "{{hmac_sha256}}"
-  
-triggers:
-  - device.created
-  - device.updated  
-  - device.telemetry
-  - device.state_changed
-  
-signing_secret: <WILL_BE_GENERATED_AFTER_SAVE>
-signature_algorithm: HMAC-SHA256`
-)}
-              </pre>
+              
+              {(integrationId || config.id) && config.webhook_url && config.webhook_secret ? (
+                <div className="space-y-2">
+                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-3 border border-blue-200 dark:border-blue-900">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                      ✅ Required Headers (Already Configured)
+                    </p>
+                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5 list-disc list-inside">
+                      <li><code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">Content-Type: application/json</code> - Tells server to expect JSON</li>
+                      <li><code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">X-Integration-ID: {integrationId || config.id}</code> - Identifies your integration</li>
+                      <li><code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">X-Golioth-Signature: &#123;&#123;hmac_sha256&#125;&#125;</code> - Verifies request authenticity</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="rounded-lg bg-slate-50 dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">
+                      🔐 Security Details
+                    </p>
+                    <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-0.5 list-disc list-inside">
+                      <li>Signature Algorithm: <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded">HMAC-SHA256</code></li>
+                      <li>Signature Header: <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded">X-Golioth-Signature</code></li>
+                      <li>Secret: <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs break-all">{config.webhook_secret}</code></li>
+                      <li className="mt-1 text-amber-700 dark:text-amber-400">⚠️ Keep your signing secret private - never share it publicly</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950 p-4 border border-amber-200 dark:border-amber-900">
+                  <p className="text-sm text-amber-900 dark:text-amber-100 font-medium">
+                    ⚠️ Save Configuration First
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Click "Save Configuration" at the bottom to generate your webhook URL and secret. 
+                    They will appear here automatically for easy copying.
+                  </p>
+                </div>
+              )}
             </div>
           </TabsContent>
 

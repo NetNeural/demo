@@ -23,6 +23,7 @@ import {
   PaginationOptions,
   ProviderCapabilities,
 } from './base-integration-provider';
+import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
 export interface GoliothProviderConfig {
   apiKey: string;
@@ -37,11 +38,17 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
 
   private api: GoliothAPI;
   private config: GoliothProviderConfig;
+  private activityLogger: FrontendActivityLogger;
+  private organizationId: string;
+  private integrationId: string;
 
-  constructor(config: GoliothProviderConfig) {
+  constructor(config: GoliothProviderConfig & { organizationId?: string; integrationId?: string }) {
     super();
     this.config = config;
     this.providerId = `golioth-${config.projectId}`;
+    this.organizationId = config.organizationId || '';
+    this.integrationId = config.integrationId || this.providerId;
+    this.activityLogger = new FrontendActivityLogger();
     
     // Initialize Golioth API client
     this.api = new GoliothAPI({
@@ -55,6 +62,23 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
    * Test connection to Golioth
    */
   async testConnection(): Promise<TestConnectionResult> {
+    if (!this.organizationId || !this.integrationId) {
+      // Fallback to non-logged operation if IDs not provided
+      return this._testConnectionInternal();
+    }
+
+    return this.activityLogger.withLog({
+      organizationId: this.organizationId,
+      integrationId: this.integrationId,
+      direction: 'outgoing',
+      activityType: 'test_connection',
+      endpoint: this.config.baseUrl || 'https://api.golioth.io',
+    }, async () => {
+      return this._testConnectionInternal();
+    });
+  }
+
+  private async _testConnectionInternal(): Promise<TestConnectionResult> {
     const startTime = Date.now();
     
     try {

@@ -6,11 +6,23 @@
 -- Much simpler and more reliable than MQTT broker
 -- ============================================================================
 
--- Enable PGMQ extension (Supabase has this built-in)
-CREATE EXTENSION IF NOT EXISTS pgmq CASCADE;
-
--- Create MQTT message queue
-SELECT pgmq.create('mqtt_messages');
+-- Enable PGMQ extension (Supabase has this built-in in cloud, may not be in local)
+-- We'll handle gracefully if not available
+DO $$
+BEGIN
+  -- Try to create extension
+  CREATE EXTENSION IF NOT EXISTS pgmq CASCADE;
+  
+  -- Try to create queue (only if extension exists)
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgmq') THEN
+    PERFORM pgmq.create('mqtt_messages');
+    RAISE NOTICE 'PGMQ queue created successfully';
+  ELSE
+    RAISE NOTICE 'PGMQ extension not available - skipping queue creation (use cloud Supabase for PGMQ)';
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'PGMQ setup skipped: % (this is OK for local development)', SQLERRM;
+END $$;
 
 -- Create table to track processed messages (for auditing)
 CREATE TABLE IF NOT EXISTS public.mqtt_message_archive (
@@ -60,16 +72,27 @@ CREATE POLICY "Organization members can view archived messages"
   );
 
 -- Function to process MQTT queue messages
-CREATE OR REPLACE FUNCTION process_mqtt_queue_messages()
+-- Only works if PGMQ extension is available
+CREATE OR REPLACE FUNCTION public.process_mqtt_queue_messages()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pgmq
 AS $$
 DECLARE
   v_message RECORD;
   v_topic_parts TEXT[];
   v_device_id TEXT;
+  v_pgmq_available BOOLEAN;
 BEGIN
+  -- Check if PGMQ is available
+  SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgmq') INTO v_pgmq_available;
+  
+  IF NOT v_pgmq_available THEN
+    RAISE NOTICE 'PGMQ not available - skipping queue processing';
+    RETURN;
+  END IF;
+
   -- Read messages from queue (batch of 10)
   FOR v_message IN 
     SELECT * FROM pgmq.read('mqtt_messages', 30, 10) -- 30 second visibility timeout, 10 messages
@@ -150,12 +173,12 @@ BEGIN
     PERFORM cron.schedule(
       'process-mqtt-queue',
       '*/10 * * * * *', -- Every 10 seconds
-      $job$SELECT process_mqtt_queue_messages()$job$
+      $job$SELECT public.process_mqtt_queue_messages()$job$
     );
   END IF;
 END $cron$;
 
 -- Comments
 COMMENT ON TABLE public.mqtt_message_archive IS 'Archive of processed MQTT messages from PGMQ';
-COMMENT ON FUNCTION process_mqtt_queue_messages IS 'Process messages from MQTT queue and update devices';
+COMMENT ON FUNCTION public.process_mqtt_queue_messages IS 'Process messages from MQTT queue and update devices';
 

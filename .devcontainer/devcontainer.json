@@ -1,0 +1,148 @@
+{
+  "name": "NetNeural IoT Platform",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // TypeScript & JavaScript
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        
+        // React & Next.js
+        "dsznajder.es7-react-js-snippets",
+        "styled-components.vscode-styled-components",
+        
+        // Database
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        
+        // Deno (for Edge Functions)
+        "denoland.vscode-deno",
+        
+        // Git & GitHub
+        "github.vscode-pull-request-github",
+        
+        // Utilities
+        "usernamehw.errorlens",
+        "EditorConfig.EditorConfig",
+        "ms-azuretools.vscode-docker",
+        
+        // Testing
+        "Orta.vscode-jest",
+        "ms-playwright.playwright"
+        ,
+        // Supabase
+        "supabase.supabase-vscode"
+      ],
+      
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        
+        // TypeScript
+        "typescript.tsdk": "development/node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        
+        // Deno (for Edge Functions)
+        "deno.enable": false,
+        "deno.enablePaths": [
+          "development/supabase/functions"
+        ],
+        
+        // Tailwind CSS
+        "tailwindCSS.experimental.classRegex": [
+          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+          ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+        ],
+        
+        // Files
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        
+        // Terminal
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.cwd": "${workspaceFolder}/development"
+      }
+    }
+  },
+
+  "forwardPorts": [
+    3000,    // Next.js Dev Server
+    54321,   // Supabase API Gateway (Kong)
+    54322,   // Supabase PostgreSQL
+    54323,   // Supabase Studio
+    54324,   // Supabase Inbucket (Email)
+    54329    // Supabase Pooler
+  ],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "🚀 Next.js App",
+      "onAutoForward": "openBrowser",
+      "visibility": "public",
+      "protocol": "https"
+    },
+    "54321": {
+      "label": "🔌 Supabase API",
+      "onAutoForward": "notify",
+      "visibility": "public",
+      "protocol": "https"
+    },
+    "54322": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    },
+    "54323": {
+      "label": "🗄️ Supabase Studio",
+      "onAutoForward": "openPreview",
+      "visibility": "public",
+      "protocol": "https"
+    },
+    "54324": {
+      "label": "📧 Email Inbox",
+      "onAutoForward": "notify",
+      "visibility": "public",
+      "protocol": "https"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh || echo '⚠️  Setup had issues but Codespace is ready. Run: cd development && bash ../.devcontainer/setup.sh'",
+  "postStartCommand": "bash .devcontainer/configure-env.sh && bash .devcontainer/make-ports-public.sh",
+  "postAttachCommand": "bash .devcontainer/configure-env.sh && bash .devcontainer/make-ports-public.sh",
+
+  "remoteEnv": {
+    "CODESPACES": "true",
+    "NODE_ENV": "development"
+  },
+
+  "mounts": [
+    // Note: Removed node_modules volume mount to fix permission issues in Codespaces
+    // Node modules will be installed fresh but npm cache is still preserved
+    "source=netneural-next-cache,target=${containerWorkspaceFolder}/development/.next,type=volume",
+    "source=netneural-supabase-data,target=${containerWorkspaceFolder}/development/.supabase,type=volume"
+  ],
+
+  "runArgs": [
+    "--network=host"
+  ],
+
+  "workspaceFolder": "/workspaces/MonoRepo",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/MonoRepo,type=bind,consistency=cached"
+}

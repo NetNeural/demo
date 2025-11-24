@@ -23,6 +23,7 @@ import {
   ProviderCapabilities,
   PaginationOptions,
 } from './base-integration-provider';
+import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
 // AWS SDK v3 imports
 import { IoTClient, ListThingsCommand, DescribeThingCommand, UpdateThingCommand } from '@aws-sdk/client-iot';
@@ -65,10 +66,16 @@ export class AwsIotIntegrationProvider extends DeviceIntegrationProvider {
   private iotClient: IoTClient;
   private iotDataClient: IoTDataPlaneClient;
   private region: string;
+  private activityLogger: FrontendActivityLogger;
+  private organizationId: string;
+  private integrationId: string;
 
-  constructor(integration: { id: string; config: AwsIotConfig }) {
+  constructor(integration: { id: string; config: AwsIotConfig; organizationId?: string }) {
     super();
     this.providerId = integration.id;
+    this.integrationId = integration.id;
+    this.organizationId = integration.organizationId || '';
+    this.activityLogger = new FrontendActivityLogger();
 
     const config = integration.config;
     this.region = config.region;
@@ -106,6 +113,22 @@ export class AwsIotIntegrationProvider extends DeviceIntegrationProvider {
    * Test AWS IoT connection
    */
   override async testConnection(): Promise<TestConnectionResult> {
+    if (!this.organizationId || !this.integrationId) {
+      return this._testConnectionInternal();
+    }
+
+    return this.activityLogger.withLog({
+      organizationId: this.organizationId,
+      integrationId: this.integrationId,
+      direction: 'outgoing',
+      activityType: 'test_connection',
+      endpoint: `AWS IoT Core (${this.region})`,
+    }, async () => {
+      return this._testConnectionInternal();
+    });
+  }
+
+  private async _testConnectionInternal(): Promise<TestConnectionResult> {
     try {
       // Try to list things (limited to 1 for quick test)
       const command = new ListThingsCommand({ maxResults: 1 });

@@ -36,6 +36,7 @@ import {
   ProviderCapabilities,
   PaginationOptions,
 } from './base-integration-provider';
+import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
 // ============================================================================
 // Azure IoT Types
@@ -94,10 +95,16 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
 
   private registry: Registry;
   private hubName: string;
+  private activityLogger: FrontendActivityLogger;
+  private organizationId: string;
+  private integrationId: string;
 
-  constructor(config: AzureIotConfig, providerId: string) {
+  constructor(config: AzureIotConfig, providerId: string, organizationId?: string) {
     super();
     this.providerId = providerId;
+    this.integrationId = providerId;
+    this.organizationId = organizationId || '';
+    this.activityLogger = new FrontendActivityLogger();
     this.registry = Registry.fromConnectionString(config.connectionString);
     
     // Extract hub name from connection string
@@ -109,6 +116,22 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
    * Test connection to Azure IoT Hub
    */
   override async testConnection(): Promise<TestConnectionResult> {
+    if (!this.organizationId || !this.integrationId) {
+      return this._testConnectionInternal();
+    }
+
+    return this.activityLogger.withLog({
+      organizationId: this.organizationId,
+      integrationId: this.integrationId,
+      direction: 'outgoing',
+      activityType: 'test_connection',
+      endpoint: `Azure IoT Hub: ${this.hubName}`,
+    }, async () => {
+      return this._testConnectionInternal();
+    });
+  }
+
+  private async _testConnectionInternal(): Promise<TestConnectionResult> {
     try {
       // Try to list devices (limit 1) to verify connection
       await this.registry.list();

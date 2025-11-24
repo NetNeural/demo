@@ -327,7 +327,10 @@ export default createEdgeFunction(async ({ req }) => {
         throw new DatabaseError(`Failed to fetch integrations: ${error.message}`, 500)
       }
 
-      // Enrich integrations with device counts
+      // Get Supabase URL for dynamic webhook URL generation
+      const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || 'http://localhost:54321'
+
+      // Enrich integrations with device counts and dynamic webhook URLs
       const enrichedIntegrations = await Promise.all(
         (integrations || []).map(async (integration: DbIntegration) => {
           // Get device count for this integration
@@ -343,7 +346,7 @@ export default createEdgeFunction(async ({ req }) => {
             status: integration.status,
             projectId: integration.project_id,
             baseUrl: integration.base_url,
-            webhook_url: integration.webhook_url,
+            webhook_url: `${supabaseUrl}/functions/v1/integration-webhook`,
             webhook_secret: integration.webhook_secret,
             webhook_enabled: integration.webhook_enabled,
             sync_direction: integration.sync_direction,
@@ -824,6 +827,20 @@ export default createEdgeFunction(async ({ req }) => {
         throw new DatabaseError(`Failed to create integration: ${error.message}`, 500)
       }
 
+      // Webhook URL is now computed dynamically from environment
+      // Just ensure webhook_secret is set (trigger should have done this)
+      if (!newIntegration.webhook_secret) {
+        const webhookSecret = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+        
+        await supabase
+          .from('device_integrations')
+          .update({ 
+            webhook_secret: webhookSecret,
+            webhook_enabled: true 
+          })
+          .eq('id', newIntegration.id)
+      }
+
       return createSuccessResponse({ 
         integration: newIntegration,
         message: 'Integration created successfully'
@@ -851,6 +868,8 @@ export default createEdgeFunction(async ({ req }) => {
         project_id?: string
         base_url?: string
         status?: string
+        webhook_enabled?: boolean
+        webhook_secret?: string
       }
 
       const updates: UpdateFields = {
@@ -864,10 +883,14 @@ export default createEdgeFunction(async ({ req }) => {
       const finalApiKey = api_key || settings?.apiKey || settings?.api_key
       const finalProjectId = project_id || settings?.projectId || settings?.project_id
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
+      const finalWebhookEnabled = settings?.webhookEnabled
+      const finalWebhookSecret = settings?.webhookSecret
       
       if (finalApiKey !== undefined) updates.api_key_encrypted = finalApiKey // TODO: Encrypt properly
       if (finalProjectId !== undefined) updates.project_id = finalProjectId
       if (finalBaseUrl !== undefined) updates.base_url = finalBaseUrl
+      if (finalWebhookEnabled !== undefined) updates.webhook_enabled = finalWebhookEnabled
+      if (finalWebhookSecret !== undefined) updates.webhook_secret = finalWebhookSecret
       
       if (status !== undefined) {
         const validStatuses = ['active', 'inactive', 'error']

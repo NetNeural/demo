@@ -1,32 +1,25 @@
 import * as Sentry from '@sentry/nextjs';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseIntegration } from '@supabase/sentry-js-integration';
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+// Only initialize Sentry if DSN is configured
+if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Integrations
-  integrations: [
-    // Supabase integration for automatic error tracking
-    new SupabaseIntegration(SupabaseClient, {
-      tracing: true,
-      breadcrumbs: true,
-      errors: true,
-    }),
-  ],
+    // Performance Monitoring
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-  // Performance Monitoring
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Debug mode
+    debug: false,
 
-  // Debug mode
-  debug: false,
+    // Environment
+    environment: process.env.NODE_ENV,
 
-  // Environment
-  environment: process.env.NODE_ENV,
+    // Release tracking
+    release: process.env.NEXT_PUBLIC_APP_VERSION,
 
-  // Release tracking
-  release: process.env.NEXT_PUBLIC_APP_VERSION,
-
-  // Enable in all environments for testing
-  enabled: true,
-});
+    // Enable in all environments for testing
+    enabled: true,
+  });
+} else {
+  console.log('[Sentry] Skipping initialization - no DSN configured');
+}
