@@ -54,6 +54,18 @@
     "out",
     "supabase/functions",
     "supabase/functions/**/*",
-    "scripts"
+    "scripts",
+    "scripts/**/*",
+    "__tests__",
+    "__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "jest.config.js",
+    "jest.setup.js",
+    "playwright.config.js",
+    "explore_*.js",
+    "compare-*.js"
   ]
 }
