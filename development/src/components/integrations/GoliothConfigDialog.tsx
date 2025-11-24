@@ -740,7 +740,7 @@ export function GoliothConfigDialog({
 
                 <div>
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    ❌ What You Don't Need (Handled Automatically):
+                    ❌ What You Don&apos;t Need (Handled Automatically):
                   </p>
                   <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside ml-2">
                     <li><strong>No API keys in webhook:</strong> Authentication uses HMAC signature only</li>
@@ -885,7 +885,7 @@ signature_header: X-Golioth-Signature`
                     ⚠️ Save Configuration First
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                    Click "Save Configuration" at the bottom to generate your webhook URL and secret. 
+                    Click &quot;Save Configuration&quot; at the bottom to generate your webhook URL and secret. 
                     They will appear here automatically for easy copying.
                   </p>
                 </div>
