@@ -70,7 +70,7 @@ export class FrontendActivityLogger {
           request_body: params.requestBody,
           status: 'started',
           metadata: params.metadata || {},
-        })
+        } as any) // Type assertion: production DB schema may be out of sync
         .select('id')
         .single()
 
