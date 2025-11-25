@@ -10,6 +10,18 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Test files (may use different patterns)
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Scripts and utilities (may use require, different patterns)
+scripts/
+*.js
+jest.setup.js
+
 # Configuration files that legitimately use require()
 next.config.js
 tailwind.config.js

@@ -226,9 +226,9 @@ export class FrontendActivityLogger {
     const failed = data.filter(d => ['failed', 'error', 'timeout'].includes(d.status)).length
     const responseTimes = data
       .filter(d => d.response_time_ms !== null)
-      .map(d => d.response_time_ms)
+      .map(d => d.response_time_ms!)
     const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+      ? responseTimes.reduce((a, b) => a! + b!, 0) / responseTimes.length
       : null
 
     return { total, success, failed, avgResponseTime }
