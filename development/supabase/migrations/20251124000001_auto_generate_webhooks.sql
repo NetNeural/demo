@@ -5,8 +5,13 @@
 -- Enable pgcrypto extension for gen_random_bytes function
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Drop existing functions to avoid conflicts (CASCADE to drop dependent objects)
+DROP FUNCTION IF EXISTS generate_webhook_url CASCADE;
+DROP FUNCTION IF EXISTS generate_webhook_secret CASCADE;
+DROP FUNCTION IF EXISTS auto_generate_webhook_config CASCADE;
+
 -- Function to generate webhook URL based on integration type and ID
-CREATE OR REPLACE FUNCTION generate_webhook_url(
+CREATE FUNCTION generate_webhook_url(
   integration_id UUID,
   integration_type TEXT
 )
@@ -56,7 +61,7 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 -- Function to generate secure webhook secret
-CREATE OR REPLACE FUNCTION generate_webhook_secret()
+CREATE FUNCTION generate_webhook_secret()
 RETURNS TEXT AS $$
 BEGIN
   -- Use gen_random_uuid() which is always available in Postgres
