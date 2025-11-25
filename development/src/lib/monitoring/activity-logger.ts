@@ -98,12 +98,12 @@ export class FrontendActivityLogger {
         .update({
           status: update.status,
           response_status: update.responseStatus,
-          response_body: update.responseBody,
+          response_body: update.responseBody as any,
           response_time_ms: update.responseTimeMs,
           error_message: update.errorMessage,
           error_code: update.errorCode,
           completed_at: new Date().toISOString(),
-        })
+        } as any) // Type assertion: production DB schema may be out of sync
         .eq('id', logId)
 
       if (error) {
