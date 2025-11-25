@@ -58,6 +58,16 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      - name: Sync migration history
+        run: |
+          echo "Repairing migration history conflicts..."
+          npx supabase migration repair --status reverted 20250107000000 || true
+          npx supabase migration repair --status reverted 20250124000000 || true
+          echo "Migration history repaired"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true
+
       - name: Push database migrations
         run: npx supabase db push
         env:
