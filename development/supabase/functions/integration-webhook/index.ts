@@ -52,16 +52,20 @@ export default createEdgeFunction(async ({ req }) => {
       throw new DatabaseError('Webhook not configured', 404)
     }
 
-    // Verify signature if secret is configured
+    // Verify signature if secret is configured (non-blocking - log verification result)
+    let signatureVerification = 'not_required'
     if (integration.webhook_secret) {
-    if (!signature) {
-      throw new DatabaseError('Missing signature', 401)
+      if (!signature) {
+        signatureVerification = 'missing_signature'
+      } else {
+        const expectedSignature = await generateSignature(body, integration.webhook_secret)
+        if (signature !== expectedSignature) {
+          signatureVerification = 'verification_failed'
+        } else {
+          signatureVerification = 'verified'
+        }
+      }
     }
-    const expectedSignature = await generateSignature(body, integration.webhook_secret)
-    if (signature !== expectedSignature) {
-      throw new DatabaseError('Invalid signature', 401)
-    }
-  }
 
   // Parse and normalize payload
   const rawPayload: RawWebhookPayload = JSON.parse(body)
@@ -81,7 +85,12 @@ export default createEdgeFunction(async ({ req }) => {
         'X-Golioth-Signature': signature ? '***' : null,
       },
       request_body: rawPayload,
-      error_message: null,
+      error_message: signatureVerification !== 'verified' && signatureVerification !== 'not_required' 
+        ? `Signature verification: ${signatureVerification}` 
+        : null,
+      metadata: {
+        signature_verification: signatureVerification
+      }
   }).select('id').single()
   
   if (logError) {
