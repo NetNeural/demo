@@ -2408,17 +2408,14 @@ export type Database = {
       }
       generate_webhook_secret: { Args: never; Returns: string }
       generate_webhook_url: {
-        Args: {
-          integration_id: string
-          integration_type: string
-          supabase_url?: string
-        }
+        Args: { integration_id: string; integration_type: string }
         Returns: string
       }
+      get_current_supabase_url: { Args: never; Returns: string }
       get_mqtt_queue_stats: {
         Args: { p_organization_id?: string }
         Returns: {
-          avg_processing_time: unknown
+          avg_processing_time: string
           completed_count: number
           failed_count: number
           pending_count: number
@@ -2447,6 +2444,7 @@ export type Database = {
           total_syncs: number
         }[]
       }
+      get_webhook_url: { Args: { integration_id: string }; Returns: string }
       log_integration_activity: {
         Args: {
           p_activity_type: string
@@ -2494,7 +2492,6 @@ export type Database = {
               p_activity_log_id?: string
               p_device_id: string
               p_device_timestamp?: string
-              p_integration_id?: string
               p_organization_id: string
               p_telemetry: Json
             }
@@ -2505,6 +2502,7 @@ export type Database = {
               p_activity_log_id?: string
               p_device_id: string
               p_device_timestamp?: string
+              p_integration_id?: string
               p_organization_id: string
               p_telemetry: Json
             }
