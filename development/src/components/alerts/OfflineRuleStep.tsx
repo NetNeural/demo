@@ -30,7 +30,7 @@ export function OfflineRuleStep({ state, updateState }: OfflineRuleStepProps) {
           onChange={(e) => updateCondition('offline_minutes', parseInt(e.target.value))}
         />
         <p className="text-sm text-muted-foreground">
-          Trigger alert if device hasn't been seen for this many minutes
+          Trigger alert if device hasn&apos;t been seen for this many minutes
         </p>
       </div>
 
