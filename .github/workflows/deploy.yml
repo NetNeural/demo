@@ -121,6 +121,8 @@ jobs:
           echo "📦 Removing API routes and Sentry instrumentation (incompatible with static export)"
           rm -rf src/app/api
           mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
+          echo "🔍 Checking alert-rules edit page..."
+          cat src/app/dashboard/alert-rules/\[id\]/edit/page.tsx
           echo "✅ Development-only files removed - building static site..."
           npm run build
           echo "✅ Build completed successfully!"
