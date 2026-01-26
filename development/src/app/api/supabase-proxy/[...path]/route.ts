@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 
-// For static export: no paths to pre-render (handled by Edge Functions)
-export async function generateStaticParams() {
-  return [];
-}
+// Route segment config - disable for static export
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 /**
  * Proxy for Supabase API requests in Codespaces

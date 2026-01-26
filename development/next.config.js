@@ -63,12 +63,20 @@ const nextConfig = {
   // 4. GitHub Pages HTTPS by default
 
   // Webpack configuration
-  webpack: (config, { dev }) => {
+  webpack: (config, { dev, isServer }) => {
     if (dev) {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
       }
+    }
+
+    // For static export: ignore API routes (they're for local development only)
+    if (isStaticExport && !isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@/app/api': false,
+      };
     }
 
     config.module.rules.push({

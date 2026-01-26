@@ -118,6 +118,9 @@ jobs:
           echo "🚀 Building NetNeural Platform for custom domain..."
           echo "Build Mode: $BUILD_MODE"
           echo "Target URL: $NEXT_PUBLIC_APP_URL"
+          echo "📦 Removing API routes (only for local development, production uses Edge Functions)"
+          rm -rf src/app/api
+          echo "✅ API routes removed - building static site..."
           npm run build
           echo "✅ Build completed successfully!"
           echo "📁 Output directory contents:"
