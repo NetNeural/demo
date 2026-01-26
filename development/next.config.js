@@ -107,8 +107,8 @@ const sentryWebpackPluginOptions = {
   disableClientWebpackPlugin: process.env.NODE_ENV === 'development', // Only in dev
 }
 
-// Export with Sentry and bundle analyzer
-module.exports = withSentryConfig(
-  withBundleAnalyzer(nextConfig),
-  sentryWebpackPluginOptions
-)
+// Export with conditional Sentry (disabled for static export to avoid Html import error)
+// Static export doesn't support custom error pages with <Html> from next/document
+module.exports = isStaticExport 
+  ? withBundleAnalyzer(nextConfig)
+  : withSentryConfig(withBundleAnalyzer(nextConfig), sentryWebpackPluginOptions)
