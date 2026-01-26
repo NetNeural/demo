@@ -147,7 +147,7 @@ export function ReviewStep({ state }: ReviewStepProps) {
       <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
         <h4 className="font-medium mb-2">Ready to Create</h4>
         <p className="text-sm text-muted-foreground">
-          Review the configuration above. Click "Create Rule" to activate monitoring for your devices.
+          Review the configuration above. Click &quot;Create Rule&quot; to activate monitoring for your devices.
         </p>
       </div>
     </div>

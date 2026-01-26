@@ -7,6 +7,7 @@
 // ===========================================================================
 
 import { createClient } from '@/lib/supabase/client'
+import { getSupabaseUrl } from '@/lib/supabase/config'
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from './types'
 
 // Import API module creators
@@ -53,7 +54,6 @@ export class EdgeFunctionClient {
   public alertRules: typeof alertRules
 
   constructor() {
-    const { getSupabaseUrl } = require('@/lib/supabase/config')
     const supabaseUrl = getSupabaseUrl()
     this.baseUrl = `${supabaseUrl}/functions/v1`
 

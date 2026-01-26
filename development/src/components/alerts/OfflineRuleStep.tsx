@@ -51,7 +51,7 @@ export function OfflineRuleStep({ state, updateState }: OfflineRuleStepProps) {
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h4 className="font-medium mb-2">How it Works:</h4>
         <p className="text-sm text-muted-foreground">
-          Devices that haven't reported for{' '}
+          Devices that haven&apos;t reported for{' '}
           <strong>{state.condition.offline_minutes || 15} minutes</strong> will trigger this rule
           {state.condition.grace_period_hours > 0 && (
             <>

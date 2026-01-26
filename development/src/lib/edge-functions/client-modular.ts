@@ -48,7 +48,6 @@ export class EdgeFunctionClient {
   public integrations: IntegrationsAPI
 
   constructor() {
-    const { getSupabaseUrl } = require('@/lib/supabase/config')
     const supabaseUrl = getSupabaseUrl()
     this.baseUrl = `${supabaseUrl}/functions/v1`
 

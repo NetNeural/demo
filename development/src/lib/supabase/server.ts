@@ -35,3 +35,6 @@ export const createServerSupabaseClient = async () => {
     }
   )
 }
+
+// Alias for API routes that expect createClient
+export const createClient = createServerSupabaseClient
