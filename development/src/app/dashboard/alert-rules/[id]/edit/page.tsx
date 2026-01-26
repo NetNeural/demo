@@ -11,6 +11,11 @@ import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
 
+// For static export: no pre-rendering (client-side routing only)
+export function generateStaticParams() {
+  return []
+}
+
 export default function EditAlertRulePage() {
   const router = useRouter()
   const params = useParams()
