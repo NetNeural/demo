@@ -7,7 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
+// For static export: no paths to pre-render (handled by Edge Functions)
+export async function generateStaticParams() {
+  return [];
+}
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ deviceId: string }> }

@@ -8,6 +8,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ConflictDetector } from '@/lib/sync/conflict-detector';
 
+// For static export: no paths to pre-render (handled by Edge Functions)
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ conflictId: string }> }
