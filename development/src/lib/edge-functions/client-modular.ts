@@ -7,6 +7,7 @@
 // ===========================================================================
 
 import { createClient } from '@/lib/supabase/client'
+import { getSupabaseUrl } from '@/lib/supabase/config'
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from './types'
 
 // Import API module creators

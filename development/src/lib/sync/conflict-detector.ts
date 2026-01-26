@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 
-export type MergeStrategy = 'prefer_local' | 'prefer_remote' | 'manual' | 'merge';
+export type MergeStrategy = 'prefer_local' | 'prefer_remote' | 'manual' | 'merge' | 'prompt';
 
 export interface FieldConflict {
   fieldName: string;
@@ -62,7 +62,7 @@ export class ConflictDetector {
           fieldName: field,
           localValue,
           remoteValue,
-          recommendedStrategy: this.fieldStrategies[field]
+          recommendedStrategy: this.fieldStrategies[field] || 'prompt'
         });
       }
     }

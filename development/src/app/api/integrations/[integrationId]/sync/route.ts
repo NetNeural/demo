@@ -20,7 +20,7 @@ export async function POST(
 
     // Get integration
     const { data: integration, error: integrationError } = await supabase
-      .from('organization_integrations')
+      .from('device_integrations')
       .select('*')
       .eq('id', integrationId)
       .single();
