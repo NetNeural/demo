@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { RuleWizard } from './RuleWizard'
@@ -11,11 +11,14 @@ import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
 
-export function EditRuleClient({ ruleId }: { ruleId: string }) {
+export function EditRuleClient() {
   const router = useRouter()
+  const params = useParams()
   const { currentOrganization } = useOrganization()
   const [rule, setRule] = useState<AlertRule | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const ruleId = params.id as string
 
   useEffect(() => {
     if (currentOrganization && ruleId) {

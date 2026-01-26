@@ -5,11 +5,6 @@ export function generateStaticParams() {
   return []
 }
 
-export default async function EditAlertRulePage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  return <EditRuleClient ruleId={id} />
+export default function EditAlertRulePage() {
+  return <EditRuleClient />
 }
