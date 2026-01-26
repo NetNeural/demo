@@ -121,8 +121,17 @@ jobs:
           echo "📦 Removing API routes and Sentry instrumentation (incompatible with static export)"
           rm -rf src/app/api
           mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
-          echo "🔍 Checking alert-rules edit page..."
-          cat src/app/dashboard/alert-rules/\[id\]/edit/page.tsx
+          echo "🧹 Cleaning build cache..."
+          rm -rf .next out
+          echo "🔍 Verifying alert-rules page has generateStaticParams..."
+          if grep -q "generateStaticParams" "src/app/dashboard/alert-rules/[id]/edit/page.tsx"; then
+            echo "✅ generateStaticParams found in file"
+            head -n 10 "src/app/dashboard/alert-rules/[id]/edit/page.tsx"
+          else
+            echo "❌ generateStaticParams NOT found - this will fail!"
+            cat "src/app/dashboard/alert-rules/[id]/edit/page.tsx"
+            exit 1
+          fi
           echo "✅ Development-only files removed - building static site..."
           npm run build
           echo "✅ Build completed successfully!"
