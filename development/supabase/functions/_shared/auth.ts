@@ -2,7 +2,7 @@
  * Authentication and authorization utilities for Edge Functions
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import type { Database } from './database.ts'
 
 export interface UserContext {

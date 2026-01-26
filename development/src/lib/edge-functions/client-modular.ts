@@ -48,10 +48,8 @@ export class EdgeFunctionClient {
   public integrations: IntegrationsAPI
 
   constructor() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (!supabaseUrl) {
-      throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined')
-    }
+    const { getSupabaseUrl } = require('@/lib/supabase/config')
+    const supabaseUrl = getSupabaseUrl()
     this.baseUrl = `${supabaseUrl}/functions/v1`
 
     // Initialize all API modules with the call method

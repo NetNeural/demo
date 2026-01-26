@@ -50,14 +50,6 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
 
   const isSuperAdmin = profile.role === 'super_admin'
 
-  // 🔍 DEBUG: Log user profile loading
-  console.log('🔍 getCurrentUser Debug:', {
-    email: user.email,
-    role: profile.role,
-    organizationId: profile.organization_id,
-    isSuperAdmin: isSuperAdmin
-  });
-
   // Super admins don't need an organization (organization_id is NULL)
   if (isSuperAdmin) {
     return {

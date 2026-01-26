@@ -2,15 +2,16 @@
 const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
-// Default to static export for GitHub Pages (override with BUILD_MODE=dynamic for local dev)
-const isStaticExport = process.env.BUILD_MODE !== 'dynamic'
+// Use dynamic mode in Codespaces (for API routes), static export elsewhere
+const isCodespaces = !!process.env.CODESPACE_NAME
+const isStaticExport = process.env.BUILD_MODE !== 'dynamic' && !isCodespaces
 
 const nextConfig = {
-  // Static export for GitHub Pages - this is our primary deployment method
-  output: 'export',
+  // Static export for GitHub Pages - disabled in Codespaces for API routes
+  output: isStaticExport ? 'export' : undefined,
 
-  // Required for GitHub Pages deployment
-  trailingSlash: true,
+  // Required for GitHub Pages deployment - disabled in Codespaces to avoid API route conflicts
+  trailingSlash: isStaticExport ? true : false,
 
   // Disable image optimization for static export
   images: {

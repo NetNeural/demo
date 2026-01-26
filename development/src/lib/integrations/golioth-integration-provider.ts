@@ -208,8 +208,45 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
     return [];
   }
 
-  /**
-   * Get provider capabilities
+  /**   * Deploy firmware to a device
+   */
+  async deployFirmware(
+    deviceId: string,
+    firmware: {
+      artifactId: string;
+      version: string;
+      packageName: string;
+      componentType?: string;
+      checksum?: string;
+    }
+  ): Promise<{
+    deploymentId: string;
+    status: string;
+    message?: string;
+  }> {
+    try {
+      // Golioth uses releases and artifacts for OTA updates
+      // We'll trigger an OTA update by updating the device's desired release
+      const response = await this.api.updateDevice(deviceId, {
+        metadata: {
+          desired_release: firmware.version,
+          deployment_artifact_id: firmware.artifactId,
+          deployment_initiated_at: new Date().toISOString()
+        }
+      });
+
+      return {
+        deploymentId: `golioth-${deviceId}-${Date.now()}`,
+        status: 'queued',
+        message: `Firmware ${firmware.version} deployment queued for device ${deviceId}`
+      };
+    } catch (error) {
+      console.error('Golioth firmware deployment error:', error);
+      throw new Error(`Failed to deploy firmware: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**   * Get provider capabilities
    */
   override getCapabilities(): ProviderCapabilities {
     return {

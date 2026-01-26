@@ -5,8 +5,7 @@
 // Features: CORS, auth, validation, error handling, logging
 // ===========================================================================
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { 
   getUserContext, 
   createAuthenticatedClient, 
@@ -56,7 +55,7 @@ export function createEdgeFunction(
     logActivity = false,
   } = options
 
-  return serve(async (req: Request) => {
+  return Deno.serve(async (req: Request) => {
     // CORS preflight
     if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders })

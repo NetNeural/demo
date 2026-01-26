@@ -67,6 +67,7 @@ export default createEdgeFunction(async ({ req }) => {
         message: alert.message,
         severity: alert.severity,
         alertType: alert.alert_type,
+        category: alert.category || 'system', // Added for Issue #108
         deviceName: alert.devices?.name || 'Unknown Device',
         deviceType: alert.devices?.device_type || 'Unknown',
         deviceId: alert.device_id,
@@ -86,6 +87,66 @@ export default createEdgeFunction(async ({ req }) => {
           severity: severityFilter,
           resolved: resolvedFilter
         }
+      })
+    }
+
+    // POST /alerts/bulk-acknowledge - Bulk acknowledge multiple alerts (Issue #108)
+    if (req.method === 'POST' && req.url.includes('/bulk-acknowledge')) {
+      const body = await req.json()
+      const { alert_ids, organization_id, acknowledgement_type, notes } = body
+
+      if (!alert_ids || !Array.isArray(alert_ids) || alert_ids.length === 0) {
+        throw new Error('alert_ids array is required')
+      }
+
+      // Verify user has access to this organization
+      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      if (!targetOrgId && !userContext.isSuperAdmin) {
+        throw new DatabaseError('Organization ID required', 400)
+      }
+
+      // Verify all alerts belong to the organization
+      const { data: alertsToAck, error: verifyError } = await supabase
+        .from('alerts')
+        .select('id, organization_id')
+        .in('id', alert_ids)
+
+      if (verifyError) {
+        throw new DatabaseError(`Failed to verify alerts: ${verifyError.message}`)
+      }
+
+      // Check access for each alert
+      const invalidAlerts = alertsToAck?.filter(alert => 
+        !userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId
+      )
+
+      if (invalidAlerts && invalidAlerts.length > 0) {
+        throw new DatabaseError('You do not have access to some of these alerts', 403)
+      }
+
+      // Bulk insert acknowledgements
+      const acknowledgements = alert_ids.map(alertId => ({
+        alert_id: alertId,
+        user_id: userContext.userId,
+        organization_id: targetOrgId,
+        acknowledgement_type: acknowledgement_type || 'acknowledged',
+        notes: notes || null
+      }))
+
+      const { data, error } = await supabase
+        .from('alert_acknowledgements')
+        .insert(acknowledgements)
+        .select()
+
+      if (error) {
+        console.error('Failed to bulk acknowledge alerts:', error)
+        throw new DatabaseError(`Failed to acknowledge alerts: ${error.message}`)
+      }
+
+      return createSuccessResponse({ 
+        acknowledged_count: data?.length || 0,
+        acknowledgements: data,
+        message: `Successfully acknowledged ${data?.length} alert(s)`
       })
     }
 
@@ -179,5 +240,5 @@ export default createEdgeFunction(async ({ req }) => {
 
   throw new Error('Method not allowed')
 }, {
-  allowedMethods: ['GET', 'PATCH', 'PUT']
+  allowedMethods: ['GET', 'POST', 'PATCH', 'PUT']
 })

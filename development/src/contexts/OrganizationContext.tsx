@@ -79,10 +79,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoading(true);
       
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Missing Supabase configuration');
-      }
+      // Supabase URL is now handled dynamically in the config
+      // No need to check env variable here since config.ts handles it
 
       // Fetch organizations using edge function client
       const response = await edgeFunctions.organizations.list();

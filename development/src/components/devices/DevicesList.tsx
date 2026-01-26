@@ -70,7 +70,7 @@ export function DevicesList() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterLocation, setFilterLocation] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<string>('name')
+  const [sortBy, setSortBy] = useState<string>('status') // Changed from 'name' to 'status' for Issue #103
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   
   const { currentOrganization } = useOrganization()
@@ -180,8 +180,16 @@ export function DevicesList() {
           bVal = (b.device_type || b.type || '')?.toLowerCase()
           break
         case 'status':
-          aVal = a.status || ''
-          bVal = b.status || ''
+          // Issue #103: Sort by status priority (online first, then warning, error, offline, maintenance)
+          const statusPriority: Record<string, number> = {
+            online: 1,
+            warning: 2,
+            error: 3,
+            offline: 4,
+            maintenance: 5
+          }
+          aVal = statusPriority[a.status] || 999
+          bVal = statusPriority[b.status] || 999
           break
         case 'lastSeen':
           aVal = new Date(a.lastSeen || 0).getTime()

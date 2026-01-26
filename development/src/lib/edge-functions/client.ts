@@ -18,6 +18,7 @@ import { createUsersAPI, type UsersAPI } from './api/users'
 import { createLocationsAPI, type LocationsAPI } from './api/locations'
 import { createIntegrationsAPI, type IntegrationsAPI } from './api/integrations'
 import { createUserActionsAPI, type UserActionsAPI } from './api/user-actions'
+import { alertRules } from './api/alert-rules'
 
 // Re-export types for convenience
 export type { EdgeFunctionResponse, EdgeFunctionOptions }
@@ -49,12 +50,11 @@ export class EdgeFunctionClient {
   public locations: LocationsAPI
   public integrations: IntegrationsAPI
   public userActions: UserActionsAPI
+  public alertRules: typeof alertRules
 
   constructor() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (!supabaseUrl) {
-      throw new Error('NEXT_PUBLIC_SUPABASE_URL is not defined')
-    }
+    const { getSupabaseUrl } = require('@/lib/supabase/config')
+    const supabaseUrl = getSupabaseUrl()
     this.baseUrl = `${supabaseUrl}/functions/v1`
 
     // Initialize all API modules with the call method
@@ -67,6 +67,7 @@ export class EdgeFunctionClient {
     this.locations = createLocationsAPI(callBound)
     this.integrations = createIntegrationsAPI(callBound)
     this.userActions = createUserActionsAPI(callBound)
+    this.alertRules = alertRules
   }
 
   /**

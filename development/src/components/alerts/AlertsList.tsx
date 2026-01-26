@@ -2,13 +2,25 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useState, useEffect, useCallback } from 'react'
+import { Alert as AlertUI, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { handleApiError } from '@/lib/sentry-utils'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { AlertsSummaryBar } from './AlertsSummaryBar'
+import { AlertsFilters } from './AlertsFilters'
+import { AlertsBulkActions } from './AlertsBulkActions'
+import { AlertsTable, type Alert } from './AlertsTable'
+import { Table2, Grid3x3 } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface AlertItem {
   id: string
@@ -25,28 +37,36 @@ interface AlertItem {
   category: 'temperature' | 'connectivity' | 'battery' | 'vibration' | 'security' | 'system'
 }
 
+type ViewMode = 'cards' | 'table'
+type TabType = 'all' | 'unacknowledged' | 'connectivity' | 'security' | 'environmental' | 'system'
+
 export function AlertsList() {
   const { currentOrganization } = useOrganization()
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  
+  // Issue #108: New state for filters, view mode, tabs, bulk actions
+  const [viewMode, setViewMode] = useState<ViewMode>('cards')
+  const [activeTab, setActiveTab] = useState<TabType>('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [severityFilter, setSeverityFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['connectivity']))
 
   const fetchAlerts = useCallback(async () => {
-    console.log('[AlertsList] fetchAlerts called, currentOrganization:', currentOrganization)
-    
     if (!currentOrganization) {
-      console.log('[AlertsList] No organization, returning early')
       setAlerts([])
       setLoading(false)
       return
     }
 
     try {
-      console.log('[AlertsList] Fetching alerts for organization:', currentOrganization.id)
       setLoading(true)
       
-      // Fetch only unresolved (active) alerts
       const response = await edgeFunctions.alerts.list(currentOrganization.id, {
         resolved: false
       })
@@ -69,9 +89,7 @@ export function AlertsList() {
       }
 
       const data = response.data
-      console.log('[AlertsList] API response:', data)
       
-      // Transform API response to match AlertItem format
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transformedAlerts = ((data as any).alerts || []).map((alert: any) => ({
         id: alert.id,
@@ -88,7 +106,6 @@ export function AlertsList() {
         category: alert.category || 'system'
       }))
       
-      console.log('[AlertsList] Transformed alerts:', transformedAlerts.length, 'alerts')
       setAlerts(transformedAlerts)
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -103,47 +120,98 @@ export function AlertsList() {
     fetchAlerts()
   }, [fetchAlerts])
 
+  // Filter alerts based on active tab
+  const tabFilteredAlerts = useMemo(() => {
+    switch (activeTab) {
+      case 'unacknowledged':
+        return alerts.filter(a => !a.acknowledged)
+      case 'connectivity':
+        return alerts.filter(a => a.category === 'connectivity')
+      case 'security':
+        return alerts.filter(a => a.category === 'security')
+      case 'environmental':
+        return alerts.filter(a => ['temperature', 'vibration'].includes(a.category))
+      case 'system':
+        return alerts.filter(a => a.category === 'system')
+      default:
+        return alerts
+    }
+  }, [alerts, activeTab])
+
+  // Apply search and filters
+  const filteredAlerts = useMemo(() => {
+    let filtered = tabFilteredAlerts
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(a =>
+        a.title.toLowerCase().includes(term) ||
+        a.description.toLowerCase().includes(term) ||
+        a.device.toLowerCase().includes(term)
+      )
+    }
+
+    // Severity filter
+    if (severityFilter !== 'all') {
+      filtered = filtered.filter(a => a.severity === severityFilter)
+    }
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(a => a.category === categoryFilter)
+    }
+
+    // Sort: severity desc, then timestamp asc (oldest first)
+    const severityPriority = { critical: 1, high: 2, medium: 3, low: 4 }
+    filtered.sort((a, b) => {
+      const severityDiff = severityPriority[a.severity] - severityPriority[b.severity]
+      if (severityDiff !== 0) return severityDiff
+      return a.rawTimestamp.getTime() - b.rawTimestamp.getTime()
+    })
+
+    return filtered
+  }, [tabFilteredAlerts, searchTerm, severityFilter, categoryFilter])
+
+  // Group alerts by category for card view
+  const groupedAlerts = useMemo(() => {
+    const groups: Record<string, AlertItem[]> = {}
+    filteredAlerts.forEach(alert => {
+      if (!groups[alert.category]) {
+        groups[alert.category] = []
+      }
+      groups[alert.category]!.push(alert)
+    })
+    return groups
+  }, [filteredAlerts])
+
   const handleAcknowledge = async (alertId: string) => {
     if (!currentOrganization) return
 
     try {
-      // Acknowledge alert using user-actions edge function
       const response = await edgeFunctions.userActions.acknowledgeAlert(alertId, 'acknowledged')
 
       if (!response.success) {
-        console.error('[AlertsList] Failed to acknowledge alert:', response.error)
-        
-        handleApiError(new Error(response.error?.message || 'Failed to acknowledge alert'), {
-          endpoint: `/functions/v1/user-actions`,
-          method: 'POST',
-          status: response.error?.status || 500,
-          context: {
-            alertId,
-            organizationId: currentOrganization.id,
-          },
-        })
-        
         toast.error('Failed to acknowledge alert')
         return
       }
 
-      // Optimistically update UI
-      setAlerts(prevAlerts => 
-        prevAlerts.map(alert => 
-          alert.id === alertId 
-            ? {
-                ...alert, 
-                acknowledged: true, 
-                acknowledgedBy: 'Current User',
-                acknowledgedAt: new Date()
-              }
+      setAlerts(prevAlerts =>
+        prevAlerts.map(alert =>
+          alert.id === alertId
+            ? { ...alert, acknowledged: true, acknowledgedBy: 'Current User', acknowledgedAt: new Date() }
             : alert
         )
       )
       
-      toast.success('Alert acknowledged successfully')
+      // Remove from selection
+      setSelectedIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(alertId)
+        return newSet
+      })
       
-      // Refresh alerts to get updated list
+      toast.success('Alert acknowledged')
       await fetchAlerts()
     } catch (error) {
       console.error('Error acknowledging alert:', error)
@@ -151,9 +219,78 @@ export function AlertsList() {
     }
   }
 
-  const handleViewDetails = (alert: AlertItem) => {
-    setSelectedAlert(alert)
-    setShowDetails(true)
+  const handleViewDetails = (alert: Alert) => {
+    // Convert Alert to AlertItem for the details modal
+    const alertItem = alerts.find(a => a.id === alert.id)
+    if (alertItem) {
+      setSelectedAlert(alertItem)
+      setShowDetails(true)
+    }
+  }
+
+  const handleBulkAcknowledge = async () => {
+    if (!currentOrganization || selectedIds.size === 0) return
+
+    setIsProcessing(true)
+    try {
+      const response = await edgeFunctions.alerts.bulkAcknowledge(
+        Array.from(selectedIds),
+        currentOrganization.id,
+        'acknowledged'
+      )
+
+      if (!response.success) {
+        toast.error('Failed to acknowledge alerts')
+        return
+      }
+
+      toast.success(`Successfully acknowledged ${selectedIds.size} alert(s)`)
+      setSelectedIds(new Set())
+      await fetchAlerts()
+    } catch (error) {
+      console.error('Error bulk acknowledging alerts:', error)
+      toast.error('Failed to acknowledge alerts')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.size === filteredAlerts.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredAlerts.map(a => a.id)))
+    }
+  }
+
+  const handleClearFilters = () => {
+    setSearchTerm('')
+    setSeverityFilter('all')
+    setCategoryFilter('all')
+  }
+
+  const toggleGroupCollapse = (category: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category)
+      } else {
+        newSet.add(category)
+      }
+      return newSet
+    })
   }
 
   const getSeverityIcon = (severity: AlertItem['severity']) => {
@@ -178,6 +315,18 @@ export function AlertsList() {
     }
   }
 
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      temperature: 'Temperature',
+      connectivity: 'Device Offline',
+      battery: 'Battery',
+      vibration: 'Vibration',
+      security: 'Security',
+      system: 'System'
+    }
+    return labels[category] || category
+  }
+
   const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
       case 'critical': return 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-800'
@@ -188,9 +337,6 @@ export function AlertsList() {
     }
   }
 
-  const activeAlerts = alerts.filter(a => !a.acknowledged)
-  const acknowledgedAlerts = alerts.filter(a => a.acknowledged)
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -200,235 +346,168 @@ export function AlertsList() {
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        {/* Active Alerts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>🚨 Active Alerts ({activeAlerts.length})</span>
-              {activeAlerts.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    activeAlerts.forEach(alert => handleAcknowledge(alert.id))
-                  }}
-                >
-                  Acknowledge All
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {activeAlerts.length > 0 ? (
-              activeAlerts.map((alert) => (
-                <Alert key={alert.id} className={getSeverityColor(alert.severity)}>
-                  <div className="flex items-start justify-between w-full">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex flex-col items-center space-y-1">
-                        <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
-                        <span className="text-sm">{getCategoryIcon(alert.category)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-900 dark:text-gray-100">
-                          {alert.title}
-                        </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {alert.description}
-                        </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                          <span className="font-medium">{alert.device}</span> • {alert.timestamp}
-                        </AlertDescription>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${
-                        alert.severity === 'critical' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
-                        alert.severity === 'high' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
-                        alert.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                        'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                      }`}>
-                        {alert.severity.toUpperCase()}
-                      </span>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleAcknowledge(alert.id)}
-                        >
-                          Acknowledge
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleViewDetails(alert)}
-                        >
-                          Details
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Alert>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p className="text-green-600 dark:text-green-500 text-lg">🎉 No active alerts</p>
-                <p className="text-sm mt-1">All systems operating normally</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+    <div className="space-y-4">
+      {/* Summary Bar */}
+      <AlertsSummaryBar 
+        alerts={alerts}
+        onFilterBySeverity={(severity) => setSeverityFilter(severity)}
+      />
 
-        {/* Acknowledged Alerts */}
-        {acknowledgedAlerts.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>✅ Acknowledged Alerts ({acknowledgedAlerts.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {acknowledgedAlerts.map((alert) => (
-                <Alert key={alert.id} className={`${getSeverityColor(alert.severity)} opacity-60`}>
-                  <div className="flex items-start justify-between w-full">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex flex-col items-center space-y-1">
-                        <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
-                        <span className="text-sm">{getCategoryIcon(alert.category)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-700 dark:text-gray-300">
-                          {alert.title}
-                        </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {alert.description}
-                        </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                          <span className="font-medium">{alert.device}</span> • {alert.timestamp}
-                        </AlertDescription>
-                        {alert.acknowledgedBy && (
-                          <AlertDescription className="text-xs text-green-600 dark:text-green-500 mt-1">
-                            ✓ Acknowledged by {alert.acknowledgedBy}
-                          </AlertDescription>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        ACKNOWLEDGED
-                      </span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleViewDetails(alert)}
-                      >
-                        Details
-                      </Button>
-                    </div>
-                  </div>
-                </Alert>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <AlertsFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            severityFilter={severityFilter}
+            onSeverityChange={setSeverityFilter}
+            categoryFilter={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+            onClearFilters={handleClearFilters}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Alert Details Modal */}
-      {showDetails && selectedAlert && (
-        <div className="modal-overlay" onClick={() => setShowDetails(false)}>
-          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title flex items-center">
-                {getSeverityIcon(selectedAlert.severity)} {getCategoryIcon(selectedAlert.category)} Alert Details
-              </h3>
-              <button 
-                onClick={() => setShowDetails(false)}
-                className="modal-close"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="modal-body space-y-4">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">{selectedAlert.title}</h4>
-                <p className="text-gray-600">{selectedAlert.description}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Device</label>
-                  <p className="text-sm text-gray-900">{selectedAlert.device}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Device ID</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedAlert.deviceId}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Severity</label>
-                  <p className={`text-sm font-medium ${
-                    selectedAlert.severity === 'critical' ? 'text-red-600' :
-                    selectedAlert.severity === 'high' ? 'text-orange-600' :
-                    selectedAlert.severity === 'medium' ? 'text-yellow-600' :
-                    'text-blue-600'
-                  }`}>
-                    {selectedAlert.severity.toUpperCase()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Category</label>
-                  <p className="text-sm text-gray-900 capitalize">{selectedAlert.category}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Timestamp</label>
-                  <p className="text-sm text-gray-900">{selectedAlert.rawTimestamp.toLocaleString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <p className={`text-sm font-medium ${
-                    selectedAlert.acknowledged ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {selectedAlert.acknowledged ? 'Acknowledged' : 'Active'}
-                  </p>
-                </div>
-              </div>
-              
-              {selectedAlert.acknowledged && selectedAlert.acknowledgedBy && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <h5 className="font-medium text-green-800 mb-1">Acknowledgment Details</h5>
-                  <p className="text-sm text-green-700">
-                    Acknowledged by <span className="font-medium">{selectedAlert.acknowledgedBy}</span>
-                  </p>
-                  {selectedAlert.acknowledgedAt && (
-                    <p className="text-sm text-green-600 mt-1">
-                      {selectedAlert.acknowledgedAt.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                onClick={() => setShowDetails(false)}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
-              {!selectedAlert.acknowledged && (
-                <button 
-                  onClick={() => {
-                    handleAcknowledge(selectedAlert.id)
-                    setShowDetails(false)
-                  }}
-                  className="btn btn-primary"
-                >
-                  Acknowledge Alert
-                </button>
-              )}
-            </div>
+      {/* Bulk Actions Bar */}
+      <AlertsBulkActions
+        selectedCount={selectedIds.size}
+        onAcknowledgeSelected={handleBulkAcknowledge}
+        onClearSelection={() => setSelectedIds(new Set())}
+        isProcessing={isProcessing}
+      />
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="all">All ({alerts.length})</TabsTrigger>
+            <TabsTrigger value="unacknowledged">
+              Unacknowledged ({alerts.filter(a => !a.acknowledged).length})
+            </TabsTrigger>
+            <TabsTrigger value="connectivity">
+              Device Offline ({alerts.filter(a => a.category === 'connectivity').length})
+            </TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="environmental">Environmental</TabsTrigger>
+            <TabsTrigger value="system">System</TabsTrigger>
+          </TabsList>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <Table2 className="h-4 w-4 mr-1" />
+              Table
+            </Button>
           </div>
         </div>
-      )}
-    </>
+
+        <TabsContent value={activeTab} className="space-y-4">
+          {filteredAlerts.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <p className="text-green-600 dark:text-green-500 text-lg">🎉 No alerts in this category</p>
+                <p className="text-sm text-muted-foreground mt-1">All systems operating normally</p>
+              </CardContent>
+            </Card>
+          ) : viewMode === 'table' ? (
+            <AlertsTable
+              alerts={filteredAlerts}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onToggleSelectAll={handleToggleSelectAll}
+              onAcknowledge={handleAcknowledge}
+              onViewDetails={handleViewDetails}
+            />
+          ) : (
+            // Cards view with grouping
+            <div className="space-y-4">
+              {Object.entries(groupedAlerts).map(([category, categoryAlerts]) => {
+                const isCollapsed = collapsedGroups.has(category)
+                const categoryLabel = getCategoryLabel(category)
+                
+                return (
+                  <Card key={category}>
+                    <Collapsible open={!isCollapsed} onOpenChange={() => toggleGroupCollapse(category)}>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="cursor-pointer hover:bg-muted/50">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center space-x-2">
+                              <span className="text-2xl">{getCategoryIcon(category as AlertItem['category'])}</span>
+                              <span>{categoryLabel}</span>
+                              <span className="text-sm font-normal text-muted-foreground">
+                                ({categoryAlerts.length})
+                              </span>
+                            </CardTitle>
+                            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="space-y-3">
+                          {categoryAlerts.map((alert) => (
+                            <AlertUI key={alert.id} className={getSeverityColor(alert.severity)}>
+                              <div className="flex items-start justify-between w-full">
+                                <div className="flex items-start space-x-3 flex-1">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <AlertDescription className="font-medium text-base text-gray-900 dark:text-gray-100">
+                                      {alert.title}
+                                    </AlertDescription>
+                                    <AlertDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                      {alert.description}
+                                    </AlertDescription>
+                                    <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                                      <span className="font-medium">{alert.device}</span> • {alert.timestamp}
+                                    </AlertDescription>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end space-y-2">
+                                  <div className="flex space-x-2">
+                                    {!alert.acknowledged && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleAcknowledge(alert.id)}
+                                      >
+                                        Acknowledge
+                                      </Button>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedAlert(alert)}
+                                    >
+                                      Details
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </AlertUI>
+                          ))}
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

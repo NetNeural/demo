@@ -34,6 +34,11 @@ const config = {
     '^.+\\.(png|jpg|jpeg|gif|webp|avif|ico|bmp|svg)$/i': '<rootDir>/__mocks__/fileMock.js',
   },
   
+  // Transform ESM modules from node_modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid|azure-iothub)/)',
+  ],
+  
   // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -47,6 +52,7 @@ const config = {
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.(test|spec).{js,jsx,ts,tsx}',
     '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/tests/**/*.(test|spec).{js,jsx,ts,tsx}',
   ],
   
   // Transform configuration

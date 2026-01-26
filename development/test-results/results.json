@@ -1,0 +1,935 @@
+{
+  "config": {
+    "configFile": "/workspaces/MonoRepo/development/playwright.config.js",
+    "rootDir": "/workspaces/MonoRepo/development/tests/playwright",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/workspaces/MonoRepo/development/tests/global-setup.ts",
+    "globalTeardown": "/workspaces/MonoRepo/development/tests/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/workspaces/MonoRepo/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "/workspaces/MonoRepo/development/tests/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/__tests__/**/*.{test,spec}.ts",
+          "**/tests/**/*.{test,spec}.ts",
+          "**/*.{test,spec}.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 2,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "golioth-enhancements.spec.ts",
+      "file": "golioth-enhancements.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Golioth Phase 1 Enhancements",
+          "file": "golioth-enhancements.spec.ts",
+          "line": 27,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Issue #89: Unified Device Status API",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 120,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should return comprehensive device status",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 1,
+                          "error": {
+                            "message": "Error: supabaseKey is required.",
+                            "stack": "Error: supabaseKey is required.\n    at SupabaseClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:118:29)\n    at createClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/index.ts:60:10)\n    at /workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts:31:28",
+                            "location": {
+                              "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                              "column": 28,
+                              "line": 31
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 29 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeAll(\u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 30 |\u001b[39m     \u001b[90m// Initialize Supabase client\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m     supabase \u001b[33m=\u001b[39m createClient(\u001b[33mSUPABASE_URL\u001b[39m\u001b[33m,\u001b[39m \u001b[33mSUPABASE_ANON_KEY\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m     \n \u001b[90m 33 |\u001b[39m     \u001b[90m// Login as super admin\u001b[39m\n \u001b[90m 34 |\u001b[39m     \u001b[36mconst\u001b[39m { data\u001b[33m:\u001b[39m authData\u001b[33m,\u001b[39m error\u001b[33m:\u001b[39m authError } \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m supabase\u001b[33m.\u001b[39mauth\u001b[33m.\u001b[39msignInWithPassword({\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                                "column": 28,
+                                "line": 31
+                              },
+                              "message": "Error: supabaseKey is required.\n\n\u001b[0m \u001b[90m 29 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeAll(\u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 30 |\u001b[39m     \u001b[90m// Initialize Supabase client\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m     supabase \u001b[33m=\u001b[39m createClient(\u001b[33mSUPABASE_URL\u001b[39m\u001b[33m,\u001b[39m \u001b[33mSUPABASE_ANON_KEY\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m     \n \u001b[90m 33 |\u001b[39m     \u001b[90m// Login as super admin\u001b[39m\n \u001b[90m 34 |\u001b[39m     \u001b[36mconst\u001b[39m { data\u001b[33m:\u001b[39m authData\u001b[33m,\u001b[39m error\u001b[33m:\u001b[39m authError } \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m supabase\u001b[33m.\u001b[39mauth\u001b[33m.\u001b[39msignInWithPassword({\u001b[0m\n\u001b[2m    at SupabaseClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:118:29)\u001b[22m\n\u001b[2m    at createClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/index.ts:60:10)\u001b[22m\n\u001b[2m    at /workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts:31:28\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.085Z",
+                          "annotations": [],
+                          "attachments": [],
+                          "errorLocation": {
+                            "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                            "column": 28,
+                            "line": 31
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-91c9f3469e19289a27ec",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 122,
+                  "column": 9
+                },
+                {
+                  "title": "should return 404 for non-existent device",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.321Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-7d2a7688a06ed4fc2056",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 150,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #86: Device Credentials Management",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 162,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should list device credentials",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.323Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-96b53aad314c121d070f",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 182,
+                  "column": 9
+                },
+                {
+                  "title": "should decrypt credential with audit logging",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.325Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-79249ce4830456cffa98",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 202,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #85: Firmware Deployment",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 243,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should queue firmware deployment",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.327Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-c3ea42cc15403eb1b16d",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 260,
+                  "column": 9
+                },
+                {
+                  "title": "should reject deployment without provider capability",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.330Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-9463444577e96c27fe82",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 293,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #87: Sync Conflict Detection",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 329,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should list unresolved conflicts",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.332Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-9edf456bc1344dbf97a6",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 350,
+                  "column": 9
+                },
+                {
+                  "title": "should resolve conflict manually",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.335Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-50ffbe0cd36486380d43",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 374,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #88: Manual Sync Trigger",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 413,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should trigger full sync",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.338Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-0e7ddfa73ac51d3a2499",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 415,
+                  "column": 9
+                },
+                {
+                  "title": "should support dry run mode",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "failed",
+                          "duration": 1,
+                          "error": {
+                            "message": "Error: supabaseKey is required.",
+                            "stack": "Error: supabaseKey is required.\n    at SupabaseClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:118:29)\n    at createClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/index.ts:60:10)\n    at /workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts:31:28",
+                            "location": {
+                              "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                              "column": 28,
+                              "line": 31
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 29 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeAll(\u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 30 |\u001b[39m     \u001b[90m// Initialize Supabase client\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m     supabase \u001b[33m=\u001b[39m createClient(\u001b[33mSUPABASE_URL\u001b[39m\u001b[33m,\u001b[39m \u001b[33mSUPABASE_ANON_KEY\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m     \n \u001b[90m 33 |\u001b[39m     \u001b[90m// Login as super admin\u001b[39m\n \u001b[90m 34 |\u001b[39m     \u001b[36mconst\u001b[39m { data\u001b[33m:\u001b[39m authData\u001b[33m,\u001b[39m error\u001b[33m:\u001b[39m authError } \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m supabase\u001b[33m.\u001b[39mauth\u001b[33m.\u001b[39msignInWithPassword({\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                                "column": 28,
+                                "line": 31
+                              },
+                              "message": "Error: supabaseKey is required.\n\n\u001b[0m \u001b[90m 29 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeAll(\u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 30 |\u001b[39m     \u001b[90m// Initialize Supabase client\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m     supabase \u001b[33m=\u001b[39m createClient(\u001b[33mSUPABASE_URL\u001b[39m\u001b[33m,\u001b[39m \u001b[33mSUPABASE_ANON_KEY\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m     \n \u001b[90m 33 |\u001b[39m     \u001b[90m// Login as super admin\u001b[39m\n \u001b[90m 34 |\u001b[39m     \u001b[36mconst\u001b[39m { data\u001b[33m:\u001b[39m authData\u001b[33m,\u001b[39m error\u001b[33m:\u001b[39m authError } \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m supabase\u001b[33m.\u001b[39mauth\u001b[33m.\u001b[39msignInWithPassword({\u001b[0m\n\u001b[2m    at SupabaseClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/SupabaseClient.ts:118:29)\u001b[22m\n\u001b[2m    at createClient (/workspaces/MonoRepo/development/node_modules/@supabase/supabase-js/src/index.ts:60:10)\u001b[22m\n\u001b[2m    at /workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts:31:28\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.081Z",
+                          "annotations": [],
+                          "attachments": [],
+                          "errorLocation": {
+                            "file": "/workspaces/MonoRepo/development/tests/playwright/golioth-enhancements.spec.ts",
+                            "column": 28,
+                            "line": 31
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-5422cf326859e07316a9",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 438,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #80: Missing Golioth Fields",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 462,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should persist all Golioth fields",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.291Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-894d942f5d9d159fc16d",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 464,
+                  "column": 9
+                },
+                {
+                  "title": "should update last_seen_online on status change",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.294Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-671a1c3aa8e386c5ad98",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 479,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #81: Firmware History Tracking",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 505,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should auto-log firmware version changes",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.297Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-06b235b590111429dab7",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 507,
+                  "column": 9
+                },
+                {
+                  "title": "should track deployment method",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.300Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-40fad06b5ab2f4c8d9ca",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 529,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Issue #83: Serial Number Primary Matching",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 543,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should match devices by serial number",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.303Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-3fb15da8e3e4b1b7a58e",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 545,
+                  "column": 9
+                },
+                {
+                  "title": "should enforce unique serial numbers",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.305Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-a1c00dde3e4669e7adea",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 558,
+                  "column": 9
+                }
+              ]
+            },
+            {
+              "title": "Performance & Integration",
+              "file": "golioth-enhancements.spec.ts",
+              "line": 574,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle concurrent requests",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.308Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-51e0765721b2712bb13d",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 576,
+                  "column": 9
+                },
+                {
+                  "title": "should return consistent data across endpoints",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-26T13:03:14.311Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "932ad47035815937d533-cdda5fe848b389c4970b",
+                  "file": "golioth-enhancements.spec.ts",
+                  "line": 590,
+                  "column": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-01-26T13:03:11.749Z",
+    "duration": 2616.26,
+    "expected": 0,
+    "skipped": 16,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}
