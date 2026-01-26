@@ -38,9 +38,10 @@ export async function GET(
     const provider = IntegrationProviderFactory.create(device.integration as any);
 
     // 3. Fetch real-time status from provider
+    const externalId = device.external_device_id || '';
     const [providerStatus, connectionInfo] = await Promise.all([
-      provider.getDeviceStatus(device.external_device_id).catch(() => null),
-      provider.getDeviceStatus(device.external_device_id).catch(() => null)
+      provider.getDeviceStatus(externalId).catch(() => null),
+      provider.getDeviceStatus(externalId).catch(() => null)
     ]);
 
     // 4. Build unified response
@@ -52,12 +53,12 @@ export async function GET(
         serialNumber: device.serial_number
       },
       status: providerStatus?.connectionState || device.status || 'unknown',
-      statusReason: providerStatus?.statusReason || null,
+      statusReason: (providerStatus as any)?.statusReason || null,
       connection: {
         isConnected: providerStatus?.connectionState === 'online',
         lastSeenOnline: device.last_seen_online || providerStatus?.lastActivity,
         lastSeenOffline: device.last_seen_offline,
-        uptime: connectionInfo?.uptime
+        uptime: (connectionInfo as any)?.uptime
       },
       firmware: {
         version: device.firmware_version || providerStatus?.firmware?.version,
@@ -66,8 +67,8 @@ export async function GET(
       },
       telemetry: providerStatus?.telemetry || {},
       integration: {
-        type: device.integration.integration_type,
-        name: device.integration.name,
+        type: (device.integration as any)?.integration_type,
+        name: (device.integration as any)?.name,
         capabilities: provider.getCapabilities()
       },
       lastSyncedAt: device.updated_at

@@ -56,13 +56,13 @@ export async function POST(
       if (decryptError || !decryptData) {
         // Fallback: return encrypted value if decryption fails
         console.warn('Decryption failed, returning encrypted value:', decryptError);
-        decryptedSecret = credential.encrypted_secret;
+        decryptedSecret = credential.encrypted_secret || '';
       } else {
         decryptedSecret = decryptData;
       }
     } catch (err) {
       console.error('Decryption error:', err);
-      decryptedSecret = credential.encrypted_secret;
+      decryptedSecret = credential.encrypted_secret || '';
     }
 
     // Log access for audit trail

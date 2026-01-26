@@ -21,10 +21,10 @@ export async function POST(
     // Get integration
     const { data: integration, error: integrationError } = await supabase
       .from('organization_integrations')
-      .select('*, organization:organizations(id)')
+      .select('*')
       .eq('id', integrationId)
       .single();
-
+    
     if (integrationError || !integration) {
       return NextResponse.json(
         { error: 'Integration not found' },
@@ -32,10 +32,22 @@ export async function POST(
       );
     }
 
+    // Get organization separately to avoid type complexity
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('id', integration.organization_id)
+      .single();
+
+    const integrationWithOrg: any = {
+      ...integration,
+      organization: org
+    };
+
     // Run sync using orchestrator
     const orchestrator = new IntegrationSyncOrchestrator();
     const result = await orchestrator.syncIntegration(
-      integration.organization.id,
+      integrationWithOrg.organization.id,
       integrationId,
       { fullSync, dryRun }
     );
