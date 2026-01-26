@@ -11,7 +11,8 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 import type { Database } from '@/types/supabase'
 
 // Note: Database table will be renamed in migration from golioth_sync_log to integration_sync_log
-type SyncLog = Database['public']['Tables']['golioth_sync_log']['Row']
+// Using January 2026 partition for type definition (partitioned table)
+type SyncLog = Database['public']['Tables']['golioth_sync_log_2026_01']['Row']
 type DeviceConflict = Database['public']['Tables']['device_conflicts']['Row']
 type SyncOperation = 'import' | 'export' | 'bidirectional'
 
@@ -62,8 +63,9 @@ export class IntegrationSyncService {
     organizationId: string,
     limit: number = 50
   ): Promise<SyncLog[]> {
+    // Query the current month partition (partitioned table)
     const { data, error } = await this.supabase
-      .from('golioth_sync_log')
+      .from('golioth_sync_log_2026_01')
       .select('*')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })

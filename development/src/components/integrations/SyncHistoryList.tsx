@@ -17,7 +17,8 @@ import {
 import { integrationSyncService } from '@/services/integration-sync.service'
 import type { Database } from '@/types/supabase'
 
-type SyncLog = Database['public']['Tables']['golioth_sync_log']['Row']
+// Use the January 2026 partition (current month) for the type definition
+type SyncLog = Database['public']['Tables']['golioth_sync_log_2026_01']['Row']
 
 interface Props {
   organizationId: string

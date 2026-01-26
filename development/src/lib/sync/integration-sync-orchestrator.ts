@@ -9,10 +9,10 @@
 
 import { IntegrationProviderFactory } from '@/lib/integrations/integration-provider-factory';
 import { createClient } from '@/lib/supabase/client';
-import type { Database } from '@/types/database';
+import type { Database } from '@/types/supabase';
 
 type Device = Database['public']['Tables']['devices']['Row'];
-type OrganizationIntegration = Database['public']['Tables']['organization_integrations']['Row'];
+type DeviceIntegration = Database['public']['Tables']['device_integrations']['Row'];
 
 export interface SyncOptions {
   fullSync?: boolean; // Sync all devices vs. incremental
@@ -57,7 +57,7 @@ export class IntegrationSyncOrchestrator {
     try {
       // 1. Get integration config
       const { data: integration, error: intError } = await this.supabase
-        .from('organization_integrations')
+        .from('device_integrations')
         .select('*')
         .eq('id', integrationId)
         .single();
@@ -67,7 +67,7 @@ export class IntegrationSyncOrchestrator {
       }
 
       // 2. Create provider (works for ANY integration type)
-      const provider = IntegrationProviderFactory.create(integration as OrganizationIntegration);
+      const provider = IntegrationProviderFactory.create(integration as DeviceIntegration);
 
       // 3. Test connection first
       const connectionTest = await provider.testConnection();
