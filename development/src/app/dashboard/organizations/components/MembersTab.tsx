@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
-import { UserPlus, Trash2, Shield, KeyRound, Copy, Mail, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Copy, Mail, CheckCircle2 } from 'lucide-react';
 import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
@@ -470,7 +470,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
             <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Make sure to save this password - you won't be able to see it again!
+                ⚠️ Make sure to save this password - you won&apos;t be able to see it again!
               </p>
             </div>
           </div>
