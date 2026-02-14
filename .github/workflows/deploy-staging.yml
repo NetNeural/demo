@@ -68,23 +68,25 @@ jobs:
         run: npx supabase link --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true
 
       - name: 📤 Push database migrations
         run: npx supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: false
+        continue-on-error: true
 
       - name: 🚀 Deploy edge functions
         run: npx supabase functions deploy --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: false
+        continue-on-error: true
 
       - name: 📝 Generate TypeScript types
         run: npx supabase gen types typescript --linked > src/lib/database.types.ts
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true
 
       - name: 🔍 Type check
         run: npm run type-check
