@@ -74,7 +74,8 @@ export default createEdgeFunction(async ({ req }) => {
         users!organization_members_user_id_fkey (
           id,
           email,
-          full_name
+          full_name,
+          password_change_required
         )
       `)
       .eq('organization_id', organizationId)
@@ -93,6 +94,7 @@ export default createEdgeFunction(async ({ req }) => {
       email: member.users?.email || '',
       role: member.role,
       joinedAt: member.created_at,
+      passwordChangeRequired: member.users?.password_change_required || false,
     }))
 
     return createSuccessResponse({ members: transformedMembers })

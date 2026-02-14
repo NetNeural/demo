@@ -9,6 +9,7 @@ export interface MembersAPI {
   add: (organizationId: string, data: { email?: string; userId?: string; role: string }) => Promise<EdgeFunctionResponse<unknown>>
   updateRole: (organizationId: string, memberId: string, role: string) => Promise<EdgeFunctionResponse<unknown>>
   remove: (organizationId: string, memberId: string) => Promise<EdgeFunctionResponse<unknown>>
+  resetPassword: (userId: string, password: string) => Promise<EdgeFunctionResponse<unknown>>
 }
 
 export function createMembersAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): MembersAPI {
@@ -49,6 +50,15 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
         method: 'DELETE',
         params: { organization_id: organizationId },
         body: { memberId },
+      }),
+    
+    /**
+     * Reset user password
+     */
+    resetPassword: (userId, password) =>
+      call('reset-password', {
+        method: 'POST',
+        body: { userId, password },
       }),
   }
 }

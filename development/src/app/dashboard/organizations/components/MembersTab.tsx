@@ -18,9 +18,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
-import { UserPlus, Trash2, Shield } from 'lucide-react';
+import { UserPlus, Trash2, Shield, KeyRound, Copy, Mail, CheckCircle2 } from 'lucide-react';
 import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
@@ -33,6 +41,7 @@ interface OrganizationMember {
   email: string;
   role: OrganizationRole;
   joinedAt: string;
+  passwordChangeRequired?: boolean;
 }
 
 interface MembersTabProps {
@@ -47,6 +56,11 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string>('');
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   // Debug logging
   console.log('📋 MembersTab context:', { 
@@ -202,6 +216,78 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     }
   };
 
+  const handleResetPassword = async (member: OrganizationMember) => {
+    try {
+      setResettingPassword(true);
+      setSelectedMember(member);
+      
+      // Generate random password (12 characters, mix of letters, numbers, special chars)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+      const tempPassword = Array.from(
+        { length: 12 }, 
+        () => chars[Math.floor(Math.random() * chars.length)]
+      ).join('');
+      
+      // Call reset password API (we'll create this edge function)
+      const response = await edgeFunctions.members.resetPassword(
+        member.userId, 
+        tempPassword
+      );
+
+      if (!response.success) {
+        const errorMsg = typeof response.error === 'string'
+          ? response.error
+          : 'Failed to reset password';
+        throw new Error(errorMsg);
+      }
+
+      setGeneratedPassword(tempPassword);
+      setPasswordCopied(false);
+      setShowPasswordDialog(true);
+      
+      toast({
+        title: 'Password Reset',
+        description: `New temporary password generated for ${member.name}`,
+      });
+      
+      // Refresh members to update password status
+      await fetchMembers();
+    } catch (error) {
+      console.error('❌ Error resetting password:', error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Failed to reset password';
+      
+      toast({
+        title: 'Error',
+        description: errorMsg,
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(generatedPassword);
+    setPasswordCopied(true);
+    
+    toast({
+      title: 'Copied',
+      description: 'Password copied to clipboard',
+    });
+    
+    setTimeout(() => setPasswordCopied(false), 2000);
+  };
+
+  const handleEmailPassword = () => {
+    // TODO: Implement email functionality
+    toast({
+      title: 'Email Not Configured',
+      description: 'Email service is not configured yet. Please copy the password manually.',
+      variant: 'destructive',
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -244,6 +330,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Password</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -285,6 +372,27 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                           <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={member.passwordChangeRequired ? "destructive" : "outline"}
+                            className="text-xs"
+                          >
+                            {member.passwordChangeRequired ? "Temporary" : "Set"}
+                          </Badge>
+                          {canModifyThisMember && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResetPassword(member)}
+                              disabled={resettingPassword}
+                              title="Reset password"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(member.joinedAt).toLocaleDateString()}
                       </TableCell>
@@ -319,6 +427,72 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         onMemberAdded={fetchMembers}
         userRole={userRole || 'member'}
       />
+
+      {/* Reset Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password Reset</DialogTitle>
+            <DialogDescription>
+              A new temporary password has been generated for {selectedMember?.name}.
+              The user will be required to change it on their next login.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <div className="text-sm text-muted-foreground">
+                {selectedMember?.email}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Temporary Password</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
+                  {generatedPassword}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyPassword}
+                  title="Copy to clipboard"
+                >
+                  {passwordCopied ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                ⚠️ Make sure to save this password - you won't be able to see it again!
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleEmailPassword}
+              className="w-full sm:w-auto"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email Password
+            </Button>
+            <Button
+              onClick={() => setShowPasswordDialog(false)}
+              className="w-full sm:w-auto"
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
