@@ -54,67 +54,130 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   // Check if user already exists
-  const { data: existingUser } = await supabaseClient
+  const { data: existingUser } = await supabaseAdmin
     .from('users')
-    .select('id')
+    .select('id, email, full_name')
     .eq('email', email)
     .single()
 
+  let authUserId: string
+
   if (existingUser) {
-    throw new Error('User with this email already exists')
-  }
+    console.log('ℹ️ User already exists, checking organization membership...')
+    
+    // Check if user is already in the organization
+    const { data: existingMembership } = await supabaseAdmin
+      .from('organization_members')
+      .select('id')
+      .eq('organization_id', userContext.organizationId)
+      .eq('user_id', existingUser.id)
+      .single()
 
-  // Create user in auth.users using Supabase admin API
-  if (!supabaseServiceKey) {
-    throw new Error('Missing service role key')
-  }
+    if (existingMembership) {
+      throw new Error('User is already a member of this organization')
+    }
 
-  // Create auth user
-  const authResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${supabaseServiceKey}`,
-      'Content-Type': 'application/json',
-      'apikey': supabaseServiceKey,
-    },
-    body: JSON.stringify({
-      email: email,
-      password: password,
-      email_confirm: true, // Auto-confirm email for admin-created users
-      user_metadata: {
-        full_name: fullName,
+    // User exists but not in this organization - reset their password and add them
+    console.log('✅ User exists but not in organization - resetting password and adding...')
+    
+    authUserId = existingUser.id
+
+    // Reset password using Admin API
+    const resetResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${authUserId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'Content-Type': 'application/json',
+        'apikey': supabaseServiceKey,
       },
-    }),
-  })
-
-  if (!authResponse.ok) {
-    const error = await authResponse.json()
-    throw new Error(error.message || 'Failed to create auth user')
-  }
-
-  const authUser = await authResponse.json()
-
-  // Create user in public.users table using admin client (bypasses RLS)
-  // @ts-expect-error - Insert object not fully typed in generated types
-  const { data: newUser, error: userError } = await supabaseAdmin
-    .from('users')
-    .insert({
-      id: authUser.id,
-      email: email,
-      full_name: fullName,
-      role: role || 'user',
-      organization_id: userContext.organizationId, // Assign to admin's organization
-      password_change_required: true, // User must change password on first login
+      body: JSON.stringify({
+        password: password,
+        user_metadata: {
+          full_name: fullName,
+        },
+      }),
     })
-    .select()
-    .single()
 
-  if (userError) {
-    console.error('Failed to create user record:', userError)
-    throw new DatabaseError(`Failed to create user record: ${userError.message}`)
+    if (!resetResponse.ok) {
+      const error = await resetResponse.json()
+      throw new Error(error.message || 'Failed to reset user password')
+    }
+
+    console.log('✅ Password reset successfully')
+
+    // Update users table to require password change
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        full_name: fullName,
+        password_change_required: true,
+      })
+      .eq('id', authUserId)
+
+    if (updateError) {
+      console.error('Failed to update user record:', updateError)
+      throw new DatabaseError(`Failed to update user record: ${updateError.message}`)
+    }
+
+    console.log('✅ User record updated with password_change_required flag')
+
+  } else {
+    // User doesn't exist - create new user
+    console.log('✅ Creating new user...')
+    
+    // Create user in auth.users using Supabase admin API
+    if (!supabaseServiceKey) {
+      throw new Error('Missing service role key')
+    }
+
+    // Create auth user
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'Content-Type': 'application/json',
+        'apikey': supabaseServiceKey,
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        email_confirm: true, // Auto-confirm email for admin-created users
+        user_metadata: {
+          full_name: fullName,
+        },
+      }),
+    })
+
+    if (!authResponse.ok) {
+      const error = await authResponse.json()
+      throw new Error(error.message || 'Failed to create auth user')
+    }
+
+    const authUser = await authResponse.json()
+    authUserId = authUser.id
+
+    // Create user in public.users table using admin client (bypasses RLS)
+    // @ts-expect-error - Insert object not fully typed in generated types
+    const { data: newUser, error: userError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: authUserId,
+        email: email,
+        full_name: fullName,
+        role: role || 'user',
+        organization_id: userContext.organizationId, // Assign to admin's organization
+        password_change_required: true, // User must change password on first login
+      })
+      .select()
+      .single()
+
+    if (userError) {
+      console.error('Failed to create user record:', userError)
+      throw new DatabaseError(`Failed to create user record: ${userError.message}`)
+    }
+    
+    console.log('✅ User record created with password_change_required flag')
   }
-  
-  console.log('✅ User record created with password_change_required flag')
   
   // TODO: Send welcome email with temporary password
   // This requires configuring email templates in Supabase dashboard
@@ -132,7 +195,7 @@ export default createEdgeFunction(async ({ req }) => {
       .from('organization_members')
       .insert({
         organization_id: userContext.organizationId,
-        user_id: authUser.id,
+        user_id: authUserId,
         role: memberRole,
         permissions: {},
       })
@@ -145,23 +208,18 @@ export default createEdgeFunction(async ({ req }) => {
     }
   }
 
-  console.log('✅ User created successfully:', { 
-    userId: authUser.id, 
+  console.log('✅ User created/updated successfully:', { 
+    userId: authUserId, 
     email: body.email,
     addedToOrganization: !!userContext.organizationId 
   })
 
-  // @ts-expect-error - newUser properties exist after successful insert
   return createSuccessResponse({ 
     user: {
-      // @ts-expect-error - newUser properties exist
-      id: newUser.id,
-      // @ts-expect-error - newUser properties exist
-      email: newUser.email,
-      // @ts-expect-error - newUser properties exist
-      fullName: newUser.full_name,
-      // @ts-expect-error - newUser properties exist
-      role: newUser.role,
+      id: authUserId,
+      email: email,
+      fullName: fullName,
+      role: role || 'user',
     }
   }, { status: 201 })
 }, {
