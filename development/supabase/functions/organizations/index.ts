@@ -137,20 +137,20 @@ export default createEdgeFunction(async ({ req }) => {
       // deno-lint-ignore no-explicit-any
       const enrichedOrgs = await Promise.all(
         (organizations || []).map(async (org: any) => {
-          // Get user count from organization_members table
-          const { count: userCount } = await supabase
+          // Get user count from organization_members table (use admin client to bypass RLS)
+          const { count: userCount } = await supabaseAdmin
             .from('organization_members')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', org.id)
           
-          // Get device count
-          const { count: deviceCount } = await supabase
+          // Get device count (use admin client to bypass RLS)
+          const { count: deviceCount } = await supabaseAdmin
             .from('devices')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', org.id)
           
-          // Get unresolved alert count
-          const { count: alertCount } = await supabase
+          // Get unresolved alert count (use admin client to bypass RLS)
+          const { count: alertCount } = await supabaseAdmin
             .from('alerts')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', org.id)

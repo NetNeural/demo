@@ -2,7 +2,8 @@ import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_sh
 import { 
   getUserContext, 
   getTargetOrganizationId,
-  createAuthenticatedClient
+  createAuthenticatedClient,
+  createServiceClient
 } from '../_shared/auth.ts'
 
 export default createEdgeFunction(async ({ req }) => {
@@ -11,6 +12,9 @@ export default createEdgeFunction(async ({ req }) => {
   
   // Create authenticated Supabase client (respects RLS)
   const supabase = createAuthenticatedClient(req)
+  
+  // Create service client for operations that need to bypass RLS (e.g., counting)
+  const supabaseAdmin = createServiceClient()
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -98,7 +102,8 @@ export default createEdgeFunction(async ({ req }) => {
       }
 
       // Get additional stats for complete dashboard
-      let membersQuery = supabase
+      // Use admin client to bypass RLS for counting (super admins need to see all counts)
+      let membersQuery = supabaseAdmin
         .from('organization_members')
         .select('id', { count: 'exact', head: true })
       
@@ -106,7 +111,7 @@ export default createEdgeFunction(async ({ req }) => {
         membersQuery = membersQuery.eq('organization_id', organizationId)
       }
 
-      let locationsQuery = supabase
+      let locationsQuery = supabaseAdmin
         .from('locations')
         .select('id', { count: 'exact', head: true })
       
@@ -114,7 +119,7 @@ export default createEdgeFunction(async ({ req }) => {
         locationsQuery = locationsQuery.eq('organization_id', organizationId)
       }
 
-      let integrationsQuery = supabase
+      let integrationsQuery = supabaseAdmin
         .from('device_integrations')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'active')
