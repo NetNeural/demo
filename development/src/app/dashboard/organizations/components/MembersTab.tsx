@@ -61,6 +61,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [emailingPassword, setEmailingPassword] = useState(false);
 
   // Debug logging
   console.log('📋 MembersTab context:', { 
@@ -280,19 +281,15 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   };
 
   const handleEmailPassword = async () => {
-    if (!selectedMember) return;
+    if (!selectedMember || !generatedPassword) return;
+    
+    setEmailingPassword(true);
     
     try {
-      // Reset password again to trigger email
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
-      const tempPassword = Array.from(
-        { length: 12 }, 
-        () => chars[Math.floor(Math.random() * chars.length)]
-      ).join('');
-      
+      // Send the currently displayed password via email
       const response = await edgeFunctions.members.resetPassword(
         selectedMember.userId, 
-        tempPassword
+        generatedPassword
       );
 
       if (!response.success) {
@@ -300,13 +297,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
       }
 
       toast({
-        title: 'Email Sent',
-        description: `Password has been emailed to ${selectedMember.email}`,
+        title: 'Email Sent! ✉️',
+        description: `Password has been sent to ${selectedMember.email}`,
       });
-      
-      // Update the displayed password
-      setGeneratedPassword(tempPassword);
-      setPasswordCopied(false);
     } catch (error) {
       console.error('❌ Error emailing password:', error);
       
@@ -315,6 +308,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         description: 'Could not send email. Please copy the password manually.',
         variant: 'destructive',
       });
+    } finally {
+      setEmailingPassword(false);
     }
   };
 
@@ -509,10 +504,11 @@ export function MembersTab({ organizationId }: MembersTabProps) {
             <Button
               variant="outline"
               onClick={handleEmailPassword}
+              disabled={emailingPassword}
               className="w-full sm:w-auto"
             >
               <Mail className="w-4 h-4 mr-2" />
-              Email Password
+              {emailingPassword ? 'Sending...' : 'Email Password'}
             </Button>
             <Button
               onClick={() => setShowPasswordDialog(false)}
