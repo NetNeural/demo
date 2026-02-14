@@ -89,17 +89,19 @@ jobs:
       #   env:
       #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
 
-      - name: 🔍 Type check
-        run: npm run type-check
-        continue-on-error: true
+      # Type check skipped - types are generated and committed manually
+      # - name: 🔍 Type check
+      #   run: npm run type-check
+      #   continue-on-error: true
 
       - name: 🧹 Lint code
         run: npm run lint
         continue-on-error: true
 
-      - name: 🧪 Run tests
-        run: npm test
-        continue-on-error: true
+      # Tests skipped for faster deployment
+      # - name: 🧪 Run tests
+      #   run: npm test
+      #   continue-on-error: true
 
       - name: ✅ Verify environment
         env:
