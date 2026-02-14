@@ -22,24 +22,44 @@ export default createEdgeFunction(async ({ req }) => {
     throw new Error('organization_id parameter is required')
   }
 
-  // Verify user has access to this organization
-  // Use service_role client to bypass RLS (permissions checked in Edge Function logic)
-  const { data: membership, error: membershipError } = await supabaseAdmin
-    .from('organization_members')
-    .select('role')
-    .eq('organization_id', organizationId)
-    .eq('user_id', userContext.userId)
-    .maybeSingle()
+  console.log('🔵 Members API called:', {
+    method,
+    organizationId,
+    userId: userContext.userId,
+    userRole: userContext.role,
+  })
 
-  if (membershipError) {
-    throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
+  // Check if user is super_admin (has global access)
+  const isSuperAdmin = userContext.role === 'super_admin'
+  
+  let userRole = 'viewer' // default role
+
+  if (isSuperAdmin) {
+    // Super admins have owner-level access to all organizations
+    console.log('✅ Super admin detected - granting owner-level access')
+    userRole = 'owner'
+  } else {
+    // Verify user has access to this organization
+    // Use service_role client to bypass RLS (permissions checked in Edge Function logic)
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', organizationId)
+      .eq('user_id', userContext.userId)
+      .maybeSingle()
+
+    if (membershipError) {
+      throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
+    }
+
+    if (!membership) {
+      throw new DatabaseError('User does not have access to this organization', 403)
+    }
+
+    userRole = membership.role
   }
 
-  if (!membership) {
-    throw new DatabaseError('User does not have access to this organization', 403)
-  }
-
-  const userRole = membership.role
+  console.log('👤 User role determined:', { userRole, isSuperAdmin })
 
   // GET - List all members in organization
   if (method === 'GET') {
@@ -80,12 +100,21 @@ export default createEdgeFunction(async ({ req }) => {
 
   // POST - Add new member to organization
   if (method === 'POST') {
+    console.log('🟢 POST /members - Adding member to organization')
+    
     // Only admins and owners can add members
     if (!['admin', 'owner'].includes(userRole)) {
+      console.error('❌ Insufficient permissions:', { userRole, required: ['admin', 'owner'] })
       throw new DatabaseError('Insufficient permissions to add members', 403)
     }
 
     const body = await req.json()
+    console.log('📥 Request body:', { 
+      hasEmail: !!body.email, 
+      hasUserId: !!body.userId, 
+      role: body.role 
+    })
+    
     const { email, userId, role } = body
 
     // Accept either email or userId
@@ -112,8 +141,10 @@ export default createEdgeFunction(async ({ req }) => {
 
     // If userId provided, use it directly; otherwise look up by email
     if (userId) {
+      console.log('🔑 Using provided userId:', userId)
       targetUserId = userId
     } else {
+      console.log('🔍 Looking up user by email:', email)
       // Find user by email using admin client (bypasses RLS)
       const { data: targetUser, error: userLookupError } = await supabaseAdmin
         .from('users')
@@ -122,17 +153,21 @@ export default createEdgeFunction(async ({ req }) => {
         .maybeSingle()
 
       if (userLookupError) {
+        console.error('❌ User lookup failed:', userLookupError)
         throw new DatabaseError(`Failed to find user: ${userLookupError.message}`, 500)
       }
 
       if (!targetUser) {
+        console.error('❌ User not found:', email)
         throw new DatabaseError('User not found with that email', 404)
       }
 
+      console.log('✅ User found:', targetUser.id)
       targetUserId = targetUser.id
     }
 
     // Check if user is already a member using admin client
+    console.log('🔍 Checking for existing membership:', { organizationId, targetUserId })
     const { data: existingMember, error: existingError } = await supabaseAdmin
       .from('organization_members')
       .select('id')
@@ -141,14 +176,19 @@ export default createEdgeFunction(async ({ req }) => {
       .maybeSingle()
 
     if (existingError) {
+      console.error('❌ Existing membership check failed:', existingError)
       throw new DatabaseError(`Failed to check existing membership: ${existingError.message}`, 500)
     }
 
     if (existingMember) {
+      console.log('⚠️ User already a member:', existingMember.id)
       throw new Error('User is already a member of this organization')
     }
 
+    console.log('✅ User not yet a member, proceeding with insert')
+
     // Add member using admin client (bypasses RLS)
+    console.log('🔵 Inserting new member:', { organizationId, targetUserId, role })
     const { data: newMember, error: addError } = await supabaseAdmin
       .from('organization_members')
       .insert({
@@ -170,8 +210,11 @@ export default createEdgeFunction(async ({ req }) => {
       .single()
 
     if (addError) {
+      console.error('❌ Failed to insert member:', addError)
       throw new DatabaseError(addError.message)
     }
+
+    console.log('✅ Member added successfully:', newMember.id)
 
     return createSuccessResponse({ 
       member: {
