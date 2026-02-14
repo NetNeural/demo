@@ -14,7 +14,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/reset-password']
+const PUBLIC_ROUTES = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/change-password']
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -66,6 +66,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Success! We have both a valid session and user profile
       setUser(userProfile)
       hasRedirected.current = false
+      
+      // Check if user needs to change password
+      if (userProfile.passwordChangeRequired && pathname !== '/auth/change-password') {
+        console.log('User must change password, redirecting...')
+        router.push('/auth/change-password')
+        return
+      }
       
     } catch (error) {
       console.error('Failed to load user:', error)

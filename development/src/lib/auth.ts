@@ -7,6 +7,7 @@ export interface UserProfile {
   organizationName: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
+  passwordChangeRequired: boolean  // True if user has temp password and must change it
 }
 
 /**
@@ -27,7 +28,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   // Note: organization can be NULL for super admins
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('role, organization_id')
+    .select('role, organization_id, password_change_required')
     .eq('id', user.id)
     .single()
 
@@ -49,6 +50,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   }
 
   const isSuperAdmin = profile.role === 'super_admin'
+  const passwordChangeRequired = profile.password_change_required === true
 
   // Super admins don't need an organization (organization_id is NULL)
   if (isSuperAdmin) {
@@ -58,7 +60,8 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       organizationId: null,
       organizationName: null,
       role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
-      isSuperAdmin: true
+      isSuperAdmin: true,
+      passwordChangeRequired
     }
   }
 
@@ -74,7 +77,8 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     organizationId: organization.id,
     organizationName: organization.name,
     role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
-    isSuperAdmin: false
+    isSuperAdmin: false,
+    passwordChangeRequired
   }
 }
 

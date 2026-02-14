@@ -104,6 +104,7 @@ export default createEdgeFunction(async ({ req }) => {
       full_name: fullName,
       role: role || 'user',
       organization_id: userContext.organizationId, // Assign to admin's organization
+      password_change_required: true, // User must change password on first login
     })
     .select()
     .single()
@@ -112,6 +113,13 @@ export default createEdgeFunction(async ({ req }) => {
     console.error('Failed to create user record:', userError)
     throw new DatabaseError(`Failed to create user record: ${userError.message}`)
   }
+  
+  console.log('✅ User record created with password_change_required flag')
+  
+  // TODO: Send welcome email with temporary password
+  // This requires configuring email templates in Supabase dashboard
+  // or using a service like Resend/SendGrid
+  // For now, the password will be shown in the UI after creation
 
   // Create organization membership if user has an organization
   if (userContext.organizationId) {

@@ -200,7 +200,7 @@ export function AddMemberDialog({
         setGeneratedPassword(tempPassword);
         setShowPasswordSuccess(true);
         setIsProcessing(false);
-        onMemberAdded();
+        // Don't call onMemberAdded() yet - wait until user closes the success dialog
         return; // Exit here - don't continue to "add existing user" logic
       }
 
