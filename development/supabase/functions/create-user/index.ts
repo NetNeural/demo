@@ -179,10 +179,99 @@ export default createEdgeFunction(async ({ req }) => {
     console.log('✅ User record created with password_change_required flag')
   }
   
-  // TODO: Send welcome email with temporary password
-  // This requires configuring email templates in Supabase dashboard
-  // or using a service like Resend/SendGrid
-  // For now, the password will be shown in the UI after creation
+  // Send welcome email with temporary password
+  const resendApiKey = Deno.env.get('RESEND_API_KEY')
+  
+  if (resendApiKey) {
+    try {
+      console.log('📧 Sending welcome email with temporary password...')
+      
+      const emailResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'NetNeural Platform <noreply@netneural.ai>',
+          to: email,
+          subject: 'Welcome to NetNeural IoT Platform',
+          html: `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: #1a1a1a; color: white; padding: 20px; text-align: center; }
+                  .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin: 20px 0; }
+                  .password-box { background: white; border: 2px solid #e0e0e0; padding: 15px; margin: 20px 0; font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px; }
+                  .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                  .cta-button { display: inline-block; background: #1a1a1a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                  .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>Welcome to NetNeural</h1>
+                  </div>
+                  <div class="content">
+                    <h2>Your Account is Ready!</h2>
+                    <p>Hello ${fullName},</p>
+                    <p>An account has been created for you on the NetNeural IoT Platform. Here are your login credentials:</p>
+                    
+                    <p><strong>Email:</strong> ${email}</p>
+                    
+                    <p><strong>Temporary Password:</strong></p>
+                    <div class="password-box">
+                      ${password}
+                    </div>
+                    
+                    <div class="warning">
+                      <strong>⚠️ Important:</strong> You will be required to change this password when you log in for the first time.
+                    </div>
+                    
+                    <p style="text-align: center;">
+                      <a href="https://demo-stage.netneural.ai" class="cta-button">Log In Now</a>
+                    </p>
+                    
+                    <h3>What's Next?</h3>
+                    <ol>
+                      <li>Click the button above to access the platform</li>
+                      <li>Log in with your email and temporary password</li>
+                      <li>Create a new secure password</li>
+                      <li>Start managing your IoT devices!</li>
+                    </ol>
+                    
+                    <p>If you have any questions, please contact your system administrator.</p>
+                  </div>
+                  <div class="footer">
+                    <p>NetNeural IoT Platform - Secure Device Management</p>
+                    <p>This is an automated message, please do not reply.</p>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `,
+        }),
+      })
+
+      if (!emailResponse.ok) {
+        const error = await emailResponse.json()
+        console.error('Failed to send welcome email:', error)
+        // Don't throw - user still created successfully
+      } else {
+        console.log('✅ Welcome email sent successfully')
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      // Don't throw - user still created successfully
+    }
+  } else {
+    console.warn('⚠️ RESEND_API_KEY not configured - skipping email')
+  }
 
   // Create organization membership if user has an organization
   if (userContext.organizationId) {

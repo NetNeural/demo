@@ -279,13 +279,43 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     setTimeout(() => setPasswordCopied(false), 2000);
   };
 
-  const handleEmailPassword = () => {
-    // TODO: Implement email functionality
-    toast({
-      title: 'Email Not Configured',
-      description: 'Email service is not configured yet. Please copy the password manually.',
-      variant: 'destructive',
-    });
+  const handleEmailPassword = async () => {
+    if (!selectedMember) return;
+    
+    try {
+      // Reset password again to trigger email
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+      const tempPassword = Array.from(
+        { length: 12 }, 
+        () => chars[Math.floor(Math.random() * chars.length)]
+      ).join('');
+      
+      const response = await edgeFunctions.members.resetPassword(
+        selectedMember.userId, 
+        tempPassword
+      );
+
+      if (!response.success) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: 'Email Sent',
+        description: `Password has been emailed to ${selectedMember.email}`,
+      });
+      
+      // Update the displayed password
+      setGeneratedPassword(tempPassword);
+      setPasswordCopied(false);
+    } catch (error) {
+      console.error('❌ Error emailing password:', error);
+      
+      toast({
+        title: 'Email Failed',
+        description: 'Could not send email. Please copy the password manually.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
