@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
-import { UserPlus, Trash2, KeyRound, Copy, Mail, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2 } from 'lucide-react';
 import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useToast } from '@/hooks/use-toast';
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
@@ -61,7 +61,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
-  const [emailingPassword, setEmailingPassword] = useState(false);
 
   // Debug logging
   console.log('📋 MembersTab context:', { 
@@ -280,75 +279,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     setTimeout(() => setPasswordCopied(false), 2000);
   };
 
-  const handleEmailPassword = async () => {
-    if (!selectedMember || !generatedPassword) return;
-    
-    setEmailingPassword(true);
-    
-    try {
-      // Send email with the currently displayed password (without resetting)
-      const response = await edgeFunctions.members.emailPassword(
-        selectedMember.userId, 
-        generatedPassword
-      );
-
-      console.log('📧 Email response:', response);
-      console.log('📧 Email response.data:', response.data);
-
-      // Check if the response data indicates failure
-      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
-        const emailResult = response.data as { success?: boolean; error?: string; message?: string };
-        
-        if (emailResult.success === false) {
-          const errorMsg = emailResult.error || emailResult.message || 'Failed to send email';
-          console.error('❌ Email send failed:', errorMsg);
-          
-          toast({
-            title: 'Email Failed',
-            description: errorMsg,
-            variant: 'destructive',
-          });
-          return;
-        }
-      }
-
-      // API wrapper returned success
-      if (!response.success) {
-        const errorMessage = typeof response.error === 'string' 
-          ? response.error 
-          : 'Failed to send email';
-        
-        console.error('❌ API error:', errorMessage);
-        
-        toast({
-          title: 'Email Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Success!
-      console.log('✅ Email sent successfully!');
-      toast({
-        title: 'Email Sent! ✉️',
-        description: `Password has been sent to ${selectedMember.email}`,
-      });
-    } catch (error) {
-      console.error('❌ Error emailing password:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Could not send email';
-      
-      toast({
-        title: 'Email Failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setEmailingPassword(false);
-    }
-  };
-
   if (loading) {
     return (
       <Card>
@@ -495,12 +425,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>
             <DialogDescription>
-              A new temporary password has been generated for {selectedMember?.name}.
+              A new temporary password has been generated for {selectedMember?.name} and has been emailed to {selectedMember?.email}.
               The user will be required to change it on their next login.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                ✉️ An email has been sent to the user with their temporary password.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
               <div className="text-sm text-muted-foreground">
@@ -531,21 +467,12 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
             <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Make sure to save this password - you won&apos;t be able to see it again!
+                ⚠️ Make sure to save this password - you won't be able to see it again!
               </p>
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant={emailingPassword ? "default" : "outline"}
-              onClick={handleEmailPassword}
-              disabled={emailingPassword}
-              className="w-full sm:w-auto transition-all active:scale-95"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              {emailingPassword ? 'Sending...' : 'Email Password'}
-            </Button>
+          <DialogFooter>
             <Button
               onClick={() => setShowPasswordDialog(false)}
               className="w-full sm:w-auto"
