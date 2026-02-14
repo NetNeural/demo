@@ -179,3 +179,4 @@ If you encounter issues:
 1. Check the detailed [Deployment Guide](./DEPLOYMENT_GUIDE.md)
 2. Review the [Environment Setup](./ENVIRONMENT_SETUP.md)
 3. Look at GitHub Actions logs for specific errors
+sbp_ec86b87df5b9fded92120a5a46d9c767da8f7b61./scripts/setup-staging-secrets.sh

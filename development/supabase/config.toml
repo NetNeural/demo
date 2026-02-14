@@ -45,7 +45,7 @@ enabled = true
 port = 54323
 # External URL of the API server that frontend connects to.
 # Default is localhost; this value may be overwritten by configure-env.sh at runtime.
-api_url = "http://127.0.0.1:54321"
+api_url = "https://didactic-umbrella-q7x56rqv5pr525r5-54321.app.github.dev"
 # OpenAI API Key to use for Supabase AI.
 openai_api_key = "env(OPENAI_API_KEY)"
 
@@ -69,9 +69,9 @@ enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 # Default to localhost for local development. This value may be overwritten at runtime by configure-env.sh or similar scripts.
-site_url = "http://127.0.0.1:3000"
+site_url = "https://didactic-umbrella-q7x56rqv5pr525r5-3000.app.github.dev"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://127.0.0.1:3000"]
+additional_redirect_urls = ["https://didactic-umbrella-q7x56rqv5pr525r5-3000.app.github.dev", "http://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.

@@ -33,11 +33,10 @@ REPO="NetNeural/MonoRepo"
 echo -e "${BLUE}📦 Repository: ${REPO}${NC}"
 echo ""
 
-# Function to set secret with environment scope
+# Function to set secret at repository level
 set_secret() {
     local secret_name=$1
     local secret_value=$2
-    local env_name=$3
     
     if [ -z "$secret_value" ]; then
         echo -e "${YELLOW}⚠️  Skipping empty value for ${secret_name}${NC}"
@@ -46,8 +45,8 @@ set_secret() {
     
     echo -e "${BLUE}Setting ${secret_name}...${NC}"
     
-    # Set as repository secret (accessible to all environments)
-    echo "$secret_value" | gh secret set "$secret_name" --repo "$REPO" --env "$env_name"
+    # Set as repository secret (accessible to all environments/workflows)
+    echo "$secret_value" | gh secret set "$secret_name" --repo "$REPO"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✅ ${secret_name} set successfully${NC}"
@@ -120,22 +119,28 @@ if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo -e "${BLUE}🚀 Setting GitHub secrets for staging environment...${NC}"
+echo -e "${BLUE}🚀 Setting GitHub secrets at repository level...${NC}"
+echo "   (These will be accessible to the staging environment workflow)"
 echo ""
 
-# Set all secrets with staging environment scope
-set_secret "STAGING_SUPABASE_PROJECT_ID" "$STAGING_PROJECT_ID" "staging"
-set_secret "STAGING_SUPABASE_URL" "$STAGING_SUPABASE_URL" "staging"
-set_secret "STAGING_SUPABASE_ANON_KEY" "$STAGING_ANON_KEY" "staging"
-set_secret "STAGING_SUPABASE_SERVICE_ROLE_KEY" "$STAGING_SERVICE_KEY" "staging"
-set_secret "STAGING_SUPABASE_DB_PASSWORD" "$STAGING_DB_PASSWORD" "staging"
-set_secret "STAGING_GOLIOTH_API_KEY" "$STAGING_GOLIOTH_KEY" "staging"
-set_secret "STAGING_SUPABASE_ACCESS_TOKEN" "$STAGING_SUPABASE_ACCESS_TOKEN" "staging"
+# Set all secrets at repository level
+set_secret "STAGING_SUPABASE_PROJECT_ID" "$STAGING_PROJECT_ID"
+set_secret "STAGING_SUPABASE_URL" "$STAGING_SUPABASE_URL"
+set_secret "STAGING_SUPABASE_ANON_KEY" "$STAGING_ANON_KEY"
+set_secret "STAGING_SUPABASE_SERVICE_ROLE_KEY" "$STAGING_SERVICE_KEY"
+set_secret "STAGING_SUPABASE_DB_PASSWORD" "$STAGING_DB_PASSWORD"
+set_secret "STAGING_GOLIOTH_API_KEY" "$STAGING_GOLIOTH_KEY"
+set_secret "STAGING_SUPABASE_ACCESS_TOKEN" "$STAGING_SUPABASE_ACCESS_TOKEN"
 
 echo ""
 echo -e "${GREEN}✅ All staging secrets configured successfully!${NC}"
 echo ""
 echo -e "${BLUE}📋 Verify secrets:${NC}"
-echo "   gh secret list --repo $REPO --env staging"
+echo "   gh secret list --repo $REPO | grep STAGING"
+echo ""
+echo -e "${YELLOW}💡 Optional: Create GitHub Environment${NC}"
+echo "   Visit: https://github.com/$REPO/settings/environments"
+echo "   → Create 'staging' environment"
+echo "   → Add protection rules (optional)"
 echo ""
 echo -e "${GREEN}🎉 Ready to proceed with staging environment setup${NC}"
