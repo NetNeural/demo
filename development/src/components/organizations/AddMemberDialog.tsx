@@ -377,7 +377,7 @@ export function AddMemberDialog({
               <DialogDescription>
                 {needsUserCreation
                   ? 'This email is not registered. Provide their details to create an account and add them to your organization.'
-                  : 'Add someone to your organization. If they don&apos;t have an account yet, we&apos;ll create one for them.'}
+                  : "Add someone to your organization. If they don't have an account yet, we'll create one for them."}
               </DialogDescription>
             </DialogHeader>
 
