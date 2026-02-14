@@ -1,4 +1,4 @@
-name: Deploy to Staging (demo-stage.netneural.ai)
+name: Deploy Staging to GitHub Pages
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://demo-stage.netneural.ai
+      url: https://netneural.github.io/MonoRepo
     
     defaults:
       run:
@@ -110,7 +110,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
           GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
-          NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"
+          NEXT_PUBLIC_APP_URL: "https://netneural.github.io/MonoRepo"
           NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform [STAGING]"
           NEXT_PUBLIC_APP_VERSION: "1.0.0-staging"
         run: |
@@ -133,9 +133,10 @@ jobs:
           echo "📁 Output:"
           ls -la out/
           
-          # Copy CNAME for custom domain
-          cp public/CNAME.staging out/CNAME
-          echo "✅ CNAME configured for demo-stage.netneural.ai"
+          # Note: Not using custom domain for staging
+          # Staging will be accessible at: https://netneural.github.io/MonoRepo/
+          # Custom domain (demo.netneural.ai) is reserved for production only
+          echo "✅ Staging will be at: https://netneural.github.io/MonoRepo/"
 
       - name: 📤 Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -150,9 +151,12 @@ jobs:
         if: success()
         run: |
           echo "🎉 Staging deployment successful!"
-          echo "🌐 URL: https://demo-stage.netneural.ai"
+          echo "🌐 URL: https://netneural.github.io/MonoRepo/"
           echo "📊 GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
           echo "🗄️ Database: ${{ secrets.STAGING_SUPABASE_URL }}"
+          echo ""
+          echo "ℹ️  Note: Staging uses GitHub Pages default URL"
+          echo "   Production custom domain: demo.netneural.ai"
 
       - name: 🔍 Post-Deployment Verification
         if: success()
