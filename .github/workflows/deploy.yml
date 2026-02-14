@@ -54,26 +54,26 @@ jobs:
           version: latest
 
       - name: Link to Supabase project
-        run: npx supabase link --project-ref bldojxpockljyivldxwf
+        run: npx supabase link --project-ref atgbmxicqikmapfqouco
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
 
       - name: Push database migrations
         run: npx supabase db push
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
         continue-on-error: false
 
       - name: Deploy edge functions
         run: npx supabase functions deploy --no-verify-jwt
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
         continue-on-error: false
 
       - name: Generate TypeScript types
         run: npx supabase gen types typescript --linked > src/lib/database.types.ts
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
 
       - name: Type check
         run: npm run type-check
@@ -86,9 +86,9 @@ jobs:
       - name: Verify environment configuration
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GOLIOTH_API_KEY: ${{ secrets.GOLIOTH_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: "https://atgbmxicqikmapfqouco.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg"
+          GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
         run: |
           echo "🔍 NetNeural Platform Configuration:"
           echo "NODE_ENV: $NODE_ENV"
@@ -96,28 +96,26 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:20}... (truncated for security)"
           echo "GOLIOTH_API_KEY: ${GOLIOTH_API_KEY:0:10}... (truncated for security)"
           echo "Build Mode: Static Export for GitHub Pages"
-          echo "Production Supabase Project: bldojxpockljyivldxwf"
+          echo "Staging Supabase Project: atgbmxicqikmapfqouco"
 
       - name: Build application
         env:
           NODE_ENV: production
           BUILD_MODE: static
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GOLIOTH_API_KEY: ${{ secrets.GOLIOTH_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: "https://atgbmxicqikmapfqouco.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg"
+          GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
-          NEXT_PUBLIC_APP_URL: "https://demo.netneural.ai"
-          NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform"
-          NEXT_PUBLIC_APP_VERSION: "1.0.0"
-          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_OTLP_ENDPOINT: ${{ secrets.SENTRY_OTLP_ENDPOINT }}
+          NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"
+          NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform [STAGING]"
+          NEXT_PUBLIC_APP_VERSION: "1.0.0-staging"
         run: |
-          echo "🚀 Building NetNeural Platform for custom domain..."
+          echo "🚀 Building NetNeural Platform for staging custom domain..."
           echo "Build Mode: $BUILD_MODE"
           echo "Target URL: $NEXT_PUBLIC_APP_URL"
+          echo "📦 Creating CNAME for custom domain..."
+          echo "demo-stage.netneural.ai" > public/CNAME
+          echo "✅ CNAME created"
           echo "📦 Removing API routes and Sentry instrumentation (incompatible with static export)"
           rm -rf src/app/api
           mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
@@ -126,6 +124,10 @@ jobs:
           echo "✅ Development-only files removed - building static site..."
           npm run build
           echo "✅ Build completed successfully!"
+          if [ ! -f out/CNAME ]; then
+            echo "⚠️ CNAME not in output, creating..."
+            echo "demo-stage.netneural.ai" > out/CNAME
+          fi
           echo "📁 Output directory contents:"
           ls -la out/
 
@@ -144,7 +146,7 @@ jobs:
       - name: Deployment success notification
         if: success()
         run: |
-          echo "🚀 NetNeural Platform deployed successfully!"
-          echo "📊 Live URL: https://${{ github.repository_owner }}.github.io/MonoRepo/"
-          echo "🎮 Running with: Fresh Supabase Production Database"
+          echo "🚀 NetNeural Staging Platform deployed successfully!"
+          echo "📊 Live URL: https://demo-stage.netneural.ai"
+          echo "🎮 Running with: Staging Supabase Database (atgbmxicqikmapfqouco)"
           echo "💡 Real device management and Golioth integration enabled"
