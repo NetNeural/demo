@@ -94,10 +94,17 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
       const data = response.data;
       
+      console.log('🏢 Organizations data received:', {
+        count: data.organizations?.length,
+        isSuperAdmin: data.isSuperAdmin,
+      });
+      
       // Transform API response to UserOrganization format
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const organizations: UserOrganization[] = (data.organizations as any[] || []).map((org: any) => ({
-        id: org.id,
+      const organizations: UserOrganization[] = (data.organizations as any[] || []).map((org: any) => {
+        console.log(`🏢 Org: ${org.name} - userCount: ${org.userCount}, deviceCount: ${org.deviceCount}`);
+        return {
+          id: org.id,
         name: org.name,
         slug: org.slug,
         description: org.description,
@@ -111,7 +118,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         deviceCount: org.deviceCount,
         userCount: org.userCount,
         activeAlertsCount: org.alertCount,
-      }));
+      };
+      });
 
       setUserOrganizations(organizations);
 
@@ -164,8 +172,12 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoadingStats(true);
       
+      console.log('📊 Fetching stats for organization:', currentOrgId);
+      
       // Fetch dashboard stats using edge function client
       const response = await edgeFunctions.organizations.stats(currentOrgId);
+
+      console.log('📊 Stats response:', { success: response.success, hasData: !!response.data, error: response.error });
 
       if (!response.success || !response.data) {
         // Only log error if we're authenticated (not on login page)
@@ -179,6 +191,12 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const statsData = response.data as any;
       
+      console.log('📊 Stats data received:', {
+        totalDevices: statsData.totalDevices,
+        totalUsers: statsData.totalUsers,
+        activeAlerts: statsData.activeAlerts,
+      });
+      
       const fetchedStats: OrganizationStats = {
         totalDevices: statsData.totalDevices || 0,
         onlineDevices: statsData.onlineDevices || 0,
@@ -188,12 +206,17 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         activeIntegrations: statsData.activeIntegrations || 0,
       };
 
+      console.log('📊 Final stats:', fetchedStats);
       setStats(fetchedStats);
     } catch (error) {
       console.error('Error fetching organization stats:', error);
       // Fall back to cached data from userOrganizations
       const currentOrg = userOrganizations.find(org => org.id === currentOrgId);
       if (currentOrg) {
+        console.log('📊 Using fallback stats from cached org data:', {
+          userCount: currentOrg.userCount,
+          deviceCount: currentOrg.deviceCount,
+        });
         setStats({
           totalDevices: currentOrg.deviceCount || 0,
           onlineDevices: Math.floor((currentOrg.deviceCount || 0) * 0.85),
