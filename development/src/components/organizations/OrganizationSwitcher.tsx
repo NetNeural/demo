@@ -109,7 +109,7 @@ export function OrganizationSwitcher({
             Get Started
           </DropdownMenuLabel>
           
-          {showCreateButton && isSuperAdmin && (
+          {showCreateButton && (
             <div className="px-2 py-2">
               <CreateOrganizationDialog
                 onSuccess={(newOrgId) => {
@@ -263,7 +263,7 @@ export function OrganizationSwitcher({
           );
         })}
 
-        {showCreateButton && isSuperAdmin && (
+        {showCreateButton && (
           <>
             <DropdownMenuSeparator />
             <div className="px-2 py-2">

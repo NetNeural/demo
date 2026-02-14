@@ -92,11 +92,9 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
     if (req.method === 'POST') {
-      // Only super admins can create organizations
-      if (!userContext.isSuperAdmin) {
-        throw new DatabaseError('Only super admins can create organizations', 403)
-      }
-
+      // Any authenticated user can create an organization
+      // They will automatically become the owner of that organization
+      
       const body = await req.json()
       const { name, slug, description, subscriptionTier } = body
 
@@ -138,6 +136,25 @@ export default createEdgeFunction(async ({ req }) => {
       if (createError) {
         console.error('Failed to create organization:', createError)
         throw new DatabaseError(`Failed to create organization: ${createError.message}`)
+      }
+      
+      // Add the creator as the owner of the new organization
+      // @ts-expect-error - Properties exist
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          // @ts-expect-error - id exists
+          organization_id: newOrg.id,
+          user_id: userContext.userId,
+          role: 'owner',
+          joined_at: new Date().toISOString()
+        })
+      
+      if (memberError) {
+        console.error('Failed to add creator as owner:', memberError)
+        // Note: Organization was created but membership failed
+        // This is not critical - user can be added manually by super admin
+        console.warn(`Organization ${newOrg.id} created but creator membership failed: ${memberError.message}`)
       }
 
       // @ts-expect-error - Properties exist in newOrg
