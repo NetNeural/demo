@@ -286,8 +286,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     setEmailingPassword(true);
     
     try {
-      // Send the currently displayed password via email
-      const response = await edgeFunctions.members.resetPassword(
+      // Send email with the currently displayed password (without resetting)
+      const response = await edgeFunctions.members.emailPassword(
         selectedMember.userId, 
         generatedPassword
       );
@@ -502,10 +502,10 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
-              variant="outline"
+              variant={emailingPassword ? "default" : "outline"}
               onClick={handleEmailPassword}
               disabled={emailingPassword}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto transition-all active:scale-95"
             >
               <Mail className="w-4 h-4 mr-2" />
               {emailingPassword ? 'Sending...' : 'Email Password'}
