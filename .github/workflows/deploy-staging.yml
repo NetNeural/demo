@@ -1,25 +1,19 @@
-# ⚠️ IMPORTANT: GitHub Pages Limitation
-# This workflow deploys staging to the same GitHub Pages site as production.
-# GitHub Pages supports only ONE custom domain per repository - both deployments
-# compete for the same site and will overwrite each other.
+# 🚀 Staging Environment Deployment
+# This workflow deploys to the MonoRepo-Staging repository with dedicated infrastructure.
 #
-# Current behavior:
-#   - Staging: https://netneural.github.io/MonoRepo/ (no custom domain)
-#   - Production: https://demo.netneural.ai (custom domain via CNAME)
-#   - Whichever deploys last is the active site
+# Environment Details:
+#   - Repository: NetNeural/MonoRepo-Staging
+#   - Domain: demo-stage.netneural.ai (custom domain)
+#   - Supabase: Dedicated staging project
+#   - Data: Test/synthetic data only
 #
-# Recommended solutions:
-#   1. Use Vercel/Netlify/Cloudflare Pages for staging (separate infrastructure)
-#   2. Deploy staging to a separate repository (e.g., NetNeural/MonoRepo-Staging)
-#   3. Use manual workflow_dispatch only (avoid automatic staging deploys)
-#
-# For production use, consider implementing option 1 or 2.
+# This staging environment is completely isolated from production.
 
 name: Deploy Staging to GitHub Pages
 
 on:
   push:
-    branches: [staging]
+    branches: [main]
     paths: ['development/**']
   workflow_dispatch:
     inputs:
@@ -43,17 +37,17 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://netneural.github.io/MonoRepo
+      url: https://demo-stage.netneural.ai
     
     defaults:
       run:
         working-directory: ./development
     
     steps:
-      - name: 📥 Checkout staging branch
+      - name: 📥 Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: staging
+          ref: main
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -127,16 +121,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
           GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
-          NEXT_PUBLIC_APP_URL: "https://netneural.github.io/MonoRepo"
+          NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"
           NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform [STAGING]"
           NEXT_PUBLIC_APP_VERSION: "1.0.0-staging"
         run: |
           echo "🚀 Building NetNeural Platform for staging..."
-          echo "Target: https://netneural.github.io/MonoRepo/"
+          echo "Target: https://demo-stage.netneural.ai/"
           
-          # Remove production CNAME to prevent domain conflicts (GitHub Pages supports one domain per repo)
-          rm -f public/CNAME
-          echo "⚠️  Removed production CNAME - staging uses default GitHub Pages URL"
+          # Create CNAME file for custom domain
+          echo "demo-stage.netneural.ai" > public/CNAME
+          echo "✅ Created CNAME for custom domain"
           
           # Remove API routes (incompatible with static export)
           rm -rf src/app/api
@@ -150,20 +144,17 @@ jobs:
           # Build static site
           npm run build
           
-          # Verify CNAME was not included in build
-          if [ -f out/CNAME ]; then
-            echo "⚠️  WARNING: CNAME found in build output, removing..."
-            rm out/CNAME
+          # Verify CNAME is included in build
+          if [ ! -f out/CNAME ]; then
+            echo "⚠️  WARNING: CNAME not found in build output, creating..."
+            echo "demo-stage.netneural.ai" > out/CNAME
           fi
           
           echo "✅ Build completed!"
           echo "📁 Output:"
           ls -la out/
           echo ""
-          echo "⚠️  IMPORTANT: GitHub Pages limitation - staging and production share the same Pages site"
-          echo "   Staging URL: https://netneural.github.io/MonoRepo/"
-          echo "   Production custom domain (demo.netneural.ai) may be overwritten by this deployment"
-          echo "   Consider using a separate hosting service for staging to avoid conflicts"
+          echo "🌐 Staging deployment target: https://demo-stage.netneural.ai/"
 
       - name: 📤 Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -178,14 +169,13 @@ jobs:
         if: success()
         run: |
           echo "🎉 Staging deployment successful!"
-          echo "🌐 Staging URL: https://netneural.github.io/MonoRepo/"
+          echo "🌐 Staging URL: https://demo-stage.netneural.ai/"
           echo "📊 GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
           echo "🗄️ Database: ${{ secrets.STAGING_SUPABASE_URL }}"
           echo ""
-          echo "⚠️  CRITICAL: GitHub Pages supports ONE custom domain per repo"
-          echo "   Production (demo.netneural.ai) and staging share the same GitHub Pages site"
-          echo "   This staging deployment may temporarily overwrite production until main deploys again"
-          echo "   Recommendation: Use Vercel/Netlify for staging to avoid conflicts"
+          echo "✅ Staging environment is completely isolated from production"
+          echo "   Production: https://demo.netneural.ai (main branch)"
+          echo "   Staging: https://demo-stage.netneural.ai (this deployment)"
 
       - name: 🔍 Post-Deployment Verification
         if: success()
@@ -194,14 +184,15 @@ jobs:
           sleep 30
           
           echo "Testing staging endpoint..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://netneural.github.io/MonoRepo/)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://demo-stage.netneural.ai/)
           
           if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ]; then
             echo "✅ Staging site is accessible (HTTP $response)"
-            echo "   URL: https://netneural.github.io/MonoRepo/"
+            echo "   URL: https://demo-stage.netneural.ai/"
           else
             echo "⚠️ Staging site returned status: $response"
-            echo "   This may be expected if production CNAME is active"
+            echo "   This may be normal during DNS propagation (first deployment)"
+            echo "   DNS can take up to 24 hours to propagate fully"
           fi
 
       - name: 📧 Notify on Failure
