@@ -1,3 +1,20 @@
+# ⚠️ IMPORTANT: GitHub Pages Limitation
+# This workflow deploys staging to the same GitHub Pages site as production.
+# GitHub Pages supports only ONE custom domain per repository - both deployments
+# compete for the same site and will overwrite each other.
+#
+# Current behavior:
+#   - Staging: https://netneural.github.io/MonoRepo/ (no custom domain)
+#   - Production: https://demo.netneural.ai (custom domain via CNAME)
+#   - Whichever deploys last is the active site
+#
+# Recommended solutions:
+#   1. Use Vercel/Netlify/Cloudflare Pages for staging (separate infrastructure)
+#   2. Deploy staging to a separate repository (e.g., NetNeural/MonoRepo-Staging)
+#   3. Use manual workflow_dispatch only (avoid automatic staging deploys)
+#
+# For production use, consider implementing option 1 or 2.
+
 name: Deploy Staging to GitHub Pages
 
 on:
@@ -115,7 +132,11 @@ jobs:
           NEXT_PUBLIC_APP_VERSION: "1.0.0-staging"
         run: |
           echo "🚀 Building NetNeural Platform for staging..."
-          echo "Target: demo-stage.netneural.ai"
+          echo "Target: https://netneural.github.io/MonoRepo/"
+          
+          # Remove production CNAME to prevent domain conflicts (GitHub Pages supports one domain per repo)
+          rm -f public/CNAME
+          echo "⚠️  Removed production CNAME - staging uses default GitHub Pages URL"
           
           # Remove API routes (incompatible with static export)
           rm -rf src/app/api
@@ -129,14 +150,20 @@ jobs:
           # Build static site
           npm run build
           
+          # Verify CNAME was not included in build
+          if [ -f out/CNAME ]; then
+            echo "⚠️  WARNING: CNAME found in build output, removing..."
+            rm out/CNAME
+          fi
+          
           echo "✅ Build completed!"
           echo "📁 Output:"
           ls -la out/
-          
-          # Note: Not using custom domain for staging
-          # Staging will be accessible at: https://netneural.github.io/MonoRepo/
-          # Custom domain (demo.netneural.ai) is reserved for production only
-          echo "✅ Staging will be at: https://netneural.github.io/MonoRepo/"
+          echo ""
+          echo "⚠️  IMPORTANT: GitHub Pages limitation - staging and production share the same Pages site"
+          echo "   Staging URL: https://netneural.github.io/MonoRepo/"
+          echo "   Production custom domain (demo.netneural.ai) may be overwritten by this deployment"
+          echo "   Consider using a separate hosting service for staging to avoid conflicts"
 
       - name: 📤 Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -151,27 +178,30 @@ jobs:
         if: success()
         run: |
           echo "🎉 Staging deployment successful!"
-          echo "🌐 URL: https://netneural.github.io/MonoRepo/"
+          echo "🌐 Staging URL: https://netneural.github.io/MonoRepo/"
           echo "📊 GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
           echo "🗄️ Database: ${{ secrets.STAGING_SUPABASE_URL }}"
           echo ""
-          echo "ℹ️  Note: Staging uses GitHub Pages default URL"
-          echo "   Production custom domain: demo.netneural.ai"
+          echo "⚠️  CRITICAL: GitHub Pages supports ONE custom domain per repo"
+          echo "   Production (demo.netneural.ai) and staging share the same GitHub Pages site"
+          echo "   This staging deployment may temporarily overwrite production until main deploys again"
+          echo "   Recommendation: Use Vercel/Netlify for staging to avoid conflicts"
 
       - name: 🔍 Post-Deployment Verification
         if: success()
         run: |
-          echo "Waiting for DNS propagation (30s)..."
+          echo "Waiting for GitHub Pages to update (30s)..."
           sleep 30
           
           echo "Testing staging endpoint..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://demo-stage.netneural.ai || echo "000")
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://netneural.github.io/MonoRepo/)
           
-          if [ "$response" = "200" ]; then
-            echo "✅ Staging site is live!"
+          if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ]; then
+            echo "✅ Staging site is accessible (HTTP $response)"
+            echo "   URL: https://netneural.github.io/MonoRepo/"
           else
             echo "⚠️ Staging site returned status: $response"
-            echo "   DNS may still be propagating"
+            echo "   This may be expected if production CNAME is active"
           fi
 
       - name: 📧 Notify on Failure
