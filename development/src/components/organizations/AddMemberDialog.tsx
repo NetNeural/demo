@@ -51,7 +51,17 @@ export function AddMemberDialog({
   const { toast } = useToast();
 
   const handleAddMember = async () => {
+    console.log('🔴 ADD MEMBER BUTTON CLICKED', {
+      email,
+      fullName,
+      role,
+      needsUserCreation,
+      isProcessing,
+      organizationId,
+    });
+    
     if (!email) {
+      console.log('❌ Validation failed: email required');
       toast({
         title: 'Email Required',
         description: 'Please enter an email address',
@@ -63,6 +73,7 @@ export function AddMemberDialog({
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('❌ Validation failed: invalid email format');
       toast({
         title: 'Invalid Email',
         description: 'Please enter a valid email address',
@@ -73,6 +84,7 @@ export function AddMemberDialog({
 
     // If we need to create user, validate full name
     if (needsUserCreation && !fullName) {
+      console.log('❌ Validation failed: full name required for user creation');
       toast({
         title: 'Name Required',
         description: 'Please enter the full name for the new user',
@@ -81,6 +93,8 @@ export function AddMemberDialog({
       return;
     }
 
+    console.log('✅ All validations passed, starting process...');
+    
       try {
       setIsProcessing(true);
       
@@ -176,14 +190,10 @@ export function AddMemberDialog({
           throw new Error(errorMsg || 'Failed to create user account');
         }
 
-        // User created successfully, store the password and show success
+        // User created successfully, now add to organization
         console.log('✅ User account created successfully');
-        setGeneratedPassword(tempPassword);
-        setShowPasswordSuccess(true);
-        setIsProcessing(false);
-        
-        // Now add to organization
         console.log('🟢 Adding newly created user to organization');
+        
         const addResponse2 = await edgeFunctions.members.add(organizationId, {
           email,
           role,
@@ -198,19 +208,24 @@ export function AddMemberDialog({
           const alreadyMember = errorMsg2.includes('already a member') || errorMsg2.includes('already exists');
           
           if (alreadyMember) {
-            // User was already added - just keep showing the password screen
-            // We'll refresh the member list when they click "Done"
+            // User was already added - show password screen and refresh list
+            console.log('⚠️ User already a member, showing password screen');
+            setGeneratedPassword(tempPassword);
+            setShowPasswordSuccess(true);
+            setIsProcessing(false);
+            onMemberAdded();
             return;
           }
           
           throw new Error(errorMsg2 || 'User created but failed to add to organization');
         }
 
-        // All done - password screen is already showing
-        // Member was successfully added, refresh the list when dialog closes
+        // All done - show password screen and refresh member list
         console.log('✅ User created and added to organization successfully');
-        onMemberAdded();
+        setGeneratedPassword(tempPassword);
+        setShowPasswordSuccess(true);
         setIsProcessing(false);
+        onMemberAdded();
         return; // Exit here - don't continue to "add existing user" logic
       }
 
@@ -256,7 +271,13 @@ export function AddMemberDialog({
         }
       }
     } catch (error) {
-      console.error('Error adding member:', error);
+      console.error('❌ Error adding member:', error);
+      console.error('Error details:', {
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+      
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to add member',
