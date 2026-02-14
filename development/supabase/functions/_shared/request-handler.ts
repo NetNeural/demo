@@ -93,9 +93,15 @@ export function createEdgeFunction(
             return createErrorResponse('Super admin access required', 403)
           }
         } catch (authError) {
+          console.error('Authentication error:', authError);
+          // Return 401 with detailed error message for debugging
           return createErrorResponse(
             authError instanceof Error ? authError.message : 'Authentication failed',
-            401
+            401,
+            { 
+              error: authError instanceof Error ? authError.message : String(authError),
+              hint: 'Check JWT configuration in Supabase dashboard'
+            }
           )
         }
       }
