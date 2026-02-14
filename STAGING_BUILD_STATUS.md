@@ -1,9 +1,11 @@
 # ✅ Staging Environment - Build Status
 
-**Status:** 🟡 Partially Complete - Automated Setup Ready  
+**Status:** � Live and Running  
 **Created:** February 13, 2026  
 **Branch:** `staging`  
-**Domain:** https://demo-stage.netneural.ai
+**URL:** https://netneural.github.io/MonoRepo
+
+**Note:** Staging uses GitHub Pages default URL. Production uses custom domain: demo.netneural.ai
 
 ---
 

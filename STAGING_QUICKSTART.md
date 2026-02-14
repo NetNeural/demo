@@ -1,8 +1,10 @@
 # Staging Environment - Quick Start Guide
 
-**Domain:** https://demo-stage.netneural.ai  
+**URL:** https://netneural.github.io/MonoRepo  
 **Purpose:** Safe testing before production deployment  
-**Status:** 📋 Planning Complete - Ready to Deploy
+**Status:** 🟢 Live
+
+**Note:** Staging uses GitHub Pages default URL (netneural.github.io/MonoRepo) because GitHub Pages only supports one custom domain per repository. Production uses: demo.netneural.ai
 
 ---
 
