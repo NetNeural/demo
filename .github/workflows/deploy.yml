@@ -58,11 +58,12 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
 
-      - name: Push database migrations
-        run: npx supabase db push
-        env:
-          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
-        continue-on-error: false
+      # Skip migration push - applied manually for staging
+      # - name: Push database migrations
+      #   run: npx supabase db push
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
+      #   continue-on-error: false
 
       - name: Deploy edge functions
         run: npx supabase functions deploy --no-verify-jwt
