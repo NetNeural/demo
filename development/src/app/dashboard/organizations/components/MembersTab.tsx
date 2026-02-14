@@ -292,8 +292,15 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         generatedPassword
       );
 
+      console.log('📧 Email response:', response);
+
       if (!response.success) {
-        throw new Error('Failed to send email');
+        // Extract detailed error message from response
+        const errorDetails = response.data && typeof response.data === 'object' && 'error' in response.data
+          ? (response.data as { error: string }).error
+          : response.error || 'Failed to send email';
+        
+        throw new Error(errorDetails);
       }
 
       toast({
@@ -303,9 +310,11 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     } catch (error) {
       console.error('❌ Error emailing password:', error);
       
+      const errorMessage = error instanceof Error ? error.message : 'Could not send email';
+      
       toast({
         title: 'Email Failed',
-        description: 'Could not send email. Please copy the password manually.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

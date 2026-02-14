@@ -162,7 +162,14 @@ export default createEdgeFunction(async ({ req }) => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json()
       console.error('❌ Resend API error:', errorData)
-      throw new Error(`Failed to send email: ${errorData.message || 'Unknown error'}`)
+      
+      // Return the error details instead of throwing
+      return createSuccessResponse({
+        success: false,
+        message: 'Failed to send email',
+        error: `Resend API error: ${errorData.message || 'Unknown error'}`,
+        details: errorData,
+      })
     }
 
     const emailData = await emailResponse.json()
@@ -174,9 +181,13 @@ export default createEdgeFunction(async ({ req }) => {
     })
   } catch (error) {
     console.error('❌ Error sending email:', error)
-    // Don't throw - let the function succeed even if email fails
-    // The password has already been reset
-    console.log('⚠️ Email failed but continuing...')
-    throw new Error('Failed to send email')
+    console.log('⚠️ Email error details:', error)
+    
+    // Return error details instead of throwing
+    return createSuccessResponse({
+      success: false,
+      message: 'Failed to send email',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
   }
 })
