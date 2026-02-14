@@ -1,5 +1,5 @@
 -- Enable necessary extensions
--- Using gen_random_uuid() from pgcrypto instead of uuid_generate_v4() from uuid-ossp
+-- Using gen_random_uuid() from pgcrypto for UUID generation
 -- This avoids schema search_path issues in Supabase
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

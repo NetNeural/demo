@@ -930,7 +930,7 @@ alter table "public"."device_integrations" validate constraint "device_integrati
 
 set check_function_bodies = off;
 
-CREATE OR REPLACE FUNCTION public.uuid_generate_v4()
+CREATE OR REPLACE FUNCTION public.gen_random_uuid()
  RETURNS uuid
  LANGUAGE sql
  IMMUTABLE

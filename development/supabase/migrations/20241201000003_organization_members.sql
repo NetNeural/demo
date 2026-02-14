@@ -1,7 +1,7 @@
 -- Add organization_members table for multi-tenant user management
 
 CREATE TABLE IF NOT EXISTS public.organization_members (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
