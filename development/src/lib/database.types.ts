@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       alert_acknowledgements: {
@@ -2432,6 +2407,7 @@ export type Database = {
           is_active: boolean | null
           last_login: string | null
           organization_id: string | null
+          password_change_required: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
@@ -2444,6 +2420,7 @@ export type Database = {
           is_active?: boolean | null
           last_login?: string | null
           organization_id?: string | null
+          password_change_required?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
@@ -2456,6 +2433,7 @@ export type Database = {
           is_active?: boolean | null
           last_login?: string | null
           organization_id?: string | null
+          password_change_required?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
@@ -2977,9 +2955,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       alert_severity: ["low", "medium", "high", "critical"],
