@@ -120,13 +120,9 @@ jobs:
         env:
           NODE_ENV: staging
           BUILD_MODE: static
-          # TODO: Move these to GitHub Secrets once admin access is granted
-          # For now, hardcoding since migrations/functions already deployed
+          # Supabase configuration (hardcoded until secrets are configured)
           NEXT_PUBLIC_SUPABASE_URL: "https://atgbmxicqikmapfqouco.supabase.co"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-          # Fallback if secret not set - REPLACE THIS WITH REAL KEY
-          # Get from: https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/settings/api
-          # NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ANON_KEY_HERE"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg"
           GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
           NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"
