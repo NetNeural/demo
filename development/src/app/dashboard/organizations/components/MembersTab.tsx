@@ -293,23 +293,43 @@ export function MembersTab({ organizationId }: MembersTabProps) {
       );
 
       console.log('📧 Email response:', response);
+      console.log('📧 Email response.data:', response.data);
 
-      if (!response.success) {
-        // Extract detailed error message from response
-        let errorMessage = 'Failed to send email';
+      // Check if the response data indicates failure
+      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+        const emailResult = response.data as { success?: boolean; error?: string; message?: string };
         
-        if (response.data && typeof response.data === 'object' && 'error' in response.data) {
-          const errorData = response.data as { error: string | unknown };
-          errorMessage = typeof errorData.error === 'string' 
-            ? errorData.error 
-            : JSON.stringify(errorData.error);
-        } else if (typeof response.error === 'string') {
-          errorMessage = response.error;
+        if (emailResult.success === false) {
+          const errorMsg = emailResult.error || emailResult.message || 'Failed to send email';
+          console.error('❌ Email send failed:', errorMsg);
+          
+          toast({
+            title: 'Email Failed',
+            description: errorMsg,
+            variant: 'destructive',
+          });
+          return;
         }
-        
-        throw new Error(errorMessage);
       }
 
+      // API wrapper returned success
+      if (!response.success) {
+        const errorMessage = typeof response.error === 'string' 
+          ? response.error 
+          : 'Failed to send email';
+        
+        console.error('❌ API error:', errorMessage);
+        
+        toast({
+          title: 'Email Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Success!
+      console.log('✅ Email sent successfully!');
       toast({
         title: 'Email Sent! ✉️',
         description: `Password has been sent to ${selectedMember.email}`,
