@@ -296,11 +296,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
       if (!response.success) {
         // Extract detailed error message from response
-        const errorDetails = response.data && typeof response.data === 'object' && 'error' in response.data
-          ? (response.data as { error: string }).error
-          : response.error || 'Failed to send email';
+        let errorMessage = 'Failed to send email';
         
-        throw new Error(errorDetails);
+        if (response.data && typeof response.data === 'object' && 'error' in response.data) {
+          const errorData = response.data as { error: string | unknown };
+          errorMessage = typeof errorData.error === 'string' 
+            ? errorData.error 
+            : JSON.stringify(errorData.error);
+        } else if (typeof response.error === 'string') {
+          errorMessage = response.error;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
