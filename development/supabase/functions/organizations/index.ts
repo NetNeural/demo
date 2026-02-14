@@ -137,9 +137,9 @@ export default createEdgeFunction(async ({ req }) => {
       // deno-lint-ignore no-explicit-any
       const enrichedOrgs = await Promise.all(
         (organizations || []).map(async (org: any) => {
-          // Get user count
+          // Get user count from organization_members table
           const { count: userCount } = await supabase
-            .from('users')
+            .from('organization_members')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', org.id)
           
