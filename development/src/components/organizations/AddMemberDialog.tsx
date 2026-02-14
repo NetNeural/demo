@@ -128,6 +128,7 @@ export function AddMemberDialog({
           fullName,
           password: tempPassword,
           role: 'user',
+          organizationRole: role, // Pass the selected organization role (member/admin/owner)
         });
 
         if (!createResponse.success) {
@@ -190,38 +191,12 @@ export function AddMemberDialog({
           throw new Error(errorMsg || 'Failed to create user account');
         }
 
-        // User created successfully, now add to organization
+        // User created successfully
+        // NOTE: create-user edge function already adds user to organization automatically
+        // No need to call members.add() - skip directly to showing password screen
         console.log('✅ User account created successfully');
-        console.log('🟢 Adding newly created user to organization');
+        console.log('ℹ️ User was automatically added to organization during creation');
         
-        const addResponse2 = await edgeFunctions.members.add(organizationId, {
-          email,
-          role,
-        });
-
-        if (!addResponse2.success) {
-          // Check if user is already a member (they might have been added in a previous attempt)
-          const errorObj2 = addResponse2.error as { message?: string } | string | undefined;
-          const errorMsg2 = typeof errorObj2 === 'string'
-            ? errorObj2.toLowerCase()
-            : (errorObj2?.message || '').toLowerCase();
-          const alreadyMember = errorMsg2.includes('already a member') || errorMsg2.includes('already exists');
-          
-          if (alreadyMember) {
-            // User was already added - show password screen and refresh list
-            console.log('⚠️ User already a member, showing password screen');
-            setGeneratedPassword(tempPassword);
-            setShowPasswordSuccess(true);
-            setIsProcessing(false);
-            onMemberAdded();
-            return;
-          }
-          
-          throw new Error(errorMsg2 || 'User created but failed to add to organization');
-        }
-
-        // All done - show password screen and refresh member list
-        console.log('✅ User created and added to organization successfully');
         setGeneratedPassword(tempPassword);
         setShowPasswordSuccess(true);
         setIsProcessing(false);

@@ -31,10 +31,11 @@ export default createEdgeFunction(async ({ req }) => {
     email: body.email, 
     hasFullName: !!body.fullName,
     hasPassword: !!body.password,
-    role: body.role 
+    role: body.role,
+    organizationRole: body.organizationRole 
   })
   
-  const { email, fullName, password, role } = body
+  const { email, fullName, password, role, organizationRole } = body
 
   if (!email || !fullName || !password) {
     console.error('❌ Missing required fields:', { hasEmail: !!email, hasFullName: !!fullName, hasPassword: !!password })
@@ -114,19 +115,25 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Create organization membership if user has an organization
   if (userContext.organizationId) {
+    // Use organizationRole from request, default to 'member'
+    const memberRole = organizationRole || 'member'
+    console.log('🏭 Creating organization membership:', { organizationId: userContext.organizationId, memberRole })
+    
     // @ts-expect-error - Insert object not fully typed in generated types
     const { error: memberError } = await supabaseAdmin
       .from('organization_members')
       .insert({
         organization_id: userContext.organizationId,
         user_id: authUser.id,
-        role: 'member',
+        role: memberRole,
         permissions: {},
       })
 
     if (memberError) {
       console.error('Failed to create organization membership:', memberError)
       // Don't fail the whole operation, just log the error
+    } else {
+      console.log('✅ Organization membership created with role:', memberRole)
     }
   }
 

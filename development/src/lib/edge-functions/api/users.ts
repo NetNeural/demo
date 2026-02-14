@@ -10,6 +10,7 @@ export interface UsersAPI {
     password: string
     fullName: string
     role?: string
+    organizationRole?: string
   }) => Promise<EdgeFunctionResponse<unknown>>
 }
 
