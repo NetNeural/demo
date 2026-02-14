@@ -8,7 +8,7 @@ export interface UsersAPI {
   create: (data: {
     email: string
     password: string
-    name: string
+    fullName: string
     role?: string
   }) => Promise<EdgeFunctionResponse<unknown>>
 }

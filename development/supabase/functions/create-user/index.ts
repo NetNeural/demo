@@ -27,9 +27,17 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   const body = await req.json()
+  console.log('📥 Create user request received:', { 
+    email: body.email, 
+    hasFullName: !!body.fullName,
+    hasPassword: !!body.password,
+    role: body.role 
+  })
+  
   const { email, fullName, password, role } = body
 
   if (!email || !fullName || !password) {
+    console.error('❌ Missing required fields:', { hasEmail: !!email, hasFullName: !!fullName, hasPassword: !!password })
     throw new Error('email, fullName, and password are required')
   }
 
@@ -121,6 +129,12 @@ export default createEdgeFunction(async ({ req }) => {
       // Don't fail the whole operation, just log the error
     }
   }
+
+  console.log('✅ User created successfully:', { 
+    userId: authUser.id, 
+    email: body.email,
+    addedToOrganization: !!userContext.organizationId 
+  })
 
   // @ts-expect-error - newUser properties exist after successful insert
   return createSuccessResponse({ 

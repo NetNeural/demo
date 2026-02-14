@@ -45,7 +45,7 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
       
       const response = await edgeFunctions.users.create({
         email,
-        name: fullName,
+        fullName,
         password,
         role: 'user',
       });

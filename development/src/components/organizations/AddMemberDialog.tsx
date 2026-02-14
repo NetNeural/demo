@@ -125,7 +125,7 @@ export function AddMemberDialog({
 
         const createResponse = await edgeFunctions.users.create({
           email,
-          name: fullName,
+          fullName,
           password: tempPassword,
           role: 'user',
         });
