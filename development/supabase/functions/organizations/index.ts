@@ -2,54 +2,102 @@ import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_sh
 import { 
   getUserContext,
   createAuthenticatedClient,
-  createServiceClient
+  createServiceClient,
+  corsHeaders
 } from '../_shared/auth.ts'
 
 export default createEdgeFunction(async ({ req }) => {
+  try {
   // Try to get authenticated user context, but don't fail if it doesn't work
   let userContext;
-  let supabase;
+  let supabase;  // For queries that respect RLS
+  let supabaseAdmin; // For operations that need to bypass RLS
   
-  try {
-    userContext = await getUserContext(req)
-    supabase = createAuthenticatedClient(req)
-  } catch (e) {
-    console.error('getUserContext failed:', e);
-    // For now, use service role as fallback
-    // TODO: Fix JWT configuration in Supabase dashboard
-    supabase = createServiceClient()
-    // Extract user ID from token manually if possible
-    const authHeader = req.headers.get('Authorization')
-    if (authHeader) {
-      try {
-        const token = authHeader.replace('Bearer ', '')
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        console.log('Using token payload:', { sub: payload.sub })
-        
-        // Get full user context using service role
-        const { data: profile } = await supabase
-          .from('users')
-          .select('organization_id, role, email')
-          .eq('id', payload.sub)
-          .single()
-        
-        if (profile) {
-          userContext = {
-            userId: payload.sub,
-            organizationId: profile.organization_id,
-            role: profile.role,
-            isSuperAdmin: profile.role === 'super_admin',
-            email: profile.email || payload.email || '',
-          }
-          console.log('Constructed userContext from token:', userContext)
-        }
-      } catch (tokenError) {
-        console.error('Failed to parse token:', tokenError)
-      }
+  // Check if this is a service role request
+  const authHeader = req.headers.get('Authorization')
+  const token = authHeader?.replace('Bearer ', '') || ''
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const isServiceRole = serviceRoleKey && token === serviceRoleKey
+  
+  console.log('=== AUTH DEBUG ===')
+  console.log('Has authHeader:', !!authHeader)
+  console.log('Token length:', token.length)
+  console.log('Has serviceRoleKey env var:', !!serviceRoleKey)
+  console.log('ServiceRoleKey length:', serviceRoleKey?.length)
+  console.log('isServiceRole:', isServiceRole)
+  console.log('Token starts with:', token.substring(0, 20))
+  console.log('ServiceKey starts with:', serviceRoleKey?.substring(0, 20))
+  
+  // Always create admin client for operations that need to bypass RLS
+  supabaseAdmin = createServiceClient()
+  
+  if (isServiceRole) {
+    // Service role bypasses all auth - treat as super admin
+    console.log('✅ Using service role access')
+    supabase = supabaseAdmin
+    userContext = {
+      userId: '00000000-0000-0000-0000-000000000000', // System user
+      organizationId: null,
+      role: 'super_admin',
+      isSuperAdmin: true,
+      email: 'system@service',
     }
-    
-    if (!userContext) {
-      throw new DatabaseError('Could not authenticate user', 401)
+  } else {
+    try {
+      userContext = await getUserContext(req)
+      supabase = createAuthenticatedClient(req)
+      console.log('✅ Successfully authenticated via getUserContext')
+    } catch (e) {
+      console.error('getUserContext failed:', e);
+      console.log('Falling back to manual JWT parsing...')
+      // For now, use service role as fallback
+      // TODO: Fix JWT configuration in Supabase dashboard
+      supabase = supabaseAdmin
+      
+      if (authHeader) {
+        try {
+          const token = authHeader.replace('Bearer ', '')
+          // Decode JWT payload - use Deno's atob which is in globalThis
+          const parts = token.split('.')
+          if (parts.length >= 2) {
+            const payload = JSON.parse(globalThis.atob(parts[1]))
+            console.log('Using token payload:', { sub: payload.sub, role: payload.role })
+            
+            // Get full user context using service role
+            const { data: profile, error: profileError } = await supabaseAdmin
+              .from('users')
+              .select('organization_id, role, email')
+              .eq('id', payload.sub)
+              .maybeSingle()
+            
+            if (profileError) {
+              console.error('Failed to fetch user profile:', profileError)
+              throw new Error(`Profile fetch error: ${profileError.message}`)
+            }
+            
+            if (profile) {
+              userContext = {
+                userId: payload.sub,
+                organizationId: profile.organization_id,
+                role: profile.role,
+                isSuperAdmin: profile.role === 'super_admin',
+                email: profile.email || payload.email || '',
+              }
+              console.log('✅ Constructed userContext from token:', userContext)
+            } else {
+              console.error('No profile found for user:', payload.sub)
+              throw new Error(`No user profile found for ID: ${payload.sub}`)
+            }
+          }
+        } catch (tokenError) {
+          console.error('Failed to parse token:', tokenError)
+          throw new DatabaseError(`Token parsing failed: ${tokenError.message}`, 401)
+        }
+      }
+      
+      if (!userContext) {
+        throw new DatabaseError('Could not authenticate user', 401)
+      }
     }
   }
 
@@ -137,32 +185,53 @@ export default createEdgeFunction(async ({ req }) => {
       // Any authenticated user can create an organization
       // They will automatically become the owner of that organization
       
-      const body = await req.json()
+      console.log('=== POST /organizations - Creating organization ===')
+      console.log('User context:', JSON.stringify(userContext, null, 2))
+      
+      let body;
+      try {
+        body = await req.json()
+      } catch (jsonError) {
+        console.error('Failed to parse JSON body:', jsonError)
+        throw new Error('Invalid JSON in request body')
+      }
+      
       const { name, slug, description, subscriptionTier } = body
+      console.log('Request body:', { name, slug, description, subscriptionTier })
 
       // Validate required fields
       if (!name || !slug) {
+        console.error('Missing required fields:', { name: !!name, slug: !!slug })
         throw new Error('Name and slug are required')
       }
 
       // Validate slug format
       if (!/^[a-z0-9-]+$/.test(slug)) {
+        console.error('Invalid slug format:', slug)
         throw new Error('Slug can only contain lowercase letters, numbers, and hyphens')
       }
 
       // Check if slug already exists
-      const { data: existing } = await supabase
+      console.log('Checking if slug exists:', slug)
+      const { data: existing, error: checkError } = await supabaseAdmin
         .from('organizations')
         .select('id')
         .eq('slug', slug)
-        .single()
+        .maybeSingle()  // Changed from single() to maybeSingle() to avoid error if not found
+
+      if (checkError) {
+        console.error('Error checking existing slug:', checkError)
+        throw new DatabaseError(`Failed to check existing slug: ${checkError.message}`)
+      }
 
       if (existing) {
+        console.error('Slug already exists:', slug)
         throw new DatabaseError('An organization with this slug already exists', 409)
       }
 
-      // Create organization
-      const { data: newOrg, error: createError } = await supabase
+      // Create organization - use admin client to bypass RLS
+      console.log('Creating organization with admin client...')
+      const { data: newOrg, error: createError } = await supabaseAdmin
         .from('organizations')
         .insert({
           name: name.trim(),
@@ -180,9 +249,12 @@ export default createEdgeFunction(async ({ req }) => {
         throw new DatabaseError(`Failed to create organization: ${createError.message}`)
       }
       
-      // Add the creator as the owner of the new organization
+      console.log('Organization created:', newOrg)
+      
+      // Add the creator as the owner of the new organization - use admin client
+      console.log('Adding creator as owner:', { org_id: newOrg?.id, user_id: userContext?.userId })
       // @ts-expect-error - Properties exist
-      const { error: memberError } = await supabase
+      const { error: memberError } = await supabaseAdmin
         .from('organization_members')
         .insert({
           // @ts-expect-error - id exists
@@ -197,10 +269,12 @@ export default createEdgeFunction(async ({ req }) => {
         // Note: Organization was created but membership failed
         // This is not critical - user can be added manually by super admin
         console.warn(`Organization ${newOrg.id} created but creator membership failed: ${memberError.message}`)
+      } else {
+        console.log('Creator added as owner successfully')
       }
 
       // @ts-expect-error - Properties exist in newOrg
-      return createSuccessResponse({
+      const response = {
         organization: {
           // @ts-expect-error - Properties exist
           id: newOrg.id,
@@ -221,7 +295,10 @@ export default createEdgeFunction(async ({ req }) => {
           // @ts-expect-error - Properties exist
           updatedAt: newOrg.updated_at
         }
-      })
+      }
+      
+      console.log('Returning success response:', JSON.stringify(response, null, 2))
+      return createSuccessResponse(response)
     }
 
     if (req.method === 'PATCH') {
@@ -268,9 +345,9 @@ export default createEdgeFunction(async ({ req }) => {
       if (subscriptionTier !== undefined) updates.subscription_tier = subscriptionTier
       if (isActive !== undefined) updates.is_active = isActive
 
-      // Update organization
+      // Update organization - use admin client to bypass RLS
       // @ts-expect-error - Dynamic update object
-      const { data: updated, error: updateError } = await supabase
+      const { data: updated, error: updateError } = await supabaseAdmin
         .from('organizations')
         .update(updates)
         .eq('id', orgId)
@@ -358,8 +435,9 @@ export default createEdgeFunction(async ({ req }) => {
 
       // Perform actual deletion (CASCADE will handle related records)
       // This includes organization_members, devices, locations, etc.
+      // Use admin client to bypass RLS
       // @ts-expect-error - Dynamic delete
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseAdmin
         .from('organizations')
         .delete()
         .eq('id', orgId)
@@ -379,6 +457,26 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
   throw new Error('Method not allowed')
+  } catch (error) {
+    // Enhanced error handling for debugging
+    console.error('=== EDGE FUNCTION ERROR ===')
+    console.error('Error type:', error?.constructor?.name)
+    console.error('Error message:', error?.message)
+    console.error('Error stack:', error?.stack)
+    console.error('Full error:', error)
+    
+    // Return detailed error for debugging (remove in production)
+    return new Response(JSON.stringify({
+      error: 'Internal Server Error',
+      message: error?.message || 'Unknown error',
+      type: error?.constructor?.name || 'Error',
+      stack: error?.stack,
+      details: error
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    })
+  }
 }, {
   allowedMethods: ['GET', 'POST', 'PATCH', 'DELETE'],
   requireAuth: false, // Handle auth manually due to JWT verification issues

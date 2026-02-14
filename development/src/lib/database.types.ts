@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -229,7 +234,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           new_values: Json | null
           old_values: Json | null
@@ -243,7 +248,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -257,7 +262,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
@@ -513,7 +518,7 @@ export type Database = {
           accessed_by: string
           credential_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
         }
         Insert: {
@@ -521,7 +526,7 @@ export type Database = {
           accessed_by: string
           credential_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Update: {
@@ -529,7 +534,7 @@ export type Database = {
           accessed_by?: string
           credential_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Relationships: [
@@ -2269,7 +2274,7 @@ export type Database = {
           error_message: string | null
           id: string
           integration_id: string | null
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           organization_id: string
           success: boolean
@@ -2287,7 +2292,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id?: string | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           organization_id: string
           success?: boolean
@@ -2305,7 +2310,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id?: string | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           organization_id?: string
           success?: boolean
@@ -2665,14 +2670,8 @@ export type Database = {
         }
         Returns: string
       }
-      cleanup_mqtt_queue: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_old_integration_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_mqtt_queue: { Args: never; Returns: number }
+      cleanup_old_integration_logs: { Args: never; Returns: number }
       cleanup_old_telemetry: {
         Args: { p_retention_days?: number }
         Returns: number
@@ -2693,6 +2692,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      decrypt_device_credential: {
+        Args: { credential_id: string }
+        Returns: string
+      }
       enqueue_mqtt_message: {
         Args: {
           p_integration_id: string
@@ -2707,6 +2710,7 @@ export type Database = {
         Args: { p_metadata: Json }
         Returns: Json
       }
+      gen_random_uuid: { Args: never; Returns: string }
       generate_mqtt_credentials: {
         Args: { p_integration_id: string; p_organization_id: string }
         Returns: {
@@ -2717,18 +2721,12 @@ export type Database = {
           username: string
         }[]
       }
-      generate_webhook_secret: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_webhook_secret: { Args: never; Returns: string }
       generate_webhook_url: {
         Args: { integration_id: string; integration_type: string }
         Returns: string
       }
-      get_current_supabase_url: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_supabase_url: { Args: never; Returns: string }
       get_mqtt_queue_stats: {
         Args: { p_organization_id?: string }
         Returns: {
@@ -2761,10 +2759,7 @@ export type Database = {
           total_syncs: number
         }[]
       }
-      get_webhook_url: {
-        Args: { integration_id: string }
-        Returns: string
-      }
+      get_webhook_url: { Args: { integration_id: string }; Returns: string }
       log_integration_activity: {
         Args: {
           p_activity_type: string
@@ -2805,13 +2800,20 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: boolean
       }
-      process_mqtt_queue_messages: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      record_device_telemetry: {
-        Args:
-          | {
+      process_mqtt_queue_messages: { Args: never; Returns: undefined }
+      record_device_telemetry:
+        | {
+            Args: {
+              p_activity_log_id?: string
+              p_device_id: string
+              p_device_timestamp?: string
+              p_organization_id: string
+              p_telemetry: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               p_activity_log_id?: string
               p_device_id: string
               p_device_timestamp?: string
@@ -2819,15 +2821,8 @@ export type Database = {
               p_organization_id: string
               p_telemetry: Json
             }
-          | {
-              p_activity_log_id?: string
-              p_device_id: string
-              p_device_timestamp?: string
-              p_organization_id: string
-              p_telemetry: Json
-            }
-        Returns: string
-      }
+            Returns: string
+          }
       record_user_action: {
         Args: {
           p_action_category: string
@@ -2848,10 +2843,6 @@ export type Database = {
       update_mqtt_connection_stats: {
         Args: { p_username: string }
         Returns: undefined
-      }
-      uuid_generate_v4: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
     }
     Enums: {
@@ -3000,4 +2991,3 @@ export const Constants = {
     },
   },
 } as const
-

@@ -83,6 +83,14 @@ export function AddMemberDialog({
 
       try {
       setIsProcessing(true);
+      
+      console.log('🔵 AddMemberDialog: Starting add member process', {
+        email,
+        role,
+        needsUserCreation,
+        hasFullName: !!fullName,
+        organizationId,
+      });
 
       // Validate organization exists and user has permission
       if (!organizationId) {
@@ -96,6 +104,8 @@ export function AddMemberDialog({
 
       // If we already know user needs to be created and we have the full name, create them first
       if (needsUserCreation && fullName) {
+        console.log('🟢 Creating new user account:', { email, fullName });
+        
         // Generate a temporary password (user will be required to change it)
         const tempPassword = `Temp${Math.random().toString(36).substring(2, 10)}!`;
 
@@ -167,11 +177,13 @@ export function AddMemberDialog({
         }
 
         // User created successfully, store the password and show success
+        console.log('✅ User account created successfully');
         setGeneratedPassword(tempPassword);
         setShowPasswordSuccess(true);
         setIsProcessing(false);
         
         // Now add to organization
+        console.log('🟢 Adding newly created user to organization');
         const addResponse2 = await edgeFunctions.members.add(organizationId, {
           email,
           role,
@@ -195,10 +207,15 @@ export function AddMemberDialog({
         }
 
         // All done - password screen is already showing
+        // Member was successfully added, refresh the list when dialog closes
+        console.log('✅ User created and added to organization successfully');
+        onMemberAdded();
         setIsProcessing(false);
+        return; // Exit here - don't continue to "add existing user" logic
       }
 
       // Try to add existing user to organization
+      console.log('🟢 Attempting to add existing user to organization');
       const addResponse = await edgeFunctions.members.add(organizationId, {
         email,
         role,
@@ -206,6 +223,7 @@ export function AddMemberDialog({
 
       if (addResponse.success) {
         // User exists and was added successfully
+        console.log('✅ Existing user added to organization successfully');
         toast({
           title: 'Member Added',
           description: `${email} has been added to the organization`,
@@ -228,6 +246,7 @@ export function AddMemberDialog({
 
         if (userNotFound) {
           // User doesn't exist - show the creation form
+          console.log('ℹ️ User not found - prompting for user creation');
           setNeedsUserCreation(true);
           setIsProcessing(false);
           return; // Don't close dialog, let user fill in details
