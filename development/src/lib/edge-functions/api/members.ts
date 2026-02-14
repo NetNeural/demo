@@ -6,9 +6,9 @@ import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
 
 export interface MembersAPI {
   list: (organizationId: string) => Promise<EdgeFunctionResponse<{ members: unknown[] }>>
-  add: (organizationId: string, data: { userId: string; role: string }) => Promise<EdgeFunctionResponse<unknown>>
-  updateRole: (organizationId: string, userId: string, role: string) => Promise<EdgeFunctionResponse<unknown>>
-  remove: (organizationId: string, userId: string) => Promise<EdgeFunctionResponse<unknown>>
+  add: (organizationId: string, data: { email?: string; userId?: string; role: string }) => Promise<EdgeFunctionResponse<unknown>>
+  updateRole: (organizationId: string, memberId: string, role: string) => Promise<EdgeFunctionResponse<unknown>>
+  remove: (organizationId: string, memberId: string) => Promise<EdgeFunctionResponse<unknown>>
 }
 
 export function createMembersAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): MembersAPI {
@@ -34,21 +34,21 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
     /**
      * Update member role
      */
-    updateRole: (organizationId, userId, role) =>
+    updateRole: (organizationId, memberId, role) =>
       call('members', {
-        method: 'PUT',
+        method: 'PATCH',
         params: { organization_id: organizationId },
-        body: { userId, role },
+        body: { memberId, role },
       }),
     
     /**
      * Remove member from organization
      */
-    remove: (organizationId, userId) =>
+    remove: (organizationId, memberId) =>
       call('members', {
         method: 'DELETE',
         params: { organization_id: organizationId },
-        body: { userId },
+        body: { memberId },
       }),
   }
 }

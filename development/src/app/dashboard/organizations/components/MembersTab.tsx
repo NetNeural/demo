@@ -41,12 +41,20 @@ interface MembersTabProps {
 
 export function MembersTab({ organizationId }: MembersTabProps) {
   const { permissions, userRole } = useOrganization();
-  const { canManageMembers } = permissions;
+  const { canManageMembers, canRemoveMembers } = permissions;
   const { toast } = useToast();
   
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+
+  // Debug logging
+  console.log('📋 MembersTab context:', { 
+    userRole, 
+    canManageMembers, 
+    canRemoveMembers, 
+    organizationId 
+  });
 
   const fetchMembers = useCallback(async () => {
     if (!organizationId) {
@@ -113,83 +121,86 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   }, [fetchMembers]);
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member from the organization?')) {
+    const memberToRemove = members.find(m => m.id === memberId);
+    const memberName = memberToRemove?.name || 'this member';
+    
+    if (!confirm(`Are you sure you want to remove ${memberName} from the organization?`)) {
       return;
     }
 
     try {
+      console.log('🗑️ Removing member:', { memberId, organizationId });
+      
       const response = await edgeFunctions.members.remove(organizationId, memberId);
 
       if (!response.success) {
-        throw new Error(
-          typeof response.error === 'string'
-            ? response.error
-            : 'Failed to remove member'
-        );
+        const errorMsg = typeof response.error === 'string'
+          ? response.error
+          : 'Failed to remove member';
+        
+        console.error('❌ Remove member failed:', response.error);
+        throw new Error(errorMsg);
       }
 
+      console.log('✅ Member removed successfully');
+      
       toast({
         title: 'Success',
-        description: 'Member removed successfully',
+        description: `${memberName} has been removed from the organization`,
       });
       
       await fetchMembers();
     } catch (error) {
-      console.error('Error removing member:', error);
+      console.error('❌ Error removing member:', error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Failed to remove member';
+      
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove member',
+        description: errorMsg,
         variant: 'destructive',
       });
     }
   };
 
   const handleChangeRole = async (memberId: string, newRole: OrganizationRole) => {
+    const memberToUpdate = members.find(m => m.id === memberId);
+    const memberName = memberToUpdate?.name || 'member';
+    
     try {
+      console.log('🔄 Updating member role:', { memberId, newRole, organizationId });
+      
       const response = await edgeFunctions.members.updateRole(organizationId, memberId, newRole);
 
       if (!response.success) {
-        throw new Error(
-          typeof response.error === 'string'
-            ? response.error
-            : 'Failed to update role'
-        );
+        const errorMsg = typeof response.error === 'string'
+          ? response.error
+          : 'Failed to update role';
+        
+        console.error('❌ Update role failed:', response.error);
+        throw new Error(errorMsg);
       }
 
+      console.log('✅ Role updated successfully');
+      
       toast({
         title: 'Success',
-        description: 'Member role updated successfully',
+        description: `${memberName}'s role has been updated to ${newRole}`,
       });
       
       await fetchMembers();
     } catch (error) {
-      console.error('Error changing role:', error);
+      console.error('❌ Error changing role:', error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Failed to update role';
+      
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update role',
+        description: errorMsg,
         variant: 'destructive',
       });
     }
   };
-
-  if (!canManageMembers) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-12">
-          <div className="text-center space-y-3">
-            <Shield className="w-12 h-12 text-muted-foreground mx-auto" />
-            <h3 className="text-lg font-semibold">Permission Denied</h3>
-            <p className="text-muted-foreground">
-              You do not have permission to manage members in this organization.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Current role: <Badge variant="secondary" className="capitalize">{userRole}</Badge>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (loading) {
     return (
@@ -240,7 +251,16 @@ export function MembersTab({ organizationId }: MembersTabProps) {
               <TableBody>
                 {members.map((member) => {
                   const roleInfo = getRoleDisplayInfo(member.role);
-                  const canModifyThisMember = canManageMembers && member.role !== 'owner';
+                  
+                  // Can modify if:
+                  // 1. User can manage members (admin or owner)
+                  // 2. AND (target is not owner OR current user is owner - only owners can modify owners)
+                  const canModifyThisMember = canManageMembers && (member.role !== 'owner' || userRole === 'owner');
+                  
+                  // Can delete if:
+                  // 1. User has remove permissions (admin or owner)
+                  // 2. AND (target is not owner OR current user is owner - only owners can delete owners)
+                  const canDeleteThisMember = canRemoveMembers && (member.role !== 'owner' || userRole === 'owner');
                   
                   return (
                     <TableRow key={member.id}>
@@ -269,11 +289,12 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                         {new Date(member.joinedAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        {canModifyThisMember ? (
+                        {canDeleteThisMember ? (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveMember(member.id)}
+                            title="Remove member from organization"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>

@@ -117,7 +117,7 @@ export function AddMemberDialog({
           if (userExists) {
             // User already exists, just try to add them to the organization
             const addResponse = await edgeFunctions.members.add(organizationId, {
-              userId: email,
+              email,
               role,
             });
 
@@ -173,7 +173,7 @@ export function AddMemberDialog({
         
         // Now add to organization
         const addResponse2 = await edgeFunctions.members.add(organizationId, {
-          userId: email,
+          email,
           role,
         });
 
@@ -200,7 +200,7 @@ export function AddMemberDialog({
 
       // Try to add existing user to organization
       const addResponse = await edgeFunctions.members.add(organizationId, {
-        userId: email,
+        email,
         role,
       });
 
