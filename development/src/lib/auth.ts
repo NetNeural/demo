@@ -30,7 +30,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     .from('users')
     .select('role, organization_id, password_change_required')
     .eq('id', user.id)
-    .single()
+    .single() as { data: { role: string; organization_id: string | null; password_change_required: boolean | null } | null; error: any }
 
   if (profileError || !profile) {
     console.error('Failed to fetch user profile:', profileError)
