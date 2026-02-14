@@ -1,10 +1,7 @@
 -- Enable PostgreSQL extensions required by the application
 -- This migration runs before all others to ensure extensions are available
 
--- UUID generation
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Cryptographic functions
+-- Cryptographic functions (includes gen_random_uuid() for UUID generation)
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Additional useful extensions for IoT platform

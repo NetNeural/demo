@@ -1,5 +1,6 @@
 -- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Using gen_random_uuid() from pgcrypto instead of uuid_generate_v4() from uuid-ossp
+-- This avoids schema search_path issues in Supabase
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Create custom types
@@ -11,7 +12,7 @@ CREATE TYPE notification_status AS ENUM ('pending', 'sent', 'delivered', 'failed
 
 -- Organizations table
 CREATE TABLE organizations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
@@ -38,7 +39,7 @@ CREATE TABLE users (
 
 -- Device integrations table
 CREATE TABLE device_integrations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     integration_type VARCHAR(50) NOT NULL, -- 'golioth', 'aws_iot', 'azure_iot', etc.
     name VARCHAR(255) NOT NULL,
@@ -53,7 +54,7 @@ CREATE TABLE device_integrations (
 
 -- Locations table
 CREATE TABLE locations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -71,7 +72,7 @@ CREATE TABLE locations (
 
 -- Departments table
 CREATE TABLE departments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -84,7 +85,7 @@ CREATE TABLE departments (
 
 -- Devices table
 CREATE TABLE devices (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     integration_id UUID REFERENCES device_integrations(id) ON DELETE SET NULL,
     external_device_id VARCHAR(255), -- ID from external system (Golioth, etc.)
@@ -106,7 +107,7 @@ CREATE TABLE devices (
 
 -- Device data table (time-series data)
 CREATE TABLE device_data (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     sensor_type VARCHAR(100) NOT NULL,
     value DECIMAL(15, 6) NOT NULL,
@@ -119,7 +120,7 @@ CREATE TABLE device_data (
 
 -- Alerts table
 CREATE TABLE alerts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
     alert_type VARCHAR(100) NOT NULL,
@@ -136,7 +137,7 @@ CREATE TABLE alerts (
 
 -- Notifications table
 CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     alert_id UUID REFERENCES alerts(id) ON DELETE SET NULL,
     recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -150,7 +151,7 @@ CREATE TABLE notifications (
 
 -- Audit logs table
 CREATE TABLE audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
