@@ -59,34 +59,35 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: 🏗️ Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: 🔗 Link to Staging Supabase
-        run: npx supabase link --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: true
-
-      - name: 📤 Push database migrations
-        run: npx supabase db push
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: true
-
-      - name: 🚀 Deploy edge functions
-        run: npx supabase functions deploy --no-verify-jwt
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: true
-
-      - name: 📝 Generate TypeScript types
-        run: npx supabase gen types typescript --linked > src/lib/database.types.ts
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-        continue-on-error: true
+      # Supabase steps skipped - already deployed manually
+      # Uncomment these when secrets are properly configured:
+      # - STAGING_SUPABASE_PROJECT_ID = atgbmxicqikmapfqouco
+      # - STAGING_SUPABASE_ACCESS_TOKEN = sbp_...
+      
+      # - name: 🏗️ Setup Supabase CLI
+      #   uses: supabase/setup-cli@v1
+      #   with:
+      #     version: latest
+      #
+      # - name: 🔗 Link to Staging Supabase
+      #   run: npx supabase link --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+      #
+      # - name: 📤 Push database migrations
+      #   run: npx supabase db push
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+      #
+      # - name: 🚀 Deploy edge functions
+      #   run: npx supabase functions deploy --no-verify-jwt
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+      #
+      # - name: 📝 Generate TypeScript types
+      #   run: npx supabase gen types typescript --linked > src/lib/database.types.ts
+      #   env:
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
 
       - name: 🔍 Type check
         run: npm run type-check
