@@ -467,7 +467,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
 
             <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Make sure to save this password - you won't be able to see it again!
+                ⚠️ Make sure to save this password - you won&apos;t be able to see it again!
               </p>
             </div>
           </div>
