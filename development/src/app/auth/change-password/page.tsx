@@ -61,9 +61,10 @@ export default function ChangePasswordPage() {
       // Update password_change_required flag in public.users table
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await supabase
           .from('users')
-          .update({ password_change_required: false })
+          .update({ password_change_required: false } as any)
           .eq('id', user.id);
 
         if (dbError) {
