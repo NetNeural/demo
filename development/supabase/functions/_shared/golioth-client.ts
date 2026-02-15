@@ -101,14 +101,14 @@ export class GoliothClient extends BaseIntegrationClient {
    * We map to database enum for storage, 'unknown' for the interface
    * 
    * Since Golioth doesn't provide reliable online/offline status (usually "-" or empty),
-   * we calculate status based on last_seen: if device reported within last 5 minutes, it's online.
+   * we calculate status based on last_seen: if device reported within last 60 minutes, it's online.
    */
   private normalizeDeviceStatus(status: string | undefined, lastSeen?: string | null): 'online' | 'offline' | 'warning' | 'error' {
-    // First check if device is recently active (within last 5 minutes)
+    // First check if device is recently active (within last 60 minutes)
     if (lastSeen) {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+      const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000)
       const lastSeenDate = new Date(lastSeen)
-      if (lastSeenDate >= fiveMinutesAgo) {
+      if (lastSeenDate >= sixtyMinutesAgo) {
         return 'online'
       }
     }

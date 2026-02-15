@@ -71,6 +71,10 @@ interface TelemetryReading {
   received_at: string
 }
 
+interface DeviceTelemetry {
+  [deviceId: string]: TelemetryReading[]
+}
+
 // Sensor type labels based on the type field from Golioth
 const SENSOR_LABELS: Record<number, string> = {
   1: 'Temperature',
@@ -134,7 +138,7 @@ export function DevicesList() {
   const [filterLocation, setFilterLocation] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('status') // Changed from 'name' to 'status' for Issue #103
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [latestTelemetry, setLatestTelemetry] = useState<Record<string, TelemetryReading>>({})
+  const [latestTelemetry, setLatestTelemetry] = useState<DeviceTelemetry>({})
   
   const { currentOrganization } = useOrganization()
 
@@ -194,22 +198,22 @@ export function DevicesList() {
     }
   }, [currentOrganization])
 
-  // Fetch latest telemetry reading for each device
+  // Fetch latest telemetry reading for each device (including multiple sensor types)
   const fetchLatestTelemetry = useCallback(async (deviceIds: string[]) => {
     if (!currentOrganization || deviceIds.length === 0) return
 
     try {
       const supabase = createClient()
       
-      // Fetch the most recent telemetry for each device using distinct on
-      // We need to get the latest per device, so we fetch recent rows and dedupe client-side
+      // Fetch recent telemetry for each device to capture multiple sensor types
+      // Multi-sensor devices report different sensor types (temp, humidity, etc.)
       const { data, error: telError } = await supabase
         .from('device_telemetry_history')
         .select('device_id, telemetry, device_timestamp, received_at')
         .eq('organization_id', currentOrganization.id)
         .in('device_id', deviceIds)
         .order('received_at', { ascending: false })
-        .limit(deviceIds.length * 3) // Get a few recent per device to ensure coverage
+        .limit(deviceIds.length * 10) // Get multiple readings to capture different sensor types
 
       if (telError) {
         console.error('[DevicesList] Error fetching telemetry:', telError)
@@ -217,15 +221,33 @@ export function DevicesList() {
       }
 
       if (data && data.length > 0) {
-        // Deduplicate: keep only the latest per device_id
-        const latest: Record<string, TelemetryReading> = {}
+        // Group by device_id and keep latest reading for each unique sensor type
+        const grouped: DeviceTelemetry = {}
         for (const row of data) {
-          if (!latest[row.device_id]) {
-            latest[row.device_id] = row as TelemetryReading
+          const reading = row as TelemetryReading
+          if (!grouped[row.device_id]) {
+            grouped[row.device_id] = []
+          }
+          
+          // Check if we already have this sensor type for this device
+          const sensorKey = reading.telemetry.type != null 
+            ? `type_${reading.telemetry.type}` 
+            : reading.telemetry.sensor || 'unknown'
+          
+          const hasSensorType = grouped[row.device_id].some(r => {
+            const existingKey = r.telemetry.type != null 
+              ? `type_${r.telemetry.type}` 
+              : r.telemetry.sensor || 'unknown'
+            return existingKey === sensorKey
+          })
+          
+          if (!hasSensorType) {
+            grouped[row.device_id].push(reading)
           }
         }
-        setLatestTelemetry(latest)
-        console.log(`[DevicesList] Loaded telemetry for ${Object.keys(latest).length} devices`)
+        setLatestTelemetry(grouped)
+        const totalReadings = Object.values(grouped).reduce((sum, readings) => sum + readings.length, 0)
+        console.log(`[DevicesList] Loaded ${totalReadings} sensor readings across ${Object.keys(grouped).length} devices`)
       }
     } catch (err) {
       console.error('[DevicesList] Error fetching telemetry:', err)
@@ -563,31 +585,43 @@ export function DevicesList() {
                     {device.status.toUpperCase()}
                   </span>
                 </div>
-                {/* Latest Telemetry Reading */}
+                {/* Latest Telemetry Readings (All Sensor Types) */}
                 {(() => {
-                  const tel = latestTelemetry[device.id]
-                  if (!tel) return null
-                  const SensorIcon = getSensorIcon(tel.telemetry.type as number | undefined, tel.telemetry.sensor as string | undefined)
-                  const sensorLabel = tel.telemetry.type != null 
-                    ? SENSOR_LABELS[tel.telemetry.type as number] || tel.telemetry.sensor 
-                    : tel.telemetry.sensor || 'Sensor'
-                  const timeAgo = formatTimeAgo(tel.device_timestamp || tel.received_at)
+                  const readings = latestTelemetry[device.id]
+                  if (!readings || readings.length === 0) return null
+                  
+                  // Find the most recent timestamp across all sensor readings
+                  const mostRecentTimestamp = readings.reduce((latest, r) => {
+                    const timestamp = r.device_timestamp || r.received_at
+                    return !latest || new Date(timestamp) > new Date(latest) ? timestamp : latest
+                  }, '')
+                  const timeAgo = formatTimeAgo(mostRecentTimestamp)
+                  
                   return (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-sm">
-                          <SensorIcon className="h-4 w-4 text-blue-500" />
-                          <span className="text-muted-foreground">{sensorLabel}:</span>
+                    <div className="mt-2 pt-2 border-t border-border/50 space-y-1.5">
+                      {readings.map((tel, idx) => {
+                        const SensorIcon = getSensorIcon(tel.telemetry.type as number | undefined, tel.telemetry.sensor as string | undefined)
+                        const sensorLabel = tel.telemetry.type != null 
+                          ? SENSOR_LABELS[tel.telemetry.type as number] || tel.telemetry.sensor 
+                          : tel.telemetry.sensor || 'Sensor'
+                        
+                        return (
+                          <div key={idx} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <SensorIcon className="h-4 w-4 text-blue-500" />
+                              <span className="text-muted-foreground">{sensorLabel}:</span>
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">
+                              {formatSensorValue(tel.telemetry)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                      {timeAgo && (
+                        <div className="text-xs text-muted-foreground text-right pt-0.5">
+                          Last updated {timeAgo}
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-foreground">
-                            {formatSensorValue(tel.telemetry)}
-                          </span>
-                          {timeAgo && (
-                            <span className="text-xs text-muted-foreground">({timeAgo})</span>
-                          )}
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )
                 })()}
