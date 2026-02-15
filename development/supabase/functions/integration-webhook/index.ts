@@ -20,7 +20,7 @@ export default createEdgeFunction(async ({ req }) => {
   try {
     // Get webhook signature and integration ID from headers
     // Header format varies by provider:
-    // - Golioth: X-Golioth-Signature
+    // - Golioth: X-Golioth-Signature (not implemented by platform, kept for future compatibility)
     // - AWS IoT: X-Amz-Sns-Message-Id
     // - Azure: X-Azure-Signature
     // - Custom: X-Webhook-Signature
@@ -76,18 +76,33 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
     // Verify signature if secret is configured (non-blocking - log verification result)
+    // NOTE: Golioth webhooks do not support HMAC signature generation (platform limitation)
     let signatureVerification = 'not_required'
-    if (integration.webhook_secret) {
+    const isGolioth = integration.integration_type === 'golioth'
+    
+    if (integration.webhook_secret && !isGolioth) {
+      // Only verify signatures for platforms that support them (AWS, Azure, Custom)
       if (!signature) {
         signatureVerification = 'missing_signature'
+        console.warn('[Webhook] No signature header found. Configure webhook with:')
+        console.warn('  - Signature Header: X-Webhook-Signature (or platform-specific header)')
+        console.warn('  - Signature Algorithm: HMAC-SHA256')
+        console.warn('  - Secret:', integration.webhook_secret)
       } else {
         const expectedSignature = await generateSignature(body, integration.webhook_secret)
         if (signature !== expectedSignature) {
           signatureVerification = 'verification_failed'
+          console.error('[Webhook] Signature verification failed!')
+          console.error('  Received signature:', signature)
+          console.error('  Expected signature:', expectedSignature)
         } else {
           signatureVerification = 'verified'
+          console.log('[Webhook] Signature verified successfully')
         }
       }
+    } else if (isGolioth) {
+      signatureVerification = 'not_supported'
+      console.log('[Webhook] Golioth webhooks do not support signature verification (platform limitation)')
     }
 
   // Parse and normalize payload
@@ -165,6 +180,15 @@ export default createEdgeFunction(async ({ req }) => {
       console.log('Unknown event type:', normalized.event, 'from provider:', integration.type)
   }
 
+  // Build response with device information
+  const responseBody = {
+    success: true,
+    event: normalized.event,
+    deviceId: normalized.deviceId || normalized.deviceName || '',
+    deviceName: normalized.deviceName || '',
+    message: 'Webhook processed successfully',
+  }
+
   // Update activity log status to completed
   if (activityLogId) {
     await supabase
@@ -172,18 +196,12 @@ export default createEdgeFunction(async ({ req }) => {
       .update({ 
         status: 'success',
         response_status: 200,
-        response_body: {
-          success: true,
-          event: normalized.event,
-          deviceId: normalized.deviceId || normalized.deviceName,
-          deviceName: normalized.deviceName,
-        },
+        response_body: responseBody,
         error_message: null,
       })
       .eq('id', activityLogId)
   }
 
-  // Update sync log status (legacy)
   // Update sync log status (legacy)
   await supabase
     .from('integration_sync_log')
@@ -193,10 +211,7 @@ export default createEdgeFunction(async ({ req }) => {
     .order('created_at', { ascending: false })
     .limit(1)
 
-  return createSuccessResponse({ 
-    success: true, 
-    message: 'Webhook processed successfully' 
-  })
+  return createSuccessResponse(responseBody)
   } catch (error) {
     // Log error to activity log if we have the necessary context
     if (supabase && integrationId && activityLogId) {
