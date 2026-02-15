@@ -234,7 +234,7 @@ export function DevicesList() {
             ? `type_${reading.telemetry.type}` 
             : reading.telemetry.sensor || 'unknown'
           
-          const hasSensorType = grouped[row.device_id].some(r => {
+          const hasSensorType = grouped[row.device_id]!.some(r => {
             const existingKey = r.telemetry.type != null 
               ? `type_${r.telemetry.type}` 
               : r.telemetry.sensor || 'unknown'
@@ -242,7 +242,7 @@ export function DevicesList() {
           })
           
           if (!hasSensorType) {
-            grouped[row.device_id].push(reading)
+            grouped[row.device_id]!.push(reading)
           }
         }
         setLatestTelemetry(grouped)
