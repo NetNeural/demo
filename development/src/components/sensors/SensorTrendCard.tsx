@@ -1,0 +1,59 @@
+'use client'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMemo } from 'react'
+import type { Device } from '@/types/sensor-details'
+
+interface TelemetryReading {
+  telemetry: {
+    type?: number
+    value?: number
+    [key: string]: unknown
+  }
+  device_timestamp: string | null
+  received_at: string
+}
+
+interface SensorTrendCardProps {
+  device: Device
+  telemetryReadings: TelemetryReading[]
+}
+
+export function SensorTrendCard({ device, telemetryReadings }: SensorTrendCardProps) {
+  const chartData = useMemo(() => {
+    return telemetryReadings
+      .slice(0, 100)
+      .map(r => ({
+        time: new Date(r.device_timestamp || r.received_at).toLocaleString(),
+        value: r.telemetry.value || 0
+      }))
+      .reverse()
+  }, [telemetryReadings])
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>📊 48-Hour Trend</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">
+          Showing last {chartData.length} readings
+        </p>
+        <div className="h-64 flex items-end justify-between gap-1">
+          {chartData.slice(-48).map((point, idx) => {
+            const maxValue = Math.max(...chartData.map(d => d.value))
+            const height = (point.value / maxValue) * 100
+            return (
+              <div
+                key={idx}
+                className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
+                style={{ height: `${height}%`, minHeight: '2px' }}
+                title={`${point.time}: ${point.value.toFixed(1)}`}
+              />
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

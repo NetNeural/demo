@@ -635,15 +635,14 @@ export function DevicesList() {
                 >
                   View Details
                 </Button>
-                {/* Temporarily disabled - sensor detail page not compatible with static export */}
-                {/* <Button 
+                <Button 
                   variant="default" 
                   size="sm" 
                   className="flex-1"
                   onClick={() => router.push(`/dashboard/sensors/${device.id}`)}
                 >
                   View Sensors
-                </Button> */}
+                </Button>
               </div>
             </CardContent>
           </Card>
