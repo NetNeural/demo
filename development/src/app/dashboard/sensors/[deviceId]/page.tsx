@@ -7,11 +7,12 @@ export async function generateStaticParams() {
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     deviceId: string
-  }
+  }>
 }
 
-export default function SensorDetailsPage({ params }: PageProps) {
-  return <SensorDetailsClient deviceId={params.deviceId} />
+export default async function SensorDetailsPage({ params }: PageProps) {
+  const { deviceId } = await params
+  return <SensorDetailsClient deviceId={deviceId} />
 }
