@@ -309,14 +309,24 @@ export abstract class BaseIntegrationClient {
       
       // Complete activity log
       if (this.activityLogId) {
+        const updateData: any = {
+          status: 'success',
+          responseTimeMs,
+          responseBody: typeof result === 'object' ? result as Record<string, unknown> : { value: result },
+        }
+        
+        // Add device count fields for sync operations
+        if (typeof result === 'object' && result !== null && 'devices_processed' in result) {
+          const syncResult = result as { devices_processed?: number; devices_succeeded?: number; devices_failed?: number }
+          updateData.devicesProcessed = syncResult.devices_processed
+          updateData.devicesSucceeded = syncResult.devices_succeeded
+          updateData.devicesFailed = syncResult.devices_failed
+        }
+        
         await logActivityComplete(
           supabase,
           this.activityLogId, 
-          { 
-            status: 'success',
-            responseTimeMs,
-            responseBody: typeof result === 'object' ? result as Record<string, unknown> : { value: result },
-          }
+          updateData
         )
       }
       

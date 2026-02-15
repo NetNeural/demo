@@ -1,0 +1,43 @@
+name: Deploy Staging Edge Functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      function:
+        description: 'Function to deploy (or "all")'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - device-sync
+          - auto-sync-cron
+          - integration-webhook
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+          
+      - name: Deploy Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: atgbmxicqikmapfqouco
+        working-directory: development
+        run: |
+          if [ "${{ inputs.function }}" == "all" ]; then
+            echo "Deploying all edge functions..."
+            npx supabase functions deploy device-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy auto-sync-cron --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy integration-webhook --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+          else
+            echo "Deploying ${{ inputs.function }}..."
+            npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+          fi

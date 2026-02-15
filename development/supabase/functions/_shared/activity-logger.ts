@@ -43,6 +43,9 @@ export interface ActivityLogUpdate {
   responseTimeMs?: number
   errorMessage?: string
   errorCode?: string
+  devicesProcessed?: number
+  devicesSucceeded?: number
+  devicesFailed?: number
 }
 
 /**
@@ -95,17 +98,30 @@ export async function logActivityComplete(
   update: ActivityLogUpdate
 ): Promise<void> {
   try {
+    const updateData: Record<string, unknown> = {
+      status: update.status,
+      response_status: update.responseStatus,
+      response_body: update.responseBody,
+      response_time_ms: update.responseTimeMs,
+      error_message: update.errorMessage,
+      error_code: update.errorCode,
+      completed_at: new Date().toISOString(),
+    }
+    
+    // Add device count fields if provided
+    if (update.devicesProcessed !== undefined) {
+      updateData.devices_processed = update.devicesProcessed
+    }
+    if (update.devicesSucceeded !== undefined) {
+      updateData.devices_succeeded = update.devicesSucceeded
+    }
+    if (update.devicesFailed !== undefined) {
+      updateData.devices_failed = update.devicesFailed
+    }
+    
     const { error } = await supabase
       .from('integration_activity_log')
-      .update({
-        status: update.status,
-        response_status: update.responseStatus,
-        response_body: update.responseBody,
-        response_time_ms: update.responseTimeMs,
-        error_message: update.errorMessage,
-        error_code: update.errorCode,
-        completed_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', logId)
 
     if (error) {
@@ -151,6 +167,9 @@ export async function logActivity(
       ip_address: params.ipAddress,
       user_agent: params.userAgent,
       metadata: params.metadata || {},
+      devices_processed: params.devicesProcessed,
+      devices_succeeded: params.devicesSucceeded,
+      devices_failed: params.devicesFailed,
       completed_at: new Date().toISOString(),
     })
     
