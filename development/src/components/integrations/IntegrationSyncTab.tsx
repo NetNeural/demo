@@ -158,30 +158,45 @@ export function IntegrationSyncTab({
       const result = response.data as SyncResult
       addLogEntry('success', 'Sync endpoint responded successfully')
       
-      // Log detailed logs from edge function (if available)
-      if (result.logs && Array.isArray(result.logs)) {
-        result.logs.forEach((log) => {
-          // Determine log level based on emoji/content
-          if (log.includes('✅') || log.includes('SUCCESS')) {
-            addLogEntry('success', log)
-          } else if (log.includes('⚠️') || log.includes('WARNING') || log.includes('ℹ️')) {
-            addLogEntry('warning', log)
-          } else if (log.includes('✗') || log.includes('ERROR') || log.includes('Failed')) {
-            addLogEntry('error', log)
-          } else {
-            addLogEntry('info', log)
-          }
-        })
-      }
-      
-      // Log summary
+      // Log summary first (cleaner display)
       if (result.summary) {
         addLogEntry('info', '=== Sync Summary ===')
         addLogEntry('success', `✓ Devices synced: ${result.summary.syncedDevices || 0}`)
         addLogEntry('success', `✓ Devices created: ${result.summary.createdDevices || 0}`)
         addLogEntry('success', `✓ Devices updated: ${result.summary.updatedDevices || 0}`)
-        addLogEntry('warning', `⚠ Devices skipped: ${result.summary.skippedDevices || 0}`)
-        addLogEntry('error', `✗ Errors: ${result.summary.errorCount || 0}`)
+        if ((result.summary.skippedDevices || 0) > 0) {
+          addLogEntry('warning', `⚠ Devices skipped: ${result.summary.skippedDevices}`)
+        }
+        if ((result.summary.errorCount || 0) > 0) {
+          addLogEntry('warning', `⚠ Devices with errors: ${result.summary.errorCount}`)
+        }
+      }
+      
+      // Only log detailed logs if there were actual errors or if user wants details
+      // Suppress "Request failed with status code 500" from export operations (expected for pull-only APIs)
+      if (result.logs && Array.isArray(result.logs)) {
+        const importantLogs = result.logs.filter(log => {
+          // Filter out expected export failures for pull-only integrations like Golioth
+          const isExportError = log.includes('Request failed with status code 500') || 
+                               (log.includes('✗') && syncOptions.direction === 'bidirectional')
+          return !isExportError
+        })
+        
+        if (importantLogs.length > 0) {
+          addLogEntry('info', '=== Sync Details ===')
+          importantLogs.forEach((log) => {
+            // Determine log level based on emoji/content
+            if (log.includes('✅') || log.includes('SUCCESS')) {
+              addLogEntry('success', log)
+            } else if (log.includes('⚠️') || log.includes('WARNING') || log.includes('ℹ️')) {
+              addLogEntry('warning', log)
+            } else if (log.includes('✗') || log.includes('ERROR') || log.includes('Failed')) {
+              addLogEntry('error', log)
+            } else {
+              addLogEntry('info', log)
+            }
+          })
+        }
       }
 
       // Log details
