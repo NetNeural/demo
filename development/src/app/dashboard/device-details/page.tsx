@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -24,10 +24,10 @@ interface TelemetryReading {
 }
 
 export default function SensorDetailsPage() {
-  const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { currentOrganization } = useOrganization()
-  const deviceId = params?.deviceId as string
+  const deviceId = searchParams.get('id')
 
   const [loading, setLoading] = useState(true)
   const [device, setDevice] = useState<Device | null>(null)

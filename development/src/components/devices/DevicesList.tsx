@@ -639,7 +639,7 @@ export function DevicesList() {
                   variant="default" 
                   size="sm" 
                   className="flex-1"
-                  onClick={() => router.push(`/dashboard/sensors/${device.id}`)}
+                  onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
                 >
                   View Sensors
                 </Button>
