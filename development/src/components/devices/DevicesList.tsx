@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface Device {
   id: string
@@ -56,6 +57,67 @@ interface Location {
   state?: string
 }
 
+interface TelemetryReading {
+  device_id: string
+  telemetry: {
+    type?: number
+    units?: number
+    value?: number
+    sensor?: string
+    timestamp?: string
+    [key: string]: unknown
+  }
+  device_timestamp: string | null
+  received_at: string
+}
+
+// Sensor type labels based on the type field from Golioth
+const SENSOR_LABELS: Record<number, string> = {
+  1: 'Temperature',
+  2: 'Humidity',
+  3: 'Pressure',
+  4: 'CO₂',
+  5: 'VOC',
+  6: 'Light',
+  7: 'Motion',
+}
+
+// Unit labels based on the units field 
+const UNIT_LABELS: Record<number, string> = {
+  1: '°C',
+  2: '°F',
+  3: '%',
+  4: 'hPa',
+  5: 'ppm',
+  6: 'ppb',
+  7: 'lux',
+}
+
+function getSensorIcon(sensorType?: number, sensorName?: string) {
+  const name = sensorName?.toLowerCase() || ''
+  if (sensorType === 1 || name.includes('tmp') || name.includes('temp')) return Thermometer
+  if (sensorType === 2 || name.includes('hum') || name.includes('sht')) return Droplets
+  return Activity
+}
+
+function formatSensorValue(telemetry: TelemetryReading['telemetry']): string {
+  if (telemetry.value == null) return 'N/A'
+  const value = Number(telemetry.value)
+  const unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
+  return `${value.toFixed(1)}${unit}`
+}
+
+function formatTimeAgo(timestamp: string | null): string {
+  if (!timestamp) return ''
+  const diff = Date.now() - new Date(timestamp).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
+}
+
 export function DevicesList() {
   const router = useRouter()
   const [devices, setDevices] = useState<Device[]>([])
@@ -72,6 +134,7 @@ export function DevicesList() {
   const [filterLocation, setFilterLocation] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('status') // Changed from 'name' to 'status' for Issue #103
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [latestTelemetry, setLatestTelemetry] = useState<Record<string, TelemetryReading>>({})
   
   const { currentOrganization } = useOrganization()
 
@@ -131,10 +194,56 @@ export function DevicesList() {
     }
   }, [currentOrganization])
 
+  // Fetch latest telemetry reading for each device
+  const fetchLatestTelemetry = useCallback(async (deviceIds: string[]) => {
+    if (!currentOrganization || deviceIds.length === 0) return
+
+    try {
+      const supabase = createClient()
+      
+      // Fetch the most recent telemetry for each device using distinct on
+      // We need to get the latest per device, so we fetch recent rows and dedupe client-side
+      const { data, error: telError } = await supabase
+        .from('device_telemetry_history')
+        .select('device_id, telemetry, device_timestamp, received_at')
+        .eq('organization_id', currentOrganization.id)
+        .in('device_id', deviceIds)
+        .order('received_at', { ascending: false })
+        .limit(deviceIds.length * 3) // Get a few recent per device to ensure coverage
+
+      if (telError) {
+        console.error('[DevicesList] Error fetching telemetry:', telError)
+        return
+      }
+
+      if (data && data.length > 0) {
+        // Deduplicate: keep only the latest per device_id
+        const latest: Record<string, TelemetryReading> = {}
+        for (const row of data) {
+          if (!latest[row.device_id]) {
+            latest[row.device_id] = row as TelemetryReading
+          }
+        }
+        setLatestTelemetry(latest)
+        console.log(`[DevicesList] Loaded telemetry for ${Object.keys(latest).length} devices`)
+      }
+    } catch (err) {
+      console.error('[DevicesList] Error fetching telemetry:', err)
+    }
+  }, [currentOrganization])
+
   useEffect(() => {
     fetchDevices()
     fetchLocations()
   }, [fetchDevices, fetchLocations])
+
+  // Fetch telemetry once devices are loaded
+  useEffect(() => {
+    if (devices.length > 0) {
+      const deviceIds = devices.map(d => d.id)
+      fetchLatestTelemetry(deviceIds)
+    }
+  }, [devices, fetchLatestTelemetry])
 
   // Compute unique device types for filter
   const deviceTypes = useMemo(() => {
@@ -454,6 +563,34 @@ export function DevicesList() {
                     {device.status.toUpperCase()}
                   </span>
                 </div>
+                {/* Latest Telemetry Reading */}
+                {(() => {
+                  const tel = latestTelemetry[device.id]
+                  if (!tel) return null
+                  const SensorIcon = getSensorIcon(tel.telemetry.type as number | undefined, tel.telemetry.sensor as string | undefined)
+                  const sensorLabel = tel.telemetry.type != null 
+                    ? SENSOR_LABELS[tel.telemetry.type as number] || tel.telemetry.sensor 
+                    : tel.telemetry.sensor || 'Sensor'
+                  const timeAgo = formatTimeAgo(tel.device_timestamp || tel.received_at)
+                  return (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <SensorIcon className="h-4 w-4 text-blue-500" />
+                          <span className="text-muted-foreground">{sensorLabel}:</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-semibold text-foreground">
+                            {formatSensorValue(tel.telemetry)}
+                          </span>
+                          {timeAgo && (
+                            <span className="text-xs text-muted-foreground">({timeAgo})</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
               <div className="flex space-x-2 mt-4">
                 <Button 
