@@ -56,7 +56,8 @@ export default function SensorDetailsClient() {
   const router = useRouter()
   const { currentOrganization } = useOrganization()
   
-  const deviceId = params?.id as string
+  // Catch-all route: [...id] makes params.id an array, get first element
+  const deviceId = Array.isArray(params?.id) ? params.id[0] : params?.id as string
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<SensorDetailsData | null>(null)
