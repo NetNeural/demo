@@ -99,14 +99,30 @@ export class GoliothClient extends BaseIntegrationClient {
    * Database accepts: 'online' | 'offline' | 'warning' | 'error'
    * Base Device interface expects: 'online' | 'offline' | 'unknown' | 'maintenance'
    * We map to database enum for storage, 'unknown' for the interface
+   * 
+   * Since Golioth doesn't provide reliable online/offline status (usually "-" or empty),
+   * we calculate status based on last_seen: if device reported within last 5 minutes, it's online.
    */
-  private normalizeDeviceStatus(status: string | undefined): 'online' | 'offline' | 'warning' | 'error' {
-    if (!status || status === '-' || status === '') return 'offline'
-    const normalized = status.toLowerCase()
-    if (normalized === 'online' || normalized === 'connected') return 'online'
-    if (normalized === 'offline' || normalized === 'disconnected') return 'offline'
-    if (normalized === 'warning' || normalized === 'maintenance') return 'warning'
-    if (normalized === 'error' || normalized === 'critical') return 'error'
+  private normalizeDeviceStatus(status: string | undefined, lastSeen?: string | null): 'online' | 'offline' | 'warning' | 'error' {
+    // First check if device is recently active (within last 5 minutes)
+    if (lastSeen) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+      const lastSeenDate = new Date(lastSeen)
+      if (lastSeenDate >= fiveMinutesAgo) {
+        return 'online'
+      }
+    }
+    
+    // If status field is explicitly set, use it
+    if (status && status !== '-' && status !== '') {
+      const normalized = status.toLowerCase()
+      if (normalized === 'online' || normalized === 'connected') return 'online'
+      if (normalized === 'offline' || normalized === 'disconnected') return 'offline'
+      if (normalized === 'warning' || normalized === 'maintenance') return 'warning'
+      if (normalized === 'error' || normalized === 'critical') return 'error'
+    }
+    
+    // Default to offline if no recent activity and no explicit status
     return 'offline'
   }
   
@@ -249,7 +265,8 @@ export class GoliothClient extends BaseIntegrationClient {
 
             // If device doesn't exist, create it
             if (!localDeviceId) {
-              const logMsg = `📝 Creating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${this.normalizeDeviceStatus(goliothDevice.status)})`
+              const normalizedStatus = this.normalizeDeviceStatus(goliothDevice.status, lastSeen)
+              const logMsg = `📝 Creating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${normalizedStatus}, last_seen: ${lastSeen})`
               logs.push(logMsg)
               console.log(logMsg)
               
@@ -260,7 +277,7 @@ export class GoliothClient extends BaseIntegrationClient {
                 name: goliothDevice.name,
                 device_type: this.determineDeviceType(goliothDevice),
                 hardware_ids: goliothDevice.hardwareIds || [],
-                status: this.normalizeDeviceStatus(goliothDevice.status),
+                status: normalizedStatus,
                 last_seen: lastSeen,
                 metadata: {
                   ...goliothDevice.metadata,
@@ -300,7 +317,8 @@ export class GoliothClient extends BaseIntegrationClient {
               logs.push(successMsg)
               console.log(successMsg)
             } else {
-              const updateMsg = `🔄 Updating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${this.normalizeDeviceStatus(goliothDevice.status)})`
+              const normalizedStatus = this.normalizeDeviceStatus(goliothDevice.status, lastSeen)
+              const updateMsg = `🔄 Updating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${normalizedStatus}, last_seen: ${lastSeen})`
               logs.push(updateMsg)
               console.log(updateMsg)
               
@@ -322,7 +340,7 @@ export class GoliothClient extends BaseIntegrationClient {
                 id: localDeviceId!,
                 name: goliothDevice.name,
                 hardware_id: goliothDevice.hardwareIds?.[0],
-                status: this.normalizeDeviceStatus(goliothDevice.status),
+                status: normalizedStatus,
                 updated_at: goliothDevice.updatedAt,
                 metadata: goliothDevice.metadata,
               }
@@ -353,7 +371,7 @@ export class GoliothClient extends BaseIntegrationClient {
               
               const resolvedStatus = conflicts.find(c => c.fieldName === 'status')
                 ? autoResolveConflict(localDevice.status, remoteDevice.status, localDevice.updated_at, remoteDevice.updated_at, conflictStrategy as any)
-                : this.normalizeDeviceStatus(goliothDevice.status)
+                : normalizedStatus
               
               // Check if device_type was manually changed (not auto-detected)
               const autoDetectedType = this.determineDeviceType(goliothDevice)
