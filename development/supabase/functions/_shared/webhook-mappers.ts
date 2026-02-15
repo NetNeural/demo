@@ -61,10 +61,14 @@ export interface RawWebhookPayload {
 export function mapGoliothWebhook(payload: RawWebhookPayload): NormalizedWebhookPayload {
   const device = payload.device || payload.data || {}
   
+  // Golioth telemetry webhooks send device_name at top level (e.g., "M260600008")
+  // This maps to serial_number in our devices table
+  const deviceName = (payload.device_name as string) || (device.name as string)
+  
   return {
     event: payload.event || 'unknown',
-    deviceId: device.id || device.deviceId || device.device_id || payload.device_id || payload.deviceId || '',
-    deviceName: device.name as string,
+    deviceId: device.id || device.deviceId || device.device_id || payload.device_id || payload.deviceId || deviceName || '',
+    deviceName: deviceName,
     status: device.status || device.state || payload.status,
     lastSeen: device.lastSeen || device.last_seen || payload.timestamp,
     metadata: device.metadata || device.tags || payload.metadata || device,

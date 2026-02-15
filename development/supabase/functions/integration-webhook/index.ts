@@ -152,7 +152,8 @@ export default createEdgeFunction(async ({ req }) => {
         response_body: {
           success: true,
           event: normalized.event,
-          deviceId: normalized.deviceId,
+          deviceId: normalized.deviceId || normalized.deviceName,
+          deviceName: normalized.deviceName,
         },
         error_message: null,
       })
@@ -232,26 +233,56 @@ async function handleDeviceUpdate(
     return
   }
   
-  const { data: device } = await supabase
+  // Look up device by serial_number first (primary), then external_device_id (fallback)
+  // Golioth device_name maps to serial_number in NetNeural devices table
+  let query = supabase
     .from('devices')
     .select('*')
-    .eq('external_device_id', payload.deviceId)
     .eq('organization_id', integration.organization_id)
-    .maybeSingle()
+  
+  if (payload.deviceName) {
+    query = query.eq('serial_number', payload.deviceName)
+  } else {
+    query = query.eq('external_device_id', payload.deviceId)
+  }
+  
+  const { data: device } = await query.maybeSingle()
 
   if (device) {
     // Update existing device
+    const updateData: Record<string, unknown> = {
+      status: payload.status || device.status,
+      last_seen: payload.lastSeen || new Date().toISOString(),
+      metadata: payload.metadata || device.metadata,
+      updated_at: new Date().toISOString(),
+    }
+    
+    // Update external_device_id and serial_number if not set
+    if (!device.external_device_id && payload.deviceId) {
+      updateData.external_device_id = payload.deviceId
+    }
+    if (!device.serial_number && payload.deviceName) {
+      updateData.serial_number = payload.deviceName
+    }
+    
     await supabase
       .from('devices')
-      .update({
-        status: payload.status || device.status,
-        last_seen: payload.lastSeen || new Date().toISOString(),
-        metadata: payload.metadata || device.metadata,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', device.id)
     
-    console.log('[Webhook] Updated device:', device.id)
+    console.log('[Webhook] Updated device:', device.id, 'with serial:', payload.deviceName)
+    
+    // Store telemetry data if present in payload
+    if (payload.metadata?.telemetry) {
+      const telemetryData = payload.metadata.telemetry as Record<string, unknown>
+      await supabase.rpc('record_device_telemetry', {
+        p_device_id: device.id,
+        p_telemetry_data: telemetryData,
+        p_timestamp: payload.timestamp || new Date().toISOString(),
+      }).catch((err: Error) => {
+        console.error('[Webhook] Failed to record telemetry:', err)
+      })
+    }
   } else {
     // Create new device if it doesn't exist (upsert behavior)
     const { data: newDevice, error } = await supabase
@@ -260,9 +291,10 @@ async function handleDeviceUpdate(
         organization_id: integration.organization_id,
         integration_id: integration.id,
         external_device_id: payload.deviceId,
+        serial_number: payload.deviceName,
         name: payload.deviceName || payload.deviceId,
-        device_type: 'sensor',  // Default type for webhook-created devices
-        status: payload.status || 'unknown',
+        device_type: 'iot-sensor',  // Default type for webhook-created devices
+        status: payload.status || 'online',
         last_seen: payload.lastSeen || new Date().toISOString(),
         metadata: payload.metadata || {},
         created_at: new Date().toISOString(),
@@ -274,7 +306,19 @@ async function handleDeviceUpdate(
     if (error) {
       console.error('[Webhook] Failed to create device:', error)
     } else {
-      console.log('[Webhook] Created new device:', newDevice?.id)
+      console.log('[Webhook] Created new device:', newDevice?.id, 'for serial:', payload.deviceName)
+      
+      // Store telemetry data if present
+      if (newDevice && payload.metadata?.telemetry) {
+        const telemetryData = payload.metadata.telemetry as Record<string, unknown>
+        await supabase.rpc('record_device_telemetry', {
+          p_device_id: newDevice.id,
+          p_telemetry_data: telemetryData,
+          p_timestamp: payload.timestamp || new Date().toISOString(),
+        }).catch((err: Error) => {
+          console.error('[Webhook] Failed to record telemetry:', err)
+        })
+      }
     }
   }
 }
@@ -292,12 +336,19 @@ async function handleDeviceCreate(
     return
   }
   
-  const { data: existing } = await supabase
+  // Look up device by serial_number first (primary), then external_device_id (fallback)
+  let query = supabase
     .from('devices')
     .select('id')
-    .eq('external_device_id', payload.deviceId)
     .eq('organization_id', integration.organization_id)
-    .maybeSingle()
+  
+  if (payload.deviceName) {
+    query = query.eq('serial_number', payload.deviceName)
+  } else {
+    query = query.eq('external_device_id', payload.deviceId)
+  }
+  
+  const { data: existing } = await query.maybeSingle()
 
   if (!existing) {
     // For custom webhooks, create device directly
@@ -309,7 +360,9 @@ async function handleDeviceCreate(
           organization_id: integration.organization_id,
           integration_id: integration.id,
           external_device_id: payload.deviceId,
+          serial_number: payload.deviceName,
           name: payload.deviceName || payload.deviceId,
+          device_type: 'iot-sensor',
           status: payload.status || 'unknown',
           last_seen: payload.lastSeen || new Date().toISOString(),
           metadata: payload.metadata || {},
@@ -331,7 +384,7 @@ async function handleDeviceCreate(
         integration_id: integration.id,
         operation: 'sync_device',
         priority: 8,
-        payload: { deviceId: payload.deviceId },
+        payload: { deviceId: payload.deviceId, deviceName: payload.deviceName },
       })
       console.log('[Webhook] Queued device for sync:', payload.deviceId)
     }
@@ -366,12 +419,19 @@ async function handleStatusChange(
     return
   }
   
-  const { data: device } = await supabase
+  // Look up device by serial_number first (primary), then external_device_id (fallback)
+  let query = supabase
     .from('devices')
     .select('id')
-    .eq('external_device_id', payload.deviceId)
     .eq('organization_id', integration.organization_id)
-    .maybeSingle()
+  
+  if (payload.deviceName) {
+    query = query.eq('serial_number', payload.deviceName)
+  } else {
+    query = query.eq('external_device_id', payload.deviceId)
+  }
+  
+  const { data: device } = await query.maybeSingle()
   
   if (device) {
     // Update existing device status
@@ -392,8 +452,9 @@ async function handleStatusChange(
         organization_id: integration.organization_id,
         integration_id: integration.id,
         external_device_id: payload.deviceId,
+        serial_number: payload.deviceName,
         name: payload.deviceName || payload.deviceId,
-        device_type: 'sensor',  // Default type for webhook-created devices
+        device_type: 'iot-sensor',  // Default type for webhook-created devices
         status: payload.status || 'unknown',
         last_seen: new Date().toISOString(),
         metadata: payload.metadata || {},

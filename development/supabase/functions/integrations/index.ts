@@ -474,6 +474,13 @@ export default createEdgeFunction(async ({ req }) => {
       }
 
       // Log activity for this test
+      console.log('[Test Connection] About to log activity:', {
+        integrationId,
+        organizationId: typedIntegration.organization_id,
+        userId: userContext.userId,
+        testSuccess: testResult.success,
+      })
+      
       const responseTime = Date.now() - startTime
       await logActivity(supabase, {
         organizationId: typedIntegration.organization_id,
@@ -497,6 +504,8 @@ export default createEdgeFunction(async ({ req }) => {
           testMessage: testResult.message
         }
       })
+      
+      console.log('[Test Connection] Activity logging completed')
 
       if (testResult.success) {
         return createSuccessResponse({ 

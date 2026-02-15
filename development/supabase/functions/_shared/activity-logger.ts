@@ -125,7 +125,14 @@ export async function logActivity(
   params: ActivityLogParams & ActivityLogUpdate
 ): Promise<void> {
   try {
-    await supabase.from('integration_activity_log').insert({
+    console.log('[Activity Logger] Attempting to log activity:', {
+      organizationId: params.organizationId,
+      integrationId: params.integrationId,
+      activityType: params.activityType,
+      status: params.status,
+    })
+    
+    const { data, error } = await supabase.from('integration_activity_log').insert({
       organization_id: params.organizationId,
       integration_id: params.integrationId,
       direction: params.direction,
@@ -146,8 +153,20 @@ export async function logActivity(
       metadata: params.metadata || {},
       completed_at: new Date().toISOString(),
     })
+    
+    if (error) {
+      console.error('[Activity Logger] Database insertion failed:', error)
+      console.error('[Activity Logger] Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      })
+    } else {
+      console.log('[Activity Logger] Activity logged successfully:', data)
+    }
   } catch (error) {
-    console.error('Exception logging complete activity:', error)
+    console.error('[Activity Logger] Exception logging complete activity:', error)
   }
 }
 
