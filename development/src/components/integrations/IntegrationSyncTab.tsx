@@ -177,8 +177,8 @@ export function IntegrationSyncTab({
       if (result.logs && Array.isArray(result.logs)) {
         const importantLogs = result.logs.filter(log => {
           // Filter out expected export failures for pull-only integrations like Golioth
-          const isExportError = log.includes('Request failed with status code 500') || 
-                               (log.includes('✗') && syncOptions.direction === 'bidirectional')
+          // Only filter lines that contain BOTH the error marker AND the 500 error
+          const isExportError = log.includes('✗') && log.includes('Request failed with status code 500')
           return !isExportError
         })
         
