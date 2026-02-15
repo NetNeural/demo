@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { TemperatureToggle } from '@/components/ui/temperature-toggle'
 
 interface Device {
   id: string
@@ -104,10 +105,21 @@ function getSensorIcon(sensorType?: number, sensorName?: string) {
   return Activity
 }
 
-function formatSensorValue(telemetry: TelemetryReading['telemetry']): string {
+function formatSensorValue(telemetry: TelemetryReading['telemetry'], useFahrenheit: boolean = false): string {
   if (telemetry.value == null) return 'N/A'
-  const value = Number(telemetry.value)
-  const unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
+  let value = Number(telemetry.value)
+  let unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
+  
+  // Convert temperature if needed
+  const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'
+  if (isTemperature && useFahrenheit && unit === '°C') {
+    value = (value * 9/5) + 32
+    unit = '°F'
+  } else if (isTemperature && !useFahrenheit && unit === '°F') {
+    value = (value - 32) * 5/9
+    unit = '°C'
+  }
+  
   return `${value.toFixed(1)}${unit}`
 }
 
@@ -131,6 +143,12 @@ export function DevicesList() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingDevice, setDeletingDevice] = useState<Device | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [useFahrenheit, setUseFahrenheit] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('temperatureUnit') === 'F'
+    }
+    return false
+  })
   
   // Filter and Sort states
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -513,24 +531,35 @@ export function DevicesList() {
             </div>
           </div>
 
-          {/* Clear Filters */}
+          {/* Clear Filters and Temperature Toggle */}
           <div className="mt-4 flex justify-between items-center">
             <span className="text-sm text-muted-foreground">
               Showing {filteredAndSortedDevices.length} of {devices.length} devices
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setFilterStatus('all')
-                setFilterType('all')
-                setFilterLocation('all')
-                setSortBy('name')
-                setSortOrder('asc')
-              }}
-            >
-              Clear Filters
-            </Button>
+            <div className="flex items-center gap-4">
+              <TemperatureToggle
+                useFahrenheit={useFahrenheit}
+                onToggle={(value) => {
+                  setUseFahrenheit(value)
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('temperatureUnit', value ? 'F' : 'C')
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterStatus('all')
+                  setFilterType('all')
+                  setFilterLocation('all')
+                  setSortBy('name')
+                  setSortOrder('asc')
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -612,7 +641,7 @@ export function DevicesList() {
                               <span className="text-muted-foreground">{sensorLabel}:</span>
                             </div>
                             <span className="text-sm font-semibold text-foreground">
-                              {formatSensorValue(tel.telemetry)}
+                              {formatSensorValue(tel.telemetry, useFahrenheit)}
                             </span>
                           </div>
                         )

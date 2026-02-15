@@ -3,8 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Battery, Signal, Activity, Thermometer, Droplets } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Device } from '@/types/sensor-details'
+import { TemperatureToggle } from '@/components/ui/temperature-toggle'
 
 interface TelemetryReading {
   telemetry: {
@@ -50,6 +51,13 @@ function getSensorIcon(sensorType?: number) {
 }
 
 export function SensorOverviewCard({ device, telemetryReadings }: SensorOverviewCardProps) {
+  const [useFahrenheit, setUseFahrenheit] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('temperatureUnit') === 'F'
+    }
+    return false
+  })
+  
   // Group latest readings by sensor type
   const latestBySensor = useMemo(() => {
     const grouped: Record<string, TelemetryReading> = {}
@@ -100,9 +108,20 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">🔍 Sensor Overview</CardTitle>
-          <Badge variant={statusBadge.variant}>
-            {statusBadge.icon} {statusBadge.label}
-          </Badge>
+          <div className="flex items-center gap-4">
+            <TemperatureToggle
+              useFahrenheit={useFahrenheit}
+              onToggle={(value) => {
+                setUseFahrenheit(value)
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('temperatureUnit', value ? 'F' : 'C')
+                }
+              }}
+            />
+            <Badge variant={statusBadge.variant}>
+              {statusBadge.icon} {statusBadge.label}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -131,12 +150,26 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
               const sensorLabel = reading.telemetry.type != null
                 ? SENSOR_LABELS[reading.telemetry.type as number]
                 : reading.telemetry.sensor || 'Sensor'
-              const unit = reading.telemetry.units != null
+              let unit = reading.telemetry.units != null
                 ? UNIT_LABELS[reading.telemetry.units as number]
                 : ''
-              const value = reading.telemetry.value != null
-                ? Number(reading.telemetry.value).toFixed(1)
-                : 'N/A'
+              let value = reading.telemetry.value != null
+                ? Number(reading.telemetry.value)
+                : null
+              
+              // Convert temperature if needed
+              const isTemperature = reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
+              if (value !== null && isTemperature) {
+                if (useFahrenheit && unit === '°C') {
+                  value = (value * 9/5) + 32
+                  unit = '°F'
+                } else if (!useFahrenheit && unit === '°F') {
+                  value = (value - 32) * 5/9
+                  unit = '°C'
+                }
+              }
+              
+              const displayValue = value !== null ? value.toFixed(1) : 'N/A'
 
               return (
                 <div key={idx} className="flex items-center justify-between">
@@ -146,7 +179,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                   </div>
                   <div className="text-right">
                     <p className="text-3xl font-bold">
-                      {value}
+                      {displayValue}
                       <span className="text-xl ml-1">{unit}</span>
                     </p>
                   </div>
