@@ -464,6 +464,14 @@ export function DevicesList() {
                 >
                   View Details
                 </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => router.push(`/dashboard/sensors/${device.id}`)}
+                >
+                  View Sensors
+                </Button>
               </div>
             </CardContent>
           </Card>

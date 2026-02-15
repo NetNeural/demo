@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       alert_acknowledgements: {
@@ -2121,6 +2146,161 @@ export type Database = {
         }
         Relationships: []
       }
+      sensor_activity: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          device_id: string
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          occurred_at: string | null
+          performed_by: string | null
+          performed_by_name: string | null
+          previous_value: Json | null
+          related_alert_id: string | null
+          sensor_type: string
+          severity: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          device_id: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          occurred_at?: string | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          previous_value?: Json | null
+          related_alert_id?: string | null
+          sensor_type: string
+          severity?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          device_id?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          occurred_at?: string | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          previous_value?: Json | null
+          related_alert_id?: string | null
+          sensor_type?: string
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensor_activity_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensor_activity_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensor_activity_related_alert_id_fkey"
+            columns: ["related_alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sensor_thresholds: {
+        Row: {
+          alert_enabled: boolean | null
+          alert_message: string | null
+          alert_severity: string | null
+          created_at: string | null
+          created_by: string | null
+          critical_max: number | null
+          critical_min: number | null
+          device_id: string
+          id: string
+          last_notification_at: string | null
+          max_value: number | null
+          min_value: number | null
+          notification_cooldown_minutes: number | null
+          notify_on_breach: boolean | null
+          sensor_type: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          alert_enabled?: boolean | null
+          alert_message?: string | null
+          alert_severity?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          critical_max?: number | null
+          critical_min?: number | null
+          device_id: string
+          id?: string
+          last_notification_at?: string | null
+          max_value?: number | null
+          min_value?: number | null
+          notification_cooldown_minutes?: number | null
+          notify_on_breach?: boolean | null
+          sensor_type: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          alert_enabled?: boolean | null
+          alert_message?: string | null
+          alert_severity?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          critical_max?: number | null
+          critical_min?: number | null
+          device_id?: string
+          id?: string
+          last_notification_at?: string | null
+          max_value?: number | null
+          min_value?: number | null
+          notification_cooldown_minutes?: number | null
+          notify_on_breach?: boolean | null
+          sensor_type?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensor_thresholds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensor_thresholds_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensor_thresholds_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_conflicts: {
         Row: {
           conflict_detected_at: string | null
@@ -2752,6 +2932,19 @@ export type Database = {
         }
         Returns: string
       }
+      log_sensor_activity: {
+        Args: {
+          p_activity_type: string
+          p_description?: string
+          p_device_id: string
+          p_metadata?: Json
+          p_new_value?: Json
+          p_previous_value?: Json
+          p_sensor_type: string
+          p_severity?: string
+        }
+        Returns: string
+      }
       log_user_action: {
         Args: {
           p_action_category: string
@@ -2955,6 +3148,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       alert_severity: ["low", "medium", "high", "critical"],
