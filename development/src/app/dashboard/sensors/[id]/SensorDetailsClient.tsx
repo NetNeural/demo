@@ -9,7 +9,41 @@ import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react'
 import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCard'
 import { SensorTrendGraph } from '@/components/sensors/SensorTrendGraph'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { createClient } from '@/lib/supabase/client'
 import type { SensorDetailsData, TimeRange } from '@/types/sensor-details'
+
+// Helper to extract number from telemetry value
+function extractNumber(value: unknown): number | null {
+  if (typeof value === 'number') return value
+  if (value && typeof value === 'object' && 'value' in value) {
+    const obj = value as { value: unknown }
+    if (typeof obj.value === 'number') return obj.value
+  }
+  return null
+}
+
+// Helper to extract metadata from telemetry value
+function extractMetadata(value: unknown): { unit?: string; quality?: number } {
+  const result: { unit?: string; quality?: number } = {}
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    if (typeof obj.unit === 'string') result.unit = obj.unit
+    if (typeof obj.quality === 'number') result.quality = obj.quality
+  }
+  return result
+}
+
+// Helper to get default unit for sensor type
+function getDefaultUnit(sensorType: string): string {
+  const units: Record<string, string> = {
+    temperature: '°C', humidity: '%', pressure: 'hPa', battery: 'V',
+    voltage: 'V', current: 'A', power: 'W', energy: 'kWh',
+    distance: 'm', speed: 'm/s', acceleration: 'm/s²',
+    angle: '°', frequency: 'Hz', luminosity: 'lux', sound: 'dB',
+    co2: 'ppm', voc: 'ppb',
+  }
+  return units[sensorType.toLowerCase()] || ''
+}
 
 export default function SensorDetailsClient() {
   const params = useParams()
@@ -33,21 +67,192 @@ export default function SensorDetailsClient() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(
-        `/api/sensors/${deviceId}?sensor_type=${selectedSensor}&time_range=${timeRange}`,
-        {
-          headers: {
-            'x-organization-id': currentOrganization.id,
-          },
-        }
-      )
+      const supabase = createClient()
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch sensor data')
+      // Verify device belongs to organization
+      const { data: device, error: deviceError } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('id', deviceId)
+        .eq('organization_id', currentOrganization.id)
+        .single()
+
+      if (deviceError || !device) {
+        throw new Error('Device not found')
       }
 
-      const result = await response.json()
-      setData(result.data)
+      // Calculate time range
+      const timeRangeHours: Record<string, number> = {
+        '48h': 48, '7d': 168, '30d': 720, '90d': 2160,
+      }
+      const hours = timeRangeHours[timeRange] || 48
+      const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+
+      // Fetch telemetry data
+      const { data: telemetryRecords } = await supabase
+        .from('device_telemetry_history')
+        .select('telemetry, created_at, device_timestamp')
+        .eq('device_id', deviceId)
+        .gte('created_at', startTime)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+
+      // Extract sensor readings from JSONB
+      const readings: Array<{ timestamp: string; value: number; quality: number | null; unit?: string }> = []
+      let latestReading: typeof readings[0] & { id: string; device_id: string; sensor_type: string; created_at: string } | null = null
+
+      if (telemetryRecords && telemetryRecords.length > 0) {
+        for (const record of telemetryRecords) {
+          const telemetry = record.telemetry as Record<string, unknown>
+          let sensorValue: number | null = null
+          let sensorUnit: string | null = null
+          let quality: number | null = 95
+
+          // Try direct property
+          if (selectedSensor in telemetry) {
+            sensorValue = extractNumber(telemetry[selectedSensor])
+            const metadata = extractMetadata(telemetry[selectedSensor])
+            sensorUnit = metadata.unit ?? null
+            quality = metadata.quality ?? quality
+          }
+          
+          // Try nested in metrics
+          if (sensorValue === null && 'metrics' in telemetry && telemetry.metrics && typeof telemetry.metrics === 'object') {
+            const metrics = telemetry.metrics as Record<string, unknown>
+            if (selectedSensor in metrics) {
+              sensorValue = extractNumber(metrics[selectedSensor])
+              const metadata = extractMetadata(metrics[selectedSensor])
+              sensorUnit = metadata.unit ?? null
+              quality = metadata.quality ?? quality
+            }
+          }
+          
+          // Try in data object
+          if (sensorValue === null && 'data' in telemetry && telemetry.data && typeof telemetry.data === 'object') {
+            const dataObj = telemetry.data as Record<string, unknown>
+            if (selectedSensor in dataObj) {
+              sensorValue = extractNumber(dataObj[selectedSensor])
+              const metadata = extractMetadata(dataObj[selectedSensor])
+              sensorUnit = metadata.unit ?? null
+              quality = metadata.quality ?? quality
+            }
+          }
+
+          if (sensorValue !== null) {
+            const reading = {
+              timestamp: record.device_timestamp || record.created_at,
+              value: sensorValue,
+              quality,
+              unit: sensorUnit || getDefaultUnit(selectedSensor)
+            }
+            
+            readings.push(reading)
+            
+            if (!latestReading) {
+              latestReading = {
+                ...reading,
+                id: `${deviceId}_${selectedSensor}_latest`,
+                device_id: deviceId,
+                sensor_type: selectedSensor,
+                created_at: record.created_at,
+              }
+            }
+          }
+        }
+      }
+
+      // Calculate statistics
+      const trendData = readings.map(r => ({ timestamp: r.timestamp, value: r.value, quality: r.quality }))
+      let statistics = null
+
+      if (trendData.length > 0) {
+        const values = trendData.map(r => r.value)
+        const min = Math.min(...values)
+        const max = Math.max(...values)
+        const avg = values.reduce((a, b) => a + b, 0) / values.length
+        const squareDiffs = values.map(v => Math.pow(v - avg, 2))
+        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length
+        const stddev = Math.sqrt(avgSquareDiff)
+
+        statistics = {
+          current: latestReading?.value || 0,
+          min, max, avg, stddev,
+          readings_count: trendData.length,
+          last_updated: latestReading?.timestamp || new Date().toISOString(),
+        }
+      }
+
+      // Fetch threshold
+      const { data: threshold } = await supabase
+        .from('sensor_thresholds')
+        .select('*')
+        .eq('device_id', deviceId)
+        .eq('sensor_type', selectedSensor)
+        .single()
+
+      // Fetch activity
+      const { data: recentActivity } = await supabase
+        .from('sensor_activity')
+        .select('*')
+        .eq('device_id', deviceId)
+        .eq('sensor_type', selectedSensor)
+        .order('occurred_at', { ascending: false })
+        .limit(20)
+
+      // Get available sensors
+      const { data: recentTelemetry } = await supabase
+        .from('device_telemetry_history')
+        .select('telemetry')
+        .eq('device_id', deviceId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      const uniqueSensors: string[] = []
+      if (recentTelemetry && recentTelemetry.length > 0) {
+        const sensorSet = new Set<string>()
+        for (const record of recentTelemetry) {
+          const telemetry = record.telemetry as Record<string, unknown>
+          const extractSensorNames = (obj: Record<string, unknown>, prefix = ''): void => {
+            for (const key in obj) {
+              const value = obj[key]
+              if (key === 'metadata' || key === 'location') continue
+              if (typeof value === 'number' || (value && typeof value === 'object' && 'value' in value)) {
+                sensorSet.add(prefix + key)
+              } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+                extractSensorNames(value as Record<string, unknown>, prefix)
+              }
+            }
+          }
+          extractSensorNames(telemetry)
+        }
+        uniqueSensors.push(...Array.from(sensorSet))
+      }
+
+      const responseData: SensorDetailsData = {
+        device: {
+          id: device.id,
+          name: device.name,
+          device_type: device.device_type,
+          model: device.model,
+          serial_number: device.serial_number,
+          status: device.status,
+          location: device.location_id,
+          firmware_version: device.firmware_version,
+          battery_level: device.battery_level,
+          signal_strength: device.signal_strength,
+          last_seen: device.last_seen,
+          metadata: device.metadata,
+        },
+        sensor_type: selectedSensor,
+        latest_reading: latestReading || null,
+        trend_data: trendData || [],
+        statistics,
+        threshold: threshold || null,
+        recent_activity: recentActivity || [],
+        available_sensors: uniqueSensors,
+      }
+
+      setData(responseData)
     } catch (err) {
       console.error('Error fetching sensor data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load sensor data')
