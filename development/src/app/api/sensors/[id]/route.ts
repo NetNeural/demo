@@ -1,51 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Helper function to safely extract number from telemetry value
-function extractNumber(value: unknown): number | null {
-  if (typeof value === 'number') return value
-  if (value && typeof value === 'object' && 'value' in value) {
-    const obj = value as { value: unknown }
-    if (typeof obj.value === 'number') return obj.value
-  }
-  return null
-}
-
-// Helper function to extract metadata from telemetry value
-function extractMetadata(value: unknown): { unit?: string; quality?: number } {
-  const result: { unit?: string; quality?: number } = {}
-  if (value && typeof value === 'object') {
-    const obj = value as Record<string, unknown>
-    if (typeof obj.unit === 'string') result.unit = obj.unit
-    if (typeof obj.quality === 'number') result.quality = obj.quality
-  }
-  return result
-}
-
-// Helper to get default unit for sensor type
-function getDefaultUnit(sensorType: string): string {
-  const units: Record<string, string> = {
-    temperature: '°C',
-    humidity: '%',
-    pressure: 'hPa',
-    battery: 'V',
-    voltage: 'V',
-    current: 'A',
-    power: 'W',
-    energy: 'kWh',
-    distance: 'm',
-    speed: 'm/s',
-    acceleration: 'm/s²',
-    angle: '°',
-    frequency: 'Hz',
-    luminosity: 'lux',
-    sound: 'dB',
-    co2: 'ppm',
-    voc: 'ppb',
-  }
-  return units[sensorType.toLowerCase()] || ''
-}
-
 // GET /api/sensors/[id]
 // Fetch sensor details and telemetry data for a specific device
 export async function GET(
@@ -93,89 +48,25 @@ export async function GET(
     const hours = timeRangeHours[timeRange] || 48
     const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
 
-    // Fetch telemetry data from device_telemetry_history (where webhooks store data)
-    const { data: telemetryRecords } = await supabase
-      .from('device_telemetry_history')
-      .select('telemetry, created_at, device_timestamp')
+    // Fetch latest reading
+    const { data: latestReading } = await supabase
+      .from('device_data')
+      .select('*')
       .eq('device_id', deviceId)
-      .gte('created_at', startTime)
-      .order('created_at', { ascending: false })
+      .eq('sensor_type', sensorType)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .single()
+
+    // Fetch trend data (time-series)
+    const { data: trendData } = await supabase
+      .from('device_data')
+      .select('timestamp, value, quality')
+      .eq('device_id', deviceId)
+      .eq('sensor_type', sensorType)
+      .gte('timestamp', startTime)
+      .order('timestamp', { ascending: true })
       .limit(1000)
-
-    // Extract sensor readings from telemetry JSONB
-    const readings: Array<{ timestamp: string; value: number; quality: number | null; unit?: string }> = []
-    let latestReading: typeof readings[0] & { id: string; device_id: string; sensor_type: string; created_at: string } | null = null
-
-    if (telemetryRecords && telemetryRecords.length > 0) {
-      for (const record of telemetryRecords) {
-        const telemetry = record.telemetry as Record<string, unknown>
-        
-        // Extract the specific sensor value from telemetry
-        // Telemetry format can be: { temperature: 22.5, humidity: 60, ... }
-        // or { metrics: { temperature: { value: 22.5, unit: "°C" } } }
-        let sensorValue: number | null = null
-        let sensorUnit: string | null = null
-        let quality: number | null = 95 // Default quality
-
-        // Try direct property
-        if (sensorType in telemetry) {
-          sensorValue = extractNumber(telemetry[sensorType])
-          const metadata = extractMetadata(telemetry[sensorType])
-          sensorUnit = metadata.unit ?? null
-          quality = metadata.quality ?? quality
-        }
-        
-        // Try nested in metrics
-        if (sensorValue === null && 'metrics' in telemetry && telemetry.metrics && typeof telemetry.metrics === 'object') {
-          const metrics = telemetry.metrics as Record<string, unknown>
-          if (sensorType in metrics) {
-            sensorValue = extractNumber(metrics[sensorType])
-            const metadata = extractMetadata(metrics[sensorType])
-            sensorUnit = metadata.unit ?? null
-            quality = metadata.quality ?? quality
-          }
-        }
-        
-        // Try in data object
-        if (sensorValue === null && 'data' in telemetry && telemetry.data && typeof telemetry.data === 'object') {
-          const data = telemetry.data as Record<string, unknown>
-          if (sensorType in data) {
-            sensorValue = extractNumber(data[sensorType])
-            const metadata = extractMetadata(data[sensorType])
-            sensorUnit = metadata.unit ?? null
-            quality = metadata.quality ?? quality
-          }
-        }
-
-        if (sensorValue !== null) {
-          const reading = {
-            timestamp: record.device_timestamp || record.created_at,
-            value: sensorValue,
-            quality,
-            unit: sensorUnit || getDefaultUnit(sensorType)
-          }
-          
-          readings.push(reading)
-          
-          // First (most recent) reading with this sensor
-          if (!latestReading) {
-            latestReading = {
-              id: record.created_at,
-              device_id: deviceId,
-              sensor_type: sensorType,
-              value: sensorValue,
-              unit: sensorUnit || getDefaultUnit(sensorType),
-              quality,
-              timestamp: record.device_timestamp || record.created_at,
-              created_at: record.created_at
-            }
-          }
-        }
-      }
-    }
-
-    // Reverse to get chronological order for trend data
-    const trendData = readings.reverse()
 
     // Calculate statistics
     let statistics = null
@@ -223,45 +114,17 @@ export async function GET(
       .order('occurred_at', { ascending: false })
       .limit(20)
 
-    // Get all available sensor types from telemetry
-    const { data: recentTelemetry } = await supabase
-      .from('device_telemetry_history')
-      .select('telemetry')
+    // Get all available sensor types for this device
+    const { data: availableSensors } = await supabase
+      .from('device_data')
+      .select('sensor_type')
       .eq('device_id', deviceId)
-      .order('created_at', { ascending: false })
-      .limit(10)
+      .order('timestamp', { ascending: false })
+      .limit(100)
 
-    const uniqueSensors: string[] = []
-    if (recentTelemetry && recentTelemetry.length > 0) {
-      const sensorSet = new Set<string>()
-      for (const record of recentTelemetry) {
-        const telemetry = record.telemetry as TelemetryData
-        // Extract sensor names from telemetry structure
-        const extractSensorNames = (obj: TelemetryData, prefix = ''): void => {
-          for (const key in obj) {
-            const value = obj[key]
-            if (typeof value === 'number' || (typeof value === 'object' && value !== null && 'value' in value)) {
-              sensorSet.add(prefix + key)
-            } else if (typeof value === 'object' && value !== null && key !== 'metadata' && key !== 'location') {
-              extractSensorNames(value as TelemetryData, prefix)
-            }
-          }Record<string, unknown>
-        // Extract sensor names from telemetry structure
-        const extractSensorNames = (obj: Record<string, unknown>, prefix = ''): void => {
-          for (const key in obj) {
-            const value = obj[key]
-            // Skip metadata and location keys
-            if (key === 'metadata' || key === 'location') continue
-            
-            // If it's a number or has a value property, it's a sensor
-            if (typeof value === 'number' || (value && typeof value === 'object' && 'value' in value)) {
-              sensorSet.add(prefix + key)
-            } 
-            // Recursively check nested objects (like metrics, data)
-            else if (value && typeof value === 'object' && !Array.isArray(value)) {
-              extractSensorNames(value as Record<string, unknown>
-      uniqueSensors.push('temperature', 'humidity', 'pressure')
-    }
+    const uniqueSensors = [
+      ...new Set(availableSensors?.map((s: { sensor_type: string }) => s.sensor_type) || []),
+    ]
 
     // Build response
     const responseData = {
@@ -285,7 +148,7 @@ export async function GET(
       statistics,
       threshold: threshold || null,
       recent_activity: recentActivity || [],
-      available_sensors: uniqueSensors,
+      available_sensors: uniqueSensors.length > 0 ? uniqueSensors : ['temperature'],
     }
 
     return NextResponse.json({
