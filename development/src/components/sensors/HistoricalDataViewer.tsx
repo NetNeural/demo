@@ -129,7 +129,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
               <span className="font-medium">{selectedRange}</span>
             </div>
             <p className="text-xs text-muted-foreground pt-3 border-t">
-              Click "Load Data" to view detailed historical readings
+              Click &ldquo;Load Data&rdquo; to view detailed historical readings
             </p>
           </div>
         ) : (
