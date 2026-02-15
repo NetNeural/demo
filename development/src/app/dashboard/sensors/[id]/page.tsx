@@ -11,6 +11,12 @@ import { SensorTrendGraph } from '@/components/sensors/SensorTrendGraph'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import type { SensorDetailsData, TimeRange } from '@/types/sensor-details'
 
+// Required for static export with dynamic routes
+// Returns empty array since device IDs are dynamic and fetched at runtime
+export function generateStaticParams() {
+  return []
+}
+
 export default function SensorDetailsPage() {
   const params = useParams()
   const router = useRouter()
