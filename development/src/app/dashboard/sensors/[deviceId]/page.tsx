@@ -57,15 +57,15 @@ export default function SensorDetailsPage() {
         id: deviceData.id,
         name: deviceData.name,
         device_type: deviceData.device_type || 'unknown',
-        model: deviceData.model,
-        serial_number: deviceData.serial_number,
+        model: deviceData.model || undefined,
+        serial_number: deviceData.serial_number || undefined,
         status: deviceData.status || 'offline',
         location: deviceData.location_id || 'Unknown',
-        firmware_version: deviceData.firmware_version,
-        battery_level: deviceData.battery_level,
-        signal_strength: deviceData.signal_strength,
-        last_seen: deviceData.last_seen,
-        metadata: deviceData.metadata,
+        firmware_version: deviceData.firmware_version || undefined,
+        battery_level: deviceData.battery_level ?? undefined,
+        signal_strength: deviceData.signal_strength ?? undefined,
+        last_seen: deviceData.last_seen || undefined,
+        metadata: deviceData.metadata as Record<string, any> | undefined,
       })
 
       // Fetch telemetry readings (48 hours)

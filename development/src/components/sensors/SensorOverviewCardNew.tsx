@@ -80,7 +80,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
   const statusBadge = getStatusBadge()
 
   // Format time ago
-  const formatTimeAgo = (timestamp: string | null) => {
+  const formatTimeAgo = (timestamp: string | null | undefined) => {
     if (!timestamp) return 'Never'
     const diff = Date.now() - new Date(timestamp).getTime()
     const mins = Math.floor(diff / 60000)
