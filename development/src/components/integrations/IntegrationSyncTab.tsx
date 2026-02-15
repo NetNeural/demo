@@ -134,6 +134,11 @@ export function IntegrationSyncTab({
       }
 
       interface SyncResult {
+        // New format: direct fields from edge function
+        devices_processed?: number
+        devices_succeeded?: number
+        devices_failed?: number
+        // Legacy format: summary object (for backwards compatibility)
         summary?: {
           syncedDevices?: number
           createdDevices?: number
@@ -151,7 +156,7 @@ export function IntegrationSyncTab({
         errors?: Array<{
           deviceId: string
           error: string
-        }>
+        } | string>
         logs?: string[] // Detailed log messages from edge function
       }
       
@@ -159,6 +164,17 @@ export function IntegrationSyncTab({
       addLogEntry('success', 'Sync endpoint responded successfully')
       
       // Log summary first (cleaner display)
+      // Edge function returns devices_processed/succeeded/failed
+      if (result.devices_processed !== undefined) {
+        addLogEntry('info', '=== Sync Summary ===')
+        addLogEntry('success', `✓ Devices processed: ${result.devices_processed}`)
+        addLogEntry('success', `✓ Devices succeeded: ${result.devices_succeeded || 0}`)
+        if ((result.devices_failed || 0) > 0) {
+          addLogEntry('warning', `⚠ Devices failed: ${result.devices_failed}`)
+        }
+      }
+      
+      // Legacy summary format (for backwards compatibility)
       if (result.summary) {
         addLogEntry('info', '=== Sync Summary ===')
         addLogEntry('success', `✓ Devices synced: ${result.summary.syncedDevices || 0}`)
