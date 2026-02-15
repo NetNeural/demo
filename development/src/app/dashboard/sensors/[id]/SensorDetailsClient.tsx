@@ -10,7 +10,13 @@ import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCard'
 import { SensorTrendGraph } from '@/components/sensors/SensorTrendGraph'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
-import type { SensorDetailsData, TimeRange } from '@/types/sensor-details'
+import type { 
+  SensorDetailsData, 
+  TimeRange, 
+  SensorReading, 
+  SensorThreshold, 
+  SensorActivity 
+} from '@/types/sensor-details'
 
 // Helper to extract number from telemetry value
 function extractNumber(value: unknown): number | null {
