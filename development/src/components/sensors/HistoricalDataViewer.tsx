@@ -43,7 +43,7 @@ interface TelemetryData {
     value?: number
     sensor?: string
     [key: string]: unknown
-  }
+  } | null
   device_timestamp: string | null
   received_at: string
 }
@@ -83,7 +83,16 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
         .limit(500)
 
       if (error) throw error
-      setHistoricalData(data || [])
+      
+      // Cast the data to our expected type
+      const typedData = (data || []).map(row => ({
+        device_id: row.device_id,
+        telemetry: row.telemetry as TelemetryData['telemetry'],
+        device_timestamp: row.device_timestamp,
+        received_at: row.received_at
+      }))
+      
+      setHistoricalData(typedData)
     } catch (err) {
       console.error('[HistoricalDataViewer] Error:', err)
       setHistoricalData([])
@@ -127,10 +136,11 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
   }
 
   const getSensorLabel = (telemetry: TelemetryData['telemetry']) => {
-    if (telemetry?.type != null) {
+    if (!telemetry) return 'Unknown'
+    if (telemetry.type != null) {
       return SENSOR_LABELS[telemetry.type] || `Sensor ${telemetry.type}`
     }
-    return telemetry?.sensor || 'Unknown'
+    return telemetry.sensor || 'Unknown'
   }
 
   const exportToCSV = () => {
