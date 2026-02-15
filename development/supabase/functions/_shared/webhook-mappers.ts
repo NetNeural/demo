@@ -51,6 +51,16 @@ export interface RawWebhookPayload {
   // Azure IoT Hub format
   lastActivityTime?: string
   properties?: Record<string, unknown>
+  // Golioth telemetry format
+  telemetry?: {
+    type?: number
+    units?: number
+    value?: number
+    sensor?: string
+    timestamp?: string
+    [key: string]: unknown
+  }
+  device_name?: string
   // Allow any additional fields
   [key: string]: unknown
 }
@@ -65,14 +75,30 @@ export function mapGoliothWebhook(payload: RawWebhookPayload): NormalizedWebhook
   // This maps to serial_number in our devices table
   const deviceName = (payload.device_name as string) || (device.name as string)
   
+  // Golioth telemetry events have telemetry at the top level:
+  // { event: "device.telemetry", telemetry: { type, units, value, sensor, timestamp }, device_name: "..." }
+  const telemetry = payload.telemetry as Record<string, unknown> | undefined
+  const telemetryTimestamp = (telemetry?.timestamp as string) || payload.timestamp
+  
+  // Build metadata, ensuring telemetry data is preserved
+  const baseMetadata = device.metadata || device.tags || payload.metadata || {}
+  const metadata: Record<string, unknown> = {
+    ...(typeof baseMetadata === 'object' && baseMetadata !== null ? baseMetadata : {}),
+  }
+  
+  // Include telemetry in metadata so the handler can store it
+  if (telemetry) {
+    metadata.telemetry = telemetry
+  }
+  
   return {
     event: payload.event || 'unknown',
     deviceId: device.id || device.deviceId || device.device_id || payload.device_id || payload.deviceId || deviceName || '',
     deviceName: deviceName,
     status: device.status || device.state || payload.status,
-    lastSeen: device.lastSeen || device.last_seen || payload.timestamp,
-    metadata: device.metadata || device.tags || payload.metadata || device,
-    timestamp: payload.timestamp,
+    lastSeen: device.lastSeen || device.last_seen || telemetryTimestamp,
+    metadata: Object.keys(metadata).length > 0 ? metadata : device,
+    timestamp: telemetryTimestamp,
   }
 }
 

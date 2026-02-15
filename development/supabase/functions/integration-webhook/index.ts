@@ -28,17 +28,40 @@ export default createEdgeFunction(async ({ req }) => {
                      req.headers.get('X-Amz-Sns-Message-Id') ||
                      req.headers.get('X-Azure-Signature') ||
                      req.headers.get('X-Webhook-Signature')
-    integrationId = req.headers.get('X-Integration-ID')
+    
+    // Support integration ID from header, URL query param, or auto-detect
+    const url = new URL(req.url)
+    integrationId = req.headers.get('X-Integration-ID') || url.searchParams.get('integration_id')
     const body = await req.text()
     
-    if (!integrationId) {
-      throw new DatabaseError('Missing integration ID', 400)
-    }
-
     // Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // If no integration ID provided, try to auto-detect from the payload
+    if (!integrationId) {
+      const rawPayload = JSON.parse(body)
+      // Golioth telemetry events have device_name and telemetry at top level
+      if (rawPayload.device_name || rawPayload.telemetry) {
+        const { data: goliothIntegration } = await supabase
+          .from('device_integrations')
+          .select('id')
+          .eq('integration_type', 'golioth')
+          .eq('webhook_enabled', true)
+          .limit(1)
+          .maybeSingle()
+        
+        if (goliothIntegration) {
+          integrationId = goliothIntegration.id
+          console.log('[Webhook] Auto-detected Golioth integration:', integrationId)
+        }
+      }
+    }
+
+    if (!integrationId) {
+      throw new DatabaseError('Missing integration ID', 400)
+    }
 
       // Get integration and verify webhook is enabled
       const { data: integration, error: intError } = await supabase
@@ -135,8 +158,8 @@ export default createEdgeFunction(async ({ req }) => {
       break
     case 'device.telemetry':
     case 'device.data':
-      // Telemetry events - treat as device update with new data
-      await handleDeviceUpdate(supabase, integration, normalized)
+      // Telemetry events - store telemetry data and update device
+      await handleTelemetry(supabase, integration, normalized, activityLogId)
       break
     default:
       console.log('Unknown event type:', normalized.event, 'from provider:', integration.type)
@@ -274,14 +297,7 @@ async function handleDeviceUpdate(
     
     // Store telemetry data if present in payload
     if (payload.metadata?.telemetry) {
-      const telemetryData = payload.metadata.telemetry as Record<string, unknown>
-      await supabase.rpc('record_device_telemetry', {
-        p_device_id: device.id,
-        p_telemetry_data: telemetryData,
-        p_timestamp: payload.timestamp || new Date().toISOString(),
-      }).catch((err: Error) => {
-        console.error('[Webhook] Failed to record telemetry:', err)
-      })
+      await storeTelemetry(supabase, device.id, integration, payload, null)
     }
   } else {
     // Create new device if it doesn't exist (upsert behavior)
@@ -310,14 +326,7 @@ async function handleDeviceUpdate(
       
       // Store telemetry data if present
       if (newDevice && payload.metadata?.telemetry) {
-        const telemetryData = payload.metadata.telemetry as Record<string, unknown>
-        await supabase.rpc('record_device_telemetry', {
-          p_device_id: newDevice.id,
-          p_telemetry_data: telemetryData,
-          p_timestamp: payload.timestamp || new Date().toISOString(),
-        }).catch((err: Error) => {
-          console.error('[Webhook] Failed to record telemetry:', err)
-        })
+        await storeTelemetry(supabase, newDevice.id, integration, payload, null)
       }
     }
   }
@@ -387,6 +396,116 @@ async function handleDeviceCreate(
         payload: { deviceId: payload.deviceId, deviceName: payload.deviceName },
       })
       console.log('[Webhook] Queued device for sync:', payload.deviceId)
+    }
+  }
+}
+
+// ===========================================================================
+// Telemetry Storage Helper
+// ===========================================================================
+// Directly inserts telemetry into device_telemetry_history table
+async function storeTelemetry(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  deviceId: string,
+  // deno-lint-ignore no-explicit-any
+  integration: any,
+  payload: NormalizedWebhookPayload,
+  activityLogId: string | null
+) {
+  const telemetry = payload.metadata?.telemetry as Record<string, unknown>
+  if (!telemetry) return
+
+  const { error } = await supabase
+    .from('device_telemetry_history')
+    .insert({
+      device_id: deviceId,
+      organization_id: integration.organization_id,
+      integration_id: integration.id,
+      telemetry: telemetry,
+      received_at: new Date().toISOString(),
+      device_timestamp: (telemetry.timestamp as string) || payload.timestamp || null,
+      activity_log_id: activityLogId,
+    })
+
+  if (error) {
+    console.error('[Webhook] Failed to store telemetry:', error)
+  } else {
+    console.log('[Webhook] Stored telemetry for device:', deviceId, 'sensor:', telemetry.sensor || 'unknown')
+  }
+}
+
+// ===========================================================================
+// Telemetry Event Handler  
+// ===========================================================================
+// Dedicated handler for device.telemetry and device.data events
+async function handleTelemetry(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  // deno-lint-ignore no-explicit-any
+  integration: any,
+  payload: NormalizedWebhookPayload,
+  activityLogId: string | null
+) {
+  if (!payload.deviceId && !payload.deviceName) {
+    console.error('[Webhook] No device ID or name found in telemetry payload')
+    return
+  }
+
+  // Look up device by serial_number first (primary), then external_device_id (fallback)
+  let query = supabase
+    .from('devices')
+    .select('*')
+    .eq('organization_id', integration.organization_id)
+
+  if (payload.deviceName) {
+    query = query.eq('serial_number', payload.deviceName)
+  } else {
+    query = query.eq('external_device_id', payload.deviceId)
+  }
+
+  const { data: device } = await query.maybeSingle()
+
+  if (device) {
+    // Update device last_seen
+    await supabase
+      .from('devices')
+      .update({
+        last_seen: payload.lastSeen || new Date().toISOString(),
+        status: 'online',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', device.id)
+
+    // Store the telemetry data
+    await storeTelemetry(supabase, device.id, integration, payload, activityLogId)
+
+    console.log('[Webhook] Processed telemetry for device:', device.id, device.serial_number)
+  } else {
+    // Device not found - create it and store telemetry
+    const { data: newDevice, error } = await supabase
+      .from('devices')
+      .insert({
+        organization_id: integration.organization_id,
+        integration_id: integration.id,
+        external_device_id: payload.deviceId,
+        serial_number: payload.deviceName,
+        name: payload.deviceName || payload.deviceId,
+        device_type: 'iot-sensor',
+        status: 'online',
+        last_seen: payload.lastSeen || new Date().toISOString(),
+        metadata: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[Webhook] Failed to create device for telemetry:', error)
+    } else if (newDevice) {
+      await storeTelemetry(supabase, newDevice.id, integration, payload, activityLogId)
+      console.log('[Webhook] Created device and stored telemetry:', newDevice.id)
     }
   }
 }
