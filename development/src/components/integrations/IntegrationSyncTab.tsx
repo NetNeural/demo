@@ -211,16 +211,24 @@ export function IntegrationSyncTab({
         })
       }
 
-      // Log errors
+      // Log errors (filter out expected export failures for pull-only APIs)
       if (result.errors && Array.isArray(result.errors)) {
-        result.errors.forEach((error) => {
-          // Handle both string errors and object errors
-          if (typeof error === 'string') {
-            addLogEntry('error', `✗ ${error}`)
-          } else {
-            addLogEntry('error', `✗ ${error.deviceId}: ${error.error}`)
-          }
+        const importantErrors = result.errors.filter(error => {
+          const errorText = typeof error === 'string' ? error : error.error
+          // Skip "Request failed with status code 500" from export operations (Golioth is pull-only)
+          return !errorText.includes('Request failed with status code 500')
         })
+        
+        if (importantErrors.length > 0) {
+          importantErrors.forEach((error) => {
+            // Handle both string errors and object errors
+            if (typeof error === 'string') {
+              addLogEntry('error', `✗ ${error}`)
+            } else {
+              addLogEntry('error', `✗ ${error.deviceId}: ${error.error}`)
+            }
+          })
+        }
       }
 
       addLogEntry('success', syncOptions.dryRun ? 'Dry run completed' : 'Sync completed successfully')
