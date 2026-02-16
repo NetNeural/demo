@@ -54,7 +54,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         // Alerts created/resolved for this device
         supabase
           .from('alerts')
-          .select('id, alert_type, title, severity, created_at, is_resolved')
+          .select('id, alert_type, title, severity, created_at, is_resolved, resolved_at')
           .eq('device_id', device.id)
           .order('created_at', { ascending: false })
           .limit(10),
@@ -101,17 +101,35 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         combinedActivities.push(...validActivities)
       }
 
-      // Add alerts
+      // Add alerts - show both creation and resolution events
       if (alerts.data) {
         const validAlerts = alerts.data
           .filter((a): a is typeof a & { created_at: string } => a.created_at != null)
-          .map(a => ({
-            id: a.id,
-            activity_type: a.is_resolved ? 'alert_resolved' : 'alert_created',
-            description: a.title,
-            severity: a.severity,
-            occurred_at: a.created_at,
-          }))
+          .flatMap(a => {
+            const events: Activity[] = []
+            
+            // Always show alert creation (threshold breach)
+            events.push({
+              id: `${a.id}-created`,
+              activity_type: 'alert_created',
+              description: `🚨 Threshold breach: ${a.title}`,
+              severity: a.severity,
+              occurred_at: a.created_at,
+            })
+            
+            // If resolved, also show resolution event (back in compliance)
+            if (a.is_resolved && a.resolved_at) {
+              events.push({
+                id: `${a.id}-resolved`,
+                activity_type: 'alert_resolved',
+                description: `✅ Back in compliance: ${a.title}`,
+                severity: 'info',
+                occurred_at: a.resolved_at,
+              })
+            }
+            
+            return events
+          })
         combinedActivities.push(...validAlerts)
       }
 
