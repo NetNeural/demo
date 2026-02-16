@@ -103,6 +103,27 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
   const lastReading = telemetryReadings[0]
   const lastReadingTime = lastReading?.device_timestamp || lastReading?.received_at
 
+  // Format sensor value with temperature conversion
+  const formatSensorValue = (reading: TelemetryReading) => {
+    const value = reading.telemetry.value
+    const sensorType = reading.telemetry.type
+    const units = reading.telemetry.units
+    
+    if (typeof value !== 'number') return value
+    
+    // Temperature conversion
+    if (sensorType === 1) {
+      // Celsius to Fahrenheit
+      const displayValue = useFahrenheit ? (value * 9/5 + 32) : value
+      const unit = useFahrenheit ? '°F' : '°C'
+      return `${displayValue.toFixed(2)} ${unit}`
+    }
+    
+    // Other sensors
+    const unit = units != null ? UNIT_LABELS[units] || '' : ''
+    return `${value.toFixed(2)} ${unit}`
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -213,33 +234,33 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             </div>
           )}
 
-          {/* Last Telemetry Reading */}
-          {telemetryReadings[0]?.telemetry?.value != null && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Activity className="h-3 w-3" />
-                <span>
-                  {telemetryReadings[0].telemetry.type 
-                    ? SENSOR_LABELS[telemetryReadings[0].telemetry.type] 
-                    : 'Last Reading'}
-                </span>
+          {/* Last Telemetry Readings - show all sensor types */}
+          {latestBySensor.map((reading, index) => {
+            const sensorType = reading.telemetry.type
+            const sensorLabel = sensorType ? SENSOR_LABELS[sensorType] : 'Reading'
+            const value = reading.telemetry?.value
+            
+            if (value == null) return null
+            
+            const Icon = getSensorIcon(sensorType)
+            
+            return (
+              <div key={index} className="space-y-1">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Icon className="h-3 w-3" />
+                  <span>{sensorLabel}</span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-lg font-semibold">
+                    {formatSensorValue(reading)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatTimeAgo(reading.received_at)}
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <p className="text-lg font-semibold">
-                  {typeof telemetryReadings[0].telemetry.value === 'number'
-                    ? telemetryReadings[0].telemetry.value.toFixed(2)
-                    : telemetryReadings[0].telemetry.value}
-                  {' '}
-                  {telemetryReadings[0].telemetry.units != null
-                    ? UNIT_LABELS[telemetryReadings[0].telemetry.units] || ''
-                    : ''}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatTimeAgo(telemetryReadings[0].received_at)}
-                </p>
-              </div>
-            </div>
-          )}
+            )
+          })}
         </div>
       </CardContent>
     </Card>
