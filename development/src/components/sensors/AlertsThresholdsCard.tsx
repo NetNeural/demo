@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select'
 import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2, TestTube } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { toast as sonnerToast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import type { SensorThreshold } from '@/types/sensor-details'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -292,16 +293,15 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
       console.log('[TEST ALERT] Alert created successfully:', data)
 
-      toast({
-        title: 'Test Alert Created',
-        description: `A test alert has been created. Check the Alerts page to verify it appears correctly.`,
+      // Use sonner toast for better visibility
+      sonnerToast.success('✅ Test Alert Sent!', {
+        description: `Your test alert has been created successfully. Check the Alerts page to see it.`,
+        duration: 5000,
       })
     } catch (error) {
       console.error('[TEST ALERT] Error creating test alert:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create test alert',
-        variant: 'destructive',
+      sonnerToast.error('Failed to Create Test Alert', {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
       })
     } finally {
       setTesting(null)
