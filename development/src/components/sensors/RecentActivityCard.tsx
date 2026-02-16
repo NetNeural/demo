@@ -310,12 +310,12 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         combinedActivities.push(...validTelemetry)
       }
 
-      // Sort by timestamp (newest first) and limit to 15
+      // Sort by timestamp (newest first) and limit to 5
       combinedActivities.sort((a, b) => 
         new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
       )
       
-      setActivities(combinedActivities.slice(0, 15))
+      setActivities(combinedActivities.slice(0, 5))
       setLoading(false)
     } catch (error) {
       console.error('Error fetching activities:', error)
