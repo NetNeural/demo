@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
@@ -46,14 +46,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [selectedLocationId, setSelectedLocationId] = useState<string>(device.location_id || '')
   const [installedAt, setInstalledAt] = useState<string>(device.metadata?.installed_at || '')
 
-  // Fetch locations when entering edit mode
-  useEffect(() => {
-    if (isEditing && locations.length === 0) {
-      fetchLocations()
-    }
-  }, [isEditing])
-
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     if (!device.organization_id) {
       toast.error('Organization ID not found')
       return
@@ -77,7 +70,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
     } finally {
       setLoadingLocations(false)
     }
-  }
+  }, [device.organization_id])
+
+  // Fetch locations on mount to display current location and enable map
+  useEffect(() => {
+    if (device.organization_id) {
+      fetchLocations()
+    }
+  }, [device.organization_id, fetchLocations])
 
   const handleSave = async () => {
     try {

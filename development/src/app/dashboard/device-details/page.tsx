@@ -44,10 +44,16 @@ export default function SensorDetailsPage() {
       setError(null)
       const supabase = createClient()
 
-      // Fetch device details
+      // Fetch device details with location join
       const { data: deviceData, error: deviceError } = await supabase
         .from('devices')
-        .select('*')
+        .select(`
+          *,
+          locations (
+            id,
+            name
+          )
+        `)
         .eq('id', deviceId)
         .eq('organization_id', currentOrganization.id)
         .single()
@@ -62,7 +68,8 @@ export default function SensorDetailsPage() {
         model: deviceData.model || undefined,
         serial_number: deviceData.serial_number || undefined,
         status: deviceData.status || 'offline',
-        location: deviceData.location_id || 'Unknown',
+        location: (deviceData.locations as { id: string; name: string } | null)?.name || undefined,
+        location_id: deviceData.location_id || undefined,
         firmware_version: deviceData.firmware_version || undefined,
         battery_level: deviceData.battery_level ?? undefined,
         signal_strength: deviceData.signal_strength ?? undefined,
