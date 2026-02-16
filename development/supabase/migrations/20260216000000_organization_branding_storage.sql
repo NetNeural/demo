@@ -2,12 +2,13 @@
 -- Date: 2026-02-16
 
 -- Create storage bucket for organization assets
+-- Industry best practice: 500KB limit for logos (after compression)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'organization-assets',
   'organization-assets',
   true,
-  5242880, -- 5MB limit
+  524288, -- 512KB limit (logos should be compressed to <500KB)
   ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml']
 ) ON CONFLICT (id) DO NOTHING;
 

@@ -53,6 +53,85 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }, [currentOrganization]);
 
+  /**
+   * Compress and resize image before upload
+   * Industry best practices:
+   * - Max dimensions: 400x400px (sufficient for logos)
+   * - WebP format for optimal compression
+   * - Quality: 85% (good balance)
+   * - Target size: <500KB
+   */
+  const compressImage = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      // Skip SVG files (they're already optimized and vector-based)
+      if (file.type === 'image/svg+xml') {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        
+        img.onload = () => {
+          // Calculate new dimensions (max 400x400, maintain aspect ratio)
+          const MAX_SIZE = 400;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = (height * MAX_SIZE) / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = (width * MAX_SIZE) / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          // Create canvas and resize
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          // Use better image smoothing
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to WebP with 85% quality
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                console.log(`Image compressed: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB`);
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            'image/webp',
+            0.85
+          );
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  };
+
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentOrganization) return;
@@ -64,9 +143,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+    // Validate initial file size (10MB max before compression)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
       return;
     }
 
@@ -74,8 +153,17 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setIsUploadingLogo(true);
       const supabase = createClient();
 
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
+      // Compress image before upload
+      toast.info('Compressing image...');
+      const compressedBlob = await compressImage(file);
+      
+      // Check compressed size (should be <500KB for logos)
+      if (compressedBlob.size > 500 * 1024) {
+        toast.warning(`Compressed to ${(compressedBlob.size / 1024).toFixed(0)}KB (larger than ideal 500KB). Consider using a simpler logo.`);
+      }
+
+      // Use .webp extension for compressed images, keep original for SVG
+      const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp';
       const fileName = `${currentOrganization.id}/logo-${Date.now()}.${fileExt}`;
 
       // Delete old logo if exists
@@ -84,12 +172,13 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         await supabase.storage.from('organization-assets').remove([oldPath]);
       }
 
-      // Upload new logo
+      // Upload compressed logo
       const { data, error } = await supabase.storage
         .from('organization-assets')
-        .upload(fileName, file, {
+        .upload(fileName, compressedBlob, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType: file.type === 'image/svg+xml' ? 'image/svg+xml' : 'image/webp'
         });
 
       if (error) throw error;
@@ -100,7 +189,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         .getPublicUrl(data.path);
 
       setLogoUrl(publicUrl);
-      toast.success('Logo uploaded successfully! Click "Save Changes" to apply.');
+      toast.success(`Logo uploaded! (${(compressedBlob.size / 1024).toFixed(0)}KB) Click "Save Changes" to apply.`);
     } catch (error) {
       console.error('Error uploading logo:', error);
       toast.error('Failed to upload logo');
@@ -330,7 +419,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WebP, or SVG. Max 5MB. Recommended: 400x400px square.
+                  PNG, JPG, WebP, or SVG. Auto-compressed to WebP at 400x400px (~200KB). Max 10MB before compression.
                 </p>
                 {logoUrl && (
                   <Button
