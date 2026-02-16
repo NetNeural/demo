@@ -19,6 +19,9 @@ interface Activity {
   severity: string
   occurred_at: string
   sensor_type?: string
+  sensor_name?: string
+  reading_value?: number
+  reading_unit?: string
 }
 
 export function RecentActivityCard({ device }: RecentActivityCardProps) {
@@ -29,8 +32,8 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
     const fetchActivities = async () => {
       const supabase = createClient()
       
-      // Fetch sensor activity, alerts, and recent telemetry
-      const [sensorActivity, alerts, telemetry] = await Promise.all([
+      // Fetch sensor activity, alerts, recent telemetry, and thresholds for unit preferences
+      const [sensorActivity, alerts, telemetry, thresholds] = await Promise.all([
         // Sensor activity (configuration changes, calibrations, etc.)
         supabase
           .from('sensor_activity')
@@ -53,7 +56,13 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           .select('id, received_at, telemetry')
           .eq('device_id', device.id)
           .order('received_at', { ascending: false })
-          .limit(5)
+          .limit(5),
+        
+        // Get temperature unit preferences from thresholds
+        supabase
+          .from('sensor_thresholds')
+          .select('sensor_type_id, temperature_unit')
+          .eq('device_id', device.id)
       ])
 
       // Combine and format all activities
@@ -88,17 +97,82 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         combinedActivities.push(...validAlerts)
       }
 
-      // Add telemetry data received events
+      // Add telemetry data received events with sensor readings
       if (telemetry.data) {
+        // Build temperature unit map from thresholds
+        const temperatureUnitMap = new Map<number, string>()
+        if (thresholds.data) {
+          thresholds.data.forEach(t => {
+            if (t.temperature_unit) {
+              temperatureUnitMap.set(t.sensor_type_id, t.temperature_unit)
+            }
+          })
+        }
+
+        // Helper to format sensor value with units
+        const formatSensorValue = (sensorName: string, value: number, sensorTypeId?: number): { value: number, unit: string } => {
+          const nameLower = sensorName.toLowerCase()
+          
+          if (nameLower.includes('temperature') || nameLower.includes('temp')) {
+            const unit = sensorTypeId ? temperatureUnitMap.get(sensorTypeId) || 'celsius' : 'celsius'
+            if (unit === 'fahrenheit') {
+              return { value: (value * 9/5) + 32, unit: '°F' }
+            }
+            return { value, unit: '°C' }
+          } else if (nameLower.includes('humidity')) {
+            return { value, unit: '%' }
+          } else if (nameLower.includes('pressure')) {
+            return { value, unit: ' hPa' }
+          } else if (nameLower.includes('battery')) {
+            return { value, unit: '%' }
+          }
+          
+          return { value, unit: '' }
+        }
+
         const validTelemetry = telemetry.data
           .filter((t): t is typeof t & { received_at: string } => t.received_at != null)
-          .map((t, idx) => ({
-            id: `telemetry-${t.id}-${idx}`,
-            activity_type: 'data_received',
-            description: 'Telemetry data received',
-            severity: 'info',
-            occurred_at: t.received_at,
-          }))
+          .flatMap((t, idx) => {
+            const telemetryData = t.telemetry
+            
+            // Extract sensor readings from telemetry
+            if (telemetryData && typeof telemetryData === 'object') {
+              const readings: Activity[] = []
+              
+              // Handle various telemetry structures
+              Object.entries(telemetryData).forEach(([key, value]) => {
+                if (typeof value === 'number' && key !== 'type_id') {
+                  const formatted = formatSensorValue(key, value)
+                  readings.push({
+                    id: `telemetry-${t.id}-${key}-${idx}`,
+                    activity_type: 'data_received',
+                    description: `${key.replace(/_/g, ' ')} reading received`,
+                    severity: 'info',
+                    occurred_at: t.received_at,
+                    sensor_name: key.replace(/_/g, ' '),
+                    reading_value: formatted.value,
+                    reading_unit: formatted.unit
+                  })
+                }
+              })
+              
+              return readings.length > 0 ? readings : [{
+                id: `telemetry-${t.id}-${idx}`,
+                activity_type: 'data_received',
+                description: 'Telemetry data received',
+                severity: 'info',
+                occurred_at: t.received_at,
+              }]
+            }
+            
+            return [{
+              id: `telemetry-${t.id}-${idx}`,
+              activity_type: 'data_received',
+              description: 'Telemetry data received',
+              severity: 'info',
+              occurred_at: t.received_at,
+            }]
+          })
         combinedActivities.push(...validTelemetry)
       }
 
@@ -194,10 +268,23 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
                     <div className={`w-2 h-2 rounded-full ${getSeverityColor(activity.severity)} mt-2`} />
                   </div>
                   <div className="flex-1 space-y-1 min-w-0">
-                    <p className="text-sm font-medium line-clamp-2">{activity.description}</p>
+                    <p className="text-sm font-medium line-clamp-2">
+                      {activity.description}
+                      {activity.reading_value !== undefined && (
+                        <span className="ml-2 text-primary font-semibold">
+                          {activity.reading_value.toFixed(1)}{activity.reading_unit}
+                        </span>
+                      )}
+                    </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{formatTime(activity.occurred_at)}</span>
-                      {activity.sensor_type && (
+                      {activity.sensor_name && (
+                        <>
+                          <span>•</span>
+                          <span className="capitalize">{activity.sensor_name}</span>
+                        </>
+                      )}
+                      {activity.sensor_type && !activity.sensor_name && (
                         <>
                           <span>•</span>
                           <span className="capitalize">{activity.sensor_type}</span>
