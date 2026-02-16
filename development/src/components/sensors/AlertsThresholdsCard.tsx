@@ -32,11 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2, TestTube } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Device } from '@/types/sensor-details'
 import type { SensorThreshold } from '@/types/sensor-details'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 
 interface AlertsThresholdsCardProps {
   device: Device
@@ -60,6 +61,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   const [thresholdToDelete, setThresholdToDelete] = useState<SensorThreshold | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [testing, setTesting] = useState<string | null>(null)
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -225,6 +227,67 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
     setDeleteDialogOpen(true)
   }
 
+  const handleTestAlert = async (threshold: SensorThreshold) => {
+    try {
+      setTesting(threshold.id)
+
+      const supabase = createClient()
+
+      // Get sensor type name mapping
+      const sensorNames: Record<string, string> = {
+        '1': 'Temperature',
+        'temperature': 'Temperature',
+        '2': 'Humidity',
+        'humidity': 'Humidity',
+        '3': 'Pressure',
+        'pressure': 'Pressure',
+        '4': 'Battery',
+        'battery': 'Battery',
+      }
+
+      const sensorName = sensorNames[threshold.sensor_type] || threshold.sensor_type
+
+      // Create a test alert
+      const { error } = await supabase.from('alerts').insert({
+        organization_id: device.organization_id,
+        device_id: device.id,
+        title: `TEST: ${sensorName} Alert`,
+        message: `Test alert for ${device.name}: This is a test of the ${sensorName} threshold alert system. Threshold ID: ${threshold.id}`,
+        severity: threshold.alert_severity,
+        category: sensorName.toLowerCase(),
+        is_resolved: false,
+        metadata: {
+          is_test: true,
+          sensor_type: threshold.sensor_type,
+          sensor_name: sensorName,
+          threshold_id: threshold.id,
+          min_value: threshold.min_value,
+          max_value: threshold.max_value,
+          critical_min: threshold.critical_min,
+          critical_max: threshold.critical_max,
+        }
+      })
+
+      if (error) {
+        throw error
+      }
+
+      toast({
+        title: 'Test Alert Created',
+        description: `A test alert has been created. Check the Alerts page to verify it appears correctly.`,
+      })
+    } catch (error) {
+      console.error('Error creating test alert:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create test alert',
+        variant: 'destructive',
+      })
+    } finally {
+      setTesting(null)
+    }
+  }
+
   const handleDeleteConfirm = async () => {
     if (!thresholdToDelete) return
 
@@ -384,6 +447,15 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button
+                      onClick={() => handleTestAlert(threshold)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={testing === threshold.id || !threshold.alert_enabled}
+                      title={threshold.alert_enabled ? 'Create a test alert' : 'Enable alert to test'}
+                    >
+                      <TestTube className="h-4 w-4" />
+                    </Button>
                     <Button
                       onClick={() => handleEdit(threshold)}
                       variant="ghost"
