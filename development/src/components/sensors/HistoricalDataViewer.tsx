@@ -10,7 +10,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import type { Device } from '@/types/sensor-details'
 import {
   LineChart,
-  Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -300,6 +300,14 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
               <div className="border rounded-lg p-4 bg-muted/20">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={chartData}>
+                    <defs>
+                      {sensorTypes.map((sensorType) => (
+                        <linearGradient key={`gradient-${sensorType}`} id={`gradient-${sensorType}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={sensorColors[sensorType] || '#6b7280'} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={sensorColors[sensorType] || '#6b7280'} stopOpacity={0.1}/>
+                        </linearGradient>
+                      ))}
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="timestamp"
@@ -351,12 +359,14 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                     />
                     <Legend />
                     {sensorTypes.map((sensorType) => (
-                      <Line
+                      <Area
                         key={sensorType}
                         type="monotone"
                         dataKey={sensorType}
                         stroke={sensorColors[sensorType] || '#6b7280'}
                         strokeWidth={2}
+                        fill={`url(#gradient-${sensorType})`}
+                        fillOpacity={1}
                         dot={false}
                         connectNulls
                         name={sensorType}
