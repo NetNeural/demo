@@ -161,7 +161,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
         </div>
 
         {/* Last Reading Timestamp */}
-        <div className="flex items-center justify-between py-3 border-t">
+        <div className="flex items-center justify-between py-3 border-y">
           <span className="text-sm font-medium">Last Reading:</span>
           <span className="text-sm text-muted-foreground">{formatTimeAgo(lastReadingTime)}</span>
         </div>
@@ -219,7 +219,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
         </div>
 
         {/* Secondary Info Grid */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+        <div className="grid grid-cols-2 gap-4 pt-4">
           {/* Battery Level */}
           {device.battery_level != null && (
             <div className="space-y-1">
