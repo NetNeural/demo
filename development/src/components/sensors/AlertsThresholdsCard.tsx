@@ -409,7 +409,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
       {/* Edit/Create Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {selectedThreshold ? `Edit ${selectedThreshold.sensor_type} Threshold` : 'Create New Threshold'}
@@ -422,7 +422,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-y-auto flex-1 pr-2">{/* Sensor Type */}
             {/* Sensor Type */}
             {!selectedThreshold && (
               <div className="space-y-2">
