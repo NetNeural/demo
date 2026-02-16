@@ -167,31 +167,42 @@ serve(async (req) => {
 </html>
     `
 
-    // Send emails
+    // Send emails in batch to avoid rate limits
+    console.log(`[send-alert-email] Sending batch email to ${uniqueEmails.length} recipients`)
+    
     const results = []
-    for (const email of uniqueEmails) {
-      try {
-        const { data, error } = await resend.emails.send({
-          from: 'NetNeural Alerts <alerts@netneural.ai>',
-          to: email,
-          subject: `${testPrefix}${alert.severity.toUpperCase()} Alert: ${alert.title}`,
-          html: emailHtml,
+    let successCount = 0
+    
+    try {
+      // Send to all recipients in a single API call
+      const { data, error } = await resend.emails.send({
+        from: 'NetNeural Alerts <alerts@netneural.ai>',
+        to: uniqueEmails, // Send to all recipients at once
+        subject: `${testPrefix}${alert.severity.toUpperCase()} Alert: ${alert.title}`,
+        html: emailHtml,
+      })
+
+      if (error) {
+        console.error(`[send-alert-email] Batch send error:`, error)
+        // Mark all as failed
+        uniqueEmails.forEach(email => {
+          results.push({ email, success: false, error: error.message || String(error) })
         })
-
-        if (error) {
-          console.error(`[send-alert-email] Error sending to ${email}:`, error)
-          results.push({ email, success: false, error: error.message })
-        } else {
-          console.log(`[send-alert-email] Sent to ${email}, ID: ${data?.id}`)
+      } else {
+        console.log(`[send-alert-email] Batch sent successfully, ID: ${data?.id}`)
+        // Mark all as success
+        uniqueEmails.forEach(email => {
           results.push({ email, success: true, id: data?.id })
-        }
-      } catch (error) {
-        console.error(`[send-alert-email] Exception sending to ${email}:`, error)
-        results.push({ email, success: false, error: String(error) })
+        })
+        successCount = uniqueEmails.length
       }
+    } catch (error) {
+      console.error(`[send-alert-email] Exception during batch send:`, error)
+      // Mark all as failed
+      uniqueEmails.forEach(email => {
+        results.push({ email, success: false, error: String(error) })
+      })
     }
-
-    const successCount = results.filter(r => r.success).length
 
     return new Response(
       JSON.stringify({ success: true, sent: successCount, total: uniqueEmails.length, results }),
