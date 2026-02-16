@@ -15,6 +15,7 @@ on:
           - integration-webhook
           - members
           - thresholds
+          - sensor-threshold-evaluator
 
 jobs:
   deploy:
@@ -41,6 +42,7 @@ jobs:
             npx supabase functions deploy integration-webhook --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy members --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy thresholds --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy sensor-threshold-evaluator --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
