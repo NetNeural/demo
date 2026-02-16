@@ -151,7 +151,7 @@ export default function SensorDetailsPage() {
         {/* 3. Location + Health */}
         <div className="grid gap-6 md:grid-cols-2">
           <LocationDetailsCard device={device} />
-          <DeviceHealthCard device={device} />
+          <DeviceHealthCard device={device} telemetryReadings={telemetryReadings} />
         </div>
 
         {/* 4. Alerts + Activity */}

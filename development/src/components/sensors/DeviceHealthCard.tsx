@@ -2,24 +2,76 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Activity, Battery, Signal, HardDrive } from 'lucide-react'
+import { Activity, Battery, Signal, HardDrive, Clock } from 'lucide-react'
 import type { Device } from '@/types/sensor-details'
+
+interface TelemetryReading {
+  device_id: string
+  telemetry: {
+    type?: number
+    [key: string]: unknown
+  } | null
+  device_timestamp: string | null
+  received_at: string
+}
 
 interface DeviceHealthCardProps {
   device: Device
+  telemetryReadings?: TelemetryReading[]
 }
 
-export function DeviceHealthCard({ device }: DeviceHealthCardProps) {
-  const calculateUptime = () => {
-    if (!device.last_seen) return 'Unknown'
-    const now = Date.now()
-    const lastSeen = new Date(device.last_seen).getTime()
-    const diffMs = now - lastSeen
-    const days = Math.floor(diffMs / (24 * 60 * 60 * 1000))
-    const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
-    const mins = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000))
-    return `${days}d ${hours}h ${mins}m`
+const SENSOR_LABELS: Record<number, string> = {
+  1: 'Temperature',
+  2: 'Humidity',
+  3: 'Pressure',
+  4: 'CO₂',
+  5: 'VOC',
+  6: 'Light',
+  7: 'Motion',
+}
+
+export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealthCardProps) {
+  // Get last timestamp for each sensor type
+  const getLastTelemetryTimestamps = () => {
+    const sensorTimestamps: Record<string, string> = {}
+    
+    telemetryReadings.forEach(reading => {
+      const sensorType = reading.telemetry?.type
+      const label = SENSOR_LABELS[sensorType]
+      
+      if (label && !sensorTimestamps[label]) {
+        // Use device_timestamp if available, otherwise received_at
+        sensorTimestamps[label] = reading.device_timestamp || reading.received_at
+      }
+    })
+    
+    return sensorTimestamps
   }
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp)
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  }
+
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`
+    return `${Math.floor(diffMins / 1440)}d ago`
+  }
+
+  const sensorTimestamps = getLastTelemetryTimestamps()
 
   const getBatteryIcon = () => {
     if (!device.battery_level) return '🔋'
@@ -44,14 +96,32 @@ export function DeviceHealthCard({ device }: DeviceHealthCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Uptime */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Uptime</span>
+        {/* Last Telemetry Readings */}
+        {Object.keys(sensorTimestamps).length > 0 ? (
+          <div className="space-y-3 pb-3 border-b">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              Last Telemetry Readings
+            </div>
+            {Object.entries(sensorTimestamps).map(([sensor, timestamp]) => (
+              <div key={sensor} className="flex items-center justify-between pl-6">
+                <span className="text-sm">{sensor}</span>
+                <div className="text-right">
+                  <div className="font-medium text-sm">{formatTimeAgo(timestamp)}</div>
+                  <div className="text-xs text-muted-foreground">{formatTimestamp(timestamp)}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <span className="font-medium">{calculateUptime()}</span>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between pb-3 border-b">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">Last Telemetry</span>
+            </div>
+            <span className="font-medium text-muted-foreground">No data</span>
+          </div>
+        )}
 
         {/* Battery */}
         {device.battery_level != null && (
