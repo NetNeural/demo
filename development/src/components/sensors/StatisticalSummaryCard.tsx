@@ -1,5 +1,6 @@
 'use client'
 
+// Statistical AI Summary - Intelligent analysis of sensor telemetry data
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -114,6 +115,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       const sensorName = typeId ? SENSOR_LABELS[typeId] : readings[0].telemetry.sensor || 'Sensor'
       const sensorTypeLower = sensorName.toLowerCase()
       const icon = SENSOR_ICONS[sensorTypeLower] || Thermometer
+
 
       return {
         sensorType: sensorKey,
