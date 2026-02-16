@@ -213,14 +213,31 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             </div>
           )}
 
-          {/* Last Telemetry */}
-          {telemetryReadings[0]?.received_at && (
+          {/* Last Telemetry Reading */}
+          {telemetryReadings[0]?.telemetry?.value != null && (
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Activity className="h-3 w-3" />
-                <span>Last Reading</span>
+                <span>
+                  {telemetryReadings[0].telemetry.type 
+                    ? SENSOR_LABELS[telemetryReadings[0].telemetry.type] 
+                    : 'Last Reading'}
+                </span>
               </div>
-              <p className="text-lg font-semibold">{formatTimeAgo(telemetryReadings[0].received_at)}</p>
+              <div className="flex flex-col">
+                <p className="text-lg font-semibold">
+                  {typeof telemetryReadings[0].telemetry.value === 'number'
+                    ? telemetryReadings[0].telemetry.value.toFixed(2)
+                    : telemetryReadings[0].telemetry.value}
+                  {' '}
+                  {telemetryReadings[0].telemetry.units != null
+                    ? UNIT_LABELS[telemetryReadings[0].telemetry.units] || ''
+                    : ''}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatTimeAgo(telemetryReadings[0].received_at)}
+                </p>
+              </div>
             </div>
           )}
         </div>
