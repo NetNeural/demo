@@ -137,7 +137,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       if (response.success) {
         toast({
           title: 'Success',
-          description: `Threshold ${selected Threshold ? 'updated' : 'created'} successfully`,
+          description: `Threshold ${selectedThreshold ? 'updated' : 'created'} successfully`,
         })
         setEditDialogOpen(false)
         await fetchThresholds()
