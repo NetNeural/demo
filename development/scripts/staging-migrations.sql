@@ -68,6 +68,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop trigger if exists, then create
+DROP TRIGGER IF EXISTS trg_sensor_thresholds_updated_at ON sensor_thresholds;
+
 CREATE TRIGGER trg_sensor_thresholds_updated_at
     BEFORE UPDATE ON sensor_thresholds
     FOR EACH ROW
