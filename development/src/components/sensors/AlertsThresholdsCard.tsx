@@ -293,6 +293,12 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
       console.log('[TEST ALERT] Alert created successfully:', data)
 
+      // Show immediate success for alert creation
+      sonnerToast.success('✅ Test Alert Created!', {
+        description: `Test alert has been created successfully. Sending email notifications...`,
+        duration: 3000,
+      })
+
       // Send email notification
       if (data && data[0]) {
         const alertId = data[0].id
@@ -319,30 +325,38 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
           const emailResult = await emailResponse.json()
           console.log('[TEST ALERT] Email response:', emailResult)
 
+          // Second toast for email status
           if (emailResult.success && emailResult.sent > 0) {
-            sonnerToast.success('✅ Test Alert Sent!', {
-              description: `Test alert created and ${emailResult.sent} email(s) sent successfully. Check your inbox and the Alerts page.`,
+            const recipientList = []
+            if (threshold.notify_emails && threshold.notify_emails.length > 0) {
+              recipientList.push(...threshold.notify_emails)
+            }
+            const recipientSummary = recipientList.length > 0 
+              ? `Recipients: ${recipientList.join(', ')}`
+              : `${emailResult.sent} recipient(s)`
+            
+            sonnerToast.success('📧 Email Sent Successfully!', {
+              description: `${emailResult.sent} test alert email(s) delivered. ${recipientSummary}. Check the recipient mailboxes.`,
+              duration: 7000,
+            })
+          } else if (emailResult.success && emailResult.sent === 0) {
+            sonnerToast.info('ℹ️ No Email Recipients', {
+              description: `${emailResult.message || 'No recipients configured for this threshold'}. Add emails or users in the threshold settings to receive notifications.`,
               duration: 5000,
             })
           } else {
-            sonnerToast.success('✅ Test Alert Created!', {
-              description: `Test alert created successfully but no emails were sent (${emailResult.message || 'no recipients configured'}). Check the Alerts page to see it.`,
+            sonnerToast.warning('⚠️ Email Sending Failed', {
+              description: `Test alert created but emails could not be sent: ${emailResult.error || 'Unknown error'}`,
               duration: 5000,
             })
           }
         } catch (emailError) {
           console.error('[TEST ALERT] Email sending error:', emailError)
-          sonnerToast.success('✅ Test Alert Created!', {
-            description: `Test alert created successfully but email sending failed. Check the Alerts page to see it.`,
+          sonnerToast.error('❌ Email Error', {
+            description: `Test alert created but email service encountered an error: ${emailError instanceof Error ? emailError.message : 'Network error'}`,
             duration: 5000,
           })
         }
-      } else {
-        // Fallback if no data returned
-        sonnerToast.success('✅ Test Alert Sent!', {
-          description: `Your test alert has been created successfully. Check the Alerts page to see it.`,
-          duration: 5000,
-        })
       }
     } catch (error) {
       console.error('[TEST ALERT] Error creating test alert:', error)
