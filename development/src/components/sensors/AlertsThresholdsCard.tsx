@@ -326,6 +326,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
           const emailResult = await emailResponse.json()
           console.log('[TEST ALERT] Email response:', emailResult)
+          console.log('[TEST ALERT] Email results details:', emailResult.results)
 
           // Second toast for email status
           if (emailResult.success && emailResult.sent > 0) {
