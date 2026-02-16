@@ -91,8 +91,9 @@ export default function SensorDetailsPage() {
         .limit(1)
       
       const thresholdsTyped = thresholds as Array<{ temperature_unit?: string }> | null
-      if (thresholdsTyped && thresholdsTyped.length > 0 && thresholdsTyped[0].temperature_unit) {
-        setTemperatureUnit(thresholdsTyped[0].temperature_unit as 'celsius' | 'fahrenheit')
+      const firstThreshold = thresholdsTyped?.[0]
+      if (firstThreshold?.temperature_unit) {
+        setTemperatureUnit(firstThreshold.temperature_unit as 'celsius' | 'fahrenheit')
       }
 
     } catch (err) {
