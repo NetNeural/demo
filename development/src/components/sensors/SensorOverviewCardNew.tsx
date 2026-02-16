@@ -82,7 +82,15 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
 
   // Calculate min/max for all sensor data
   const sensorMinMax = useMemo(() => {
-    const stats: Record<string, { min: number; max: number; label: string; unit: string; isTemperature: boolean }> = {}
+    const stats: Record<string, { 
+      min: number
+      max: number
+      minTime: string
+      maxTime: string
+      label: string
+      unit: string
+      isTemperature: boolean 
+    }> = {}
     
     for (const reading of telemetryReadings) {
       const sensorKey = reading.telemetry.type != null
@@ -92,6 +100,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
       const value = reading.telemetry.value
       if (typeof value !== 'number') continue
       
+      const timestamp = reading.device_timestamp || reading.received_at
       const sensorLabel = reading.telemetry.type != null
         ? SENSOR_LABELS[reading.telemetry.type as number]
         : reading.telemetry.sensor || 'Sensor'
@@ -101,10 +110,24 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
       const isTemperature = reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
       
       if (!stats[sensorKey]) {
-        stats[sensorKey] = { min: value, max: value, label: sensorLabel, unit, isTemperature }
+        stats[sensorKey] = { 
+          min: value, 
+          max: value, 
+          minTime: timestamp,
+          maxTime: timestamp,
+          label: sensorLabel, 
+          unit, 
+          isTemperature 
+        }
       } else {
-        stats[sensorKey].min = Math.min(stats[sensorKey].min, value)
-        stats[sensorKey].max = Math.max(stats[sensorKey].max, value)
+        if (value < stats[sensorKey].min) {
+          stats[sensorKey].min = value
+          stats[sensorKey].minTime = timestamp
+        }
+        if (value > stats[sensorKey].max) {
+          stats[sensorKey].max = value
+          stats[sensorKey].maxTime = timestamp
+        }
       }
     }
     
@@ -232,16 +255,26 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <span className="text-xs text-muted-foreground">Low: </span>
-                        <span className="font-medium text-blue-600">
-                          {minValue.toFixed(1)} {unit}
-                        </span>
+                        <div>
+                          <span className="text-xs text-muted-foreground">Low: </span>
+                          <span className="font-medium text-blue-600">
+                            {minValue.toFixed(1)} {unit}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {formatTimeAgo(stats.minTime)}
+                        </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-muted-foreground">High: </span>
-                        <span className="font-medium text-red-600">
-                          {maxValue.toFixed(1)} {unit}
-                        </span>
+                        <div>
+                          <span className="text-xs text-muted-foreground">High: </span>
+                          <span className="font-medium text-red-600">
+                            {maxValue.toFixed(1)} {unit}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {formatTimeAgo(stats.maxTime)}
+                        </div>
                       </div>
                     </div>
                   </div>
