@@ -89,8 +89,10 @@ export default createEdgeFunction(async ({ req }) => {
     // Transform the data to flatten the users object
     // deno-lint-ignore no-explicit-any
     const transformedMembers = members.map((member: any) => ({
-      id: member.id,
+      id: member.user_id, // Use user_id as the primary ID (matches auth.users)
+      membership_id: member.id, // Keep the membership ID for reference
       userId: member.user_id,
+      full_name: member.users?.full_name || 'Unknown User',
       name: member.users?.full_name || 'Unknown User',
       email: member.users?.email || '',
       role: member.role,
