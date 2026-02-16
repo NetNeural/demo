@@ -37,18 +37,22 @@ function LocationMap({
         document.head.appendChild(link)
       }
 
-      // Load Leaflet library
-      const L = await import('leaflet' as any) as any
+      // Load Leaflet library from CDN
+      if (!(window as any).L) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+          script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
+          script.crossOrigin = ''
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+      }
 
-      // Fix default marker icon issue with webpack
-      delete (L.Icon.Default.prototype as any)._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      })
+      const L = (window as any).L
 
-      if (!mapRef.current) return
+      if (!L || !mapRef.current) return
 
       // Clean up existing map
       if (leafletMapRef.current) {
