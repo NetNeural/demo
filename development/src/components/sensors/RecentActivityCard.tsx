@@ -4,7 +4,8 @@
 // Last updated: 2026-02-16T11:05:00Z - Force cache clear
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Clock, RefreshCw, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Device } from '@/types/sensor-details'
@@ -29,8 +30,9 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchActivities = async () => {
+  const fetchActivities = async () => {
+    try {
+      setLoading(true)
       const supabase = createClient()
       
       // Fetch sensor activity, alerts, recent telemetry, thresholds, and notifications
@@ -238,14 +240,27 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
       
       setActivities(combinedActivities.slice(0, 15))
       setLoading(false)
+    } catch (error) {
+      console.error('Error fetching activities:', error)
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchActivities()
 
     // Refresh every 30 seconds
     const interval = setInterval(fetchActivities, 30000)
     return () => clearInterval(interval)
   }, [device.id])
+
+  const handleClear = () => {
+    setActivities([])
+  }
+
+  const handleReset = () => {
+    fetchActivities()
+  }
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -290,10 +305,34 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          🔧 Recent Activity
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            🔧 Recent Activity
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={loading}
+              className="h-8"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Reset
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClear}
+              disabled={activities.length === 0}
+              className="h-8"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
