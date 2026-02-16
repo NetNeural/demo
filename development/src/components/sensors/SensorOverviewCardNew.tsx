@@ -80,6 +80,37 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
     return grouped
   }, [telemetryReadings])
 
+  // Calculate min/max for all sensor data
+  const sensorMinMax = useMemo(() => {
+    const stats: Record<string, { min: number; max: number; label: string; unit: string; isTemperature: boolean }> = {}
+    
+    for (const reading of telemetryReadings) {
+      const sensorKey = reading.telemetry.type != null
+        ? `type_${reading.telemetry.type}`
+        : reading.telemetry.sensor || 'unknown'
+      
+      const value = reading.telemetry.value
+      if (typeof value !== 'number') continue
+      
+      const sensorLabel = reading.telemetry.type != null
+        ? SENSOR_LABELS[reading.telemetry.type as number]
+        : reading.telemetry.sensor || 'Sensor'
+      const unit = reading.telemetry.units != null
+        ? UNIT_LABELS[reading.telemetry.units as number]
+        : ''
+      const isTemperature = reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
+      
+      if (!stats[sensorKey]) {
+        stats[sensorKey] = { min: value, max: value, label: sensorLabel, unit, isTemperature }
+      } else {
+        stats[sensorKey].min = Math.min(stats[sensorKey].min, value)
+        stats[sensorKey].max = Math.max(stats[sensorKey].max, value)
+      }
+    }
+    
+    return stats
+  }, [telemetryReadings])
+
   // Get status badge color
   const getStatusBadge = () => {
     const status = device.status
@@ -165,6 +196,60 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           <span className="text-sm font-medium">Last Reading:</span>
           <span className="text-sm text-muted-foreground">{formatTimeAgo(lastReadingTime)}</span>
         </div>
+
+        {/* Min/Max Readings */}
+        {Object.keys(sensorMinMax).length > 0 && (
+          <div className="space-y-3 py-3 border-b">
+            <span className="text-sm font-medium">All-Time Readings:</span>
+            <div className="grid grid-cols-1 gap-3">
+              {Object.entries(sensorMinMax).map(([sensorKey, stats]) => {
+                const SensorIcon = getSensorIcon(
+                  sensorKey.startsWith('type_') ? parseInt(sensorKey.split('_')[1]) : undefined
+                )
+                
+                // Convert temperature if needed
+                let minValue = stats.min
+                let maxValue = stats.max
+                let unit = stats.unit
+                
+                if (stats.isTemperature) {
+                  if (useFahrenheit && unit === '°C') {
+                    minValue = (minValue * 9/5) + 32
+                    maxValue = (maxValue * 9/5) + 32
+                    unit = '°F'
+                  } else if (!useFahrenheit && unit === '°F') {
+                    minValue = (minValue - 32) * 5/9
+                    maxValue = (maxValue - 32) * 5/9
+                    unit = '°C'
+                  }
+                }
+                
+                return (
+                  <div key={sensorKey} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <SensorIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{stats.label}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <span className="text-xs text-muted-foreground">Low: </span>
+                        <span className="font-medium text-blue-600">
+                          {minValue.toFixed(1)} {unit}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-muted-foreground">High: </span>
+                        <span className="font-medium text-red-600">
+                          {maxValue.toFixed(1)} {unit}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Current Sensor Values - Largest Font */}
         <div className="space-y-4">
