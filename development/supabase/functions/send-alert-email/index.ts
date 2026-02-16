@@ -31,9 +31,6 @@ serve(async (req) => {
     console.log('[send-alert-email] Processing alert:', alert_id)
 
     // Get the alert details from database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
     const alertResponse = await fetch(`${supabaseUrl}/rest/v1/alerts?id=eq.${alert_id}&select=*,devices!alerts_device_id_fkey(name,device_type)`, {
       headers: {
         'apikey': supabaseServiceKey,
