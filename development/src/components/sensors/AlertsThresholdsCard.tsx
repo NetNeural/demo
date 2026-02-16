@@ -172,7 +172,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 h-5" />
+            <AlertTriangle className="h-5 w-5" />
             ⚠️ Alerts & Thresholds
           </CardTitle>
         </CardHeader>
@@ -290,16 +290,16 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
       {/* Edit/Create Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="m`Edit ${selectedThreshold.sensor_type} Threshold` : 'Create New Threshold'}
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedThreshold ? `Edit ${selectedThreshold.sensor_type} Threshold` : 'Create New Threshold'}
             </DialogTitle>
             <DialogDescription>
               {selectedThreshold 
                 ? `Configure alert thresholds and notification preferences for ${selectedThreshold.sensor_type} sensor`
                 : 'Each sensor type (temperature, humidity, battery, etc.) can have its own threshold configuration'
               }
-            </DialogTitle>
-            <DialogDescription>
-              Configure alert thresholds and notification preferences for this sensor
             </DialogDescription>
           </DialogHeader>
 
