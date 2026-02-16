@@ -16,13 +16,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus } from 'lucide-react'
+import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Device } from '@/types/sensor-details'
 import type { SensorThreshold } from '@/types/sensor-details'
@@ -45,8 +55,11 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [loading, setLoading] = useState(true)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedThreshold, setSelectedThreshold] = useState<SensorThreshold | null>(null)
+  const [thresholdToDelete, setThresholdToDelete] = useState<SensorThreshold | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -207,6 +220,42 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
     }
   }
 
+  const handleDeleteClick = (threshold: SensorThreshold) => {
+    setThresholdToDelete(threshold)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!thresholdToDelete) return
+
+    try {
+      setDeleting(true)
+
+      const response = await edgeFunctions.thresholds.delete(thresholdToDelete.id)
+
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: `Threshold for ${thresholdToDelete.sensor_type} deleted successfully`,
+        })
+        setDeleteDialogOpen(false)
+        setThresholdToDelete(null)
+        await fetchThresholds()
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to delete threshold')
+      }
+    } catch (error) {
+      console.error('Error deleting threshold:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete threshold',
+        variant: 'destructive',
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const toggleNotificationChannel = (channel: string) => {
     setFormData(prev => ({
       ...prev,
@@ -334,13 +383,23 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                       </div>
                     )}
                   </div>
-                  <Button
-                    onClick={() => handleEdit(threshold)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      onClick={() => handleEdit(threshold)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteClick(threshold)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -659,6 +718,29 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the threshold for <strong>{thresholdToDelete?.sensor_type.replace(/_/g, ' ')}</strong>.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
