@@ -301,8 +301,9 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
       message: `Analyzing ${totalReadings.toLocaleString()} readings across ${sensorAnalyses.length} sensor${sensorAnalyses.length > 1 ? 's' : ''}. AI pattern detection active.`,
     })
 
+    console.log('🤖 [aiInsights] Generated', insights.length, 'insights. First insight:', insights[0]?.message?.substring(0, 100))
     return insights
-  }, [sensorAnalyses, formatValue])
+  }, [sensorAnalyses, formatValue, temperatureUnit])
 
   const getTrendIcon = (trend: 'rising' | 'falling' | 'stable') => {
     if (trend === 'rising') return <TrendingUp className="h-4 w-4 text-orange-500" />
