@@ -41,6 +41,7 @@ interface OrganizationMember {
   email: string;
   role: OrganizationRole;
   joinedAt: string;
+  lastLogin?: string | null;
   passwordChangeRequired?: boolean;
 }
 
@@ -323,6 +324,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   <TableHead>Role</TableHead>
                   <TableHead>Password</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Last Login</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -386,6 +388,17 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(member.joinedAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {member.lastLogin 
+                          ? new Date(member.lastLogin).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : <span className="text-muted-foreground/50">Never</span>
+                        }
                       </TableCell>
                       <TableCell className="text-right">
                         {canDeleteThisMember ? (

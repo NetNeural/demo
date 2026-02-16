@@ -75,6 +75,7 @@ export default createEdgeFunction(async ({ req }) => {
           id,
           email,
           full_name,
+          last_login,
           password_change_required
         )
       `)
@@ -94,6 +95,7 @@ export default createEdgeFunction(async ({ req }) => {
       email: member.users?.email || '',
       role: member.role,
       joinedAt: member.created_at,
+      lastLogin: member.users?.last_login || null,
       passwordChangeRequired: member.users?.password_change_required || false,
     }))
 
