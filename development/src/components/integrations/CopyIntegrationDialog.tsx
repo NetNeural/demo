@@ -135,8 +135,29 @@ export function CopyIntegrationDialog({
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to copy integration')
+        const errorText = await response.text()
+        console.error('❌ Integration copy failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          requestBody: {
+            organization_id: selectedOrgId,
+            integration_type: integration.type,
+            name: `${integration.name} (Copy)`,
+            settings: integration.config,
+            status: 'active'
+          }
+        })
+        
+        let errorMessage = 'Failed to copy integration'
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorData.message || errorMessage
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
 
       toast.success(`Successfully copied "${integration.name}" to the selected organization`)
