@@ -273,14 +273,20 @@ async function handleDeviceUpdate(
   
   // Look up device by serial_number first (primary), then external_device_id (fallback)
   // Golioth device_name maps to serial_number in NetNeural devices table
+  // IMPORTANT: Check BOTH serial_number AND external_device_id to avoid duplicates
+  // because Golioth devices have both a hardware ID (device name) and a platform ID
   let query = supabase
     .from('devices')
     .select('*')
     .eq('organization_id', integration.organization_id)
   
-  if (payload.deviceName) {
+  // Search by both serial_number and external_device_id using OR condition
+  // This prevents duplicates when webhook uses device name but sync uses platform ID
+  if (payload.deviceName && payload.deviceId) {
+    query = query.or(`serial_number.eq.${payload.deviceName},external_device_id.eq.${payload.deviceId}`)
+  } else if (payload.deviceName) {
     query = query.eq('serial_number', payload.deviceName)
-  } else {
+  } else if (payload.deviceId) {
     query = query.eq('external_device_id', payload.deviceId)
   }
   
@@ -361,14 +367,18 @@ async function handleDeviceCreate(
   }
   
   // Look up device by serial_number first (primary), then external_device_id (fallback)
+  // Use OR condition to check both fields and avoid duplicates
   let query = supabase
     .from('devices')
     .select('id')
     .eq('organization_id', integration.organization_id)
   
-  if (payload.deviceName) {
+  // Search by both serial_number and external_device_id using OR condition
+  if (payload.deviceName && payload.deviceId) {
+    query = query.or(`serial_number.eq.${payload.deviceName},external_device_id.eq.${payload.deviceId}`)
+  } else if (payload.deviceName) {
     query = query.eq('serial_number', payload.deviceName)
-  } else {
+  } else if (payload.deviceId) {
     query = query.eq('external_device_id', payload.deviceId)
   }
   
