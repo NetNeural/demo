@@ -161,7 +161,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
         </div>
 
         {/* Last Reading Timestamp */}
-        <div className="flex items-center justify-between py-3 border-y">
+        <div className="flex items-center justify-between py-3 border-t">
           <span className="text-sm font-medium">Last Reading:</span>
           <span className="text-sm text-muted-foreground">{formatTimeAgo(lastReadingTime)}</span>
         </div>
@@ -219,7 +219,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
         </div>
 
         {/* Secondary Info Grid */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
           {/* Battery Level */}
           {device.battery_level != null && (
             <div className="space-y-1">
@@ -241,13 +241,13 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
               <p className="text-lg font-semibold">{device.signal_strength} dBm</p>
             </div>
           )}
+        </div>
 
-          {/* Last 5 Readings Section */}
-          <div className="pt-4 mt-4">
-            <div className="flex items-center py-3 border-y">
-              <span className="text-sm font-medium">Last 5 Readings:</span>
-            </div>
-            <div className="pt-3 space-y-3">
+        {/* Last 5 Readings Section */}
+        <div className="border-y py-3">
+          <span className="text-sm font-medium">Last 5 Readings:</span>
+        </div>
+        <div className="space-y-3">
               {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
               const firstReading = readings[0]
               if (!firstReading) return null
@@ -282,8 +282,6 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                 </div>
               )
             })}
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
