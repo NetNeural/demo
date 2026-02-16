@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,8 @@ interface OrganizationSettingsTabProps {
 
 export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const { currentOrganization, isOwner, refreshOrganizations } = useOrganization();
-  const [orgName, setOrgName] = useState(currentOrganization?.name || '');
-  const orgSlug = currentOrganization?.slug || '';
+  const [orgName, setOrgName] = useState('');
+  const [orgSlug, setOrgSlug] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -29,14 +29,29 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Branding settings with type safety
-  const settings: OrganizationSettings = currentOrganization?.settings || {};
-  const [logoUrl, setLogoUrl] = useState(settings.branding?.logo_url || '');
-  const [primaryColor, setPrimaryColor] = useState(settings.branding?.primary_color || '#3b82f6');
-  const [secondaryColor, setSecondaryColor] = useState(settings.branding?.secondary_color || '#64748b');
-  const [accentColor, setAccentColor] = useState(settings.branding?.accent_color || '#10b981');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>(settings.theme || 'auto');
-  const [timezone, setTimezone] = useState(settings.timezone || 'UTC');
+  // Branding settings state
+  const [logoUrl, setLogoUrl] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#3b82f6');
+  const [secondaryColor, setSecondaryColor] = useState('#64748b');
+  const [accentColor, setAccentColor] = useState('#10b981');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('auto');
+  const [timezone, setTimezone] = useState('UTC');
+
+  // Sync state when currentOrganization changes
+  useEffect(() => {
+    if (currentOrganization) {
+      setOrgName(currentOrganization.name || '');
+      setOrgSlug(currentOrganization.slug || '');
+      
+      const settings: OrganizationSettings = currentOrganization.settings || {};
+      setLogoUrl(settings.branding?.logo_url || '');
+      setPrimaryColor(settings.branding?.primary_color || '#3b82f6');
+      setSecondaryColor(settings.branding?.secondary_color || '#64748b');
+      setAccentColor(settings.branding?.accent_color || '#10b981');
+      setTheme(settings.theme || 'auto');
+      setTimezone(settings.timezone || 'UTC');
+    }
+  }, [currentOrganization]);
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -101,8 +116,11 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setIsSaving(true);
       setSaveMessage('');
 
+      // Get current settings to merge with updates
+      const currentSettings: OrganizationSettings = currentOrganization.settings || {};
+      
       const updatedSettings: OrganizationSettings = {
-        ...settings,
+        ...currentSettings,
         branding: {
           logo_url: logoUrl,
           primary_color: primaryColor,
@@ -112,6 +130,11 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         theme,
         timezone,
       };
+
+      console.log('Saving organization settings:', {
+        name: orgName.trim(),
+        settings: updatedSettings
+      });
 
       const response = await edgeFunctions.organizations.update(currentOrganization.id, {
         name: orgName.trim(),
