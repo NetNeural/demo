@@ -1,12 +1,17 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useMemo } from 'react'
+import { Brain, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Thermometer, Droplets, Wind, Battery } from 'lucide-react'
 import type { Device } from '@/types/sensor-details'
 
 interface TelemetryReading {
   telemetry: {
     value?: number
+    type?: number
+    sensor?: string
     [key: string]: unknown
   }
   device_timestamp: string | null
@@ -18,75 +23,354 @@ interface StatisticalSummaryCardProps {
   telemetryReadings: TelemetryReading[]
 }
 
+interface SensorAnalysis {
+  sensorType: string
+  sensorName: string
+  icon: typeof Thermometer
+  avg: number
+  min: number
+  max: number
+  trend: 'rising' | 'falling' | 'stable'
+  trendPercent: number
+  readings: number
+  lastValue: number
+}
+
+interface AIInsight {
+  type: 'normal' | 'warning' | 'critical' | 'info'
+  icon: typeof CheckCircle
+  title: string
+  message: string
+}
+
+const SENSOR_LABELS: Record<number, string> = {
+  1: 'Temperature',
+  2: 'Humidity',
+  3: 'Pressure',
+  4: 'CO₂',
+  5: 'VOC',
+  6: 'Light',
+  7: 'Motion',
+}
+
+const SENSOR_ICONS: Record<string, typeof Thermometer> = {
+  temperature: Thermometer,
+  humidity: Droplets,
+  pressure: Wind,
+  battery: Battery,
+}
+
 export function StatisticalSummaryCard({ device, telemetryReadings }: StatisticalSummaryCardProps) {
-  const stats = useMemo(() => {
-    if (telemetryReadings.length === 0) {
-      return { avg: 0, min: 0, max: 0, range: 0, count: 0, quality: 0 }
+  // Analyze each sensor type separately
+  const sensorAnalyses = useMemo<SensorAnalysis[]>(() => {
+    if (telemetryReadings.length === 0) return []
+
+    const sensorGroups: Record<string, TelemetryReading[]> = {}
+    
+    // Group readings by sensor type
+    for (const reading of telemetryReadings) {
+      const sensorKey = reading.telemetry.type != null
+        ? `type_${reading.telemetry.type}`
+        : reading.telemetry.sensor || 'unknown'
+      
+      if (!sensorGroups[sensorKey]) {
+        sensorGroups[sensorKey] = []
+      }
+      sensorGroups[sensorKey].push(reading)
     }
 
-    const values = telemetryReadings
-      .map(r => r.telemetry.value)
-      .filter((v): v is number => v != null)
+    // Analyze each sensor group
+    return Object.entries(sensorGroups).map(([sensorKey, readings]) => {
+      const values = readings
+        .map(r => r.telemetry.value)
+        .filter((v): v is number => v != null)
 
-    if (values.length === 0) {
-      return { avg: 0, min: 0, max: 0, range: 0, count: 0, quality: 0 }
-    }
+      if (values.length === 0) return null
 
-    const min = Math.min(...values)
-    const max = Math.max(...values)
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length
-    const range = max - min
+      const avg = values.reduce((sum, v) => sum + v, 0) / values.length
+      const min = Math.min(...values)
+      const max = Math.max(...values)
+      const lastValue = values[0] // Most recent
 
-    // Calculate standard deviation
-    const variance = values.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / values.length
-    const stddev = Math.sqrt(variance)
+      // Calculate trend: compare first half vs second half
+      const halfPoint = Math.floor(values.length / 2)
+      const recentValues = values.slice(0, halfPoint)
+      const olderValues = values.slice(halfPoint)
+      
+      const recentAvg = recentValues.reduce((sum, v) => sum + v, 0) / recentValues.length
+      const olderAvg = olderValues.reduce((sum, v) => sum + v, 0) / olderValues.length
+      
+      const change = recentAvg - olderAvg
+      const trendPercent = Math.abs((change / olderAvg) * 100)
+      
+      let trend: 'rising' | 'falling' | 'stable' = 'stable'
+      if (trendPercent > 5) {
+        trend = change > 0 ? 'rising' : 'falling'
+      }
 
-    // Data quality: percentage of non-null readings
-    const quality = (values.length / telemetryReadings.length) * 100
+      // Get sensor label and icon
+      const typeId = sensorKey.startsWith('type_') ? parseInt(sensorKey.split('_')[1]) : null
+      const sensorName = typeId ? SENSOR_LABELS[typeId] : readings[0].telemetry.sensor || 'Sensor'
+      const sensorTypeLower = sensorName.toLowerCase()
+      const icon = SENSOR_ICONS[sensorTypeLower] || Thermometer
 
-    return { avg, min, max, range, stddev, count: values.length, quality }
+      return {
+        sensorType: sensorKey,
+        sensorName,
+        icon,
+        avg,
+        min,
+        max,
+        trend,
+        trendPercent,
+        readings: values.length,
+        lastValue,
+      }
+    }).filter((a): a is SensorAnalysis => a !== null)
   }, [telemetryReadings])
+
+  // Generate AI insights based on sensor data
+  const aiInsights = useMemo<AIInsight[]>(() => {
+    const insights: AIInsight[] = []
+
+    if (sensorAnalyses.length === 0) {
+      insights.push({
+        type: 'info',
+        icon: AlertCircle,
+        title: 'No Data Available',
+        message: 'Waiting for telemetry data to generate insights.',
+      })
+      return insights
+    }
+
+    let hasWarning = false
+    let hasCritical = false
+
+    // Analyze each sensor for issues
+    for (const sensor of sensorAnalyses) {
+      // Temperature analysis
+      if (sensor.sensorName.toLowerCase().includes('temperature')) {
+        if (sensor.trend === 'falling' && sensor.trendPercent > 10) {
+          insights.push({
+            type: 'warning',
+            icon: TrendingDown,
+            title: 'Temperature Dropping',
+            message: `Temperature has dropped ${sensor.trendPercent.toFixed(1)}% recently. Condenser or cooling system may be failing. Current: ${sensor.lastValue.toFixed(1)}°C`,
+          })
+          hasWarning = true
+        } else if (sensor.trend === 'rising' && sensor.trendPercent > 10) {
+          insights.push({
+            type: 'warning',
+            icon: TrendingUp,
+            title: 'Temperature Rising',
+            message: `Temperature has increased ${sensor.trendPercent.toFixed(1)}% recently. Check HVAC system or cooling. Current: ${sensor.lastValue.toFixed(1)}°C`,
+          })
+          hasWarning = true
+        } else if (sensor.lastValue > 35) {
+          insights.push({
+            type: 'critical',
+            icon: AlertCircle,
+            title: 'High Temperature Alert',
+            message: `Temperature at ${sensor.lastValue.toFixed(1)}°C is critically high. Immediate cooling required.`,
+          })
+          hasCritical = true
+        } else if (sensor.lastValue < 5) {
+          insights.push({
+            type: 'critical',
+            icon: AlertCircle,
+            title: 'Low Temperature Alert',
+            message: `Temperature at ${sensor.lastValue.toFixed(1)}°C is critically low. Check heating system.`,
+          })
+          hasCritical = true
+        }
+      }
+
+      // Humidity analysis
+      if (sensor.sensorName.toLowerCase().includes('humidity')) {
+        if (sensor.trend === 'rising' && sensor.trendPercent > 8) {
+          insights.push({
+            type: 'warning',
+            icon: TrendingUp,
+            title: 'Humidity Climbing',
+            message: `Humidity has increased ${sensor.trendPercent.toFixed(1)}% recently (now ${sensor.lastValue.toFixed(1)}%). Room ventilation may be needed to prevent moisture buildup.`,
+          })
+          hasWarning = true
+        } else if (sensor.lastValue > 70) {
+          insights.push({
+            type: 'critical',
+            icon: AlertCircle,
+            title: 'High Humidity Alert',
+            message: `Humidity at ${sensor.lastValue.toFixed(1)}% is too high. Risk of mold and equipment damage. Increase ventilation immediately.`,
+          })
+          hasCritical = true
+        } else if (sensor.lastValue < 20) {
+          insights.push({
+            type: 'warning',
+            icon: AlertCircle,
+            title: 'Low Humidity',
+            message: `Humidity at ${sensor.lastValue.toFixed(1)}% is very low. May cause static electricity and discomfort.`,
+          })
+          hasWarning = true
+        }
+      }
+
+      // Battery analysis
+      if (sensor.sensorName.toLowerCase().includes('battery')) {
+        if (sensor.lastValue < 20) {
+          insights.push({
+            type: 'critical',
+            icon: Battery,
+            title: 'Low Battery Critical',
+            message: `Battery at ${sensor.lastValue.toFixed(0)}%. Device will shut down soon. Replace or recharge immediately.`,
+          })
+          hasCritical = true
+        } else if (sensor.lastValue < 30) {
+          insights.push({
+            type: 'warning',
+            icon: Battery,
+            title: 'Battery Low',
+            message: `Battery at ${sensor.lastValue.toFixed(0)}%. Consider replacing soon to avoid service interruption.`,
+          })
+          hasWarning = true
+        }
+      }
+
+      // Pressure analysis
+      if (sensor.sensorName.toLowerCase().includes('pressure')) {
+        if (sensor.trend === 'falling' && sensor.trendPercent > 5) {
+          insights.push({
+            type: 'info',
+            icon: TrendingDown,
+            title: 'Pressure Dropping',
+            message: `Pressure has decreased ${sensor.trendPercent.toFixed(1)}%. Weather change or system depressurization detected.`,
+          })
+        }
+      }
+    }
+
+    // If no warnings or critical issues, add positive feedback
+    if (!hasWarning && !hasCritical) {
+      insights.push({
+        type: 'normal',
+        icon: CheckCircle,
+        title: 'All Systems Normal',
+        message: 'Based on recent sensor data, all measurements are within normal operating ranges. Equipment is functioning properly.',
+      })
+    }
+
+    // Overall data quality insight
+    const totalReadings = sensorAnalyses.reduce((sum, s) => sum + s.readings, 0)
+    insights.push({
+      type: 'info',
+      icon: Brain,
+      title: 'Data Quality',
+      message: `Analyzing ${totalReadings.toLocaleString()} readings across ${sensorAnalyses.length} sensor${sensorAnalyses.length > 1 ? 's' : ''}. AI pattern detection active.`,
+    })
+
+    return insights
+  }, [sensorAnalyses])
+
+  const getTrendIcon = (trend: 'rising' | 'falling' | 'stable') => {
+    if (trend === 'rising') return <TrendingUp className="h-4 w-4 text-orange-500" />
+    if (trend === 'falling') return <TrendingDown className="h-4 w-4 text-blue-500" />
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+
+  const getInsightColor = (type: AIInsight['type']) => {
+    switch (type) {
+      case 'critical': return 'destructive'
+      case 'warning': return 'secondary'
+      case 'normal': return 'default'
+      case 'info': return 'outline'
+      default: return 'outline'
+    }
+  }
+
+  const getInsightBg = (type: AIInsight['type']) => {
+    switch (type) {
+      case 'critical': return 'bg-red-50 dark:bg-red-950 border-red-200'
+      case 'warning': return 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200'
+      case 'normal': return 'bg-green-50 dark:bg-green-950 border-green-200'
+      case 'info': return 'bg-blue-50 dark:bg-blue-950 border-blue-200'
+      default: return 'bg-muted'
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>📈 Statistical Summary</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Brain className="h-5 w-5" />
+          🤖 Statistical AI Summary
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Average</p>
-            <p className="text-2xl font-bold">{stats.avg.toFixed(1)}</p>
+      <CardContent className="space-y-6">
+        {/* Sensor Statistics Grid */}
+        {sensorAnalyses.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {sensorAnalyses.map((sensor) => {
+              const Icon = sensor.icon
+              return (
+                <div key={sensor.sensorType} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{sensor.sensorName}</span>
+                    </div>
+                    {getTrendIcon(sensor.trend)}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <p className="text-muted-foreground">Avg</p>
+                      <p className="font-semibold">{sensor.avg.toFixed(1)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Min</p>
+                      <p className="font-semibold">{sensor.min.toFixed(1)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Max</p>
+                      <p className="font-semibold">{sensor.max.toFixed(1)}</p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {sensor.readings.toLocaleString()} readings
+                  </div>
+                </div>
+              )
+            })}
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Min</p>
-            <p className="text-2xl font-bold">{stats.min.toFixed(1)}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Max</p>
-            <p className="text-2xl font-bold">{stats.max.toFixed(1)}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Range</p>
-            <p className="text-2xl font-bold">{stats.range.toFixed(1)}</p>
-          </div>
-        </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-          {stats.stddev != null && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Std Dev</p>
-              <p className="text-lg font-semibold">±{stats.stddev.toFixed(2)}</p>
+        {/* AI Insights */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Brain className="h-4 w-4" />
+            AI Predictive Analysis
+          </div>
+          <ScrollArea className="h-[200px]">
+            <div className="space-y-2 pr-3">
+              {aiInsights.map((insight, idx) => {
+                const Icon = insight.icon
+                return (
+                  <div key={idx} className={`p-3 border rounded-lg ${getInsightBg(insight.type)}`}>
+                    <div className="flex items-start gap-3">
+                      <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{insight.title}</p>
+                          <Badge variant={getInsightColor(insight.type)} className="text-xs">
+                            {insight.type}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{insight.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )}
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Readings</p>
-            <p className="text-lg font-semibold">{stats.count.toLocaleString()}</p>
-          </div>
-          <div className="space-y-1 col-span-2">
-            <p className="text-xs text-muted-foreground">Data Quality</p>
-            <p className="text-lg font-semibold">{stats.quality.toFixed(1)}% complete</p>
-          </div>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
