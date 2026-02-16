@@ -13,6 +13,7 @@ on:
           - device-sync
           - auto-sync-cron
           - integration-webhook
+          - members
 
 jobs:
   deploy:
@@ -37,6 +38,7 @@ jobs:
             npx supabase functions deploy device-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy auto-sync-cron --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy integration-webhook --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy members --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
