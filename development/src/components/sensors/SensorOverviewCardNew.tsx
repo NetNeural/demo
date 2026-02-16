@@ -168,10 +168,13 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
 
         {/* Current Sensor Values - Largest Font */}
         <div className="space-y-4">
-          {latestBySensor.length === 0 ? (
+          {Object.keys(latestBySensor).length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No sensor data available</p>
           ) : (
-            latestBySensor.map((reading, idx) => {
+            Object.entries(latestBySensor).map(([sensorKey, readings]) => {
+              const reading = readings[0] // Get the most recent reading
+              if (!reading) return null
+              
               const SensorIcon = getSensorIcon(reading.telemetry.type as number | undefined)
               const sensorLabel = reading.telemetry.type != null
                 ? SENSOR_LABELS[reading.telemetry.type as number]
@@ -198,7 +201,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
               const displayValue = value !== null ? value.toFixed(1) : 'N/A'
 
               return (
-                <div key={idx} className="flex items-center justify-between">
+                <div key={sensorKey} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <SensorIcon className="h-5 w-5 text-blue-500" />
                     <span className="text-sm font-medium">{sensorLabel}</span>
