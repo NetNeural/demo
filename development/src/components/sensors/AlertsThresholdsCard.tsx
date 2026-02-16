@@ -418,6 +418,16 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
   const activeAlerts = thresholds.filter(t => t.alert_enabled).length
 
+  // Helper to get temperature unit symbol
+  const getUnitSymbol = (threshold: SensorThreshold) => {
+    const tempSensors = ['temperature', 'humidity', 'pressure']
+    if (tempSensors.includes(threshold.sensor_type.toLowerCase())) {
+      const unit = (threshold as any).temperature_unit || 'celsius'
+      return unit === 'fahrenheit' ? '°F' : '°C'
+    }
+    return ''
+  }
+
   if (loading) {
     return (
       <Card>
@@ -506,16 +516,16 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       {threshold.min_value && (
-                        <div>Min: {threshold.min_value}</div>
+                        <div>Min: {threshold.min_value}{getUnitSymbol(threshold)}</div>
                       )}
                       {threshold.max_value && (
-                        <div>Max: {threshold.max_value}</div>
+                        <div>Max: {threshold.max_value}{getUnitSymbol(threshold)}</div>
                       )}
                       {threshold.critical_min && (
-                        <div className="text-red-600">Critical Min: {threshold.critical_min}</div>
+                        <div className="text-red-600">Critical Min: {threshold.critical_min}{getUnitSymbol(threshold)}</div>
                       )}
                       {threshold.critical_max && (
-                        <div className="text-red-600">Critical Max: {threshold.critical_max}</div>
+                        <div className="text-red-600">Critical Max: {threshold.critical_max}{getUnitSymbol(threshold)}</div>
                       )}
                     </div>
                     {threshold.notify_on_breach && (
