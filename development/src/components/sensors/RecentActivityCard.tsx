@@ -171,6 +171,30 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           })
         }
 
+        // Sensor type labels (Golioth structure)
+        const SENSOR_LABELS: Record<number, string> = {
+          1: 'Temperature',
+          2: 'Humidity',
+          3: 'Pressure',
+          4: 'CO₂',
+          5: 'VOC',
+          6: 'Light',
+          7: 'Motion',
+          8: 'Battery',
+        }
+
+        // Unit labels (Golioth structure)
+        const UNIT_LABELS: Record<number, string> = {
+          1: '°C',
+          2: '°F',
+          3: '%',
+          4: 'hPa',
+          5: 'ppm',
+          6: 'ppb',
+          7: 'lux',
+          8: '%', // Battery percentage
+        }
+
         // Helper to format sensor value with units
         const formatSensorValue = (sensorName: string, value: number): { value: number, unit: string } => {
           const nameLower = sensorName.toLowerCase()
@@ -197,12 +221,47 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           .filter((t): t is typeof t & { received_at: string } => t.received_at != null)
           .flatMap((t, idx) => {
             const telemetryData = t.telemetry
-            console.log('📦 Telemetry object:', { id: t.id, received_at: t.received_at, keys: Object.keys(telemetryData || {}) })
+            console.log('📦 Telemetry object:', { id: t.id, received_at: t.received_at, telemetry: telemetryData })
             
             // Extract sensor readings from telemetry
-            if (telemetryData && typeof telemetryData === 'object') {
+            if (telemetryData && typeof telemetryData === 'object' && !Array.isArray(telemetryData)) {
               const readings: Activity[] = []
               
+              // Handle Golioth structure: { type: 1, units: 1, value: 36.4, timestamp: "..." }
+              const telemetry = telemetryData as Record<string, unknown>
+              if (typeof telemetry.type === 'number' && 
+                  typeof telemetry.value === 'number') {
+                const sensorType = telemetry.type as number
+                const sensorName = SENSOR_LABELS[sensorType] || 'Unknown Sensor'
+                const unitId = telemetry.units as number
+                let unit = UNIT_LABELS[unitId] || ''
+                let value = telemetry.value as number
+
+                // Convert temperature based on preferences
+                if (sensorType === 1) { // Temperature
+                  const preferredUnit = temperatureUnitMap.get('temperature') || 'celsius'
+                  if (preferredUnit === 'fahrenheit' && unit === '°C') {
+                    value = (value * 9/5) + 32
+                    unit = '°F'
+                  }
+                }
+
+                console.log('✅ Adding Golioth sensor reading:', { sensorName, value, unit })
+                readings.push({
+                  id: `telemetry-${t.id}-golioth-${idx}`,
+                  activity_type: 'data_received',
+                  description: `${sensorName} reading received`,
+                  severity: 'info',
+                  occurred_at: t.received_at,
+                  sensor_name: sensorName,
+                  reading_value: value,
+                  reading_unit: unit
+                })
+
+                return readings
+              }
+              
+              // Handle flat structure: { temperature: 36.4, humidity: 83.9, ... }
               // Metadata fields to exclude from activity feed
               const excludeFields = ['type', 'type_id', 'units', 'value', 'sensor', 'timestamp', 'received_at', 'device_timestamp']
               
@@ -224,10 +283,10 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
               
               // Handle various telemetry structures
               Object.entries(telemetryData).forEach(([key, value]) => {
-                console.log('🔑 Checking field:', { key, value, type: typeof value, isSensor: isSensorField(key) })
+                console.log('🔑 Checking flat field:', { key, value, type: typeof value, isSensor: isSensorField(key) })
                 if (typeof value === 'number' && isSensorField(key)) {
                   const formatted = formatSensorValue(key, value)
-                  console.log('✅ Adding sensor reading:', { key, value, formatted })
+                  console.log('✅ Adding flat sensor reading:', { key, value, formatted })
                   readings.push({
                     id: `telemetry-${t.id}-${key}-${idx}`,
                     activity_type: 'data_received',
