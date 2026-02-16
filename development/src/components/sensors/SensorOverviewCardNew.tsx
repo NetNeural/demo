@@ -58,9 +58,9 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
     return false
   })
   
-  // Group latest readings by sensor type
+  // Group last 5 readings by sensor type
   const latestBySensor = useMemo(() => {
-    const grouped: Record<string, TelemetryReading> = {}
+    const grouped: Record<string, TelemetryReading[]> = {}
     
     for (const reading of telemetryReadings) {
       const sensorKey = reading.telemetry.type != null
@@ -68,11 +68,16 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
         : reading.telemetry.sensor || 'unknown'
       
       if (!grouped[sensorKey]) {
-        grouped[sensorKey] = reading
+        grouped[sensorKey] = []
+      }
+      
+      // Keep only the last 5 readings per sensor
+      if (grouped[sensorKey].length < 5) {
+        grouped[sensorKey].push(reading)
       }
     }
     
-    return Object.values(grouped)
+    return grouped
   }, [telemetryReadings])
 
   // Get status badge color
@@ -234,29 +239,37 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             </div>
           )}
 
-          {/* Last Telemetry Readings - show all sensor types */}
-          {latestBySensor.map((reading, index) => {
-            const sensorType = reading.telemetry.type
+          {/* Last 5 Telemetry Readings per Sensor Type */}
+          {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
+            const firstReading = readings[0]
+            if (!firstReading) return null
+            
+            const sensorType = firstReading.telemetry.type
             const sensorLabel = sensorType ? SENSOR_LABELS[sensorType] : 'Reading'
-            const value = reading.telemetry?.value
-            
-            if (value == null) return null
-            
             const Icon = getSensorIcon(sensorType)
             
             return (
-              <div key={index} className="space-y-1">
+              <div key={sensorKey} className="space-y-1">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Icon className="h-3 w-3" />
                   <span>{sensorLabel}</span>
                 </div>
-                <div className="flex flex-col">
-                  <p className="text-lg font-semibold">
-                    {formatSensorValue(reading)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatTimeAgo(reading.received_at)}
-                  </p>
+                <div className="flex flex-col space-y-0.5">
+                  {readings.map((reading, idx) => {
+                    const value = reading.telemetry?.value
+                    if (value == null) return null
+                    
+                    return (
+                      <div key={idx} className="flex items-baseline justify-between">
+                        <p className={idx === 0 ? "text-lg font-semibold" : "text-sm"}>
+                          {formatSensorValue(reading)}
+                        </p>
+                        <p className="text-xs text-muted-foreground ml-2">
+                          {formatTimeAgo(reading.received_at)}
+                        </p>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )
