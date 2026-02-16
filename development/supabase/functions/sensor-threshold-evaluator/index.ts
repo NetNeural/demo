@@ -10,15 +10,16 @@ interface SensorThreshold {
   id: string
   device_id: string
   sensor_type: string
-  min_threshold?: number
-  max_threshold?: number
-  critical_threshold?: number
+  min_value?: number
+  max_value?: number
+  critical_min?: number
+  critical_max?: number
   alert_enabled: boolean
   notify_on_breach: boolean
   notify_user_ids?: string[]
   notify_emails?: string[]
   notification_channels?: string[]
-  last_alert_at?: string
+  last_notification_at?: string
 }
 
 interface Device {
@@ -126,18 +127,22 @@ serve(async (req) => {
         const value = reading.telemetry.value
 
         // Check if value breaches thresholds
-        let breachType: 'critical' | 'max' | 'min' | null = null
+        let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null = null
         let breachMessage = ''
 
-        if (threshold.critical_threshold != null && value >= threshold.critical_threshold) {
-          breachType = 'critical'
-          breachMessage = `Critical threshold exceeded: ${value} >= ${threshold.critical_threshold}`
-        } else if (threshold.max_threshold != null && value > threshold.max_threshold) {
+        // Check critical thresholds first
+        if (threshold.critical_max != null && value >= threshold.critical_max) {
+          breachType = 'critical_max'
+          breachMessage = `Critical maximum threshold exceeded: ${value} >= ${threshold.critical_max}`
+        } else if (threshold.critical_min != null && value <= threshold.critical_min) {
+          breachType = 'critical_min'
+          breachMessage = `Critical minimum threshold breached: ${value} <= ${threshold.critical_min}`
+        } else if (threshold.max_value != null && value > threshold.max_value) {
           breachType = 'max'
-          breachMessage = `Maximum threshold exceeded: ${value} > ${threshold.max_threshold}`
-        } else if (threshold.min_threshold != null && value < threshold.min_threshold) {
+          breachMessage = `Maximum threshold exceeded: ${value} > ${threshold.max_value}`
+        } else if (threshold.min_value != null && value < threshold.min_value) {
           breachType = 'min'
-          breachMessage = `Minimum threshold breached: ${value} < ${threshold.min_threshold}`
+          breachMessage = `Minimum threshold breached: ${value} < ${threshold.min_value}`
         }
 
         if (breachType) {
@@ -145,14 +150,14 @@ serve(async (req) => {
 
           // Create alert
           const sensorName = SENSOR_TYPE_NAMES[parseInt(threshold.sensor_type)] || `Sensor ${threshold.sensor_type}`
-          const severity = breachType === 'critical' ? 'critical' : 'high'
+          const severity = (breachType === 'critical_max' || breachType === 'critical_min') ? 'critical' : 'high'
           
           const { error: alertError } = await supabaseClient
             .from('alerts')
             .insert({
               organization_id: device.organization_id,
               device_id: device.id,
-              title: `${sensorName} ${breachType === 'critical' ? 'Critical' : 'Threshold'} Alert`,
+              title: `${sensorName} ${severity === 'critical' ? 'Critical' : 'Threshold'} Alert`,
               message: `${device.name}: ${breachMessage}`,
               severity: severity,
               category: sensorName.toLowerCase(),
@@ -163,9 +168,10 @@ serve(async (req) => {
                 current_value: value,
                 threshold_id: threshold.id,
                 breach_type: breachType,
-                min_threshold: threshold.min_threshold,
-                max_threshold: threshold.max_threshold,
-                critical_threshold: threshold.critical_threshold,
+                min_value: threshold.min_value,
+                max_value: threshold.max_value,
+                critical_min: threshold.critical_min,
+                critical_max: threshold.critical_max,
               }
             })
 
@@ -187,10 +193,10 @@ serve(async (req) => {
             // TODO: Implement email sending via Resend
           }
 
-          // Update last_alert_at
+          // Update last_notification_at
           await supabaseClient
             .from('sensor_thresholds')
-            .update({ last_alert_at: new Date().toISOString() })
+            .update({ last_notification_at: new Date().toISOString() })
             .eq('id', threshold.id)
 
           results.triggered++
