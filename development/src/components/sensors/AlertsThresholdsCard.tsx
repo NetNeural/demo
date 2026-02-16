@@ -190,7 +190,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
         max_value: formData.max_value ? parseFloat(formData.max_value) : null,
         critical_min: formData.critical_min ? parseFloat(formData.critical_min) : null,
         critical_max: formData.critical_max ? parseFloat(formData.critical_max) : null,
-        temperature_unit: formData.temperature_unit,
+        ...(formData.sensor_type === 'temperature' && { temperature_unit: formData.temperature_unit }),
         alert_enabled: formData.alert_enabled,
         alert_severity: formData.alert_severity,
         alert_message: formData.alert_message || null,
@@ -418,10 +418,9 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
   const activeAlerts = thresholds.filter(t => t.alert_enabled).length
 
-  // Helper to get temperature unit symbol
+  // Helper to get temperature unit symbol (only for temperature sensors)
   const getUnitSymbol = (threshold: SensorThreshold) => {
-    const tempSensors = ['temperature', 'humidity', 'pressure']
-    if (tempSensors.includes(threshold.sensor_type.toLowerCase())) {
+    if (threshold.sensor_type.toLowerCase() === 'temperature') {
       const unit = (threshold as any).temperature_unit || 'celsius'
       return unit === 'fahrenheit' ? '°F' : '°C'
     }
@@ -629,8 +628,8 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
               </div>
             )}
 
-            {/* Temperature Unit Selector - Only for temperature-related sensors */}
-            {['temperature', 'humidity', 'pressure'].includes(formData.sensor_type) && (
+            {/* Temperature Unit Selector - Only for temperature sensors */}
+            {formData.sensor_type === 'temperature' && (
               <div className="space-y-2">
                 <Label htmlFor="temperature_unit">Temperature Unit</Label>
                 <Select
@@ -657,7 +656,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="min_value">
-                    Minimum Value{['temperature', 'humidity', 'pressure'].includes(formData.sensor_type) && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    Minimum Value{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
                   </Label>
                   <Input
                     id="min_value"
@@ -670,7 +669,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="max_value">
-                    Maximum Value{['temperature', 'humidity', 'pressure'].includes(formData.sensor_type) && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    Maximum Value{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
                   </Label>
                   <Input
                     id="max_value"
@@ -689,7 +688,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="critical_min">
-                    Critical Minimum{['temperature', 'humidity', 'pressure'].includes(formData.sensor_type) && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    Critical Minimum{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
                   </Label>
                   <Input
                     id="critical_min"
@@ -702,7 +701,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="critical_max">
-                    Critical Maximum{['temperature', 'humidity', 'pressure'].includes(formData.sensor_type) && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    Critical Maximum{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
                   </Label>
                   <Input
                     id="critical_max"

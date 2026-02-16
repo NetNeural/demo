@@ -10,4 +10,4 @@ ADD CONSTRAINT temperature_unit_check
 CHECK (temperature_unit IN ('celsius', 'fahrenheit'));
 
 COMMENT ON COLUMN sensor_thresholds.temperature_unit IS 
-  'Temperature unit for threshold values (celsius or fahrenheit). Only applies to temperature-related sensors.';
+  'Temperature unit for threshold values (celsius or fahrenheit). Only applies to temperature sensors.';
