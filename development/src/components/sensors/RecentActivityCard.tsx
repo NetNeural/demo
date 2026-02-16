@@ -60,14 +60,16 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
 
       // Add sensor activities
       if (sensorActivity.data) {
-        combinedActivities.push(...sensorActivity.data.map(a => ({
-          id: a.id,
-          activity_type: a.activity_type,
-          description: a.description || a.activity_type.replace(/_/g, ' '),
-          severity: a.severity || 'info',
-          occurred_at: a.occurred_at,
-          sensor_type: a.sensor_type
-        })))
+        combinedActivities.push(...sensorActivity.data
+          .filter(a => a.occurred_at != null) // Filter out null timestamps
+          .map(a => ({
+            id: a.id,
+            activity_type: a.activity_type,
+            description: a.description || a.activity_type.replace(/_/g, ' '),
+            severity: a.severity || 'info',
+            occurred_at: a.occurred_at!,
+            sensor_type: a.sensor_type
+          })))
       }
 
       // Add alerts
