@@ -5,6 +5,20 @@
 
 export type OrganizationRole = 'owner' | 'admin' | 'member' | 'viewer';
 
+export interface OrganizationSettings {
+  branding?: {
+    logo_url?: string;
+    primary_color?: string;
+    secondary_color?: string;
+    accent_color?: string;
+  };
+  theme?: 'light' | 'dark' | 'auto';
+  display_name?: string;
+  timezone?: string;
+  date_format?: string;
+  [key: string]: unknown;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -12,7 +26,7 @@ export interface Organization {
   description?: string;
   subscription_tier?: string;
   is_active: boolean;
-  settings?: Record<string, unknown>;
+  settings?: OrganizationSettings;
   created_at: string;
   updated_at: string;
   owner_id?: string;
