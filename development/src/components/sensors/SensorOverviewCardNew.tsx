@@ -243,9 +243,12 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           )}
 
           {/* Last 5 Readings Section */}
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-sm font-medium mb-3">Last 5 Readings</h3>
-            {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
+          <div className="pt-4 mt-4">
+            <div className="flex items-center py-3 border-y">
+              <span className="text-sm font-medium">Last 5 Readings:</span>
+            </div>
+            <div className="pt-3 space-y-3">
+              {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
               const firstReading = readings[0]
               if (!firstReading) return null
               
@@ -279,6 +282,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                 </div>
               )
             })}
+            </div>
           </div>
         </div>
       </CardContent>
