@@ -64,14 +64,18 @@ const SENSOR_ICONS: Record<string, typeof Thermometer> = {
 }
 
 export function StatisticalSummaryCard({ device, telemetryReadings, temperatureUnit }: StatisticalSummaryCardProps) {
+  console.log('🌡️ [StatisticalSummaryCard] Rendering with temperatureUnit:', temperatureUnit)
+  
   // Helper to format values with units - memoized to ensure stable reference
   const formatValue = useCallback((value: number, sensorName: string): string => {
     const nameLower = sensorName.toLowerCase()
     if (nameLower.includes('temperature') || nameLower.includes('temp')) {
       if (temperatureUnit === 'fahrenheit') {
         const fahrenheit = (value * 9/5) + 32
+        console.log('🌡️ [formatValue] Converting to Fahrenheit:', value, '°C →', fahrenheit.toFixed(1), '°F')
         return `${fahrenheit.toFixed(1)}°F`
       }
+      console.log('🌡️ [formatValue] Keeping Celsius:', value, '°C')
       return `${value.toFixed(1)}°C`
     } else if (nameLower.includes('humidity')) {
       return `${value.toFixed(1)}%`
@@ -160,6 +164,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
 
   // Generate AI insights based on sensor data
   const aiInsights = useMemo<AIInsight[]>(() => {
+    console.log('🤖 [aiInsights] Recalculating insights with temperatureUnit:', temperatureUnit)
     const insights: AIInsight[] = []
 
     if (sensorAnalyses.length === 0) {
