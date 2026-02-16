@@ -10,6 +10,17 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
+import dynamic from 'next/dynamic'
+
+// Dynamically import the map component (client-side only)
+const LocationMap = dynamic(() => import('./LocationMap'), { 
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  )
+})
 
 interface LocationDetailsCardProps {
   device: Device
@@ -21,6 +32,8 @@ interface Location {
   address?: string | null
   city?: string | null
   state?: string | null
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
@@ -52,7 +65,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
       
       const { data, error } = await supabase
         .from('locations')
-        .select('id, name, address, city, state')
+        .select('id, name, address, city, state, latitude, longitude')
         .eq('organization_id', device.organization_id)
         .order('name')
       
@@ -220,6 +233,20 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
                 <p className="font-medium">{device.metadata.placement}</p>
+              </div>
+            )}
+
+            {/* Map display when location has coordinates */}
+            {selectedLocation?.latitude && selectedLocation?.longitude && (
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground mb-2">Map</p>
+                <LocationMap 
+                  latitude={selectedLocation.latitude}
+                  longitude={selectedLocation.longitude}
+                  locationName={selectedLocation.name}
+                  deviceName={device.name}
+                  installedAt={installedAt}
+                />
               </div>
             )}
           </>
