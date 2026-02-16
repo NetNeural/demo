@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { Resend } from 'npm:resend@2.0.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +20,16 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    // Create Supabase admin client for auth.users access
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
     
     const { alert_id, threshold_id, recipient_emails, recipient_user_ids } = await req.json() as EmailRequest
@@ -44,28 +55,31 @@ serve(async (req) => {
     }
 
     const device = alert.devices
-
-    // Collect all recipient emails
-    const allEmails: string[] = []
-
-    // Add manual emails
-    if (recipient_emails && recipient_emails.length > 0) {
-      allEmails.push(...recipient_emails)
-    }
-
-    // Fetch emails for user IDs
     if (recipient_user_ids && recipient_user_ids.length > 0) {
-      const usersResponse = await fetch(
-        `${supabaseUrl}/rest/v1/users?id=in.(${recipient_user_ids.join(',')})&select=email`,
-        {
-          headers: {
-            'apikey': supabaseServiceKey,
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-          },
-        }
-      )
-      const users = await usersResponse.json()
-      allEmails.push(...users.map((u: any) => u.email).filter(Boolean))
+      console.log(`[send-alert-email] Fetching emails for ${recipient_user_ids.length} user IDs:`, recipient_user_ids)
+      
+      // Use admin API to fetch user emails from auth.users
+      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
+      
+      if (authError) {
+        console.error('[send-alert-email] Error fetching auth users:', authError)
+      } else if (authUsers && authUsers.users) {
+        // Filter to only the requested user IDs
+        const requestedUsers = authUsers.users.filter(u => recipient_user_ids.includes(u.id))
+        const fetchedEmails = requestedUsers.map(u => u.email).filter(Boolean)
+        console.log(`[send-alert-email] Found ${fetchedEmails.length} emails from auth.users:`, fetchedEmails)
+        allEmails.push(...fetchedEmails as string[]
+          }
+        )
+        const users = await usersResponse2.json()
+        console.log('[send-alert-email] Fetched from users table:', users)
+        allEmails.push(...users.map((u: any) => u.email).filter(Boolean))
+      } else {
+        const result = await usersResponse.json()
+        console.log('[send-alert-email] Fetched from auth.users:', result)
+        const emails = Array.isArray(result) ? result.map((u: any) => u.email) : []
+        allEmails.push(...emails.filter(Boolean))
+      }
     }
 
     if (allEmails.length === 0) {
