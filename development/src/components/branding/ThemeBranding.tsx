@@ -19,8 +19,15 @@ export function ThemeBranding() {
     if (branding) {
       const root = document.documentElement;
 
+      // Apply primary color to all shade variants
       if (branding.primary_color) {
         root.style.setProperty('--color-primary', branding.primary_color);
+        
+        // Apply to commonly used shade variants (600, 700, 800 for gradients/hovers)
+        root.style.setProperty('--color-primary-600', branding.primary_color);
+        root.style.setProperty('--color-primary-700', adjustBrightness(branding.primary_color, -10));
+        root.style.setProperty('--color-primary-800', adjustBrightness(branding.primary_color, -20));
+        
         // Convert hex to RGB for opacity variants
         const rgb = hexToRgb(branding.primary_color);
         if (rgb) {
@@ -30,10 +37,12 @@ export function ThemeBranding() {
 
       if (branding.secondary_color) {
         root.style.setProperty('--color-secondary', branding.secondary_color);
+        root.style.setProperty('--color-secondary-600', branding.secondary_color);
       }
 
       if (branding.accent_color) {
         root.style.setProperty('--color-accent', branding.accent_color);
+        root.style.setProperty('--color-accent-600', branding.accent_color);
       }
 
       console.log('✅ Applied organization branding:', {
@@ -86,4 +95,23 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
         b: parseInt(result[3], 16),
       }
     : null;
+}
+
+/**
+ * Adjust color brightness (positive = lighter, negative = darker)
+ */
+function adjustBrightness(hex: string, percent: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const adjust = (value: number) => {
+    const adjusted = value + (value * percent / 100);
+    return Math.max(0, Math.min(255, Math.round(adjusted)));
+  };
+
+  const r = adjust(rgb.r);
+  const g = adjust(rgb.g);
+  const b = adjust(rgb.b);
+
+  return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
 }
