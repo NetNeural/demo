@@ -7,7 +7,6 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCardNew'
-import { SensorTrendCard } from '@/components/sensors/SensorTrendCard'
 import { LocationDetailsCard } from '@/components/sensors/LocationDetailsCard'
 import { DeviceHealthCard } from '@/components/sensors/DeviceHealthCard'
 import { RecentActivityCard } from '@/components/sensors/RecentActivityCard'
@@ -143,11 +142,10 @@ export default function SensorDetailsPage() {
 
       {/* Priority Cards */}
       <div className="grid gap-6 md:grid-cols-1">
-        {/* 1. Sensor Overview + 48H Graph (80% of value) */}
+        {/* 1. Sensor Overview */}
         <SensorOverviewCard device={device} telemetryReadings={telemetryReadings} />
-        <SensorTrendCard device={device} telemetryReadings={telemetryReadings} />
 
-        {/* 2. Historical Data Viewer (NEW) */}
+        {/* 2. Historical Data Viewer with Trend Chart */}
         <HistoricalDataViewer device={device} />
 
         {/* 3. Location + Health */}

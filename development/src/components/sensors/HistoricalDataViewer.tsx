@@ -4,10 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Download, Calendar } from 'lucide-react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import type { Device } from '@/types/sensor-details'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
 
 interface HistoricalDataViewerProps {
   device: Device
@@ -169,6 +179,65 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     URL.revokeObjectURL(url)
   }
 
+  // Process data for line chart
+  const chartData = useMemo(() => {
+    if (historicalData.length === 0) return []
+
+    // Sort data by timestamp ascending for proper line chart
+    const sortedData = [...historicalData].sort((a, b) => 
+      new Date(a.received_at).getTime() - new Date(b.received_at).getTime()
+    )
+
+    // Group readings by timestamp (combine multiple sensors at same time)
+    const groupedByTime = new Map<number, Record<string, number | string>>()
+    
+    sortedData.forEach(row => {
+      const timestamp = new Date(row.received_at).getTime()
+      const sensorType = row.telemetry?.type
+      const sensorLabel = SENSOR_LABELS[sensorType || 0] || 'Unknown'
+      let value = row.telemetry?.value || 0
+
+      // Apply temperature conversion if needed
+      if (sensorType === 1 && useFahrenheit) {
+        value = (value * 9/5) + 32
+      }
+
+      if (!groupedByTime.has(timestamp)) {
+        groupedByTime.set(timestamp, {
+          timestamp,
+          timeLabel: formatTimestamp(row.received_at)
+        })
+      }
+
+      const timeEntry = groupedByTime.get(timestamp)!
+      timeEntry[sensorLabel] = value
+    })
+
+    return Array.from(groupedByTime.values())
+  }, [historicalData, useFahrenheit])
+
+  // Get unique sensor types for the chart
+  const sensorTypes = useMemo(() => {
+    const types = new Set<string>()
+    historicalData.forEach(row => {
+      const sensorType = row.telemetry?.type
+      const label = SENSOR_LABELS[sensorType || 0]
+      if (label) types.add(label)
+    })
+    return Array.from(types)
+  }, [historicalData])
+
+  // Color palette for different sensors
+  const sensorColors: Record<string, string> = {
+    'Temperature': '#ef4444',
+    'Humidity': '#3b82f6',
+    'Pressure': '#10b981',
+    'CO₂': '#f59e0b',
+    'VOC': '#8b5cf6',
+    'Light': '#eab308',
+    'Motion': '#06b6d4'
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -225,6 +294,78 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                 <span className="font-medium">{selectedRange}</span>
               </div>
             </div>
+
+            {/* Trend Chart */}
+            {chartData.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/20">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis 
+                      dataKey="timestamp"
+                      type="number"
+                      domain={['auto', 'auto']}
+                      tickFormatter={(timestamp) => {
+                        const date = new Date(timestamp)
+                        
+                        // For 24H range, show time only
+                        if (selectedRange === '24H') {
+                          return date.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })
+                        }
+                        // For longer ranges, show date + time
+                        return date.toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit'
+                        })
+                      }}
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      domain={['auto', 'auto']}
+                      tick={{ fontSize: 12 }}
+                      width={60}
+                    />
+                    <Tooltip 
+                      labelFormatter={(timestamp) => {
+                        return new Date(timestamp as number).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      }}
+                      formatter={(value: number | string, name: string) => {
+                        const unit = name === 'Temperature' 
+                          ? (useFahrenheit ? '°F' : '°C')
+                          : UNIT_LABELS[historicalData.find(d => SENSOR_LABELS[d.telemetry?.type || 0] === name)?.telemetry?.units || 0] || ''
+                        return [typeof value === 'number' ? value.toFixed(1) : value, `${name} ${unit}`]
+                      }}
+                    />
+                    <Legend />
+                    {sensorTypes.map((sensorType) => (
+                      <Line
+                        key={sensorType}
+                        type="monotone"
+                        dataKey={sensorType}
+                        stroke={sensorColors[sensorType] || '#6b7280'}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                        name={sensorType}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
             {/* Data Table */}
             <div className="border rounded-lg overflow-hidden">
