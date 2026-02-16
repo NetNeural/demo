@@ -662,7 +662,7 @@ export function DevicesList() {
                   className="flex-1"
                   onClick={() => openDeviceDetailsPage(device.id)}
                 >
-                  View Details
+                  Details
                 </Button>
                 <Button 
                   variant="default" 
@@ -670,7 +670,7 @@ export function DevicesList() {
                   className="flex-1"
                   onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
                 >
-                  View Sensors
+                  Sensor Data
                 </Button>
               </div>
             </CardContent>
