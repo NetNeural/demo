@@ -123,6 +123,22 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const selectedLocation = locations.find(loc => loc.id === selectedLocationId)
   const displayLocationName = selectedLocation?.name || device.location || 'Not assigned'
 
+  // Debug logging for map display
+  useEffect(() => {
+    if (selectedLocation) {
+      console.log('🗺️ [LocationDetailsCard] Selected location:', {
+        name: selectedLocation.name,
+        hasLatitude: !!selectedLocation.latitude,
+        hasLongitude: !!selectedLocation.longitude,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        willShowMap: !!(selectedLocation.latitude && selectedLocation.longitude)
+      })
+    } else if (selectedLocationId) {
+      console.log('⚠️ [LocationDetailsCard] Location ID set but not found:', selectedLocationId)
+    }
+  }, [selectedLocation, selectedLocationId])
+
   return (
     <Card>
       <CardHeader>
@@ -261,6 +277,19 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                   deviceName={device.name}
                   installedAt={installedAt}
                 />
+              </div>
+            )}
+            
+            {/* Message when location exists but has no coordinates */}
+            {selectedLocation && !selectedLocation.latitude && !selectedLocation.longitude && (
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  📍 <strong>Map Not Available</strong>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add GPS coordinates (latitude/longitude) to this location to display the map. 
+                  Edit the location in <strong>Organizations → Locations</strong> tab.
+                </p>
               </div>
             )}
           </>
