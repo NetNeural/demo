@@ -29,8 +29,14 @@ interface Activity {
 export function RecentActivityCard({ device }: RecentActivityCardProps) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [isCleared, setIsCleared] = useState(false)
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (skipIfCleared = true) => {
+    // If user has cleared activities and this is an auto-refresh, don't fetch
+    if (skipIfCleared && isCleared) {
+      return
+    }
+
     try {
       setLoading(true)
       const supabase = createClient()
@@ -247,19 +253,22 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
   }
 
   useEffect(() => {
-    fetchActivities()
+    // Initial fetch
+    fetchActivities(false)
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchActivities, 30000)
+    // Auto-refresh every 30 seconds (will skip if cleared)
+    const interval = setInterval(() => fetchActivities(true), 30000)
     return () => clearInterval(interval)
   }, [device.id])
 
   const handleClear = () => {
     setActivities([])
+    setIsCleared(true)
   }
 
-  const handleReset = () => {
-    fetchActivities()
+  const handleRefresh = () => {
+    setIsCleared(false)
+    fetchActivities(false)
   }
 
   const formatTime = (timestamp: string) => {
@@ -314,12 +323,12 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReset}
+              onClick={handleRefresh}
               disabled={loading}
               className="h-8"
             >
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-              Reset
+              Refresh
             </Button>
             <Button
               variant="outline"
