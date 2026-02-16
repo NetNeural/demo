@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
+import { ThemeBranding } from '@/components/branding/ThemeBranding'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
@@ -20,14 +21,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="dashboard-container">
-      <nav className="nav-sidebar">
-        <div className="nav-header">
-          <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
-        </div>
-        
-        {/* Organization Switcher */}
-        <div className="px-4 py-3 border-b border-gray-200">
+    <>
+      <ThemeBranding />
+      <div className="dashboard-container">
+        <nav className="nav-sidebar">
+          <div className="nav-header">
+            <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
+          </div>
+          
+          {/* Organization Switcher */}
+          <div className="px-4 py-3 border-b border-gray-200">
           <OrganizationSwitcherCompact />
         </div>
         
@@ -87,6 +90,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         {children}
       </main>
     </div>
+    </>
   )
 }
 

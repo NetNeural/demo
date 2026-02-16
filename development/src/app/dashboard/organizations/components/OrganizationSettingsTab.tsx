@@ -190,9 +190,29 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       setLogoUrl(publicUrl);
       toast.success(`Logo uploaded! (${(compressedBlob.size / 1024).toFixed(0)}KB) Click "Save Changes" to apply.`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading logo:', error);
-      toast.error('Failed to upload logo');
+      
+      // Provide specific error messages
+      let errorMessage = 'Failed to upload logo';
+      
+      if (error?.message?.includes('row-level security')) {
+        errorMessage = 'Permission denied. Please ensure you are an organization owner and storage policies are applied.';
+      } else if (error?.message?.includes('exceed')) {
+        errorMessage = 'File too large. Maximum size is 512KB after compression.';
+      } else if (error?.message) {
+        errorMessage = `Upload failed: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
+      
+      // Log detailed error for debugging
+      console.error('Upload error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        error: error
+      });
     } finally {
       setIsUploadingLogo(false);
     }
