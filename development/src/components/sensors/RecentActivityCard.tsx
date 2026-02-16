@@ -1,6 +1,7 @@
 'use client'
 
 // Recent Activity Card - displays sensor activity, alerts, and telemetry updates
+// Last updated: 2026-02-16T11:05:00Z - Force cache clear
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Clock } from 'lucide-react'

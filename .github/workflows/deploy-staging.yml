@@ -108,7 +108,9 @@ jobs:
           rm -rf .next
           rm -rf out
           rm -rf node_modules/.cache
-          echo "✅ Build cache cleared"
+          rm -rf .turbo
+          rm -rf .swc
+          echo "✅ Build cache cleared completely"
 
       - name: ✅ Verify environment
         env:
