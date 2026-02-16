@@ -14,6 +14,9 @@ export interface LocationsAPI {
     city?: string
     state?: string
     country?: string
+    postal_code?: string
+    latitude?: number | null
+    longitude?: number | null
   }) => Promise<EdgeFunctionResponse<unknown>>
   update: (locationId: string, data: {
     name?: string
@@ -22,6 +25,9 @@ export interface LocationsAPI {
     city?: string
     state?: string
     country?: string
+    postal_code?: string
+    latitude?: number | null
+    longitude?: number | null
   }) => Promise<EdgeFunctionResponse<unknown>>
   delete: (locationId: string) => Promise<EdgeFunctionResponse<unknown>>
 }
@@ -49,8 +55,9 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
      * Update an existing location
      */
     update: (locationId, data) =>
-      call(`locations/${locationId}`, {
+      call('locations', {
         method: 'PATCH',
+        params: { id: locationId },
         body: data,
       }),
     
@@ -58,8 +65,9 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
      * Delete a location
      */
     delete: (locationId) =>
-      call(`locations/${locationId}`, {
+      call('locations', {
         method: 'DELETE',
+        params: { id: locationId },
       }),
   }
 }
