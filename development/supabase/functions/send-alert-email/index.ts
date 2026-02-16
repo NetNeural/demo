@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { Resend } from 'npm:resend@2.0.0'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,21 +15,16 @@ interface EmailRequest {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
+    const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    // Create Supabase admin client for auth.users access
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
     
     const { alert_id, threshold_id, recipient_emails, recipient_user_ids } = await req.json() as EmailRequest
 
@@ -64,21 +58,31 @@ serve(async (req) => {
       allEmails.push(...recipient_emails)
     }
 
-    // Fetch emails for user IDs from auth.users
+    // Fetch emails for user IDs from auth.users using RPC
     if (recipient_user_ids && recipient_user_ids.length > 0) {
       console.log(`[send-alert-email] Fetching emails for ${recipient_user_ids.length} user IDs:`, recipient_user_ids)
       
-      // Use admin API to fetch user emails from auth.users
-      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
+      const emailsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/rpc/get_user_emails`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseServiceKey,
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_ids: recipient_user_ids }),
+        }
+      )
       
-      if (authError) {
-        console.error('[send-alert-email] Error fetching auth users:', authError)
-      } else if (authUsers && authUsers.users) {
-        // Filter to only the requested user IDs
-        const requestedUsers = authUsers.users.filter(u => recipient_user_ids.includes(u.id))
-        const fetchedEmails = requestedUsers.map(u => u.email).filter(Boolean)
+      if (emailsResponse.ok) {
+        const emailRecords = await emailsResponse.json()
+        const fetchedEmails = emailRecords.map((r: any) => r.email).filter(Boolean)
         console.log(`[send-alert-email] Found ${fetchedEmails.length} emails from auth.users:`, fetchedEmails)
-        allEmails.push(...fetchedEmails as string[])
+        allEmails.push(...fetchedEmails)
+      } else {
+        const errorText = await emailsResponse.text()
+        console.error(`[send-alert-email] Error fetching user emails: ${emailsResponse.status} ${emailsResponse.statusText}`, errorText)
       }
     }
 
