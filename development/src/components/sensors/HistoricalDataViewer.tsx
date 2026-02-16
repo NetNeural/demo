@@ -1,5 +1,7 @@
 'use client'
 
+// Updated: 2026-02-16 - Added gradient fills to chart visualization
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
