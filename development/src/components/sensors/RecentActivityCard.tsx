@@ -61,7 +61,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         // Get temperature unit preferences from thresholds
         supabase
           .from('sensor_thresholds')
-          .select('sensor_type_id, temperature_unit')
+          .select('sensor_type, temperature_unit')
           .eq('device_id', device.id)
       ])
 
@@ -100,21 +100,21 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
       // Add telemetry data received events with sensor readings
       if (telemetry.data) {
         // Build temperature unit map from thresholds
-        const temperatureUnitMap = new Map<number, string>()
+        const temperatureUnitMap = new Map<string, string>()
         if (thresholds.data) {
-          thresholds.data.forEach(t => {
-            if (t.temperature_unit) {
-              temperatureUnitMap.set(t.sensor_type_id, t.temperature_unit)
+          thresholds.data.forEach((t: any) => {
+            if (t.temperature_unit && t.sensor_type) {
+              temperatureUnitMap.set(t.sensor_type.toLowerCase(), t.temperature_unit)
             }
           })
         }
 
         // Helper to format sensor value with units
-        const formatSensorValue = (sensorName: string, value: number, sensorTypeId?: number): { value: number, unit: string } => {
+        const formatSensorValue = (sensorName: string, value: number): { value: number, unit: string } => {
           const nameLower = sensorName.toLowerCase()
           
           if (nameLower.includes('temperature') || nameLower.includes('temp')) {
-            const unit = sensorTypeId ? temperatureUnitMap.get(sensorTypeId) || 'celsius' : 'celsius'
+            const unit = temperatureUnitMap.get('temperature') || 'celsius'
             if (unit === 'fahrenheit') {
               return { value: (value * 9/5) + 32, unit: '°F' }
             }
