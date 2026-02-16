@@ -350,7 +350,7 @@ export default createEdgeFunction(async ({ req }) => {
 
       const body = await req.json()
       console.log('Update payload:', body)
-      const { name, description, subscriptionTier, isActive } = body
+      const { name, description, subscriptionTier, isActive, settings } = body
 
       // Build update object
       const updates: Record<string, unknown> = {}
@@ -358,6 +358,7 @@ export default createEdgeFunction(async ({ req }) => {
       if (description !== undefined) updates.description = description?.trim() || null
       if (subscriptionTier !== undefined) updates.subscription_tier = subscriptionTier
       if (isActive !== undefined) updates.is_active = isActive
+      if (settings !== undefined) updates.settings = settings
 
       console.log('Applying updates:', updates)
 

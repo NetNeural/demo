@@ -3,6 +3,7 @@
  */
 
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
+import type { OrganizationSettings } from '@/types/organization'
 
 export interface OrganizationsAPI {
   list: () => Promise<EdgeFunctionResponse<{ organizations: unknown[]; isSuperAdmin: boolean }>>
@@ -18,6 +19,7 @@ export interface OrganizationsAPI {
     description?: string
     subscriptionTier?: 'free' | 'starter' | 'professional' | 'enterprise'
     isActive?: boolean
+    settings?: OrganizationSettings
   }) => Promise<EdgeFunctionResponse<unknown>>
   delete: (organizationId: string) => Promise<EdgeFunctionResponse<unknown>>
 }
