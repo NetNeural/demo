@@ -4,8 +4,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { Brain, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Thermometer, Droplets, Wind, Battery } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import type { Device } from '@/types/sensor-details'
 
 interface TelemetryReading {
@@ -62,6 +63,45 @@ const SENSOR_ICONS: Record<string, typeof Thermometer> = {
 }
 
 export function StatisticalSummaryCard({ device, telemetryReadings }: StatisticalSummaryCardProps) {
+  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
+
+  // Fetch temperature unit preference from thresholds
+  useEffect(() => {
+    const fetchTemperatureUnit = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('sensor_thresholds')
+        .select('temperature_unit')
+        .eq('device_id', device.id)
+        .limit(1)
+        .single()
+      
+      if (data?.temperature_unit) {
+        setTemperatureUnit(data.temperature_unit as 'celsius' | 'fahrenheit')
+      }
+    }
+    fetchTemperatureUnit()
+  }, [device.id])
+
+  // Helper to format values with units
+  const formatValue = (value: number, sensorName: string): string => {
+    const nameLower = sensorName.toLowerCase()
+    if (nameLower.includes('temperature') || nameLower.includes('temp')) {
+      if (temperatureUnit === 'fahrenheit') {
+        const fahrenheit = (value * 9/5) + 32
+        return `${fahrenheit.toFixed(1)}°F`
+      }
+      return `${value.toFixed(1)}°C`
+    } else if (nameLower.includes('humidity')) {
+      return `${value.toFixed(1)}%`
+    } else if (nameLower.includes('battery')) {
+      return `${value.toFixed(0)}%`
+    } else if (nameLower.includes('pressure')) {
+      return `${value.toFixed(1)} hPa`
+    }
+    return value.toFixed(1)
+  }
+
   // Analyze each sensor type separately
   const sensorAnalyses = useMemo<SensorAnalysis[]>(() => {
     if (telemetryReadings.length === 0) return []
@@ -163,7 +203,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'warning',
             icon: TrendingDown,
             title: 'Temperature Dropping',
-            message: `Temperature has dropped ${sensor.trendPercent.toFixed(1)}% recently. Condenser or cooling system may be failing. Current: ${sensor.lastValue.toFixed(1)}°C`,
+            message: `Temperature has dropped ${sensor.trendPercent.toFixed(1)}% recently. Condenser or cooling system may be failing. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
           })
           hasWarning = true
         } else if (sensor.trend === 'rising' && sensor.trendPercent > 10) {
@@ -171,7 +211,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'warning',
             icon: TrendingUp,
             title: 'Temperature Rising',
-            message: `Temperature has increased ${sensor.trendPercent.toFixed(1)}% recently. Check HVAC system or cooling. Current: ${sensor.lastValue.toFixed(1)}°C`,
+            message: `Temperature has increased ${sensor.trendPercent.toFixed(1)}% recently. Check HVAC system or cooling. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
           })
           hasWarning = true
         } else if (sensor.lastValue > 35) {
@@ -179,7 +219,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'critical',
             icon: AlertCircle,
             title: 'High Temperature Alert',
-            message: `Temperature at ${sensor.lastValue.toFixed(1)}°C is critically high. Immediate cooling required.`,
+            message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically high. Immediate cooling required.`,
           })
           hasCritical = true
         } else if (sensor.lastValue < 5) {
@@ -187,7 +227,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'critical',
             icon: AlertCircle,
             title: 'Low Temperature Alert',
-            message: `Temperature at ${sensor.lastValue.toFixed(1)}°C is critically low. Check heating system.`,
+            message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically low. Check heating system.`,
           })
           hasCritical = true
         }
@@ -276,7 +316,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
     })
 
     return insights
-  }, [sensorAnalyses])
+  }, [sensorAnalyses, temperatureUnit])
 
   const getTrendIcon = (trend: 'rising' | 'falling' | 'stable') => {
     if (trend === 'rising') return <TrendingUp className="h-4 w-4 text-orange-500" />
@@ -330,15 +370,15 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
                       <p className="text-muted-foreground">Avg</p>
-                      <p className="font-semibold">{sensor.avg.toFixed(1)}</p>
+                      <p className="font-semibold">{formatValue(sensor.avg, sensor.sensorName)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Min</p>
-                      <p className="font-semibold">{sensor.min.toFixed(1)}</p>
+                      <p className="font-semibold">{formatValue(sensor.min, sensor.sensorName)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Max</p>
-                      <p className="font-semibold">{sensor.max.toFixed(1)}</p>
+                      <p className="font-semibold">{formatValue(sensor.max, sensor.sensorName)}</p>
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
