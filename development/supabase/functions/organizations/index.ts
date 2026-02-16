@@ -307,6 +307,11 @@ export default createEdgeFunction(async ({ req }) => {
       const pathParts = url.pathname.split('/')
       const orgId = pathParts[pathParts.length - 1]
 
+      console.log('=== PATCH /organizations/:id - Update organization ===')
+      console.log('Organization ID:', orgId)
+      console.log('User ID:', userContext.userId)
+      console.log('Is Super Admin:', userContext.isSuperAdmin)
+
       if (!orgId || orgId === 'organizations') {
         throw new Error('Organization ID is required')
       }
@@ -315,6 +320,7 @@ export default createEdgeFunction(async ({ req }) => {
       // Super admins can update any organization
       // Organization owners can update their own organization
       if (!userContext.isSuperAdmin) {
+        console.log('Checking user membership...')
         // Check if user is owner of this organization
         // Use maybeSingle() to handle cases where membership might not exist
         // @ts-expect-error - role exists
@@ -325,17 +331,24 @@ export default createEdgeFunction(async ({ req }) => {
           .eq('user_id', userContext.userId)
           .maybeSingle()
 
+        console.log('Membership result:', { membership, error: membershipError })
+
         if (membershipError) {
+          console.error('Membership check error:', membershipError)
           throw new DatabaseError(`Failed to verify membership: ${membershipError.message}`, 500)
         }
 
         // @ts-expect-error - role exists
         if (!membership || membership.role !== 'owner') {
+          console.error('Permission denied - not owner:', { membership })
           throw new DatabaseError('You do not have permission to update this organization', 403)
         }
+        
+        console.log('Permission granted - user is owner')
       }
 
       const body = await req.json()
+      console.log('Update payload:', body)
       const { name, description, subscriptionTier, isActive } = body
 
       // Build update object
@@ -344,6 +357,8 @@ export default createEdgeFunction(async ({ req }) => {
       if (description !== undefined) updates.description = description?.trim() || null
       if (subscriptionTier !== undefined) updates.subscription_tier = subscriptionTier
       if (isActive !== undefined) updates.is_active = isActive
+
+      console.log('Applying updates:', updates)
 
       // Update organization - use admin client to bypass RLS
       // @ts-expect-error - Dynamic update object
@@ -358,6 +373,8 @@ export default createEdgeFunction(async ({ req }) => {
         console.error('Failed to update organization:', updateError)
         throw new DatabaseError(`Failed to update organization: ${updateError.message}`)
       }
+
+      console.log('Update successful!', updated)
 
       // @ts-expect-error - Properties exist
       return createSuccessResponse({
