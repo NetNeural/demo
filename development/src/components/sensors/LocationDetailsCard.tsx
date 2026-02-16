@@ -180,14 +180,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                 </div>
               ) : (
                 <Select
-                  value={selectedLocationId}
-                  onValueChange={setSelectedLocationId}
+                  value={selectedLocationId || 'none'}
+                  onValueChange={(value) => setSelectedLocationId(value === 'none' ? '' : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No location</SelectItem>
+                    <SelectItem value="none">No location</SelectItem>
                     {locations.map((location) => (
                       <SelectItem key={location.id} value={location.id}>
                         {location.name}
