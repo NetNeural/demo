@@ -226,8 +226,9 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             <span className="text-sm font-medium">All-Time Readings:</span>
             <div className="grid grid-cols-1 gap-3">
               {Object.entries(sensorMinMax).map(([sensorKey, stats]) => {
+                const typeId = sensorKey.startsWith('type_') ? sensorKey.split('_')[1] : undefined
                 const SensorIcon = getSensorIcon(
-                  sensorKey.startsWith('type_') ? parseInt(sensorKey.split('_')[1]) : undefined
+                  typeId ? parseInt(typeId) : undefined
                 )
                 
                 // Convert temperature if needed
