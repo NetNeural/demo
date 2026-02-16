@@ -1,40 +1,228 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 
 interface LocationDetailsCardProps {
   device: Device
 }
 
+interface Location {
+  id: string
+  name: string
+  address?: string | null
+  city?: string | null
+  state?: string | null
+}
+
 export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loadingLocations, setLoadingLocations] = useState(false)
+  
+  // Form state
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(device.location_id || '')
+  const [installedAt, setInstalledAt] = useState<string>(device.metadata?.installed_at || '')
+
+  // Fetch locations when entering edit mode
+  useEffect(() => {
+    if (isEditing && locations.length === 0) {
+      fetchLocations()
+    }
+  }, [isEditing])
+
+  const fetchLocations = async () => {
+    if (!device.organization_id) {
+      toast.error('Organization ID not found')
+      return
+    }
+
+    try {
+      setLoadingLocations(true)
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('locations')
+        .select('id, name, address, city, state')
+        .eq('organization_id', device.organization_id)
+        .order('name')
+      
+      if (error) throw error
+      setLocations(data || [])
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+      toast.error('Failed to load locations')
+    } finally {
+      setLoadingLocations(false)
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      const supabase = createClient()
+
+      // Update device with new location and metadata
+      const { error } = await supabase
+        .from('devices')
+        .update({
+          location_id: selectedLocationId || null,
+          metadata: {
+            ...device.metadata,
+            installed_at: installedAt || null,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', device.id)
+
+      if (error) throw error
+
+      toast.success('Location details updated successfully')
+
+      setIsEditing(false)
+      
+      // Reload page to show updated data
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating location:', error)
+      toast.error('Failed to update location details')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setSelectedLocationId(device.location_id || '')
+    setInstalledAt(device.metadata?.installed_at || '')
+    setIsEditing(false)
+  }
+
+  // Get selected location display name
+  const selectedLocation = locations.find(loc => loc.id === selectedLocationId)
+  const displayLocationName = selectedLocation?.name || device.location || 'Not assigned'
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          📍 Location Details
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div>
-          <p className="text-sm text-muted-foreground">Location</p>
-          <p className="font-medium">{device.location || 'Not assigned'}</p>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            📍 Location Details
+          </CardTitle>
+          {!isEditing ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit2 className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-1" />
+                )}
+                Save
+              </Button>
+            </div>
+          )}
         </div>
-        {device.metadata?.placement && (
-          <div>
-            <p className="text-sm text-muted-foreground">Placement</p>
-            <p className="font-medium">{device.metadata.placement}</p>
-          </div>
-        )}
-        {device.metadata?.installed_at && (
-          <div>
-            <p className="text-sm text-muted-foreground">Installation Date</p>
-            <p className="font-medium">
-              {new Date(device.metadata.installed_at).toLocaleDateString()}
-            </p>
-          </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isEditing ? (
+          <>
+            {/* Location Selector */}
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              {loadingLocations ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading locations...
+                </div>
+              ) : (
+                <Select
+                  value={selectedLocationId}
+                  onValueChange={setSelectedLocationId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No location</SelectItem>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                        {location.city && ` - ${location.city}, ${location.state}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Select the facility or building location
+              </p>
+            </div>
+
+            {/* Installed At Input */}
+            <div className="space-y-2">
+              <Label htmlFor="installed_at">Installed At</Label>
+              <Input
+                id="installed_at"
+                value={installedAt}
+                onChange={(e) => setInstalledAt(e.target.value)}
+                placeholder="e.g., Walk-in cooler, Bean room, Bathroom A"
+              />
+              <p className="text-xs text-muted-foreground">
+                Specific room or area where the device is installed
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Display Mode */}
+            <div>
+              <p className="text-sm text-muted-foreground">Location</p>
+              <p className="font-medium">{displayLocationName}</p>
+            </div>
+            {installedAt && (
+              <div>
+                <p className="text-sm text-muted-foreground">Installed At</p>
+                <p className="font-medium">{installedAt}</p>
+              </div>
+            )}
+            {device.metadata?.placement && (
+              <div>
+                <p className="text-sm text-muted-foreground">Placement</p>
+                <p className="font-medium">{device.metadata.placement}</p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

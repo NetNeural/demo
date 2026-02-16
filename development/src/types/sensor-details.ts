@@ -85,6 +85,7 @@ export interface Device {
   external_device_id?: string
   status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
   location?: string
+  location_id?: string
   firmware_version?: string
   battery_level?: number
   signal_strength?: number
