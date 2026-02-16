@@ -242,41 +242,44 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             </div>
           )}
 
-          {/* Last 5 Telemetry Readings per Sensor Type */}
-          {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
-            const firstReading = readings[0]
-            if (!firstReading) return null
-            
-            const sensorType = firstReading.telemetry.type
-            const sensorLabel = sensorType ? SENSOR_LABELS[sensorType] : 'Reading'
-            const Icon = getSensorIcon(sensorType)
-            
-            return (
-              <div key={sensorKey} className="space-y-1">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Icon className="h-3 w-3" />
-                  <span>{sensorLabel}</span>
+          {/* Last 5 Readings Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-medium mb-3">Last 5 Readings</h3>
+            {Object.entries(latestBySensor).map(([sensorKey, readings]) => {
+              const firstReading = readings[0]
+              if (!firstReading) return null
+              
+              const sensorType = firstReading.telemetry.type
+              const sensorLabel = sensorType ? SENSOR_LABELS[sensorType] : 'Reading'
+              const Icon = getSensorIcon(sensorType)
+              
+              return (
+                <div key={sensorKey} className="mb-3 last:mb-0">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1.5">
+                    <Icon className="h-3 w-3" />
+                    <span>{sensorLabel}</span>
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    {readings.map((reading, idx) => {
+                      const value = reading.telemetry?.value
+                      if (value == null) return null
+                      
+                      return (
+                        <div key={idx} className="flex flex-col">
+                          <span className="text-sm font-medium">
+                            {formatSensorValue(reading)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatTimeAgo(reading.received_at)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-col space-y-0.5">
-                  {readings.map((reading, idx) => {
-                    const value = reading.telemetry?.value
-                    if (value == null) return null
-                    
-                    return (
-                      <div key={idx} className="flex items-baseline justify-between">
-                        <p className={idx === 0 ? "text-lg font-semibold" : "text-sm"}>
-                          {formatSensorValue(reading)}
-                        </p>
-                        <p className="text-xs text-muted-foreground ml-2">
-                          {formatTimeAgo(reading.received_at)}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </CardContent>
     </Card>
