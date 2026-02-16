@@ -75,24 +75,30 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
 
       // Add alerts
       if (alerts.data) {
-        combinedActivities.push(...alerts.data.map(a => ({
-          id: a.id,
-          activity_type: a.is_resolved ? 'alert_resolved' : 'alert_created',
-          description: a.title,
-          severity: a.severity,
-          occurred_at: a.created_at,
-        })))
+        const validAlerts = alerts.data
+          .filter((a): a is typeof a & { created_at: string } => a.created_at != null)
+          .map(a => ({
+            id: a.id,
+            activity_type: a.is_resolved ? 'alert_resolved' : 'alert_created',
+            description: a.title,
+            severity: a.severity,
+            occurred_at: a.created_at,
+          }))
+        combinedActivities.push(...validAlerts)
       }
 
       // Add telemetry data received events
       if (telemetry.data) {
-        combinedActivities.push(...telemetry.data.map((t, idx) => ({
-          id: `telemetry-${t.id}-${idx}`,
-          activity_type: 'data_received',
-          description: 'Telemetry data received',
-          severity: 'info',
-          occurred_at: t.received_at,
-        })))
+        const validTelemetry = telemetry.data
+          .filter((t): t is typeof t & { received_at: string } => t.received_at != null)
+          .map((t, idx) => ({
+            id: `telemetry-${t.id}-${idx}`,
+            activity_type: 'data_received',
+            description: 'Telemetry data received',
+            severity: 'info',
+            occurred_at: t.received_at,
+          }))
+        combinedActivities.push(...validTelemetry)
       }
 
       // Sort by timestamp (newest first) and limit to 15
