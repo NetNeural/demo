@@ -1,6 +1,6 @@
 'use client'
 
-// Statistical AI Summary - Intelligent analysis of sensor telemetry data - Cache bust v2
+// Statistical AI Summary - Intelligent analysis with instant temperature unit sync
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -23,6 +23,7 @@ interface TelemetryReading {
 interface StatisticalSummaryCardProps {
   device: Device
   telemetryReadings: TelemetryReading[]
+  temperatureUnit: 'celsius' | 'fahrenheit'
 }
 
 interface SensorAnalysis {
@@ -62,71 +63,11 @@ const SENSOR_ICONS: Record<string, typeof Thermometer> = {
   battery: Battery,
 }
 
-export function StatisticalSummaryCard({ device, telemetryReadings }: StatisticalSummaryCardProps) {
-  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  // Fetch temperature unit preference from thresholds
-  useEffect(() => {
-    const fetchTemperatureUnit = async () => {
-      const supabase = createClient()
-      // Query for all thresholds for this device to find temperature unit
-      const result = await supabase
-        .from('sensor_thresholds')
-        .select('temperature_unit, sensor_type')
-        .eq('device_id', device.id)
-      
-      // Type assertion for temperature_unit column (not yet in generated types)
-      const thresholds = result.data as Array<{ temperature_unit?: string; sensor_type?: string }> | null
-      
-      console.log('📊 All thresholds for device:', { 
-        deviceId: device.id, 
-        thresholds,
-        error: result.error
-      })
-      
-      // Find first threshold with a temperature_unit set
-      const thresholdWithUnit = thresholds?.find(t => t.temperature_unit != null)
-      
-      if (thresholdWithUnit?.temperature_unit) {
-        setTemperatureUnit(thresholdWithUnit.temperature_unit as 'celsius' | 'fahrenheit')
-        console.log('✅ Temperature unit set to:', thresholdWithUnit.temperature_unit)
-      } else {
-        console.log('⚠️ No temperature unit found in any threshold, defaulting to celsius')
-      }
-    }
-    fetchTemperatureUnit()
-    
-    // Set up real-time subscription to sensor_thresholds changes
-    const supabase = createClient()
-    const channel = supabase
-      .channel('threshold_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sensor_thresholds',
-          filter: `device_id=eq.${device.id}`
-        },
-        (payload) => {
-          console.log('🔄 Threshold changed, refetching temperature unit:', payload)
-          // Re-fetch temperature unit when thresholds change
-          fetchTemperatureUnit()
-        }
-      )
-      .subscribe()
-    
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [device.id, refreshKey])
-
+export function StatisticalSummaryCard({ device, telemetryReadings, temperatureUnit }: StatisticalSummaryCardProps) {
   // Helper to format values with units - memoized to ensure stable reference
   const formatValue = useCallback((value: number, sensorName: string): string => {
     const nameLower = sensorName.toLowerCase()
     if (nameLower.includes('temperature') || nameLower.includes('temp')) {
-      console.log('🌡️ Formatting temperature:', { value, sensorName, unit: temperatureUnit })
       if (temperatureUnit === 'fahrenheit') {
         const fahrenheit = (value * 9/5) + 32
         return `${fahrenheit.toFixed(1)}°F`

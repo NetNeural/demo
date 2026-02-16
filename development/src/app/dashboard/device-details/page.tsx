@@ -32,6 +32,7 @@ export default function SensorDetailsPage() {
   const [device, setDevice] = useState<Device | null>(null)
   const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
 
   const fetchDeviceData = useCallback(async () => {
     if (!currentOrganization || !deviceId) return
@@ -81,6 +82,18 @@ export default function SensorDetailsPage() {
 
       if (telemetryError) throw telemetryError
       setTelemetryReadings((telemetryData as TelemetryReading[]) || [])
+
+      // Fetch temperature unit preference from any threshold
+      const { data: thresholds } = await supabase
+        .from('sensor_thresholds')
+        .select('temperature_unit')
+        .eq('device_id', deviceId)
+        .limit(1)
+      
+      const thresholdsTyped = thresholds as Array<{ temperature_unit?: string }> | null
+      if (thresholdsTyped && thresholdsTyped.length > 0 && thresholdsTyped[0].temperature_unit) {
+        setTemperatureUnit(thresholdsTyped[0].temperature_unit as 'celsius' | 'fahrenheit')
+      }
 
     } catch (err) {
       console.error('[SensorDetails] Error:', err)
@@ -157,12 +170,20 @@ export default function SensorDetailsPage() {
 
         {/* 4. Alerts + Activity */}
         <div className="grid gap-6 md:grid-cols-2">
-          <AlertsThresholdsCard device={device} />
+          <AlertsThresholdsCard 
+            device={device} 
+            temperatureUnit={temperatureUnit}
+            onTemperatureUnitChange={setTemperatureUnit}
+          />
           <RecentActivityCard device={device} />
         </div>
 
         {/* 5. Statistics */}
-        <StatisticalSummaryCard device={device} telemetryReadings={telemetryReadings} />
+        <StatisticalSummaryCard 
+          device={device} 
+          telemetryReadings={telemetryReadings}
+          temperatureUnit={temperatureUnit}
+        />
       </div>
     </div>
   )

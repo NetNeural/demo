@@ -88,13 +88,12 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
 
       // Add sensor activities
       if (sensorActivity.data) {
-        const tagId = device.external_device_id || device.serial_number || device.id.substring(0, 8)
         const validActivities = sensorActivity.data
           .filter((a): a is typeof a & { occurred_at: string } => a.occurred_at != null)
           .map(a => ({
             id: a.id,
             activity_type: a.activity_type,
-            description: `${a.description || a.activity_type.replace(/_/g, ' ')} [${tagId}]`,
+            description: a.description || a.activity_type.replace(/_/g, ' '),
             severity: a.severity || 'info',
             occurred_at: a.occurred_at,
             sensor_type: a.sensor_type
@@ -104,13 +103,12 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
 
       // Add alerts
       if (alerts.data) {
-        const tagId = device.external_device_id || device.serial_number || device.id.substring(0, 8)
         const validAlerts = alerts.data
           .filter((a): a is typeof a & { created_at: string } => a.created_at != null)
           .map(a => ({
             id: a.id,
             activity_type: a.is_resolved ? 'alert_resolved' : 'alert_created',
-            description: `${a.title} [${tagId}]`,
+            description: a.title,
             severity: a.severity,
             occurred_at: a.created_at,
           }))
@@ -119,7 +117,6 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
 
       // Add notifications sent for alerts
       if (notifications.data) {
-        const tagId = device.external_device_id || device.serial_number || device.id.substring(0, 8)
         const validNotifications = notifications.data
           .filter((n): n is typeof n & { sent_at: string } => n.sent_at != null)
           .map(n => {
@@ -136,7 +133,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
             return {
               id: `notification-${n.id}`,
               activity_type: 'notification_sent',
-              description: `${methodEmoji} ${n.method.toUpperCase()} notification ${statusText}: ${alertTitle} [${tagId}]`,
+              description: `${methodEmoji} ${n.method.toUpperCase()} notification ${statusText}: ${alertTitle}`,
               severity: 'info',
               occurred_at: n.sent_at,
             }
@@ -177,7 +174,6 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           return { value, unit: '' }
         }
 
-        const tagId = device.external_device_id || device.serial_number || device.id.substring(0, 8)
         const validTelemetry = telemetry.data
           .filter((t): t is typeof t & { received_at: string } => t.received_at != null)
           .flatMap((t, idx) => {
@@ -213,7 +209,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
                   readings.push({
                     id: `telemetry-${t.id}-${key}-${idx}`,
                     activity_type: 'data_received',
-                    description: `${key.replace(/_/g, ' ')} reading received [${tagId}]`,
+                    description: `${key.replace(/_/g, ' ')} reading received`,
                     severity: 'info',
                     occurred_at: t.received_at,
                     sensor_name: key.replace(/_/g, ' '),

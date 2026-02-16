@@ -42,6 +42,8 @@ import { createClient } from '@/lib/supabase/client'
 
 interface AlertsThresholdsCardProps {
   device: Device
+  temperatureUnit: 'celsius' | 'fahrenheit'
+  onTemperatureUnitChange: (unit: 'celsius' | 'fahrenheit') => void
 }
 
 interface OrganizationMember {
@@ -51,7 +53,7 @@ interface OrganizationMember {
   role: string
 }
 
-export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
+export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUnitChange }: AlertsThresholdsCardProps) {
   const { toast } = useToast()
   const [thresholds, setThresholds] = useState<SensorThreshold[]>([])
   const [members, setMembers] = useState<OrganizationMember[]>([])
@@ -140,7 +142,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       alert_enabled: threshold.alert_enabled,
       alert_severity: threshold.alert_severity,
       alert_message: threshold.alert_message || '',
-      temperature_unit: (threshold as any).temperature_unit || 'celsius',
+      temperature_unit: (threshold as any).temperature_unit || temperatureUnit,
       notify_on_breach: threshold.notify_on_breach,
       notification_cooldown_minutes: threshold.notification_cooldown_minutes || 15,
       notification_channels: threshold.notification_channels || [],
@@ -159,7 +161,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       max_value: '',
       critical_min: '',
       critical_max: '',
-      temperature_unit: 'celsius',
+      temperature_unit: temperatureUnit,
       alert_enabled: true,
       alert_severity: 'medium',
       alert_message: '',
@@ -638,7 +640,11 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                 <Label htmlFor="temperature_unit">Temperature Unit</Label>
                 <Select
                   value={formData.temperature_unit}
-                  onValueChange={(value: 'celsius' | 'fahrenheit') => setFormData(prev => ({ ...prev, temperature_unit: value }))}
+                  onValueChange={(value: 'celsius' | 'fahrenheit') => {
+                    setFormData(prev => ({ ...prev, temperature_unit: value }))
+                    // Immediately notify parent for instant UI update
+                    onTemperatureUnitChange(value)
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
