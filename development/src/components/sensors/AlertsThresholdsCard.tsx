@@ -228,8 +228,11 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   }
 
   const handleTestAlert = async (threshold: SensorThreshold) => {
+    console.log('[TEST ALERT] Button clicked for threshold:', threshold.id)
+    
     try {
       setTesting(threshold.id)
+      console.log('[TEST ALERT] Creating test alert...')
 
       const supabase = createClient()
 
@@ -246,13 +249,21 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       }
 
       const sensorName = sensorNames[threshold.sensor_type] || threshold.sensor_type
+      
+      // Map to valid category
+      const categoryMap: Record<string, string> = {
+        'temperature': 'temperature',
+        'humidity': 'temperature',
+        'pressure': 'temperature',
+        'battery': 'battery',
+      }
+      const category = categoryMap[sensorName.toLowerCase()] || 'system'
 
-      // Create a test alert
-      const { error } = await supabase.from('alerts').insert({
+      const alertData = {
         organization_id: device.organization_id || '',
         device_id: device.id,
         alert_type: `${sensorName.toLowerCase()}_threshold`,
-        category: sensorName.toLowerCase() as 'temperature' | 'battery' | 'system',
+        category: category,
         title: `TEST: ${sensorName} Alert`,
         message: `Test alert for ${device.name}: This is a test of the ${sensorName} threshold alert system. Threshold ID: ${threshold.id}`,
         severity: threshold.alert_severity,
@@ -267,18 +278,26 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
           critical_min: threshold.critical_min,
           critical_max: threshold.critical_max,
         }
-      } as any)
+      }
+
+      console.log('[TEST ALERT] Inserting alert data:', alertData)
+
+      // Create a test alert
+      const { data, error } = await supabase.from('alerts').insert(alertData as any).select()
 
       if (error) {
+        console.error('[TEST ALERT] Insert error:', error)
         throw error
       }
+
+      console.log('[TEST ALERT] Alert created successfully:', data)
 
       toast({
         title: 'Test Alert Created',
         description: `A test alert has been created. Check the Alerts page to verify it appears correctly.`,
       })
     } catch (error) {
-      console.error('Error creating test alert:', error)
+      console.error('[TEST ALERT] Error creating test alert:', error)
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create test alert',
