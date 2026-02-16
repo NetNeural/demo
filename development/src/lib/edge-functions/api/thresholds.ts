@@ -2,12 +2,13 @@
 // Handles sensor threshold configuration and alerting
 
 import type { EdgeFunctionResponse } from '../types'
+import type { SensorThreshold } from '@/types/sensor-details'
 
 export interface ThresholdsAPI {
-  list: (deviceId: string) => Promise<EdgeFunctionResponse>
-  create: (payload: ThresholdPayload) => Promise<EdgeFunctionResponse>
-  update: (thresholdId: string, payload: Partial<ThresholdPayload>) => Promise<EdgeFunctionResponse>
-  delete: (thresholdId: string) => Promise<EdgeFunctionResponse>
+  list: (deviceId: string) => Promise<EdgeFunctionResponse<{ thresholds: SensorThreshold[] }>>
+  create: (payload: ThresholdPayload) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  update: (thresholdId: string, payload: Partial<ThresholdPayload>) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  delete: (thresholdId: string) => Promise<EdgeFunctionResponse<{ success: boolean }>>
 }
 
 export interface ThresholdPayload {
@@ -25,7 +26,7 @@ export interface ThresholdPayload {
 }
 
 export const createThresholdsAPI = (
-  call: (functionName: string, options?: any) => Promise<EdgeFunctionResponse>
+  call: <T>(functionName: string, options?: any) => Promise<EdgeFunctionResponse<T>>
 ): ThresholdsAPI => ({
   /**
    * List all thresholds for a device
