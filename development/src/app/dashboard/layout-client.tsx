@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode
@@ -11,6 +12,7 @@ interface DashboardLayoutClientProps {
 
 export default function DashboardLayoutClient({ children, userEmail }: DashboardLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { currentOrganization } = useOrganization()
 
   const handleLogout = async () => {
     try {
@@ -67,7 +69,7 @@ export default function DashboardLayoutClient({ children, userEmail }: Dashboard
 
       <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="nav-header">
-          <h1 className="nav-brand">NetNeural IoT</h1>
+          <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
         </div>
         <div className="nav-menu">
           <Link href="/dashboard" className="nav-item" onClick={() => setMobileMenuOpen(false)}>

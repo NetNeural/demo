@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { UserProvider, useUser } from '@/contexts/UserContext'
-import { OrganizationProvider } from '@/contexts/OrganizationContext'
+import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
+  const { currentOrganization } = useOrganization()
   const supabase = createClient()
 
   if (loading) {
@@ -22,7 +23,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <div className="dashboard-container">
       <nav className="nav-sidebar">
         <div className="nav-header">
-          <h1 className="nav-brand">NetNeural IoT</h1>
+          <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
         </div>
         
         {/* Organization Switcher */}

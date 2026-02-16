@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useUser } from '@/lib/auth/user-context'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,7 @@ export default function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const { user } = useUser()
+  const { currentOrganization } = useOrganization()
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
@@ -52,7 +54,7 @@ export default function DashboardShell({
       )}>
         {/* Brand */}
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">NetNeural IoT</h1>
+          <h1 className="text-xl font-bold text-gray-900">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
         </div>
 
         {/* Navigation Menu */}
