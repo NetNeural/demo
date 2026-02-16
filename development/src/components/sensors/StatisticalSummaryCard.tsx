@@ -69,12 +69,14 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
   useEffect(() => {
     const fetchTemperatureUnit = async () => {
       const supabase = createClient()
-      const { data } = await supabase
+      const result = await supabase
         .from('sensor_thresholds')
         .select('temperature_unit')
         .eq('device_id', device.id)
         .limit(1)
-        .single() as { data: { temperature_unit?: string } | null }
+        .single()
+      
+      const data = result.data as { temperature_unit?: string } | null
       
       if (data?.temperature_unit) {
         setTemperatureUnit(data.temperature_unit as 'celsius' | 'fahrenheit')
