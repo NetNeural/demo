@@ -1,5 +1,6 @@
 'use client'
 
+// Cache bust: 2026-02-16 v2 - Fixed optional chaining
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
