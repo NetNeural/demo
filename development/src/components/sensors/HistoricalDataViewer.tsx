@@ -5,6 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Download, Calendar } from 'lucide-react'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -63,6 +64,7 @@ interface TelemetryData {
 export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
   const { currentOrganization } = useOrganization()
   const [selectedRange, setSelectedRange] = useState<TimeRange>('48H')
+  const [selectedSensor, setSelectedSensor] = useState<string>('all')
   const [loading, setLoading] = useState(false)
   const [historicalData, setHistoricalData] = useState<TelemetryData[]>([])
   const useFahrenheit = typeof window !== 'undefined' 
@@ -229,6 +231,23 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     return Array.from(types)
   }, [historicalData])
 
+  // Filter data based on selected sensor
+  const filteredHistoricalData = useMemo(() => {
+    if (selectedSensor === 'all') return historicalData
+    
+    return historicalData.filter(row => {
+      const sensorType = row.telemetry?.type
+      const label = SENSOR_LABELS[sensorType || 0]
+      return label === selectedSensor
+    })
+  }, [historicalData, selectedSensor])
+
+  // Filter sensor types for chart based on selection
+  const visibleSensorTypes = useMemo(() => {
+    if (selectedSensor === 'all') return sensorTypes
+    return sensorTypes.filter(type => type === selectedSensor)
+  }, [sensorTypes, selectedSensor])
+
   // Color palette for different sensors
   const sensorColors: Record<string, string> = {
     'Temperature': '#ef4444',
@@ -262,19 +281,46 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Time Range Selector */}
-        <div className="flex flex-wrap gap-2">
-          {(['24H', '48H', '7D', '30D', '90D'] as TimeRange[]).map(range => (
-            <Button
-              key={range}
-              size="sm"
-              variant={selectedRange === range ? 'default' : 'outline'}
-              onClick={() => setSelectedRange(range)}
-              disabled={loading}
-            >
-              {range}
-            </Button>
-          ))}
+        {/* Time Range and Sensor Selector */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Time Range Buttons */}
+          <div className="flex flex-wrap gap-2">
+            {(['24H', '48H', '7D', '30D', '90D'] as TimeRange[]).map(range => (
+              <Button
+                key={range}
+                size="sm"
+                variant={selectedRange === range ? 'default' : 'outline'}
+                onClick={() => setSelectedRange(range)}
+                disabled={loading}
+              >
+                {range}
+              </Button>
+            ))}
+          </div>
+          
+          {/* Sensor Type Dropdown */}
+          {sensorTypes.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Sensor:</span>
+              <Select
+                value={selectedSensor}
+                onValueChange={setSelectedSensor}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select sensor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sensors</SelectItem>
+                  {sensorTypes.map((sensorType) => (
+                    <SelectItem key={sensorType} value={sensorType}>
+                      {sensorType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Data Summary */}
@@ -289,11 +335,19 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
             <div className="flex items-center justify-between text-sm p-3 bg-muted/50 rounded-lg">
               <div>
                 <span className="text-muted-foreground">Data Points: </span>
-                <Badge variant="secondary">{historicalData.length.toLocaleString()}</Badge>
+                <Badge variant="secondary">{filteredHistoricalData.length.toLocaleString()}</Badge>
               </div>
-              <div>
-                <span className="text-muted-foreground">Range: </span>
-                <span className="font-medium">{selectedRange}</span>
+              <div className="flex items-center gap-3">
+                {selectedSensor !== 'all' && (
+                  <>
+                    <Badge variant="outline">{selectedSensor}</Badge>
+                    <span className="text-muted-foreground">|</span>
+                  </>
+                )}
+                <div>
+                  <span className="text-muted-foreground">Range: </span>
+                  <span className="font-medium">{selectedRange}</span>
+                </div>
               </div>
             </div>
 
@@ -303,7 +357,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={chartData}>
                     <defs>
-                      {sensorTypes.map((sensorType) => (
+                      {visibleSensorTypes.map((sensorType) => (
                         <linearGradient key={`gradient-${sensorType}`} id={`gradient-${sensorType}`} x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={sensorColors[sensorType] || '#6b7280'} stopOpacity={0.8}/>
                           <stop offset="95%" stopColor={sensorColors[sensorType] || '#6b7280'} stopOpacity={0.1}/>
@@ -360,7 +414,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                       }}
                     />
                     <Legend />
-                    {sensorTypes.map((sensorType) => (
+                    {visibleSensorTypes.map((sensorType) => (
                       <Area
                         key={sensorType}
                         type="monotone"
@@ -391,7 +445,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {historicalData.map((row, idx) => (
+                    {filteredHistoricalData.map((row, idx) => (
                       <tr key={idx} className="hover:bg-muted/30">
                         <td className="p-2 text-muted-foreground">
                           {formatTimestamp(row.received_at)}
