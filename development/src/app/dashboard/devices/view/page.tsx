@@ -542,8 +542,17 @@ export default function DeviceViewPage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Select value={locationId || undefined} onValueChange={(value) => setLocationId(value)}>
+                  <Label htmlFor="location">
+                    Location
+                    {device.isExternallyManaged && (
+                      <span className="ml-2 text-xs text-muted-foreground">(Managed by {device.integrationName || 'integration'})</span>
+                    )}
+                  </Label>
+                  <Select 
+                    value={locationId || undefined} 
+                    onValueChange={(value) => setLocationId(value)}
+                    disabled={device.isExternallyManaged}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="No location assigned" />
                     </SelectTrigger>
@@ -555,7 +564,7 @@ export default function DeviceViewPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {locationId && (
+                  {locationId && !device.isExternallyManaged && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -610,7 +619,10 @@ export default function DeviceViewPage() {
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
                     <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    This device is externally managed. Delete operations are disabled. Changes may be overwritten by the integration.
+                    <span>
+                      This device is managed by <strong>{device.integrationName || 'an external integration'}</strong>. 
+                      Location and deletion operations are disabled. Other changes may be overwritten by the integration.
+                    </span>
                   </p>
                 </div>
               )}
