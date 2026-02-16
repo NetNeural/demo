@@ -102,10 +102,10 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
       
       const timestamp = reading.device_timestamp || reading.received_at
       const sensorLabel = reading.telemetry.type != null
-        ? SENSOR_LABELS[reading.telemetry.type as number]
-        : reading.telemetry.sensor || 'Sensor'
+        ? (SENSOR_LABELS[reading.telemetry.type as number] || 'Sensor')
+        : (reading.telemetry.sensor || 'Sensor')
       const unit = reading.telemetry.units != null
-        ? UNIT_LABELS[reading.telemetry.units as number]
+        ? (UNIT_LABELS[reading.telemetry.units as number] || '')
         : ''
       const isTemperature = reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
       
