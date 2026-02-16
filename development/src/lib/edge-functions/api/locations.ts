@@ -50,7 +50,7 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
      */
     update: (locationId, data) =>
       call(`locations/${locationId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
     
