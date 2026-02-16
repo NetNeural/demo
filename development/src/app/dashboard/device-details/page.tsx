@@ -156,7 +156,7 @@ export default function SensorDetailsPage() {
 
         {/* 4. Alerts + Activity */}
         <div className="grid gap-6 md:grid-cols-2">
-          <AlertsThresholdsCard device={device} telemetryReadings={telemetryReadings} />
+          <AlertsThresholdsCard device={device} />
           <RecentActivityCard device={device} />
         </div>
 

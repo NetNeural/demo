@@ -19,6 +19,7 @@ import { createUsersAPI, type UsersAPI } from './api/users'
 import { createLocationsAPI, type LocationsAPI } from './api/locations'
 import { createIntegrationsAPI, type IntegrationsAPI } from './api/integrations'
 import { createUserActionsAPI, type UserActionsAPI } from './api/user-actions'
+import { createThresholdsAPI, type ThresholdsAPI } from './api/thresholds'
 import { alertRules } from './api/alert-rules'
 
 // Re-export types for convenience
@@ -32,6 +33,7 @@ export type {
   LocationsAPI,
   IntegrationsAPI,
   UserActionsAPI,
+  ThresholdsAPI,
 }
 
 /**
@@ -51,6 +53,7 @@ export class EdgeFunctionClient {
   public locations: LocationsAPI
   public integrations: IntegrationsAPI
   public userActions: UserActionsAPI
+  public thresholds: ThresholdsAPI
   public alertRules: typeof alertRules
 
   constructor() {
@@ -67,6 +70,7 @@ export class EdgeFunctionClient {
     this.locations = createLocationsAPI(callBound)
     this.integrations = createIntegrationsAPI(callBound)
     this.userActions = createUserActionsAPI(callBound)
+    this.thresholds = createThresholdsAPI(callBound)
     this.alertRules = alertRules
   }
 
