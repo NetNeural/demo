@@ -37,6 +37,9 @@ export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealt
     
     telemetryReadings.forEach(reading => {
       const sensorType = reading.telemetry?.type
+      
+      if (sensorType === undefined) return
+      
       const label = SENSOR_LABELS[sensorType]
       
       if (label && !sensorTimestamps[label]) {
