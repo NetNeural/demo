@@ -65,6 +65,7 @@ export default function SensorDetailsPage() {
         signal_strength: deviceData.signal_strength ?? undefined,
         last_seen: deviceData.last_seen || undefined,
         metadata: deviceData.metadata as Record<string, any> | undefined,
+        organization_id: deviceData.organization_id,
       })
 
       // Fetch telemetry readings (48 hours)

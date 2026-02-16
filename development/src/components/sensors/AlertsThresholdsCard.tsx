@@ -91,12 +91,21 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   const fetchMembers = async () => {
     try {
       // Get organization ID from device
-      if (!device.organization_id) return
+      if (!device.organization_id) {
+        console.warn('No organization_id on device:', device)
+        return
+      }
       
+      console.log('Fetching members for organization:', device.organization_id)
       const response = await edgeFunctions.members.list(device.organization_id) as any
       
+      console.log('Members API response:', response)
+      
       if (response.success && response.data?.members) {
+        console.log('Setting members:', response.data.members)
         setMembers(response.data.members)
+      } else {
+        console.warn('No members in response or request failed:', response)
       }
     } catch (error) {
       console.error('Error fetching members:', error)
