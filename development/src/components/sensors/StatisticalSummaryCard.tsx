@@ -64,6 +64,7 @@ const SENSOR_ICONS: Record<string, typeof Thermometer> = {
 
 export function StatisticalSummaryCard({ device, telemetryReadings }: StatisticalSummaryCardProps) {
   const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Fetch temperature unit preference from thresholds
   useEffect(() => {
@@ -92,7 +93,31 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       }
     }
     fetchTemperatureUnit()
-  }, [device.id])
+    
+    // Set up real-time subscription to sensor_thresholds changes
+    const supabase = createClient()
+    const channel = supabase
+      .channel('threshold_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sensor_thresholds',
+          filter: `device_id=eq.${device.id}`
+        },
+        (payload) => {
+          console.log('🔄 Threshold changed, refetching temperature unit:', payload)
+          // Re-fetch temperature unit when thresholds change
+          fetchTemperatureUnit()
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [device.id, refreshKey])
 
   // Helper to format values with units - memoized to ensure stable reference
   const formatValue = useCallback((value: number, sensorName: string): string => {
