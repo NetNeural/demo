@@ -79,6 +79,21 @@ const nextConfig = {
       };
     }
 
+    // Ignore leaflet - it's loaded from CDN, not bundled
+    // This prevents webpack from trying to bundle leaflet when it encounters any references
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        leaflet: false,
+      }
+      
+      // Also add to externals to completely exclude from bundling
+      config.externals = {
+        ...config.externals,
+        leaflet: 'leaflet',
+      }
+    }
+
     config.module.rules.push({
       test: /\.svg$/i,
       issuer: /\.[jt]sx?$/,

@@ -14,11 +14,12 @@ import { RecentActivityCard } from '@/components/sensors/RecentActivityCard'
 import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
 import { StatisticalSummaryCard } from '@/components/sensors/StatisticalSummaryCard'
 import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
+import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
 import type { Device } from '@/types/sensor-details'
 
 interface TelemetryReading {
   device_id: string
-  telemetry: any
+  telemetry: Record<string, unknown>
   device_timestamp: string | null
   received_at: string
 }
@@ -66,7 +67,7 @@ export default function SensorDetailsPage() {
         battery_level: deviceData.battery_level ?? undefined,
         signal_strength: deviceData.signal_strength ?? undefined,
         last_seen: deviceData.last_seen || undefined,
-        metadata: deviceData.metadata as Record<string, any> | undefined,
+        metadata: deviceData.metadata as Record<string, unknown> | undefined,
         organization_id: deviceData.organization_id,
       })
 
@@ -154,6 +155,13 @@ export default function SensorDetailsPage() {
             <p className="text-muted-foreground">{device.device_type}</p>
           </div>
         </div>
+        {currentOrganization && (
+          <TransferDeviceDialog
+            device={device}
+            currentOrgId={currentOrganization.id}
+            onTransferComplete={() => router.push('/dashboard/devices')}
+          />
+        )}
       </div>
 
       {/* Priority Cards */}
