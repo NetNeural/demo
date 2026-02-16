@@ -209,16 +209,16 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
             <Badge variant={activeAlerts > 0 ? 'default' : 'secondary'}>
               {activeAlerts}/{thresholds.length}
             </Badge>
-          </div>font-medium mb-1">
+          </div>
+
+          {thresholds.length === 0 ? (
+            <div className="text-center py-8 border rounded-lg bg-muted/20">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm font-medium mb-1">
                 No thresholds configured yet
               </p>
               <p className="text-xs text-muted-foreground mb-4">
                 Set up thresholds for temperature, humidity, battery, and other sensors
-          {thresholds.length === 0 ? (
-            <div className="text-center py-8 border rounded-lg bg-muted/20">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-3">
-                No thresholds configured yet
               </p>
               <Button onClick={handleAddNew} variant="outline" size="sm">
                 Create First Threshold
