@@ -303,6 +303,8 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       if (data && data[0]) {
         const alertId = data[0].id
         console.log('[TEST ALERT] Sending email notification for alert:', alertId)
+        console.log('[TEST ALERT] Threshold notify_emails:', threshold.notify_emails)
+        console.log('[TEST ALERT] Threshold notify_user_ids:', threshold.notify_user_ids)
         
         try {
           const emailResponse = await fetch(
