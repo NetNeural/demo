@@ -82,6 +82,7 @@ export interface Device {
   device_type: string
   model?: string
   serial_number?: string
+  external_device_id?: string
   status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
   location?: string
   firmware_version?: string
