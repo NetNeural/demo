@@ -65,7 +65,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           .select('id, received_at, telemetry')
           .eq('device_id', device.id)
           .order('received_at', { ascending: false })
-          .limit(5),
+          .limit(20),
         
         // Get temperature unit preferences from thresholds
         supabase
@@ -192,10 +192,12 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
           return { value, unit: '' }
         }
 
+        console.log('🔍 Recent Activity - Telemetry data:', telemetry.data?.length || 0, 'records')
         const validTelemetry = telemetry.data
           .filter((t): t is typeof t & { received_at: string } => t.received_at != null)
           .flatMap((t, idx) => {
             const telemetryData = t.telemetry
+            console.log('📦 Telemetry object:', { id: t.id, received_at: t.received_at, keys: Object.keys(telemetryData || {}) })
             
             // Extract sensor readings from telemetry
             if (telemetryData && typeof telemetryData === 'object') {
@@ -222,8 +224,10 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
               
               // Handle various telemetry structures
               Object.entries(telemetryData).forEach(([key, value]) => {
+                console.log('🔑 Checking field:', { key, value, type: typeof value, isSensor: isSensorField(key) })
                 if (typeof value === 'number' && isSensorField(key)) {
                   const formatted = formatSensorValue(key, value)
+                  console.log('✅ Adding sensor reading:', { key, value, formatted })
                   readings.push({
                     id: `telemetry-${t.id}-${key}-${idx}`,
                     activity_type: 'data_received',
