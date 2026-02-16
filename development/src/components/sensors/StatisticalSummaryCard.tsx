@@ -1,6 +1,6 @@
 'use client'
 
-// Statistical AI Summary - Intelligent analysis of sensor telemetry data
+// Statistical AI Summary - Intelligent analysis of sensor telemetry data - Cache bust v2
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
