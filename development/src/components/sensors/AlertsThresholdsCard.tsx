@@ -190,7 +190,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
         max_value: formData.max_value ? parseFloat(formData.max_value) : null,
         critical_min: formData.critical_min ? parseFloat(formData.critical_min) : null,
         critical_max: formData.critical_max ? parseFloat(formData.critical_max) : null,
-        ...(formData.sensor_type === 'temperature' && { temperature_unit: formData.temperature_unit }),
+        temperature_unit: formData.temperature_unit,
         alert_enabled: formData.alert_enabled,
         alert_severity: formData.alert_severity,
         alert_message: formData.alert_message || null,
