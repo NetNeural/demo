@@ -115,9 +115,9 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       
       // Safely access readings array
       const firstReading = readings[0]
-      const sensorName = typeId 
-        ? SENSOR_LABELS[typeId] 
-        : (firstReading?.telemetry.sensor || 'Sensor')
+      const sensorName = (typeId && SENSOR_LABELS[typeId]) 
+        || firstReading?.telemetry.sensor 
+        || 'Sensor'
       const sensorTypeLower = sensorName.toLowerCase()
       const icon = SENSOR_ICONS[sensorTypeLower] || Thermometer
 
