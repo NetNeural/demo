@@ -74,7 +74,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
         .select('temperature_unit')
         .eq('device_id', device.id)
         .limit(1)
-        .single()
+        .single() as { data: { temperature_unit?: string } | null }
       
       if (data?.temperature_unit) {
         setTemperatureUnit(data.temperature_unit as 'celsius' | 'fahrenheit')
