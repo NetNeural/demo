@@ -1,5 +1,6 @@
 'use client'
 
+// LocationMap component - Displays device location on an interactive map using Leaflet from CDN
 import { useEffect, useRef } from 'react'
 
 interface LocationMapProps {
