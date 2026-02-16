@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plug, Check, AlertCircle, Plus } from 'lucide-react';
+import { Plug, Check, AlertCircle, Plus, Copy } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { edgeFunctions } from '@/lib/edge-functions';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog';
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog';
 import { MqttConfigDialog } from '@/components/integrations/MqttConfigDialog';
 import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog';
+import { CopyIntegrationDialog } from '@/components/integrations/CopyIntegrationDialog';
 import {
   Select,
   SelectContent,
@@ -165,6 +166,8 @@ export default function IntegrationsTab({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [integrationToDelete, setIntegrationToDelete] = useState<Integration | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [integrationToCopy, setIntegrationToCopy] = useState<Integration | null>(null);
   const { toast } = useToast();
 
   // State for new integration
@@ -587,6 +590,16 @@ export default function IntegrationsTab({
                           className="flex-1"
                         >
                           {integration.status === 'not-configured' ? 'Configure' : 'Edit'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setIntegrationToCopy(integration);
+                            setShowCopyDialog(true);
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
@@ -1132,6 +1145,19 @@ export default function IntegrationsTab({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Copy Integration Dialog */}
+          <CopyIntegrationDialog
+            integration={integrationToCopy}
+            open={showCopyDialog}
+            onOpenChange={setShowCopyDialog}
+            onSuccess={() => {
+              setShowCopyDialog(false);
+              setIntegrationToCopy(null);
+              loadIntegrations();
+            }}
+            currentOrgId={selectedOrganization}
+          />
         </>
       )}
     </div>
