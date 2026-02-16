@@ -330,16 +330,8 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
           // Second toast for email status
           if (emailResult.success && emailResult.sent > 0) {
-            const recipientList = []
-            if (threshold.notify_emails && threshold.notify_emails.length > 0) {
-              recipientList.push(...threshold.notify_emails)
-            }
-            const recipientSummary = recipientList.length > 0 
-              ? `Recipients: ${recipientList.join(', ')}`
-              : `${emailResult.sent} recipient(s)`
-            
             sonnerToast.success('📧 Email Sent Successfully!', {
-              description: `${emailResult.sent} test alert email(s) delivered. ${recipientSummary}. Check the recipient mailboxes.`,
+              description: `${emailResult.sent} of ${emailResult.total} test alert email(s) delivered successfully. Check the recipient mailboxes.`,
               duration: 7000,
             })
           } else if (emailResult.success && emailResult.sent === 0) {
