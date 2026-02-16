@@ -1,0 +1,79 @@
+name: Fix Storage Error 42P17
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to fix'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+jobs:
+  fix-storage:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: development/package-lock.json
+
+      - name: Install dependencies
+        working-directory: development
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply storage fix SQL
+        working-directory: development
+        env:
+          SUPABASE_URL: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ inputs.environment == 'staging' && secrets.STAGE_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "Applying storage fix to ${{ inputs.environment }}..."
+          
+          # Apply the fix SQL
+          npx supabase db execute \
+            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
+            -f scripts/fix-storage-42p17.sql
+
+      - name: Verify fix
+        working-directory: development
+        env:
+          SUPABASE_URL: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ inputs.environment == 'staging' && secrets.STAGE_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npx supabase db execute \
+            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
+            -c "SELECT 'Bucket exists: ' || CASE WHEN EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'organization-assets') THEN 'Yes' ELSE 'No' END;"
+          
+          npx supabase db execute \
+            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
+            -c "SELECT 'Policies: ' || COUNT(*)::text FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname LIKE '%organization%';"
+
+      - name: Summary
+        run: |
+          echo "## ✅ Storage Fix Applied" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Applied fix to **${{ inputs.environment }}** environment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What was fixed:" >> $GITHUB_STEP_SUMMARY
+          echo "- Created/verified \`organization-assets\` bucket" >> $GITHUB_STEP_SUMMARY
+          echo "- Applied 4 storage policies (SELECT, INSERT, UPDATE, DELETE)" >> $GITHUB_STEP_SUMMARY
+          echo "- Set file size limit to 512KB" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test uploading a logo:" >> $GITHUB_STEP_SUMMARY
+          echo "Go to: https://demo-stage.netneural.ai/dashboard/organizations" >> $GITHUB_STEP_SUMMARY
