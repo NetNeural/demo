@@ -103,6 +103,13 @@ jobs:
       #   run: npm test
       #   continue-on-error: true
 
+      - name: 🗑️ Clear build cache
+        run: |
+          rm -rf .next
+          rm -rf out
+          rm -rf node_modules/.cache
+          echo "✅ Build cache cleared"
+
       - name: ✅ Verify environment
         env:
           NODE_ENV: staging
