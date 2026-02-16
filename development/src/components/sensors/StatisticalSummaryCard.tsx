@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useCallback } from 'react'
 import { Brain, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Thermometer, Droplets, Wind, Battery } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Device } from '@/types/sensor-details'
@@ -73,8 +73,9 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
         .from('sensor_thresholds')
         .select('temperature_unit')
         .eq('device_id', device.id)
+        .not('temperature_unit', 'is', null)
         .limit(1)
-        .single()
+        .maybeSingle()
       
       const data = result.data as { temperature_unit?: string } | null
       
@@ -85,8 +86,8 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
     fetchTemperatureUnit()
   }, [device.id])
 
-  // Helper to format values with units
-  const formatValue = (value: number, sensorName: string): string => {
+  // Helper to format values with units - memoized to ensure stable reference
+  const formatValue = useCallback((value: number, sensorName: string): string => {
     const nameLower = sensorName.toLowerCase()
     if (nameLower.includes('temperature') || nameLower.includes('temp')) {
       if (temperatureUnit === 'fahrenheit') {
@@ -102,7 +103,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       return `${value.toFixed(1)} hPa`
     }
     return value.toFixed(1)
-  }
+  }, [temperatureUnit])
 
   // Analyze each sensor type separately
   const sensorAnalyses = useMemo<SensorAnalysis[]>(() => {
@@ -242,7 +243,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'warning',
             icon: TrendingUp,
             title: 'Humidity Climbing',
-            message: `Humidity has increased ${sensor.trendPercent.toFixed(1)}% recently (now ${sensor.lastValue.toFixed(1)}%). Room ventilation may be needed to prevent moisture buildup.`,
+            message: `Humidity has increased ${sensor.trendPercent.toFixed(1)}% recently (now ${formatValue(sensor.lastValue, sensor.sensorName)}). Room ventilation may be needed to prevent moisture buildup.`,
           })
           hasWarning = true
         } else if (sensor.lastValue > 70) {
@@ -250,7 +251,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'critical',
             icon: AlertCircle,
             title: 'High Humidity Alert',
-            message: `Humidity at ${sensor.lastValue.toFixed(1)}% is too high. Risk of mold and equipment damage. Increase ventilation immediately.`,
+            message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is too high. Risk of mold and equipment damage. Increase ventilation immediately.`,
           })
           hasCritical = true
         } else if (sensor.lastValue < 20) {
@@ -258,7 +259,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'warning',
             icon: AlertCircle,
             title: 'Low Humidity',
-            message: `Humidity at ${sensor.lastValue.toFixed(1)}% is very low. May cause static electricity and discomfort.`,
+            message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is very low. May cause static electricity and discomfort.`,
           })
           hasWarning = true
         }
@@ -271,7 +272,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'critical',
             icon: Battery,
             title: 'Low Battery Critical',
-            message: `Battery at ${sensor.lastValue.toFixed(0)}%. Device will shut down soon. Replace or recharge immediately.`,
+            message: `Battery at ${formatValue(sensor.lastValue, sensor.sensorName)}. Device will shut down soon. Replace or recharge immediately.`,
           })
           hasCritical = true
         } else if (sensor.lastValue < 30) {
@@ -279,7 +280,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
             type: 'warning',
             icon: Battery,
             title: 'Battery Low',
-            message: `Battery at ${sensor.lastValue.toFixed(0)}%. Consider replacing soon to avoid service interruption.`,
+            message: `Battery at ${formatValue(sensor.lastValue, sensor.sensorName)}. Consider replacing soon to avoid service interruption.`,
           })
           hasWarning = true
         }
@@ -318,7 +319,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
     })
 
     return insights
-  }, [sensorAnalyses, temperatureUnit])
+  }, [sensorAnalyses, formatValue])
 
   const getTrendIcon = (trend: 'rising' | 'falling' | 'stable') => {
     if (trend === 'rising') return <TrendingUp className="h-4 w-4 text-orange-500" />
