@@ -249,12 +249,13 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
 
       // Create a test alert
       const { error } = await supabase.from('alerts').insert({
-        organization_id: device.organization_id,
+        organization_id: device.organization_id || '',
         device_id: device.id,
+        alert_type: `${sensorName.toLowerCase()}_threshold`,
+        category: sensorName.toLowerCase() as 'temperature' | 'battery' | 'system',
         title: `TEST: ${sensorName} Alert`,
         message: `Test alert for ${device.name}: This is a test of the ${sensorName} threshold alert system. Threshold ID: ${threshold.id}`,
         severity: threshold.alert_severity,
-        category: sensorName.toLowerCase(),
         is_resolved: false,
         metadata: {
           is_test: true,
@@ -266,7 +267,7 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
           critical_min: threshold.critical_min,
           critical_max: threshold.critical_max,
         }
-      })
+      } as any)
 
       if (error) {
         throw error

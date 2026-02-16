@@ -152,15 +152,29 @@ serve(async (req) => {
           const sensorName = SENSOR_TYPE_NAMES[parseInt(threshold.sensor_type)] || `Sensor ${threshold.sensor_type}`
           const severity = (breachType === 'critical_max' || breachType === 'critical_min') ? 'critical' : 'high'
           
+          // Map sensor name to category
+          const categoryMap: Record<string, string> = {
+            'Temperature': 'temperature',
+            'Humidity': 'temperature',
+            'Pressure': 'temperature',
+            'Battery': 'battery',
+            'CO2': 'system',
+            'TVOC': 'system',
+            'Light': 'system',
+            'Motion': 'vibration',
+          }
+          const category = categoryMap[sensorName] || 'system'
+          
           const { error: alertError } = await supabaseClient
             .from('alerts')
             .insert({
               organization_id: device.organization_id,
               device_id: device.id,
+              alert_type: `${sensorName.toLowerCase()}_threshold`,
+              category: category,
               title: `${sensorName} ${severity === 'critical' ? 'Critical' : 'Threshold'} Alert`,
               message: `${device.name}: ${breachMessage}`,
               severity: severity,
-              category: sensorName.toLowerCase(),
               is_resolved: false,
               metadata: {
                 sensor_type: threshold.sensor_type,
