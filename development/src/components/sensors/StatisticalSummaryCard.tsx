@@ -309,7 +309,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5" />
-          🤖 Statistical AI Summary
+          🤖 AI Powered Predictive Analysis
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
