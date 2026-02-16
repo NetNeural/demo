@@ -33,8 +33,8 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
     const fetchActivities = async () => {
       const supabase = createClient()
       
-      // Fetch sensor activity, alerts, recent telemetry, and thresholds for unit preferences
-      const [sensorActivity, alerts, telemetry, thresholds] = await Promise.all([
+      // Fetch sensor activity, alerts, recent telemetry, thresholds, and notifications
+      const [sensorActivity, alerts, telemetry, thresholds, notifications] = await Promise.all([
         // Sensor activity (configuration changes, calibrations, etc.)
         supabase
           .from('sensor_activity')
@@ -63,7 +63,16 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
         supabase
           .from('sensor_thresholds')
           .select('sensor_type, temperature_unit')
-          .eq('device_id', device.id)
+          .eq('device_id', device.id),
+        
+        // Notifications sent for this device's alerts
+        supabase
+          .from('notifications')
+          .select('id, alert_id, method, status, sent_at, delivered_at, alerts!inner(title, device_id)')
+          .eq('alerts.device_id', device.id)
+          .not('sent_at', 'is', null)
+          .order('sent_at', { ascending: false })
+          .limit(10)
       ])
 
       // Combine and format all activities
@@ -96,6 +105,32 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
             occurred_at: a.created_at,
           }))
         combinedActivities.push(...validAlerts)
+      }
+
+      // Add notifications sent for alerts
+      if (notifications.data) {
+        const validNotifications = notifications.data
+          .filter((n): n is typeof n & { sent_at: string } => n.sent_at != null)
+          .map(n => {
+            const methodEmoji = {
+              email: '📧',
+              sms: '📱',
+              webhook: '🔗',
+              in_app: '🔔'
+            }[n.method] || '📤'
+            
+            const statusText = n.status === 'delivered' ? 'delivered' : 'sent'
+            const alertTitle = (n as any).alerts?.title || 'Alert'
+            
+            return {
+              id: `notification-${n.id}`,
+              activity_type: 'notification_sent',
+              description: `${methodEmoji} ${n.method.toUpperCase()} notification ${statusText}: ${alertTitle}`,
+              severity: 'info',
+              occurred_at: n.sent_at,
+            }
+          })
+        combinedActivities.push(...validNotifications)
       }
 
       // Add telemetry data received events with sensor readings
@@ -241,6 +276,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
       case 'alert_triggered':
       case 'alert_created': return '🚨'
       case 'alert_resolved': return '✅'
+      case 'notification_sent': return '📤'
       case 'calibration': return '🔧'
       case 'maintenance': return '🛠️'
       case 'status_change': return '🔄'
