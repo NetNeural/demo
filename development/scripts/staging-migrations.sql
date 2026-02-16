@@ -148,14 +148,15 @@ DROP POLICY IF EXISTS sensor_thresholds_org_write ON sensor_thresholds;
 DROP POLICY IF EXISTS sensor_activity_org_read ON sensor_activity;
 DROP POLICY IF EXISTS sensor_activity_org_write ON sensor_activity;
 
--- sensor_thresholds policies
+-- sensor_thresholds policies (using existing get_user_organization_id function)
 CREATE POLICY sensor_thresholds_org_read ON sensor_thresholds
     FOR SELECT
     USING (
         device_id IN (
             SELECT d.id FROM devices d
-            INNER JOIN user_organizations uo ON uo.organization_id = d.organization_id
-            WHERE uo.user_id = auth.uid()
+            WHERE d.organization_id = (
+                SELECT organization_id FROM users WHERE id = auth.uid()
+            )
         )
     );
 
@@ -164,19 +165,21 @@ CREATE POLICY sensor_thresholds_org_write ON sensor_thresholds
     USING (
         device_id IN (
             SELECT d.id FROM devices d
-            INNER JOIN user_organizations uo ON uo.organization_id = d.organization_id
-            WHERE uo.user_id = auth.uid()
+            WHERE d.organization_id = (
+                SELECT organization_id FROM users WHERE id = auth.uid()
+            )
         )
     );
 
--- sensor_activity policies
+-- sensor_activity policies (using existing get_user_organization_id function)
 CREATE POLICY sensor_activity_org_read ON sensor_activity
     FOR SELECT
     USING (
         device_id IN (
             SELECT d.id FROM devices d
-            INNER JOIN user_organizations uo ON uo.organization_id = d.organization_id
-            WHERE uo.user_id = auth.uid()
+            WHERE d.organization_id = (
+                SELECT organization_id FROM users WHERE id = auth.uid()
+            )
         )
     );
 
@@ -185,8 +188,9 @@ CREATE POLICY sensor_activity_org_write ON sensor_activity
     USING (
         device_id IN (
             SELECT d.id FROM devices d
-            INNER JOIN user_organizations uo ON uo.organization_id = d.organization_id
-            WHERE uo.user_id = auth.uid()
+            WHERE d.organization_id = (
+                SELECT organization_id FROM users WHERE id = auth.uid()
+            )
         )
     );
 
