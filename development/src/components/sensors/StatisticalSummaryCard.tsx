@@ -69,18 +69,26 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
   useEffect(() => {
     const fetchTemperatureUnit = async () => {
       const supabase = createClient()
+      // Query for all thresholds for this device to find temperature unit
       const result = await supabase
         .from('sensor_thresholds')
-        .select('temperature_unit')
+        .select('temperature_unit, sensor_type')
         .eq('device_id', device.id)
-        .not('temperature_unit', 'is', null)
-        .limit(1)
-        .maybeSingle()
       
-      const data = result.data as { temperature_unit?: string } | null
+      console.log('📊 All thresholds for device:', { 
+        deviceId: device.id, 
+        thresholds: result.data,
+        error: result.error
+      })
       
-      if (data?.temperature_unit) {
-        setTemperatureUnit(data.temperature_unit as 'celsius' | 'fahrenheit')
+      // Find first threshold with a temperature_unit set
+      const thresholdWithUnit = result.data?.find(t => t.temperature_unit != null)
+      
+      if (thresholdWithUnit?.temperature_unit) {
+        setTemperatureUnit(thresholdWithUnit.temperature_unit as 'celsius' | 'fahrenheit')
+        console.log('✅ Temperature unit set to:', thresholdWithUnit.temperature_unit)
+      } else {
+        console.log('⚠️ No temperature unit found in any threshold, defaulting to celsius')
       }
     }
     fetchTemperatureUnit()
@@ -90,6 +98,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
   const formatValue = useCallback((value: number, sensorName: string): string => {
     const nameLower = sensorName.toLowerCase()
     if (nameLower.includes('temperature') || nameLower.includes('temp')) {
+      console.log('🌡️ Formatting temperature:', { value, sensorName, unit: temperatureUnit })
       if (temperatureUnit === 'fahrenheit') {
         const fahrenheit = (value * 9/5) + 32
         return `${fahrenheit.toFixed(1)}°F`
