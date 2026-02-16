@@ -264,8 +264,8 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
         device_id: device.id,
         alert_type: `${sensorName.toLowerCase()}_threshold`,
         category: category,
-        title: `TEST: ${sensorName} Alert`,
-        message: `Test alert for ${device.name}: This is a test of the ${sensorName} threshold alert system. Threshold ID: ${threshold.id}`,
+        title: `🧪 TEST ALERT: ${sensorName} Threshold`,
+        message: `⚠️ THIS IS A TEST ALERT - NOT A REAL ISSUE ⚠️\n\nDevice: ${device.name}\nSensor: ${sensorName}\nThreshold ID: ${threshold.id}\n\nThis test verifies that the alert system is working correctly. You can safely acknowledge or delete this test alert.`,
         severity: threshold.alert_severity,
         is_resolved: false,
         metadata: {
@@ -471,8 +471,8 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                       onClick={() => handleTestAlert(threshold)}
                       variant="ghost"
                       size="sm"
-                      disabled={testing === threshold.id || !threshold.alert_enabled}
-                      title={threshold.alert_enabled ? 'Create a test alert' : 'Enable alert to test'}
+                      disabled={testing === threshold.id}
+                      title="Create a test alert to verify the alert system is working"
                     >
                       <TestTube className="h-4 w-4" />
                     </Button>
