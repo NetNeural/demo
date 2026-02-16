@@ -214,7 +214,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           )}
 
           {/* Last Telemetry */}
-          {telemetryReadings.length > 0 && telemetryReadings[0].received_at && (
+          {telemetryReadings[0]?.received_at && (
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Activity className="h-3 w-3" />
