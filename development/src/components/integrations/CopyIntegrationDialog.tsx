@@ -126,9 +126,9 @@ export function CopyIntegrationDialog({
           },
           body: JSON.stringify({
             organization_id: selectedOrgId,
-            type: integration.type,
+            integration_type: integration.type,
             name: `${integration.name} (Copy)`,
-            config: integration.config,
+            settings: integration.config,
             status: 'active'
           })
         }
