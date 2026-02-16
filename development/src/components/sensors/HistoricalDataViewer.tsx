@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import type { Device } from '@/types/sensor-details'
 import {
-  LineChart,
+  ComposedChart,
   Area,
   XAxis,
   YAxis,
@@ -301,7 +301,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
             {chartData.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/20">
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
+                  <ComposedChart data={chartData}>
                     <defs>
                       {sensorTypes.map((sensorType) => (
                         <linearGradient key={`gradient-${sensorType}`} id={`gradient-${sensorType}`} x1="0" y1="0" x2="0" y2="1">
@@ -374,7 +374,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                         name={sensorType}
                       />
                     ))}
-                  </LineChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             )}
