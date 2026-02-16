@@ -213,14 +213,14 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
             </div>
           )}
 
-          {/* Uptime */}
-          {device.last_seen && (
+          {/* Last Telemetry */}
+          {telemetryReadings.length > 0 && telemetryReadings[0].received_at && (
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Activity className="h-3 w-3" />
-                <span>Uptime</span>
+                <span>Last Reading</span>
               </div>
-              <p className="text-lg font-semibold">{formatTimeAgo(device.last_seen)}</p>
+              <p className="text-lg font-semibold">{formatTimeAgo(telemetryReadings[0].received_at)}</p>
             </div>
           )}
         </div>
