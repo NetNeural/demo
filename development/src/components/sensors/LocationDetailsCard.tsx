@@ -222,6 +222,20 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             <div>
               <p className="text-sm text-muted-foreground">Location</p>
               <p className="font-medium">{displayLocationName}</p>
+              {selectedLocation && (
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {selectedLocation.address && (
+                    <div>{selectedLocation.address}</div>
+                  )}
+                  {(selectedLocation.city || selectedLocation.state) && (
+                    <div>
+                      {selectedLocation.city}
+                      {selectedLocation.city && selectedLocation.state && ', '}
+                      {selectedLocation.state}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {installedAt && (
               <div>
