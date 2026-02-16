@@ -76,14 +76,17 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
         .select('temperature_unit, sensor_type')
         .eq('device_id', device.id)
       
+      // Type assertion for temperature_unit column (not yet in generated types)
+      const thresholds = result.data as Array<{ temperature_unit?: string; sensor_type?: string }> | null
+      
       console.log('📊 All thresholds for device:', { 
         deviceId: device.id, 
-        thresholds: result.data,
+        thresholds,
         error: result.error
       })
       
       // Find first threshold with a temperature_unit set
-      const thresholdWithUnit = result.data?.find(t => t.temperature_unit != null)
+      const thresholdWithUnit = thresholds?.find(t => t.temperature_unit != null)
       
       if (thresholdWithUnit?.temperature_unit) {
         setTemperatureUnit(thresholdWithUnit.temperature_unit as 'celsius' | 'fahrenheit')
