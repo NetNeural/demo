@@ -63,8 +63,69 @@ const SENSOR_ICONS: Record<string, typeof Thermometer> = {
   battery: Battery,
 }
 
+// Location-specific expectations for context-aware AI analysis
+interface LocationContext {
+  tempMin: number  // °C
+  tempMax: number  // °C
+  humidityMin: number  // %
+  humidityMax: number  // %
+  context: string
+}
+
+const LOCATION_CONTEXTS: Record<string, LocationContext> = {
+  // Refrigerated spaces
+  'walk-in cooler': { tempMin: 0, tempMax: 4, humidityMin: 85, humidityMax: 95, context: 'Walk-in coolers require 32-40°F (0-4°C) and 85-95% humidity for fresh produce storage.' },
+  'cooler': { tempMin: 0, tempMax: 4, humidityMin: 85, humidityMax: 95, context: 'Coolers should maintain refrigeration temperatures around 32-40°F (0-4°C).' },
+  'refrigerator': { tempMin: 1, tempMax: 4, humidityMin: 65, humidityMax: 75, context: 'Refrigerators should stay between 34-40°F (1-4°C) for food safety.' },
+  'freezer': { tempMin: -23, tempMax: -18, humidityMin: 0, humidityMax: 10, context: 'Freezers must maintain -10 to 0°F (-23 to -18°C) for proper food preservation.' },
+  
+  // Food preparation
+  'kitchen': { tempMin: 18, tempMax: 24, humidityMin: 40, humidityMax: 60, context: 'Commercial kitchens should maintain 65-75°F (18-24°C) with moderate humidity.' },
+  'prep area': { tempMin: 18, tempMax: 24, humidityMin: 40, humidityMax: 60, context: 'Food prep areas need controlled temperatures around 65-75°F (18-24°C).' },
+  'bean room': { tempMin: 18, tempMax: 22, humidityMin: 50, humidityMax: 70, context: 'Coffee bean storage requires cool, dry conditions around 65-72°F (18-22°C) with 50-70% humidity.' },
+  
+  // Produce storage
+  'produce': { tempMin: 7, tempMax: 13, humidityMin: 85, humidityMax: 95, context: 'Fresh vegetables need 45-55°F (7-13°C) and 85-95% humidity to prevent wilting.' },
+  'vegetable': { tempMin: 7, tempMax: 13, humidityMin: 85, humidityMax: 95, context: 'Vegetable storage requires cool temperatures and high humidity to maintain freshness.' },
+  
+  // Humid environments
+  'bathroom': { tempMin: 20, tempMax: 26, humidityMin: 40, humidityMax: 70, context: 'Bathrooms typically have higher humidity (40-70%) and should stay between 68-78°F (20-26°C).' },
+  'shower': { tempMin: 20, tempMax: 26, humidityMin: 60, humidityMax: 80, context: 'Shower areas have elevated humidity and should monitor for excess moisture above 80%.' },
+  
+  // Storage areas
+  'basement': { tempMin: 15, tempMax: 21, humidityMin: 30, humidityMax: 50, context: 'Basements should stay cool and dry, around 60-70°F (15-21°C) with 30-50% humidity to prevent mold.' },
+  'storage': { tempMin: 15, tempMax: 24, humidityMin: 30, humidityMax: 60, context: 'General storage areas benefit from stable conditions around 60-75°F (15-24°C).' },
+  'warehouse': { tempMin: 15, tempMax: 27, humidityMin: 30, humidityMax: 60, context: 'Warehouse spaces should maintain 60-80°F (15-27°C) depending on stored goods.' },
+  
+  // Climate controlled
+  'server room': { tempMin: 18, tempMax: 27, humidityMin: 40, humidityMax: 60, context: 'Server rooms require 64-80°F (18-27°C) and 40-60% humidity for optimal equipment performance.' },
+  'office': { tempMin: 20, tempMax: 24, humidityMin: 40, humidityMax: 60, context: 'Office spaces should maintain comfortable conditions around 68-75°F (20-24°C).' },
+  'lab': { tempMin: 20, tempMax: 24, humidityMin: 30, humidityMax: 60, context: 'Laboratory environments need stable conditions around 68-75°F (20-24°C) with controlled humidity.' },
+}
+
+// Smart location detection from installed_at field
+function getLocationContext(installedAt: string | undefined): LocationContext | null {
+  if (!installedAt) return null
+  
+  const location = installedAt.toLowerCase()
+  
+  // Direct match
+  for (const [key, context] of Object.entries(LOCATION_CONTEXTS)) {
+    if (location.includes(key)) {
+      return context
+    }
+  }
+  
+  return null
+}
+
 export function StatisticalSummaryCard({ device, telemetryReadings, temperatureUnit }: StatisticalSummaryCardProps) {
   console.log('🌡️ [StatisticalSummaryCard] Rendering with temperatureUnit:', temperatureUnit)
+  
+  // Extract installation location for context-aware analysis
+  const installedAt = device.metadata?.installed_at as string | undefined
+  const locationContext = getLocationContext(installedAt)
+  console.log('📍 [LocationContext]:', installedAt, locationContext)
   
   // Helper to format values with units - memoized to ensure stable reference
   const formatValue = useCallback((value: number, sensorName: string): string => {
@@ -177,74 +238,197 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
       return insights
     }
 
+    // Add location context insight if available
+    if (locationContext && installedAt) {
+      insights.push({
+        type: 'info',
+        icon: Brain,
+        title: `Location-Aware Analysis: ${installedAt}`,
+        message: locationContext.context,
+      })
+    }
+
     let hasWarning = false
     let hasCritical = false
 
     // Analyze each sensor for issues
     for (const sensor of sensorAnalyses) {
-      // Temperature analysis
+      // Temperature analysis with location context
       if (sensor.sensorName.toLowerCase().includes('temperature')) {
-        if (sensor.trend === 'falling' && sensor.trendPercent > 10) {
-          insights.push({
-            type: 'warning',
-            icon: TrendingDown,
-            title: 'Temperature Dropping',
-            message: `Temperature has dropped ${sensor.trendPercent.toFixed(1)}% recently. Condenser or cooling system may be failing. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
-          })
-          hasWarning = true
-        } else if (sensor.trend === 'rising' && sensor.trendPercent > 10) {
-          insights.push({
-            type: 'warning',
-            icon: TrendingUp,
-            title: 'Temperature Rising',
-            message: `Temperature has increased ${sensor.trendPercent.toFixed(1)}% recently. Check HVAC system or cooling. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
-          })
-          hasWarning = true
-        } else if (sensor.lastValue > 35) {
-          insights.push({
-            type: 'critical',
-            icon: AlertCircle,
-            title: 'High Temperature Alert',
-            message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically high. Immediate cooling required.`,
-          })
-          hasCritical = true
-        } else if (sensor.lastValue < 5) {
-          insights.push({
-            type: 'critical',
-            icon: AlertCircle,
-            title: 'Low Temperature Alert',
-            message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically low. Check heating system.`,
-          })
-          hasCritical = true
+        const tempCelsius = sensor.lastValue // Always in Celsius for comparison
+        
+        // Location-aware temperature analysis
+        if (locationContext) {
+          const { tempMin, tempMax, context } = locationContext
+          const isRefrigeratedSpace = installedAt && (
+            installedAt.toLowerCase().includes('cooler') ||
+            installedAt.toLowerCase().includes('freezer') ||
+            installedAt.toLowerCase().includes('refriger')
+          )
+          
+          if (tempCelsius < tempMin - 2) {
+            const lowTempAdvice = isRefrigeratedSpace
+              ? 'Check thermostat settings or cooling system - may be running too cold.'
+              : 'Check heating system or insulation.'
+            
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: `Temperature Too Low for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is below optimal range for this location. ${context} ${lowTempAdvice}`,
+            })
+            hasCritical = true
+          } else if (tempCelsius < tempMin) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingDown,
+              title: `Temperature Below Optimal`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is slightly below recommended range for ${installedAt}. Expected: ${formatValue(tempMin, sensor.sensorName)}-${formatValue(tempMax, sensor.sensorName)}`,
+            })
+            hasWarning = true
+          } else if (tempCelsius > tempMax + 2) {
+            const highTempAdvice = isRefrigeratedSpace
+              ? 'Cooling system may be failing or door left open. Check immediately to prevent spoilage.'
+              : 'Check HVAC/cooling system.'
+            
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: `Temperature Too High for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} exceeds safe limits. ${context} ${highTempAdvice}`,
+            })
+            hasCritical = true
+          } else if (tempCelsius > tempMax) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingUp,
+              title: `Temperature Above Optimal`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is above recommended range for ${installedAt}. Expected: ${formatValue(tempMin, sensor.sensorName)}-${formatValue(tempMax, sensor.sensorName)}`,
+            })
+            hasWarning = true
+          } else {
+            // Within optimal range - provide positive feedback
+            insights.push({
+              type: 'normal',
+              icon: CheckCircle,
+              title: `Temperature Optimal for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is within ideal range. ${context}`,
+            })
+          }
+        } else {
+          // Generic temperature analysis when no location context
+          if (sensor.trend === 'falling' && sensor.trendPercent > 10) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingDown,
+              title: 'Temperature Dropping',
+              message: `Temperature has dropped ${sensor.trendPercent.toFixed(1)}% recently. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
+            })
+            hasWarning = true
+          } else if (sensor.trend === 'rising' && sensor.trendPercent > 10) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingUp,
+              title: 'Temperature Rising',
+              message: `Temperature has increased ${sensor.trendPercent.toFixed(1)}% recently. Current: ${formatValue(sensor.lastValue, sensor.sensorName)}`,
+            })
+            hasWarning = true
+          } else if (sensor.lastValue > 35) {
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: 'High Temperature Alert',
+              message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically high. Immediate cooling required.`,
+            })
+            hasCritical = true
+          } else if (sensor.lastValue < 5) {
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: 'Low Temperature Alert',
+              message: `Temperature at ${formatValue(sensor.lastValue, sensor.sensorName)} is critically low. Check heating system.`,
+            })
+            hasCritical = true
+          }
         }
       }
 
-      // Humidity analysis
+      // Humidity analysis with location context
       if (sensor.sensorName.toLowerCase().includes('humidity')) {
-        if (sensor.trend === 'rising' && sensor.trendPercent > 8) {
-          insights.push({
-            type: 'warning',
-            icon: TrendingUp,
-            title: 'Humidity Climbing',
-            message: `Humidity has increased ${sensor.trendPercent.toFixed(1)}% recently (now ${formatValue(sensor.lastValue, sensor.sensorName)}). Room ventilation may be needed to prevent moisture buildup.`,
-          })
-          hasWarning = true
-        } else if (sensor.lastValue > 70) {
-          insights.push({
-            type: 'critical',
-            icon: AlertCircle,
-            title: 'High Humidity Alert',
-            message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is too high. Risk of mold and equipment damage. Increase ventilation immediately.`,
-          })
-          hasCritical = true
-        } else if (sensor.lastValue < 20) {
-          insights.push({
-            type: 'warning',
-            icon: AlertCircle,
-            title: 'Low Humidity',
-            message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is very low. May cause static electricity and discomfort.`,
-          })
-          hasWarning = true
+        const humidity = sensor.lastValue
+        
+        // Location-aware humidity analysis
+        if (locationContext) {
+          const { humidityMin, humidityMax, context } = locationContext
+          
+          if (humidity < humidityMin - 10) {
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: `Humidity Too Low for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is critically below optimal range. ${context} Check humidification or ventilation systems.`,
+            })
+            hasCritical = true
+          } else if (humidity < humidityMin) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingDown,
+              title: `Humidity Below Optimal`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is below recommended range for ${installedAt}. Expected: ${humidityMin}-${humidityMax}%`,
+            })
+            hasWarning = true
+          } else if (humidity > humidityMax + 10) {
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: `Humidity Too High for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} exceeds safe limits. ${context} Risk of condensation, mold, or spoilage. Increase ventilation immediately.`,
+            })
+            hasCritical = true
+          } else if (humidity > humidityMax) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingUp,
+              title: `Humidity Above Optimal`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is above recommended range for ${installedAt}. Expected: ${humidityMin}-${humidityMax}%`,
+            })
+            hasWarning = true
+          } else {
+            // Within optimal range
+            insights.push({
+              type: 'normal',
+              icon: CheckCircle,
+              title: `Humidity Optimal for ${installedAt}`,
+              message: `${formatValue(sensor.lastValue, sensor.sensorName)} is within ideal range. ${context}`,
+            })
+          }
+        } else {
+          // Generic humidity analysis when no location context
+          if (sensor.trend === 'rising' && sensor.trendPercent > 8) {
+            insights.push({
+              type: 'warning',
+              icon: TrendingUp,
+              title: 'Humidity Climbing',
+              message: `Humidity has increased ${sensor.trendPercent.toFixed(1)}% recently (now ${formatValue(sensor.lastValue, sensor.sensorName)}). Room ventilation may be needed to prevent moisture buildup.`,
+            })
+            hasWarning = true
+          } else if (sensor.lastValue > 70) {
+            insights.push({
+              type: 'critical',
+              icon: AlertCircle,
+              title: 'High Humidity Alert',
+              message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is too high. Risk of mold and equipment damage. Increase ventilation immediately.`,
+            })
+            hasCritical = true
+          } else if (sensor.lastValue < 20) {
+            insights.push({
+              type: 'warning',
+              icon: AlertCircle,
+              title: 'Low Humidity',
+              message: `Humidity at ${formatValue(sensor.lastValue, sensor.sensorName)} is very low. May cause static electricity and discomfort.`,
+            })
+            hasWarning = true
+          }
         }
       }
 
@@ -303,7 +487,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
 
     console.log('🤖 [aiInsights] Generated', insights.length, 'insights. First insight:', insights[0]?.message?.substring(0, 100))
     return insights
-  }, [sensorAnalyses, formatValue, temperatureUnit])
+  }, [sensorAnalyses, formatValue, temperatureUnit, locationContext, installedAt])
 
   const getTrendIcon = (trend: 'rising' | 'falling' | 'stable') => {
     if (trend === 'rising') return <TrendingUp className="h-4 w-4 text-orange-500" />
