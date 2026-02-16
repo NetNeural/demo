@@ -109,7 +109,8 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
       }
 
       // Get sensor label and icon
-      const typeId = sensorKey.startsWith('type_') ? parseInt(sensorKey.split('_')[1]) : null
+      const parts = sensorKey.split('_')
+      const typeId = sensorKey.startsWith('type_') && parts[1] ? parseInt(parts[1]) : null
       const sensorName = typeId ? SENSOR_LABELS[typeId] : readings[0].telemetry.sensor || 'Sensor'
       const sensorTypeLower = sensorName.toLowerCase()
       const icon = SENSOR_ICONS[sensorTypeLower] || Thermometer
