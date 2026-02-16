@@ -346,7 +346,7 @@ export function StatisticalSummaryCard({ device, telemetryReadings }: Statistica
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Brain className="h-4 w-4" />
-            AI Predictive Analysis
+            AI-Powered Predictive Analysis
           </div>
           <ScrollArea className="h-[200px]">
             <div className="space-y-2 pr-3">
