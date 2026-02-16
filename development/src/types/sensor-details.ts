@@ -89,6 +89,7 @@ export interface Device {
   signal_strength?: number
   last_seen?: string
   metadata?: Record<string, any>
+  organization_id?: string
 }
 
 export interface SensorDetailsData {
