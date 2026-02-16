@@ -41,6 +41,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
   const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,6 +50,8 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
     state: '',
     country: '',
     postal_code: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
   const fetchLocations = useCallback(async () => {
@@ -100,6 +103,8 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       state: '',
       country: '',
       postal_code: '',
+      latitude: null,
+      longitude: null,
     });
     setShowDialog(true);
   };
@@ -114,8 +119,73 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       state: location.state || '',
       country: location.country || '',
       postal_code: location.postal_code || '',
+      latitude: location.latitude,
+      longitude: location.longitude,
     });
     setShowDialog(true);
+  };
+
+  const handleGeocodeAddress = async () => {
+    // Build address string from available fields
+    const addressParts = [
+      formData.address,
+      formData.city,
+      formData.state,
+      formData.postal_code,
+      formData.country
+    ].filter(Boolean);
+
+    if (addressParts.length === 0) {
+      toast.error('Please enter address information to geocode');
+      return;
+    }
+
+    const addressString = addressParts.join(', ');
+
+    try {
+      setGeocoding(true);
+      console.log('🗺️ [Geocoding] Looking up:', addressString);
+
+      // Use OpenStreetMap Nominatim API (free, no key required)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressString)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'NetNeural IoT Platform' // Required by Nominatim
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Geocoding service unavailable');
+      }
+
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        toast.error('No coordinates found for this address. Try adding more details.');
+        return;
+      }
+
+      const result = data[0];
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
+
+      console.log('✅ [Geocoding] Found:', { lat, lon, display_name: result.display_name });
+
+      setFormData(prev => ({
+        ...prev,
+        latitude: lat,
+        longitude: lon
+      }));
+
+      toast.success('Coordinates found! 🗺️');
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      toast.error('Failed to geocode address. Please try again.');
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const handleSave = async () => {
@@ -394,6 +464,69 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                   placeholder="United States"
                 />
               </div>
+            </div>
+
+            {/* GPS Coordinates Section */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <Label className="text-base">GPS Coordinates</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Required for map display. Auto-fill from address or enter manually.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGeocodeAddress}
+                  disabled={geocoding || !formData.address}
+                >
+                  {geocoding ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Geocoding...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Geocode Address
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={formData.latitude ?? ''}
+                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="e.g., 40.7128"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={formData.longitude ?? ''}
+                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="e.g., -74.0060"
+                  />
+                </div>
+              </div>
+
+              {formData.latitude && formData.longitude && (
+                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                  ✓ Coordinates set - map will be displayed
+                </p>
+              )}
             </div>
           </div>
 
