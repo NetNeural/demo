@@ -55,6 +55,16 @@ serve(async (req) => {
     }
 
     const device = alert.devices
+
+    // Collect all recipient emails
+    const allEmails: string[] = []
+
+    // Add manual emails
+    if (recipient_emails && recipient_emails.length > 0) {
+      allEmails.push(...recipient_emails)
+    }
+
+    // Fetch emails for user IDs from auth.users
     if (recipient_user_ids && recipient_user_ids.length > 0) {
       console.log(`[send-alert-email] Fetching emails for ${recipient_user_ids.length} user IDs:`, recipient_user_ids)
       
@@ -68,17 +78,7 @@ serve(async (req) => {
         const requestedUsers = authUsers.users.filter(u => recipient_user_ids.includes(u.id))
         const fetchedEmails = requestedUsers.map(u => u.email).filter(Boolean)
         console.log(`[send-alert-email] Found ${fetchedEmails.length} emails from auth.users:`, fetchedEmails)
-        allEmails.push(...fetchedEmails as string[]
-          }
-        )
-        const users = await usersResponse2.json()
-        console.log('[send-alert-email] Fetched from users table:', users)
-        allEmails.push(...users.map((u: any) => u.email).filter(Boolean))
-      } else {
-        const result = await usersResponse.json()
-        console.log('[send-alert-email] Fetched from auth.users:', result)
-        const emails = Array.isArray(result) ? result.map((u: any) => u.email) : []
-        allEmails.push(...emails.filter(Boolean))
+        allEmails.push(...fetchedEmails as string[])
       }
     }
 
