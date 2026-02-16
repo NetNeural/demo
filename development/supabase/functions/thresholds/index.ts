@@ -51,6 +51,9 @@ export default createEdgeFunction(async ({ req }) => {
       alert_message,
       notify_on_breach = true,
       notification_cooldown_minutes = 15,
+      notify_user_ids = [],
+      notify_emails = [],
+      notification_channels = [],
     } = body
 
     if (!device_id || !sensor_type) {
@@ -83,6 +86,9 @@ export default createEdgeFunction(async ({ req }) => {
         alert_message,
         notify_on_breach,
         notification_cooldown_minutes,
+        notify_user_ids,
+        notify_emails,
+        notification_channels,
         created_by: userContext.userId,
         updated_by: userContext.userId,
       })
@@ -109,6 +115,9 @@ export default createEdgeFunction(async ({ req }) => {
       alert_message,
       notify_on_breach,
       notification_cooldown_minutes,
+      notify_user_ids,
+      notify_emails,
+      notification_channels,
     } = body
 
     const { data: threshold, error } = await supabaseAdmin
@@ -123,6 +132,9 @@ export default createEdgeFunction(async ({ req }) => {
         alert_message,
         notify_on_breach,
         notification_cooldown_minutes,
+        notify_user_ids,
+        notify_emails,
+        notification_channels,
         updated_by: userContext.userId,
         updated_at: new Date().toISOString(),
       })

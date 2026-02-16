@@ -32,9 +32,17 @@ interface AlertsThresholdsCardProps {
   device: Device
 }
 
+interface OrganizationMember {
+  id: string
+  full_name: string
+  email: string
+  role: string
+}
+
 export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   const { toast } = useToast()
   const [thresholds, setThresholds] = useState<SensorThreshold[]>([])
+  const [members, setMembers] = useState<OrganizationMember[]>([])
   const [loading, setLoading] = useState(true)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedThreshold, setSelectedThreshold] = useState<SensorThreshold | null>(null)
@@ -53,10 +61,14 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
     notify_on_breach: true,
     notification_cooldown_minutes: 15,
     notification_channels: [] as string[],
+    notify_user_ids: [] as string[],
+    notify_emails: [] as string[],
+    manualEmails: '', // For the input field
   })
 
   useEffect(() => {
     fetchThresholds()
+    fetchMembers()
   }, [device.id])
 
   const fetchThresholds = async () => {
@@ -76,6 +88,21 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
     }
   }
 
+  const fetchMembers = async () => {
+    try {
+      // Get organization ID from device
+      if (!device.organization_id) return
+      
+      const response = await edgeFunctions.members.list(device.organization_id) as any
+      
+      if (response.success && response.data?.members) {
+        setMembers(response.data.members)
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error)
+    }
+  }
+
   const handleEdit = (threshold: SensorThreshold) => {
     setSelectedThreshold(threshold)
     setFormData({
@@ -89,7 +116,10 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       alert_message: threshold.alert_message || '',
       notify_on_breach: threshold.notify_on_breach,
       notification_cooldown_minutes: threshold.notification_cooldown_minutes || 15,
-      notification_channels: [], // TODO: fetch from separate table
+      notification_channels: threshold.notification_channels || [],
+      notify_user_ids: threshold.notify_user_ids || [],
+      notify_emails: threshold.notify_emails || [],
+      manualEmails: (threshold.notify_emails || []).join(', '),
     })
     setEditDialogOpen(true)
   }
@@ -107,7 +137,10 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       alert_message: '',
       notify_on_breach: true,
       notification_cooldown_minutes: 15,
-      notification_channels: [],
+      notification_channels: ['email'], // Default to email
+      notify_user_ids: [],
+      notify_emails: [],
+      manualEmails: '',
     })
     setEditDialogOpen(true)
   }
@@ -115,6 +148,12 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
   const handleSave = async () => {
     try {
       setSaving(true)
+
+      // Parse manual emails from comma-separated string
+      const manualEmails = formData.manualEmails
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email.length > 0)
 
       const payload = {
         device_id: device.id,
@@ -128,6 +167,9 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
         alert_message: formData.alert_message || null,
         notify_on_breach: formData.notify_on_breach,
         notification_cooldown_minutes: formData.notification_cooldown_minutes,
+        notification_channels: formData.notification_channels,
+        notify_user_ids: formData.notify_user_ids,
+        notify_emails: manualEmails,
       }
 
       const response = selectedThreshold
@@ -162,6 +204,15 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
       notification_channels: prev.notification_channels.includes(channel)
         ? prev.notification_channels.filter(c => c !== channel)
         : [...prev.notification_channels, channel]
+    }))
+  }
+
+  const toggleUserNotification = (userId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      notify_user_ids: prev.notify_user_ids.includes(userId)
+        ? prev.notify_user_ids.filter(id => id !== userId)
+        : [...prev.notify_user_ids, userId]
     }))
   }
 
@@ -536,6 +587,50 @@ export function AlertsThresholdsCard({ device }: AlertsThresholdsCardProps) {
                       </div>
                     </div>
                   </div>
+
+                  {/* Email Recipients - Organization Members */}
+                  {formData.notification_channels.includes('email') && (
+                    <div className="space-y-3">
+                      <Label>Notify Users</Label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                        {members.length === 0 ? (
+                          <p className="text-sm text-muted-foreground p-2">No organization members found</p>
+                        ) : (
+                          members.map(member => (
+                            <div key={member.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{member.full_name}</p>
+                                <p className="text-xs text-muted-foreground">{member.email}</p>
+                              </div>
+                              <Switch
+                                checked={formData.notify_user_ids.includes(member.id)}
+                                onCheckedChange={() => toggleUserNotification(member.id)}
+                              />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select organization members to notify
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Manual Email Addresses */}
+                  {formData.notification_channels.includes('email') && (
+                    <div className="space-y-2">
+                      <Label htmlFor="manual_emails">Additional Email Addresses</Label>
+                      <Input
+                        id="manual_emails"
+                        value={formData.manualEmails}
+                        onChange={(e) => setFormData(prev => ({ ...prev, manualEmails: e.target.value }))}
+                        placeholder="email1@example.com, email2@example.com"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter email addresses separated by commas for external contacts
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>

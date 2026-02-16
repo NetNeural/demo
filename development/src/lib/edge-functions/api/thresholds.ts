@@ -23,6 +23,9 @@ export interface ThresholdPayload {
   alert_message?: string | null
   notify_on_breach?: boolean
   notification_cooldown_minutes?: number
+  notify_user_ids?: string[]
+  notify_emails?: string[]
+  notification_channels?: string[]
 }
 
 export const createThresholdsAPI = (

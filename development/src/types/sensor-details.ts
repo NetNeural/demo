@@ -27,6 +27,9 @@ export interface SensorThreshold {
   notify_on_breach: boolean
   notification_cooldown_minutes: number
   last_notification_at: string | null
+  notify_user_ids: string[] | null
+  notify_emails: string[] | null
+  notification_channels: string[] | null
   created_at: string
   updated_at: string
 }
