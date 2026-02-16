@@ -220,71 +220,6 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           <span className="text-sm text-muted-foreground">{formatTimeAgo(lastReadingTime)}</span>
         </div>
 
-        {/* Min/Max Readings */}
-        {Object.keys(sensorMinMax).length > 0 && (
-          <div className="space-y-3 py-3 border-b">
-            <span className="text-sm font-medium">All-Time Readings:</span>
-            <div className="grid grid-cols-1 gap-3">
-              {Object.entries(sensorMinMax).map(([sensorKey, stats]) => {
-                const typeId = sensorKey.startsWith('type_') ? sensorKey.split('_')[1] : undefined
-                const SensorIcon = getSensorIcon(
-                  typeId ? parseInt(typeId) : undefined
-                )
-                
-                // Convert temperature if needed
-                let minValue = stats.min
-                let maxValue = stats.max
-                let unit = stats.unit
-                
-                if (stats.isTemperature) {
-                  if (useFahrenheit && unit === '°C') {
-                    minValue = (minValue * 9/5) + 32
-                    maxValue = (maxValue * 9/5) + 32
-                    unit = '°F'
-                  } else if (!useFahrenheit && unit === '°F') {
-                    minValue = (minValue - 32) * 5/9
-                    maxValue = (maxValue - 32) * 5/9
-                    unit = '°C'
-                  }
-                }
-                
-                return (
-                  <div key={sensorKey} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <SensorIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{stats.label}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div>
-                          <span className="text-xs text-muted-foreground">Low: </span>
-                          <span className="font-medium text-blue-600">
-                            {minValue.toFixed(1)} {unit}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {formatTimeAgo(stats.minTime)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div>
-                          <span className="text-xs text-muted-foreground">High: </span>
-                          <span className="font-medium text-red-600">
-                            {maxValue.toFixed(1)} {unit}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {formatTimeAgo(stats.maxTime)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Current Sensor Values - Largest Font */}
         <div className="space-y-4">
           {Object.keys(latestBySensor).length === 0 ? (
@@ -402,6 +337,71 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
               )
             })}
         </div>
+
+        {/* Min/Max Readings */}
+        {Object.keys(sensorMinMax).length > 0 && (
+          <div className="space-y-3 py-3 border-t">
+            <span className="text-sm font-medium">All-Time Readings:</span>
+            <div className="grid grid-cols-1 gap-3">
+              {Object.entries(sensorMinMax).map(([sensorKey, stats]) => {
+                const typeId = sensorKey.startsWith('type_') ? sensorKey.split('_')[1] : undefined
+                const SensorIcon = getSensorIcon(
+                  typeId ? parseInt(typeId) : undefined
+                )
+                
+                // Convert temperature if needed
+                let minValue = stats.min
+                let maxValue = stats.max
+                let unit = stats.unit
+                
+                if (stats.isTemperature) {
+                  if (useFahrenheit && unit === '°C') {
+                    minValue = (minValue * 9/5) + 32
+                    maxValue = (maxValue * 9/5) + 32
+                    unit = '°F'
+                  } else if (!useFahrenheit && unit === '°F') {
+                    minValue = (minValue - 32) * 5/9
+                    maxValue = (maxValue - 32) * 5/9
+                    unit = '°C'
+                  }
+                }
+                
+                return (
+                  <div key={sensorKey} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <SensorIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{stats.label}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div>
+                          <span className="text-xs text-muted-foreground">Low: </span>
+                          <span className="font-medium text-blue-600">
+                            {minValue.toFixed(1)} {unit}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {formatTimeAgo(stats.minTime)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div>
+                          <span className="text-xs text-muted-foreground">High: </span>
+                          <span className="font-medium text-red-600">
+                            {maxValue.toFixed(1)} {unit}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {formatTimeAgo(stats.maxTime)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
