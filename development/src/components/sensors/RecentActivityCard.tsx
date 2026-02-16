@@ -140,9 +140,28 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
             if (telemetryData && typeof telemetryData === 'object') {
               const readings: Activity[] = []
               
+              // Metadata fields to exclude from activity feed
+              const excludeFields = ['type', 'type_id', 'units', 'value', 'sensor', 'timestamp', 'received_at', 'device_timestamp']
+              
+              // Valid sensor reading field patterns
+              const isSensorField = (key: string): boolean => {
+                const keyLower = key.toLowerCase()
+                return (
+                  keyLower.includes('temperature') ||
+                  keyLower.includes('temp') ||
+                  keyLower.includes('humidity') ||
+                  keyLower.includes('pressure') ||
+                  keyLower.includes('battery') ||
+                  keyLower.includes('co2') ||
+                  keyLower.includes('voc') ||
+                  keyLower.includes('light') ||
+                  keyLower.includes('motion')
+                ) && !excludeFields.includes(key)
+              }
+              
               // Handle various telemetry structures
               Object.entries(telemetryData).forEach(([key, value]) => {
-                if (typeof value === 'number' && key !== 'type_id') {
+                if (typeof value === 'number' && isSensorField(key)) {
                   const formatted = formatSensorValue(key, value)
                   readings.push({
                     id: `telemetry-${t.id}-${key}-${idx}`,
