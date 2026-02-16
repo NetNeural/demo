@@ -195,16 +195,39 @@ serve(async (req) => {
             continue
           }
 
-          // Send notifications (email, SMS, etc.)
-          if (threshold.notify_user_ids && threshold.notify_user_ids.length > 0) {
-            console.log(`[sensor-threshold-evaluator] Would notify ${threshold.notify_user_ids.length} users`)
-            // TODO: Implement email sending via Resend
-            // TODO: Implement SMS sending
-          }
+          // Send email notifications
+          if (alertData && ((threshold.notify_user_ids && threshold.notify_user_ids.length > 0) || (threshold.notify_emails && threshold.notify_emails.length > 0))) {
+            console.log(`[sensor-threshold-evaluator] Sending email notifications for alert ${alertData.id}`)
+            
+            try {
+              const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+              const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+              
+              const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-alert-email`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  alert_id: alertData.id,
+                  threshold_id: threshold.id,
+                  recipient_emails: threshold.notify_emails || [],
+                  recipient_user_ids: threshold.notify_user_ids || [],
+                }),
+              })
 
-          if (threshold.notify_emails && threshold.notify_emails.length > 0) {
-            console.log(`[sensor-threshold-evaluator] Would notify ${threshold.notify_emails.length} email addresses`)
-            // TODO: Implement email sending via Resend
+              const emailResult = await emailResponse.json()
+              console.log(`[sensor-threshold-evaluator] Email notification result:`, emailResult)
+              
+              if (emailResult.success) {
+                console.log(`[sensor-threshold-evaluator] Sent ${emailResult.sent} email notification(s)`)
+              } else {
+                console.error(`[sensor-threshold-evaluator] Email sending failed:`, emailResult.error)
+              }
+            } catch (emailError) {
+              console.error(`[sensor-threshold-evaluator] Error sending email notifications:`, emailError)
+            }
           }
 
           // Update last_notification_at
