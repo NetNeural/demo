@@ -18,13 +18,17 @@
 -- =============================================================================
 -- FIX 1: organization_members Table Policies
 -- =============================================================================
--- Remove policies that query users table (causes circular dependency)
+-- Remove ALL old policies (including duplicates from previous migrations)
 
 DROP POLICY IF EXISTS "Users can view members in their organizations" ON organization_members;
 DROP POLICY IF EXISTS "Users can view their own organization memberships" ON organization_members;
 DROP POLICY IF EXISTS "organization_members_select_user_only" ON organization_members;
+DROP POLICY IF EXISTS "org_members_select_own" ON organization_members;
+DROP POLICY IF EXISTS "org_members_insert_authenticated" ON organization_members;
+DROP POLICY IF EXISTS "org_members_update_authenticated" ON organization_members;
+DROP POLICY IF EXISTS "org_members_delete_authenticated" ON organization_members;
 
--- Create simple policy with NO subqueries to other tables
+-- Create clean SELECT policy with NO subqueries to other tables
 CREATE POLICY "organization_members_select_user_only" ON organization_members
     FOR SELECT 
     USING (
@@ -33,6 +37,25 @@ CREATE POLICY "organization_members_select_user_only" ON organization_members
         OR
         -- Users can only view their own memberships
         (user_id = auth.uid())
+    );
+
+-- Re-create other policies without circular dependencies
+CREATE POLICY "org_members_insert_service" ON organization_members
+    FOR INSERT
+    WITH CHECK (
+        (auth.jwt() ->> 'role' = 'service_role')
+    );
+
+CREATE POLICY "org_members_update_service" ON organization_members
+    FOR UPDATE
+    USING (
+        (auth.jwt() ->> 'role' = 'service_role')
+    );
+
+CREATE POLICY "org_members_delete_service" ON organization_members
+    FOR DELETE
+    USING (
+        (auth.jwt() ->> 'role' = 'service_role')
     );
 
 -- =============================================================================
@@ -72,8 +95,13 @@ WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 
 -- Expected results:
--- 1. organization_members: 1 policy "organization_members_select_user_only"
--- 2. organizations: 1 policy "organizations_select_all_authenticated"
+-- 1. organization_members: 
+--    - organization_members_select_user_only (SELECT for users)
+--    - org_members_insert_service (INSERT for service_role)
+--    - org_members_update_service (UPDATE for service_role)
+--    - org_members_delete_service (DELETE for service_role)
+-- 2. organizations: 
+--    - organizations_select_all_authenticated (SELECT for all authenticated)
 
 -- =============================================================================
 -- NOTES
