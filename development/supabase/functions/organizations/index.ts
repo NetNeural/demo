@@ -1,4 +1,4 @@
-// Organizations Edge Function - Updated CORS headers to include PATCH method
+// Organizations Edge Function - CORS headers updated in auth.ts to include PATCH method
 import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { 
   getUserContext,
