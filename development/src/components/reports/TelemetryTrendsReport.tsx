@@ -218,6 +218,7 @@ export function TelemetryTrendsReport() {
   const statistics = useMemo((): DeviceStats[] => {
     return selectedDevices.map((deviceId, index) => {
       const deviceData = devices.find(d => d.id === deviceId)
+      const color = DEVICE_COLORS[index % DEVICE_COLORS.length] || '#3b82f6'
       const values = telemetryData
         .map(d => d[deviceId])
         .filter((v): v is number => typeof v === 'number' && !isNaN(v))
@@ -229,7 +230,7 @@ export function TelemetryTrendsReport() {
           min: 0,
           max: 0,
           avg: 0,
-          color: DEVICE_COLORS[index % DEVICE_COLORS.length],
+          color,
         }
       }
 
@@ -243,7 +244,7 @@ export function TelemetryTrendsReport() {
         min,
         max,
         avg,
-        color: DEVICE_COLORS[index % DEVICE_COLORS.length],
+        color,
       }
     })
   }, [selectedDevices, telemetryData, devices])
