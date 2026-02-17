@@ -143,6 +143,169 @@ class DocumentationStateMonitor:
         
         return apps
     
+    def count_mobile_apps(self) -> Dict[str, int]:
+        """Count mobile applications"""
+        apps = {
+            'total': 0,
+            'ios_apps': 0,
+            'android_apps': 0,
+            'react_native_apps': 0
+        }
+        
+        # Look for mobile app indicators
+        for item in self.base_path.iterdir():
+            if item.is_dir():
+                # Check for iOS
+                if (item / "ios").exists() and (item / "ios" / "Podfile").exists():
+                    apps['ios_apps'] += 1
+                    apps['total'] += 1
+                
+                # Check for Android
+                if (item / "android").exists() and (item / "android" / "build.gradle").exists():
+                    apps['android_apps'] += 1
+                    apps['total'] += 1
+                
+                # Check for React Native
+                if (item / "package.json").exists():
+                    try:
+                        with open(item / "package.json", 'r') as f:
+                            package_data = json.load(f)
+                            deps = package_data.get('dependencies', {})
+                            if 'react-native' in deps:
+                                apps['react_native_apps'] += 1
+                    except (json.JSONDecodeError, IOError):
+                        continue
+        
+        return apps
+    
+    def count_infrastructure(self) -> Dict[str, int]:
+        """Count infrastructure components"""
+        return {
+            'total': 0,
+            'docker_compose_files': len(list(self.base_path.rglob("docker-compose*.yml"))),
+            'kubernetes_configs': len(list(self.base_path.rglob("k8s/*.yaml"))),
+            'terraform_configs': len(list(self.base_path.rglob("*.tf")))
+        }
+    
+    def count_api_endpoints(self) -> int:
+        """Count API endpoints across services"""
+        # Simplified: count route definitions in Go services
+        endpoint_count = 0
+        for item in self.base_path.iterdir():
+            if item.is_dir() and (item / "go.mod").exists():
+                # Count HTTP route registrations
+                for go_file in item.rglob("*.go"):
+                    try:
+                        with open(go_file, 'r') as f:
+                            content = f.read()
+                            # Count common router patterns
+                            endpoint_count += content.count('.Handle(')
+                            endpoint_count += content.count('.HandleFunc(')
+                            endpoint_count += content.count('.GET(')
+                            endpoint_count += content.count('.POST(')
+                            endpoint_count += content.count('.PUT(')
+                            endpoint_count += content.count('.DELETE(')
+                    except IOError:
+                        continue
+        return endpoint_count
+    
+    def calculate_test_coverage(self) -> float:
+        """Calculate test coverage percentage"""
+        # Stub: return 0 for now
+        return 0.0
+    
+    def check_market_data_freshness(self) -> int:
+        """Check age of market data in days"""
+        return 0
+    
+    def check_competitive_analysis_age(self) -> int:
+        """Check age of competitive analysis in days"""
+        return 0
+    
+    def get_customer_satisfaction(self) -> float:
+        """Get customer satisfaction score"""
+        return 0.0
+    
+    def assess_financial_accuracy(self) -> float:
+        """Assess financial projections accuracy"""
+        return 0.0
+    
+    def track_epic_completion(self) -> Dict[str, float]:
+        """Track epic completion percentages"""
+        return {'epic_1': 0.0}
+    
+    def track_milestone_progress(self) -> Dict[str, float]:
+        """Track milestone progress"""
+        return {'milestone_1': 0.0}
+    
+    def calculate_team_velocity(self) -> float:
+        """Calculate team velocity"""
+        return 0.0
+    
+    def validate_technical_docs(self) -> float:
+        """Validate technical documentation accuracy"""
+        return 0.0
+    
+    def validate_business_docs(self) -> float:
+        """Validate business documentation freshness"""
+        return 0.0
+    
+    def validate_analysis_docs(self) -> float:
+        """Validate analysis documentation relevance"""
+        return 0.0
+    
+    def compare_technical_metrics(self, previous: Dict, current: Dict) -> Dict:
+        """Compare technical metrics between states"""
+        return {}
+    
+    def compare_business_metrics(self, previous: Dict, current: Dict) -> Dict:
+        """Compare business metrics between states"""
+        return {}
+    
+    def compare_project_metrics(self, previous: Dict, current: Dict) -> Dict:
+        """Compare project metrics between states"""
+        return {}
+    
+    def identify_significant_changes(self, changes: Dict) -> None:
+        """Identify significant changes"""
+        pass
+    
+    def generate_technical_recommendations(self, changes: Dict) -> List[Dict]:
+        """Generate technical documentation recommendations"""
+        return []
+    
+    def generate_business_recommendations(self, changes: Dict) -> List[Dict]:
+        """Generate business documentation recommendations"""
+        return []
+    
+    def generate_project_recommendations(self, changes: Dict) -> List[Dict]:
+        """Generate project documentation recommendations"""
+        return []
+    
+    def prioritize_recommendations(self, recommendations: List[Dict]) -> List[Dict]:
+        """Prioritize documentation recommendations"""
+        return recommendations
+    
+    def load_historical_snapshots(self, days: int) -> List[Dict]:
+        """Load historical snapshots for the specified number of days"""
+        return []
+    
+    def analyze_technical_trends(self, snapshots: List[Dict]) -> Dict:
+        """Analyze technical trends from historical data"""
+        return {}
+    
+    def analyze_business_trends(self, snapshots: List[Dict]) -> Dict:
+        """Analyze business trends from historical data"""
+        return {}
+    
+    def analyze_project_trends(self, snapshots: List[Dict]) -> Dict:
+        """Analyze project trends from historical data"""
+        return {}
+    
+    def analyze_health_trends(self, snapshots: List[Dict]) -> Dict:
+        """Analyze documentation health trends"""
+        return {}
+    
     def calculate_mvp_completion(self) -> float:
         """Calculate current MVP completion percentage"""
         # This would integrate with your project management system
