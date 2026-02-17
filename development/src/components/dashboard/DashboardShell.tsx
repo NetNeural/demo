@@ -1,5 +1,6 @@
 'use client'
 
+// Navigation icons using Lucide React - Version 2.0
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
