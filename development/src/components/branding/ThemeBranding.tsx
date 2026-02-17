@@ -20,30 +20,33 @@ export function ThemeBranding() {
     if (branding) {
       const root = document.documentElement;
 
-      // Apply primary color to all shade variants
+      // Apply primary color (convert hex to HSL for Tailwind)
       if (branding.primary_color) {
-        root.style.setProperty('--color-primary', branding.primary_color);
-        
-        // Apply to commonly used shade variants (600, 700, 800 for gradients/hovers)
-        root.style.setProperty('--color-primary-600', branding.primary_color);
-        root.style.setProperty('--color-primary-700', adjustBrightness(branding.primary_color, -10));
-        root.style.setProperty('--color-primary-800', adjustBrightness(branding.primary_color, -20));
-        
-        // Convert hex to RGB for opacity variants
-        const rgb = hexToRgb(branding.primary_color);
-        if (rgb) {
-          root.style.setProperty('--color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+        const hsl = hexToHsl(branding.primary_color);
+        if (hsl) {
+          // Tailwind format: "hue saturation% lightness%"
+          root.style.setProperty('--primary', hsl);
+          root.style.setProperty('--primary-foreground', getLightness(hsl) > 50 ? '0 0% 9%' : '0 0% 98%');
+          root.style.setProperty('--ring', hsl);
         }
       }
 
+      // Apply secondary color
       if (branding.secondary_color) {
-        root.style.setProperty('--color-secondary', branding.secondary_color);
-        root.style.setProperty('--color-secondary-600', branding.secondary_color);
+        const hsl = hexToHsl(branding.secondary_color);
+        if (hsl) {
+          root.style.setProperty('--secondary', hsl);
+          root.style.setProperty('--secondary-foreground', getLightness(hsl) > 50 ? '0 0% 9%' : '0 0% 98%');
+        }
       }
 
+      // Apply accent color
       if (branding.accent_color) {
-        root.style.setProperty('--color-accent', branding.accent_color);
-        root.style.setProperty('--color-accent-600', branding.accent_color);
+        const hsl = hexToHsl(branding.accent_color);
+        if (hsl) {
+          root.style.setProperty('--accent', hsl);
+          root.style.setProperty('--accent-foreground', getLightness(hsl) > 50 ? '0 0% 9%' : '0 0% 98%');
+        }
       }
 
       console.log('✅ Applied organization branding:', {
@@ -86,36 +89,56 @@ export function ThemeBranding() {
 }
 
 /**
- * Convert hex color to RGB
+ * Convert hex color to HSL (Tailwind CSS format)
+ * Returns format: "hue saturation% lightness%"
  */
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result && result[1] && result[2] && result[3]
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
+function hexToHsl(hex: string): string | null {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Parse hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  // Convert to degrees and percentages
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  const lPercent = Math.round(l * 100);
+
+  // Return in Tailwind format (no commas, with %)
+  return `${h} ${s}% ${lPercent}%`;
 }
 
 /**
- * Adjust color brightness (positive = lighter, negative = darker)
+ * Extract lightness value from HSL string
  */
-function adjustBrightness(hex: string, percent: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-
-  const adjust = (value: number) => {
-    const adjusted = value + (value * percent / 100);
-    return Math.max(0, Math.min(255, Math.round(adjusted)));
-  };
-
-  const r = adjust(rgb.r);
-  const g = adjust(rgb.g);
-  const b = adjust(rgb.b);
-
-  return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+function getLightness(hsl: string): number {
+  const match = hsl.match(/\d+%$/);
+  return match ? parseInt(match[0]) : 50;
 }
 
 /**

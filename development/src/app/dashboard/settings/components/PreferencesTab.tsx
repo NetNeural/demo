@@ -20,7 +20,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 export function PreferencesTab() {
   const { toast } = useToast();
   const { currentOrganization } = useOrganization();
-  const [useOrgDefault, setUseOrgDefault] = useState(false);
+  const [useOrgDefault, setUseOrgDefault] = useState(true); // Default to organization theme
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/New_York');
@@ -83,8 +83,12 @@ export function PreferencesTab() {
       try {
         // First check localStorage for immediate theme application
         const savedUseOrgDefault = localStorage.getItem('useOrgDefaultTheme');
-        if (savedUseOrgDefault) {
+        if (savedUseOrgDefault !== null) {
           setUseOrgDefault(savedUseOrgDefault === 'true');
+        } else {
+          // Default to true for new users
+          setUseOrgDefault(true);
+          localStorage.setItem('useOrgDefaultTheme', 'true');
         }
         
         const savedTheme = localStorage.getItem('theme');
@@ -192,21 +196,59 @@ export function PreferencesTab() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Organization Default Toggle */}
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <div className="space-y-0.5 flex-1">
-              <Label htmlFor="use-org-theme" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                Use Organization Default Theme
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Your organization&apos;s theme is set to: <strong className="capitalize">{orgTheme}</strong>
-              </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div className="space-y-0.5 flex-1">
+                <Label htmlFor="use-org-theme" className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Use Organization Default Theme
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Your organization&apos;s theme is set to: <strong className="capitalize">{orgTheme}</strong>
+                </p>
+              </div>
+              <Switch
+                id="use-org-theme"
+                checked={useOrgDefault}
+                onCheckedChange={setUseOrgDefault}
+              />
             </div>
-            <Switch
-              id="use-org-theme"
-              checked={useOrgDefault}
-              onCheckedChange={setUseOrgDefault}
-            />
+            
+            {/* Organization Color Preview */}
+            {currentOrganization?.settings?.branding && (
+              <div className="p-3 bg-card border rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Organization Colors:</p>
+                <div className="flex gap-3">
+                  {currentOrganization.settings.branding.primary_color && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-8 h-8 rounded border-2 border-border"
+                        style={{ backgroundColor: currentOrganization.settings.branding.primary_color }}
+                      />
+                      <span className="text-xs text-muted-foreground">Primary</span>
+                    </div>
+                  )}
+                  {currentOrganization.settings.branding.secondary_color && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-8 h-8 rounded border-2 border-border"
+                        style={{ backgroundColor: currentOrganization.settings.branding.secondary_color }}
+                      />
+                      <span className="text-xs text-muted-foreground">Secondary</span>
+                    </div>
+                  )}
+                  {currentOrganization.settings.branding.accent_color && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-8 h-8 rounded border-2 border-border"
+                        style={{ backgroundColor: currentOrganization.settings.branding.accent_color }}
+                      />
+                      <span className="text-xs text-muted-foreground">Accent</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Personal Theme Override */}

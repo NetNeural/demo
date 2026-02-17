@@ -466,10 +466,35 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             Theme & Colors
           </CardTitle>
           <CardDescription>
-            Set custom colors for your organization&apos;s interface
+            Set custom colors for your organization&apos;s interface. These will apply to all users by default, but individual users can override with personal preferences.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Live Color Preview */}
+          <div className="p-4 bg-card border rounded-lg">
+            <p className="text-sm font-medium mb-3">Preview:</p>
+            <div className="flex gap-2">
+              <button 
+                className="px-4 py-2 rounded-md text-white font-medium transition-colors"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Primary Button
+              </button>
+              <button 
+                className="px-4 py-2 rounded-md text-white font-medium transition-colors"
+                style={{ backgroundColor: secondaryColor }}
+              >
+                Secondary Button
+              </button>
+              <button 
+                className="px-4 py-2 rounded-md text-white font-medium transition-colors"
+                style={{ backgroundColor: accentColor }}
+              >
+                Accent Button
+              </button>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Primary Color */}
             <div className="space-y-2">
