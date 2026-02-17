@@ -30,8 +30,8 @@ serve(async (req) => {
 
     console.log('[send-alert-email] Processing alert:', alert_id)
 
-    // Get the alert details from database
-    const alertResponse = await fetch(`${supabaseUrl}/rest/v1/alerts?id=eq.${alert_id}&select=*,devices!alerts_device_id_fkey(name,device_type)`, {
+    // Get the alert details from database, including device and location
+    const alertResponse = await fetch(`${supabaseUrl}/rest/v1/alerts?id=eq.${alert_id}&select=*,devices!alerts_device_id_fkey(name,device_type,location_id,locations!devices_location_id_fkey(name,address,city,state,country))`, {
       headers: {
         'apikey': supabaseServiceKey,
         'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -46,6 +46,7 @@ serve(async (req) => {
     }
 
     const device = alert.devices
+    const location = device?.locations || null
 
     // Collect all recipient emails
     const allEmails: string[] = []
@@ -135,7 +136,8 @@ serve(async (req) => {
     <div class="content">
       <div class="device-info">
         <strong>Device:</strong> ${device?.name || 'Unknown'}<br>
-        <strong>Type:</strong> ${device?.device_type || 'N/A'}
+        <strong>Type:</strong> ${device?.device_type || 'N/A'}${location ? `<br>
+        <strong>Location:</strong> ${location.name}${location.address || location.city ? ` — ${[location.address, location.city, location.state, location.country].filter(Boolean).join(', ')}` : ''}` : ''}
       </div>
       
       <div class="alert-box">
