@@ -98,6 +98,25 @@ const UNIT_LABELS: Record<number, string> = {
   7: 'lux',
 }
 
+/**
+ * Determine if a device is a gateway/cellular type (not an environmental sensor)
+ */
+function isGatewayDevice(deviceType: string, deviceName: string): boolean {
+  const type = deviceType.toLowerCase()
+  const name = deviceName.toLowerCase()
+  
+  return (
+    type.includes('gateway') ||
+    type.includes('cellular') ||
+    type.includes('nrf9151') ||
+    type.includes('nrf9160') ||
+    type.includes('router') ||
+    type.includes('hub') ||
+    name.includes('gateway') ||
+    name.includes('cellular')
+  )
+}
+
 function getSensorIcon(sensorType?: number, sensorName?: string) {
   const name = sensorName?.toLowerCase() || ''
   if (sensorType === 1 || name.includes('tmp') || name.includes('temp')) return Thermometer
@@ -670,7 +689,9 @@ export function DevicesList() {
                   className="flex-1"
                   onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
                 >
-                  Sensor Data
+                  {isGatewayDevice(device.device_type, device.name) 
+                    ? 'Gateway Data' 
+                    : 'Device Data'}
                 </Button>
               </div>
             </CardContent>
