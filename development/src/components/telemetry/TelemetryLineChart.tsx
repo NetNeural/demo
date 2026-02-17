@@ -31,12 +31,12 @@ interface TelemetryLineChartProps {
   height?: number
 }
 
-const TIME_RANGE_INTERVALS = {
-  '1h': '1 hour',
-  '6h': '6 hours',
-  '24h': '24 hours',
-  '7d': '7 days',
-  '30d': '30 days',
+const TIME_RANGE_HOURS: Record<string, number> = {
+  '1h': 1,
+  '6h': 6,
+  '24h': 24,
+  '7d': 168,
+  '30d': 720,
 }
 
 export function TelemetryLineChart({
@@ -59,7 +59,8 @@ export function TelemetryLineChart({
       setLoading(true)
       setError(null)
 
-      const interval = TIME_RANGE_INTERVALS[timeRange]
+      const hours = TIME_RANGE_HOURS[timeRange] || 24
+      const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
@@ -68,10 +69,10 @@ export function TelemetryLineChart({
           device_timestamp,
           telemetry,
           integration:integration_id (
-            type
+            integration_type
           )
         `)
-        .gte('device_timestamp', `now() - interval '${interval}'`)
+        .gte('device_timestamp', startTime)
         .order('device_timestamp', { ascending: true })
 
       if (deviceId) {
@@ -110,7 +111,7 @@ export function TelemetryLineChart({
           return {
             timestamp: new Date(item.device_timestamp).toLocaleString(),
             value: parseFloat(String(value)),
-            integration_type: item.integration?.type || 'unknown',
+            integration_type: item.integration?.integration_type || 'unknown',
           }
         })
         .filter(Boolean) as TelemetryDataPoint[]
@@ -118,7 +119,7 @@ export function TelemetryLineChart({
       setData(processedData)
     } catch (err) {
       console.error('[Telemetry Chart] Error:', err)
-      setError('An unexpected error occurred')
+      setError(`Failed to load ${metricLabel || metric} data`)
     } finally {
       setLoading(false)
     }
