@@ -3,9 +3,14 @@
 *Enterprise-Grade IoT Platform-as-a-Service Solution*
 
 [![GitHub](https://img.shields.io/badge/GitHub-NetNeural/MonoRepo-blue.svg)](https://github.com/NetNeural/MonoRepo)
-[![MVP Progress](https://img.shields.io/badge/MVP_Progress-78%25-green.svg)](docs/README.md)
+[![MVP Progress](https://img.shields.io/badge/MVP_Progress-92%25-brightgreen.svg)](docs/README.md)
 [![Documentation](https://img.shields.io/badge/Documentation-Complete-brightgreen.svg)](docs/README.md)
 [![Market Size](https://img.shields.io/badge/Target_Market-$2.3B-gold.svg)](docs/generated/business/ENHANCED_MARKET_ANALYSIS.md)
+
+[![CI Tests](https://github.com/NetNeural/MonoRepo/actions/workflows/test.yml/badge.svg)](https://github.com/NetNeural/MonoRepo/actions/workflows/test.yml)
+[![Nightly Performance](https://github.com/NetNeural/MonoRepo/actions/workflows/performance.yml/badge.svg)](https://github.com/NetNeural/MonoRepo/actions/workflows/performance.yml)
+[![codecov](https://codecov.io/gh/NetNeural/MonoRepo/branch/main/graph/badge.svg)](https://codecov.io/gh/NetNeural/MonoRepo)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 A comprehensive IoT Platform-as-a-Service (PaaS) solution designed to bridge the gap between developer-friendly platforms and enterprise-grade solutions. NetNeural provides enterprise features at competitive pricing with 67% cost savings compared to traditional IoT platforms.
 
