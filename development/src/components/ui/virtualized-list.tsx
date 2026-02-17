@@ -1,10 +1,7 @@
 /**
  * VirtualizedList Component
  * 
- * TEMPORARILY DISABLED: react-window package has version issues
- * TODO: Fix react-window version (should be 1.8.x not 2.2.7) and re-enable
- * 
- * High-performance list component using react-window for rendering
+ * High-performance list component using react-window v2 for rendering
  * only visible items. Use this for lists with 50+ items.
  * 
  * @example
@@ -20,10 +17,8 @@
  * ```
  */
 
-// TODO: Fix react-window version before re-enabling
-// import { FixedSizeList as List, type ListChildComponentProps } from 'react-window'
-// import AutoSizer from 'react-virtualized-auto-sizer'
-// import { memo } from 'react'
+import { List } from 'react-window'
+import { type CSSProperties, type ReactElement } from 'react'
 
 interface VirtualizedListProps<T> {
   items: T[]
@@ -31,61 +26,65 @@ interface VirtualizedListProps<T> {
   itemHeight: number
   renderItem: (item: T, index: number) => React.ReactNode
   className?: string
-  overscanCount?: number  // Number of items to render outside viewport (default: 3)
+  overscanCount?: number
   onItemsRendered?: (startIndex: number, endIndex: number) => void
 }
 
 /**
- * Virtualized List Component (TEMPORARILY DISABLED)
- * 
- * This component is temporarily disabled due to react-window package version issues.
- * Use a regular map for now, or fix the package version first.
+ * High-performance virtualized list using react-window v2.
+ * Only renders visible rows plus overscan, dramatically reducing DOM nodes
+ * for large datasets (200+ devices, 1000+ alerts, etc.).
  */
 export function VirtualizedList<T>({
   items,
-  height = '100%',
+  height = 600,
+  itemHeight,
   renderItem,
   className = '',
-}: Pick<VirtualizedListProps<T>, 'items' | 'height' | 'renderItem' | 'className'>) {
-  // Fallback to regular rendering until react-window is fixed
+  overscanCount = 5,
+  onItemsRendered,
+}: VirtualizedListProps<T>) {
+  // For small lists, skip virtualization overhead
+  if (items.length < 30) {
+    return (
+      <div className={className} style={{ height: typeof height === 'number' ? `${height}px` : height, overflow: 'auto' }}>
+        {items.map((item, index) => (
+          <div key={index}>{renderItem(item, index)}</div>
+        ))}
+      </div>
+    )
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  type NoExtraProps = {}
+
+  const Row = ({ index, style }: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> }): ReactElement | null => {
+    const item = items[index]
+    if (!item) return null
+    return (
+      <div style={style}>
+        {renderItem(item, index)}
+      </div>
+    )
+  }
+
+  const numericHeight = typeof height === 'number' ? height : 600
+
   return (
-    <div className={className} style={{ height: typeof height === 'number' ? `${height}px` : height, overflow: 'auto' }}>
-      {items.map((item, index) => (
-        <div key={index}>{renderItem(item, index)}</div>
-      ))}
+    <div className={className}>
+      <List<NoExtraProps>
+        rowComponent={Row}
+        rowCount={items.length}
+        rowHeight={itemHeight}
+        rowProps={{}}
+        defaultHeight={numericHeight}
+        overscanCount={overscanCount}
+        onRowsRendered={onItemsRendered ? (visible) => {
+          onItemsRendered(visible.startIndex, visible.stopIndex)
+        } : undefined}
+      />
     </div>
   )
 }
-
-/**
- * Example Usage: DevicesList with Virtualization
- * 
- * NOTE: This component is temporarily using regular rendering.
- * To re-enable virtualization, fix react-window package version first.
- * 
- * @example
- * ```tsx
- * import { VirtualizedList } from '@/components/ui/virtualized-list'
- * 
- * export function DevicesListVirtualized() {
- *   const [devices, setDevices] = useState<Device[]>([])
- * 
- *   return (
- *     <VirtualizedList
- *       items={devices}
- *       height="calc(100vh - 200px)"  // Responsive height
- *       itemHeight={80}  // Each device card is 80px tall
- *       renderItem={(device) => (
- *         <DeviceCard 
- *           key={device.id}
- *           device={device}
- *           onClick={() => handleDeviceClick(device.id)}
- *         />
- *       )}
- *     />
- *   )
- * }
- * ```
- */
 
 export default VirtualizedList
