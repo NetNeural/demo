@@ -1,13 +1,14 @@
 'use client'
 
-// Cache bust: 2026-02-16 v2 - Fixed optional chaining
-import { useEffect, useState, useCallback } from 'react'
+// Cache bust: 2026-02-17 v3 - Conditional cards by device type
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCardNew'
+import { GatewayOverviewCard } from '@/components/sensors/GatewayOverviewCard'
 import { LocationDetailsCard } from '@/components/sensors/LocationDetailsCard'
 import { DeviceHealthCard } from '@/components/sensors/DeviceHealthCard'
 import { RecentActivityCard } from '@/components/sensors/RecentActivityCard'
@@ -16,6 +17,56 @@ import { StatisticalSummaryCard } from '@/components/sensors/StatisticalSummaryC
 import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
 import type { Device } from '@/types/sensor-details'
+
+/**
+ * Determine if a device is a gateway/cellular type (not an environmental sensor)
+ * Gateways don't produce temperature/humidity/pressure data - they relay data
+ * from child sensors and report connectivity metrics instead.
+ */
+function isGatewayDevice(device: Device): boolean {
+  const type = (device.device_type || '').toLowerCase()
+  const name = (device.name || '').toLowerCase()
+  const model = (device.model || '').toLowerCase()
+
+  // Check device_type field
+  if (
+    type.includes('gateway') ||
+    type.includes('cellular') ||
+    type.includes('nrf9151') ||
+    type.includes('nrf9160') ||
+    type.includes('router') ||
+    type.includes('hub') ||
+    type === 'netneural-gateway' ||
+    type === 'cellular-gateway' ||
+    type === 'nrf9151_cellular'
+  ) {
+    return true
+  }
+
+  // Check device name
+  if (name.includes('gateway') || name.includes('cellular')) {
+    return true
+  }
+
+  // Check model
+  if (model.includes('gateway') || model.includes('nrf9151') || model.includes('nrf9160')) {
+    return true
+  }
+
+  // Check metadata
+  if (device.metadata) {
+    if (
+      device.metadata.is_gateway === true ||
+      device.metadata.isGateway === true ||
+      (typeof device.metadata.device_category === 'string' && 
+        device.metadata.device_category.toLowerCase().includes('gateway'))
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
 
 interface TelemetryReading {
   device_id: string
@@ -35,6 +86,9 @@ export default function SensorDetailsPage() {
   const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
   const [error, setError] = useState<string | null>(null)
   const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
+
+  // Determine device category
+  const isGateway = useMemo(() => device ? isGatewayDevice(device) : false, [device])
 
   const fetchDeviceData = useCallback(async () => {
     if (!currentOrganization || !deviceId) return
@@ -171,36 +225,46 @@ export default function SensorDetailsPage() {
         )}
       </div>
 
-      {/* Priority Cards */}
+      {/* Priority Cards - Conditional by device type */}
       <div className="grid gap-6 md:grid-cols-1">
-        {/* 1. Sensor Overview */}
-        <SensorOverviewCard device={device} telemetryReadings={telemetryReadings} />
+        {/* 1. Overview Card - Different for gateways vs sensors */}
+        {isGateway ? (
+          <GatewayOverviewCard device={device} telemetryReadings={telemetryReadings} />
+        ) : (
+          <SensorOverviewCard device={device} telemetryReadings={telemetryReadings} />
+        )}
 
-        {/* 2. Historical Data Viewer with Trend Chart */}
-        <HistoricalDataViewer device={device} />
+        {/* 2. Historical Data Viewer - Only for sensors with telemetry data */}
+        {!isGateway && (
+          <HistoricalDataViewer device={device} />
+        )}
 
-        {/* 3. Location + Health */}
+        {/* 3. Location + Health - Always shown */}
         <div className="grid gap-6 md:grid-cols-2">
           <LocationDetailsCard device={device} />
           <DeviceHealthCard device={device} telemetryReadings={telemetryReadings} />
         </div>
 
-        {/* 4. Alerts + Activity */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <AlertsThresholdsCard 
-            device={device} 
-            temperatureUnit={temperatureUnit}
-            onTemperatureUnitChange={setTemperatureUnit}
-          />
+        {/* 4. Alerts + Activity - Alerts only for sensors */}
+        <div className={`grid gap-6 ${isGateway ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}>
+          {!isGateway && (
+            <AlertsThresholdsCard 
+              device={device} 
+              temperatureUnit={temperatureUnit}
+              onTemperatureUnitChange={setTemperatureUnit}
+            />
+          )}
           <RecentActivityCard device={device} />
         </div>
 
-        {/* 5. Statistics */}
-        <StatisticalSummaryCard 
-          device={device} 
-          telemetryReadings={telemetryReadings}
-          temperatureUnit={temperatureUnit}
-        />
+        {/* 5. Statistics - Only for sensors */}
+        {!isGateway && (
+          <StatisticalSummaryCard 
+            device={device} 
+            telemetryReadings={telemetryReadings}
+            temperatureUnit={temperatureUnit}
+          />
+        )}
       </div>
     </div>
   )

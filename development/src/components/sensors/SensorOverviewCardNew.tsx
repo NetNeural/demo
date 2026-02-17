@@ -58,6 +58,33 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
     return false
   })
   
+  // Extract health metrics from latest telemetry reading
+  const telemetryHealthMetrics = useMemo(() => {
+    if (!telemetryReadings.length || !telemetryReadings[0]) return null
+    
+    const latest = telemetryReadings[0].telemetry
+    return {
+      battery: typeof latest.battery === 'number' ? latest.battery : null,
+      rssi: typeof latest.rssi === 'number' ? latest.rssi : null,
+      uptime: typeof latest.uptime === 'number' ? latest.uptime : null,
+      firmware: typeof latest.firmware_version === 'string' ? latest.firmware_version : null,
+    }
+  }, [telemetryReadings])
+  
+  // Format uptime (seconds -> "3d 14h 23m")
+  const formatUptime = (seconds: number): string => {
+    const days = Math.floor(seconds / 86400)
+    const hours = Math.floor((seconds % 86400) / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    
+    const parts = []
+    if (days > 0) parts.push(`${days}d`)
+    if (hours > 0) parts.push(`${hours}h`)
+    if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`)
+    
+    return parts.join(' ')
+  }
+  
   // Group last 5 readings by sensor type
   const latestBySensor = useMemo(() => {
     const grouped: Record<string, TelemetryReading[]> = {}
@@ -272,27 +299,92 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           )}
         </div>
 
-        {/* Secondary Info Grid */}
+        {/* Secondary Info Grid - Device Health Metrics */}
         <div className="grid grid-cols-2 gap-4 pt-4">
-          {/* Battery Level */}
-          {device.battery_level != null && (
+          {/* Battery Level - Show both device profile and telemetry */}
+          {(device.battery_level != null || telemetryHealthMetrics?.battery != null) && (
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Battery className="h-3 w-3" />
                 <span>Battery</span>
               </div>
-              <p className="text-lg font-semibold">{device.battery_level}%</p>
+              {device.battery_level != null && (
+                <p className="text-lg font-semibold">
+                  {device.battery_level}%
+                  <span className="text-xs text-muted-foreground ml-1">(Profile)</span>
+                </p>
+              )}
+              {telemetryHealthMetrics?.battery != null && (
+                <p className="text-sm text-muted-foreground">
+                  {telemetryHealthMetrics.battery}% <span className="text-xs">(Live)</span>
+                </p>
+              )}
+              {device.battery_level == null && telemetryHealthMetrics?.battery != null && (
+                <p className="text-lg font-semibold">{telemetryHealthMetrics.battery}%</p>
+              )}
             </div>
           )}
 
-          {/* Signal Strength */}
-          {device.signal_strength != null && (
+          {/* Signal Strength - Show both device profile and telemetry */}
+          {(device.signal_strength != null || telemetryHealthMetrics?.rssi != null) && (
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Signal className="h-3 w-3" />
                 <span>Signal</span>
               </div>
-              <p className="text-lg font-semibold">{device.signal_strength} dBm</p>
+              {device.signal_strength != null && (
+                <p className="text-lg font-semibold">
+                  {device.signal_strength} dBm
+                  <span className="text-xs text-muted-foreground ml-1">(Profile)</span>
+                </p>
+              )}
+              {telemetryHealthMetrics?.rssi != null && (
+                <p className="text-sm text-muted-foreground">
+                  {telemetryHealthMetrics.rssi} dBm <span className="text-xs">(Live)</span>
+                </p>
+              )}
+              {device.signal_strength == null && telemetryHealthMetrics?.rssi != null && (
+                <p className="text-lg font-semibold">{telemetryHealthMetrics.rssi} dBm</p>
+              )}
+            </div>
+          )}
+          
+          {/* Uptime - From telemetry only */}
+          {telemetryHealthMetrics?.uptime != null && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Activity className="h-3 w-3" />
+                <span>Uptime</span>
+              </div>
+              <p className="text-lg font-semibold">{formatUptime(telemetryHealthMetrics.uptime)}</p>
+            </div>
+          )}
+          
+          {/* Firmware Version - Show both device profile and telemetry if different */}
+          {(device.firmware_version || telemetryHealthMetrics?.firmware) && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Activity className="h-3 w-3" />
+                <span>Firmware</span>
+              </div>
+              {device.firmware_version && (
+                <p className="text-lg font-semibold">
+                  {device.firmware_version}
+                  {telemetryHealthMetrics?.firmware && 
+                   telemetryHealthMetrics.firmware !== device.firmware_version && (
+                    <span className="text-xs text-muted-foreground ml-1">(Profile)</span>
+                  )}
+                </p>
+              )}
+              {telemetryHealthMetrics?.firmware && 
+               telemetryHealthMetrics.firmware !== device.firmware_version && (
+                <p className="text-sm text-muted-foreground">
+                  {telemetryHealthMetrics.firmware} <span className="text-xs">(Live)</span>
+                </p>
+              )}
+              {!device.firmware_version && telemetryHealthMetrics?.firmware && (
+                <p className="text-lg font-semibold">{telemetryHealthMetrics.firmware}</p>
+              )}
             </div>
           )}
         </div>
