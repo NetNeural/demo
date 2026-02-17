@@ -54,8 +54,10 @@ interface DeviceStats {
 interface Threshold {
   device_id: string
   sensor_type: string
-  warning_threshold: number | null
-  critical_threshold: number | null
+  min_value: number | null
+  max_value: number | null
+  critical_min: number | null
+  critical_max: number | null
   temperature_unit?: string
 }
 
@@ -137,7 +139,7 @@ export function TelemetryTrendsReport() {
     const fetchThresholds = async () => {
       const { data, error } = await supabase
         .from('sensor_thresholds')
-        .select('device_id, sensor_type, warning_threshold, critical_threshold, temperature_unit')
+        .select('device_id, sensor_type, min_value, max_value, critical_min, critical_max, temperature_unit')
         .in('device_id', selectedDevices)
         .eq('sensor_type', selectedSensor)
 
@@ -260,8 +262,15 @@ export function TelemetryTrendsReport() {
         const value = point[deviceId] as number | undefined
         if (value === undefined) return
 
-        const isCritical = threshold.critical_threshold !== null && value >= threshold.critical_threshold
-        const isWarning = !isCritical && threshold.warning_threshold !== null && value >= threshold.warning_threshold
+        // Check critical range breach (outside critical_min to critical_max)
+        const isCritical = (threshold.critical_min !== null && value < threshold.critical_min) || 
+                          (threshold.critical_max !== null && value > threshold.critical_max)
+        
+        // Check warning range breach (outside min_value to max_value, but not critical)
+        const isWarning = !isCritical && (
+          (threshold.min_value !== null && value < threshold.min_value) || 
+          (threshold.max_value !== null && value > threshold.max_value)
+        )
 
         if (isCritical || isWarning) {
           if (!currentBreach) {
@@ -582,20 +591,39 @@ export function TelemetryTrendsReport() {
                 {/* Threshold Lines */}
                 {thresholds.map(threshold => (
                   <React.Fragment key={threshold.device_id}>
-                    {threshold.warning_threshold !== null && (
+                    {/* Warning thresholds */}
+                    {threshold.min_value !== null && (
                       <ReferenceLine
-                        y={threshold.warning_threshold}
+                        y={threshold.min_value}
                         stroke="#f59e0b"
                         strokeDasharray="3 3"
-                        label={{ value: 'Warning', position: 'right' }}
+                        label={{ value: 'Warning Min', position: 'right', fill: '#f59e0b' }}
                       />
                     )}
-                    {threshold.critical_threshold !== null && (
+                    {threshold.max_value !== null && (
                       <ReferenceLine
-                        y={threshold.critical_threshold}
+                        y={threshold.max_value}
+                        stroke="#f59e0b"
+                        strokeDasharray="3 3"
+                        label={{ value: 'Warning Max', position: 'right', fill: '#f59e0b' }}
+                      />
+                    )}
+                    
+                    {/* Critical thresholds */}
+                    {threshold.critical_min !== null && (
+                      <ReferenceLine
+                        y={threshold.critical_min}
                         stroke="#ef4444"
                         strokeDasharray="3 3"
-                        label={{ value: 'Critical', position: 'right' }}
+                        label={{ value: 'Critical Min', position: 'right', fill: '#ef4444' }}
+                      />
+                    )}
+                    {threshold.critical_max !== null && (
+                      <ReferenceLine
+                        y={threshold.critical_max}
+                        stroke="#ef4444"
+                        strokeDasharray="3 3"
+                        label={{ value: 'Critical Max', position: 'right', fill: '#ef4444' }}
                       />
                     )}
                   </React.Fragment>
