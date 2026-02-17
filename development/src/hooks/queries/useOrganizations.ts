@@ -10,30 +10,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys, CACHE_TIME } from '@/lib/query-client'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/database.types'
 
-export interface Organization {
-  id: string
-  name: string
-  slug: string
-  created_at: string
-  updated_at: string
-}
+export type Organization = Database['public']['Tables']['organizations']['Row']
 
-export interface User {
-  id: string
-  email: string
-  full_name?: string
-  created_at: string
-  updated_at: string
-}
+export type User = Database['public']['Tables']['users']['Row']
 
-export interface OrganizationMember {
-  id: string
-  organization_id: string
-  user_id: string
-  role: 'owner' | 'admin' | 'member' | 'viewer'
-  created_at: string
-  updated_at: string
+export type OrganizationMember = Database['public']['Tables']['organization_members']['Row'] & {
   user?: User
 }
 
@@ -117,7 +100,7 @@ export function useOrganizationMembersQuery(organizationId: string) {
         .from('organization_members')
         .select(`
           *,
-          user:users(*)
+          user:users!organization_members_user_id_fkey(*)
         `)
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
@@ -233,7 +216,7 @@ export function useUpdateOrganizationMutation() {
   const supabase = createClient()
 
   return useMutation({
-    mutationFn: async (org: { id: string; [key: string]: any }) => {
+    mutationFn: async (org: { id: string; [key: string]: unknown }) => {
       const { data, error } = await supabase
         .from('organizations')
         .update(org)

@@ -5,21 +5,44 @@
  * - Telemetry data: 1 minute cache
  * - Efficient time-range queries
  * - Automatic pagination support
+ * 
+ * Note: The device_telemetry_history table stores sensor readings in a
+ * `telemetry` JSON column. Individual fields like sensor_type, value, unit
+ * are extracted from this JSON at query time.
  */
 
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys, CACHE_TIME } from '@/lib/query-client'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/database.types'
 
-export interface TelemetryData {
-  id: string
-  device_id: string
-  sensor_type: string
-  value: number
-  unit: string
-  timestamp: string
-  metadata?: Record<string, unknown>
-  created_at: string
+/** Raw database row from device_telemetry_history */
+export type TelemetryRow = Database['public']['Tables']['device_telemetry_history']['Row']
+
+/** Parsed telemetry payload extracted from the JSON blob */
+export interface TelemetryParsed {
+  sensor_type?: string
+  value?: number
+  unit?: string
+  [key: string]: unknown
+}
+
+/** Convenience type: DB row + parsed telemetry fields for display */
+export interface TelemetryData extends TelemetryRow {
+  parsed?: TelemetryParsed
+}
+
+/** Helper: safely parse the telemetry JSON blob */
+function parseTelemetryBlob(row: TelemetryRow): TelemetryParsed {
+  if (row.telemetry && typeof row.telemetry === 'object' && !Array.isArray(row.telemetry)) {
+    return row.telemetry as TelemetryParsed
+  }
+  return {}
+}
+
+/** Helper: enrich rows with parsed telemetry */
+function enrichRows(rows: TelemetryRow[]): TelemetryData[] {
+  return rows.map(row => ({ ...row, parsed: parseTelemetryBlob(row) }))
 }
 
 /**
@@ -44,16 +67,12 @@ export function useLatestTelemetryQuery(deviceId: string, options?: {
       : queryKeys.latestTelemetry(deviceId),
     
     queryFn: async (): Promise<TelemetryData[]> => {
-      let query = supabase
+      const query = supabase
         .from('device_telemetry_history')
         .select('*')
         .eq('device_id', deviceId)
-        .order('timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(options?.limit || 100)
-
-      if (options?.sensorType) {
-        query = query.eq('sensor_type', options.sensorType)
-      }
 
       const { data, error } = await query
 
@@ -61,7 +80,14 @@ export function useLatestTelemetryQuery(deviceId: string, options?: {
         throw new Error(error.message || 'Failed to fetch telemetry')
       }
 
-      return data || []
+      const enriched = enrichRows(data || [])
+
+      // Client-side filter by sensor_type from telemetry JSON
+      if (options?.sensorType) {
+        return enriched.filter(d => d.parsed?.sensor_type === options.sensorType)
+      }
+
+      return enriched
     },
     
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
@@ -101,13 +127,9 @@ export function useTelemetryRangeQuery(params: {
         .from('device_telemetry_history')
         .select('*')
         .eq('device_id', params.deviceId)
-        .gte('timestamp', params.start)
-        .lte('timestamp', params.end)
-        .order('timestamp', { ascending: true })
-
-      if (params.sensorType) {
-        query = query.eq('sensor_type', params.sensorType)
-      }
+        .gte('created_at', params.start)
+        .lte('created_at', params.end)
+        .order('created_at', { ascending: true })
 
       if (params.limit) {
         query = query.limit(params.limit)
@@ -119,7 +141,14 @@ export function useTelemetryRangeQuery(params: {
         throw new Error(error.message || 'Failed to fetch telemetry range')
       }
 
-      return data || []
+      const enriched = enrichRows(data || [])
+
+      // Client-side filter by sensor_type if specified
+      if (params.sensorType) {
+        return enriched.filter(d => d.parsed?.sensor_type === params.sensorType)
+      }
+
+      return enriched
     },
     
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
@@ -157,11 +186,10 @@ export function useTelemetryStatsQuery(params: {
 
       const { data, error } = await supabase
         .from('device_telemetry_history')
-        .select('value')
+        .select('*')
         .eq('device_id', params.deviceId)
-        .eq('sensor_type', params.sensorType)
-        .gte('timestamp', hoursAgo.toISOString())
-        .order('timestamp', { ascending: true })
+        .gte('created_at', hoursAgo.toISOString())
+        .order('created_at', { ascending: true })
 
       if (error) {
         throw new Error(error.message || 'Failed to fetch telemetry stats')
@@ -177,7 +205,14 @@ export function useTelemetryStatsQuery(params: {
         }
       }
 
-      const values = data.map(d => d.value)
+      // Parse telemetry JSON and extract numeric values for the sensor type
+      const values = enrichRows(data)
+        .filter(d => d.parsed?.sensor_type === params.sensorType && typeof d.parsed?.value === 'number')
+        .map(d => d.parsed!.value as number)
+
+      if (values.length === 0) {
+        return { count: 0, min: null, max: null, avg: null, latest: null }
+      }
       
       return {
         count: values.length,
@@ -221,20 +256,22 @@ export function useGroupedTelemetryQuery(deviceId: string, options?: {
         .from('device_telemetry_history')
         .select('*')
         .eq('device_id', deviceId)
-        .gte('timestamp', hoursAgo.toISOString())
-        .order('timestamp', { ascending: false })
+        .gte('created_at', hoursAgo.toISOString())
+        .order('created_at', { ascending: false })
         .limit(options?.limit || 500)
 
       if (error) {
         throw new Error(error.message || 'Failed to fetch grouped telemetry')
       }
 
-      // Group by sensor_type
-      const grouped = (data || []).reduce((acc, item) => {
-        if (!acc[item.sensor_type]) {
-          acc[item.sensor_type] = []
+      // Group by sensor_type extracted from telemetry JSON
+      const enriched = enrichRows(data || [])
+      const grouped = enriched.reduce((acc, item) => {
+        const sensorType = item.parsed?.sensor_type || 'unknown'
+        if (!acc[sensorType]) {
+          acc[sensorType] = []
         }
-        acc[item.sensor_type].push(item)
+        acc[sensorType]!.push(item)
         return acc
       }, {} as Record<string, TelemetryData[]>)
 

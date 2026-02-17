@@ -379,7 +379,7 @@ export async function trackUserAction<T>(
     {
       op: 'user.action',
       name: actionName,
-      attributes: metadata,
+      attributes: metadata as Record<string, string | number | boolean | undefined>,
     },
     async (span) => {
       const startTime = performance.now()

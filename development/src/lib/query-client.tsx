@@ -159,7 +159,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Show DevTools in development only */}
       {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+        <ReactQueryDevtools initialIsOpen={false} position="bottom" />
       )}
     </QueryClientProvider>
   )

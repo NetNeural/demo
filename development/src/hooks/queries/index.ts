@@ -39,6 +39,8 @@ export {
   useTelemetryStatsQuery,
   useGroupedTelemetryQuery,
   type TelemetryData,
+  type TelemetryRow,
+  type TelemetryParsed,
 } from './useTelemetry'
 
 // Organizations & Users
