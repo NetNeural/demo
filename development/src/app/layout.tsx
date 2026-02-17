@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
 import { Toaster } from 'sonner'
 import { SentryInit } from '@/components/SentryInit'
+import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <SentryInit />
+        <WebVitalsReporter />
         <Providers>
           {children}
           <Toaster theme="system" richColors />
