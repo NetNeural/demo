@@ -122,8 +122,8 @@ export function MqttConfigDialog({
           id: string
           name: string
           type: string
-          settings?: Record<string, unknown>
-          config?: {
+          settings?: {
+            brokerType?: 'hosted' | 'external'
             brokerUrl?: string
             port?: number
             username?: string
@@ -131,6 +131,13 @@ export function MqttConfigDialog({
             clientId?: string
             useTls?: boolean
             topics?: string
+            payloadParser?: 'standard' | 'vmark' | 'custom'
+            customParserConfig?: {
+              device_id_path?: string
+              telemetry_path?: string
+              timestamp_path?: string
+              timestamp_format?: string
+            }
           }
         }>
       }
@@ -138,18 +145,26 @@ export function MqttConfigDialog({
       const data = response.data as IntegrationResponse
       const integration = data.integrations?.find((i) => i.id === integrationId)
       
-      if (integration?.config) {
-        const cfg = integration.config
+      if (integration?.settings) {
+        const s = integration.settings
         setConfig({
           id: integration.id,
           name: integration.name,
-          broker_url: cfg.brokerUrl || '',
-          port: cfg.port || 1883,
-          username: cfg.username || '',
-          password: cfg.password || '',
-          client_id: cfg.clientId || '',
-          use_tls: cfg.useTls ?? false,
-          topics: cfg.topics || '',
+          broker_type: s.brokerType || 'external',
+          broker_url: s.brokerUrl || '',
+          port: s.port || 1883,
+          username: s.username || '',
+          password: s.password || '',
+          client_id: s.clientId || '',
+          use_tls: s.useTls ?? false,
+          topics: s.topics || '',
+          payload_parser: s.payloadParser || 'standard',
+          custom_parser_config: s.customParserConfig || {
+            device_id_path: 'device',
+            telemetry_path: 'data',
+            timestamp_path: 'timestamp',
+            timestamp_format: 'iso8601',
+          },
         })
       }
     } catch (error) {
