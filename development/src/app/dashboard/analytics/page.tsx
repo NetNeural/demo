@@ -171,11 +171,12 @@ export default function AnalyticsPage() {
           : undefined;
         
         // Calculate average resolution time
-        const resolvedAlertsWithTime = alerts.filter(a => a.resolved_at && a.is_resolved);
+        const resolvedAlertsWithTime = alerts.filter(a => a.resolved_at && a.is_resolved && a.created_at);
         const avgResolutionTime = resolvedAlertsWithTime.length > 0
           ? resolvedAlertsWithTime.reduce((sum, a) => {
+              if (!a.resolved_at || !a.created_at) return sum; // Extra safety check for TypeScript
               const created = new Date(a.created_at).getTime();
-              const resolved = new Date(a.resolved_at!).getTime();
+              const resolved = new Date(a.resolved_at).getTime();
               return sum + (resolved - created) / (1000 * 60); // minutes
             }, 0) / resolvedAlertsWithTime.length
           : undefined;
