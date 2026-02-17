@@ -144,18 +144,17 @@ export function AlertHistoryReport() {
 
       const supabase = createClient()
 
-      // Build query
+      // Build query - simplified without device join to avoid RLS issues
       let query = supabase
         .from('alerts')
-        .select(`
-          *,
-          devices!device_id(name)
-        `)
+        .select('*')
         .eq('organization_id', currentOrganization.id)
         .order('created_at', { ascending: false })
         .limit(1000)
 
       const { data: alertsData, error } = await query
+      
+      console.log('[AlertHistoryReport] Query result:', { data: alertsData, error, orgId: currentOrganization.id })
 
       if (error) {
         console.error('[AlertHistoryReport] Database error:', error)
@@ -217,7 +216,7 @@ export function AlertHistoryReport() {
           severity: alert.severity,
           alert_type: alert.alert_type,
           device_id: alert.device_id,
-          device_name: alert.devices?.name || 'Unknown Device',
+          device_name: alert.device_id || 'No Device',
           created_at: alert.created_at,
           is_resolved: alert.is_resolved,
           resolved_at: alert.resolved_at,
