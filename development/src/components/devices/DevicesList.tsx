@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
 import { TemperatureToggle } from '@/components/ui/temperature-toggle'
 
@@ -177,9 +178,18 @@ export function DevicesList() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [latestTelemetry, setLatestTelemetry] = useState<DeviceTelemetry>({})
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+  
+  // Refresh states
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  
   const { currentOrganization } = useOrganization()
 
-  const fetchDevices = useCallback(async () => {
+  const fetchDevices = useCallback(async (isManualRefresh = false) => {
     if (!currentOrganization) {
       setDevices([])
       setLoading(false)
@@ -187,7 +197,11 @@ export function DevicesList() {
     }
 
     try {
-      setLoading(true)
+      if (isManualRefresh) {
+        setIsRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       setError(null)
       
       // Use edge function client SDK
@@ -363,6 +377,14 @@ export function DevicesList() {
           aVal = new Date(a.lastSeen || 0).getTime()
           bVal = new Date(b.lastSeen || 0).getTime()
           break
+        case 'battery':
+          aVal = a.batteryLevel ?? -1
+          bVal = b.batteryLevel ?? -1
+          break
+        case 'firmware':
+          aVal = a.firmware_version?.toLowerCase() || ''
+          bVal = b.firmware_version?.toLowerCase() || ''
+          break
         default:
           return 0
       }
@@ -374,6 +396,17 @@ export function DevicesList() {
 
     return filtered
   }, [devices, filterStatus, filterType, filterLocation, sortBy, sortOrder])
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedDevices.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedDevices = filteredAndSortedDevices.slice(startIndex, endIndex)
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterStatus, filterType, filterLocation, sortBy, sortOrder])
 
   const openDeviceDetailsPage = (deviceId: string) => {
     router.push(`/dashboard/devices/view?id=${deviceId}`)
@@ -531,6 +564,8 @@ export function DevicesList() {
                   <SelectItem value="type">Type</SelectItem>
                   <SelectItem value="status">Status</SelectItem>
                   <SelectItem value="lastSeen">Last Seen</SelectItem>
+                  <SelectItem value="battery">Battery</SelectItem>
+                  <SelectItem value="firmware">Firmware</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -550,12 +585,34 @@ export function DevicesList() {
             </div>
           </div>
 
-          {/* Clear Filters and Temperature Toggle */}
-          <div className="mt-4 flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
-              Showing {filteredAndSortedDevices.length} of {devices.length} devices
-            </span>
+          {/* Pagination Controls and Actions */}
+          <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredAndSortedDevices.length)} of {filteredAndSortedDevices.length} devices
+                {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="auto-refresh"
+                  checked={autoRefresh}
+                  onCheckedChange={setAutoRefresh}
+                />
+                <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
+                  Auto-refresh (30s)
+                </Label>
+              </div>
               <TemperatureToggle
                 useFahrenheit={useFahrenheit}
                 onToggle={(value) => {
@@ -583,8 +640,60 @@ export function DevicesList() {
         </CardContent>
       </Card>
       
+      {/* Pagination Navigation */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {filteredAndSortedDevices.map((device) => (
+        {paginatedDevices.map((device) => (
           <Card key={device.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -614,6 +723,18 @@ export function DevicesList() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Battery:</span>
                     <span className="text-foreground">{device.batteryLevel}%</span>
+                  </div>
+                )}
+                {device.signal_strength != null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Signal:</span>
+                    <span className="text-foreground">{device.signal_strength} dBm</span>
+                  </div>
+                )}
+                {device.firmware_version && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Firmware:</span>
+                    <span className="text-foreground">{device.firmware_version}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
