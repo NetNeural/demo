@@ -129,6 +129,7 @@ export function AddMemberDialog({
           password: tempPassword,
           role: 'user',
           organizationRole: role, // Pass the selected organization role (member/admin/owner)
+          organizationId: organizationId, // Pass the target organization ID
         });
 
         if (!createResponse.success) {
