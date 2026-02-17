@@ -1,0 +1,47 @@
+-- Ensure demo alerts exist in the main NetNeural organization
+-- NetNeural (00000000-0000-0000-0000-000000000001) is the primary demo org
+
+-- Delete any existing demo alerts in NetNeural to avoid duplicates
+DELETE FROM alerts 
+WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+  AND title IN ('Critical Battery Alert', 'Device Offline', 'High Humidity', 'Maintenance Due', 'High Temperature');
+
+-- Insert demo alerts into NetNeural organization
+INSERT INTO alerts (
+  organization_id,
+  alert_type,
+  severity,
+  title,
+  message,
+  metadata,
+  is_resolved,
+  category,
+  created_at,
+  updated_at
+) VALUES
+  -- Critical alerts
+  ('00000000-0000-0000-0000-000000000001', 'low_battery', 'critical', 'Critical Battery Alert', 'Battery at 10%', '{}', false, 'system', NOW() - INTERVAL '10 hours', NOW() - INTERVAL '8 hours'),
+  ('00000000-0000-0000-0000-000000000001', 'device_offline', 'critical', 'Device Offline', 'Device not responding', '{}', false, 'system', NOW() - INTERVAL '26 hours', NOW() - INTERVAL '8 hours'),
+  
+  -- High severity
+  ('00000000-0000-0000-0000-000000000001', 'temperature_high', 'high', 'High Temperature', 'Temp exceeded 30°C', '{}', true, 'system', NOW() - INTERVAL '36 hours', NOW() - INTERVAL '8 hours'),
+  ('00000000-0000-0000-0000-000000000001', 'signal_weak', 'high', 'Weak Signal', 'Signal strength below threshold', '{}', false, 'system', NOW() - INTERVAL '12 hours', NOW() - INTERVAL '8 hours'),
+  
+  -- Medium severity
+  ('00000000-0000-0000-0000-000000000001', 'humidity_high', 'medium', 'High Humidity', 'Humidity at 85%', '{}', false, 'system', NOW() - INTERVAL '15 hours', NOW() - INTERVAL '8 hours'),
+  ('00000000-0000-0000-0000-000000000001', 'firmware_update', 'medium', 'Firmware Update Available', 'New firmware version ready', '{}', false, 'system', NOW() - INTERVAL '20 hours', NOW() - INTERVAL '8 hours'),
+  
+  -- Low severity
+  ('00000000-0000-0000-0000-000000000001', 'maintenance_due', 'low', 'Maintenance Due', 'Schedule maintenance soon', '{}', false, 'system', NOW() - INTERVAL '48 hours', NOW() - INTERVAL '8 hours'),
+  ('00000000-0000-0000-0000-000000000001', 'data_sync', 'low', 'Data Sync Complete', 'All data synchronized', '{}', true, 'system', NOW() - INTERVAL '5 hours', NOW() - INTERVAL '3 hours');
+
+-- Verify alerts were created
+SELECT 
+  COUNT(*) as total_alerts,
+  SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
+  SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high,
+  SUM(CASE WHEN severity = 'medium' THEN 1 ELSE 0 END) as medium,
+  SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low,
+  SUM(CASE WHEN is_resolved = false THEN 1 ELSE 0 END) as active
+FROM alerts
+WHERE organization_id = '00000000-0000-0000-0000-000000000001';

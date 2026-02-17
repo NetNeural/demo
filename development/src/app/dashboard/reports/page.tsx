@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, TrendingUp, ArrowRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { FileText, TrendingUp, ArrowRight, Shield } from 'lucide-react'
 
 export default function ReportsIndexPage() {
   const router = useRouter()
@@ -22,6 +23,14 @@ export default function ReportsIndexPage() {
       icon: TrendingUp,
       href: '/dashboard/reports/telemetry',
       features: ['Multi-device comparison', 'Threshold visualization', 'Statistics dashboard', 'Chart & table views'],
+    },
+    {
+      title: 'User Activity Audit Log',
+      description: 'Track all user actions in the system for compliance and troubleshooting (Admin only)',
+      icon: Shield,
+      href: '/dashboard/reports/audit-log',
+      features: ['Complete activity tracking', 'Advanced filtering', 'Before/after changes', 'CSV export'],
+      adminOnly: true,
     },
   ]
 
@@ -42,6 +51,12 @@ export default function ReportsIndexPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <Icon className="w-10 h-10 text-primary mb-2" />
+                  {report.adminOnly && (
+                    <Badge variant="secondary" className="ml-auto">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Admin Only
+                    </Badge>
+                  )}
                 </div>
                 <CardTitle className="text-xl">{report.title}</CardTitle>
                 <CardDescription>{report.description}</CardDescription>
