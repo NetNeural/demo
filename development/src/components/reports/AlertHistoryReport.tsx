@@ -143,6 +143,14 @@ export function AlertHistoryReport() {
       console.log('[AlertHistoryReport] Fetching alerts for org:', currentOrganization.id)
 
       const supabase = createClient()
+      
+      // Log Supabase connection details
+      const supabaseUrl = (supabase as any).supabaseUrl || 'unknown'
+      console.log('[AlertHistoryReport] Supabase URL:', supabaseUrl)
+      console.log('[AlertHistoryReport] Environment:', {
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'not set',
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+      })
 
       // Build query - simplified without device join to avoid RLS issues
       let query = supabase
