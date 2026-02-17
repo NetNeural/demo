@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
 import { toast } from 'sonner'
 
 interface Device {
@@ -253,13 +254,28 @@ export default function DeviceViewPage() {
         title={device.name}
         description={`${device.device_type || device.type || 'Unknown'} • ID: ${device.id?.substring(0, 8) || 'N/A'}`}
         action={
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/dashboard/devices')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Devices
-          </Button>
+          <div className="flex items-center gap-2">
+            {currentOrganization && (
+              <TransferDeviceDialog
+                device={{
+                  id: device.id,
+                  name: device.name,
+                  device_type: device.device_type,
+                  status: device.status,
+                  organization_id: device.organization_id,
+                }}
+                currentOrgId={currentOrganization.id}
+                onTransferComplete={() => router.push('/dashboard/devices')}
+              />
+            )}
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/dashboard/devices')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Devices
+            </Button>
+          </div>
         }
       />
 

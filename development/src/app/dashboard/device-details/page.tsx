@@ -16,7 +16,6 @@ import { RecentActivityCard } from '@/components/sensors/RecentActivityCard'
 import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
 import { StatisticalSummaryCard } from '@/components/sensors/StatisticalSummaryCard'
 import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
-import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
 import type { Device } from '@/types/sensor-details'
 
 /**
@@ -211,13 +210,6 @@ export default function SensorDetailsPage() {
             <p className="text-muted-foreground">{device.device_type}</p>
           </div>
         </div>
-        {currentOrganization && (
-          <TransferDeviceDialog
-            device={device}
-            currentOrgId={currentOrganization.id}
-            onTransferComplete={() => router.push('/dashboard/devices')}
-          />
-        )}
       </div>
 
       {/* Priority Cards - Conditional by device type */}
