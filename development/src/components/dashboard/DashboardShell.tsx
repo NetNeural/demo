@@ -9,11 +9,21 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { cn } from '@/lib/utils'
+import { 
+  LayoutDashboard, 
+  Smartphone, 
+  Building2, 
+  Bell, 
+  BarChart3, 
+  FileText, 
+  Settings,
+  type LucideIcon
+} from 'lucide-react'
 
 interface NavigationItem {
   name: string
   href: string
-  icon: string
+  icon: LucideIcon
 }
 
 export default function DashboardShell({
@@ -27,13 +37,13 @@ export default function DashboardShell({
   const { currentOrganization } = useOrganization()
 
   const navigation: NavigationItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-    { name: 'Devices', href: '/dashboard/devices', icon: '📱' },
-    { name: 'Organizations', href: '/dashboard/organizations', icon: '🏢' },
-    { name: 'Alerts', href: '/dashboard/alerts', icon: '🚨' },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-    { name: 'Reports', href: '/dashboard/reports/alerts', icon: '📋' },
-    { name: 'Settings & Users', href: '/dashboard/settings', icon: '⚙️' },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
+    { name: 'Organizations', href: '/dashboard/organizations', icon: Building2 },
+    { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Reports', href: '/dashboard/reports/alerts', icon: FileText },
+    { name: 'Settings & Users', href: '/dashboard/settings', icon: Settings },
   ]
 
   const handleSignOut = async () => {
@@ -70,21 +80,24 @@ export default function DashboardShell({
 
         {/* Navigation Menu */}
         <div className="p-4">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center px-4 py-3 mb-1 rounded-md transition-all duration-150 ease-in-out",
-                "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                pathname === item.href && "bg-blue-100 text-blue-700"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="w-5 h-5 mr-3">{item.icon}</span>
-              {item.name}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center px-4 py-3 mb-1 rounded-md transition-all duration-150 ease-in-out",
+                  "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                  pathname === item.href && "bg-blue-100 text-blue-700"
+                )}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                {item.name}
+              </Link>
+            )
+          })}
         </div>
 
         {/* User Section */}
