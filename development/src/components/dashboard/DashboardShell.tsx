@@ -54,7 +54,18 @@ export default function DashboardShell({
       )}>
         {/* Brand */}
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
+          <div className="flex items-center gap-3">
+            {currentOrganization?.settings?.branding?.logo_url && (
+              <img 
+                src={currentOrganization.settings.branding.logo_url} 
+                alt={`${currentOrganization.name} logo`}
+                className="h-8 w-8 object-contain flex-shrink-0"
+              />
+            )}
+            <h1 className="text-xl font-bold text-gray-900">
+              {currentOrganization?.name || 'NetNeural'} IoT Platform
+            </h1>
+          </div>
         </div>
 
         {/* Navigation Menu */}
@@ -115,9 +126,16 @@ export default function DashboardShell({
             >
               ☰
             </Button>
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex items-center gap-3">
+              {currentOrganization?.settings?.branding?.logo_url && (
+                <img 
+                  src={currentOrganization.settings.branding.logo_url} 
+                  alt={`${currentOrganization.name} logo`}
+                  className="h-6 w-6 object-contain flex-shrink-0"
+                />
+              )}
               <h1 className="text-xl font-semibold text-gray-900">
-                NetNeural IoT Platform
+                {currentOrganization?.name || 'NetNeural'} IoT Platform
               </h1>
             </div>
             <div className="flex items-center gap-2">
