@@ -21,6 +21,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 import {
   Dialog,
   DialogContent,
@@ -124,7 +125,7 @@ export function AlertsList() {
         severity: alert.severity || 'medium',
         device: alert.deviceName || alert.device_name || 'Unknown Device',
         deviceId: alert.deviceId || alert.device_id || '',
-        timestamp: alert.created_at ? new Date(alert.created_at).toLocaleString() : 'Unknown',
+        timestamp: alert.created_at || new Date().toISOString(),
         rawTimestamp: alert.created_at ? new Date(alert.created_at) : new Date(),
         acknowledged: alert.is_resolved || false,
         acknowledgedBy: alert.resolved_by,
@@ -498,7 +499,7 @@ export function AlertsList() {
                                       {alert.description}
                                     </AlertDescription>
                                     <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                                      <span className="font-medium">{alert.device}</span> • {alert.timestamp}
+                                      <span className="font-medium">{alert.device}</span> • {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
                                     </AlertDescription>
                                   </div>
                                 </div>
