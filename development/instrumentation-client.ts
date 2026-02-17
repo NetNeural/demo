@@ -18,14 +18,14 @@ export function onClientInit() {
     ],
 
     // Performance Monitoring
-    tracesSampleRate: 1.0, // Capture 100% of transactions (reduce to 0.1 in production)
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
     // Session Replay
     replaysSessionSampleRate: 0.1, // 10% of sessions
     replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
 
-    // Debug mode (enable in development to see what Sentry is doing)
-    debug: true, // Force debug mode to see what's happening
+    // Debug mode — only in development to avoid noisy Transport disabled errors in prod
+    debug: process.env.NODE_ENV === 'development',
 
     // Environment
     environment: process.env.NODE_ENV || 'development',

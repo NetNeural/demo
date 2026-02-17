@@ -93,20 +93,11 @@ function sendToSentry(metric: Metric) {
     )
   }
 
-  // Send custom event for poor vitals
+  // For poor vitals, set a Sentry tag so they show up in issue searches
+  // but do NOT fire captureMessage — it's too noisy and triggers transport
+  // errors on static-export deployments where Sentry transport may be unavailable.
   if (customRating === 'poor') {
-    Sentry.captureMessage(`Poor ${name} detected: ${value.toFixed(2)}`, {
-      level: 'warning',
-      tags: {
-        vital: name,
-        rating: customRating,
-      },
-      extra: {
-        value,
-        threshold: VITALS_THRESHOLDS[name as keyof typeof VITALS_THRESHOLDS],
-        metric,
-      },
-    })
+    Sentry.getCurrentScope().setTag(`poor_vital_${name.toLowerCase()}`, value.toFixed(2))
   }
 }
 

@@ -17,14 +17,14 @@ if (typeof window !== 'undefined') {
     ],
 
     // Performance Monitoring
-    tracesSampleRate: 1.0,
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
     // Session Replay
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
 
-    // Debug mode
-    debug: true,
+    // Debug mode — only in development to avoid Transport disabled noise in prod
+    debug: process.env.NODE_ENV === 'development',
 
     // Environment
     environment: process.env.NODE_ENV || 'development',
