@@ -566,12 +566,19 @@ export function TelemetryTrendsReport() {
               {sensorInfo?.label || 'Sensor'} Trends
             </CardTitle>
             <CardDescription>
-              {telemetryData.length > 0 && telemetryData[0]?.timestamp && telemetryData[telemetryData.length - 1]?.timestamp && (
-                <>
-                  {telemetryData.length} data points from {format(new Date(telemetryData[0].timestamp), 'MMM d, HH:mm')} to{' '}
-                  {format(new Date(telemetryData[telemetryData.length - 1].timestamp), 'MMM d, HH:mm')}
-                </>
-              )}
+              {(() => {
+                const firstPoint = telemetryData[0]
+                const lastPoint = telemetryData[telemetryData.length - 1]
+                if (telemetryData.length > 0 && firstPoint?.timestamp && lastPoint?.timestamp) {
+                  return (
+                    <>
+                      {telemetryData.length} data points from {format(new Date(firstPoint.timestamp), 'MMM d, HH:mm')} to{' '}
+                      {format(new Date(lastPoint.timestamp), 'MMM d, HH:mm')}
+                    </>
+                  )
+                }
+                return null
+              })()}
             </CardDescription>
           </CardHeader>
           <CardContent>
