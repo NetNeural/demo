@@ -5,6 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Download, Calendar } from 'lucide-react'
 import { useState, useCallback, useEffect, useMemo } from 'react'
@@ -26,7 +27,12 @@ interface HistoricalDataViewerProps {
   device: Device
 }
 
-type TimeRange = '24H' | '48H' | '7D' | '30D' | '90D'
+type TimeRange = '1H' | '6H' | '12H' | '24H' | 'custom'
+
+interface CustomTimeRange {
+  hours: number
+  label: string
+}
 
 const SENSOR_LABELS: Record<number, string> = {
   1: 'Temperature',
@@ -63,15 +69,17 @@ interface TelemetryData {
 
 export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
   const { currentOrganization } = useOrganization()
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('48H')
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('24H')
   const [selectedSensor, setSelectedSensor] = useState<string>('all')
   const [loading, setLoading] = useState(false)
   const [historicalData, setHistoricalData] = useState<TelemetryData[]>([])
+  const [customHours, setCustomHours] = useState<string>('48')
+  const [showCustomInput, setShowCustomInput] = useState(false)
   const useFahrenheit = typeof window !== 'undefined' 
     ? localStorage.getItem('temperatureUnit') === 'F' 
     : false
 
-  const fetchHistoricalData = useCallback(async (range: TimeRange) => {
+  const fetchHistoricalData = useCallback(async (range: TimeRange, customHoursValue?: number) => {
     if (!currentOrganization) return
 
     setLoading(true)
@@ -79,11 +87,12 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
       const supabase = createClient()
       
       // Calculate time range
-      let hoursAgo = 48
+      let hoursAgo = 24
+      if (range === '1H') hoursAgo = 1
+      if (range === '6H') hoursAgo = 6
+      if (range === '12H') hoursAgo = 12
       if (range === '24H') hoursAgo = 24
-      if (range === '7D') hoursAgo = 24 * 7
-      if (range === '30D') hoursAgo = 24 * 30
-      if (range === '90D') hoursAgo = 24 * 90
+      if (range === 'custom' && customHoursValue) hoursAgo = customHoursValue
 
       const startTime = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
 
@@ -117,8 +126,23 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
 
   // Auto-load data on mount
   useEffect(() => {
-    fetchHistoricalData(selectedRange)
-  }, [fetchHistoricalData, selectedRange])
+    if (selectedRange === 'custom') {
+      const hours = parseInt(customHours, 10)
+      if (!isNaN(hours) && hours > 0) {
+        fetchHistoricalData(selectedRange, hours)
+      }
+    } else {
+      fetchHistoricalData(selectedRange)
+    }
+  }, [fetchHistoricalData, selectedRange, customHours])
+
+  const handleCustomRangeApply = () => {
+    const hours = parseInt(customHours, 10)
+    if (!isNaN(hours) && hours > 0 && hours <= 2160) { // Max 90 days
+      setSelectedRange('custom')
+      setShowCustomInput(false)
+    }
+  }
 
   const formatValue = (telemetry: TelemetryData['telemetry']) => {
     if (!telemetry || telemetry.value == null) return 'N/A'
@@ -284,19 +308,53 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
         {/* Time Range and Sensor Selector */}
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Time Range Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {(['24H', '48H', '7D', '30D', '90D'] as TimeRange[]).map(range => (
+          <div className="flex flex-wrap gap-2 items-center">
+            {(['1H', '6H', '12H', '24H'] as TimeRange[]).map(range => (
               <Button
                 key={range}
                 size="sm"
                 variant={selectedRange === range ? 'default' : 'outline'}
-                onClick={() => setSelectedRange(range)}
+                onClick={() => {
+                  setSelectedRange(range)
+                  setShowCustomInput(false)
+                }}
                 disabled={loading}
               >
                 {range}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant={showCustomInput || selectedRange === 'custom' ? 'default' : 'outline'}
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              disabled={loading}
+            >
+              Custom
+            </Button>
           </div>
+          
+          {/* Custom Time Range Input */}
+          {showCustomInput && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Hours:</span>
+              <Input
+                type="number"
+                min={1}
+                max={2160}
+                value={customHours}
+                onChange={(e) => setCustomHours(e.target.value)}
+                className="w-20"
+                placeholder="48"
+              />
+              <Button
+                size="sm"
+                onClick={handleCustomRangeApply}
+                disabled={loading || !customHours || parseInt(customHours, 10) <= 0}
+              >
+                Apply
+              </Button>
+            </div>
+          )}
           
           {/* Sensor Type Dropdown */}
           {sensorTypes.length > 0 && (
