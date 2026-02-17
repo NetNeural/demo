@@ -1,16 +1,17 @@
 import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
 import { 
   getUserContext, 
+  resolveOrganizationId,
   getTargetOrganizationId,
-  createAuthenticatedClient
+  createServiceClient
 } from '../_shared/auth.ts'
 
 export default createEdgeFunction(async ({ req }) => {
   // Get authenticated user context
   const userContext = await getUserContext(req)
   
-  // Create authenticated Supabase client (respects RLS)
-  const supabase = createAuthenticatedClient(req)
+  // Use service_role client to bypass RLS — authorization handled by resolveOrganizationId
+  const supabase = createServiceClient()
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -19,8 +20,8 @@ export default createEdgeFunction(async ({ req }) => {
       const severityFilter = url.searchParams.get('severity') // Filter by severity
       const resolvedFilter = url.searchParams.get('resolved') // Filter by resolution status
       
-      // Determine which organization to query based on user's role
-      const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
+      // Determine which organization to query — supports multi-org via organization_members
+      const organizationId = await resolveOrganizationId(userContext, requestedOrgId)
       
       if (!organizationId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)

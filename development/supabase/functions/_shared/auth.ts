@@ -164,10 +164,12 @@ export async function getUserContext(req: Request): Promise<UserContext> {
 }
 
 /**
- * Determine the organization ID to use for queries
+ * Determine the organization ID to use for queries (sync version)
  * - Super admins can specify organization_id in query params
- * - Regular users can only access their own organization
+ * - Regular users get their default organization from users table
  * - Returns null if user has no organization and isn't super admin
+ * 
+ * @deprecated Use resolveOrganizationId() for multi-org support
  */
 export function getTargetOrganizationId(
   userContext: UserContext,
@@ -179,6 +181,46 @@ export function getTargetOrganizationId(
   }
   
   // Regular users can only access their own organization
+  return userContext.organizationId
+}
+
+/**
+ * Resolve the organization ID for multi-org support
+ * - Super admins can access any organization
+ * - Regular users can access any org they're a member of (via organization_members)
+ * - Falls back to users.organization_id if no membership found
+ * 
+ * Uses service_role to bypass RLS when checking organization_members
+ */
+export async function resolveOrganizationId(
+  userContext: UserContext,
+  requestedOrgId?: string | null
+): Promise<string | null> {
+  // Super admins can query any organization
+  if (userContext.isSuperAdmin) {
+    return requestedOrgId || null
+  }
+
+  // If no specific org requested, or requesting their default org, return it
+  if (!requestedOrgId || requestedOrgId === userContext.organizationId) {
+    return userContext.organizationId
+  }
+
+  // Check if user is a member of the requested org
+  const serviceClient = createServiceClient()
+  const { data: membership } = await serviceClient
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userContext.userId)
+    .eq('organization_id', requestedOrgId)
+    .single()
+
+  if (membership) {
+    return requestedOrgId
+  }
+
+  // Not a member of the requested org — fall back to default
+  console.warn(`User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org.`)
   return userContext.organizationId
 }
 

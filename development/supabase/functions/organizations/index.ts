@@ -104,9 +104,9 @@ export default createEdgeFunction(async ({ req }) => {
 
     if (req.method === 'GET') {
       // Super admins can see all organizations
-      // Regular users can only see their own organization (enforced by RLS)
+      // Regular users see all organizations they belong to (via organization_members)
       
-      let query = supabase
+      let query = supabaseAdmin
         .from('organizations')
         .select(`
           id,
@@ -121,9 +121,32 @@ export default createEdgeFunction(async ({ req }) => {
         `)
         .order('name')
       
-      // If not super admin, filter to user's organization
-      if (!userContext.isSuperAdmin && userContext.organizationId) {
-        query = query.eq('id', userContext.organizationId)
+      // If not super admin, get all orgs the user is a member of
+      if (!userContext.isSuperAdmin) {
+        // Get user's org memberships
+        const { data: memberships } = await supabaseAdmin
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', userContext.userId)
+
+        const memberOrgIds = memberships?.map(m => m.organization_id) || []
+        
+        // Also include the user's default org from users table
+        if (userContext.organizationId && !memberOrgIds.includes(userContext.organizationId)) {
+          memberOrgIds.push(userContext.organizationId)
+        }
+
+        if (memberOrgIds.length > 0) {
+          query = query.in('id', memberOrgIds)
+        } else {
+          // No memberships found — return empty
+          return createSuccessResponse({ 
+            organizations: [],
+            count: 0,
+            userRole: userContext.role,
+            isSuperAdmin: userContext.isSuperAdmin
+          })
+        }
       }
 
       // Execute query - RLS ensures user can only see allowed organizations

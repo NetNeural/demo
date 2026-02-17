@@ -10,6 +10,10 @@ on:
         type: choice
         options:
           - all
+          - devices
+          - alerts
+          - organizations
+          - dashboard-stats
           - device-sync
           - auto-sync-cron
           - integration-webhook
@@ -41,6 +45,10 @@ jobs:
         run: |
           if [ "${{ inputs.function }}" == "all" ]; then
             echo "Deploying all edge functions..."
+            npx supabase functions deploy devices --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy alerts --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy organizations --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy dashboard-stats --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy device-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy auto-sync-cron --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy integration-webhook --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
