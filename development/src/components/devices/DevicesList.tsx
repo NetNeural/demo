@@ -691,7 +691,7 @@ export function DevicesList() {
                 >
                   {isGatewayDevice(device.device_type, device.name) 
                     ? 'Gateway Data' 
-                    : 'Device Data'}
+                    : 'Sensor Data'}
                 </Button>
               </div>
             </CardContent>
