@@ -12,7 +12,7 @@ const config = {
   testEnvironment: 'jsdom',
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/__tests__/setup.ts'],
   
   // Module name mapping for CSS modules and static assets
   moduleNameMapper: {
