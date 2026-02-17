@@ -67,7 +67,7 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
       const orgs = memberships
         ?.filter(m => {
           const org = m.organizations as { id: string; name: string } | null
-          return org !== null && org.id !== currentOrgId && adminRoles.includes(m.role)
+          return org !== null && org.id !== currentOrgId && adminRoles.includes(m.role as string)
         })
         .map(m => {
           const org = m.organizations as { id: string; name: string }
