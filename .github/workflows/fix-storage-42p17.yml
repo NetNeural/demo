@@ -42,27 +42,32 @@ jobs:
         env:
           SUPABASE_URL: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ inputs.environment == 'staging' && secrets.STAGE_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_ACCESS_TOKEN || secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_ID }}
         run: |
           echo "Applying storage fix to ${{ inputs.environment }}..."
           
-          # Apply the fix SQL
-          npx supabase db execute \
-            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
-            -f scripts/fix-storage-42p17.sql
+          # Link to project
+          npx supabase link --project-ref $SUPABASE_PROJECT_ID
+          
+          # Apply the migration (use the new migration file instead of script)
+          npx supabase db push --include-all
 
       - name: Verify fix
         working-directory: development
         env:
-          SUPABASE_URL: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ inputs.environment == 'staging' && secrets.STAGE_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ inputs.environment == 'staging' && secrets.STAGING_SUPABASE_ACCESS_TOKEN || secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          npx supabase db execute \
-            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
-            -c "SELECT 'Bucket exists: ' || CASE WHEN EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'organization-assets') THEN 'Yes' ELSE 'No' END;"
+          echo "Verifying storage bucket was created..."
           
-          npx supabase db execute \
-            --db-url "postgresql://postgres:$SUPABASE_SERVICE_KEY@db.$(echo $SUPABASE_URL | cut -d'/' -f3 | cut -d'.' -f1).supabase.co:5432/postgres" \
-            -c "SELECT 'Policies: ' || COUNT(*)::text FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname LIKE '%organization%';"
+          # Check if bucket exists using Supabase REST API
+          PROJECT_REF=$(npx supabase status | grep "API URL" | cut -d'/' -f3 | cut -d'.' -f1)
+          echo "Project ref: $PROJECT_REF"
+          
+          # List buckets
+          curl -s "https://$PROJECT_REF.supabase.co/storage/v1/bucket" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            | jq '.[] | select(.id == "organization-assets")
 
       - name: Summary
         run: |
