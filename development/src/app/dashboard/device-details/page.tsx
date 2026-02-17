@@ -115,7 +115,7 @@ export default function SensorDetailsPage() {
         device_type: (deviceData.device_type as string) || 'unknown',
         model: (deviceData.model as string) || undefined,
         serial_number: (deviceData.serial_number as string) || undefined,
-        status: (deviceData.status as string) || 'offline',
+        status: (deviceData.status as Device['status']) || 'offline',
         location: (deviceData.location as string) || undefined,
         location_id: (deviceData.location_id as string) || undefined,
         firmware_version: (deviceData.firmware_version as string) || undefined,
