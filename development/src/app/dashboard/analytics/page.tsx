@@ -33,8 +33,9 @@ interface DevicePerformance {
 interface AlertStats {
   total_alerts: number;
   critical_alerts: number;
-  warning_alerts: number;
-  info_alerts: number;
+  high_alerts: number;
+  medium_alerts: number;
+  low_alerts: number;
   resolved_alerts: number;
   pending_alerts: number;
   avg_response_time_minutes?: number;
@@ -144,8 +145,9 @@ export default function AnalyticsPage() {
         const alerts = alertData || [];
         const totalAlerts = alerts.length;
         const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
-        const warningAlerts = alerts.filter(a => a.severity === 'warning').length;
-        const infoAlerts = alerts.filter(a => a.severity === 'info').length;
+        const highAlerts = alerts.filter(a => a.severity === 'high').length;
+        const mediumAlerts = alerts.filter(a => a.severity === 'medium').length;
+        const lowAlerts = alerts.filter(a => a.severity === 'low').length;
         const resolvedAlerts = alerts.filter(a => a.is_resolved).length;
         const pendingAlerts = totalAlerts - resolvedAlerts;
         
@@ -278,8 +280,9 @@ export default function AnalyticsPage() {
           alertStats: {
             total_alerts: totalAlerts,
             critical_alerts: criticalAlerts,
-            warning_alerts: warningAlerts,
-            info_alerts: infoAlerts,
+            high_alerts: highAlerts,
+            medium_alerts: mediumAlerts,
+            low_alerts: lowAlerts,
             resolved_alerts: resolvedAlerts,
             pending_alerts: pendingAlerts,
             avg_response_time_minutes: avgResponseTime,
@@ -301,8 +304,9 @@ export default function AnalyticsPage() {
           alertStats: {
             total_alerts: 0,
             critical_alerts: 0,
-            warning_alerts: 0,
-            info_alerts: 0,
+            high_alerts: 0,
+            medium_alerts: 0,
+            low_alerts: 0,
             resolved_alerts: 0,
             pending_alerts: 0
           },
@@ -642,12 +646,16 @@ export default function AnalyticsPage() {
                     <span className="text-sm font-medium">{data.alertStats.critical_alerts}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">Warning</span>
-                    <span className="text-sm font-medium">{data.alertStats.warning_alerts}</span>
+                    <span className="text-sm">High</span>
+                    <span className="text-sm font-medium">{data.alertStats.high_alerts}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">Info</span>
-                    <span className="text-sm font-medium">{data.alertStats.info_alerts}</span>
+                    <span className="text-sm">Medium</span>
+                    <span className="text-sm font-medium">{data.alertStats.medium_alerts}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Low</span>
+                    <span className="text-sm font-medium">{data.alertStats.low_alerts}</span>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t">
                     <span className="text-sm">Resolved</span>
