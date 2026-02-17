@@ -14,7 +14,7 @@
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/analytics
  */
 
-import { onCLS, onINP, onMETRIC, onFCP, onFID, onLCP, onTTFB, type Metric } from 'web-vitals'
+import { onCLS, onINP, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals'
 import * as Sentry from '@sentry/nextjs'
 
 /**
@@ -53,7 +53,7 @@ function getRating(
  * Send Web Vital to Sentry as a measurement
  */
 function sendToSentry(metric: Metric) {
-  const { name, value, id, rating } = metric
+  const { name, value, id } = metric
   
   // Convert to milliseconds for Sentry (most metrics are in ms already)
   const valueInMs = name === 'CLS' ? value * 1000 : value
@@ -61,8 +61,11 @@ function sendToSentry(metric: Metric) {
   // Get custom rating based on thresholds
   const customRating = getRating(name, value)
 
-  // Send as Sentry measurement
-  Sentry.getCurrentScope().setMeasurement(name, valueInMs, 'millisecond')
+  // Send to Sentry with context
+  Sentry.getCurrentScope().setContext('webVitals', {
+    [name]: valueInMs,
+    rating: customRating
+  })
   
   // Add as breadcrumb for debugging
   Sentry.addBreadcrumb({
@@ -116,13 +119,13 @@ export function reportWebVitals() {
   try {
     // Core Web Vitals
     onLCP(sendToSentry)  // Largest Contentful Paint
-    onFID(sendToSentry)  // First Input Delay
+    // onFID has been replaced by onINP in web-vitals v4+
     onCLS(sendToSentry)  // Cumulative Layout Shift
 
     // Additional metrics
     onFCP(sendToSentry)  // First Contentful Paint
     onTTFB(sendToSentry) // Time to First Byte
-    onINP(sendToSentry)  // Interaction to Next Paint
+    onINP(sendToSentry)  // Interaction to Next Paint (replaces FID)
 
     // Log initialization
     if (process.env.NODE_ENV === 'development') {
@@ -149,7 +152,9 @@ export function reportWebVitals() {
  * ```
  */
 export function reportCustomVital(name: string, value: number) {
-  Sentry.getCurrentScope().setMeasurement(name, value, 'millisecond')
+  Sentry.getCurrentScope().setContext('customVitals', {
+    [name]: value
+  })
   
   Sentry.addBreadcrumb({
     type: 'metric',
@@ -229,10 +234,10 @@ export function perfMeasure(
  * ```
  */
 export function usePerformanceMonitor(componentName: string) {
-  if (typeof window === 'undefined') return
-
   // Mark component mount
   React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     perfMark(`${componentName}-mount`)
     
     return () => {
