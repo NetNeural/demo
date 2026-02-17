@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { QueryProvider } from '@/lib/query-client'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Initialize theme on mount
@@ -27,5 +28,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  return <>{children}</>
+  return (
+    <QueryProvider>
+      {children}
+    </QueryProvider>
+  )
 }
