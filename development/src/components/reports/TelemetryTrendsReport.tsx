@@ -566,7 +566,7 @@ export function TelemetryTrendsReport() {
               {sensorInfo?.label || 'Sensor'} Trends
             </CardTitle>
             <CardDescription>
-              {telemetryData.length > 0 && (
+              {telemetryData.length > 0 && telemetryData[0]?.timestamp && telemetryData[telemetryData.length - 1]?.timestamp && (
                 <>
                   {telemetryData.length} data points from {format(new Date(telemetryData[0].timestamp), 'MMM d, HH:mm')} to{' '}
                   {format(new Date(telemetryData[telemetryData.length - 1].timestamp), 'MMM d, HH:mm')}
