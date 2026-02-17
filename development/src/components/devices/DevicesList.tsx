@@ -843,7 +843,7 @@ export function DevicesList() {
         <Card>
           <CardContent className="text-center py-12">
             <p className="text-muted-foreground mb-4">No devices found</p>
-            <Button onClick={fetchDevices}>Retry</Button>
+            <Button onClick={() => fetchDevices()}>Retry</Button>
           </CardContent>
         </Card>
       )}
