@@ -28,15 +28,16 @@ interface Device {
   organization_id: string
 }
 
-interface TelemetryReading {
+interface DeviceDataReading {
+  id: string
   device_id: string
-  telemetry: {
-    type: number
-    value: number
-    units?: number
-  }
-  device_timestamp: string
-  received_at: string
+  sensor_type: string
+  value: number
+  unit?: string
+  quality?: number
+  metadata?: any
+  timestamp: string
+  created_at: string
 }
 
 // Sensor type to name mapping
@@ -104,11 +105,11 @@ serve(async (req) => {
 
         // Get most recent telemetry reading for this device and sensor type
         const { data: readings, error: readingsError } = await supabaseClient
-          .from('telemetry_data')
+          .from('device_data')
           .select('*')
           .eq('device_id', threshold.device_id)
-          .eq('telemetry->>type', threshold.sensor_type)
-          .order('received_at', { ascending: false })
+          .eq('sensor_type', threshold.sensor_type)
+          .order('timestamp', { ascending: false })
           .limit(1)
 
         if (readingsError) {
@@ -123,8 +124,8 @@ serve(async (req) => {
           continue
         }
 
-        const reading = readings[0] as TelemetryReading
-        const value = reading.telemetry.value
+        const reading = readings[0] as any
+        const value = reading.value
 
         // Check if value breaches thresholds
         let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null = null
@@ -165,7 +166,7 @@ serve(async (req) => {
           }
           const category = categoryMap[sensorName] || 'system'
           
-          const { error: alertError } = await supabaseClient
+          const { data: alertData, error: alertError } = await supabaseClient
             .from('alerts')
             .insert({
               organization_id: device.organization_id,
@@ -188,6 +189,8 @@ serve(async (req) => {
                 critical_max: threshold.critical_max,
               }
             })
+            .select()
+            .single()
 
           if (alertError) {
             console.error(`[sensor-threshold-evaluator] Error creating alert:`, alertError)
