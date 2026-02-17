@@ -514,7 +514,7 @@ export function AlertsList() {
                                       </Button>
                                     )}
                                     <Button
-                                      variant="ghost"
+                                      variant="outline"
                                       size="sm"
                                       onClick={() => {
                                         setSelectedAlert(alert)
