@@ -45,6 +45,7 @@ interface Props {
   organizationId: string
   onSaved?: (integrationId?: string) => void
   mode?: 'dialog' | 'page' // 'dialog' for modal overlay, 'page' for inline rendering
+  initialBrokerType?: 'hosted' | 'external'
 }
 
 export function MqttConfigDialog({ 
@@ -53,7 +54,8 @@ export function MqttConfigDialog({
   integrationId, 
   organizationId,
   onSaved,
-  mode = 'dialog' // Default to dialog mode for backward compatibility
+  mode = 'dialog', // Default to dialog mode for backward compatibility
+  initialBrokerType,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -70,7 +72,7 @@ export function MqttConfigDialog({
   
   const [config, setConfig] = useState<MqttConfig>({
     name: 'MQTT Broker Integration',
-    broker_type: 'hosted',
+    broker_type: initialBrokerType || 'hosted',
     broker_url: '',
     port: 1883,
     username: '',
@@ -94,6 +96,7 @@ export function MqttConfigDialog({
       // Reset to default config when opening dialog for new integration
       setConfig({
         name: 'MQTT Broker Integration',
+        broker_type: initialBrokerType || 'hosted',
         broker_url: '',
         port: 1883,
         username: '',

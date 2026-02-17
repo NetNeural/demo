@@ -67,7 +67,7 @@ export default function IntegrationViewPage() {
     case 'mqtt':
     case 'mqtt_hosted':
     case 'mqtt_external':
-      return <MqttConfigDialog {...commonProps} />
+      return <MqttConfigDialog {...commonProps} initialBrokerType={integrationType === 'mqtt_external' ? 'external' : 'hosted'} />
     
     case 'aws_iot':
       return <AwsIotConfigDialog {...commonProps} />

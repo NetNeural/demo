@@ -174,6 +174,7 @@ export default function IntegrationsTab({
   const [newIntegrationType, setNewIntegrationType] = useState('');
   const [newIntegrationName, setNewIntegrationName] = useState('');
   const [integrationConfig, setIntegrationConfig] = useState<Record<string, string>>({});
+  const [mqttBrokerType, setMqttBrokerType] = useState<'hosted' | 'external'>('hosted');
 
   const loadIntegrations = React.useCallback(async () => {
     setIsLoading(true);
@@ -964,6 +965,45 @@ export default function IntegrationsTab({
               </div>
             )}
 
+            {/* MQTT Broker Type Selection */}
+            {newIntegrationType === 'mqtt' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Broker Type *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      mqttBrokerType === 'hosted'
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-muted hover:border-primary/50'
+                    }`}
+                    onClick={() => setMqttBrokerType('hosted')}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm">🚀 Hosted</span>
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">NetNeural managed broker with auto-generated credentials</p>
+                  </button>
+                  <button
+                    type="button"
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      mqttBrokerType === 'external'
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-muted hover:border-primary/50'
+                    }`}
+                    onClick={() => setMqttBrokerType('external')}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm">🔧 External</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">Advanced</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Connect to your own MQTT broker infrastructure</p>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Integration Name (Optional)</label>
               <Input
@@ -988,6 +1028,7 @@ export default function IntegrationsTab({
                 setShowAddModal(false);
                 setNewIntegrationType('');
                 setNewIntegrationName('');
+                setMqttBrokerType('hosted');
               }}
             >
               Cancel
@@ -997,8 +1038,13 @@ export default function IntegrationsTab({
                 // Close the add modal and navigate directly to configuration page
                 setShowAddModal(false);
                 
+                // For MQTT, pass the specific broker subtype
+                const finalType = newIntegrationType === 'mqtt' 
+                  ? `mqtt_${mqttBrokerType}` 
+                  : newIntegrationType;
+                
                 // All integrations use view page for consistency
-                router.push(`/dashboard/integrations/view?id=new&organizationId=${selectedOrganization}&type=${newIntegrationType}`);
+                router.push(`/dashboard/integrations/view?id=new&organizationId=${selectedOrganization}&type=${finalType}`);
               }}
               disabled={!newIntegrationType}
             >
