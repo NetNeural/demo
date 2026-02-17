@@ -7,6 +7,7 @@ import { useUser } from '@/lib/auth/user-context'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { cn } from '@/lib/utils'
 
 interface NavigationItem {
@@ -55,13 +56,11 @@ export default function DashboardShell({
         {/* Brand */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            {currentOrganization?.settings?.branding?.logo_url && (
-              <img 
-                src={currentOrganization.settings.branding.logo_url} 
-                alt={`${currentOrganization.name} logo`}
-                className="h-8 w-8 object-contain flex-shrink-0"
-              />
-            )}
+            <OrganizationLogo
+              settings={currentOrganization?.settings}
+              name={currentOrganization?.name || 'NetNeural'}
+              size="lg"
+            />
             <h1 className="text-xl font-bold text-gray-900">
               {currentOrganization?.name || 'NetNeural'} IoT Platform
             </h1>
@@ -127,13 +126,11 @@ export default function DashboardShell({
               ☰
             </Button>
             <div className="hidden lg:flex items-center gap-3">
-              {currentOrganization?.settings?.branding?.logo_url && (
-                <img 
-                  src={currentOrganization.settings.branding.logo_url} 
-                  alt={`${currentOrganization.name} logo`}
-                  className="h-6 w-6 object-contain flex-shrink-0"
-                />
-              )}
+              <OrganizationLogo
+                settings={currentOrganization?.settings}
+                name={currentOrganization?.name || 'NetNeural'}
+                size="md"
+              />
               <h1 className="text-xl font-semibold text-gray-900">
                 {currentOrganization?.name || 'NetNeural'} IoT Platform
               </h1>

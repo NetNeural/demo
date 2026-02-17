@@ -34,6 +34,4 @@ CREATE POLICY "Service role full access to telemetry"
 ALTER TABLE device_telemetry_history ENABLE ROW LEVEL SECURITY;
 
 -- Add helpful comment
-COMMENT ON TABLE device_telemetry_history IS 
-  'Stores all telemetry data from devices across all integrations. ' ||
-  'RLS ensures users only see telemetry from their organization''s devices.';
+COMMENT ON TABLE device_telemetry_history IS 'Stores all telemetry data from devices across all integrations. RLS ensures users only see telemetry from their organization''s devices.';

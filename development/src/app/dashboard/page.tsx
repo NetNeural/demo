@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LocationsCard } from '@/components/dashboard/LocationsCard'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { 
   Smartphone, 
@@ -63,7 +64,14 @@ export default function DashboardPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {/* Page Header */}
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">{currentOrganization.name}</h1>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization.settings}
+            name={currentOrganization.name}
+            size="xl"
+          />
+          <h1 className="text-3xl font-bold tracking-tight">{currentOrganization.name}</h1>
+        </div>
         <p className="text-muted-foreground">Real-time overview of your IoT infrastructure</p>
       </div>
 

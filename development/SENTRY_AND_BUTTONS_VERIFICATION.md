@@ -36,7 +36,8 @@
 **Status:** ✅ **Production-ready** - Just need to reduce tracesSampleRate to 0.1 in production
 
 ---
-
+# This should work (read-only permission)
+gh secret list --repo NetNeural/MonoRepo-Staging | grep OPENAI
 #### **Server Configuration (instrumentation.ts):**
 ```typescript
 ✅ Node.js runtime: sentry.server.config

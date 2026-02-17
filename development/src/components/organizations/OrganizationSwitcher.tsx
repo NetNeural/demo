@@ -7,6 +7,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreateOrganizationDialog } from '@/components/organizations/CreateOrganizationDialog';
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,12 +79,10 @@ export function OrganizationSwitcher({
             )}
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className={cn(
-                'flex items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0',
-                compact ? 'w-8 h-8' : 'w-10 h-10'
-              )}>
-                <Building2 className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-              </div>
+              <OrganizationLogo
+                size={compact ? 'lg' : 'xl'}
+                showFallback={true}
+              />
               
               <div className="flex-1 min-w-0 text-left">
                 <span className={cn(
@@ -159,12 +158,12 @@ export function OrganizationSwitcher({
           )}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={cn(
-              'flex items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0',
-              compact ? 'w-8 h-8' : 'w-10 h-10'
-            )}>
-              <Building2 className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-            </div>
+            <OrganizationLogo
+              settings={currentOrganization.settings}
+              name={currentOrganization.name}
+              size={compact ? 'lg' : 'xl'}
+              className={!currentOrganization.settings?.branding?.logo_url ? 'bg-primary text-primary-foreground' : ''}
+            />
             
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center gap-2">
@@ -219,14 +218,18 @@ export function OrganizationSwitcher({
               }}
               className="flex items-start gap-3 p-3 cursor-pointer"
             >
-              <div className={cn(
-                'flex items-center justify-center w-10 h-10 rounded-md flex-shrink-0',
-                isSelected 
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              )}>
-                <Building2 className="w-5 h-5" />
-              </div>
+              <OrganizationLogo
+                settings={org.settings}
+                name={org.name}
+                size="xl"
+                className={cn(
+                  !org.settings?.branding?.logo_url && (
+                    isSelected 
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  )
+                )}
+              />
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -311,9 +314,12 @@ export function OrganizationIndicator({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center">
-        <Building2 className="w-3.5 h-3.5" />
-      </div>
+      <OrganizationLogo
+        settings={currentOrganization.settings}
+        name={currentOrganization.name}
+        size="md"
+        className={!currentOrganization.settings?.branding?.logo_url ? 'bg-primary text-primary-foreground' : ''}
+      />
       <span className="text-sm font-medium text-foreground truncate">
         {currentOrganization.name}
       </span>
