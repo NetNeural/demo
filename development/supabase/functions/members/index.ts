@@ -76,7 +76,8 @@ export default createEdgeFunction(async ({ req }) => {
           email,
           full_name,
           last_login,
-          password_change_required
+          password_change_required,
+          role
         )
       `)
       .eq('organization_id', organizationId)
@@ -88,7 +89,13 @@ export default createEdgeFunction(async ({ req }) => {
 
     // Transform the data to flatten the users object
     // deno-lint-ignore no-explicit-any
-    const transformedMembers = members.map((member: any) => ({
+    const transformedMembers = members
+      // Hide super_admin accounts from non-super_admin users
+      .filter((member: any) => {
+        if (isSuperAdmin) return true // Super admins see everyone
+        return member.users?.role !== 'super_admin'
+      })
+      .map((member: any) => ({
       id: member.user_id, // Use user_id as the primary ID (matches auth.users)
       membership_id: member.id, // Keep the membership ID for reference
       userId: member.user_id,
