@@ -110,6 +110,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         description: org.description,
         subscriptionTier: org.subscriptionTier,
         is_active: org.isActive,
+        settings: org.settings, // Include settings (branding, theme, etc.)
         role: data.isSuperAdmin ? 'owner' : 'admin', // TODO: Get actual role from organization_members
         membershipId: `mem-${org.id}`,
         joinedAt: org.createdAt,
