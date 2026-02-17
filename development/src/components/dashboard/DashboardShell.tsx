@@ -47,6 +47,15 @@ export default function DashboardShell({
     { name: 'Settings & Users', href: '/dashboard/settings', icon: Settings },
   ]
 
+  // Debug: Log icon types
+  if (typeof window !== 'undefined') {
+    console.log('🔍 Navigation Icons Debug:', {
+      dashboardIcon: typeof LayoutDashboard,
+      devicesIcon: typeof Smartphone,
+      iconIsFunction: typeof LayoutDashboard === 'function'
+    })
+  }
+
   const handleSignOut = async () => {
     try {
       const supabase = createClient()

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { LayoutDashboard, Smartphone, Bell, BarChart3 } from 'lucide-react'
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode
@@ -73,19 +74,19 @@ export default function DashboardLayoutClient({ children, userEmail }: Dashboard
         </div>
         <div className="nav-menu">
           <Link href="/dashboard" className="nav-item" onClick={() => setMobileMenuOpen(false)}>
-            <span className="nav-icon">📊</span>
+            <LayoutDashboard className="w-5 h-5 mr-2" />
             Dashboard
           </Link>
           <Link href="/dashboard/devices" className="nav-item" onClick={() => setMobileMenuOpen(false)}>
-            <span className="nav-icon">📱</span>
+            <Smartphone className="w-5 h-5 mr-2" />
             Devices
           </Link>
           <Link href="/dashboard/alerts" className="nav-item" onClick={() => setMobileMenuOpen(false)}>
-            <span className="nav-icon">🚨</span>
+            <Bell className="w-5 h-5 mr-2" />
             Alerts
           </Link>
           <Link href="/dashboard/analytics" className="nav-item" onClick={() => setMobileMenuOpen(false)}>
-            <span className="nav-icon">📈</span>
+            <BarChart3 className="w-5 h-5 mr-2" />
             Analytics
           </Link>
         </div>
