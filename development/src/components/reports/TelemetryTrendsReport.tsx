@@ -139,7 +139,7 @@ export function TelemetryTrendsReport() {
     const fetchThresholds = async () => {
       const { data, error } = await supabase
         .from('sensor_thresholds')
-        .select('device_id, sensor_type, min_value, max_value, critical_min, critical_max, temperature_unit')
+        .select('device_id, sensor_type, min_value, max_value, critical_min, critical_max')
         .in('device_id', selectedDevices)
         .eq('sensor_type', selectedSensor)
 
