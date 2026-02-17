@@ -1,0 +1,1122 @@
+# NetNeural IoT Platform - Developer Setup Guide
+**Version 1.0** | **Last Updated:** February 17, 2026  
+**For:** Software Engineers, Frontend Developers, Backend Developers
+
+---
+
+## Table of Contents
+
+1. [Prerequisites](#1-prerequisites)
+2. [Initial Setup](#2-initial-setup)
+3. [Environment Configuration](#3-environment-configuration)
+4. [Local Development](#4-local-development)
+5. [Running Tests](#5-running-tests)
+6. [Debugging](#6-debugging)
+7. [Code Style & Contribution Guidelines](#7-code-style--contribution-guidelines)
+8. [Deployment](#8-deployment)
+9. [Troubleshooting](#9-troubleshooting)
+10. [FAQ](#10-faq)
+
+---
+
+## 1. Prerequisites
+
+### Required Software
+
+| Software | Minimum Version | Recommended Version | Download |
+|----------|----------------|---------------------|----------|
+| **Node.js** | 20.0.0 LTS | 20.11.0 LTS | https://nodejs.org/ |
+| **npm** | 10.0.0 | 10.4.0 | (bundled with Node.js) |
+| **Git** | 2.30 | Latest | https://git-scm.com/ |
+| **Docker Desktop** | 20.10 | Latest | https://www.docker.com/products/docker-desktop/ |
+| **Supabase CLI** | 1.127.0 | Latest | `npm install -g supabase` |
+
+### Optional (Recommended)
+
+| Tool | Purpose | Download |
+|------|---------|----------|
+| **VS Code** | IDE with excellent TypeScript support | https://code.visualstudio.com/ |
+| **GitHub CLI** | Manage issues/PRs from terminal | https://cli.github.com/ |
+| **Postman** | API testing | https://www.postman.com/ |
+
+### System Requirements
+
+- **OS:** macOS, Linux, Windows (WSL2 recommended)
+- **RAM:** 8GB minimum, 16GB recommended
+- **Disk Space:** 10GB free (Docker images + node_modules)
+- **Network:** Stable internet connection for initial setup
+
+---
+
+## 2. Initial Setup
+
+### 2.1 Clone Repository
+
+```bash
+# Clone the repository
+git clone https://github.com/NetNeural/MonoRepo-Staging.git
+cd MonoRepo-Staging/development
+```
+
+**⚠️ Note:** The repository is a monorepo. All active development happens in the `development/` directory.
+
+### 2.2 Install Dependencies
+
+```bash
+# Install Node.js dependencies (takes 2-5 minutes)
+npm install
+```
+
+**Expected Output:**
+```
+added 2,456 packages in 3m 42s
+```
+
+**If errors occur:**
+```bash
+# Clear npm cache and retry
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### 2.3 Install Supabase CLI
+
+```bash
+# Install globally
+npm install -g supabase
+
+# Verify installation
+supabase --version
+# Expected: supabase 1.127.0 (or higher)
+```
+
+### 2.4 Docker Setup
+
+**macOS/Windows:**
+1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+2. Launch Docker Desktop
+3. Verify: `docker --version` → Should show version 20.10+
+
+**Linux:**
+```bash
+# Install Docker Engine
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+# Log out and log back in
+```
+
+---
+
+## 3. Environment Configuration
+
+### 3.1 Create Environment File
+
+```bash
+# Copy example environment file
+cp .env.example .env.local
+```
+
+### 3.2 Configure Environment Variables
+
+Edit `.env.local` with your configuration:
+
+```dotenv
+# ============================================================================
+# Application Configuration
+# ============================================================================
+NODE_ENV=development
+NEXT_PUBLIC_APP_NAME="NetNeural IoT Platform"
+NEXT_PUBLIC_APP_VERSION="1.0.0"
+DEBUG=true
+
+# ============================================================================
+# Supabase Configuration (Local Development)
+# ============================================================================
+
+# These values are set automatically by `supabase start`
+# DO NOT CHANGE unless you know what you're doing
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<obtained_from_supabase_start>
+SUPABASE_SERVICE_ROLE_KEY=<obtained_from_supabase_start>
+
+# ============================================================================
+# External API Integrations (Optional for local development)
+# ============================================================================
+
+# Golioth IoT Platform
+# Get your API key from: https://console.golioth.io/settings/api-keys
+GOLIOTH_API_KEY=your-golioth-api-key-here
+GOLIOTH_PROJECT_ID=your-golioth-project-id
+GOLIOTH_BASE_URL=https://api.golioth.io
+
+# OpenAI API
+# Get your API key from: https://platform.openai.com/api-keys
+# Optional: AI insights feature will gracefully degrade without this
+OPENAI_API_KEY=your-openai-api-key-here
+
+# ============================================================================
+# Monitoring & Error Tracking (Optional)
+# ============================================================================
+
+# Sentry DSN (for error tracking)
+# Get from: https://sentry.io/settings/projects/
+SENTRY_DSN=your-sentry-dsn-here
+SENTRY_ORG=your-sentry-org
+SENTRY_PROJECT=your-sentry-project
+
+# ============================================================================
+# Email Configuration (Optional)
+# ============================================================================
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=noreply@netneural.ai
+```
+
+### 3.3 Obtain Supabase Credentials
+
+**Option 1: Local Development (Recommended for new developers)**
+
+```bash
+# Start Supabase local stack
+supabase start
+
+# Output will include:
+# API URL: http://127.0.0.1:54321
+# DB URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+# Studio URL: http://localhost:54323
+# anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Copy the `anon key` and `service_role key` to your `.env.local` file.**
+
+**Option 2: Cloud Supabase (for production-like testing)**
+
+1. Create account at https://supabase.com
+2. Create new project
+3. Go to **Settings** → **API**
+4. Copy values to `.env.local`:
+   - `URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` (secret) → `SUPABASE_SERVICE_ROLE_KEY`
+
+**⚠️ Security Warning:**
+- ❌ NEVER commit `.env.local` to Git (already in `.gitignore`)
+- ❌ NEVER share `service_role` key publicly (full database access)
+- ✅ Use local Supabase for development
+- ✅ Use cloud Supabase with separate staging project
+
+---
+
+## 4. Local Development
+
+### 4.1 Start Development Environment
+
+**Full Stack (Recommended):**
+```bash
+# Starts Supabase + Next.js together
+npm run dev:full
+
+# With debugging enabled
+npm run dev:full:debug
+```
+
+**Individual Services:**
+
+**Terminal 1: Start Supabase**
+```bash
+npm run supabase:start
+# Waits until all containers are healthy (~30-60 seconds)
+```
+
+**Terminal 2: Start Next.js**
+```bash
+npm run dev
+# Next.js starts on http://localhost:3000
+```
+
+### 4.2 Verify Installation
+
+**Open Browser:**
+- **Application:** http://localhost:3000
+- **Supabase Studio:** http://localhost:54323 (database admin UI)
+- **API Health Check:** http://127.0.0.1:54321/health
+
+**Check Supabase Services:**
+```bash
+npm run supabase:status
+
+# Expected output:
+#          API URL: http://127.0.0.1:54321
+#      GraphQL URL: http://127.0.0.1:54321/graphql/v1
+#           DB URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+#       Studio URL: http://127.0.0.1:54323
+#     Inbucket URL: http://127.0.0.1:54324
+#       JWT secret: super-secret-jwt-token
+#         anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 4.3 Development URLs Reference
+
+| Service | URL | Credentials | Purpose |
+|---------|-----|-------------|---------|
+| **Next.js App** | http://localhost:3000 | (see Database) | Main application |
+| **Supabase Studio** | http://localhost:54323 | N/A | Database admin UI |
+| **Supabase API** | http://127.0.0.1:54321 | anon key | Backend API |
+| **Edge Functions** | http://127.0.0.1:54321/functions/v1 | anon key | Serverless functions |
+| **PostgreSQL** | postgresql://postgres:postgres@127.0.0.1:54322/postgres | postgres / postgres | Direct DB access |
+| **Inbucket (Email)** | http://127.0.0.1:54324 | N/A | Email testing UI |
+
+**Test User (seeded by migrations):**
+- Email: `admin@netneural.ai`
+- Password: `admin123`
+
+### 4.4 Database Operations
+
+**Generate TypeScript Types (after schema changes):**
+```bash
+npm run supabase:types
+# Generates src/lib/database.types.ts
+```
+
+**Create Migration:**
+```bash
+supabase migration new add_feature_name
+# Creates supabase/migrations/YYYYMMDDHHMMSS_add_feature_name.sql
+```
+
+**Apply Migrations:**
+```bash
+npm run supabase:migrate
+# Applies all pending migrations to local database
+```
+
+**Reset Database (⚠️ destroys all local data):**
+```bash
+npm run supabase:reset
+# Drops all tables and re-runs migrations from scratch
+```
+
+**Open Database Studio:**
+```bash
+npm run supabase:studio
+# Opens http://localhost:54323 in browser
+```
+
+### 4.5 Edge Functions Development
+
+**List All Functions:**
+```bash
+supabase functions list
+```
+
+**Serve Functions Locally:**
+```bash
+npm run supabase:functions:serve
+# Functions available at http://127.0.0.1:54321/functions/v1/{function-name}
+```
+
+**Create New Function:**
+```bash
+supabase functions new my-function-name
+# Creates supabase/functions/my-function-name/index.ts
+```
+
+**Test Function:**
+```bash
+curl -i http://127.0.0.1:54321/functions/v1/my-function-name \\
+  -H "Authorization: Bearer YOUR_ANON_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"test": "data"}'
+```
+
+**Deploy Function to Cloud (staging):**
+```bash
+supabase functions deploy my-function-name --project-ref YOUR_PROJECT_REF
+```
+
+---
+
+## 5. Running Tests
+
+### 5.1 Unit Tests (Jest)
+
+**Run All Tests:**
+```bash
+npm test
+# Runs Jest with React Testing Library
+```
+
+**Watch Mode (auto-rerun on file changes):**
+```bash
+npm run test:watch
+```
+
+**Coverage Report:**
+```bash
+npm run test:coverage
+# Generates coverage/ directory with HTML report
+# Open coverage/lcov-report/index.html in browser
+```
+
+**Run Specific Test File:**
+```bash
+npm test src/components/DeviceCard.test.tsx
+```
+
+**Run Tests Matching Pattern:**
+```bash
+npm test -- --testNamePattern="renders correctly"
+```
+
+### 5.2 E2E Tests (Playwright)
+
+**Install Playwright Browsers (first time only):**
+```bash
+npx playwright install
+```
+
+**Run E2E Tests:**
+```bash
+npm run test:e2e
+# Runs all Playwright tests in headless mode
+```
+
+**Interactive UI Mode:**
+```bash
+npm run test:e2e:ui
+# Opens Playwright Test UI for debugging
+```
+
+**Run Specific Test:**
+```bash
+npx playwright test tests/e2e/login.spec.ts
+```
+
+**Debug Single Test:**
+```bash
+npx playwright test tests/e2e/login.spec.ts --debug
+# Opens browser with DevTools for step-by-step debugging
+```
+
+### 5.3 Edge Function Tests (Deno)
+
+**Run Deno Tests:**
+```bash
+cd supabase/functions
+deno test --allow-all
+```
+
+**Test Specific Function:**
+```bash
+deno test --allow-all devices/
+```
+
+**Coverage:**
+```bash
+deno test --allow-all --coverage=cov_profile
+deno coverage cov_profile
+```
+
+### 5.4 Continuous Integration
+
+**Run All Checks (before committing):**
+```bash
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# Unit tests
+npm test
+
+# E2E tests
+npm run test:e2e
+
+# Build verification
+npm run build
+```
+
+**Automated Pre-commit Hook:**
+- Husky runs linting and type checking automatically before each commit
+- If checks fail, commit is blocked
+- Fix issues and retry commit
+
+---
+
+## 6. Debugging
+
+### 6.1 VS Code Debugging Setup
+
+**Install VS Code Extensions:**
+1. Open VS Code
+2. Go to **Extensions** (Ctrl+Shift+X)
+3. Install:
+   - **ESLint** (dbaeumer.vscode-eslint)
+   - **Prettier** (esbenp.prettier-vscode)
+   - **Tailwind CSS IntelliSense** (bradlc.vscode-tailwindcss)
+   - **Deno** (denoland.vscode-deno)
+
+**Launch Configurations (`.vscode/launch.json`):**
+
+Create `.vscode/launch.json`:
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev:debug"
+    },
+    {
+      "name": "Next.js: debug client-side",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Next.js: debug full stack",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev:full:debug",
+      "serverReadyAction": {
+        "pattern": "started server on .+, url: (https?://.+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
+    },
+    {
+      "name": "Edge Function: debug",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev:functions:debug"
+    }
+  ]
+}
+```
+
+**Start Debugging:**
+1. Press **F5** or go to **Run and Debug** (Ctrl+Shift+D)
+2. Select configuration from dropdown
+3. Set breakpoints by clicking line numbers
+4. Hover over variables to inspect values
+
+### 6.2 Browser DevTools
+
+**React DevTools:**
+1. Install [React DevTools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi) extension
+2. Open DevTools (F12) → **⚛️ React** tab
+3. Inspect component tree, props, state
+
+**Network Debugging:**
+1. Open DevTools (F12) → **Network** tab
+2. Filter by **Fetch/XHR** to see API calls
+3. Click request → **Headers** to see JWT token
+4. Click **Response** to see API data
+
+**Console Debugging:**
+```typescript
+// Add logging to your code
+console.log('Device data:', device)
+console.table(devices) // Pretty table format
+console.error('API error:', error)
+```
+
+### 6.3 Database Debugging
+
+**Query Logs (Supabase Studio):**
+1. Open http://localhost:54323
+2. Go to **Logs** → **Query Performance**
+3. View slow queries (>1 second)
+
+**Direct SQL Access:**
+```bash
+# Connect to PostgreSQL
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# Run queries
+SELECT * FROM devices LIMIT 10;
+SELECT * FROM alerts WHERE is_resolved = false;
+```
+
+### 6.4 Edge Function Debugging
+
+**Console Logs:**
+```typescript
+// In Edge Function code
+console.log('Request received:', req.method, req.url)
+console.error('Error occurred:', error)
+```
+
+**View Logs:**
+```bash
+# Real-time logs
+supabase functions serve --inspect
+
+# Cloud function logs
+supabase functions logs my-function-name --project-ref YOUR_PROJECT_REF
+```
+
+**Debugging with Breakpoints:**
+```bash
+# Start functions with debugger
+npm run dev:functions:debug
+
+# In Chrome, open: chrome://inspect
+# Click "Open dedicated DevTools for Node"
+# Set breakpoints in Sources tab
+```
+
+---
+
+## 7. Code Style & Contribution Guidelines
+
+### 7.1 Code Formatting
+
+**Prettier (automatic formatting):**
+```bash
+# Format all files
+npm run format
+
+# Check formatting without writing
+npm run format:check
+```
+
+**Prettier Configuration (`.prettierrc.json`):**
+```json
+{
+  "semi": false,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "printWidth": 100
+}
+```
+
+### 7.2 Linting
+
+**ESLint:**
+```bash
+# Run linter
+npm run lint
+
+# Auto-fix issues
+npm run lint:fix
+```
+
+**ESLint Configuration:**
+- Extends Next.js recommended config
+- TypeScript strict mode enabled
+- React Hooks rules enforced
+
+### 7.3 TypeScript Guidelines
+
+**Best Practices:**
+- ✅ Use explicit types for function parameters and return values
+- ✅ Prefer interfaces over types for object shapes
+- ✅ Use enums for fixed sets of values
+- ✅ Enable `strict` mode in `tsconfig.json`
+- ❌ Avoid `any` type (use `unknown` if type is truly unknown)
+
+**Example:**
+```typescript
+// ✅ Good
+interface Device {
+  id: string
+  name: string
+  status: 'online' | 'offline'
+}
+
+async function getDevices(organizationId: string): Promise<Device[]> {
+  const response = await fetch(`/api/devices?org=${organizationId}`)
+  return response.json()
+}
+
+// ❌ Bad
+function getDevices(orgId: any): any {
+  return fetch(`/api/devices?org=${orgId}`).then(r => r.json())
+}
+```
+
+### 7.4 Commit Message Convention
+
+**Format:**
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, no logic change)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Examples:**
+```bash
+# Good commit messages
+git commit -m "feat(devices): Add batch delete functionality"
+git commit -m "fix(alerts): Resolve duplicate alert notifications"
+git commit -m "docs: Update API documentation with rate limits"
+
+# Bad commit messages
+git commit -m "updates"
+git commit -m "fixed stuff"
+git commit -m "WIP"
+```
+
+### 7.5 Pull Request Guidelines
+
+**Before Creating PR:**
+1. ✅ Run `npm run type-check` → No errors
+2. ✅ Run `npm run lint` → No errors
+3. ✅ Run `npm test` → All tests pass
+4. ✅ Run `npm run build` → Build succeeds
+5. ✅ Update CHANGELOG.md if user-facing change
+
+**PR Description Template:**
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] E2E tests added/updated
+- [ ] Manual testing performed
+
+## Screenshots (if applicable)
+[Screenshots here]
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Comments added for complex logic
+- [ ] Documentation updated
+- [ ] No new warnings generated
+```
+
+---
+
+## 8. Deployment
+
+### 8.1 Build for Production
+
+**Static Export (GitHub Pages):**
+```bash
+# Build static HTML/CSS/JS
+npm run build
+
+# Output directory: out/
+# Test locally:
+npm run start:static
+# Opens http://localhost:3000
+```
+
+**Verify Build:**
+```bash
+# Check bundle sizes
+npm run build:analyze
+# Opens browser with bundle analyzer
+```
+
+### 8.2 Deploy to Staging
+
+**Prerequisites:**
+- GitHub account with push access to repository
+- GitHub Pages enabled on repository
+
+**Manual Deployment:**
+```bash
+# 1. Build static files
+npm run build
+
+# 2. Commit build output (if using deploy branch)
+git add out/
+git commit -m "chore: Build for deployment"
+
+# 3. Push to main branch
+git push origin main
+
+# GitHub Actions automatically deploys to GitHub Pages
+```
+
+**Automated CI/CD:**
+- GitHub Actions workflow (`.github/workflows/deploy.yml`) triggers on push to `main`
+- Workflow:
+  1. Checkout code
+  2. Install dependencies
+  3. Run tests
+  4. Build static export
+  5. Deploy to GitHub Pages
+- View deployment status: https://github.com/NetNeural/MonoRepo-Staging/actions
+
+### 8.3 Deploy Edge Functions
+
+**Deploy All Functions:**
+```bash
+# Requires Supabase Access Token
+supabase link --project-ref YOUR_PROJECT_REF
+supabase functions deploy
+```
+
+**Deploy Single Function:**
+```bash
+supabase functions deploy device-sync --project-ref YOUR_PROJECT_REF
+```
+
+**Environment Variables for Functions:**
+```bash
+# Set function secrets (not in .env)
+supabase secrets set GOLIOTH_API_KEY=your-key-here
+supabase secrets set OPENAI_API_KEY=your-key-here
+```
+
+### 8.4 Database Migrations (Production)
+
+**⚠️ WARNING: Production migrations are irreversible. Test in staging first!**
+
+```bash
+# 1. Test migration locally
+supabase db reset
+# Verify application works
+
+# 2. Link to production project
+supabase link --project-ref PRODUCTION_PROJECT_REF
+
+# 3. Apply migrations to production
+supabase db push
+
+# 4. Verify production
+# Check application, run smoke tests
+```
+
+---
+
+## 9. Troubleshooting
+
+### 9.1 Common Issues
+
+#### **Issue: `supabase start` fails with "Docker not running"**
+
+**Solution:**
+```bash
+# Check Docker status
+docker ps
+
+# If not running:
+# macOS/Windows: Launch Docker Desktop
+# Linux: sudo systemctl start docker
+```
+
+#### **Issue: Port 3000 already in use**
+
+**Solution:**
+```bash
+# Find process using port 3000
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+PORT=3001 npm run dev
+```
+
+#### **Issue: `npm run supabase:types` generates empty file**
+
+**Solution:**
+```bash
+# Ensure Supabase is running
+npm run supabase:status
+
+# Reset database with schema
+npm run supabase:reset
+
+# Regenerate types
+npm run supabase:types
+```
+
+#### **Issue: Authentication errors (401 Unauthorized)**
+
+**Diagnostics:**
+1. Check `.env.local` has correct `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+2. Verify key matches output from `supabase start`
+3. Clear browser cookies and localStorage
+4. Restart Next.js dev server
+
+**Solution:**
+```bash
+# Get fresh keys
+npm run supabase:stop
+npm run supabase:start
+# Copy anon key to .env.local
+# Restart dev server
+```
+
+#### **Issue: Database migrations fail**
+
+**Solution:**
+```bash
+# Check migration syntax
+cat supabase/migrations/YYYYMMDDHHMMSS_your_migration.sql
+
+# Reset and reapply
+npm run supabase:reset
+
+# If still failing, check PostgreSQL logs
+docker logs supabase-db
+```
+
+#### **Issue: Edge Function returns 500 error**
+
+**Diagnostics:**
+1. Check function logs: `supabase functions serve --inspect`
+2. Test function locally before deploying
+3. Verify environment variables set: `supabase secrets list`
+
+**Solution:**
+```bash
+# View logs
+supabase functions logs my-function-name --project-ref YOUR_PROJECT_REF
+
+# Common causes:
+# - Missing environment variable
+# - Incorrect SQL query
+# - Network timeout (increase function timeout)
+```
+
+### 9.2 Performance Issues
+
+#### **Slow Build Times**
+
+**Solution:**
+```bash
+# Clear Next.js cache
+npm run clean
+npm install
+
+# Use Turbopack (faster)
+npm run dev # Already uses --turbo flag
+```
+
+#### **Slow Test Execution**
+
+**Solution:**
+```bash
+# Run tests in parallel
+npm test -- --maxWorkers=4
+
+# Run only changed tests
+npm test -- --onlyChanged
+```
+
+#### **High Memory Usage (Docker)**
+
+**Solution:**
+1. Increase Docker memory limit:
+   - Docker Desktop → Settings → Resources → Memory
+   - Increase to 8GB (default: 2GB)
+2. Stop unused containers:
+   ```bash
+   docker container prune
+   docker image prune
+   ```
+
+---
+
+## 10. FAQ
+
+### Q: Do I need to run Supabase locally, or can I use the cloud?
+
+**A:** Both options work:
+- **Local (recommended for development):** Faster, free, isolated from production
+- **Cloud (recommended for staging):** Matches production environment, requires internet connection
+
+### Q: How do I add a new page/route?
+
+**A:** Next.js 15 uses App Router:
+```bash
+# Create new route
+mkdir -p src/app/my-page
+touch src/app/my-page/page.tsx
+
+# Add content
+# src/app/my-page/page.tsx
+export default function MyPage() {
+  return <h1>My New Page</h1>
+}
+
+# Access: http://localhost:3000/my-page
+```
+
+### Q: How do I add a new database table?
+
+**A:**
+```bash
+# 1. Create migration
+supabase migration new add_my_table
+
+# 2. Edit migration file
+# supabase/migrations/YYYYMMDDHHMMSS_add_my_table.sql
+CREATE TABLE my_table (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+# 3. Apply migration
+npm run supabase:reset
+
+# 4. Regenerate types
+npm run supabase:types
+```
+
+### Q: How do I add a new Edge Function?
+
+**A:**
+```bash
+# 1. Create function
+supabase functions new my-function
+
+# 2. Edit function code
+# supabase/functions/my-function/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+serve(async (req) => {
+  return new Response(JSON.stringify({ message: 'Hello' }), {
+    headers: { 'Content-Type': 'application/json' }
+  })
+})
+
+# 3. Test locally
+supabase functions serve
+
+# 4. Deploy
+supabase functions deploy my-function
+```
+
+### Q: How do I update dependencies?
+
+**A:**
+```bash
+# Check outdated packages
+npm outdated
+
+# Update specific package
+npm install package-name@latest
+
+# Update all packages (caution: may break things)
+npm update
+
+# Verify application still works
+npm test && npm run build
+```
+
+### Q: How do I handle merge conflicts?
+
+**A:**
+```bash
+# 1. Fetch latest changes
+git fetch origin main
+
+# 2. Rebase your branch
+git rebase origin/main
+
+# 3. Resolve conflicts (VS Code shows conflicts in files)
+# Edit files, remove conflict markers
+
+# 4. Continue rebase
+git add .
+git rebase --continue
+
+# 5. Force push (if already pushed)
+git push --force-with-lease
+```
+
+### Q: How do I reset my local database to production state?
+
+**A:**
+**⚠️ WARNING: This destroys all local data!**
+```bash
+# 1. Backup local data (if needed)
+supabase db dump > backup.sql
+
+# 2. Stop local Supabase
+npm run supabase:stop
+
+# 3. Delete local database
+rm -rf supabase/.branches
+
+# 4. Start fresh
+npm run supabase:start
+npm run supabase:reset
+
+# 5. (Optional) Restore production schema
+# supabase db pull --project-ref PROD_PROJECT_REF
+```
+
+---
+
+## Additional Resources
+
+### Documentation
+- **Platform Docs:** `/docs` directory
+- **API Reference:** `docs/API_DOCUMENTATION.md`
+- **User Guide:** `docs/USER_QUICK_START.md`
+- **Admin Guide:** `docs/ADMINISTRATOR_GUIDE.md`
+
+### External Resources
+- **Next.js Docs:** https://nextjs.org/docs
+- **Supabase Docs:** https://supabase.com/docs
+- **TypeScript Handbook:** https://www.typescriptlang.org/docs/
+- **Tailwind CSS:** https://tailwindcss.com/docs
+- **Radix UI:** https://www.radix-ui.com/docs/primitives
+
+### Community & Support
+- **GitHub Issues:** https://github.com/NetNeural/MonoRepo-Staging/issues
+- **Slack Channel:** #netneural-dev (internal)
+- **Tech Lead:** techsupport@netneural.ai
+- **Weekly Standups:** Mondays 10 AM PST
+
+---
+
+**Congratulations! You're ready to start developing. 🚀**
+
+**Next Steps:**
+1. ✅ Complete setup steps above
+2. ✅ Read `docs/API_DOCUMENTATION.md` for API reference
+3. ✅ Pick an issue from GitHub Issues
+4. ✅ Create feature branch: `git checkout -b feature/my-feature`
+5. ✅ Make changes, write tests, commit
+6. ✅ Create Pull Request for review
+
+**Happy Coding!**
+
+---
+
+**© 2026 NetNeural. All rights reserved.**
+
+**Document Version:** 1.0  
+**Last Reviewed By:** Platform Engineering Team  
+**Next Review Date:** March 17, 2026
