@@ -241,12 +241,6 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
           )}
         </div>
 
-        {/* Last Reading Timestamp */}
-        <div className="flex items-center justify-between py-3 border-y">
-          <span className="text-sm font-medium">Last Reading:</span>
-          <span className="text-sm text-muted-foreground">{formatTimeAgo(lastReadingTime)}</span>
-        </div>
-
         {/* Current Sensor Values - Largest Font */}
         <div className="space-y-4">
           {Object.keys(latestBySensor).length === 0 ? (
@@ -281,6 +275,8 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
               
               const displayValue = value !== null ? value.toFixed(1) : 'N/A'
 
+              const readingTime = reading.device_timestamp || reading.received_at
+
               return (
                 <div key={sensorKey} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -292,6 +288,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                       {displayValue}
                       <span className="text-xl ml-1">{unit}</span>
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatTimeAgo(readingTime)}</p>
                   </div>
                 </div>
               )
