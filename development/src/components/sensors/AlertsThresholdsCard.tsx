@@ -176,8 +176,13 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
   }
 
   const handleSave = async () => {
+    console.log('🔵 [THRESHOLD SAVE] handleSave called')
+    console.log('🔵 [THRESHOLD SAVE] Form data:', formData)
+    console.log('🔵 [THRESHOLD SAVE] Selected threshold:', selectedThreshold)
+    
     try {
       setSaving(true)
+      console.log('🔵 [THRESHOLD SAVE] Saving state set to true')
 
       // Parse manual emails from comma-separated string
       const manualEmails = formData.manualEmails
@@ -203,28 +208,37 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         notify_emails: manualEmails,
       }
 
+      console.log('🔵 [THRESHOLD SAVE] Payload prepared:', payload)
+      console.log('🔵 [THRESHOLD SAVE] Calling Edge Function...')
+
       const response = selectedThreshold
         ? await edgeFunctions.thresholds.update(selectedThreshold.id, payload)
         : await edgeFunctions.thresholds.create(payload)
 
+      console.log('🔵 [THRESHOLD SAVE] Edge Function response:', response)
+
       if (response.success) {
+        console.log('✅ [THRESHOLD SAVE] Save successful')
         toast({
           title: 'Success',
           description: `Threshold ${selectedThreshold ? 'updated' : 'created'} successfully`,
         })
         setEditDialogOpen(false)
         await fetchThresholds()
+        console.log('✅ [THRESHOLD SAVE] Thresholds refreshed')
       } else {
+        console.error('❌ [THRESHOLD SAVE] Save failed:', response.error)
         throw new Error(typeof response.error === 'string' ? response.error : 'Failed to save threshold')
       }
     } catch (error) {
-      console.error('Error saving threshold:', error)
+      console.error('❌ [THRESHOLD SAVE] Exception caught:', error)
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to save threshold',
         variant: 'destructive',
       })
     } finally {
+      console.log('🔵 [THRESHOLD SAVE] Finally block - setting saving to false')
       setSaving(false)
     }
   }

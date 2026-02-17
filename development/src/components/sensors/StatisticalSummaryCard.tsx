@@ -127,6 +127,12 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
   const locationContext = getLocationContext(installedAt)
   console.log('📍 [LocationContext]:', installedAt, locationContext)
   
+  // State for AI insights
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [useOpenAI, setUseOpenAI] = useState(true) // Toggle for AI vs rule-based
+  const supabase = createClient()
+  
   // Helper to format values with units - memoized to ensure stable reference
   const formatValue = useCallback((value: number, sensorName: string): string => {
     const nameLower = sensorName.toLowerCase()
@@ -223,9 +229,89 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
     }).filter((a): a is SensorAnalysis => a !== null)
   }, [telemetryReadings])
 
-  // Generate AI insights based on sensor data
-  const aiInsights = useMemo<AIInsight[]>(() => {
-    console.log('🤖 [aiInsights] Recalculating insights with temperatureUnit:', temperatureUnit)
+  // Fetch AI insights from OpenAI Edge Function
+  useEffect(() => {
+    let mounted = true
+
+    const fetchAIInsights = async () => {
+      // Skip if no data or AI disabled
+      if (sensorAnalyses.length === 0 || !useOpenAI) {
+        if (mounted) {
+          setAiInsights(generateRuleBasedInsights())
+        }
+        return
+      }
+
+      setAiLoading(true)
+      
+      try {
+        console.log('🤖 Fetching AI insights from OpenAI...')
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ai-insights`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            deviceId: device.id,
+            deviceName: device.name,
+            installedAt,
+            telemetryReadings: telemetryReadings.slice(0, 50), // Last 50 readings
+            temperatureUnit,
+            organizationId: device.organization_id
+          }),
+        })
+
+        const data = await response.json()
+        
+        if (data.fallback || data.error) {
+          console.warn('⚠️ AI insights unavailable, using rule-based fallback:', data.error)
+          if (mounted) {
+            setAiInsights(generateRuleBasedInsights())
+          }
+        } else {
+          console.log('✅ AI insights received:', data.cached ? '(cached)' : '(fresh)', data.insights)
+          if (mounted) {
+            setAiInsights(data.insights.map((insight: { type: string; title: string; message: string; confidence?: number }) => ({
+              ...insight,
+              icon: getIconForInsightType(insight.type)
+            })))
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch AI insights:', error)
+        if (mounted) {
+          setAiInsights(generateRuleBasedInsights())
+        }
+      } finally {
+        if (mounted) {
+          setAiLoading(false)
+        }
+      }
+    }
+
+    fetchAIInsights()
+
+    return () => {
+      mounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [device.id, telemetryReadings.length, temperatureUnit, sensorAnalyses.length, useOpenAI])
+
+  // Helper: Get icon for insight type
+  const getIconForInsightType = (type: string) => {
+    switch (type) {
+      case 'critical': return AlertCircle
+      case 'warning': return TrendingUp
+      case 'normal': return CheckCircle
+      default: return Brain
+    }
+  }
+
+  // Generate rule-based insights as fallback
+  const generateRuleBasedInsights = useCallback((): AIInsight[] => {
+    console.log('🤖 [aiInsights] Generating rule-based insights with temperatureUnit:', temperatureUnit)
     const insights: AIInsight[] = []
 
     if (sensorAnalyses.length === 0) {
@@ -482,10 +568,10 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
       type: 'info',
       icon: Brain,
       title: 'Data Quality',
-      message: `Analyzing ${totalReadings.toLocaleString()} readings across ${sensorAnalyses.length} sensor${sensorAnalyses.length > 1 ? 's' : ''}. AI pattern detection active.`,
+      message: `Analyzing ${totalReadings.toLocaleString()} readings across ${sensorAnalyses.length} sensor${sensorAnalyses.length > 1 ? 's' : ''}. Rule-based pattern detection.`,
     })
 
-    console.log('🤖 [aiInsights] Generated', insights.length, 'insights. First insight:', insights[0]?.message?.substring(0, 100))
+    console.log('🤖 [generateRuleBasedInsights] Generated', insights.length, 'insights')
     return insights
   }, [sensorAnalyses, formatValue, temperatureUnit, locationContext, installedAt])
 
@@ -518,10 +604,24 @@ export function StatisticalSummaryCard({ device, telemetryReadings, temperatureU
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5" />
-          🤖 AI Powered Predictive Analysis
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            🤖 AI Powered Predictive Analysis
+            {aiLoading && (
+              <span className="text-xs text-muted-foreground animate-pulse">
+                (generating insights...)
+              </span>
+            )}
+          </CardTitle>
+          <button
+            onClick={() => setUseOpenAI(!useOpenAI)}
+            className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+            title={useOpenAI ? 'Using OpenAI GPT-3.5' : 'Using rule-based analysis'}
+          >
+            {useOpenAI ? '🤖 AI' : '📊 Rules'}
+          </button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Sensor Statistics Grid */}

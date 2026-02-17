@@ -1,12 +1,12 @@
 # Secrets Inventory & Management Guide
-**Last Updated:** November 13, 2025  
+**Last Updated:** February 16, 2026  
 **Status:** ✅ All production secrets secured in GitHub
 
 ---
 
 ## 📊 Overview
 
-All production secrets are now managed via **GitHub Secrets** and accessible through GitHub Actions workflows. Local development uses `.env.local` (gitignored) with the same keys.
+All production secrets (15 total) are now managed via **GitHub Secrets** and accessible through GitHub Actions workflows. Local development uses `.env.local` (gitignored) with the same keys.
 
 ---
 
@@ -66,6 +66,20 @@ All production secrets are now managed via **GitHub Secrets** and accessible thr
 
 ---
 
+### OpenAI (AI-Powered Insights)
+| Secret Name | Purpose | Rotation | Last Updated |
+|-------------|---------|----------|--------------|
+| `OPENAI_API_KEY` | GPT-3.5 API access for predictive insights | **90 days** | Today ✅ |
+
+**Status:** ✅ Newly integrated for AI-powered predictive analysis
+
+**Usage:**
+- Used in `ai-insights` Edge Function for generating intelligent insights
+- Cached for 15 minutes to minimize API costs
+- Average cost: ~$0.0005 per device per analysis
+
+---
+
 ## 🏠 Local Development (`.env.local`)
 
 **Location:** `development/.env.local` (gitignored)
@@ -82,6 +96,9 @@ GOLIOTH_API_KEY=<from GitHub secrets>
 
 # GitHub (Personal Token - for local scripts)
 GITHUB_TOKEN=<from GitHub secrets>
+
+# OpenAI (AI-Powered Insights - for testing)
+OPENAI_API_KEY=<from GitHub secrets>
 
 # Sentry (Production Values - for testing)
 NEXT_PUBLIC_SENTRY_DSN=<from GitHub secrets>
@@ -162,9 +179,18 @@ gh secret set -f .env.production --repo NetNeural/MonoRepo
 
 ---
 
-## ✅ Recent Changes (November 13, 2025)
+## ✅ Recent Changes
 
-### Completed
+### February 16, 2026 - OpenAI Integration
+- ✅ Added `OPENAI_API_KEY` to GitHub secrets
+- ✅ Created `ai-insights` Edge Function with GPT-3.5 integration
+- ✅ Implemented 15-minute caching to optimize API costs
+- ✅ Added `ai_insights_cache` database table and migration
+- ✅ Updated environment configuration files (`.env.example`, `.env.production`)
+- ✅ Enhanced StatisticalSummaryCard component with real AI insights
+- ✅ Added AI/Rules toggle for user preference
+
+### November 13, 2025 - Initial Secrets Migration
 - ✅ Added `GOLIOTH_API_KEY` to GitHub secrets
 - ✅ Added `GITHUB_TOKEN` to GitHub secrets
 - ✅ Removed hardcoded secrets from `explore_golioth_api.js`
