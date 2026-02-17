@@ -5,7 +5,7 @@
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
 
 export interface DevicesAPI {
-  list: (organizationId: string, options?: { limit?: number }) => Promise<EdgeFunctionResponse<{ devices: unknown[]; count: number }>>
+  list: (organizationId?: string, options?: { limit?: number }) => Promise<EdgeFunctionResponse<{ devices: unknown[]; count: number }>>
   get: (deviceId: string) => Promise<EdgeFunctionResponse<unknown>>
   create: (data: unknown) => Promise<EdgeFunctionResponse<unknown>>
   update: (deviceId: string, data: unknown) => Promise<EdgeFunctionResponse<unknown>>
@@ -20,12 +20,12 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
     /**
      * List all devices for an organization
      */
-    list: (organizationId: string, options?: { limit?: number }) =>
+    list: (organizationId?: string, options?: { limit?: number }) =>
       call<{ devices: unknown[]; count: number }>('devices', {
-        params: {
+        params: organizationId ? {
           organization_id: organizationId,
           ...options,
-        },
+        } : options,
       }),
     
     /**
