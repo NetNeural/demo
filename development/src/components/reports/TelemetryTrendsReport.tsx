@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,8 +14,6 @@ import {
   Table as TableIcon, 
   Download, 
   Calendar as CalendarIcon,
-  TrendingUp,
-  TrendingDown,
   Activity,
   AlertTriangle
 } from 'lucide-react'
@@ -31,7 +29,7 @@ import {
   ReferenceLine,
   ReferenceArea
 } from 'recharts'
-import { format, subHours, subDays, isWithinInterval } from 'date-fns'
+import { format, subHours } from 'date-fns'
 
 interface Device {
   id: string
