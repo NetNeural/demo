@@ -71,6 +71,53 @@ const nextConfig = {
       }
     }
 
+    // Production optimizations
+    if (!dev) {
+      // Enable tree shaking - remove unused exports
+      config.optimization = {
+        ...config.optimization,
+        usedExports: true,
+        sideEffects: false,
+        minimize: true,
+        // Split vendor chunks for better caching
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            // React and React-DOM in separate chunk
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react-vendor',
+              priority: 20,
+            },
+            // Radix UI components in separate chunk
+            radixui: {
+              test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+              name: 'radix-vendor',
+              priority: 15,
+            },
+            // Supabase in separate chunk
+            supabase: {
+              test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+              name: 'supabase-vendor',
+              priority: 15,
+            },
+            // Other vendor libraries
+            vendors: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: 10,
+            },
+            // Common code shared by multiple pages
+            common: {
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      }
+    }
+
     // For static export: ignore API routes (they're for local development only)
     if (isStaticExport && !isServer) {
       config.resolve.alias = {
@@ -102,6 +149,17 @@ const nextConfig = {
 
     return config
   },
+
+  // Performance optimizations
+  poweredByHeader: false,  // Remove X-Powered-By header
+  compress: true,  // Enable gzip compression
+  
+  // Optimize production builds
+  productionBrowserSourceMaps: false,  // Disable source maps in prod for smaller bundles
+  
+  // Static generation optimization
+  reactStrictMode: true,  // Helps identify potential problems
+  swcMinify: true,  // Use SWC for faster minification
 }
 
 // Bundle analyzer
