@@ -21,6 +21,31 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+
+interface AlertMetadata {
+  sensor_type?: string
+  sensor_name?: string
+  current_value?: number
+  threshold_id?: string
+  breach_type?: 'critical_max' | 'critical_min' | 'max' | 'min'
+  min_value?: number
+  max_value?: number
+  critical_min?: number
+  critical_max?: number
+  temperature_unit?: 'celsius' | 'fahrenheit'
+  is_test?: boolean
+  [key: string]: unknown
+}
 
 interface AlertItem {
   id: string
@@ -35,6 +60,7 @@ interface AlertItem {
   acknowledgedBy?: string
   acknowledgedAt?: Date
   category: 'temperature' | 'connectivity' | 'battery' | 'vibration' | 'security' | 'system'
+  metadata?: AlertMetadata
 }
 
 type ViewMode = 'cards' | 'table'
@@ -103,7 +129,8 @@ export function AlertsList() {
         acknowledged: alert.is_resolved || false,
         acknowledgedBy: alert.resolved_by,
         acknowledgedAt: alert.resolved_at ? new Date(alert.resolved_at) : undefined,
-        category: alert.category || 'system'
+        category: alert.category || 'system',
+        metadata: alert.metadata || {}
       }))
       
       setAlerts(transformedAlerts)
@@ -489,7 +516,10 @@ export function AlertsList() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => setSelectedAlert(alert)}
+                                      onClick={() => {
+                                        setSelectedAlert(alert)
+                                        setShowDetails(true)
+                                      }}
                                     >
                                       Details
                                     </Button>
@@ -508,6 +538,201 @@ export function AlertsList() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Alert Details Dialog */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <span className="text-2xl">{selectedAlert && getSeverityIcon(selectedAlert.severity)}</span>
+                <span className="text-2xl">{selectedAlert && getCategoryIcon(selectedAlert.category)}</span>
+                Alert Details
+              </DialogTitle>
+              <Badge variant={selectedAlert?.severity === 'critical' ? 'destructive' : 'default'}>
+                {selectedAlert?.severity?.toUpperCase()}
+              </Badge>
+            </div>
+            <DialogDescription className="sr-only">
+              Detailed information about the alert
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAlert && (
+            <div className="space-y-6">
+              {/* Alert Overview */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-lg">{selectedAlert.title}</h4>
+                <p className="text-sm text-muted-foreground">{selectedAlert.description}</p>
+              </div>
+
+              <Separator />
+
+              {/* Device and Timestamp Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Device</label>
+                  <p className="text-sm font-medium mt-1">{selectedAlert.device}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Device ID</label>
+                  <p className="text-sm font-mono mt-1 truncate" title={selectedAlert.deviceId}>
+                    {selectedAlert.deviceId}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Category</label>
+                  <p className="text-sm capitalize mt-1">{selectedAlert.category}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Timestamp</label>
+                  <p className="text-sm mt-1">{selectedAlert.rawTimestamp.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Threshold Details */}
+              {selectedAlert.metadata && (selectedAlert.metadata.sensor_type || selectedAlert.metadata.current_value !== undefined) && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Threshold Details</h4>
+                    
+                    {selectedAlert.metadata.sensor_name && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sensor</label>
+                        <p className="text-sm font-medium mt-1">{selectedAlert.metadata.sensor_name}</p>
+                      </div>
+                    )}
+
+                    {selectedAlert.metadata.breach_type && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Breach Type</label>
+                        <p className="text-sm mt-1">
+                          <Badge variant={selectedAlert.metadata.breach_type.includes('critical') ? 'destructive' : 'default'}>
+                            {selectedAlert.metadata.breach_type.replace(/_/g, ' ').toUpperCase()}
+                          </Badge>
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedAlert.metadata.current_value !== undefined && (
+                      <div className="bg-muted p-4 rounded-lg">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Current Value</label>
+                        <p className="text-2xl font-bold mt-1">
+                          {selectedAlert.metadata.current_value.toFixed(2)}
+                          {selectedAlert.metadata.temperature_unit === 'fahrenheit' ? '°F' : 
+                           selectedAlert.metadata.temperature_unit === 'celsius' ? '°C' : ''}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Threshold Values */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {selectedAlert.metadata.critical_max !== undefined && selectedAlert.metadata.critical_max !== null && (
+                        <div className="border border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800 p-3 rounded-lg">
+                          <label className="text-xs font-medium text-red-700 dark:text-red-300 uppercase tracking-wide">
+                            Critical Max
+                          </label>
+                          <p className="text-lg font-semibold text-red-900 dark:text-red-100 mt-1">
+                            {selectedAlert.metadata.critical_max}
+                            {selectedAlert.metadata.temperature_unit === 'fahrenheit' ? '°F' : 
+                             selectedAlert.metadata.temperature_unit === 'celsius' ? '°C' : ''}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAlert.metadata.critical_min !== undefined && selectedAlert.metadata.critical_min !== null && (
+                        <div className="border border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800 p-3 rounded-lg">
+                          <label className="text-xs font-medium text-red-700 dark:text-red-300 uppercase tracking-wide">
+                            Critical Min
+                          </label>
+                          <p className="text-lg font-semibold text-red-900 dark:text-red-100 mt-1">
+                            {selectedAlert.metadata.critical_min}
+                            {selectedAlert.metadata.temperature_unit === 'fahrenheit' ? '°F' : 
+                             selectedAlert.metadata.temperature_unit === 'celsius' ? '°C' : ''}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAlert.metadata.max_value !== undefined && selectedAlert.metadata.max_value !== null && (
+                        <div className="border border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800 p-3 rounded-lg">
+                          <label className="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                            Max Threshold
+                          </label>
+                          <p className="text-lg font-semibold text-orange-900 dark:text-orange-100 mt-1">
+                            {selectedAlert.metadata.max_value}
+                            {selectedAlert.metadata.temperature_unit === 'fahrenheit' ? '°F' : 
+                             selectedAlert.metadata.temperature_unit === 'celsius' ? '°C' : ''}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAlert.metadata.min_value !== undefined && selectedAlert.metadata.min_value !== null && (
+                        <div className="border border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800 p-3 rounded-lg">
+                          <label className="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                            Min Threshold
+                          </label>
+                          <p className="text-lg font-semibold text-orange-900 dark:text-orange-100 mt-1">
+                            {selectedAlert.metadata.min_value}
+                            {selectedAlert.metadata.temperature_unit === 'fahrenheit' ? '°F' : 
+                             selectedAlert.metadata.temperature_unit === 'celsius' ? '°C' : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Acknowledgment Status */}
+              <Separator />
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</label>
+                <p className={`text-sm font-medium mt-1 ${selectedAlert.acknowledged ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                  {selectedAlert.acknowledged ? '✓ Acknowledged' : '⚠ Active'}
+                </p>
+                {selectedAlert.acknowledged && selectedAlert.acknowledgedBy && (
+                  <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                    <p className="text-sm text-green-800 dark:text-green-200">
+                      Acknowledged by <span className="font-medium">{selectedAlert.acknowledgedBy}</span>
+                    </p>
+                    {selectedAlert.acknowledgedAt && (
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                        {selectedAlert.acknowledgedAt.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Test Alert Indicator */}
+              {selectedAlert.metadata?.is_test && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                    🧪 This is a test alert
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetails(false)}>
+              Close
+            </Button>
+            {selectedAlert && !selectedAlert.acknowledged && (
+              <Button 
+                onClick={async () => {
+                  await handleAcknowledge(selectedAlert.id)
+                  setShowDetails(false)
+                }}
+              >
+                Acknowledge Alert
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
