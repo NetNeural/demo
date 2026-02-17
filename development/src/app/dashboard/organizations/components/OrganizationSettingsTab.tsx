@@ -537,7 +537,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
           {/* Theme Mode */}
           <div className="space-y-2">
-            <Label htmlFor="theme-mode">Theme Mode</Label>
+            <Label htmlFor="theme-mode">Default Theme Mode</Label>
             <Select value={theme} onValueChange={(value: 'light' | 'dark' | 'auto') => setTheme(value)}>
               <SelectTrigger id="theme-mode">
                 <SelectValue />
@@ -548,6 +548,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 <SelectItem value="auto">Auto (System)</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground">
+              Sets the default theme for all users in your organization. Users can override this in their personal settings.
+            </p>
           </div>
 
           {/* Timezone */}

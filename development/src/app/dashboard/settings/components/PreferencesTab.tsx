@@ -14,10 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette } from 'lucide-react';
+import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette, Building2 } from 'lucide-react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export function PreferencesTab() {
   const { toast } = useToast();
+  const { currentOrganization } = useOrganization();
+  const [useOrgDefault, setUseOrgDefault] = useState(false);
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState('America/New_York');
@@ -37,21 +40,30 @@ export function PreferencesTab() {
   const [quietHoursEnd, setQuietHoursEnd] = useState('07:00');
   const [muteWeekends, setMuteWeekends] = useState(false);
 
+  // Get organization default theme
+  const orgTheme = currentOrganization?.settings?.theme || 'auto';
+  
   // Apply theme to document whenever it changes
   useEffect(() => {
     const root = document.documentElement;
     
-    // Save to localStorage for persistence
-    localStorage.setItem('theme', theme);
+    // Save preferences to localStorage
+    localStorage.setItem('useOrgDefaultTheme', useOrgDefault.toString());
+    if (!useOrgDefault) {
+      localStorage.setItem('theme', theme);
+    }
+    
+    // Determine which theme to apply
+    const effectiveTheme = useOrgDefault ? orgTheme : theme;
     
     // Remove all theme classes
     root.classList.remove('dark', 'light', 'theme-slate', 'theme-navy', 'theme-emerald', 'theme-neutral', 'theme-high-contrast', 'theme-twilight', 'theme-crimson');
     
-    if (theme === 'dark') {
+    if (effectiveTheme === 'dark') {
       root.classList.add('dark');
-    } else if (theme === 'light') {
+    } else if (effectiveTheme === 'light') {
       root.classList.add('light');
-    } else if (theme === 'system') {
+    } else if (effectiveTheme === 'system' || effectiveTheme === 'auto') {
       // System theme - respect OS preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
@@ -61,15 +73,20 @@ export function PreferencesTab() {
       }
     } else {
       // Custom theme
-      root.classList.add(theme);
+      root.classList.add(effectiveTheme);
     }
-  }, [theme]);
+  }, [theme, useOrgDefault, orgTheme]);
 
   // Load preferences from Supabase on mount
   useEffect(() => {
     const loadPreferences = async () => {
       try {
         // First check localStorage for immediate theme application
+        const savedUseOrgDefault = localStorage.getItem('useOrgDefaultTheme');
+        if (savedUseOrgDefault) {
+          setUseOrgDefault(savedUseOrgDefault === 'true');
+        }
+        
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
           setTheme(savedTheme);
@@ -80,6 +97,7 @@ export function PreferencesTab() {
         
         if (user?.user_metadata?.preferences) {
           const prefs = user.user_metadata.preferences;
+          if (prefs.useOrgDefaultTheme !== undefined) setUseOrgDefault(prefs.useOrgDefaultTheme);
           if (prefs.theme) setTheme(prefs.theme);
           if (prefs.language) setLanguage(prefs.language);
           if (prefs.timezone) setTimezone(prefs.timezone);
@@ -108,6 +126,7 @@ export function PreferencesTab() {
   const handleSavePreferences = async () => {
     try {
       const preferences = {
+        useOrgDefaultTheme: useOrgDefault,
         theme,
         language,
         timezone,
@@ -172,9 +191,30 @@ export function PreferencesTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Organization Default Toggle */}
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="use-org-theme" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Use Organization Default Theme
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Your organization&apos;s theme is set to: <strong className="capitalize">{orgTheme}</strong>
+              </p>
+            </div>
+            <Switch
+              id="use-org-theme"
+              checked={useOrgDefault}
+              onCheckedChange={setUseOrgDefault}
+            />
+          </div>
+
+          {/* Personal Theme Override */}
           <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
-            <Select value={theme} onValueChange={setTheme}>
+            <Label htmlFor="theme" className={useOrgDefault ? 'text-muted-foreground' : ''}>
+              Personal Theme {useOrgDefault && '(Override Disabled)'}
+            </Label>
+            <Select value={theme} onValueChange={setTheme} disabled={useOrgDefault}>
               <SelectTrigger id="theme">
                 <SelectValue />
               </SelectTrigger>

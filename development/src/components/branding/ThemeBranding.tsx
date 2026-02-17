@@ -6,6 +6,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 /**
  * ThemeBranding Component
  * Applies organization-specific branding (colors, theme) to the app
+ * Theme hierarchy: Personal Override > Organization Default > System Preference
  */
 export function ThemeBranding() {
   const { currentOrganization } = useOrganization();
@@ -52,26 +53,27 @@ export function ThemeBranding() {
       });
     }
 
-    // Apply theme mode
+    // Apply theme mode (respecting personal override)
+    const root = document.documentElement;
+    
+    // Store org theme as data attribute so personal settings can show it
     if (theme) {
-      const root = document.documentElement;
-      
-      if (theme === 'dark') {
-        root.classList.add('dark');
-        root.classList.remove('light');
-      } else if (theme === 'light') {
-        root.classList.add('light');
-        root.classList.remove('dark');
-      } else {
-        // Auto mode - respect system preference
-        root.classList.remove('light', 'dark');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          root.classList.add('dark');
-        }
+      root.setAttribute('data-org-theme', theme);
+    }
+    
+    // Check if user has personal theme override
+    const personalTheme = localStorage.getItem('theme');
+    const useOrgDefault = localStorage.getItem('useOrgDefaultTheme');
+    
+    // If user explicitly wants org default or has no personal preference, use org theme
+    if (useOrgDefault === 'true' || !personalTheme) {
+      if (theme) {
+        applyTheme(theme);
+        console.log('✅ Applied organization theme:', theme);
       }
-
-      console.log('✅ Applied theme mode:', theme);
+    } else {
+      // Personal preference takes precedence
+      console.log('ℹ️ Using personal theme override, org theme available:', theme);
     }
 
     // Cleanup function
@@ -114,4 +116,31 @@ function adjustBrightness(hex: string, percent: number): string {
   const b = adjust(rgb.b);
 
   return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Apply theme to document root
+ */
+function applyTheme(theme: string) {
+  const root = document.documentElement;
+  
+  // Remove all theme classes
+  root.classList.remove('dark', 'light', 'theme-slate', 'theme-navy', 'theme-emerald', 'theme-neutral', 'theme-high-contrast', 'theme-twilight', 'theme-crimson');
+  
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else if (theme === 'light') {
+    root.classList.add('light');
+  } else if (theme === 'auto') {
+    // Auto mode - respect system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.add('light');
+    }
+  } else {
+    // Custom theme
+    root.classList.add(theme);
+  }
 }
