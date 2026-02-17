@@ -1,17 +1,23 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
-import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText } from 'lucide-react'
+import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X } from 'lucide-react'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
   const { currentOrganization } = useOrganization()
   const supabase = createClient()
+  const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), [])
 
   if (loading) {
     return <div className="p-6">Loading...</div>
@@ -21,80 +27,96 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     return <div className="p-6">Redirecting to login...</div>
   }
 
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+    { href: '/dashboard/devices', label: 'Devices', icon: Smartphone },
+    { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
+    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/dashboard/reports', label: 'Reports', icon: FileText },
+    { href: '/dashboard/organizations', label: 'Organization', icon: Building2 },
+    { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
+  ]
+
   return (
     <>
       <ThemeBranding />
       <div className="dashboard-container">
-        <nav className="nav-sidebar">
+        {/* Mobile Menu Toggle — visible only on < 1024px via CSS */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+
+        {/* Mobile Overlay — closes drawer on tap */}
+        {mobileMenuOpen && (
+          <div
+            className="mobile-overlay"
+            onClick={closeMobileMenu}
+            aria-hidden="true"
+          />
+        )}
+
+        <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="nav-header">
             <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
           </div>
           
           {/* Organization Switcher */}
           <div className="px-4 py-3 border-b border-gray-200">
-          <OrganizationSwitcherCompact />
-        </div>
-        
-        <div className="nav-menu">
-          <Link href="/dashboard" className="nav-item">
-            <LayoutDashboard className="w-5 h-5 mr-2" />
-            Dashboard
-          </Link>
-          <Link href="/dashboard/devices" className="nav-item">
-            <Smartphone className="w-5 h-5 mr-2" />
-            Devices
-          </Link>
-          <Link href="/dashboard/alerts" className="nav-item">
-            <Bell className="w-5 h-5 mr-2" />
-            Alerts
-          </Link>
-          <Link href="/dashboard/analytics" className="nav-item">
-            <BarChart3 className="w-5 h-5 mr-2" />
-            Analytics
-          </Link>
-          <Link href="/dashboard/reports" className="nav-item">
-            <FileText className="w-5 h-5 mr-2" />
-            Reports
-          </Link>
-          <a href="/dashboard/organizations" className="nav-item">
-            <Building2 className="w-5 h-5 mr-2" />
-            Organization
-          </a>
-          <a href="/dashboard/settings" className="nav-item">
-            <Settings className="w-5 h-5 mr-2" />
-            Personal Settings
-          </a>
-        </div>
-        <div className="nav-user">
-          <div className="user-info">
-            <p className="text-sm font-medium text-gray-900">
-              {user.email}
-            </p>
-            {user.isSuperAdmin ? (
-              <p className="text-xs font-semibold text-red-600">
-                🛡️ Super Admin
-              </p>
-            ) : (
-              <p className="text-xs text-gray-500">
-                {user.organizationName}
-              </p>
-            )}
+            <OrganizationSwitcherCompact />
           </div>
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut()
-              window.location.href = '/'
-            }}
-            className="btn btn-ghost btn-sm"
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
-      <main className="main-content">
-        {children}
-      </main>
-    </div>
+        
+          <div className="nav-menu">
+            {navItems.map(({ href, label, icon: Icon, exact }) => {
+              const isActive = exact ? pathname === href : pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  <Icon className="w-5 h-5 mr-2" />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+          <div className="nav-user">
+            <div className="user-info">
+              <p className="text-sm font-medium text-gray-900">
+                {user.email}
+              </p>
+              {user.isSuperAdmin ? (
+                <p className="text-xs font-semibold text-red-600">
+                  🛡️ Super Admin
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  {user.organizationName}
+                </p>
+              )}
+            </div>
+            <button 
+              onClick={async () => {
+                closeMobileMenu()
+                await supabase.auth.signOut()
+                window.location.href = '/'
+              }}
+              className="btn btn-ghost btn-sm"
+            >
+              Sign out
+            </button>
+          </div>
+        </nav>
+        <main className="main-content">
+          {children}
+        </main>
+      </div>
     </>
   )
 }
