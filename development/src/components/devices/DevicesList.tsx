@@ -24,11 +24,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
 import { TemperatureToggle } from '@/components/ui/temperature-toggle'
+import { useExport } from '@/hooks/useExport'
+import { format } from 'date-fns'
 
 interface Device {
   id: string
@@ -155,7 +157,9 @@ function formatTimeAgo(timestamp: string | null): string {
 }
 
 export function DevicesList() {
+  const { currentOrganization } = useOrganization()
   const router = useRouter()
+  const { exportToCSV, isExporting, progress } = useExport()
   const [devices, setDevices] = useState<Device[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
@@ -186,8 +190,6 @@ export function DevicesList() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  
-  const { currentOrganization } = useOrganization()
 
   const fetchDevices = useCallback(async (isManualRefresh = false) => {
     if (!currentOrganization) {
@@ -621,6 +623,52 @@ export function DevicesList() {
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  exportToCSV({
+                    filename: 'devices-status-report',
+                    headers: [
+                      'Device Name',
+                      'Type',
+                      'Model',
+                      'Serial Number',
+                      'Status',
+                      'Last Seen',
+                      'Battery Level',
+                      'Signal Strength',
+                      'Firmware Version',
+                      'Location',
+                      'Integration',
+                      'External ID'
+                    ],
+                    data: filteredAndSortedDevices,
+                    transformRow: (device: Device) => [
+                      device.name,
+                      device.device_type,
+                      device.model || '',
+                      device.serial_number || '',
+                      device.status,
+                      device.lastSeen ? format(new Date(device.lastSeen), 'yyyy-MM-dd HH:mm:ss') : '',
+                      device.batteryLevel ? `${device.batteryLevel}%` : '',
+                      device.signal_strength ? `${device.signal_strength} dBm` : '',
+                      device.firmware_version || '',
+                      locations.find(l => l.id === device.location_id)?.name || '',
+                      device.integrationName || '',
+                      device.externalDeviceId || ''
+                    ]
+                  })
+                }}
+                disabled={isExporting || filteredAndSortedDevices.length === 0}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isExporting ? `Exporting... ${progress.progress}%` : 'Export CSV'}
               </Button>
               <div className="flex items-center gap-2">
                 <Switch
