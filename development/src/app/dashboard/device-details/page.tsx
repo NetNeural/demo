@@ -85,7 +85,13 @@ export default function SensorDetailsPage() {
   const [device, setDevice] = useState<Device | null>(null)
   const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius')
+  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('temperatureUnit')
+      if (stored === 'C') return 'celsius'
+    }
+    return 'fahrenheit' // Default: Fahrenheit
+  })
 
   // Determine device category
   const isGateway = useMemo(() => device ? isGatewayDevice(device) : false, [device])

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette, Building2 } from 'lucide-react';
+import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette, Building2, Thermometer } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export function PreferencesTab() {
@@ -39,6 +39,9 @@ export function PreferencesTab() {
   const [quietHoursStart, setQuietHoursStart] = useState('22:00');
   const [quietHoursEnd, setQuietHoursEnd] = useState('07:00');
   const [muteWeekends, setMuteWeekends] = useState(false);
+
+  // Temperature unit preference (default: Fahrenheit)
+  const [temperatureUnit, setTemperatureUnit] = useState<'F' | 'C'>('F');
 
   // Get organization default theme
   const orgTheme = currentOrganization?.settings?.theme || 'auto';
@@ -118,6 +121,10 @@ export function PreferencesTab() {
           if (prefs.quietHoursStart) setQuietHoursStart(prefs.quietHoursStart);
           if (prefs.quietHoursEnd) setQuietHoursEnd(prefs.quietHoursEnd);
           if (prefs.muteWeekends !== undefined) setMuteWeekends(prefs.muteWeekends);
+          if (prefs.temperatureUnit) {
+            setTemperatureUnit(prefs.temperatureUnit);
+            localStorage.setItem('temperatureUnit', prefs.temperatureUnit);
+          }
         }
       } catch (error) {
         console.error('Error loading preferences:', error);
@@ -146,7 +153,8 @@ export function PreferencesTab() {
         quietHoursEnabled,
         quietHoursStart,
         quietHoursEnd,
-        muteWeekends
+        muteWeekends,
+        temperatureUnit,
       };
 
       // Save to Supabase user metadata
@@ -166,6 +174,7 @@ export function PreferencesTab() {
 
       // Also save to localStorage as backup
       localStorage.setItem('user_preferences', JSON.stringify(preferences));
+      localStorage.setItem('temperatureUnit', temperatureUnit);
       
       toast({
         title: "Success",
@@ -431,6 +440,47 @@ export function PreferencesTab() {
                   <SelectItem value="24h">24 Hour</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Temperature Unit */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Thermometer className="w-5 h-5" />
+            Temperature Unit
+          </CardTitle>
+          <CardDescription>
+            Choose how temperatures are displayed across the application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Display Temperature In</Label>
+              <p className="text-sm text-muted-foreground">
+                {temperatureUnit === 'F' ? 'Fahrenheit (°F)' : 'Celsius (°C)'} — applied everywhere
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+              <Button
+                variant={temperatureUnit === 'C' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTemperatureUnit('C')}
+                className="text-xs px-3"
+              >
+                °C
+              </Button>
+              <Button
+                variant={temperatureUnit === 'F' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTemperatureUnit('F')}
+                className="text-xs px-3"
+              >
+                °F
+              </Button>
             </div>
           </div>
         </CardContent>

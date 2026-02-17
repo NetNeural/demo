@@ -53,9 +53,10 @@ function getSensorIcon(sensorType?: number) {
 export function SensorOverviewCard({ device, telemetryReadings }: SensorOverviewCardProps) {
   const [useFahrenheit, setUseFahrenheit] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('temperatureUnit') === 'F'
+      const stored = localStorage.getItem('temperatureUnit')
+      return stored ? stored === 'F' : true // Default: Fahrenheit
     }
-    return false
+    return true
   })
   
   // Extract health metrics from latest telemetry reading

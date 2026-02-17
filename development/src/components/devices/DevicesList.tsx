@@ -169,9 +169,10 @@ export function DevicesList() {
   const [deleting, setDeleting] = useState(false)
   const [useFahrenheit, setUseFahrenheit] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('temperatureUnit') === 'F'
+      const stored = localStorage.getItem('temperatureUnit')
+      return stored ? stored === 'F' : true // Default: Fahrenheit
     }
-    return false
+    return true
   })
   
   // Filter and Sort states

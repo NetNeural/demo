@@ -76,8 +76,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
   const [customHours, setCustomHours] = useState<string>('48')
   const [showCustomInput, setShowCustomInput] = useState(false)
   const useFahrenheit = typeof window !== 'undefined' 
-    ? localStorage.getItem('temperatureUnit') === 'F' 
-    : false
+    ? (localStorage.getItem('temperatureUnit') ?? 'F') === 'F'
+    : true
 
   const fetchHistoricalData = useCallback(async (range: TimeRange, customHoursValue?: number) => {
     if (!currentOrganization) return
