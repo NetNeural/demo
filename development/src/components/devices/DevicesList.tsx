@@ -211,6 +211,7 @@ export function DevicesList() {
         setError(response.error?.message || 'Failed to fetch devices')
         setDevices([])
         setLoading(false)
+        setIsRefreshing(false)
         return
       }
       
@@ -223,6 +224,7 @@ export function DevicesList() {
       setDevices([])
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
   }, [currentOrganization])
 
@@ -304,6 +306,23 @@ export function DevicesList() {
       console.error('[DevicesList] Error fetching telemetry:', err)
     }
   }, [currentOrganization])
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(async () => {
+    setLastRefresh(new Date())
+    await fetchDevices(true)
+  }, [fetchDevices])
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return
+
+    const intervalId = setInterval(() => {
+      handleRefresh()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(intervalId)
+  }, [autoRefresh, handleRefresh])
 
   useEffect(() => {
     fetchDevices()
