@@ -1,12 +1,13 @@
 'use client'
 
-// Cache bust: 2026-02-17 v3 - Conditional cards by device type
+// Cache bust: 2026-02-17 v4 - Use edge function for device fetch (multi-org support)
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCardNew'
 import { GatewayOverviewCard } from '@/components/sensors/GatewayOverviewCard'
 import { LocationDetailsCard } from '@/components/sensors/LocationDetailsCard'
@@ -96,43 +97,37 @@ export default function SensorDetailsPage() {
     try {
       setLoading(true)
       setError(null)
-      const supabase = createClient()
 
-      // Fetch device details with location join
-      const { data: deviceData, error: deviceError } = await supabase
-        .from('devices')
-        .select(`
-          *,
-          locations (
-            id,
-            name
-          )
-        `)
-        .eq('id', deviceId)
-        .eq('organization_id', currentOrganization.id)
-        .single()
+      // Fetch device via edge function (bypasses RLS, supports multi-org)
+      const deviceResponse = await edgeFunctions.devices.get(deviceId)
+      
+      if (!deviceResponse.success || !deviceResponse.data) {
+        throw new Error('Device not found')
+      }
 
-      if (deviceError) throw deviceError
+      // The edge function returns { device: {...} }
+      const deviceData = (deviceResponse.data as { device: Record<string, unknown> }).device
       if (!deviceData) throw new Error('Device not found')
 
       setDevice({
-        id: deviceData.id,
-        name: deviceData.name,
-        device_type: deviceData.device_type || 'unknown',
-        model: deviceData.model || undefined,
-        serial_number: deviceData.serial_number || undefined,
-        status: deviceData.status || 'offline',
-        location: (deviceData.locations as { id: string; name: string } | null)?.name || undefined,
-        location_id: deviceData.location_id || undefined,
-        firmware_version: deviceData.firmware_version || undefined,
-        battery_level: deviceData.battery_level ?? undefined,
-        signal_strength: deviceData.signal_strength ?? undefined,
-        last_seen: deviceData.last_seen || undefined,
+        id: deviceData.id as string,
+        name: deviceData.name as string,
+        device_type: (deviceData.device_type as string) || 'unknown',
+        model: (deviceData.model as string) || undefined,
+        serial_number: (deviceData.serial_number as string) || undefined,
+        status: (deviceData.status as string) || 'offline',
+        location: (deviceData.location as string) || undefined,
+        location_id: (deviceData.location_id as string) || undefined,
+        firmware_version: (deviceData.firmware_version as string) || undefined,
+        battery_level: deviceData.battery_level != null ? (deviceData.battery_level as number) : undefined,
+        signal_strength: deviceData.signal_strength != null ? (deviceData.signal_strength as number) : undefined,
+        last_seen: (deviceData.last_seen as string) || undefined,
         metadata: deviceData.metadata as Record<string, unknown> | undefined,
-        organization_id: deviceData.organization_id,
+        organization_id: deviceData.organization_id as string,
       })
 
-      // Fetch telemetry readings (48 hours)
+      // Fetch telemetry readings (48 hours) - uses direct client (RLS allows via USING(true))
+      const supabase = createClient()
       const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
       const { data: telemetryData, error: telemetryError } = await supabase
         .from('device_telemetry_history')
