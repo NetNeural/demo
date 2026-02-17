@@ -4,12 +4,24 @@
 
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
 
+export interface CreateAlertData {
+  organization_id: string
+  device_id: string
+  alert_type: string
+  category: string
+  title: string
+  message: string
+  severity: string
+  metadata?: Record<string, unknown>
+}
+
 export interface AlertsAPI {
   list: (organizationId: string, options?: {
     limit?: number
     severity?: 'info' | 'warning' | 'error' | 'critical'
     resolved?: boolean
   }) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number }>>
+  create: (data: CreateAlertData) => Promise<EdgeFunctionResponse<{ alert: unknown }>>
   acknowledge: (alertId: string) => Promise<EdgeFunctionResponse<unknown>>
   bulkAcknowledge: (alertIds: string[], organizationId: string, acknowledgementType?: string, notes?: string) => Promise<EdgeFunctionResponse<{ acknowledged_count: number }>>
   resolve: (alertId: string) => Promise<EdgeFunctionResponse<unknown>>
@@ -30,6 +42,15 @@ export function createAlertsAPI(call: <T>(functionName: string, options?: EdgeFu
         },
       }),
     
+    /**
+     * Create a new alert
+     */
+    create: (data) =>
+      call<{ alert: unknown }>('alerts', {
+        method: 'POST',
+        body: data,
+      }),
+
     /**
      * Acknowledge an alert
      */

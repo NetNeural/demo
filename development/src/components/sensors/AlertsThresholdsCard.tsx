@@ -38,7 +38,6 @@ import { toast as sonnerToast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import type { SensorThreshold } from '@/types/sensor-details'
 import { edgeFunctions } from '@/lib/edge-functions/client'
-import { createClient } from '@/lib/supabase/client'
 
 interface AlertsThresholdsCardProps {
   device: Device
@@ -82,7 +81,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     notification_channels: [] as string[],
     notify_user_ids: [] as string[],
     notify_emails: [] as string[],
+    notify_phone_numbers: [] as string[],
     manualEmails: '', // For the input field
+    manualPhones: '', // For the SMS phone input field
   })
 
   useEffect(() => {
@@ -148,7 +149,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       notification_channels: threshold.notification_channels || [],
       notify_user_ids: threshold.notify_user_ids || [],
       notify_emails: threshold.notify_emails || [],
+      notify_phone_numbers: threshold.notify_phone_numbers || [],
       manualEmails: (threshold.notify_emails || []).join(', '),
+      manualPhones: (threshold.notify_phone_numbers || []).join(', '),
     })
     setEditDialogOpen(true)
   }
@@ -170,7 +173,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       notification_channels: ['email'], // Default to email
       notify_user_ids: [],
       notify_emails: [],
+      notify_phone_numbers: [],
       manualEmails: '',
+      manualPhones: '',
     })
     setEditDialogOpen(true)
   }
@@ -190,6 +195,12 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         .map(email => email.trim())
         .filter(email => email.length > 0)
 
+      // Parse manual phone numbers from comma-separated string
+      const manualPhones = formData.manualPhones
+        .split(',')
+        .map(phone => phone.trim())
+        .filter(phone => phone.length > 0)
+
       const payload = {
         device_id: device.id,
         sensor_type: formData.sensor_type,
@@ -206,6 +217,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         notification_channels: formData.notification_channels,
         notify_user_ids: formData.notify_user_ids,
         notify_emails: manualEmails,
+        notify_phone_numbers: manualPhones,
       }
 
       console.log('🔵 [THRESHOLD SAVE] Payload prepared:', payload)
@@ -255,8 +267,6 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       setTesting(threshold.id)
       console.log('[TEST ALERT] Creating test alert...')
 
-      const supabase = createClient()
-
       // Get sensor type name mapping
       const sensorNames: Record<string, string> = {
         '1': 'Temperature',
@@ -288,7 +298,6 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         title: `🧪 TEST ALERT: ${sensorName} Threshold`,
         message: `⚠️ THIS IS A TEST ALERT - NOT A REAL ISSUE ⚠️\n\nDevice: ${device.name}\nSensor: ${sensorName}\nThreshold ID: ${threshold.id}\n\nThis test verifies that the alert system is working correctly. You can safely acknowledge or delete this test alert.`,
         severity: threshold.alert_severity,
-        is_resolved: false,
         metadata: {
           is_test: true,
           sensor_type: threshold.sensor_type,
@@ -301,34 +310,36 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         }
       }
 
-      console.log('[TEST ALERT] Inserting alert data:', alertData)
+      console.log('[TEST ALERT] Inserting alert data via edge function:', alertData)
 
-      // Create a test alert
-      const { data, error } = await supabase.from('alerts').insert(alertData as any).select()
+      // Create test alert via edge function (bypasses RLS)
+      const response = await edgeFunctions.alerts.create(alertData) as { success: boolean; data?: { alert?: { id: string } }; error?: string }
 
-      if (error) {
-        console.error('[TEST ALERT] Insert error:', error)
-        throw error
+      if (!response.success) {
+        console.error('[TEST ALERT] Insert error:', response.error)
+        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to create test alert')
       }
 
-      console.log('[TEST ALERT] Alert created successfully:', data)
+      const alertId = response.data?.alert?.id
+      console.log('[TEST ALERT] Alert created successfully:', alertId)
 
       // Show immediate success for alert creation
       sonnerToast.success('✅ Test Alert Created!', {
-        description: `Test alert has been created successfully. Sending email notifications...`,
+        description: `Test alert has been created successfully. Sending notifications...`,
         duration: 3000,
       })
 
-      // Send email notification
-      if (data && data[0]) {
-        const alertId = data[0].id
-        console.log('[TEST ALERT] Sending email notification for alert:', alertId)
+      // Send notifications via all configured channels (email, slack, sms)
+      if (alertId) {
+        console.log('[TEST ALERT] Sending notifications for alert:', alertId)
+        console.log('[TEST ALERT] Threshold channels:', threshold.notification_channels)
         console.log('[TEST ALERT] Threshold notify_emails:', threshold.notify_emails)
         console.log('[TEST ALERT] Threshold notify_user_ids:', threshold.notify_user_ids)
+        console.log('[TEST ALERT] Threshold notify_phone_numbers:', threshold.notify_phone_numbers)
         
         try {
-          const emailResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-alert-email`,
+          const notifResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-alert-notifications`,
             {
               method: 'POST',
               headers: {
@@ -338,37 +349,41 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
               body: JSON.stringify({
                 alert_id: alertId,
                 threshold_id: threshold.id,
-                recipient_emails: threshold.notify_emails || [],
-                recipient_user_ids: threshold.notify_user_ids || [],
               }),
             }
           )
 
-          const emailResult = await emailResponse.json()
-          console.log('[TEST ALERT] Email response:', emailResult)
-          console.log('[TEST ALERT] Email results details:', emailResult.results)
+          const notifResult = await notifResponse.json()
+          console.log('[TEST ALERT] Notification response:', notifResult)
 
-          // Second toast for email status
-          if (emailResult.success && emailResult.sent > 0) {
-            sonnerToast.success('📧 Email Sent Successfully!', {
-              description: `${emailResult.sent} of ${emailResult.total} test alert email(s) delivered successfully. Check the recipient mailboxes.`,
+          if (notifResult.success && notifResult.channels_succeeded > 0) {
+            const channelsSummary = (notifResult.results || [])
+              .filter((r: { success: boolean }) => r.success)
+              .map((r: { channel: string; detail?: string }) => `${r.channel}: ${r.detail || 'OK'}`)
+              .join(', ')
+            sonnerToast.success('📨 Notifications Sent!', {
+              description: `${notifResult.channels_succeeded}/${notifResult.channels_dispatched} channels succeeded. ${channelsSummary}`,
               duration: 7000,
             })
-          } else if (emailResult.success && emailResult.sent === 0) {
-            sonnerToast.info('ℹ️ No Email Recipients', {
-              description: `${emailResult.message || 'No recipients configured for this threshold'}. Add emails or users in the threshold settings to receive notifications.`,
+          } else if (notifResult.success && notifResult.channels_dispatched === 0) {
+            sonnerToast.info('ℹ️ No Notification Channels', {
+              description: 'No notification channels configured for this threshold. Add email, Slack, or SMS in the threshold settings.',
               duration: 5000,
             })
           } else {
-            sonnerToast.warning('⚠️ Email Sending Failed', {
-              description: `Test alert created but emails could not be sent: ${emailResult.error || 'Unknown error'}`,
+            const failedChannels = (notifResult.results || [])
+              .filter((r: { success: boolean }) => !r.success)
+              .map((r: { channel: string; error?: string }) => `${r.channel}: ${r.error || 'failed'}`)
+              .join(', ')
+            sonnerToast.warning('⚠️ Some Notifications Failed', {
+              description: `Test alert created but some channels failed: ${failedChannels}`,
               duration: 5000,
             })
           }
-        } catch (emailError) {
-          console.error('[TEST ALERT] Email sending error:', emailError)
-          sonnerToast.error('❌ Email Error', {
-            description: `Test alert created but email service encountered an error: ${emailError instanceof Error ? emailError.message : 'Network error'}`,
+        } catch (notifError) {
+          console.error('[TEST ALERT] Notification sending error:', notifError)
+          sonnerToast.error('❌ Notification Error', {
+            description: `Test alert created but notification service encountered an error: ${notifError instanceof Error ? notifError.message : 'Network error'}`,
             duration: 5000,
           })
         }
@@ -910,6 +925,35 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                       />
                       <p className="text-xs text-muted-foreground">
                         Enter email addresses separated by commas for external contacts
+                      </p>
+                    </div>
+                  )}
+
+                  {/* SMS Phone Numbers */}
+                  {formData.notification_channels.includes('sms') && (
+                    <div className="space-y-2">
+                      <Label htmlFor="manual_phones">SMS Phone Numbers</Label>
+                      <Input
+                        id="manual_phones"
+                        value={formData.manualPhones}
+                        onChange={(e) => setFormData(prev => ({ ...prev, manualPhones: e.target.value }))}
+                        placeholder="+15551234567, +15559876543"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter phone numbers in E.164 format (e.g. +15551234567), separated by commas. Requires Twilio configuration in organization settings.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Slack Info */}
+                  {formData.notification_channels.includes('slack') && (
+                    <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Slack Notifications
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Slack alerts will be posted to the webhook URL configured in your organization&apos;s notification settings (Settings → Alerts).
                       </p>
                     </div>
                   )}

@@ -29,6 +29,7 @@ export interface SensorThreshold {
   last_notification_at: string | null
   notify_user_ids: string[] | null
   notify_emails: string[] | null
+  notify_phone_numbers: string[] | null
   notification_channels: string[] | null
   created_at: string
   updated_at: string

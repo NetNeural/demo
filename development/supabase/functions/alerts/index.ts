@@ -91,6 +91,44 @@ export default createEdgeFunction(async ({ req }) => {
       })
     }
 
+    // POST /alerts - Create a new alert (e.g., test alerts)
+    if (req.method === 'POST' && !req.url.includes('/bulk-acknowledge')) {
+      const body = await req.json()
+      const { organization_id, device_id, alert_type, category, title, message, severity, metadata } = body
+
+      if (!organization_id || !device_id || !title) {
+        throw new Error('organization_id, device_id, and title are required')
+      }
+
+      // Verify user has access to the organization
+      const orgId = await resolveOrganizationId(userContext, organization_id)
+      if (!orgId) {
+        throw new DatabaseError('User does not have access to this organization', 403)
+      }
+
+      const { data: alert, error: insertError } = await supabase
+        .from('alerts')
+        .insert({
+          organization_id: orgId,
+          device_id,
+          alert_type: alert_type || 'manual',
+          category: category || 'system',
+          title,
+          message: message || '',
+          severity: severity || 'warning',
+          is_resolved: false,
+          metadata: metadata || {},
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        throw new DatabaseError(`Failed to create alert: ${insertError.message}`)
+      }
+
+      return createSuccessResponse({ alert })
+    }
+
     // POST /alerts/bulk-acknowledge - Bulk acknowledge multiple alerts (Issue #108)
     if (req.method === 'POST' && req.url.includes('/bulk-acknowledge')) {
       const body = await req.json()

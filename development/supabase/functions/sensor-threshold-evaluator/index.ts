@@ -226,15 +226,21 @@ serve(async (req) => {
             continue
           }
 
-          // Send email notifications
-          if (alertData && ((threshold.notify_user_ids && threshold.notify_user_ids.length > 0) || (threshold.notify_emails && threshold.notify_emails.length > 0))) {
-            console.log(`[sensor-threshold-evaluator] Sending email notifications for alert ${alertData.id}`)
+          // Send notifications via all configured channels (email, slack, sms)
+          const hasRecipients = 
+            (threshold.notify_user_ids && threshold.notify_user_ids.length > 0) ||
+            (threshold.notify_emails && threshold.notify_emails.length > 0) ||
+            (threshold.notify_phone_numbers && threshold.notify_phone_numbers.length > 0) ||
+            (threshold.notification_channels && threshold.notification_channels.includes('slack'))
+
+          if (alertData && hasRecipients) {
+            console.log(`[sensor-threshold-evaluator] Sending notifications for alert ${alertData.id}, channels: ${(threshold.notification_channels || ['email']).join(', ')}`)
             
             try {
               const supabaseUrl = Deno.env.get('SUPABASE_URL')!
               const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
               
-              const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-alert-email`, {
+              const notifResponse = await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -243,21 +249,19 @@ serve(async (req) => {
                 body: JSON.stringify({
                   alert_id: alertData.id,
                   threshold_id: threshold.id,
-                  recipient_emails: threshold.notify_emails || [],
-                  recipient_user_ids: threshold.notify_user_ids || [],
                 }),
               })
 
-              const emailResult = await emailResponse.json()
-              console.log(`[sensor-threshold-evaluator] Email notification result:`, emailResult)
+              const notifResult = await notifResponse.json()
+              console.log(`[sensor-threshold-evaluator] Notification result:`, notifResult)
               
-              if (emailResult.success) {
-                console.log(`[sensor-threshold-evaluator] Sent ${emailResult.sent} email notification(s)`)
+              if (notifResult.success) {
+                console.log(`[sensor-threshold-evaluator] ${notifResult.channels_succeeded}/${notifResult.channels_dispatched} channels succeeded`)
               } else {
-                console.error(`[sensor-threshold-evaluator] Email sending failed:`, emailResult.error)
+                console.error(`[sensor-threshold-evaluator] Notification dispatch failed:`, notifResult.error)
               }
-            } catch (emailError) {
-              console.error(`[sensor-threshold-evaluator] Error sending email notifications:`, emailError)
+            } catch (notifError) {
+              console.error(`[sensor-threshold-evaluator] Error sending notifications:`, notifError)
             }
           }
 
