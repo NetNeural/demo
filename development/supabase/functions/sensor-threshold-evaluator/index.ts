@@ -20,6 +20,7 @@ interface SensorThreshold {
   notify_emails?: string[]
   notification_channels?: string[]
   last_notification_at?: string
+  temperature_unit?: 'celsius' | 'fahrenheit'
 }
 
 interface Device {
@@ -144,7 +145,15 @@ serve(async (req) => {
         }
 
         const reading = readings[0] as any
-        const value = reading.telemetry.value
+        let value = reading.telemetry.value
+
+        // Handle temperature unit conversion
+        // Device telemetry is always in Celsius (units: 1)
+        // Convert to Fahrenheit if threshold is set in Fahrenheit
+        if (threshold.sensor_type.toLowerCase() === 'temperature' && threshold.temperature_unit === 'fahrenheit') {
+          value = (value * 9/5) + 32
+          console.log(`[sensor-threshold-evaluator] Converted ${reading.telemetry.value}°C to ${value}°F`)
+        }
 
         // Check if value breaches thresholds
         let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null = null
