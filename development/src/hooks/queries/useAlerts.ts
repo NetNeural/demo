@@ -10,23 +10,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys, CACHE_TIME } from '@/lib/query-client'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/database.types'
 
-export interface Alert {
-  id: string
-  device_id: string
-  sensor_type: string
-  severity: 'critical' | 'warning' | 'info'
-  category: 'connectivity' | 'security' | 'environmental' | 'system'
-  breach_type: string
-  current_value: number | null
-  threshold_value: number | null
-  message: string
-  is_acknowledged: boolean
-  acknowledged_by: string | null
-  acknowledged_at: string | null
-  created_at: string
-  updated_at: string
+export type Alert = Database['public']['Tables']['alerts']['Row'] & {
+  // Extend with any computed fields if needed
 }
+
+// Type alias for alert severity
+export type AlertSeverity = Database['public']['Enums']['alert_severity']
 
 /**
  * Hook: Fetch all alerts with caching
@@ -42,7 +33,7 @@ export interface Alert {
 export function useAlertsQuery(filters?: {
   deviceId?: string
   organizationId?: string
-  unacknowledgedOnly?: boolean
+  unresolvedOnly?: boolean
   category?: Alert['category']
   severity?: Alert['severity']
 }) {
@@ -53,7 +44,7 @@ export function useAlertsQuery(filters?: {
       ? queryKeys.alertsByDevice(filters.deviceId)
       : filters?.organizationId
       ? queryKeys.alertsByOrg(filters.organizationId)
-      : filters?.unacknowledgedOnly
+      : filters?.unresolvedOnly
       ? queryKeys.unacknowledgedAlerts
       : queryKeys.alerts,
     
@@ -68,8 +59,8 @@ export function useAlertsQuery(filters?: {
         query = query.eq('device_id', filters.deviceId)
       }
       
-      if (filters?.unacknowledgedOnly) {
-        query = query.eq('is_acknowledged', false)
+      if (filters?.unresolvedOnly) {
+        query = query.eq('is_resolved', false)
       }
       
       if (filters?.category) {
@@ -155,9 +146,9 @@ export function useAcknowledgeAlertMutation() {
       const { data, error } = await supabase
         .from('alerts')
         .update({
-          is_acknowledged: true,
-          acknowledged_by: user.id,
-          acknowledged_at: new Date().toISOString(),
+          is_resolved: true,
+          resolved_by: user.id,
+          resolved_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', alertId)
@@ -174,7 +165,11 @@ export function useAcknowledgeAlertMutation() {
       // Invalidate all alert queries
       queryClient.invalidateQueries({ queryKey: queryKeys.alerts })
       queryClient.invalidateQueries({ queryKey: queryKeys.unacknowledgedAlerts })
-      queryClient.invalidateQueries({ queryKey: queryKeys.alertsByDevice(data.device_id) })
+      
+      // Only invalidate device alerts if device_id exists
+      if (data.device_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.alertsByDevice(data.device_id) })
+      }
       
       // Update the specific alert in cache
       queryClient.setQueryData(queryKeys.alert(data.id), data)
@@ -207,9 +202,9 @@ export function useBulkAcknowledgeAlertsMutation() {
       const { data, error } = await supabase
         .from('alerts')
         .update({
-          is_acknowledged: true,
-          acknowledged_by: user.id,
-          acknowledged_at: new Date().toISOString(),
+          is_resolved: true,
+          resolved_by: user.id,
+          resolved_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .in('id', alertIds)
