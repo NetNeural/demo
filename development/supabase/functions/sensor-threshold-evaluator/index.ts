@@ -28,15 +28,19 @@ interface Device {
   organization_id: string
 }
 
-interface DeviceDataReading {
+interface TelemetryHistoryReading {
   id: string
   device_id: string
-  sensor_type: string
-  value: number
-  unit?: string
-  quality?: number
-  metadata?: any
-  timestamp: string
+  organization_id: string
+  telemetry: {
+    type: number
+    value: number
+    units?: number
+    sensor?: string
+    timestamp?: string
+  }
+  received_at: string
+  device_timestamp: string
   created_at: string
 }
 
@@ -96,6 +100,18 @@ serve(async (req) => {
       errors: 0,
     }
 
+    // Mapping from sensor type names to telemetry type IDs
+    const SENSOR_TYPE_TO_ID: Record<string, string> = {
+      'temperature': '1',
+      'humidity': '2',
+      'pressure': '3',
+      'battery': '4',
+      'co2': '7',
+      'tvoc': '8',
+      'light': '9',
+      'motion': '10',
+    }
+
     // Process each threshold
     for (const threshold of thresholds || []) {
       try {
@@ -103,13 +119,16 @@ serve(async (req) => {
 
         console.log(`[sensor-threshold-evaluator] Evaluating threshold for device: ${device.name}, sensor: ${threshold.sensor_type}`)
 
+        // Convert sensor type name to ID for querying
+        const sensorTypeId = SENSOR_TYPE_TO_ID[threshold.sensor_type.toLowerCase()] || threshold.sensor_type
+
         // Get most recent telemetry reading for this device and sensor type
         const { data: readings, error: readingsError } = await supabaseClient
-          .from('device_data')
+          .from('device_telemetry_history')
           .select('*')
           .eq('device_id', threshold.device_id)
-          .eq('sensor_type', threshold.sensor_type)
-          .order('timestamp', { ascending: false })
+          .eq('telemetry->>type', sensorTypeId)
+          .order('received_at', { ascending: false })
           .limit(1)
 
         if (readingsError) {
@@ -125,7 +144,7 @@ serve(async (req) => {
         }
 
         const reading = readings[0] as any
-        const value = reading.value
+        const value = reading.telemetry.value
 
         // Check if value breaches thresholds
         let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null = null
