@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format, subDays, subHours } from 'date-fns'
 import { 
@@ -109,10 +109,20 @@ export function AlertHistoryReport() {
     if (!currentOrganization) return
 
     try {
-      const response = await edgeFunctions.devices.list(currentOrganization.id)
-      if (response.success && response.data?.devices) {
-        const deviceList = (response.data.devices as Array<{ id: string; name: string }>)
-        setDevices(deviceList)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('devices')
+        .select('id, name')
+        .eq('organization_id', currentOrganization.id)
+        .order('name')
+
+      if (error) {
+        console.error('[AlertHistoryReport] Error fetching devices:', error)
+        return
+      }
+
+      if (data) {
+        setDevices(data)
       }
     } catch (error) {
       console.error('[AlertHistoryReport] Error fetching devices:', error)
@@ -122,6 +132,7 @@ export function AlertHistoryReport() {
   // Fetch alerts with acknowledgements
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
+      console.log('[AlertHistoryReport] No organization selected')
       setAlerts([])
       setLoading(false)
       return
@@ -129,17 +140,48 @@ export function AlertHistoryReport() {
 
     try {
       setLoading(true)
+      console.log('[AlertHistoryReport] Fetching alerts for org:', currentOrganization.id)
 
-      // Fetch alerts using edge function (adjust to fetch all, not just unresolved)
-      const alertsResponse = await edgeFunctions.alerts.list(currentOrganization.id, {
-        limit: 1000 // Get all alerts for reporting
-      })
+      const supabase = createClient()
 
-      if (!alertsResponse.success || !alertsResponse.data?.alerts) {
-        throw new Error('Failed to fetch alerts')
+      // Build query
+      let query = supabase
+        .from('alerts')
+        .select(`
+          *,
+          devices!device_id(name)
+        `)
+        .eq('organization_id', currentOrganization.id)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+
+      const { data: alertsData, error } = await query
+
+      if (error) {
+        console.error('[AlertHistoryReport] Database error:', error)
+        throw new Error(`Failed to fetch alerts: ${error.message}`)
       }
 
-      const alertsData = alertsResponse.data.alerts as Alert[]
+      console.log('[AlertHistoryReport] Fetched alerts:', alertsData?.length || 0)
+
+      if (!alertsData || alertsData.length === 0) {
+        console.warn('[AlertHistoryReport] No alerts found for organization')
+        setAlerts([])
+        setStats({
+          totalAlerts: 0,
+          criticalAlerts: 0,
+          highAlerts: 0,
+          mediumAlerts: 0,
+          lowAlerts: 0,
+          acknowledgedAlerts: 0,
+          unresolvedAlerts: 0,
+          avgResponseTimeMinutes: 0,
+          falsePositiveCount: 0,
+          falsePositiveRate: 0
+        })
+        setLoading(false)
+        return
+      }
 
       // Fetch acknowledgements for all alerts
       // Note: This would need to be implemented in the edge function
@@ -153,7 +195,8 @@ export function AlertHistoryReport() {
       }
 
       // Combine alerts with acknowledgements and calculate response times
-      const alertsWithAck: AlertWithAck[] = alertsData.map(alert => {
+      // deno-lint-ignore no-explicit-any
+      const alertsWithAck: AlertWithAck[] = alertsData.map((alert: any) => {
         const ack = acknowledgementsMap.get(alert.id)
         let responseTimeMinutes: number | undefined
         let isFalsePositive = false
@@ -168,7 +211,18 @@ export function AlertHistoryReport() {
         }
 
         return {
-          ...alert,
+          id: alert.id,
+          title: alert.title,
+          message: alert.message,
+          severity: alert.severity,
+          alert_type: alert.alert_type,
+          device_id: alert.device_id,
+          device_name: alert.devices?.name || 'Unknown Device',
+          created_at: alert.created_at,
+          is_resolved: alert.is_resolved,
+          resolved_at: alert.resolved_at,
+          resolved_by: alert.resolved_by,
+          metadata: alert.metadata,
           acknowledgement: ack,
           responseTimeMinutes,
           isFalsePositive
