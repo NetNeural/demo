@@ -43,7 +43,7 @@ export default function DashboardShell({
     { name: 'Organizations', href: '/dashboard/organizations', icon: Building2 },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { name: 'Reports', href: '/dashboard/reports/alerts', icon: FileText },
+    { name: 'Reports', href: '/dashboard/reports', icon: FileText },
     { name: 'Settings & Users', href: '/dashboard/settings', icon: Settings },
   ]
 
