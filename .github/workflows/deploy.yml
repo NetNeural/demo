@@ -56,25 +56,25 @@ jobs:
       - name: Link to Supabase project
         run: npx supabase link --project-ref atgbmxicqikmapfqouco
         env:
-          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       # Skip migration push - applied manually for staging
       # - name: Push database migrations
       #   run: npx supabase db push
       #   env:
-      #     SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
+      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       #   continue-on-error: false
 
       - name: Deploy edge functions
         run: npx supabase functions deploy --no-verify-jwt
         env:
-          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         continue-on-error: false
 
       - name: Generate TypeScript types
         run: npx supabase gen types typescript --linked > src/lib/database.types.ts
         env:
-          SUPABASE_ACCESS_TOKEN: sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Type check
         run: npm run type-check
