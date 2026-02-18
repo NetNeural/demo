@@ -262,10 +262,11 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
     // Get the member being updated using admin client
+    // Note: memberId is the user_id (the GET response maps id → user_id)
     const { data: targetMember, error: targetError } = await supabaseAdmin
       .from('organization_members')
-      .select('role, user_id')
-      .eq('id', memberId)
+      .select('id, role, user_id')
+      .eq('user_id', memberId)
       .eq('organization_id', organizationId)
       .single()
 
@@ -292,7 +293,7 @@ export default createEdgeFunction(async ({ req }) => {
     const { data: updatedMember, error: updateError } = await supabaseAdmin
       .from('organization_members')
       .update({ role })
-      .eq('id', memberId)
+      .eq('id', targetMember.id)
       .eq('organization_id', organizationId)
       .select(`
         id,
@@ -338,10 +339,11 @@ export default createEdgeFunction(async ({ req }) => {
     }
 
     // Get the member being removed using admin client
+    // Note: memberId is the user_id (the GET response maps id → user_id)
     const { data: targetMember, error: targetError } = await supabaseAdmin
       .from('organization_members')
       .select('role, user_id')
-      .eq('id', memberId)
+      .eq('user_id', memberId)
       .eq('organization_id', organizationId)
       .single()
 
@@ -363,7 +365,7 @@ export default createEdgeFunction(async ({ req }) => {
     const { error: deleteError } = await supabaseAdmin
       .from('organization_members')
       .delete()
-      .eq('id', memberId)
+      .eq('user_id', memberId)
       .eq('organization_id', organizationId)
 
     if (deleteError) {
