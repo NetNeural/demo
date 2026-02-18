@@ -535,3 +535,4 @@ const { data, error } = await supabase.auth.signInWithPassword({ email, password
 - PM2 process management
 - Golioth IoT integration
 - Basic device management
+
