@@ -7,6 +7,8 @@ import { useAnalyticsData } from './hooks/useAnalyticsData';
 import {
   AnalyticsHeader,
   SystemHealthCards,
+  ProblematicDevicesCard,
+  AIForecastingSection,
   TelemetryChartsSection,
   DevicePerformanceTable,
   AlertStatsCards,
@@ -36,7 +38,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Analytics for {currentOrganization.name}</h2>
+          <h2 className="text-3xl font-bold tracking-tight">AI Analytics for {currentOrganization.name}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -58,7 +60,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Analytics for {currentOrganization.name}</h2>
+          <h2 className="text-3xl font-bold tracking-tight">AI Analytics for {currentOrganization.name}</h2>
         </div>
         <div className="text-center">
           <p className="text-red-500">Failed to load analytics data</p>
@@ -77,6 +79,10 @@ export default function AnalyticsPage() {
       />
 
       <SystemHealthCards health={data.systemHealth} />
+
+      <ProblematicDevicesCard devices={data.devicePerformance} />
+
+      <AIForecastingSection organizationId={currentOrganization.id} timeRange={timeRange} />
 
       <TelemetryChartsSection organizationId={currentOrganization.id} timeRange={timeRange} />
 

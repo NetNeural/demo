@@ -14,7 +14,7 @@ export function AnalyticsHeader({ organizationName, timeRange, onTimeRangeChange
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">AI Analytics</h1>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
             <SelectTrigger className="w-[160px]">
@@ -35,7 +35,7 @@ export function AnalyticsHeader({ organizationName, timeRange, onTimeRangeChange
         </div>
       </div>
       <p className="text-muted-foreground">
-        Real-time performance and health metrics for {organizationName}
+        AI-powered insights, forecasting, and fleet health for {organizationName}
       </p>
     </div>
   );

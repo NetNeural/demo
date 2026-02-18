@@ -32,7 +32,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { href: '/dashboard/devices', label: 'Devices', icon: Smartphone },
     { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
-    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/organizations', label: 'Organization', icon: Building2 },
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
