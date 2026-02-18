@@ -20,12 +20,14 @@ import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
 
 const tabs = [
-  { id: 'customer-assistance', label: 'Customer Assistance', icon: Users },
-  { id: 'troubleshooting', label: 'Troubleshooting', icon: Wrench },
-  { id: 'system-health', label: 'System Health', icon: Activity },
-  { id: 'admin-tools', label: 'Admin Tools', icon: Settings2 },
-  { id: 'tests', label: 'Tests & Validation', icon: FlaskConical },
-  { id: 'documentation', label: 'Documentation', icon: BookOpen },
+  // Org-admin tabs — visible to all org admins
+  { id: 'customer-assistance', label: 'Customer Assistance', icon: Users, superAdminOnly: false },
+  { id: 'admin-tools', label: 'Admin Tools', icon: Settings2, superAdminOnly: false },
+  { id: 'documentation', label: 'Documentation', icon: BookOpen, superAdminOnly: false },
+  // Platform tabs — NetNeural super admins only
+  { id: 'troubleshooting', label: 'Troubleshooting', icon: Wrench, superAdminOnly: true },
+  { id: 'system-health', label: 'System Health', icon: Activity, superAdminOnly: true },
+  { id: 'tests', label: 'Tests & Validation', icon: FlaskConical, superAdminOnly: true },
 ]
 
 export default function SupportPage() {
@@ -58,6 +60,9 @@ export default function SupportPage() {
 
   const orgId = currentOrganization?.id || user?.organizationId || ''
   const orgName = currentOrganization?.name || user?.organizationName || ''
+  const isSuperAdmin = user?.isSuperAdmin || false
+
+  const visibleTabs = tabs.filter(tab => !tab.superAdminOnly || isSuperAdmin)
 
   return (
     <div className="space-y-6">
@@ -65,7 +70,7 @@ export default function SupportPage() {
         title="Support & Administration"
         description={`Diagnostics, customer tools, and troubleshooting for ${orgName}`}
         action={
-          user?.isSuperAdmin ? (
+          isSuperAdmin ? (
             <Badge variant="destructive" className="flex items-center gap-1">
               <Shield className="w-3 h-3" />
               Super Admin — Cross-Org Access
@@ -76,10 +81,11 @@ export default function SupportPage() {
 
       <Tabs defaultValue="customer-assistance" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="w-full justify-start flex-wrap">
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {visibleTabs.map(({ id, label, icon: Icon, superAdminOnly }) => (
             <TabsTrigger key={id} value={id} className="flex items-center gap-2">
               <Icon className="w-4 h-4" />
               <span className="hidden sm:inline">{label}</span>
+              {superAdminOnly && <Shield className="w-3 h-3 text-red-400" />}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -88,25 +94,31 @@ export default function SupportPage() {
           <CustomerAssistanceTab organizationId={orgId} />
         </TabsContent>
 
-        <TabsContent value="troubleshooting">
-          <TroubleshootingTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="system-health">
-          <SystemHealthTab organizationId={orgId} isSuperAdmin={user?.isSuperAdmin || false} />
-        </TabsContent>
-
         <TabsContent value="admin-tools">
           <AdminToolsTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="tests">
-          <TestsTab organizationId={orgId} />
         </TabsContent>
 
         <TabsContent value="documentation">
           <DocumentationTab />
         </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="troubleshooting">
+            <TroubleshootingTab organizationId={orgId} />
+          </TabsContent>
+        )}
+
+        {isSuperAdmin && (
+          <TabsContent value="system-health">
+            <SystemHealthTab organizationId={orgId} isSuperAdmin={isSuperAdmin} />
+          </TabsContent>
+        )}
+
+        {isSuperAdmin && (
+          <TabsContent value="tests">
+            <TestsTab organizationId={orgId} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

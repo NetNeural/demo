@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 import {
   Search,
@@ -30,17 +31,15 @@ import { formatDistanceToNow, format } from 'date-fns'
 
 interface OrgMember {
   id: string
-  user_id: string
+  membership_id: string
+  userId: string
+  full_name: string
+  name: string
+  email: string
   role: string
-  created_at: string
-  users: {
-    id: string
-    email: string
-    raw_user_meta_data?: Record<string, unknown>
-    last_sign_in_at?: string | null
-    created_at: string
-    banned_until?: string | null
-  } | null
+  joinedAt: string
+  lastLogin: string | null
+  passwordChangeRequired: boolean
 }
 
 interface AuditEntry {
@@ -77,34 +76,17 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
     if (!organizationId) return
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          users:user_id (
-            id,
-            email,
-            raw_user_meta_data,
-            last_sign_in_at,
-            created_at,
-            banned_until
-          )
-        `)
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      setMembers((data as unknown as OrgMember[]) || [])
+      const response = await edgeFunctions.members.list(organizationId)
+      if (!response.success) throw new Error('Failed to fetch members')
+      const membersData = (response.data as { members: OrgMember[] })?.members || []
+      setMembers(membersData)
     } catch (err) {
       console.error('Failed to fetch members:', err)
       toast.error('Failed to load organization members')
     } finally {
       setLoading(false)
     }
-  }, [organizationId, supabase])
+  }, [organizationId])
 
   useEffect(() => {
     fetchMembers()
@@ -176,8 +158,8 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   }
 
   const filteredMembers = members.filter((m) => {
-    const email = m.users?.email || ''
-    const name = (m.users?.raw_user_meta_data?.full_name as string) || ''
+    const email = m.email || ''
+    const name = m.full_name || ''
     const matchesSearch =
       !searchQuery ||
       email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,8 +169,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   })
 
   const getMemberStatus = (member: OrgMember): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    if (member.users?.banned_until) return { label: 'Disabled', variant: 'destructive' }
-    if (!member.users?.last_sign_in_at) return { label: 'Invited', variant: 'outline' }
+    if (!member.lastLogin) return { label: 'Invited', variant: 'outline' }
     return { label: 'Active', variant: 'default' }
   }
 
@@ -256,7 +237,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
             <div className="flex items-center gap-3">
               <UserCheck className="w-8 h-8 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{members.filter(m => m.users?.last_sign_in_at && !m.users?.banned_until).length}</p>
+                <p className="text-2xl font-bold">{members.filter(m => m.lastLogin).length}</p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
@@ -267,7 +248,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
             <div className="flex items-center gap-3">
               <Mail className="w-8 h-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">{members.filter(m => !m.users?.last_sign_in_at).length}</p>
+                <p className="text-2xl font-bold">{members.filter(m => !m.lastLogin).length}</p>
                 <p className="text-sm text-muted-foreground">Pending Invite</p>
               </div>
             </div>
@@ -278,7 +259,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
             <div className="flex items-center gap-3">
               <UserX className="w-8 h-8 text-red-500" />
               <div>
-                <p className="text-2xl font-bold">{members.filter(m => m.users?.banned_until).length}</p>
+                <p className="text-2xl font-bold">0</p>
                 <p className="text-sm text-muted-foreground">Disabled</p>
               </div>
             </div>
@@ -347,20 +328,19 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                 ) : (
                   filteredMembers.map((member) => {
                     const status = getMemberStatus(member)
-                    const fullName = (member.users?.raw_user_meta_data?.full_name as string) || null
-                    const isExpanded = expandedUserId === member.user_id
+                    const fullName = member.full_name || null
+                    const isExpanded = expandedUserId === member.userId
 
                     return (
-                      <>
+                      <Fragment key={member.id}>
                         <TableRow
-                          key={member.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleExpandUser(member.user_id)}
+                          onClick={() => handleExpandUser(member.userId)}
                         >
                           <TableCell>
                             <div>
-                              <p className="font-medium">{fullName || member.users?.email || 'Unknown'}</p>
-                              {fullName && <p className="text-xs text-muted-foreground">{member.users?.email}</p>}
+                              <p className="font-medium">{fullName || member.email || 'Unknown'}</p>
+                              {fullName && <p className="text-xs text-muted-foreground">{member.email}</p>}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -376,12 +356,12 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                             <Badge variant={status.variant}>{status.label}</Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {member.users?.last_sign_in_at
-                              ? formatDistanceToNow(new Date(member.users.last_sign_in_at), { addSuffix: true })
+                            {member.lastLogin
+                              ? formatDistanceToNow(new Date(member.lastLogin), { addSuffix: true })
                               : 'Never'}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(member.created_at), 'MMM d, yyyy')}
+                            {format(new Date(member.joinedAt), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell>
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -390,7 +370,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
 
                         {/* Expanded Detail Panel */}
                         {isExpanded && (
-                          <TableRow key={`${member.id}-detail`}>
+                          <TableRow>
                             <TableCell colSpan={6} className="bg-muted/30 p-0">
                               <div className="p-4 space-y-4">
                                 {/* Quick Actions */}
@@ -401,7 +381,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                     disabled={actionLoading === 'reset-password'}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleResetPassword(member.users?.email || '')
+                                      handleResetPassword(member.email || '')
                                     }}
                                   >
                                     <KeyRound className="w-4 h-4 mr-1" />
@@ -412,7 +392,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      navigator.clipboard.writeText(member.users?.email || '')
+                                      navigator.clipboard.writeText(member.email || '')
                                       toast.success('Email copied to clipboard')
                                     }}
                                   >
@@ -426,10 +406,10 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                       value={member.role}
                                       onValueChange={(newRole) => {
                                         if (newRole !== member.role) {
-                                          handleChangeRole(member.id, member.users?.email || '', newRole)
+                                          handleChangeRole(member.membership_id, member.email || '', newRole)
                                         }
                                       }}
-                                      disabled={actionLoading === `role-${member.id}`}
+                                      disabled={actionLoading === `role-${member.membership_id}`}
                                     >
                                       <SelectTrigger className="w-[140px] h-8 text-xs">
                                         <UserCog className="w-3 h-3 mr-1" />
@@ -526,7 +506,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })
                 )}

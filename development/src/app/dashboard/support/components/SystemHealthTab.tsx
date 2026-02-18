@@ -10,17 +10,14 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
   Activity,
-  Database,
   Clock,
   HardDrive,
   AlertTriangle,
   RefreshCw,
-  Wifi,
   TrendingUp,
   BarChart3,
-  Shield,
 } from 'lucide-react'
-import { formatDistanceToNow, format, subDays, subHours } from 'date-fns'
+import { formatDistanceToNow, format, subHours } from 'date-fns'
 
 interface Props {
   organizationId: string
@@ -68,7 +65,6 @@ export default function SystemHealthTab({ organizationId, isSuperAdmin }: Props)
   const [edgeMetrics, setEdgeMetrics] = useState<EdgeMetrics | null>(null)
   const [storageMetrics, setStorageMetrics] = useState<StorageMetrics | null>(null)
   const [errorMetrics, setErrorMetrics] = useState<ErrorMetric[]>([])
-  const [connectionCount, setConnectionCount] = useState<number | null>(null)
 
   const fetchEdgeMetrics = useCallback(async () => {
     try {

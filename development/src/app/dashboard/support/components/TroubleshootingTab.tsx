@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -571,9 +571,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                   </TableHeader>
                   <TableBody>
                     {activityLogs.map(log => (
-                      <>
+                      <Fragment key={log.id}>
                         <TableRow
-                          key={log.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
                         >
@@ -612,7 +611,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                           </TableCell>
                         </TableRow>
                         {expandedLogId === log.id && (
-                          <TableRow key={`${log.id}-detail`}>
+                          <TableRow>
                             <TableCell colSpan={8} className="bg-muted/30 p-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {log.request_body && (
@@ -643,7 +642,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     ))}
                   </TableBody>
                 </Table>
