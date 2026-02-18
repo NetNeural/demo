@@ -137,7 +137,18 @@ export class OrganizationIntegrationService {
         return await this.testGoliothConnection(integration);
       }
 
-      return { success: false, message: 'Integration type not supported for testing' };
+      // For all other types, delegate to the integration-test edge function
+      try {
+        const { data, error } = await this.supabase.functions.invoke('integration-test', {
+          body: { integrationId },
+        });
+        if (error) {
+          return { success: false, message: error.message || 'Test connection failed' };
+        }
+        return { success: data?.success ?? false, message: data?.message || 'Test completed' };
+      } catch {
+        return { success: false, message: 'Failed to invoke test connection' };
+      }
     } catch (error) {
       return { 
         success: false, 

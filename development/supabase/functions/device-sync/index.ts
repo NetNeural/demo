@@ -234,6 +234,8 @@ function createIntegrationClient(
       })
 
     case 'mqtt':
+    case 'mqtt_hosted':
+    case 'mqtt_external':
       return new MqttClient({
         type: 'mqtt',
         settings: {
