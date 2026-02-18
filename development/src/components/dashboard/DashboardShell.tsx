@@ -58,6 +58,7 @@ export default function DashboardShell({
 
   const handleSignOut = async () => {
     try {
+      sessionStorage.setItem('manual_signout', '1')
       const supabase = createClient()
       await supabase.auth.signOut()
       window.location.href = '/auth/login'

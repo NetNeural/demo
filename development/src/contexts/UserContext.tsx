@@ -37,7 +37,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route))
         if (!isPublicRoute && !hasRedirected.current) {
           hasRedirected.current = true
-          router.push('/auth/login?error=session_expired')
+          // Don't show session_expired if the user intentionally signed out
+          const wasManualSignOut = typeof window !== 'undefined' && sessionStorage.getItem('manual_signout')
+          if (wasManualSignOut) {
+            sessionStorage.removeItem('manual_signout')
+            router.push('/auth/login')
+          } else {
+            router.push('/auth/login?error=session_expired')
+          }
         }
         setUser(null)
         return

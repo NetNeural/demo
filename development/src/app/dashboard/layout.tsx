@@ -111,8 +111,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <button 
               onClick={async () => {
                 closeMobileMenu()
+                sessionStorage.setItem('manual_signout', '1')
                 await supabase.auth.signOut()
-                window.location.href = '/'
+                window.location.href = '/auth/login'
               }}
               className="btn btn-ghost btn-sm"
             >
