@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Settings, Shield } from 'lucide-react';
+import { User, Settings, Shield, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
 import { ProfileTab } from './components/ProfileTab';
 import { PreferencesTab } from './components/PreferencesTab';
 import { SecurityTab } from './components/SecurityTab';
+import { UserOrganizationsTab } from './components/UserOrganizationsTab';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -32,6 +33,10 @@ export default function SettingsPage() {
             <Shield className="w-4 h-4" />
             <span>Security</span>
           </TabsTrigger>
+          <TabsTrigger value="organizations" className="flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            <span>Organizations</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -51,6 +56,11 @@ export default function SettingsPage() {
         {/* Security Tab */}
         <TabsContent value="security">
           <SecurityTab />
+        </TabsContent>
+
+        {/* Organizations Tab */}
+        <TabsContent value="organizations">
+          <UserOrganizationsTab />
         </TabsContent>
       </Tabs>
     </div>
