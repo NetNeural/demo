@@ -70,17 +70,14 @@ function LoginForm() {
 
   const orgSlug = searchParams?.get('org') || null
 
-  // Fetch org branding when ?org= is present
+  // Fetch org branding — always load branding (default to netneural-demo when no ?org= param)
   useEffect(() => {
-    if (!orgSlug) {
-      setBrandingLoaded(true)
-      return
-    }
+    const slug = orgSlug || 'netneural-demo'
     const fetchBranding = async () => {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         const res = await fetch(
-          `${supabaseUrl}/functions/v1/org-branding?slug=${encodeURIComponent(orgSlug)}`,
+          `${supabaseUrl}/functions/v1/org-branding?slug=${encodeURIComponent(slug)}`,
           { headers: { 'Content-Type': 'application/json' } }
         )
         if (res.ok) {
