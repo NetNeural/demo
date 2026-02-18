@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Trash2, AlertTriangle, Upload, Image as ImageIcon, Palette } from 'lucide-react';
+import { Settings, Trash2, AlertTriangle, Upload, Image as ImageIcon, Palette, Monitor } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { edgeFunctions } from '@/lib/edge-functions/client';
 import { handleApiError } from '@/lib/sentry-utils';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import type { OrganizationSettings } from '@/types/organization';
+import { DeviceTypeImageManager } from '@/components/organizations/DeviceTypeImageManager';
 
 interface OrganizationSettingsTabProps {
   organizationId: string;
@@ -36,6 +37,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [accentColor, setAccentColor] = useState('#10b981');
   const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('auto');
   const [timezone, setTimezone] = useState('UTC');
+  const [deviceTypeImages, setDeviceTypeImages] = useState<Record<string, string>>({});
 
   // Sync state when currentOrganization changes
   useEffect(() => {
@@ -50,6 +52,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setAccentColor(settings.branding?.accent_color || '#10b981');
       setTheme(settings.theme || 'auto');
       setTimezone(settings.timezone || 'UTC');
+      setDeviceTypeImages(
+        (settings.device_type_images as Record<string, string>) || {}
+      );
     }
   }, [currentOrganization]);
 
@@ -238,6 +243,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         },
         theme,
         timezone,
+        device_type_images: deviceTypeImages,
       };
 
       console.log('Saving organization settings:', {
@@ -455,6 +461,26 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Device Type Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="w-5 h-5" />
+            Device Type Images
+          </CardTitle>
+          <CardDescription>
+            Upload images for each device type. These appear on device cards across the dashboard.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DeviceTypeImageManager
+            organizationId={currentOrganization?.id || ''}
+            deviceTypeImages={deviceTypeImages}
+            onChange={setDeviceTypeImages}
+          />
         </CardContent>
       </Card>
 

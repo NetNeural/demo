@@ -16,6 +16,8 @@ export interface OrganizationSettings {
   display_name?: string;
   timezone?: string;
   date_format?: string;
+  /** Maps device_type strings to their uploaded image URLs */
+  device_type_images?: Record<string, string>;
   [key: string]: unknown;
 }
 

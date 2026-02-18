@@ -346,6 +346,12 @@ export function DevicesList() {
     return Array.from(types).sort()
   }, [devices])
 
+  // Device type images from organization settings
+  const deviceTypeImages = useMemo<Record<string, string>>(() => {
+    const settings = currentOrganization?.settings as Record<string, unknown> | undefined
+    return (settings?.device_type_images as Record<string, string>) || {}
+  }, [currentOrganization])
+
   // Filter and sort devices
   const filteredAndSortedDevices = useMemo(() => {
     let filtered = [...devices]
@@ -775,7 +781,23 @@ export function DevicesList() {
                   )}
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">{device.type}</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                {(() => {
+                  const typeName = device.device_type || device.type || ''
+                  const imgUrl = deviceTypeImages[typeName]
+                  if (imgUrl) {
+                    return (
+                      <img
+                        src={imgUrl}
+                        alt={typeName}
+                        className="w-5 h-5 object-contain rounded-sm inline-block"
+                      />
+                    )
+                  }
+                  return null
+                })()}
+                {device.type}
+              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
