@@ -131,9 +131,9 @@ jobs:
         env:
           NODE_ENV: staging
           BUILD_MODE: static
-          # Supabase configuration (hardcoded until secrets are configured)
-          NEXT_PUBLIC_SUPABASE_URL: "https://atgbmxicqikmapfqouco.supabase.co"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg"
+          # Supabase configuration (managed via GitHub Secrets)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || 'https://atgbmxicqikmapfqouco.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
           GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
           NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"

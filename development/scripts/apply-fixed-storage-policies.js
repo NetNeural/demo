@@ -3,7 +3,7 @@ const fs = require('fs')
 
 const supabase = createClient(
   'https://atgbmxicqikmapfqouco.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzMwMDA0NSwiZXhwIjoyMDYyODc2MDQ1fQ.uyD1wUWKWMGF-KCjH1nXzHKoJSxuMjZCSmgzNBvr2ks'
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 async function applyPolicies() {

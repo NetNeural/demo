@@ -8,7 +8,7 @@
 const { createClient } = require('@supabase/supabase-js')
 
 const supabaseUrl = 'https://atgbmxicqikmapfqouco.supabase.co'
-const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg'
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // You need to provide the password for admin@netneural.ai
 const email = 'admin@netneural.ai'

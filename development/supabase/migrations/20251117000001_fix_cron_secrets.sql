@@ -18,13 +18,18 @@ CREATE POLICY "Service role only" ON public.pg_cron_secrets
     USING (false);
 
 -- Insert the secrets
+-- IMPORTANT: Replace placeholder values with actual secrets before running this migration.
+-- Get these from environment variables or Supabase Dashboard → Settings → API.
 INSERT INTO public.pg_cron_secrets (name, secret)
 VALUES
-  ('project_url', 'https://bldojxpockljyivldxwf.supabase.co'),
-  ('service_role_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAyNjk1NSwiZXhwIjoyMDcwNjAyOTU1fQ.u9OK1PbjHLKMY8K1LM-bn8zYlRm-U5Zk1ef5NqQEhDQ')
+  ('project_url', current_setting('app.supabase_url', true)),
+  ('service_role_key', current_setting('app.service_role_key', true))
 ON CONFLICT (name) DO UPDATE SET 
   secret = EXCLUDED.secret,
   updated_at = NOW();
+-- To set these before running:
+-- ALTER DATABASE postgres SET app.supabase_url = 'https://your-project.supabase.co';
+-- ALTER DATABASE postgres SET app.service_role_key = 'your-service-role-key';
 
 -- Update the cron job to use the custom table instead of vault
 SELECT cron.unschedule('auto-sync-cron-job');

@@ -61,7 +61,7 @@ CREATE POLICY "Service role can manage secrets"
 INSERT INTO public.pg_cron_secrets (name, secret) 
 VALUES 
   ('project_url', 'https://atgbmxicqikmapfqouco.supabase.co'),
-  ('service_role_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY')
+  ('service_role_key', '<YOUR_SERVICE_ROLE_KEY>') -- Get from Supabase Dashboard → Settings → API
 ON CONFLICT (name) 
 DO UPDATE SET 
   secret = EXCLUDED.secret,

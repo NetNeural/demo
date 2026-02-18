@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js')
 const PROJECT_REF = 'atgbmxicqikmapfqouco'
 const PROD_URL = `https://${PROJECT_REF}.supabase.co`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.L4jJcMg8dVrzLsDxWq9MjCf1X8Y-2FpgH9OsAH45w6k'
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 const TARGET_EMAIL = 'admin@netneural.ai'
 

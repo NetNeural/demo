@@ -19,7 +19,7 @@ NC='\033[0m'
 # Staging configuration
 STAGING_PROJECT_REF="atgbmxicqikmapfqouco"
 STAGING_URL="https://atgbmxicqikmapfqouco.supabase.co"
-STAGING_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY"
+STAGING_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Auto-Sync Cron Setup for Staging${NC}"
@@ -78,7 +78,7 @@ CREATE POLICY IF NOT EXISTS "Service role can manage secrets"
 INSERT INTO public.pg_cron_secrets (name, secret) 
 VALUES 
     ('project_url', 'https://atgbmxicqikmapfqouco.supabase.co'),
-    ('service_role_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY')
+    ('service_role_key', ${SUPABASE_SERVICE_ROLE_KEY})
 ON CONFLICT (name) 
 DO UPDATE SET 
     secret = EXCLUDED.secret,

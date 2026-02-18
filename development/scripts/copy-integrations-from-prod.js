@@ -2,11 +2,11 @@ const { createClient } = require('@supabase/supabase-js')
 
 // Production
 const prodUrl = 'https://bldojxpockljyivldxwf.supabase.co'
-const prodKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAyNjk1NSwiZXhwIjoyMDcwNjAyOTU1fQ.u9OK1PbjHLKMY8K1LM-bn8zYlRm-U5Zk1ef5NqQEhDQ'
+const prodKey = process.env.PROD_SUPABASE_SERVICE_ROLE_KEY
 
 // Staging
 const stagingUrl = 'https://atgbmxicqikmapfqouco.supabase.co'
-const stagingKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY'
+const stagingKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const prod = createClient(prodUrl, prodKey, { auth: { persistSession: false } })
 const staging = createClient(stagingUrl, stagingKey, { auth: { persistSession: false } })
