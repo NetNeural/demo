@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { edgeFunctions } from '@/lib/edge-functions/client';
 import { createClient } from '@/lib/supabase/client';
 import type {
   AnalyticsData,
@@ -53,11 +52,19 @@ export function useAnalyticsData(timeRange: TimeRange) {
         const hours = getTimeRangeHours(timeRange);
         const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
-        // Fetch devices
-        const devicesResponse = await edgeFunctions.devices.list(currentOrganization.id);
-        if (!devicesResponse.success) throw new Error('Failed to fetch devices data');
+        // Fetch devices directly via Supabase (more reliable than edge function for analytics)
+        const { data: devicesData, error: devicesError } = await supabase
+          .from('devices')
+          .select('id, name, status, last_seen, serial_number, device_type, metadata, organization_id')
+          .eq('organization_id', currentOrganization.id)
+          .order('name');
 
-        const devices: Device[] = (devicesResponse.data?.devices as Device[]) || [];
+        if (devicesError) {
+          console.error('[Analytics] Devices fetch error:', devicesError);
+          throw new Error('Failed to fetch devices data');
+        }
+
+        const devices: Device[] = (devicesData as unknown as Device[]) || [];
 
         // Fetch alerts
         const { data: alertData, error: alertError } = await supabase
@@ -107,9 +114,11 @@ export function useAnalyticsData(timeRange: TimeRange) {
         const devicePerformancePromises = devices.map(async (device): Promise<DevicePerformance> => {
           const { data: telemetryData, error: telemetryError } = await supabase
             .from('device_telemetry_history')
-            .select('telemetry, device_timestamp')
+            .select('telemetry, received_at, device_timestamp')
             .eq('device_id', device.id)
-            .gte('device_timestamp', startTime);
+            .gte('received_at', startTime)
+            .order('received_at', { ascending: false })
+            .limit(1000);
 
           if (telemetryError) console.error(`[Analytics] Telemetry error for ${device.name}:`, telemetryError);
 
