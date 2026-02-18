@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -18,8 +18,8 @@ import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette, Building2, Thermomete
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export function PreferencesTab() {
-  const { toast } = useToast();
   const { currentOrganization } = useOrganization();
+  const [saving, setSaving] = useState(false);
   const [useOrgDefault, setUseOrgDefault] = useState(true); // Default to organization theme
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('en');
@@ -135,6 +135,7 @@ export function PreferencesTab() {
   }, []);
 
   const handleSavePreferences = async () => {
+    setSaving(true);
     try {
       const preferences = {
         useOrgDefaultTheme: useOrgDefault,
@@ -164,11 +165,7 @@ export function PreferencesTab() {
       });
 
       if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to save preferences: " + error.message,
-          variant: "destructive",
-        });
+        toast.error('Failed to save preferences: ' + error.message);
         return;
       }
 
@@ -176,17 +173,12 @@ export function PreferencesTab() {
       localStorage.setItem('user_preferences', JSON.stringify(preferences));
       localStorage.setItem('temperatureUnit', temperatureUnit);
       
-      toast({
-        title: "Success",
-        description: "Preferences saved successfully!",
-      });
+      toast.success('Preferences saved successfully!');
     } catch (err) {
       console.error('Error saving preferences:', err);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -667,8 +659,8 @@ export function PreferencesTab() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSavePreferences} size="lg">
-          Save Preferences
+        <Button onClick={handleSavePreferences} size="lg" disabled={saving}>
+          {saving ? 'Saving...' : 'Save Preferences'}
         </Button>
       </div>
     </div>
