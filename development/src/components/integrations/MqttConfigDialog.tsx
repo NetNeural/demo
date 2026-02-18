@@ -253,7 +253,8 @@ export function MqttConfigDialog({
   }
 
   const handleTest = async () => {
-    if (!integrationId) {
+    const effectiveId = savedIntegrationId || integrationId
+    if (!effectiveId) {
       toast.error('Please save the configuration before testing')
       return
     }
@@ -267,7 +268,7 @@ export function MqttConfigDialog({
         message?: string
       }
       
-      const result = await integrationService.testIntegration(integrationId, 'mqtt') as TestResult
+      const result = await integrationService.testIntegration(effectiveId, 'mqtt') as TestResult
       setTestResult({
         success: result.success,
         message: result.message || 'Connection test completed'

@@ -113,6 +113,8 @@ async function testIntegrationUnified(
         break
 
       case 'mqtt':
+      case 'mqtt_hosted':
+      case 'mqtt_external':
         client = new MqttClient({
           type: 'mqtt',
           settings: {
@@ -431,7 +433,7 @@ export default createEdgeFunction(async ({ req }) => {
 
       try {
         // Use unified client pattern for supported integrations
-        const unifiedIntegrations = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'mqtt']
+        const unifiedIntegrations = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'mqtt', 'mqtt_hosted', 'mqtt_external']
         
         if (unifiedIntegrations.includes(typedIntegration.integration_type)) {
           testResult = await testIntegrationUnified(

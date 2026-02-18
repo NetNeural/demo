@@ -7,8 +7,11 @@ import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
 export default createEdgeFunction(async ({ req, supabase }) => {
+  // Read integrationId from body (preferred) or URL path (fallback)
+  const body = await req.json().catch(() => ({}))
   const url = new URL(req.url)
-  const integrationId = url.pathname.split('/').pop()
+  const pathSegment = url.pathname.split('/').pop()
+  const integrationId = body.integrationId || body.integration_id || (pathSegment !== 'integration-test' ? pathSegment : undefined)
 
   // Use the authenticated supabase client provided by createEdgeFunction
   // (replaces deprecated supabaseClient.auth.setAuth() from v1)
@@ -16,6 +19,10 @@ export default createEdgeFunction(async ({ req, supabase }) => {
 
   if (req.method === 'POST') {
     const startTime = Date.now()
+
+      if (!integrationId) {
+        throw new DatabaseError('Integration ID is required', 400)
+      }
     
       const { data: integration, error } = await supabaseClient
         .from('device_integrations')
@@ -152,6 +159,8 @@ function createIntegrationClient(
         })
 
       case 'mqtt':
+      case 'mqtt_hosted':
+      case 'mqtt_external':
         return new MqttClient({
           type: 'mqtt',
           settings: {
