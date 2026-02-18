@@ -205,14 +205,88 @@ async function moveDevice(
   sourceOrgId: string,
   targetOrgId: string,
   includeTelemetry: boolean,
-  userId: string
+  _userId: string
 ): Promise<TransferResult> {
   const deviceId = device.id
   let telemetryCount = 0
   let alertsCount = 0
   let thresholdsCount = 0
+  const warnings: string[] = []
 
-  // Move the device itself
+  // 1. Move telemetry data FIRST (before device org changes)
+  //    We do this first because queries filter on organization_id = sourceOrgId.
+  //    If we move the device first, some queries might not find the source records.
+  if (includeTelemetry) {
+    const { count, error: telemetryError } = await serviceClient
+      .from('device_telemetry_history')
+      .update({ organization_id: targetOrgId })
+      .eq('device_id', deviceId)
+      .eq('organization_id', sourceOrgId)
+      .select('*', { count: 'exact', head: true })
+
+    if (telemetryError) {
+      console.error('Telemetry update failed:', telemetryError)
+      warnings.push(`Telemetry update failed: ${telemetryError.message}`)
+      // Attempt a second time — this is critical data
+      const { count: retryCount, error: retryError } = await serviceClient
+        .from('device_telemetry_history')
+        .update({ organization_id: targetOrgId })
+        .eq('device_id', deviceId)
+        .eq('organization_id', sourceOrgId)
+        .select('*', { count: 'exact', head: true })
+
+      if (retryError) {
+        console.error('Telemetry update RETRY failed:', retryError)
+        warnings.push(`Telemetry retry also failed: ${retryError.message}`)
+      } else {
+        telemetryCount = retryCount ?? 0
+        console.log(`Telemetry retry succeeded: ${telemetryCount} records moved`)
+      }
+    } else {
+      telemetryCount = count ?? 0
+      console.log(`Telemetry moved: ${telemetryCount} records`)
+    }
+  }
+
+  // 2. Move alerts
+  const { count: alertCount, error: alertError } = await serviceClient
+    .from('alerts')
+    .update({ organization_id: targetOrgId })
+    .eq('device_id', deviceId)
+    .eq('organization_id', sourceOrgId)
+    .select('*', { count: 'exact', head: true })
+
+  if (alertError) {
+    console.error('Alerts update failed:', alertError)
+    warnings.push(`Alerts update failed: ${alertError.message}`)
+  } else {
+    alertsCount = alertCount ?? 0
+    console.log(`Alerts moved: ${alertsCount} records`)
+  }
+
+  // 3. Move notifications linked to this device's alerts
+  try {
+    const { error: notifError } = await serviceClient
+      .from('notifications')
+      .update({ organization_id: targetOrgId })
+      .eq('organization_id', sourceOrgId)
+      .in(
+        'alert_id',
+        serviceClient
+          .from('alerts')
+          .select('id')
+          .eq('device_id', deviceId)
+      )
+
+    if (notifError) {
+      console.error('Notifications update failed:', notifError)
+      warnings.push(`Notifications update failed: ${notifError.message}`)
+    }
+  } catch {
+    console.log('Notifications update skipped')
+  }
+
+  // 4. Move the device itself
   const { error: updateError } = await serviceClient
     .from('devices')
     .update({
@@ -229,39 +303,7 @@ async function moveDevice(
     )
   }
 
-  // Move telemetry data
-  if (includeTelemetry) {
-    const { count, error: telemetryError } = await serviceClient
-      .from('device_telemetry_history')
-      .update({ organization_id: targetOrgId })
-      .eq('device_id', deviceId)
-      .eq('organization_id', sourceOrgId)
-      .select('*', { count: 'exact', head: true })
-
-    if (telemetryError) {
-      console.error('Telemetry update failed:', telemetryError)
-      // Non-fatal: log and continue
-    } else {
-      telemetryCount = count ?? 0
-    }
-  }
-
-  // Move alerts
-  const { count: alertCount, error: alertError } = await serviceClient
-    .from('alerts')
-    .update({ organization_id: targetOrgId })
-    .eq('device_id', deviceId)
-    .eq('organization_id', sourceOrgId)
-    .select('*', { count: 'exact', head: true })
-
-  if (alertError) {
-    console.error('Alerts update failed:', alertError)
-  } else {
-    alertsCount = alertCount ?? 0
-  }
-
-  // Move sensor thresholds (these reference device_id, not org directly,
-  // but we update any org-scoped fields if they exist)
+  // 5. Touch sensor thresholds (these reference device_id, not org directly)
   try {
     const { count: thresholdCount, error: thresholdError } = await serviceClient
       .from('sensor_thresholds')
@@ -273,8 +315,31 @@ async function moveDevice(
       thresholdsCount = thresholdCount ?? 0
     }
   } catch {
-    // sensor_thresholds table may not exist
     console.log('Sensor thresholds update skipped (table may not exist)')
+  }
+
+  // 6. Final safety net: ensure all telemetry records match the device's org
+  //    This catches any records missed by the targeted update above.
+  if (includeTelemetry) {
+    try {
+      const { count: orphanedCount, error: syncError } = await serviceClient
+        .from('device_telemetry_history')
+        .update({ organization_id: targetOrgId })
+        .eq('device_id', deviceId)
+        .neq('organization_id', targetOrgId)
+        .select('*', { count: 'exact', head: true })
+
+      if (!syncError && (orphanedCount ?? 0) > 0) {
+        console.log(`Safety net: synced ${orphanedCount} additional orphaned telemetry records`)
+        telemetryCount += orphanedCount ?? 0
+      }
+    } catch {
+      console.log('Safety net telemetry sync skipped')
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.warn('Transfer completed with warnings:', warnings)
   }
 
   return {
