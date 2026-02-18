@@ -536,3 +536,4 @@ const { data, error } = await supabase.auth.signInWithPassword({ email, password
 - Golioth IoT integration
 - Basic device management
 
+# Trigger
