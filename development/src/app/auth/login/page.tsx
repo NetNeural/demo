@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'rea
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Wifi, Radio, Cpu, Zap, Shield, Activity, Eye, EyeOff, Lock, type LucideIcon } from 'lucide-react'
 
@@ -368,14 +369,13 @@ function LoginForm() {
 
             {/* Remember me */}
             <div className="mb-6 flex items-center">
-              <input
+              <Checkbox
                 id="remember-me"
-                type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500/50"
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                className="h-4 w-4 rounded border-gray-600 bg-gray-800 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
               />
-              <label htmlFor="remember-me" className="ml-2 text-sm text-gray-400">
+              <label htmlFor="remember-me" className="ml-2 text-sm text-gray-400 cursor-pointer">
                 Keep me signed in
               </label>
             </div>
