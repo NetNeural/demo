@@ -8,6 +8,7 @@ import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 
@@ -17,6 +18,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Keep browser tab title in sync with current page + org
+  usePageTitle()
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), [])
 
