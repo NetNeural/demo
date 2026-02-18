@@ -8,6 +8,7 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { AcknowledgeAlertDialog, type AcknowledgementType } from '@/components/alerts/AcknowledgeAlertDialog'
 
 interface AlertItem {
   id: string
@@ -38,6 +39,9 @@ const formatTimestamp = (timestamp: string): string => {
 export function AlertsCard() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAckDialog, setShowAckDialog] = useState(false)
+  const [ackAlertId, setAckAlertId] = useState<string | null>(null)
+  const [ackAlertTitle, setAckAlertTitle] = useState('')
   const { currentOrganization } = useOrganization()
   const router = useRouter()
 
@@ -100,30 +104,40 @@ export function AlertsCard() {
   }, [fetchAlerts])
 
   const handleAcknowledgeAlert = async (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId)
+    setAckAlertId(alertId)
+    setAckAlertTitle(alert?.title || '')
+    setShowAckDialog(true)
+  }
+
+  const handleAcknowledgeWithNotes = async (type: AcknowledgementType, notes: string) => {
+    if (!ackAlertId) return
+
     try {
-      const response = await edgeFunctions.alerts.acknowledge(alertId);
+      const response = await edgeFunctions.userActions.acknowledgeAlert(ackAlertId, type, notes)
 
       if (!response.success) {
-        console.error('Failed to acknowledge alert:', response.error);
+        console.error('Failed to acknowledge alert:', response.error)
         toast.error('Failed to acknowledge alert')
-        return
+        throw new Error('Failed to acknowledge alert')
       }
 
       // Optimistic UI update
       setAlerts(prevAlerts => 
         prevAlerts.map(alert => 
-          alert.id === alertId 
+          alert.id === ackAlertId 
             ? { ...alert, acknowledged: true }
             : alert
         )
       )
 
-      toast.success('Alert acknowledged')
+      toast.success(`Alert ${type === 'resolved' ? 'resolved' : 'acknowledged'}`)
+      setAckAlertId(null)
     } catch (error) {
       console.error('Error acknowledging alert:', error)
       toast.error('Failed to acknowledge alert')
-      // Refresh to get actual state
       fetchAlerts()
+      throw error
     }
   }
 
@@ -226,6 +240,14 @@ export function AlertsCard() {
           </div>
         )}
       </CardContent>
+
+      {/* Acknowledge Alert Dialog */}
+      <AcknowledgeAlertDialog
+        open={showAckDialog}
+        onOpenChange={setShowAckDialog}
+        alertTitle={ackAlertTitle}
+        onConfirm={handleAcknowledgeWithNotes}
+      />
     </>
   )
 }

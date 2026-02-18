@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { AcknowledgeAlertDialog, type AcknowledgementType } from './AcknowledgeAlertDialog'
 
 interface AlertMetadata {
   sensor_type?: string
@@ -73,6 +74,9 @@ export function AlertsList() {
   const [loading, setLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [ackAlertId, setAckAlertId] = useState<string | null>(null)
+  const [ackAlertTitle, setAckAlertTitle] = useState<string>('')
+  const [showAckDialog, setShowAckDialog] = useState(false)
   
   // Issue #108: New state for filters, view mode, tabs, bulk actions
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
@@ -213,20 +217,26 @@ export function AlertsList() {
     return groups
   }, [filteredAlerts])
 
-  const handleAcknowledge = async (alertId: string) => {
-    if (!currentOrganization) return
+  const openAckDialog = (alertId: string, alertTitle?: string) => {
+    setAckAlertId(alertId)
+    setAckAlertTitle(alertTitle || '')
+    setShowAckDialog(true)
+  }
+
+  const handleAcknowledgeWithNotes = async (type: AcknowledgementType, notes: string) => {
+    if (!currentOrganization || !ackAlertId) return
 
     try {
-      const response = await edgeFunctions.userActions.acknowledgeAlert(alertId, 'acknowledged')
+      const response = await edgeFunctions.userActions.acknowledgeAlert(ackAlertId, type, notes)
 
       if (!response.success) {
         toast.error('Failed to acknowledge alert')
-        return
+        throw new Error('Failed to acknowledge alert')
       }
 
       setAlerts(prevAlerts =>
         prevAlerts.map(alert =>
-          alert.id === alertId
+          alert.id === ackAlertId
             ? { ...alert, acknowledged: true, acknowledgedBy: 'Current User', acknowledgedAt: new Date() }
             : alert
         )
@@ -235,16 +245,24 @@ export function AlertsList() {
       // Remove from selection
       setSelectedIds(prev => {
         const newSet = new Set(prev)
-        newSet.delete(alertId)
+        newSet.delete(ackAlertId)
         return newSet
       })
       
-      toast.success('Alert acknowledged')
+      toast.success(`Alert ${type === 'resolved' ? 'resolved' : type === 'false_positive' ? 'marked as false positive' : type === 'dismissed' ? 'dismissed' : 'acknowledged'}`)
+      setAckAlertId(null)
       await fetchAlerts()
     } catch (error) {
       console.error('Error acknowledging alert:', error)
       toast.error('Failed to acknowledge alert')
+      throw error
     }
+  }
+
+  // Legacy handler for components that call with just an ID (table/card views)
+  const handleAcknowledge = (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId)
+    openAckDialog(alertId, alert?.title)
   }
 
   const handleViewDetails = (alert: Alert) => {
@@ -509,7 +527,7 @@ export function AlertsList() {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleAcknowledge(alert.id)}
+                                        onClick={() => openAckDialog(alert.id, alert.title)}
                                       >
                                         Acknowledge
                                       </Button>
@@ -723,9 +741,9 @@ export function AlertsList() {
             </Button>
             {selectedAlert && !selectedAlert.acknowledged && (
               <Button 
-                onClick={async () => {
-                  await handleAcknowledge(selectedAlert.id)
+                onClick={() => {
                   setShowDetails(false)
+                  openAckDialog(selectedAlert.id, selectedAlert.title)
                 }}
               >
                 Acknowledge Alert
@@ -734,6 +752,14 @@ export function AlertsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Acknowledge Alert Dialog */}
+      <AcknowledgeAlertDialog
+        open={showAckDialog}
+        onOpenChange={setShowAckDialog}
+        alertTitle={ackAlertTitle}
+        onConfirm={handleAcknowledgeWithNotes}
+      />
     </div>
   )
 }
