@@ -124,3 +124,8 @@ export function hasMinimumRole(user: UserProfile | null, minRole: UserProfile['r
   
   return userLevel >= minLevel
 }
+
+// Support Page Access
+export function canAccessSupport(user: UserProfile | null): boolean {
+  return hasMinimumRole(user, 'org_admin')
+}
