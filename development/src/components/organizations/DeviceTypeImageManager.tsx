@@ -7,6 +7,7 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
 import { edgeFunctions } from '@/lib/edge-functions/client';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { toast } from 'sonner';
 
 interface DeviceTypeImageManagerProps {
@@ -107,6 +108,35 @@ export function DeviceTypeImageManager({
   const [loadingTypes, setLoadingTypes] = useState(false);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const newFileInputRef = useRef<HTMLInputElement>(null);
+  const { currentOrganization, refreshOrganizations } = useOrganization();
+
+  /**
+   * Auto-persist device_type_images to the organization settings.
+   * Merges with existing settings so other fields (branding, theme, etc.) are preserved.
+   */
+  const persistImages = async (updatedImages: Record<string, string>) => {
+    try {
+      // Merge with existing settings to avoid overwriting branding/theme/etc.
+      const existingSettings = (currentOrganization?.settings as Record<string, unknown>) || {};
+      const mergedSettings = { ...existingSettings, device_type_images: updatedImages };
+      
+      const response = await edgeFunctions.organizations.update(organizationId, {
+        settings: mergedSettings as never,
+      });
+      if (!response.success) {
+        console.error('Failed to save device type images:', response.error);
+        toast.error('Image uploaded but failed to save to settings. Try clicking "Save All Changes".');
+        return false;
+      }
+      // Refresh the organization context so other pages pick up the change
+      await refreshOrganizations();
+      return true;
+    } catch (err) {
+      console.error('Error persisting device type images:', err);
+      toast.error('Image uploaded but failed to save to settings.');
+      return false;
+    }
+  };
 
   // Auto-detect device types from the organization's actual devices
   const fetchDeviceTypes = useCallback(async () => {
@@ -186,7 +216,12 @@ export function DeviceTypeImageManager({
 
       const updated = { ...deviceTypeImages, [deviceType]: publicUrl };
       onChange(updated);
-      toast.success(`Image uploaded for "${deviceType}". Click "Save All Changes" to apply.`);
+      const saved = await persistImages(updated);
+      if (saved) {
+        toast.success(`Image uploaded and saved for "${deviceType}".`);
+      } else {
+        toast.success(`Image uploaded for "${deviceType}". Click "Save All Changes" to apply.`);
+      }
     } catch (error: unknown) {
       console.error('Error uploading device type image:', error);
       const message =
@@ -197,11 +232,16 @@ export function DeviceTypeImageManager({
     }
   };
 
-  const handleRemove = (deviceType: string) => {
+  const handleRemove = async (deviceType: string) => {
     const updated = { ...deviceTypeImages };
     delete updated[deviceType];
     onChange(updated);
-    toast.info(`Image removed for "${deviceType}". Click "Save All Changes" to apply.`);
+    const saved = await persistImages(updated);
+    if (saved) {
+      toast.success(`Image removed for "${deviceType}".`);
+    } else {
+      toast.success(`Image removed for "${deviceType}". Click "Save All Changes" to apply.`);
+    }
   };
 
   const handleAddNewType = () => {
