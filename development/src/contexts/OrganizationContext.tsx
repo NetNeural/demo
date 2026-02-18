@@ -9,7 +9,7 @@ import type {
   OrganizationRole,
   OrganizationStats 
 } from '@/types/organization';
-import { getOrganizationPermissions } from '@/types/organization';
+import { getOrganizationPermissions, isResellerOrg } from '@/types/organization';
 
 interface OrganizationContextType {
   // Current organization
@@ -44,6 +44,10 @@ interface OrganizationContextType {
   canManageMembers: boolean;
   canManageDevices: boolean;
   canManageIntegrations: boolean;
+  
+  // Reseller capabilities
+  isReseller: boolean;
+  canCreateChildOrgs: boolean;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -108,9 +112,11 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         name: org.name,
         slug: org.slug,
         description: org.description,
-        subscriptionTier: org.subscriptionTier,
+        subscription_tier: org.subscriptionTier,
         is_active: org.isActive,
         settings: org.settings, // Include settings (branding, theme, etc.)
+        parent_organization_id: org.parentOrganizationId || null,
+        created_by: org.createdBy || null,
         role: data.isSuperAdmin ? 'owner' : 'admin', // TODO: Get actual role from organization_members
         membershipId: `mem-${org.id}`,
         joinedAt: org.createdAt,
@@ -291,6 +297,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const isAdmin = userRole === 'admin';
   const isMember = userRole === 'member';
   const isViewer = userRole === 'viewer';
+  
+  // Reseller checks
+  const isReseller = isResellerOrg(currentOrganization);
+  const canCreateChildOrgs = isReseller && (isOwner || isAdmin);
 
   const value: OrganizationContextType = {
     currentOrganization,
@@ -310,6 +320,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     canManageMembers: permissions.canManageMembers,
     canManageDevices: permissions.canManageDevices,
     canManageIntegrations: permissions.canManageIntegrations,
+    isReseller,
+    canCreateChildOrgs,
   };
 
   return (

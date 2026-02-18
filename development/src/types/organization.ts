@@ -21,17 +21,31 @@ export interface OrganizationSettings {
   [key: string]: unknown;
 }
 
+export type SubscriptionTier = 'free' | 'starter' | 'professional' | 'reseller' | 'enterprise';
+
+export const RESELLER_TIERS: SubscriptionTier[] = ['reseller', 'enterprise'];
+
 export interface Organization {
   id: string;
   name: string;
   slug: string;
   description?: string;
-  subscription_tier?: string;
+  subscription_tier?: SubscriptionTier;
   is_active: boolean;
   settings?: OrganizationSettings;
+  parent_organization_id?: string | null;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   owner_id?: string;
+}
+
+/**
+ * Check if an organization has reseller privileges (can create/manage child orgs)
+ */
+export function isResellerOrg(org: Organization | null | undefined): boolean {
+  if (!org?.subscription_tier) return false;
+  return RESELLER_TIERS.includes(org.subscription_tier as SubscriptionTier);
 }
 
 export interface OrganizationMember {

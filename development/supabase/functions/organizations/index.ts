@@ -106,6 +106,10 @@ export default createEdgeFunction(async ({ req }) => {
       // Super admins can see all organizations
       // Regular users see all organizations they belong to (via organization_members)
       
+      // Check for parent_organization_id filter (for listing child orgs)
+      const url = new URL(req.url)
+      const parentOrgFilter = url.searchParams.get('parent_organization_id')
+      
       let query = supabaseAdmin
         .from('organizations')
         .select(`
@@ -116,10 +120,30 @@ export default createEdgeFunction(async ({ req }) => {
           subscription_tier,
           is_active,
           settings,
+          parent_organization_id,
+          created_by,
           created_at,
           updated_at
         `)
         .order('name')
+
+      // If filtering by parent org, validate the requester has access
+      if (parentOrgFilter) {
+        if (!userContext.isSuperAdmin) {
+          // Must be owner/admin of the parent org
+          const { data: membership } = await supabaseAdmin
+            .from('organization_members')
+            .select('role')
+            .eq('organization_id', parentOrgFilter)
+            .eq('user_id', userContext.userId)
+            .maybeSingle()
+
+          if (!membership || !['owner', 'admin'].includes(membership.role)) {
+            throw new DatabaseError('You must be an owner or admin of the parent organization to view child orgs', 403)
+          }
+        }
+        query = query.eq('parent_organization_id', parentOrgFilter)
+      }
       
       // If not super admin, get all orgs the user is a member of
       if (!userContext.isSuperAdmin) {
@@ -188,6 +212,8 @@ export default createEdgeFunction(async ({ req }) => {
             subscriptionTier: org.subscription_tier,
             isActive: org.is_active,
             settings: org.settings || {},
+            parentOrganizationId: org.parent_organization_id || null,
+            createdBy: org.created_by || null,
             userCount: userCount || 0,
             deviceCount: deviceCount || 0,
             alertCount: alertCount || 0,
@@ -220,8 +246,8 @@ export default createEdgeFunction(async ({ req }) => {
         throw new Error('Invalid JSON in request body')
       }
       
-      const { name, slug, description, subscriptionTier } = body
-      console.log('Request body:', { name, slug, description, subscriptionTier })
+      const { name, slug, description, subscriptionTier, parentOrganizationId } = body
+      console.log('Request body:', { name, slug, description, subscriptionTier, parentOrganizationId })
 
       // Validate required fields
       if (!name || !slug) {
@@ -233,6 +259,67 @@ export default createEdgeFunction(async ({ req }) => {
       if (!/^[a-z0-9-]+$/.test(slug)) {
         console.error('Invalid slug format:', slug)
         throw new Error('Slug can only contain lowercase letters, numbers, and hyphens')
+      }
+
+      // If creating a child org, validate the parent is a reseller-tier org
+      if (parentOrganizationId) {
+        const { data: parentOrg, error: parentError } = await supabaseAdmin
+          .from('organizations')
+          .select('id, subscription_tier, name')
+          .eq('id', parentOrganizationId)
+          .single()
+
+        if (parentError || !parentOrg) {
+          throw new DatabaseError('Parent organization not found', 404)
+        }
+
+        const resellerTiers = ['reseller', 'enterprise']
+        if (!resellerTiers.includes(parentOrg.subscription_tier || '')) {
+          throw new DatabaseError('Parent organization does not have reseller privileges', 403)
+        }
+
+        // Non-super-admins must be owner/admin of the parent org to create children
+        if (!userContext.isSuperAdmin) {
+          const { data: membership } = await supabaseAdmin
+            .from('organization_members')
+            .select('role')
+            .eq('organization_id', parentOrganizationId)
+            .eq('user_id', userContext.userId)
+            .maybeSingle()
+
+          if (!membership || !['owner', 'admin'].includes(membership.role)) {
+            throw new DatabaseError('You must be an owner or admin of the parent organization', 403)
+          }
+        }
+
+        // Check child org limit from reseller agreement
+        const { data: agreement } = await supabaseAdmin
+          .from('reseller_agreements')
+          .select('max_child_organizations, status')
+          .eq('organization_id', parentOrganizationId)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        if (agreement) {
+          const { count: childCount } = await supabaseAdmin
+            .from('organizations')
+            .select('id', { count: 'exact', head: true })
+            .eq('parent_organization_id', parentOrganizationId)
+
+          if (agreement.max_child_organizations && (childCount || 0) >= agreement.max_child_organizations) {
+            throw new DatabaseError(
+              `Child organization limit reached (${agreement.max_child_organizations}). Contact NetNeural to increase your limit.`,
+              403
+            )
+          }
+        }
+
+        console.log(`Creating child org under parent: ${parentOrg.name} (${parentOrganizationId})`)
+      }
+
+      // Only super_admins can set reseller/enterprise tiers
+      if (subscriptionTier && ['reseller', 'enterprise'].includes(subscriptionTier) && !userContext.isSuperAdmin) {
+        throw new DatabaseError('Only platform administrators can create reseller or enterprise organizations', 403)
       }
 
       // Check if slug already exists
@@ -255,16 +342,22 @@ export default createEdgeFunction(async ({ req }) => {
 
       // Create organization - use admin client to bypass RLS
       console.log('Creating organization with admin client...')
+      const insertData: Record<string, unknown> = {
+        name: name.trim(),
+        slug: slug.trim().toLowerCase(),
+        description: description?.trim() || null,
+        subscription_tier: subscriptionTier || 'starter',
+        is_active: true,
+        settings: {},
+        created_by: userContext.userId,
+      }
+      if (parentOrganizationId) {
+        insertData.parent_organization_id = parentOrganizationId
+      }
+
       const { data: newOrg, error: createError } = await supabaseAdmin
         .from('organizations')
-        .insert({
-          name: name.trim(),
-          slug: slug.trim().toLowerCase(),
-          description: description?.trim() || null,
-          subscription_tier: subscriptionTier || 'starter',
-          is_active: true,
-          settings: {}
-        })
+        .insert(insertData)
         .select()
         .single()
 
@@ -314,6 +407,10 @@ export default createEdgeFunction(async ({ req }) => {
           isActive: newOrg.is_active,
           // @ts-expect-error - Properties exist
           settings: newOrg.settings || {},
+          // @ts-expect-error - Properties exist
+          parentOrganizationId: newOrg.parent_organization_id || null,
+          // @ts-expect-error - Properties exist
+          createdBy: newOrg.created_by || null,
           // @ts-expect-error - Properties exist
           createdAt: newOrg.created_at,
           // @ts-expect-error - Properties exist

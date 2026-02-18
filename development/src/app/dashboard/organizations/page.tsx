@@ -9,21 +9,29 @@ import {
   Plug, 
   Settings,
   Building2,
-  Shield
+  Shield,
+  Crown,
+  Plus
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useUser } from '@/contexts/UserContext';
 import { OverviewTab } from './components/OverviewTab';
 import { MembersTab } from './components/MembersTab';
 import { LocationsTab } from './components/LocationsTab';
 import { OrganizationIntegrationsTab } from './components/OrganizationIntegrationsTab';
 import { OrganizationSettingsTab } from './components/OrganizationSettingsTab';
 import { AccessRequestsTab } from './components/AccessRequestsTab';
+import { ChildOrganizationsTab } from './components/ChildOrganizationsTab';
+import { CreateOrganizationDialog } from './components/CreateOrganizationDialog';
 
 export default function OrganizationsPage() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showCreateOrgDialog, setShowCreateOrgDialog] = useState(false);
 
   // Set active tab from URL parameter
   useEffect(() => {
@@ -35,8 +43,13 @@ export default function OrganizationsPage() {
   const { 
     currentOrganization,
     isOwner,
-    isAdmin 
+    isAdmin,
+    isReseller,
+    canCreateChildOrgs,
+    refreshOrganizations,
   } = useOrganization();
+  const { user } = useUser();
+  const isSuperAdmin = user?.isSuperAdmin || false;
 
   if (!currentOrganization) {
     return (
@@ -63,6 +76,22 @@ export default function OrganizationsPage() {
       <PageHeader
         title="Organization Management"
         description={`Configure ${currentOrganization.name} - members, devices, integrations, and settings. Switch organizations using the sidebar.`}
+        action={
+          (isSuperAdmin || canCreateChildOrgs) ? (
+            <div className="flex items-center gap-2">
+              {isReseller && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Crown className="w-3 h-3" />
+                  Reseller
+                </Badge>
+              )}
+              <Button size="sm" onClick={() => setShowCreateOrgDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                {canCreateChildOrgs ? 'Create Customer Org' : 'Create Organization'}
+              </Button>
+            </div>
+          ) : undefined
+        }
       />
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -91,6 +120,13 @@ export default function OrganizationsPage() {
             <TabsTrigger value="access" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               <span>Access Requests</span>
+            </TabsTrigger>
+          )}
+          
+          {isReseller && (isOwner || isAdmin) && (
+            <TabsTrigger value="customers" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              <span>Customer Orgs</span>
             </TabsTrigger>
           )}
           
@@ -124,12 +160,30 @@ export default function OrganizationsPage() {
           </TabsContent>
         )}
 
+        {isReseller && (isOwner || isAdmin) && (
+          <TabsContent value="customers">
+            <ChildOrganizationsTab organizationId={currentOrganization.id} />
+          </TabsContent>
+        )}
+
         {isOwner && (
           <TabsContent value="settings">
             <OrganizationSettingsTab organizationId={currentOrganization.id} />
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Create Organization Dialog */}
+      <CreateOrganizationDialog
+        open={showCreateOrgDialog}
+        onOpenChange={setShowCreateOrgDialog}
+        parentOrganizationId={canCreateChildOrgs ? currentOrganization.id : undefined}
+        parentOrganizationName={canCreateChildOrgs ? currentOrganization.name : undefined}
+        isSuperAdmin={isSuperAdmin}
+        onCreated={async () => {
+          await refreshOrganizations();
+        }}
+      />
     </div>
   );
 }

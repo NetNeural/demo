@@ -9,8 +9,11 @@ export function canViewAllOrganizations(user: UserProfile | null): boolean {
   return user?.isSuperAdmin || false
 }
 
-export function canCreateOrganization(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+export function canCreateOrganization(user: UserProfile | null, isResellerOrg?: boolean): boolean {
+  if (user?.isSuperAdmin) return true
+  // Reseller org owners can create child organizations
+  if (isResellerOrg && (user?.role === 'org_owner' || user?.role === 'org_admin')) return true
+  return false
 }
 
 export function canManageOrganization(user: UserProfile | null, orgId: string): boolean {
@@ -20,6 +23,19 @@ export function canManageOrganization(user: UserProfile | null, orgId: string): 
 
 export function canDeleteOrganization(user: UserProfile | null): boolean {
   return user?.isSuperAdmin || false
+}
+
+// Reseller Management
+export function canManageChildOrganizations(user: UserProfile | null, isResellerOrg?: boolean): boolean {
+  if (user?.isSuperAdmin) return true
+  if (isResellerOrg && (user?.role === 'org_owner' || user?.role === 'org_admin')) return true
+  return false
+}
+
+export function canViewChildOrganizations(user: UserProfile | null, isResellerOrg?: boolean): boolean {
+  if (user?.isSuperAdmin) return true
+  if (isResellerOrg && user?.role !== 'viewer') return true
+  return false
 }
 
 // User Management
