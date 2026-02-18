@@ -65,29 +65,21 @@ export function TelemetryLineChart({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('device_telemetry_history')
-        .select(`
-          device_timestamp,
-          telemetry,
-          integration:integration_id (
-            integration_type
-          )
-        `)
-        .gte('device_timestamp', startTime)
-        .order('device_timestamp', { ascending: true })
+        .select('device_timestamp, received_at, telemetry')
+        .gte('received_at', startTime)
+        .order('received_at', { ascending: true })
 
       if (deviceId) {
         query = query.eq('device_id', deviceId)
       }
 
       if (organizationId) {
-        query = query.in('device_id', 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from('devices')
-            .select('id')
-            .eq('organization_id', organizationId)
-        )
+        // device_telemetry_history has organization_id directly — no subquery needed
+        query = query.eq('organization_id', organizationId)
       }
+
+      // Limit to prevent loading too many rows
+      query = query.limit(500)
 
       const { data: telemetryData, error: fetchError } = await query
 
@@ -104,14 +96,14 @@ export function TelemetryLineChart({
 
       // Extract metric values from telemetry JSON
       const processedData: TelemetryDataPoint[] = telemetryData
-        .map((item: { device_timestamp: string; telemetry: Record<string, unknown>; integration?: { integration_type: string } }) => {
+        .map((item: { device_timestamp: string | null; received_at: string; telemetry: Record<string, unknown> }) => {
           const value = item.telemetry?.[metric]
           if (value === undefined || value === null) return null
 
+          const ts = item.device_timestamp || item.received_at
           return {
-            timestamp: new Date(item.device_timestamp).toLocaleString(),
+            timestamp: new Date(ts).toLocaleString(),
             value: parseFloat(String(value)),
-            integration_type: item.integration?.integration_type || 'unknown',
           }
         })
         .filter(Boolean) as TelemetryDataPoint[]
