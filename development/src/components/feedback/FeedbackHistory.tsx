@@ -15,10 +15,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2, CheckCircle2, GitPullRequestClosed, ArrowDownFromLine } from 'lucide-react'
+import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2, CheckCircle2, ArrowDownFromLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { toast } from 'sonner'
+import { FeedbackDetailDialog } from './FeedbackDetailDialog'
 
 interface FeedbackItem {
   id: string
@@ -67,7 +68,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedItem, setSelectedItem] = useState<FeedbackItem | null>(null)
 
   const fetchFeedback = useCallback(async () => {
     if (!currentOrganization) return
@@ -215,7 +216,11 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
               return (
               <div
                 key={item.id}
-                className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors ${isResolved ? 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20' : ''}`}
+                className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer ${isResolved ? 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20' : ''}`}
+                onClick={() => setSelectedItem(item)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedItem(item) }}
               >
                 {/* Type icon */}
                 <div className="mt-0.5">
@@ -245,23 +250,12 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                     {item.description}
                   </p>
 
-                  {/* Resolution note from GitHub */}
+                  {/* Resolved indicator */}
                   {isResolved && item.github_resolution && (
-                    <div className="mt-2 p-2 rounded bg-green-100/60 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
-                      <button
-                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                        className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 w-full text-left"
-                      >
-                        <GitPullRequestClosed className="w-3 h-3" />
-                        Resolution from GitHub
-                        <span className="ml-auto text-[10px]">{expandedId === item.id ? '▲' : '▼'}</span>
-                      </button>
-                      {expandedId === item.id && (
-                        <p className="text-xs text-green-800 dark:text-green-300 mt-1 whitespace-pre-wrap">
-                          {item.github_resolution}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Resolved — click to see details
+                    </p>
                   )}
 
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -278,6 +272,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="w-3 h-3" />
                         #{item.github_issue_number}
@@ -287,6 +282,8 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                 </div>
 
                 {/* Delete button */}
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+                <div onClick={(e) => e.stopPropagation()}>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -323,12 +320,19 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </div>
               </div>
               )
             })}
           </div>
         )}
       </CardContent>
+
+      <FeedbackDetailDialog
+        item={selectedItem}
+        open={!!selectedItem}
+        onOpenChange={(open) => { if (!open) setSelectedItem(null) }}
+      />
     </Card>
   )
 }

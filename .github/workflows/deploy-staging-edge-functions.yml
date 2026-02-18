@@ -24,6 +24,10 @@ on:
           - send-alert-email
           - ai-insights
           - transfer-device
+          - feedback-submit
+          - feedback-sync
+          - feedback-comments
+          - org-branding
 
 jobs:
   deploy:
@@ -59,6 +63,10 @@ jobs:
             npx supabase functions deploy send-alert-email --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy ai-insights --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy transfer-device --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-submit --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-comments --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy org-branding --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
