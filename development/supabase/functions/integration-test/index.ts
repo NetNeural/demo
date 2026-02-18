@@ -1,5 +1,4 @@
 import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { logActivityStart, logActivityComplete, getIpAddress } from '../_shared/activity-logger.ts'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
@@ -7,19 +6,13 @@ import { AzureIotClient } from '../_shared/azure-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
-export default createEdgeFunction(async ({ req }) => {
+export default createEdgeFunction(async ({ req, supabase }) => {
   const url = new URL(req.url)
   const integrationId = url.pathname.split('/').pop()
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-  )
-
-  const authHeader = req.headers.get('Authorization')
-  if (authHeader) {
-    supabaseClient.auth.setAuth(authHeader.replace('Bearer ', ''))
-  }
+  // Use the authenticated supabase client provided by createEdgeFunction
+  // (replaces deprecated supabaseClient.auth.setAuth() from v1)
+  const supabaseClient = supabase!
 
   if (req.method === 'POST') {
     const startTime = Date.now()
@@ -108,7 +101,8 @@ export default createEdgeFunction(async ({ req }) => {
 function createIntegrationClient(
   // deno-lint-ignore no-explicit-any
   integration: any,
-  supabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   organizationId: string,
   integrationId: string
 ): BaseIntegrationClient | null {
