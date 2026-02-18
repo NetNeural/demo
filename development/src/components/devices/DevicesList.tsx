@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
@@ -346,10 +346,16 @@ export function DevicesList() {
     return Array.from(types).sort()
   }, [devices])
 
-  // Device type images from organization settings
+  // Device type images from organization settings (case-insensitive lookup map)
   const deviceTypeImages = useMemo<Record<string, string>>(() => {
     const settings = currentOrganization?.settings as Record<string, unknown> | undefined
-    return (settings?.device_type_images as Record<string, string>) || {}
+    const raw = (settings?.device_type_images as Record<string, string>) || {}
+    // Build a lowercase-keyed map so lookups are case-insensitive
+    const map: Record<string, string> = {}
+    for (const [key, url] of Object.entries(raw)) {
+      map[key.toLowerCase()] = url
+    }
+    return map
   }, [currentOrganization])
 
   // Filter and sort devices
@@ -784,7 +790,7 @@ export function DevicesList() {
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 {(() => {
                   const typeName = device.device_type || device.type || ''
-                  const imgUrl = deviceTypeImages[typeName]
+                  const imgUrl = deviceTypeImages[typeName.toLowerCase()]
                   if (imgUrl) {
                     return (
                       <img
@@ -794,7 +800,7 @@ export function DevicesList() {
                       />
                     )
                   }
-                  return null
+                  return <Monitor className="w-4 h-4 text-muted-foreground/60" />
                 })()}
                 {device.type}
               </p>

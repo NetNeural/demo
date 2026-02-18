@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/edge-functions/client';
 import { toast } from 'sonner';
 
 interface DeviceTypeImageManagerProps {
@@ -102,8 +103,36 @@ export function DeviceTypeImageManager({
 }: DeviceTypeImageManagerProps) {
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [newTypeName, setNewTypeName] = useState('');
+  const [detectedTypes, setDetectedTypes] = useState<string[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const newFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-detect device types from the organization's actual devices
+  const fetchDeviceTypes = useCallback(async () => {
+    if (!organizationId) return;
+    try {
+      setLoadingTypes(true);
+      const response = await edgeFunctions.devices.list(organizationId);
+      if (response.success && response.data?.devices) {
+        const devices = response.data.devices as Array<{ device_type?: string; type?: string }>;
+        const types = new Set<string>();
+        for (const d of devices) {
+          const t = d.device_type || d.type;
+          if (t && t !== 'unknown') types.add(t);
+        }
+        setDetectedTypes(Array.from(types).sort());
+      }
+    } catch (err) {
+      console.error('Failed to fetch device types:', err);
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    fetchDeviceTypes();
+  }, [fetchDeviceTypes]);
 
   const handleUpload = async (deviceType: string, file: File) => {
     if (!VALID_TYPES.includes(file.type)) {
@@ -207,6 +236,11 @@ export function DeviceTypeImageManager({
 
   const existingTypes = Object.keys(deviceTypeImages);
 
+  // Device types that don't yet have an image assigned
+  const availableTypes = detectedTypes.filter(
+    (t) => !existingTypes.some((e) => e.toLowerCase() === t.toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       {/* Existing device type images */}
@@ -275,43 +309,48 @@ export function DeviceTypeImageManager({
         </div>
       )}
 
-      {existingTypes.length === 0 && (
+      {existingTypes.length === 0 && !loadingTypes && availableTypes.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No device type images configured yet. Add images to visually identify
-          devices on your dashboard.
+          No device types found. Add devices to your organization first, then come back to assign images.
         </p>
       )}
 
-      {/* Add new device type image */}
-      <div className="flex items-end gap-2">
-        <div className="flex-1 space-y-1">
-          <Label htmlFor="new-device-type" className="text-xs">
-            Device Type Name
-          </Label>
-          <Input
-            id="new-device-type"
-            value={newTypeName}
-            onChange={(e) => setNewTypeName(e.target.value)}
-            placeholder="e.g. Wireless Access Point"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddNewType();
-              }
-            }}
-          />
+      {existingTypes.length === 0 && !loadingTypes && availableTypes.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          No device type images configured yet. Select a device type below to add an image.
+        </p>
+      )}
+
+      {/* Add image for a device type — dropdown of org's actual types */}
+      {availableTypes.length > 0 && (
+        <div className="flex items-end gap-2">
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs">Select Device Type</Label>
+            <Select value={newTypeName} onValueChange={setNewTypeName}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingTypes ? 'Loading types...' : 'Choose a device type'} />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddNewType}
+            disabled={!!uploadingType || !newTypeName}
+          >
+            <Upload className="w-4 h-4 mr-1" />
+            Add Image
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleAddNewType}
-          disabled={!!uploadingType}
-        >
-          <Upload className="w-4 h-4 mr-1" />
-          Add Image
-        </Button>
-      </div>
+      )}
 
       {/* Hidden file input for new type uploads */}
       <input
@@ -323,9 +362,8 @@ export function DeviceTypeImageManager({
       />
 
       <p className="text-xs text-muted-foreground">
-        Upload images for each device type. Images are compressed to 200×200px WebP (~50KB).
-        Supported formats: PNG, JPG, WebP, SVG. These images appear on device cards across
-        the dashboard.
+        Select a device type from your organization&apos;s devices and upload an image.
+        Images are compressed to 200×200px WebP (~50KB). These appear on device cards across the dashboard.
       </p>
     </div>
   );
