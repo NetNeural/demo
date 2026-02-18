@@ -4,9 +4,21 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useToast } from '@/hooks/use-toast'
 
 interface FeedbackItem {
   id: string
@@ -52,6 +64,8 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const supabase = createClient()
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const fetchFeedback = useCallback(async () => {
     if (!currentOrganization) return
@@ -77,6 +91,41 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
       setLoading(false)
     }
   }, [currentOrganization, supabase])
+
+  const handleDelete = async (id: string, title: string) => {
+    setDeletingId(id)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('feedback')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error deleting feedback:', error)
+        toast({
+          title: 'Delete Failed',
+          description: error.message || 'Could not delete feedback',
+          variant: 'destructive',
+        })
+      } else {
+        setItems((prev) => prev.filter((item) => item.id !== id))
+        toast({
+          title: 'Feedback Deleted',
+          description: `"${title}" has been removed.`,
+        })
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete feedback',
+        variant: 'destructive',
+      })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   useEffect(() => {
     fetchFeedback()
@@ -164,6 +213,44 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Delete button */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-muted-foreground hover:text-red-600"
+                      disabled={deletingId === item.id}
+                    >
+                      {deletingId === item.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Feedback?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete &quot;{item.title}&quot;.
+                        {item.github_issue_url && (
+                          <> The linked GitHub issue (#{item.github_issue_number}) will not be deleted.</>
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(item.id, item.title)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ))}
           </div>
