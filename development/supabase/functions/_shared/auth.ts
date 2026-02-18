@@ -207,15 +207,31 @@ export async function resolveOrganizationId(
   }
 
   // Check if user is a member of the requested org
+  // Also verify temporary memberships haven't expired
   const serviceClient = createServiceClient()
   const { data: membership } = await serviceClient
     .from('organization_members')
-    .select('organization_id')
+    .select('organization_id, is_temporary, expires_at')
     .eq('user_id', userContext.userId)
     .eq('organization_id', requestedOrgId)
     .single()
 
   if (membership) {
+    // Check if temporary membership has expired
+    if (membership.is_temporary && membership.expires_at) {
+      const expiresAt = new Date(membership.expires_at)
+      if (expiresAt < new Date()) {
+        console.warn(`User ${userContext.email} temporary access to org ${requestedOrgId} has expired.`)
+        // Clean up expired membership
+        await serviceClient
+          .from('organization_members')
+          .delete()
+          .eq('user_id', userContext.userId)
+          .eq('organization_id', requestedOrgId)
+          .eq('is_temporary', true)
+        return userContext.organizationId
+      }
+    }
     return requestedOrgId
   }
 

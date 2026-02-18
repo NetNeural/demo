@@ -8,7 +8,8 @@ import {
   MapPin, 
   Plug, 
   Settings,
-  Building2
+  Building2,
+  Shield
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
@@ -18,6 +19,7 @@ import { MembersTab } from './components/MembersTab';
 import { LocationsTab } from './components/LocationsTab';
 import { OrganizationIntegrationsTab } from './components/OrganizationIntegrationsTab';
 import { OrganizationSettingsTab } from './components/OrganizationSettingsTab';
+import { AccessRequestsTab } from './components/AccessRequestsTab';
 
 export default function OrganizationsPage() {
   const searchParams = useSearchParams();
@@ -32,7 +34,8 @@ export default function OrganizationsPage() {
   }, [searchParams]);
   const { 
     currentOrganization,
-    isOwner 
+    isOwner,
+    isAdmin 
   } = useOrganization();
 
   if (!currentOrganization) {
@@ -84,6 +87,13 @@ export default function OrganizationsPage() {
             <span>Integrations</span>
           </TabsTrigger>
           
+          {(isOwner || isAdmin) && (
+            <TabsTrigger value="access" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              <span>Access Requests</span>
+            </TabsTrigger>
+          )}
+          
           {isOwner && (
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -107,6 +117,12 @@ export default function OrganizationsPage() {
         <TabsContent value="integrations">
           <OrganizationIntegrationsTab organizationId={currentOrganization.id} />
         </TabsContent>
+
+        {(isOwner || isAdmin) && (
+          <TabsContent value="access">
+            <AccessRequestsTab organizationId={currentOrganization.id} />
+          </TabsContent>
+        )}
 
         {isOwner && (
           <TabsContent value="settings">

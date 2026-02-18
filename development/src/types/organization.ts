@@ -44,6 +44,10 @@ export interface OrganizationMember {
   joined_at: string;
   created_at: string;
   updated_at: string;
+  /** When temporary membership expires (null = permanent) */
+  expires_at?: string;
+  /** Whether this is a temporary cross-org access grant */
+  is_temporary?: boolean;
 }
 
 export interface UserOrganization extends Organization {
