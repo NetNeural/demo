@@ -51,16 +51,20 @@ export function AddMemberDialog({
   const { toast } = useToast();
 
   const handleAddMember = async () => {
+    // Trim whitespace from inputs (common copy-paste issue)
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = fullName.trim();
+    
     console.log('🔴 ADD MEMBER BUTTON CLICKED', {
-      email,
-      fullName,
+      email: trimmedEmail,
+      fullName: trimmedName,
       role,
       needsUserCreation,
       isProcessing,
       organizationId,
     });
     
-    if (!email) {
+    if (!trimmedEmail) {
       console.log('❌ Validation failed: email required');
       toast({
         title: 'Email Required',
@@ -72,8 +76,8 @@ export function AddMemberDialog({
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log('❌ Validation failed: invalid email format');
+    if (!emailRegex.test(trimmedEmail)) {
+      console.log('❌ Validation failed: invalid email format, raw value:', JSON.stringify(email), 'trimmed:', JSON.stringify(trimmedEmail));
       toast({
         title: 'Invalid Email',
         description: 'Please enter a valid email address',
@@ -82,8 +86,12 @@ export function AddMemberDialog({
       return;
     }
 
+    // Update state with trimmed values
+    setEmail(trimmedEmail);
+    setFullName(trimmedName);
+
     // If we need to create user, validate full name
-    if (needsUserCreation && !fullName) {
+    if (needsUserCreation && !trimmedName) {
       console.log('❌ Validation failed: full name required for user creation');
       toast({
         title: 'Name Required',
@@ -99,10 +107,10 @@ export function AddMemberDialog({
       setIsProcessing(true);
       
       console.log('🔵 AddMemberDialog: Starting add member process', {
-        email,
+        email: trimmedEmail,
         role,
         needsUserCreation,
-        hasFullName: !!fullName,
+        hasFullName: !!trimmedName,
         organizationId,
       });
 
@@ -117,15 +125,15 @@ export function AddMemberDialog({
       }
 
       // If we already know user needs to be created and we have the full name, create them first
-      if (needsUserCreation && fullName) {
-        console.log('🟢 Creating new user account:', { email, fullName });
+      if (needsUserCreation && trimmedName) {
+        console.log('🟢 Creating new user account:', { email: trimmedEmail, fullName: trimmedName });
         
         // Generate a temporary password (user will be required to change it)
         const tempPassword = `Temp${Math.random().toString(36).substring(2, 10)}!`;
 
         const createResponse = await edgeFunctions.users.create({
-          email,
-          fullName,
+          email: trimmedEmail,
+          fullName: trimmedName,
           password: tempPassword,
           role: 'user',
           organizationRole: role, // Pass the selected organization role (member/admin/owner)
@@ -143,7 +151,7 @@ export function AddMemberDialog({
           if (userExists) {
             // User already exists, just try to add them to the organization
             const addResponse = await edgeFunctions.members.add(organizationId, {
-              email,
+              email: trimmedEmail,
               role,
             });
 
@@ -158,7 +166,7 @@ export function AddMemberDialog({
               if (alreadyMember) {
                 toast({
                   title: 'Already a Member',
-                  description: `${email} is already a member of this organization.`,
+                  description: `${trimmedEmail} is already a member of this organization.`,
                 });
 
                 // Reset form and close dialog
@@ -176,7 +184,7 @@ export function AddMemberDialog({
 
             toast({
               title: 'Member Added',
-              description: `${email} has been added to the organization.`,
+              description: `${trimmedEmail} has been added to the organization.`,
             });
 
             // Reset form and close dialog
@@ -208,7 +216,7 @@ export function AddMemberDialog({
       // Try to add existing user to organization
       console.log('🟢 Attempting to add existing user to organization');
       const addResponse = await edgeFunctions.members.add(organizationId, {
-        email,
+        email: trimmedEmail,
         role,
       });
 
@@ -217,7 +225,7 @@ export function AddMemberDialog({
         console.log('✅ Existing user added to organization successfully');
         toast({
           title: 'Member Added',
-          description: `${email} has been added to the organization`,
+          description: `${trimmedEmail} has been added to the organization`,
         });
 
         // Reset form and close dialog
@@ -393,7 +401,8 @@ export function AddMemberDialog({
                 type="email"
                 placeholder="colleague@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.trimStart())}
+                onBlur={() => setEmail(email.trim())}
                 disabled={isProcessing || needsUserCreation}
                 className="pl-10"
               />
