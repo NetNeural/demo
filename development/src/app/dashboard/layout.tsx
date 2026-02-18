@@ -8,7 +8,7 @@ import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
-import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus } from 'lucide-react'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
@@ -34,6 +34,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/organizations', label: 'Organization', icon: Building2 },
+    { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
   ]
 
