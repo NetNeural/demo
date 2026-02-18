@@ -1,9 +1,11 @@
 name: Deploy NetNeural Platform to GitHub Pages
 
+# DISABLED auto-push: Only staging deploys on push now (save Actions minutes)
+# Re-enable push trigger when ready for production deploys
 on:
-  push:
-    branches: [ main ]
-    paths: [ 'development/**' ]
+  # push:
+  #   branches: [ main ]
+  #   paths: [ 'development/**' ]
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

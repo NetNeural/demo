@@ -1,12 +1,14 @@
 name: Run Tests
 
+# DISABLED auto-push: Only staging deploys on push now (save Actions minutes)
+# Tests still run on PRs and can be triggered manually
 on:
   pull_request:
     branches: [ main, staging ]
     paths: [ 'development/**' ]
-  push:
-    branches: [ main, staging ]
-    paths: [ 'development/**' ]
+  # push:
+  #   branches: [ main, staging ]
+  #   paths: [ 'development/**' ]
   workflow_dispatch:
 
 # Permissions for the GITHUB_TOKEN
