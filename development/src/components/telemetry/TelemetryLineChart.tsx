@@ -104,7 +104,7 @@ export function TelemetryLineChart({
 
       // Extract metric values from telemetry JSON
       const processedData: TelemetryDataPoint[] = telemetryData
-        .map((item: { device_timestamp: string; telemetry: Record<string, unknown>; integration?: { type: string } }) => {
+        .map((item: { device_timestamp: string; telemetry: Record<string, unknown>; integration?: { integration_type: string } }) => {
           const value = item.telemetry?.[metric]
           if (value === undefined || value === null) return null
 
