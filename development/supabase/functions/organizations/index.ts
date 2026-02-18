@@ -7,32 +7,55 @@ import {
   corsHeaders
 } from '../_shared/auth.ts'
 
-export default createEdgeFunction(async ({ req }) => {
+// This function handles its own auth internally
+// (service role detection, JWT fallback, manual token parsing)
+export default createEdgeFunction(
+  async ({ req }) => {
   try {
-  // Try to get authenticated user context, but don't fail if it doesn't work
+  // This function handles its own auth (service role detection, JWT fallback, etc.)
   let userContext;
   let supabase;  // For queries that respect RLS
   let supabaseAdmin; // For operations that need to bypass RLS
   
   // Check if this is a service role request
   const authHeader = req.headers.get('Authorization')
-  const token = authHeader?.replace('Bearer ', '') || ''
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const isServiceRole = serviceRoleKey && token === serviceRoleKey
+  const token = authHeader?.replace('Bearer ', '').trim() || ''
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim() || ''
+  
+  // Compare tokens, handling potential whitespace/encoding differences
+  const isServiceRole = serviceRoleKey.length > 0 && token === serviceRoleKey
+  
+  // Additional check: decode JWT and check for service_role claim
+  let isServiceRoleByPayload = false
+  if (!isServiceRole && token) {
+    try {
+      const parts = token.split('.')
+      if (parts.length >= 2) {
+        const payload = JSON.parse(globalThis.atob(parts[1]))
+        if (payload.role === 'service_role') {
+          isServiceRoleByPayload = true
+        }
+      }
+    } catch { /* not a valid JWT */ }
+  }
+  
+  const effectiveServiceRole = isServiceRole || isServiceRoleByPayload
   
   console.log('=== AUTH DEBUG ===')
   console.log('Has authHeader:', !!authHeader)
   console.log('Token length:', token.length)
   console.log('Has serviceRoleKey env var:', !!serviceRoleKey)
   console.log('ServiceRoleKey length:', serviceRoleKey?.length)
-  console.log('isServiceRole:', isServiceRole)
+  console.log('isServiceRole (exact match):', isServiceRole)
+  console.log('isServiceRoleByPayload:', isServiceRoleByPayload)
+  console.log('effectiveServiceRole:', effectiveServiceRole)
   console.log('Token starts with:', token.substring(0, 20))
   console.log('ServiceKey starts with:', serviceRoleKey?.substring(0, 20))
   
   // Always create admin client for operations that need to bypass RLS
   supabaseAdmin = createServiceClient()
   
-  if (isServiceRole) {
+  if (effectiveServiceRole) {
     // Service role bypasses all auth - treat as super admin
     console.log('✅ Using service role access')
     supabase = supabaseAdmin
@@ -63,6 +86,10 @@ export default createEdgeFunction(async ({ req }) => {
           if (parts.length >= 2) {
             const payload = JSON.parse(globalThis.atob(parts[1]))
             console.log('Using token payload:', { sub: payload.sub, role: payload.role })
+            
+            if (!payload.sub) {
+              throw new Error('JWT token has no sub claim — cannot identify user')
+            }
             
             // Get full user context using service role
             const { data: profile, error: profileError } = await supabaseAdmin
