@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { extractMetricValue } from '@/lib/telemetry-utils'
 import {
   LineChart,
   Line,
@@ -104,8 +105,8 @@ export function TelemetryLineChart({
         const seenDevices = new Set<string>()
 
         for (const item of telemetryData) {
-          const value = item.telemetry?.[metric]
-          if (value === undefined || value === null) continue
+          const value = extractMetricValue(item.telemetry as Record<string, unknown>, metric)
+          if (value === null) continue
 
           const ts = item.device_timestamp || item.received_at
           const timeKey = new Date(ts).toLocaleString()
@@ -124,8 +125,8 @@ export function TelemetryLineChart({
         // Single device mode — flat array
         const processed = telemetryData
           .map((item: { device_timestamp: string | null; received_at: string; telemetry: Record<string, unknown> }) => {
-            const value = item.telemetry?.[metric]
-            if (value === undefined || value === null) return null
+            const value = extractMetricValue(item.telemetry, metric)
+            if (value === null) return null
             const ts = item.device_timestamp || item.received_at
             return {
               timestamp: new Date(ts).toLocaleString(),

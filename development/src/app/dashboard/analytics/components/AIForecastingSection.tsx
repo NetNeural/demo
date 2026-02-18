@@ -20,6 +20,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import type { TimeRange } from '../types/analytics.types';
 import { getTimeRangeHours } from '../types/analytics.types';
+import { extractMetricValue } from '@/lib/telemetry-utils';
 
 interface AIForecastingSectionProps {
   organizationId: string;
@@ -152,9 +153,8 @@ export function AIForecastingSection({ organizationId, timeRange }: AIForecastin
       // Extract all values with timestamps
       const points: { x: number; y: number; deviceId: string }[] = [];
       for (const row of telemetryData) {
-        const val = row.telemetry?.[key];
-        if (val === undefined || val === null) continue;
-        const num = parseFloat(String(val));
+        const num = extractMetricValue(row.telemetry as Record<string, unknown>, key);
+        if (num === null) continue;
         if (isNaN(num)) continue;
         const t = new Date(row.received_at).getTime();
         points.push({ x: (t - startMs) / (1000 * 60 * 60), y: num, deviceId: row.device_id });
@@ -222,9 +222,8 @@ export function AIForecastingSection({ organizationId, timeRange }: AIForecastin
     // Group battery readings by device
     const byDevice = new Map<string, { x: number; y: number }[]>();
     for (const row of telemetryData) {
-      const val = row.telemetry?.battery;
-      if (val === undefined || val === null) continue;
-      const num = parseFloat(String(val));
+      const num = extractMetricValue(row.telemetry as Record<string, unknown>, 'battery');
+      if (num === null) continue;
       if (isNaN(num)) continue;
 
       const t = new Date(row.received_at).getTime();

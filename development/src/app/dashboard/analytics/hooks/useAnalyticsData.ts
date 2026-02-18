@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { createClient } from '@/lib/supabase/client';
+import { extractMetricValue } from '@/lib/telemetry-utils';
 import type {
   AnalyticsData,
   Device,
@@ -126,12 +127,12 @@ export function useAnalyticsData(timeRange: TimeRange) {
           const dataPointsCount = telemetry.length;
 
           const batteryValues = telemetry
-            .map(t => { const tel = t.telemetry as Record<string, unknown>; return typeof tel?.battery === 'number' ? tel.battery : null; })
+            .map(t => extractMetricValue(t.telemetry as Record<string, unknown>, 'battery'))
             .filter((b): b is number => b !== null);
           const avgBattery = batteryValues.length > 0 ? batteryValues.reduce((a, b) => a + b, 0) / batteryValues.length : undefined;
 
           const rssiValues = telemetry
-            .map(t => { const tel = t.telemetry as Record<string, unknown>; return typeof tel?.rssi === 'number' ? tel.rssi : null; })
+            .map(t => extractMetricValue(t.telemetry as Record<string, unknown>, 'rssi'))
             .filter((r): r is number => r !== null);
           const avgRssi = rssiValues.length > 0 ? rssiValues.reduce((a, b) => a + b, 0) / rssiValues.length : undefined;
 
