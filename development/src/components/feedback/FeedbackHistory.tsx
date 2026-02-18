@@ -18,7 +18,7 @@ import {
 import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2, CheckCircle2, GitPullRequestClosed, ArrowDownFromLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface FeedbackItem {
   id: string
@@ -68,7 +68,6 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const [syncing, setSyncing] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const { toast } = useToast()
 
   const fetchFeedback = useCallback(async () => {
     if (!currentOrganization) return
@@ -106,25 +105,14 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
 
       if (error) {
         console.error('Error deleting feedback:', error)
-        toast({
-          title: 'Delete Failed',
-          description: error.message || 'Could not delete feedback',
-          variant: 'destructive',
-        })
+        toast.error(error.message || 'Could not delete feedback')
       } else {
         setItems((prev) => prev.filter((item) => item.id !== id))
-        toast({
-          title: 'Feedback Deleted',
-          description: `"${title}" has been removed.`,
-        })
+        toast.success(`"${title}" has been removed.`)
       }
     } catch (err) {
       console.error('Delete error:', err)
-      toast({
-        title: 'Error',
-        description: 'Failed to delete feedback',
-        variant: 'destructive',
-      })
+      toast.error('Failed to delete feedback')
     } finally {
       setDeletingId(null)
     }
@@ -151,35 +139,21 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
       const result = await response.json()
 
       if (!response.ok) {
-        toast({
-          title: 'Sync Failed',
-          description: result.error?.message || 'Could not sync from GitHub',
-          variant: 'destructive',
-        })
+        toast.error(result.error?.message || 'Could not sync from GitHub')
         return
       }
 
       const { synced, total } = result.data || {}
       if (synced > 0) {
-        toast({
-          title: 'GitHub Status Synced',
-          description: `Updated ${synced} of ${total} feedback items from GitHub.`,
-        })
+        toast.success(`Updated ${synced} of ${total} feedback items from GitHub.`)
         // Refresh the list to show updated statuses
         await fetchFeedback()
       } else {
-        toast({
-          title: 'Already Up to Date',
-          description: 'All feedback items match their GitHub issue status.',
-        })
+        toast.info('All feedback items already match their GitHub issue status.')
       }
     } catch (err) {
       console.error('Sync error:', err)
-      toast({
-        title: 'Sync Error',
-        description: 'Failed to sync feedback status from GitHub',
-        variant: 'destructive',
-      })
+      toast.error('Failed to sync feedback status from GitHub')
     } finally {
       setSyncing(false)
     }

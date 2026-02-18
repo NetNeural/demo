@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Bug, Lightbulb, Send, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
@@ -20,7 +20,6 @@ interface FeedbackFormProps {
 }
 
 export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
-  const { toast } = useToast()
   const { user } = useUser()
   const { currentOrganization } = useOrganization()
   const supabase = createClient()
@@ -35,20 +34,12 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     e.preventDefault()
 
     if (!title.trim() || !description.trim()) {
-      toast({
-        title: 'Missing fields',
-        description: 'Please fill in both the title and description.',
-        variant: 'destructive',
-      })
+      toast.error('Please fill in both the title and description.')
       return
     }
 
     if (!currentOrganization) {
-      toast({
-        title: 'No organization selected',
-        description: 'Please select an organization first.',
-        variant: 'destructive',
-      })
+      toast.error('Please select an organization first.')
       return
     }
 
@@ -57,7 +48,7 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
-        toast({ title: 'Not authenticated', variant: 'destructive' })
+        toast.error('Not authenticated')
         return
       }
 
@@ -85,12 +76,11 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
         throw new Error(result.message || result.error || 'Submission failed')
       }
 
-      toast({
-        title: 'Feedback submitted!',
-        description: result.data?.feedback?.github_issue_url
-          ? `GitHub issue #${result.data.feedback.github_issue_number} created.`
-          : 'Your feedback has been recorded.',
-      })
+      toast.success(
+        result.data?.feedback?.github_issue_url
+          ? `Feedback submitted! GitHub issue #${result.data.feedback.github_issue_number} created.`
+          : 'Feedback submitted! Your feedback has been recorded.'
+      )
 
       // Reset form
       setTitle('')
@@ -99,11 +89,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
       onSubmitted?.()
     } catch (error) {
       console.error('Feedback submission error:', error)
-      toast({
-        title: 'Submission failed',
-        description: error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      })
+      toast.error(
+        error instanceof Error ? error.message : 'Submission failed. Please try again.'
+      )
     } finally {
       setSubmitting(false)
     }
