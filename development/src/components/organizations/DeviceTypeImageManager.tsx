@@ -324,11 +324,11 @@ export function DeviceTypeImageManager({
       {/* Add image for a device type — dropdown of org's actual types */}
       {availableTypes.length > 0 && (
         <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-1">
+          <div className="w-48 space-y-1">
             <Label className="text-xs">Select Device Type</Label>
             <Select value={newTypeName} onValueChange={setNewTypeName}>
-              <SelectTrigger>
-                <SelectValue placeholder={loadingTypes ? 'Loading types...' : 'Choose a device type'} />
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={loadingTypes ? 'Loading...' : 'Choose type'} />
               </SelectTrigger>
               <SelectContent>
                 {availableTypes.map((t) => (

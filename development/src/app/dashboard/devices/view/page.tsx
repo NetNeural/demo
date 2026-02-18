@@ -253,6 +253,24 @@ export default function DeviceViewPage() {
       <PageHeader
         title={device.name}
         description={`${device.device_type || device.type || 'Unknown'} • ID: ${device.id?.substring(0, 8) || 'N/A'}`}
+        icon={(() => {
+          const typeName = device.device_type || device.type || ''
+          const settings = currentOrganization?.settings as Record<string, unknown> | undefined
+          const rawImages = (settings?.device_type_images as Record<string, string>) || {}
+          const imgUrl = Object.entries(rawImages).find(
+            ([k]) => k.toLowerCase() === typeName.toLowerCase()
+          )?.[1]
+          if (imgUrl) {
+            return (
+              <img
+                src={imgUrl}
+                alt={typeName}
+                className="w-12 h-12 object-contain rounded-lg border bg-white p-1"
+              />
+            )
+          }
+          return undefined
+        })()}
         action={
           <div className="flex items-center gap-2">
             {currentOrganization && (
