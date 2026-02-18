@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2 } from 'lucide-react'
+import { ExternalLink, Bug, Lightbulb, RefreshCw, Loader2, Trash2, CheckCircle2, GitPullRequestClosed, ArrowDownFromLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useToast } from '@/hooks/use-toast'
@@ -29,6 +29,7 @@ interface FeedbackItem {
   status: string
   github_issue_number: number | null
   github_issue_url: string | null
+  github_resolution: string | null
   created_at: string
 }
 
@@ -64,7 +65,9 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const supabase = createClient()
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchFeedback = useCallback(async () => {
@@ -77,7 +80,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('feedback')
-        .select('id, type, title, description, severity, status, github_issue_number, github_issue_url, created_at')
+        .select('id, type, title, description, severity, status, github_issue_number, github_issue_url, github_resolution, created_at')
         .eq('organization_id', currentOrganization.id)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -127,6 +130,61 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
     }
   }
 
+  /** Sync GitHub issue statuses back to the feedback table */
+  const handleSyncFromGitHub = async () => {
+    if (!currentOrganization) return
+
+    setSyncing(true)
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const session = (await supabase.auth.getSession()).data.session
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/feedback-sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ organizationId: currentOrganization.id }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        toast({
+          title: 'Sync Failed',
+          description: result.error?.message || 'Could not sync from GitHub',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const { synced, total } = result.data || {}
+      if (synced > 0) {
+        toast({
+          title: 'GitHub Status Synced',
+          description: `Updated ${synced} of ${total} feedback items from GitHub.`,
+        })
+        // Refresh the list to show updated statuses
+        await fetchFeedback()
+      } else {
+        toast({
+          title: 'Already Up to Date',
+          description: 'All feedback items match their GitHub issue status.',
+        })
+      }
+    } catch (err) {
+      console.error('Sync error:', err)
+      toast({
+        title: 'Sync Error',
+        description: 'Failed to sync feedback status from GitHub',
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   useEffect(() => {
     fetchFeedback()
   }, [fetchFeedback, refreshKey])
@@ -150,9 +208,25 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Feedback History</CardTitle>
-        <Button variant="ghost" size="sm" onClick={fetchFeedback}>
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncFromGitHub}
+            disabled={syncing || items.length === 0}
+            title="Sync status from GitHub issues"
+          >
+            {syncing ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            ) : (
+              <ArrowDownFromLine className="w-4 h-4 mr-1" />
+            )}
+            {syncing ? 'Syncing...' : 'Sync from GitHub'}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={fetchFeedback}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
@@ -162,14 +236,18 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {items.map((item) => (
+            {items.map((item) => {
+              const isResolved = item.status === 'resolved' || item.status === 'closed'
+              return (
               <div
                 key={item.id}
-                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors ${isResolved ? 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20' : ''}`}
               >
                 {/* Type icon */}
                 <div className="mt-0.5">
-                  {item.type === 'bug_report' ? (
+                  {isResolved ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : item.type === 'bug_report' ? (
                     <Bug className="w-4 h-4 text-red-500" />
                   ) : (
                     <Lightbulb className="w-4 h-4 text-yellow-500" />
@@ -179,7 +257,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm truncate">{item.title}</span>
+                    <span className={`font-medium text-sm truncate ${isResolved ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
                     <Badge className={`${STATUS_COLORS[item.status] || 'bg-gray-500'} text-white text-[10px] px-1.5 py-0`}>
                       {STATUS_LABELS[item.status] || item.status}
                     </Badge>
@@ -192,6 +270,26 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {item.description}
                   </p>
+
+                  {/* Resolution note from GitHub */}
+                  {isResolved && item.github_resolution && (
+                    <div className="mt-2 p-2 rounded bg-green-100/60 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+                      <button
+                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                        className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 w-full text-left"
+                      >
+                        <GitPullRequestClosed className="w-3 h-3" />
+                        Resolution from GitHub
+                        <span className="ml-auto text-[10px]">{expandedId === item.id ? '▲' : '▼'}</span>
+                      </button>
+                      {expandedId === item.id && (
+                        <p className="text-xs text-green-800 dark:text-green-300 mt-1 whitespace-pre-wrap">
+                          {item.github_resolution}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                     <span>{new Date(item.created_at).toLocaleDateString('en-US', {
                       month: 'short',
@@ -252,7 +350,8 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </CardContent>

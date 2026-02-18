@@ -1,275 +1,452 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Wifi, Radio, Cpu, Zap, Shield, Activity, Eye, EyeOff, Lock, type LucideIcon } from 'lucide-react'
 
+// ─── Org branding type ────────────────────────────────────────────────
+interface OrgBranding {
+  name: string
+  slug: string
+  logoUrl: string | null
+  primaryColor: string | null
+  secondaryColor: string | null
+  accentColor: string | null
+}
+
+const DEFAULT_BRANDING = {
+  name: 'NetNeural',
+  primaryColor: '#06b6d4',   // cyan-500
+  secondaryColor: '#8b5cf6', // violet-500
+  accentColor: '#10b981',    // emerald-500
+}
+
+// ─── Animated background node ─────────────────────────────────────────
+interface FloatingNode {
+  id: number
+  x: number
+  y: number
+  size: number
+  speed: number
+  delay: number
+  icon: number
+}
+
+function generateNodes(count: number): FloatingNode[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 16 + Math.random() * 20,
+    speed: 20 + Math.random() * 40,
+    delay: Math.random() * -20,
+    icon: i % 6,
+  }))
+}
+
+const NODE_ICONS: LucideIcon[] = [Wifi, Radio, Cpu, Zap, Shield, Activity]
+
+// ─── Main login component ─────────────────────────────────────────────
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
-  // Pre-fill credentials only in development mode for convenience
+
+  // Form state
   const [email, setEmail] = useState(process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : '')
   const [password, setPassword] = useState(process.env.NODE_ENV === 'development' ? 'password123' : '')
+  const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  
-  // Prevent redirect loops
   const hasCheckedAuth = useRef(false)
 
-  // Check for error messages in URL parameters
+  // Branding state
+  const [branding, setBranding] = useState<OrgBranding | null>(null)
+  const [brandingLoaded, setBrandingLoaded] = useState(false)
+
+  const orgSlug = searchParams?.get('org') || null
+
+  // Fetch org branding when ?org= is present
+  useEffect(() => {
+    if (!orgSlug) {
+      setBrandingLoaded(true)
+      return
+    }
+    const fetchBranding = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const res = await fetch(
+          `${supabaseUrl}/functions/v1/org-branding?slug=${encodeURIComponent(orgSlug)}`,
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && json.data) {
+            setBranding(json.data)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch org branding:', err)
+      } finally {
+        setBrandingLoaded(true)
+      }
+    }
+    fetchBranding()
+  }, [orgSlug])
+
+  // Resolved colors (org branding → defaults)
+  const colors = useMemo(() => ({
+    primary: branding?.primaryColor || DEFAULT_BRANDING.primaryColor,
+    secondary: branding?.secondaryColor || DEFAULT_BRANDING.secondaryColor,
+    accent: branding?.accentColor || DEFAULT_BRANDING.accentColor,
+  }), [branding])
+
+  const orgName = branding?.name || DEFAULT_BRANDING.name
+  const logoUrl = branding?.logoUrl || null
+
+  // Floating nodes for background animation
+  const nodes = useMemo(() => generateNodes(12), [])
+
+  // Error from URL
   useEffect(() => {
     const errorParam = searchParams?.get('error')
     if (errorParam) {
-      // Decode and display the error message
       setError(decodeURIComponent(errorParam))
-      
-      // Clear the URL parameter to prevent showing error after refresh
-      const newUrl = window.location.pathname
-      window.history.replaceState({}, '', newUrl)
+      window.history.replaceState({}, '', window.location.pathname + (orgSlug ? `?org=${orgSlug}` : ''))
     }
-  }, [searchParams])
+  }, [searchParams, orgSlug])
 
-  // Check if user is already authenticated and redirect
+  // Auth check
   useEffect(() => {
-    // Only check once to prevent loops
     if (hasCheckedAuth.current) return
-    
     const checkAuth = async () => {
       try {
         const supabase = createClient()
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        // If there's a session error or no session, just stay on login page
-        if (sessionError || !session) {
-          hasCheckedAuth.current = true
-          return
-        }
-        
-        // Only redirect if we have a valid session
-        if (session) {
-          hasCheckedAuth.current = true
-          router.replace('/dashboard')
-        }
-      } catch (err) {
-        console.error('Auth check error:', err)
-        // Mark as checked to prevent loops
+        if (sessionError || !session) { hasCheckedAuth.current = true; return }
+        if (session) { hasCheckedAuth.current = true; router.replace('/dashboard') }
+      } catch {
         hasCheckedAuth.current = true
-        // Don't show error to user, just stay on login page
       }
     }
-    
     checkAuth()
   }, [router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
     try {
       const supabase = createClient()
-      
-      // Sign in with password
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password: password
+        password,
       })
 
-      if (loginError) {
-        setError('Invalid email or password. Please try again.')
-        setIsLoading(false)
-        return
-      }
+      if (loginError) { setError('Invalid email or password. Please try again.'); setIsLoading(false); return }
+      if (!data.user) { setError('Login failed — please try again'); setIsLoading(false); return }
 
-      if (!data.user) {
-        setError('Login failed - please try again')
-        setIsLoading(false)
-        return
-      }
-
-      // If "Remember Me" is NOT checked, set session to expire after 8 hours
-      // Default Supabase session is 7 days, so we override only if not remembering
       if (!rememberMe && data.session) {
-        // Set session expiry to 8 hours (28800 seconds)
         await supabase.auth.setSession({
           access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token
+          refresh_token: data.session.refresh_token,
         })
       }
 
-      // Wait a brief moment to ensure session is fully established
       await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Verify session is established before redirecting
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (session) {
-        // Mark that we've successfully authenticated
         hasCheckedAuth.current = true
-        
-        // Use Next.js router for client-side navigation
         router.push('/dashboard')
-        // Small delay then force refresh to ensure all auth state is synced
-        setTimeout(() => {
-          router.refresh()
-        }, 50)
+        setTimeout(() => router.refresh(), 50)
       } else {
         setError('Session could not be established. Please try again.')
         setIsLoading(false)
       }
-      
-    } catch (err) {
-      console.error('Login error:', err)
+    } catch {
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
+  }, [email, password, rememberMe, router])
+
+  // Don't render until branding is resolved (prevents flash)
+  if (!brandingLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="animate-pulse text-cyan-400 text-lg">Loading...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding (Desktop only) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-12 flex-col justify-center">
-        <div className="opacity-95">
-          <h1 className="text-3xl font-bold mb-4">NetNeural IoT</h1>
-          <p className="text-xl mb-8">Enterprise IoT Management Platform</p>
-          <h2 className="text-2xl font-semibold mb-4">Secure IoT Infrastructure</h2>
-          <p className="text-lg">Monitor, manage, and secure your enterprise IoT ecosystem</p>
-        </div>
+    <div className="min-h-screen relative overflow-hidden bg-gray-950 flex items-center justify-center">
+      {/* ───── Animated mesh background ───── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {/* Gradient orbs */}
+        <div
+          className="absolute w-[600px] h-[600px] rounded-full blur-[128px] opacity-20 animate-pulse"
+          style={{
+            background: `radial-gradient(circle, ${colors.primary}, transparent)`,
+            top: '-10%',
+            left: '-10%',
+            animationDuration: '8s',
+          }}
+        />
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full blur-[128px] opacity-15 animate-pulse"
+          style={{
+            background: `radial-gradient(circle, ${colors.secondary}, transparent)`,
+            bottom: '-10%',
+            right: '-10%',
+            animationDuration: '10s',
+            animationDelay: '-3s',
+          }}
+        />
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 animate-pulse"
+          style={{
+            background: `radial-gradient(circle, ${colors.accent}, transparent)`,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            animationDuration: '12s',
+            animationDelay: '-6s',
+          }}
+        />
+
+        {/* Grid lines */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(${colors.primary}40 1px, transparent 1px), linear-gradient(90deg, ${colors.primary}40 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
+
+        {/* Floating IoT node icons */}
+        {nodes.map((node) => {
+          const Icon = NODE_ICONS[node.icon]
+          return (
+            <div
+              key={node.id}
+              className="absolute"
+              style={{
+                left: `${node.x}%`,
+                top: `${node.y}%`,
+                opacity: 0.06,
+                animation: `nnFloat ${node.speed}s linear infinite`,
+                animationDelay: `${node.delay}s`,
+              }}
+            >
+              <Icon style={{ width: node.size, height: node.size, color: colors.primary }} />
+            </div>
+          )
+        })}
       </div>
 
-      {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-950">
-        <div className="w-full max-w-[400px]">
-          {/* Mobile Brand (Mobile only) */}
-          <div className="text-center mb-8 lg:hidden">
-            <h1 className="text-2xl font-bold text-foreground">NetNeural IoT</h1>
-            <p className="text-muted-foreground">Enterprise Platform</p>
+      {/* ───── Content ───── */}
+      <div className="relative z-10 w-full max-w-md mx-4">
+        {/* Brand header */}
+        <div className="text-center mb-8">
+          {logoUrl ? (
+            <div className="flex justify-center mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoUrl}
+                alt={`${orgName} logo`}
+                className="h-16 w-auto object-contain drop-shadow-lg"
+              />
+            </div>
+          ) : (
+            <div className="flex justify-center mb-4">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                  boxShadow: `0 8px 32px ${colors.primary}30`,
+                }}
+              >
+                <Activity className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          )}
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: colors.primary }}>
+            {orgName}
+          </h1>
+          <p className="text-gray-400 mt-1 text-sm">
+            {branding ? 'IoT Management Platform' : 'Enterprise IoT Management Platform'}
+          </p>
+        </div>
+
+        {/* Glass card */}
+        <div
+          className="rounded-2xl border backdrop-blur-xl p-8 shadow-2xl"
+          style={{
+            background: 'rgba(15, 23, 42, 0.7)',
+            borderColor: `${colors.primary}20`,
+            boxShadow: `0 0 80px ${colors.primary}08, 0 25px 50px rgba(0,0,0,0.4)`,
+          }}
+        >
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-100">Welcome back</h2>
+            <p className="text-gray-400 text-sm mt-1">Sign in to continue</p>
           </div>
 
-          {/* Login Card */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
-                <p className="text-muted-foreground">Sign in to your enterprise account</p>
-              </div>
-
-              {error && (
-                <Alert variant="destructive" className="mb-6">
-                  <AlertDescription>
-                    <div className="flex items-start justify-between">
-                      <span>{error}</span>
-                      {error.includes('unexpected error') && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setError('')
-                            setEmail('')
-                            setPassword('')
-                            hasCheckedAuth.current = false
-                          }}
-                          className="ml-2 h-auto py-0 px-2 text-xs"
-                        >
-                          Reset
-                        </Button>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <form onSubmit={handleSubmit} className="mb-6">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1" htmlFor="email">
-                    Email address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full px-4 py-2 border rounded-md bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:border-input outline-none transition-all"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1" htmlFor="password">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-4 py-2 border rounded-md bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:border-input outline-none transition-all"
-                  />
-                </div>
-
-                <div className="mb-6 flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-primary border-input rounded focus:ring-ring"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 text-sm">
-                    Remember me (keep me signed in)
-                  </label>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-12 text-base font-medium"
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </Button>
-              </form>
-
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  Forgot your password? Contact your system administrator
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Development Mode Helper */}
-          {process.env.NODE_ENV === 'development' && (
-            <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          {/* Error */}
+          {error && (
+            <Alert variant="destructive" className="mb-6 bg-red-950/60 border-red-800/60">
               <AlertDescription>
-                <strong>Development Mode:</strong> Test accounts available
-                <div className="text-sm mt-2 space-y-1">
-                  <div>• superadmin@netneural.ai</div>
-                  <div>• admin@netneural.ai</div>
-                  <div>• user@netneural.ai</div>
-                  <div>• viewer@netneural.ai</div>
-                  <div className="mt-1 text-xs">Password: password123</div>
+                <div className="flex items-start justify-between text-red-200">
+                  <span>{error}</span>
+                  {error.includes('unexpected error') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setError(''); setEmail(''); setPassword(''); hasCheckedAuth.current = false }}
+                      className="ml-2 h-auto py-0 px-2 text-xs text-red-300 hover:text-white"
+                    >
+                      Reset
+                    </Button>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Security Notice */}
-          <Alert className="mt-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-            <AlertDescription>
-              <strong>Enterprise Security:</strong> This platform uses advanced security measures.
-            </AlertDescription>
-          </Alert>
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            {/* Email */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5" htmlFor="email">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-lg bg-gray-800/60 text-gray-100 border border-gray-700/60 placeholder:text-gray-500 focus:outline-none focus:ring-2 transition-all"
+                style={{ ['--tw-ring-color' as string]: `${colors.primary}80` }}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5" htmlFor="password">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-800/60 text-gray-100 border border-gray-700/60 placeholder:text-gray-500 focus:outline-none focus:ring-2 transition-all"
+                  style={{ ['--tw-ring-color' as string]: `${colors.primary}80` }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember me */}
+            <div className="mb-6 flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500/50"
+              />
+              <label htmlFor="remember-me" className="ml-2 text-sm text-gray-400">
+                Keep me signed in
+              </label>
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-12 text-base font-semibold rounded-lg text-white transition-all shadow-lg hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+              style={{
+                background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                boxShadow: `0 4px 20px ${colors.primary}30`,
+              }}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Sign in
+                </span>
+              )}
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <p className="text-center mt-6 text-xs text-gray-500">
+            Forgot your password? Contact your system administrator
+          </p>
         </div>
+
+        {/* Security badge */}
+        <div className="flex items-center justify-center gap-2 mt-6 text-xs text-gray-500">
+          <Shield className="w-3.5 h-3.5" style={{ color: colors.accent }} />
+          <span>Enterprise-grade security</span>
+          <span className="text-gray-700">•</span>
+          <span>256-bit encryption</span>
+        </div>
+
+        {/* Powered by (only for org-branded logins) */}
+        {branding && (
+          <p className="text-center mt-3 text-[11px] text-gray-600">
+            Powered by <span className="text-gray-400 font-medium">NetNeural</span>
+          </p>
+        )}
+
+        {/* Dev helper */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 rounded-lg bg-gray-900/80 border border-gray-800 text-xs text-gray-400">
+            <strong className="text-cyan-400">Dev Mode</strong> — Test accounts:
+            <div className="mt-1 space-y-0.5 text-gray-500">
+              <div>superadmin@netneural.ai / admin@netneural.ai</div>
+              <div>user@netneural.ai / viewer@netneural.ai</div>
+              <div className="text-gray-600">Password: password123</div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ───── Animation keyframes ───── */}
+      <style>{`
+        @keyframes nnFloat {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-20px) rotate(5deg); }
+          50% { transform: translateY(-10px) rotate(-3deg); }
+          75% { transform: translateY(-25px) rotate(2deg); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -277,10 +454,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto" />
+          <p className="mt-4 text-gray-400">Loading...</p>
         </div>
       </div>
     }>
