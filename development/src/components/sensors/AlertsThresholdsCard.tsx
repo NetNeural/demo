@@ -32,12 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2, TestTube } from 'lucide-react'
+import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2, TestTube, Sparkles, Loader2, Info } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { toast as sonnerToast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import type { SensorThreshold } from '@/types/sensor-details'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import type { AIRecommendation } from '@/lib/edge-functions/api/thresholds'
 
 interface AlertsThresholdsCardProps {
   device: Device
@@ -64,6 +66,11 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [testing, setTesting] = useState<string | null>(null)
+
+  // AI recommendation state
+  const [aiEnabled, setAiEnabled] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null)
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -153,6 +160,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       manualEmails: (threshold.notify_emails || []).join(', '),
       manualPhones: (threshold.notify_phone_numbers || []).join(', '),
     })
+    setAiEnabled(false)
+    setAiRecommendation(null)
     setEditDialogOpen(true)
   }
 
@@ -177,7 +186,69 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       manualEmails: '',
       manualPhones: '',
     })
+    setAiEnabled(false)
+    setAiRecommendation(null)
     setEditDialogOpen(true)
+  }
+
+  const handleAIToggle = async (checked: boolean) => {
+    setAiEnabled(checked)
+    if (!checked) {
+      setAiRecommendation(null)
+      return
+    }
+
+    // Need a sensor type to make recommendations
+    const sensorType = formData.sensor_type || selectedThreshold?.sensor_type
+    if (!sensorType) {
+      sonnerToast.error('Select a sensor type first', {
+        description: 'AI recommendations require a sensor type to analyze the correct telemetry data.',
+      })
+      setAiEnabled(false)
+      return
+    }
+
+    setAiLoading(true)
+    try {
+      const response = await edgeFunctions.thresholds.recommend(
+        device.id,
+        sensorType,
+        formData.temperature_unit,
+      ) as any
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to get AI recommendations')
+      }
+
+      const rec: AIRecommendation = response.data
+      setAiRecommendation(rec)
+
+      if (rec.available && rec.recommended) {
+        // Auto-fill form with recommended values
+        setFormData(prev => ({
+          ...prev,
+          min_value: rec.recommended!.min_value.toString(),
+          max_value: rec.recommended!.max_value.toString(),
+          critical_min: rec.recommended!.critical_min.toString(),
+          critical_max: rec.recommended!.critical_max.toString(),
+        }))
+        sonnerToast.success('AI thresholds applied', {
+          description: `Based on ${rec.data_points} data points. You can still adjust the values before saving.`,
+        })
+      } else {
+        sonnerToast.info('Not enough data yet', {
+          description: rec.message,
+        })
+      }
+    } catch (error) {
+      console.error('AI recommendation error:', error)
+      sonnerToast.error('AI recommendation failed', {
+        description: error instanceof Error ? error.message : 'Could not analyze telemetry data',
+      })
+      setAiEnabled(false)
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   const handleSave = async () => {
@@ -188,6 +259,44 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     try {
       setSaving(true)
       console.log('🔵 [THRESHOLD SAVE] Saving state set to true')
+
+      // Validate threshold hierarchy: critical_min ≤ min_value ≤ max_value ≤ critical_max
+      const minVal = formData.min_value ? parseFloat(formData.min_value) : null
+      const maxVal = formData.max_value ? parseFloat(formData.max_value) : null
+      const critMin = formData.critical_min ? parseFloat(formData.critical_min) : null
+      const critMax = formData.critical_max ? parseFloat(formData.critical_max) : null
+
+      if (minVal != null && maxVal != null && minVal >= maxVal) {
+        sonnerToast.error('Invalid thresholds', {
+          description: 'Warning Minimum must be less than Warning Maximum.',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (critMin != null && minVal != null && critMin > minVal) {
+        sonnerToast.error('Invalid thresholds', {
+          description: 'Critical Minimum must be less than or equal to Warning Minimum. Critical min represents the extreme low boundary below which the situation is critical.',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (critMax != null && maxVal != null && critMax < maxVal) {
+        sonnerToast.error('Invalid thresholds', {
+          description: 'Critical Maximum must be greater than or equal to Warning Maximum. Critical max represents the extreme high boundary above which the situation is critical.',
+        })
+        setSaving(false)
+        return
+      }
+
+      if (critMin != null && critMax != null && critMin >= critMax) {
+        sonnerToast.error('Invalid thresholds', {
+          description: 'Critical Minimum must be less than Critical Maximum.',
+        })
+        setSaving(false)
+        return
+      }
 
       // Parse manual emails from comma-separated string
       const manualEmails = formData.manualEmails
@@ -689,9 +798,62 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
               </div>
             )}
 
+            {/* AI Auto-Threshold */}
+            <div className="space-y-3 p-4 border rounded-lg bg-gradient-to-r from-violet-50/50 to-blue-50/50 dark:from-violet-950/20 dark:to-blue-950/20">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="ai_thresholds"
+                  checked={aiEnabled}
+                  onCheckedChange={(checked) => handleAIToggle(checked === true)}
+                  disabled={aiLoading}
+                />
+                <div className="flex-1">
+                  <label htmlFor="ai_thresholds" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    Set thresholds from telemetry data
+                    {aiLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Analyzes historical sensor readings to calculate optimal warning and critical ranges using statistical modeling (mean ± standard deviations).
+                  </p>
+                </div>
+              </div>
+
+              {/* AI Recommendation Result */}
+              {aiRecommendation && (
+                <div className="mt-3 text-xs space-y-2">
+                  {aiRecommendation.available && aiRecommendation.statistics ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 font-medium">
+                        <Sparkles className="h-3 w-3" />
+                        Analysis of {aiRecommendation.data_points} readings
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+                        <div>Mean: <span className="font-mono">{aiRecommendation.statistics.mean}</span></div>
+                        <div>Std Dev: <span className="font-mono">{aiRecommendation.statistics.stddev}</span></div>
+                        <div>Observed Min: <span className="font-mono">{aiRecommendation.statistics.min_observed}</span></div>
+                        <div>Observed Max: <span className="font-mono">{aiRecommendation.statistics.max_observed}</span></div>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Thresholds have been filled in below. You can still adjust the values before saving.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-700 dark:text-amber-400">
+                      <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <p>{aiRecommendation.message}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Threshold Values */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm">Warning Thresholds</h4>
+              <p className="text-xs text-muted-foreground">
+                Defines the normal operating range. A warning alert fires when the value drops below the minimum or rises above the maximum.
+              </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="min_value">
@@ -724,6 +886,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-red-600">Critical Thresholds</h4>
+              <p className="text-xs text-muted-foreground">
+                Optional. Defines extreme boundaries beyond the warning range. Critical min must be ≤ warning min, and critical max must be ≥ warning max. Example: Warning 60–90°F, Critical 40–100°F.
+              </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="critical_min">
@@ -735,7 +900,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                     step="0.01"
                     value={formData.critical_min}
                     onChange={(e) => setFormData(prev => ({ ...prev, critical_min: e.target.value }))}
-                    placeholder="Critical low value"
+                    placeholder="Below warning min (e.g. 40)"
                   />
                 </div>
                 <div className="space-y-2">
@@ -748,7 +913,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                     step="0.01"
                     value={formData.critical_max}
                     onChange={(e) => setFormData(prev => ({ ...prev, critical_max: e.target.value }))}
-                    placeholder="Critical high value"
+                    placeholder="Above warning max (e.g. 100)"
                   />
                 </div>
               </div>
