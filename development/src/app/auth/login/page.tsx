@@ -230,7 +230,7 @@ function LoginForm() {
 
         {/* Floating IoT node icons */}
         {nodes.map((node) => {
-          const Icon = NODE_ICONS[node.icon]
+          const IconComponent = NODE_ICONS[node.icon] as LucideIcon
           return (
             <div
               key={node.id}
@@ -243,7 +243,7 @@ function LoginForm() {
                 animationDelay: `${node.delay}s`,
               }}
             >
-              <Icon style={{ width: node.size, height: node.size, color: colors.primary }} />
+              <IconComponent style={{ width: node.size, height: node.size, color: colors.primary }} />
             </div>
           )
         })}
