@@ -4,16 +4,19 @@ import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { ImportUsersDialog } from './ImportUsersDialog'
 import { CreateUserDialog } from '../organizations/CreateUserDialog'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 export function UsersHeader() {
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const { currentOrganization } = useOrganization()
+  const orgName = currentOrganization?.name
 
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{orgName ? `${orgName} User Management` : 'User Management'}</h2>
           <p className="text-muted-foreground">Manage user accounts and permissions</p>
         </div>
         <div className="flex items-center space-x-2">

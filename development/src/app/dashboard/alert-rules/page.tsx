@@ -114,7 +114,7 @@ export default function AlertRulesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Alert Rules</h1>
+          <h1 className="text-3xl font-bold">{currentOrganization?.name ? `${currentOrganization.name} Alert Rules` : 'Alert Rules'}</h1>
           <p className="text-muted-foreground mt-1">
             Create automated rules to monitor your devices and trigger actions
           </p>

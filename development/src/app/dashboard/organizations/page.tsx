@@ -74,7 +74,7 @@ export default function OrganizationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Organization Management"
+        title={`${currentOrganization.name} Organization Management`}
         description={`Configure ${currentOrganization.name} - members, devices, integrations, and settings. Switch organizations using the sidebar.`}
         action={
           (isSuperAdmin || canCreateChildOrgs) ? (

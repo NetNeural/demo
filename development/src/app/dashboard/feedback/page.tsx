@@ -32,7 +32,7 @@ export default function FeedbackPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader
-        title="Feedback"
+        title={`${currentOrganization.name} Feedback`}
         description={`Submit bug reports and feature requests for ${currentOrganization.name}. Each submission creates a tracked GitHub issue.`}
       />
 

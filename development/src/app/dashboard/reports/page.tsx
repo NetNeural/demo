@@ -118,7 +118,7 @@ export default function ReportsIndexPage() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{currentOrganization?.name ? `${currentOrganization.name} Reports` : 'Reports'}</h1>
         <p className="text-muted-foreground mt-2">
           Analyze your IoT data with comprehensive reporting tools
         </p>

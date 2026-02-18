@@ -67,7 +67,7 @@ export default function SupportPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Support & Administration"
+        title={orgName ? `${orgName} Support & Administration` : 'Support & Administration'}
         description={`Diagnostics, customer tools, and troubleshooting for ${orgName}`}
         action={
           isSuperAdmin ? (
