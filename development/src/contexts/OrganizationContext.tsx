@@ -117,7 +117,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         settings: org.settings, // Include settings (branding, theme, etc.)
         parent_organization_id: org.parentOrganizationId || null,
         created_by: org.createdBy || null,
-        role: data.isSuperAdmin ? 'owner' : 'admin', // TODO: Get actual role from organization_members
+        role: org.memberRole || (data.isSuperAdmin ? 'owner' : 'admin'),
         membershipId: `mem-${org.id}`,
         joinedAt: org.createdAt,
         created_at: org.createdAt,

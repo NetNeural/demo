@@ -173,14 +173,21 @@ export default createEdgeFunction(
       }
       
       // If not super admin, get all orgs the user is a member of
+      // deno-lint-ignore no-explicit-any
+      let membershipMap: Record<string, string> = {}
       if (!userContext.isSuperAdmin) {
-        // Get user's org memberships
+        // Get user's org memberships WITH role
         const { data: memberships } = await supabaseAdmin
           .from('organization_members')
-          .select('organization_id')
+          .select('organization_id, role')
           .eq('user_id', userContext.userId)
 
         const memberOrgIds = memberships?.map(m => m.organization_id) || []
+        // Build a map of org_id -> role for later use
+        // deno-lint-ignore no-explicit-any
+        memberships?.forEach((m: any) => {
+          membershipMap[m.organization_id] = m.role
+        })
         
         // Also include the user's default org from users table
         if (userContext.organizationId && !memberOrgIds.includes(userContext.organizationId)) {
@@ -244,6 +251,7 @@ export default createEdgeFunction(
             userCount: userCount || 0,
             deviceCount: deviceCount || 0,
             alertCount: alertCount || 0,
+            memberRole: userContext.isSuperAdmin ? 'owner' : (membershipMap[org.id] || 'viewer'),
             createdAt: org.created_at,
             updatedAt: org.updated_at
           }
