@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import { ResellerAgreementSection } from './ResellerAgreementSection';
 
 interface OverviewTabProps {
   organizationId: string;
@@ -120,6 +121,9 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reseller Agreement Section */}
+      <ResellerAgreementSection organizationId={organizationId} />
 
       {/* Recent Activity */}
       <Card>

@@ -28,6 +28,7 @@ on:
           - feedback-sync
           - feedback-comments
           - org-branding
+          - reseller-agreement-apply
 
 jobs:
   deploy:
@@ -67,6 +68,7 @@ jobs:
             npx supabase functions deploy feedback-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy feedback-comments --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy org-branding --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy reseller-agreement-apply --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
