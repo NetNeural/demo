@@ -226,6 +226,569 @@ export default function TestsTab({ organizationId }: Props) {
         })
       },
     },
+    // Integration Tests
+    {
+      id: 'integration-golioth',
+      name: 'Golioth Integration',
+      description: 'Test connection to configured Golioth integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          // Get list of integrations
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'golioth')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active Golioth integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          // Call edge function to test the integration
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Connection successful'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-aws-iot',
+      name: 'AWS IoT Core Integration',
+      description: 'Test connection to configured AWS IoT Core integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'aws_iot')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active AWS IoT integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Connection successful'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-azure-iot',
+      name: 'Azure IoT Hub Integration',
+      description: 'Test connection to configured Azure IoT Hub integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'azure_iot')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active Azure IoT integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Connection successful'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-mqtt',
+      name: 'MQTT Broker Integration',
+      description: 'Test connection to configured MQTT broker integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .ilike('integration_type', 'mqtt%')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active MQTT integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Connection successful'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-email',
+      name: 'Email/SMTP Integration',
+      description: 'Test connection to configured SMTP email integration',
+      icon: Mail,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'email')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active Email integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'SMTP configuration valid'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-slack',
+      name: 'Slack Integration',
+      description: 'Test connection to configured Slack webhook integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'slack')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active Slack integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Webhook validated (test message sent)'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-webhook',
+      name: 'Custom Webhook Integration',
+      description: 'Test connection to configured custom webhook integration',
+      icon: Webhook,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'webhook')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active Webhook integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || `Webhook responded with status ${result.details?.status || 'OK'}`}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
+    {
+      id: 'integration-netneural-hub',
+      name: 'NetNeural Hub Integration',
+      description: 'Test connection to configured NetNeural Hub integration',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: integrations, error: listError } = await supabase
+            .from('device_integrations')
+            .select('id, name, integration_type, status')
+            .eq('organization_id', organizationId)
+            .eq('integration_type', 'netneural_hub')
+            .eq('status', 'active')
+            .limit(1)
+            .single()
+
+          if (listError || !integrations) {
+            const durationMs = Date.now() - start
+            return { 
+              success: false, 
+              message: 'No active NetNeural Hub integration found. Configure one in Organizations → Integrations.', 
+              durationMs 
+            }
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            return { success: false, message: 'No active session', durationMs: Date.now() - start }
+          }
+
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const result = await response.json()
+          const durationMs = Date.now() - start
+
+          if (!response.ok || !result.success) {
+            return { 
+              success: false, 
+              message: result.error?.message || result.message || 'Test failed', 
+              durationMs 
+            }
+          }
+
+          return { 
+            success: true, 
+            message: `${integrations.name}: ${result.message || 'Hub connection successful'}`, 
+            durationMs 
+          }
+        } catch (err) {
+          return { 
+            success: false, 
+            message: err instanceof Error ? err.message : 'Test failed', 
+            durationMs: Date.now() - start 
+          }
+        }
+      },
+    },
   ]
 
   const runHealthCheck = async (check: HealthCheck) => {
