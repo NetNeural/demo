@@ -143,7 +143,7 @@ export function useAnalyticsData(timeRange: TimeRange) {
             .eq('severity', 'critical')
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const expectedDataPoints = hours * 12;
           const uptimePercentage = Math.min(100, (dataPointsCount / expectedDataPoints) * 100);

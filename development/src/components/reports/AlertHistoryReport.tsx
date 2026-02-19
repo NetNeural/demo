@@ -416,6 +416,29 @@ export function AlertHistoryReport() {
         </Button>
       </div>
 
+      {/* AI Report Summary */}
+      {alerts.length > 0 && currentOrganization && (
+        <AIReportSummary
+          reportType="alert-history"
+          reportData={{
+            dateRange: dateRangePreset === 'custom' && startDate && endDate
+              ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
+              : dateRangePreset === '24h' ? 'Last 24 hours'
+              : dateRangePreset === '7d' ? 'Last 7 days'
+              : dateRangePreset === '30d' ? 'Last 30 days'
+              : 'Today',
+            totalRecords: stats.totalAlerts,
+            criticalCount: stats.criticalAlerts,
+            metadata: {
+              resolvedCount: stats.acknowledgedAlerts,
+              avgResponseTime: stats.avgResponseTimeMinutes,
+              falsePositiveRate: stats.falsePositiveRate,
+            }
+          }}
+          organizationId={currentOrganization.id}
+        />
+      )}
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
