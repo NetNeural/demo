@@ -8,6 +8,7 @@ import { useUser } from '@/lib/auth/user-context'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { cn } from '@/lib/utils'
 import { 
@@ -18,6 +19,7 @@ import {
   BarChart3, 
   FileText, 
   Settings,
+  Shield,
   type LucideIcon
 } from 'lucide-react'
 
@@ -161,7 +163,12 @@ export default function DashboardShell({
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              {/* Add header actions here if needed */}
+              {user?.isSuperAdmin && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Super Admin — Cross-Org Access
+                </Badge>
+              )}
             </div>
           </div>
         </header>
