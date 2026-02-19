@@ -141,7 +141,7 @@ jobs:
 
       - name: 🏗️ Build application
         env:
-          NODE_ENV: staging
+          NODE_ENV: production
           BUILD_MODE: static
           # Supabase configuration (managed via GitHub Secrets)
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || 'https://atgbmxicqikmapfqouco.supabase.co' }}
