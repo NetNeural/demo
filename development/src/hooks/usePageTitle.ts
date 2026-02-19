@@ -15,6 +15,7 @@ const ROUTE_TITLES: [string, string][] = [
   ['/dashboard/analytics', 'AI Analytics'],
   ['/dashboard/devices/view', 'Device Details'],
   ['/dashboard/devices', 'Devices'],
+  ['/dashboard/device-types', 'Device Types'],
   ['/dashboard/device-details', 'Sensor Details'],
   ['/dashboard/feedback', 'Feedback'],
   ['/dashboard/integrations/mqtt', 'MQTT Integration'],

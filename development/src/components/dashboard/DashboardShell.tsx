@@ -20,6 +20,7 @@ import {
   FileText, 
   Settings,
   Shield,
+  SlidersHorizontal,
   type LucideIcon
 } from 'lucide-react'
 
@@ -44,6 +45,7 @@ export default function DashboardShell({
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
+    { name: 'Device Types', href: '/dashboard/device-types', icon: SlidersHorizontal },
     { name: 'Organizations', href: '/dashboard/organizations', icon: Building2 },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },

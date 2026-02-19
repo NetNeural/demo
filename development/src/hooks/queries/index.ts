@@ -59,5 +59,14 @@ export {
   type OrganizationMember,
 } from './useOrganizations'
 
+// Device Types
+export {
+  useDeviceTypesQuery,
+  useDeviceTypeQuery,
+  useCreateDeviceTypeMutation,
+  useUpdateDeviceTypeMutation,
+  useDeleteDeviceTypeMutation,
+} from './useDeviceTypes'
+
 // Re-export query client utilities
 export { queryKeys, CACHE_TIME } from '@/lib/query-client'

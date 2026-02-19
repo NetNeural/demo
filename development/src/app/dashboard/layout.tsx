@@ -10,7 +10,7 @@ import { PreferencesProvider } from '@/contexts/PreferencesContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy } from 'lucide-react'
+import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy, SlidersHorizontal } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -36,6 +36,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { href: '/dashboard/devices', label: 'Devices', icon: Smartphone },
+    { href: '/dashboard/device-types', label: 'Device Types', icon: SlidersHorizontal },
     { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
     { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },

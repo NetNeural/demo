@@ -111,6 +111,10 @@ export const queryKeys = {
   alertsByOrg: (orgId: string) => ['alerts', 'org', orgId] as const,
   unacknowledgedAlerts: ['alerts', 'unacknowledged'] as const,
 
+  // Device Types (5 minute cache)
+  deviceTypes: (orgId: string) => ['device-types', 'org', orgId] as const,
+  deviceType: (id: string) => ['device-types', id] as const,
+
   // Sensor Thresholds (5 minute cache)
   thresholds: (deviceId: string) => ['thresholds', deviceId] as const,
   thresholdsByOrg: (orgId: string) => ['thresholds', 'org', orgId] as const,
