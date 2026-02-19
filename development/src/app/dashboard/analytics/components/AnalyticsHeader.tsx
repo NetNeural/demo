@@ -23,7 +23,7 @@ export function AnalyticsHeader({ organizationName, organizationSettings, timeRa
             name={organizationName || 'NetNeural'}
             size="xl"
           />
-          <h1 className="text-3xl font-bold tracking-tight">AI Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{organizationName} AI Analytics</h1>
         </div>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
