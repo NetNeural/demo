@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   BookOpen,
   FileText,
@@ -21,6 +22,7 @@ import {
   Activity,
   ClipboardList,
   History,
+  Clock,
 } from 'lucide-react'
 
 interface DocEntry {
@@ -254,6 +256,7 @@ const categoryColors: Record<string, string> = {
 export default function DocumentationTab() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const { fmt } = useDateFormatter()
 
   const filtered = DOCS.filter(doc => {
     const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory
@@ -353,6 +356,10 @@ export default function DocumentationTab() {
                           </span>
                           <span className="text-[10px] text-muted-foreground">
                             {doc.lines} lines
+                          </span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1" title={new Date(doc.lastUpdated).toLocaleDateString()}>
+                            <Clock className="w-3 h-3" />
+                            Updated {fmt.timeAgo(doc.lastUpdated)}
                           </span>
                           <div className="flex gap-1">
                             {doc.audience.map(a => (

@@ -377,7 +377,34 @@ export default function TroubleshootingTab({ organizationId }: Props) {
           {selectedDevice && (
             <div className="border rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">{selectedDevice.name}</h3>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{selectedDevice.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-muted-foreground font-mono">
+                      ID: {selectedDevice.id}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedDevice.id)
+                        toast.success('Device ID copied to clipboard')
+                      }}
+                      title="Copy Device ID"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                    {selectedDevice.serial_number && (
+                      <>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          SN: {selectedDevice.serial_number}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => fetchDiagnostics(selectedDeviceId)}>
                     <RefreshCw className="w-4 h-4 mr-1" /> Refresh

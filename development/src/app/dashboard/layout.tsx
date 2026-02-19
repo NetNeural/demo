@@ -8,8 +8,11 @@ import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
 import { PreferencesProvider } from '@/contexts/PreferencesContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
+import { QuickActionsDropdown } from '@/components/quick-actions/QuickActionsDropdown'
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/KeyboardShortcutsModal'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy, SlidersHorizontal } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 
@@ -22,6 +25,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   // Keep browser tab title in sync with current page + org
   usePageTitle()
+
+  // Enable global keyboard shortcuts
+  useKeyboardShortcuts()
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), [])
 
@@ -49,6 +55,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ThemeBranding />
+      <KeyboardShortcutsModal />
       <div className="dashboard-container">
         {/* Mobile Menu Toggle — visible only on < 1024px via CSS */}
         <button
@@ -124,13 +131,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
         <main className="main-content">
-          {user.isSuperAdmin && (
-            <div className="flex justify-end sticky top-0 z-50 py-1.5 pr-4 md:pr-8 pointer-events-none">
-              <span className="pointer-events-auto inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
-                🛡️ Super Admin — Cross-Org Access
-              </span>
+          {/* Top bar with Quick Actions and Super Admin badge */}
+          <div className="flex justify-between items-center sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+            <div className="flex-1" />
+            <div className="flex items-center gap-3">
+              <QuickActionsDropdown />
+              {user.isSuperAdmin && (
+                <span className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                  🛡️ Super Admin — Cross-Org Access
+                </span>
+              )}
             </div>
-          )}
+          </div>
           {children}
         </main>
       </div>
