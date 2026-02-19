@@ -12,8 +12,84 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      ai_insights_cache: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          expires_at: string
+          generated_at: string
+          id: string
+          insights: Json
+          organization_id: string
+          token_usage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          expires_at: string
+          generated_at?: string
+          id?: string
+          insights?: Json
+          organization_id: string
+          token_usage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          insights?: Json
+          organization_id?: string
+          token_usage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_cache_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_insights_cache_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_acknowledgements: {
         Row: {
           acknowledged_at: string
@@ -868,6 +944,85 @@ export type Database = {
           },
         ]
       }
+      device_types: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          device_class: string | null
+          icon: string | null
+          id: string
+          lower_alert: number | null
+          lower_normal: number
+          name: string
+          organization_id: string
+          precision_digits: number | null
+          unit: string | null
+          updated_at: string | null
+          updated_by: string | null
+          upper_alert: number | null
+          upper_normal: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          device_class?: string | null
+          icon?: string | null
+          id?: string
+          lower_alert?: number | null
+          lower_normal: number
+          name: string
+          organization_id: string
+          precision_digits?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          upper_alert?: number | null
+          upper_normal: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          device_class?: string | null
+          icon?: string | null
+          id?: string
+          lower_alert?: number | null
+          lower_normal?: number
+          name?: string
+          organization_id?: string
+          precision_digits?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          upper_alert?: number | null
+          upper_normal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_types_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           battery_level: number | null
@@ -876,6 +1031,7 @@ export type Database = {
           deleted_at: string | null
           department_id: string | null
           device_type: string
+          device_type_id: string | null
           external_device_id: string | null
           firmware_version: string | null
           golioth_status: string | null
@@ -902,6 +1058,7 @@ export type Database = {
           deleted_at?: string | null
           department_id?: string | null
           device_type: string
+          device_type_id?: string | null
           external_device_id?: string | null
           firmware_version?: string | null
           golioth_status?: string | null
@@ -928,6 +1085,7 @@ export type Database = {
           deleted_at?: string | null
           department_id?: string | null
           device_type?: string
+          device_type_id?: string | null
           external_device_id?: string | null
           firmware_version?: string | null
           golioth_status?: string | null
@@ -956,6 +1114,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "devices_device_type_id_fkey"
+            columns: ["device_type_id"]
+            isOneToOne: false
+            referencedRelation: "device_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "devices_integration_id_fkey"
             columns: ["integration_id"]
             isOneToOne: false
@@ -974,6 +1139,75 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          browser_info: string | null
+          created_at: string
+          description: string
+          github_issue_number: number | null
+          github_issue_url: string | null
+          github_resolution: string | null
+          id: string
+          organization_id: string
+          page_url: string | null
+          severity: Database["public"]["Enums"]["feedback_severity"] | null
+          status: Database["public"]["Enums"]["feedback_status"]
+          title: string
+          type: Database["public"]["Enums"]["feedback_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser_info?: string | null
+          created_at?: string
+          description: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_resolution?: string | null
+          id?: string
+          organization_id: string
+          page_url?: string | null
+          severity?: Database["public"]["Enums"]["feedback_severity"] | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          title: string
+          type: Database["public"]["Enums"]["feedback_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser_info?: string | null
+          created_at?: string
+          description?: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_resolution?: string | null
+          id?: string
+          organization_id?: string
+          page_url?: string | null
+          severity?: Database["public"]["Enums"]["feedback_severity"] | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["feedback_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1310,6 +1544,9 @@ export type Database = {
           activity_type: string
           completed_at: string | null
           created_at: string
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
           direction: string
           endpoint: string | null
           error_code: string | null
@@ -1333,6 +1570,9 @@ export type Database = {
           activity_type: string
           completed_at?: string | null
           created_at?: string
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
           direction: string
           endpoint?: string | null
           error_code?: string | null
@@ -1356,6 +1596,9 @@ export type Database = {
           activity_type?: string
           completed_at?: string | null
           created_at?: string
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
           direction?: string
           endpoint?: string | null
           error_code?: string | null
@@ -2056,11 +2299,13 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           id: string
           is_active: boolean | null
           name: string
           owner_id: string | null
+          parent_organization_id: string | null
           settings: Json | null
           slug: string
           subscription_tier: string | null
@@ -2068,11 +2313,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name: string
           owner_id?: string | null
+          parent_organization_id?: string | null
           settings?: Json | null
           slug: string
           subscription_tier?: string | null
@@ -2080,11 +2327,13 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           owner_id?: string | null
+          parent_organization_id?: string | null
           settings?: Json | null
           slug?: string
           subscription_tier?: string | null
@@ -2096,6 +2345,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_parent_organization_id_fkey"
+            columns: ["parent_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2120,6 +2376,160 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reseller_agreement_applications: {
+        Row: {
+          additional_notes: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string | null
+          applicant_title: string | null
+          applicant_user_id: string
+          business_model: string | null
+          company_address: string
+          company_legal_name: string
+          company_tax_id: string | null
+          company_website: string | null
+          created_at: string | null
+          estimated_customers: number
+          github_issue_number: number | null
+          github_issue_url: string | null
+          id: string
+          organization_id: string
+          preferred_billing: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_market: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone?: string | null
+          applicant_title?: string | null
+          applicant_user_id: string
+          business_model?: string | null
+          company_address: string
+          company_legal_name: string
+          company_tax_id?: string | null
+          company_website?: string | null
+          created_at?: string | null
+          estimated_customers?: number
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          id?: string
+          organization_id: string
+          preferred_billing?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_market?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          applicant_email?: string
+          applicant_name?: string
+          applicant_phone?: string | null
+          applicant_title?: string | null
+          applicant_user_id?: string
+          business_model?: string | null
+          company_address?: string
+          company_legal_name?: string
+          company_tax_id?: string | null
+          company_website?: string | null
+          created_at?: string | null
+          estimated_customers?: number
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          id?: string
+          organization_id?: string
+          preferred_billing?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_market?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_agreement_applications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reseller_agreements: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          agreement_type: string
+          agreement_version: string | null
+          billing_model: string | null
+          created_at: string | null
+          custom_terms: Json | null
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          max_child_organizations: number | null
+          notes: string | null
+          organization_id: string
+          revenue_share_percent: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agreement_type?: string
+          agreement_version?: string | null
+          billing_model?: string | null
+          created_at?: string | null
+          custom_terms?: Json | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_child_organizations?: number | null
+          notes?: string | null
+          organization_id: string
+          revenue_share_percent?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agreement_type?: string
+          agreement_version?: string | null
+          billing_model?: string | null
+          created_at?: string | null
+          custom_terms?: Json | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_child_organizations?: number | null
+          notes?: string | null
+          organization_id?: string
+          revenue_share_percent?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_agreements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sensor_activity: {
         Row: {
@@ -2208,9 +2618,13 @@ export type Database = {
           last_notification_at: string | null
           max_value: number | null
           min_value: number | null
+          notification_channels: string[] | null
           notification_cooldown_minutes: number | null
+          notify_emails: string[] | null
           notify_on_breach: boolean | null
+          notify_user_ids: string[] | null
           sensor_type: string
+          temperature_unit: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -2227,9 +2641,13 @@ export type Database = {
           last_notification_at?: string | null
           max_value?: number | null
           min_value?: number | null
+          notification_channels?: string[] | null
           notification_cooldown_minutes?: number | null
+          notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_user_ids?: string[] | null
           sensor_type: string
+          temperature_unit?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -2246,9 +2664,13 @@ export type Database = {
           last_notification_at?: string | null
           max_value?: number | null
           min_value?: number | null
+          notification_channels?: string[] | null
           notification_cooldown_minutes?: number | null
+          notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_user_ids?: string[] | null
           sensor_type?: string
+          temperature_unit?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -2803,6 +3225,7 @@ export type Database = {
         }
         Returns: string
       }
+      cleanup_expired_ai_insights_cache: { Args: never; Returns: undefined }
       cleanup_mqtt_queue: { Args: never; Returns: number }
       cleanup_old_integration_logs: { Args: never; Returns: number }
       cleanup_old_telemetry: {
@@ -2890,6 +3313,12 @@ export type Database = {
           pending_conflicts: number
           successful_syncs: number
           total_syncs: number
+        }[]
+      }
+      get_user_emails: {
+        Args: { user_ids: string[] }
+        Returns: {
+          email: string
         }[]
       }
       get_webhook_url: { Args: { integration_id: string }; Returns: string }
@@ -2994,6 +3423,14 @@ export type Database = {
     Enums: {
       alert_severity: "low" | "medium" | "high" | "critical"
       device_status: "online" | "offline" | "warning" | "error"
+      feedback_severity: "critical" | "high" | "medium" | "low"
+      feedback_status:
+        | "submitted"
+        | "acknowledged"
+        | "in_progress"
+        | "resolved"
+        | "closed"
+      feedback_type: "bug_report" | "feature_request"
       integration_broker_type: "hosted" | "external"
       notification_method: "email" | "sms" | "webhook" | "in_app"
       notification_status: "pending" | "sent" | "delivered" | "failed"
@@ -3123,10 +3560,22 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       alert_severity: ["low", "medium", "high", "critical"],
       device_status: ["online", "offline", "warning", "error"],
+      feedback_severity: ["critical", "high", "medium", "low"],
+      feedback_status: [
+        "submitted",
+        "acknowledged",
+        "in_progress",
+        "resolved",
+        "closed",
+      ],
+      feedback_type: ["bug_report", "feature_request"],
       integration_broker_type: ["hosted", "external"],
       notification_method: ["email", "sms", "webhook", "in_app"],
       notification_status: ["pending", "sent", "delivered", "failed"],
