@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   AlertTriangle,
   WifiOff,
@@ -106,6 +108,8 @@ function classifyDevice(device: DevicePerformance): DeviceIssue['issues'] {
 }
 
 export function ProblematicDevicesCard({ devices }: ProblematicDevicesCardProps) {
+  const [hideZeroUptime, setHideZeroUptime] = useState(false);
+
   const problematicDevices = useMemo(() => {
     return devices
       .map((device) => ({
@@ -113,6 +117,13 @@ export function ProblematicDevicesCard({ devices }: ProblematicDevicesCardProps)
         issues: classifyDevice(device),
       }))
       .filter((d) => d.issues.length > 0)
+      .filter((d) => {
+        // Filter out devices with zero uptime if checkbox is checked
+        if (hideZeroUptime && d.device.uptime_percentage < 5) {
+          return false;
+        }
+        return true;
+      })
       .sort((a, b) => {
         // Sort by severity: critical first, then by number of issues
         const aCritical = a.issues.filter(i => i.severity === 'critical').length;
@@ -120,7 +131,7 @@ export function ProblematicDevicesCard({ devices }: ProblematicDevicesCardProps)
         if (aCritical !== bCritical) return bCritical - aCritical;
         return b.issues.length - a.issues.length;
       });
-  }, [devices]);
+  }, [devices, hideZeroUptime]);
 
   const criticalCount = problematicDevices.filter(d => d.issues.some(i => i.severity === 'critical')).length;
   const warningCount = problematicDevices.length - criticalCount;
@@ -140,17 +151,32 @@ export function ProblematicDevicesCard({ devices }: ProblematicDevicesCardProps)
                 : `${problematicDevices.length} of ${devices.length} devices with issues`}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            {criticalCount > 0 && (
-              <Badge variant="destructive" className="text-xs">
-                {criticalCount} critical
-              </Badge>
-            )}
-            {warningCount > 0 && (
-              <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                {warningCount} warning
-              </Badge>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="hide-zero-uptime" 
+                checked={hideZeroUptime}
+                onCheckedChange={(checked) => setHideZeroUptime(checked === true)}
+              />
+              <Label 
+                htmlFor="hide-zero-uptime" 
+                className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap"
+              >
+                Hide zero uptime
+              </Label>
+            </div>
+            <div className="flex gap-2">
+              {criticalCount > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  {criticalCount} critical
+                </Badge>
+              )}
+              {warningCount > 0 && (
+                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                  {warningCount} warning
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
