@@ -96,10 +96,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
   const [diagLoading, setDiagLoading] = useState(false)
 
   // Integration testing state
-  const [integrations, setIntegrations] = useState<Integration[]>([])
-  const [integrationsLoading, setIntegrationsLoading] = useState(true)
   const [testingId, setTestingId] = useState<string | null>(null)
-  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({})
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; durationMs?: number }>>({})
 
   // Edge function logs state
   const [activityLogs, setActivityLogs] = useState<ActivityLogEntry[]>([])
@@ -109,6 +107,18 @@ export default function TroubleshootingTab({ organizationId }: Props) {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
   const [logsPage, setLogsPage] = useState(0)
   const LOGS_PAGE_SIZE = 25
+
+  // Define all 8 integration types for testing
+  const INTEGRATION_TYPES = [
+    { id: 'golioth', label: '🌐 Golioth', name: 'Golioth Integration' },
+    { id: 'aws_iot', label: '☁️ AWS IoT Core', name: 'AWS IoT Core Integration' },
+    { id: 'azure_iot', label: '🔵 Azure IoT Hub', name: 'Azure IoT Hub Integration' },
+    { id: 'mqtt', label: '📡 MQTT Broker', name: 'MQTT Broker Integration' },
+    { id: 'email', label: '📧 Email/SMTP', name: 'Email/SMTP Integration' },
+    { id: 'slack', label: '💬 Slack', name: 'Slack Integration' },
+    { id: 'webhook', label: '🔗 Webhook', name: 'Webhook Integration' },
+    { id: 'netneural_hub', label: '🚀 NetNeural Hub', name: 'NetNeural Hub Integration' }
+  ]
 
   // Fetch devices
   const fetchDevices = useCallback(async () => {
@@ -124,27 +134,6 @@ export default function TroubleshootingTab({ organizationId }: Props) {
       setDevices(data || [])
     } catch (err) {
       console.error('Failed to fetch devices:', err)
-    }
-  }, [organizationId, supabase])
-
-  // Fetch integrations
-  const fetchIntegrations = useCallback(async () => {
-    if (!organizationId) return
-    setIntegrationsLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('device_integrations')
-        .select('id, name, integration_type, status, organization_id')
-        .eq('organization_id', organizationId)
-        .order('name')
-
-      if (error) throw error
-      setIntegrations((data as unknown as Integration[]) || [])
-    } catch (err) {
-      console.error('Failed to fetch integrations:', err)
-      toast.error('Failed to load integrations')
-    } finally {
-      setIntegrationsLoading(false)
     }
   }, [organizationId, supabase])
 
@@ -183,7 +172,6 @@ export default function TroubleshootingTab({ organizationId }: Props) {
   }, [organizationId, supabase, logTypeFilter, logStatusFilter, logsPage])
 
   useEffect(() => { fetchDevices() }, [fetchDevices])
-  useEffect(() => { fetchIntegrations() }, [fetchIntegrations])
   useEffect(() => { fetchActivityLogs() }, [fetchActivityLogs])
 
   // Fetch device diagnostics
@@ -224,29 +212,90 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     if (deviceId) fetchDiagnostics(deviceId)
   }
 
-  // Test integration
-  const handleTestIntegration = async (integrationId: string) => {
-    setTestingId(integrationId)
+  // Test integration by type
+  const handleTestIntegrationType = async (integrationType: string) => {
+    setTestingId(integrationType)
+    const start = Date.now()
+    
     try {
-      const response = await edgeFunctions.integrations.test(integrationId)
-      const result = response?.data as { success: boolean; message?: string } | undefined
-      setTestResults(prev => ({
-        ...prev,
-        [integrationId]: {
-          success: result?.success || false,
-          message: result?.message || (result?.success ? 'Connection successful' : 'Connection failed'),
+      // Find active integration of this type
+      const { data: integration, error: listError } = await supabase
+        .from('device_integrations')
+        .select('id, name, integration_type, status')
+        .eq('organization_id', organizationId)
+        .eq('integration_type', integrationType)
+        .eq('status', 'active')
+        .limit(1)
+        .single()
+
+      if (listError || !integration) {
+        const durationMs = Date.now() - start
+        const integrationName = INTEGRATION_TYPES.find(t => t.id === integrationType)?.name || integrationType
+        setTestResults(prev => ({
+          ...prev,
+          [integrationType]: {
+            success: false,
+            message: `No active ${integrationName.replace(' Integration', '')} integration found. Configure one in Organizations → Integrations.`,
+            durationMs
+          }
+        }))
+        return
+      }
+
+      // Call edge function to test the integration
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        const durationMs = Date.now() - start
+        setTestResults(prev => ({
+          ...prev,
+          [integrationType]: { success: false, message: 'No active session', durationMs }
+        }))
+        return
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/integrations/test?id=${integration.id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      }))
-      if (result?.success) {
-        toast.success('Integration test passed')
+      )
+
+      const result = await response.json()
+      const durationMs = Date.now() - start
+
+      if (!response.ok || !result.success) {
+        setTestResults(prev => ({
+          ...prev,
+          [integrationType]: {
+            success: false,
+            message: result.error?.message || result.message || 'Test failed',
+            durationMs
+          }
+        }))
+        toast.error(`${integration.name}: ${result.error?.message || result.message || 'Test failed'}`)
       } else {
-        toast.error(result?.message || 'Integration test failed')
+        setTestResults(prev => ({
+          ...prev,
+          [integrationType]: {
+            success: true,
+            message: `${integration.name}: ${result.message || 'Connection successful'}`,
+            durationMs
+          }
+        }))
+        toast.success(`${integration.name}: Test passed`)
       }
     } catch (err) {
+      const durationMs = Date.now() - start
       const message = err instanceof Error ? err.message : 'Test failed'
       setTestResults(prev => ({
         ...prev,
-        [integrationId]: { success: false, message }
+        [integrationType]: { success: false, message, durationMs }
       }))
       toast.error(message)
     } finally {
@@ -256,9 +305,15 @@ export default function TroubleshootingTab({ organizationId }: Props) {
 
   // Test all integrations
   const handleTestAll = async () => {
-    for (const integration of integrations) {
-      await handleTestIntegration(integration.id)
+    setTestingId('all')
+    for (const integrationType of INTEGRATION_TYPES) {
+      await handleTestIntegrationType(integrationType.id)
     }
+    setTestingId(null)
+    
+    const results = Object.values(testResults)
+    const passed = results.filter(r => r.success).length
+    toast.success(`Integration tests complete: ${passed}/${INTEGRATION_TYPES.length} passed`)
   }
 
   const copyDiagnostics = () => {
@@ -280,15 +335,6 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     !deviceSearch || d.name.toLowerCase().includes(deviceSearch.toLowerCase()) ||
     d.serial_number?.toLowerCase().includes(deviceSearch.toLowerCase())
   )
-
-  const getIntegrationTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      golioth: 'Golioth', mqtt: 'MQTT', mqtt_hosted: 'MQTT (Hosted)',
-      mqtt_external: 'MQTT (External)', aws_iot: 'AWS IoT', azure_iot: 'Azure IoT',
-      google_iot: 'Google IoT', webhook: 'Webhook', email: 'Email', slack: 'Slack',
-    }
-    return labels[type] || type
-  }
 
   return (
     <div className="space-y-6">
@@ -441,70 +487,67 @@ export default function TroubleshootingTab({ organizationId }: Props) {
           <CardDescription>Test configured integration connections</CardDescription>
         </CardHeader>
         <CardContent>
-          {integrationsLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-            </div>
-          ) : integrations.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">No integrations configured for this organization</p>
-          ) : (
-            <>
-              <div className="flex justify-end mb-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestAll}
-                  disabled={testingId !== null}
-                >
-                  <PlayCircle className="w-4 h-4 mr-1" />
-                  Test All ({integrations.length})
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {integrations.map(integration => {
-                  const result = testResults[integration.id]
-                  const isTesting = testingId === integration.id
-                  return (
-                    <div key={integration.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">{getIntegrationTypeLabel(integration.integration_type)}</Badge>
-                        <span className="font-medium text-sm">{integration.name}</span>
-                      </div>
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestAll}
+              disabled={testingId !== null}
+            >
+              {testingId === 'all' ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <PlayCircle className="w-4 h-4 mr-1" />
+              )}
+              Test All ({INTEGRATION_TYPES.length})
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {INTEGRATION_TYPES.map(integrationType => {
+              const result = testResults[integrationType.id]
+              const isTesting = testingId === integrationType.id
+              return (
+                <div key={integrationType.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline">{integrationType.label}</Badge>
+                    <span className="font-medium text-sm">{integrationType.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {result && (
                       <div className="flex items-center gap-2">
-                        {result && (
-                          <div className="flex items-center gap-1">
-                            {result.success ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span className={`text-xs ${result.success ? 'text-green-600' : 'text-red-600'}`}>
-                              {result.message.length > 40 ? result.message.slice(0, 40) + '...' : result.message}
-                            </span>
-                          </div>
+                        {result.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleTestIntegration(integration.id)}
-                          disabled={isTesting}
-                        >
-                          {isTesting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <PlayCircle className="w-4 h-4 mr-1" />
-                              Test
-                            </>
-                          )}
-                        </Button>
+                        <span className={`text-xs max-w-[300px] truncate ${result.success ? 'text-green-600' : 'text-red-600'}`}>
+                          {result.message}
+                        </span>
+                        {result.durationMs && result.durationMs > 0 && (
+                          <Badge variant="outline" className="text-[10px]">{result.durationMs}ms</Badge>
+                        )}
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestIntegrationType(integrationType.id)}
+                      disabled={isTesting || testingId === 'all'}
+                    >
+                      {isTesting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <PlayCircle className="w-4 h-4 mr-1" />
+                          Test
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 
