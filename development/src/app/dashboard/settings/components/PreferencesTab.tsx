@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Moon, Sun, Monitor, Globe, Layout, Bell, Palette, Building2, Thermometer } from 'lucide-react';
+import { Moon, Sun, Monitor, Globe, Bell, Palette, Building2, Thermometer } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export function PreferencesTab() {
@@ -356,6 +356,20 @@ export function PreferencesTab() {
               onCheckedChange={setAnimationsEnabled}
             />
           </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="sound">Sound Effects</Label>
+              <p className="text-sm text-muted-foreground">
+                Play sounds for notifications and alerts
+              </p>
+            </div>
+            <Switch
+              id="sound"
+              checked={soundEnabled}
+              onCheckedChange={setSoundEnabled}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -474,34 +488,6 @@ export function PreferencesTab() {
                 °F
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Dashboard Layout */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Layout className="w-5 h-5" />
-            Dashboard Layout
-          </CardTitle>
-          <CardDescription>
-            Configure your default dashboard view
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="sound">Sound Effects</Label>
-              <p className="text-sm text-muted-foreground">
-                Play sounds for notifications and alerts
-              </p>
-            </div>
-            <Switch
-              id="sound"
-              checked={soundEnabled}
-              onCheckedChange={setSoundEnabled}
-            />
           </div>
         </CardContent>
       </Card>

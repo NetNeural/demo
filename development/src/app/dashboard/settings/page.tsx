@@ -45,11 +45,7 @@ export default function SettingsPage() {
 
         {/* Profile Tab */}
         <TabsContent value="profile">
-          <ProfileTab
-            initialName="NetNeural Admin"
-            initialEmail="admin@netneural.ai"
-            initialNotifications={true}
-          />
+          <ProfileTab />
         </TabsContent>
 
         {/* Preferences Tab */}

@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Bell, Send } from 'lucide-react';
+import { User, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -18,24 +16,12 @@ import { SettingsSection } from './shared/SettingsSection';
 import { SettingsFormGroup } from './shared/SettingsFormGroup';
 import { createClient } from '@/lib/supabase/client';
 
-interface ProfileTabProps {
-  initialName?: string;
-  initialEmail?: string;
-  initialNotifications?: boolean;
-}
-
-export function ProfileTab({
-  initialName = 'NetNeural Admin',
-  initialEmail = 'admin@netneural.ai',
-  initialNotifications = true
-}: ProfileTabProps) {
+export function ProfileTab() {
   const { toast } = useToast();
-  const [profileName, setProfileName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
+  const [profileName, setProfileName] = useState('');
+  const [email, setEmail] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [department, setDepartment] = useState('');
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const [marketing, setMarketing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Load profile from Supabase on mount
@@ -62,8 +48,6 @@ export function ProfileTab({
       if (metadata) {
         if (metadata.job_title) setJobTitle(metadata.job_title);
         if (metadata.department) setDepartment(metadata.department);
-        if (typeof metadata.email_notifications === 'boolean') setNotifications(metadata.email_notifications);
-        if (typeof metadata.marketing_emails === 'boolean') setMarketing(metadata.marketing_emails);
       }
       
       // Email comes from auth
@@ -113,8 +97,6 @@ export function ProfileTab({
         data: {
           job_title: jobTitle,
           department: department,
-          email_notifications: notifications,
-          marketing_emails: marketing
         }
       });
 
@@ -161,12 +143,10 @@ export function ProfileTab({
   };
 
   const handleReset = () => {
-    setProfileName(initialName);
-    setEmail(initialEmail);
+    setProfileName('');
+    setEmail('');
     setJobTitle('');
     setDepartment('');
-    setNotifications(initialNotifications);
-    setMarketing(false);
   };
 
   return (
@@ -218,52 +198,6 @@ export function ProfileTab({
               </SelectContent>
             </Select>
           </SettingsFormGroup>
-        </div>
-      </SettingsSection>
-
-      {/* Notification Preferences */}
-      <SettingsSection
-        icon={<Bell className="w-5 h-5" />}
-        title="Notification Preferences"
-        description="Control how you receive updates and communications"
-      >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between py-3 border-b">
-            <div className="space-y-0.5">
-              <Label htmlFor="email-notifications" className="text-base font-medium">
-                Email Notifications
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email notifications for account updates and alerts
-              </p>
-            </div>
-            <Switch
-              id="email-notifications"
-              checked={notifications}
-              onCheckedChange={setNotifications}
-            />
-          </div>
-
-          <div className="flex items-center justify-between py-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="marketing" className="text-base font-medium">
-                Product Updates
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive product updates, newsletters, and feature announcements
-              </p>
-            </div>
-            <Switch
-              id="marketing"
-              checked={marketing}
-              onCheckedChange={setMarketing}
-            />
-          </div>
-
-          <p className="text-sm text-muted-foreground pt-2">
-            For advanced notification settings (SMS, severity filters, quiet hours), visit the{' '}
-            <span className="font-medium text-primary">Preferences</span> tab.
-          </p>
         </div>
       </SettingsSection>
 
