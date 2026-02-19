@@ -23,7 +23,12 @@ export function AnalyticsHeader({ organizationName, organizationSettings, timeRa
             name={organizationName || 'NetNeural'}
             size="xl"
           />
-          <h1 className="text-3xl font-bold tracking-tight">{organizationName} AI Analytics</h1>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{organizationName} AI Analytics</h2>
+            <p className="text-muted-foreground">
+              AI-powered insights, forecasting, and fleet health for {organizationName}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
@@ -44,9 +49,6 @@ export function AnalyticsHeader({ organizationName, organizationSettings, timeRa
           </Button>
         </div>
       </div>
-      <p className="text-muted-foreground">
-        AI-powered insights, forecasting, and fleet health for {organizationName}
-      </p>
     </div>
   );
 }

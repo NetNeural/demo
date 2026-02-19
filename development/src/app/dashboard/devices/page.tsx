@@ -15,7 +15,7 @@ export default function DevicesPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
           <div className="text-center space-y-3">
             <p className="text-muted-foreground">No organization selected</p>
@@ -27,7 +27,7 @@ export default function DevicesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       {/* Organization context: {currentOrganization.name} */}
       <DevicesHeader />
       

@@ -16,20 +16,19 @@ export function PageHeader({ title, description, action, icon, className }: Page
   const { currentOrganization } = useOrganization()
 
   return (
-    <div className={cn("mb-8 pl-6", className)}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
+    <div className={cn("", className)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <OrganizationLogo
             settings={currentOrganization?.settings}
             name={currentOrganization?.name || 'NetNeural'}
             size="xl"
-            className="mt-1"
           />
-          {icon && <div className="flex-shrink-0 mt-1">{icon}</div>}
+          {icon && <div className="flex-shrink-0">{icon}</div>}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+            <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
             {description && (
-              <p className="text-gray-600">{description}</p>
+              <p className="text-muted-foreground">{description}</p>
             )}
           </div>
         </div>

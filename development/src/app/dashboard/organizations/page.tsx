@@ -53,7 +53,7 @@ export default function OrganizationsPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <PageHeader
           title="Organization Management"
           description="Select an organization from the sidebar to manage"
@@ -72,7 +72,7 @@ export default function OrganizationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       <PageHeader
         title={`${currentOrganization.name} Organization Management`}
         description={`Configure ${currentOrganization.name} - members, devices, integrations, and settings. Switch organizations using the sidebar.`}

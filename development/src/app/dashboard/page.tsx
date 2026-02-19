@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
   if (loading || isLoadingOrg) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <div className="text-center">
           <p>Loading dashboard...</p>
         </div>
@@ -47,7 +47,7 @@ export default function DashboardPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Welcome to NetNeural IoT Platform</h1>
           <p className="text-muted-foreground">Select an organization to view your dashboard</p>
@@ -63,7 +63,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       {/* Page Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-3">
@@ -72,9 +72,11 @@ export default function DashboardPage() {
             name={currentOrganization.name}
             size="xl"
           />
-          <h1 className="text-3xl font-bold tracking-tight">{currentOrganization.name}</h1>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{currentOrganization.name}</h1>
+            <p className="text-muted-foreground">Real-time overview of your IoT infrastructure</p>
+          </div>
         </div>
-        <p className="text-muted-foreground">Real-time overview of your IoT infrastructure</p>
       </div>
 
       {/* Stats Grid */}

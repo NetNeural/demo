@@ -22,7 +22,7 @@ export default function AnalyticsPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
           <div className="text-center space-y-3">
             <p className="text-muted-foreground">No organization selected</p>
@@ -37,16 +37,17 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <div className="flex items-center gap-3">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <div className="flex items-center gap-3">
             <OrganizationLogo
               settings={currentOrganization?.settings}
               name={currentOrganization?.name || 'NetNeural'}
               size="xl"
             />
-            <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
-          </div>
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
+              <p className="text-muted-foreground">AI-powered insights, forecasting, and fleet health</p>
+            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -66,16 +67,17 @@ export default function AnalyticsPage() {
 
   if (!data) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <div className="flex items-center gap-3">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <div className="flex items-center gap-3">
             <OrganizationLogo
               settings={currentOrganization?.settings}
               name={currentOrganization?.name || 'NetNeural'}
               size="xl"
             />
-            <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
-          </div>
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
+              <p className="text-muted-foreground">AI-powered insights, forecasting, and fleet health</p>
+            </div>
         </div>
         <div className="text-center">
           <p className="text-red-500">Failed to load analytics data</p>
