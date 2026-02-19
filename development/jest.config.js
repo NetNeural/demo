@@ -17,12 +17,14 @@ const config = {
   // Module name mapping for CSS modules and static assets
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
-    '^@/(.*)$': '<rootDir>/src/$1',
+    // Note: More specific patterns must come before general ones
+    '^@/__tests__/(.*)$': '<rootDir>/__tests__/$1',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
     '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
     
     // Handle CSS imports (with CSS modules)
     '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
@@ -49,10 +51,20 @@ const config = {
   
   // Test match patterns
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/src/**/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.(test|spec).{js,jsx,ts,tsx}',
-    '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
-    '<rootDir>/tests/**/*.(test|spec).{js,jsx,ts,tsx}',
+    '<rootDir>/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}',
+    '<rootDir>/tests/**/*.(test).{js,jsx,ts,tsx}',
+  ],
+  
+  // Exclude utility and setup files from being treated as tests
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/setup\\.ts$',
+    '/__tests__/utils/',
+    '/__tests__/mocks/',
+    '/tests/playwright/',
+    '/tests/integration/sync-orchestrator\\.integration\\.test\\.ts$',
   ],
   
   // Transform configuration
