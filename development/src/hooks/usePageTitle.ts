@@ -25,7 +25,7 @@ const ROUTE_TITLES: [string, string][] = [
   ['/dashboard/reports/alerts', 'Alert History'],
   ['/dashboard/reports/telemetry', 'Telemetry Trends'],
   ['/dashboard/reports', 'Reports'],
-  ['/dashboard/settings', 'Settings'],
+  ['/dashboard/settings', 'Personal Settings'],
   ['/dashboard/support', 'Support'],
   ['/dashboard/users', 'Users'],
   ['/dashboard', 'Dashboard'],
