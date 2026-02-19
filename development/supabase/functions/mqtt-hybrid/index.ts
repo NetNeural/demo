@@ -25,7 +25,7 @@ interface MqttIntegration {
   id: string
   organization_id: string
   integration_type: 'mqtt_hosted' | 'mqtt_external' | 'mqtt'
-  config: {
+  settings: {
     // For hosted broker
     use_hosted?: boolean
     
@@ -91,19 +91,19 @@ async function connectMqttClient(
     })
   } else {
     // Connect to external broker
-    const config = integration.config
-    const protocol = config.protocol || 'mqtt'
-    const port = config.port || (protocol === 'mqtts' ? 8883 : 1883)
-    const url = `${protocol}://${config.broker_url}:${port}`
+    const settings = integration.settings
+    const protocol = settings.protocol || 'mqtt'
+    const port = settings.port || (protocol === 'mqtts' ? 8883 : 1883)
+    const url = `${protocol}://${settings.broker_url}:${port}`
 
     const client = mqtt.connect(url, {
       clientId: `netneural_${Date.now()}`,
-      username: config.username,
-      password: config.password,
+      username: settings.username,
+      password: settings.password,
       clean: true,
       reconnectPeriod: 1000,
       connectTimeout: 30000,
-      ...(config.use_tls && {
+      ...(settings.use_tls && {
         rejectUnauthorized: true,
       }),
     })
