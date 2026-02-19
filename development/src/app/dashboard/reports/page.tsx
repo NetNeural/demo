@@ -125,8 +125,8 @@ export default function ReportsIndexPage() {
           size="xl"
         />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{currentOrganization?.name ? `${currentOrganization.name} Reports` : 'Reports'}</h1>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-3xl font-bold tracking-tight">{currentOrganization?.name ? `${currentOrganization.name} Reports` : 'Reports'}</h2>
+          <p className="text-muted-foreground">
             Analyze your IoT data with comprehensive reporting tools
           </p>
         </div>

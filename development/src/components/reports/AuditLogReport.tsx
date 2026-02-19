@@ -430,7 +430,7 @@ export function AuditLogReport() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <OrganizationLogo
@@ -439,11 +439,8 @@ export function AuditLogReport() {
           size="xl"
         />
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <FileText className="h-8 w-8" />
-            User Activity Audit Log
-          </h1>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-3xl font-bold tracking-tight">User Activity Audit Log</h2>
+          <p className="text-muted-foreground">
             View and track all user actions in the system for compliance and troubleshooting
           </p>
         </div>

@@ -45,7 +45,7 @@ export default function SupportPage() {
 
   if (userLoading) {
     return (
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-6 w-96" />
         <Skeleton className="h-12 w-full" />
@@ -65,7 +65,7 @@ export default function SupportPage() {
   const visibleTabs = tabs.filter(tab => !tab.superAdminOnly || isSuperAdmin)
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       <PageHeader
         title={orgName ? `${orgName} Support & Administration` : 'Support & Administration'}
         description={`Diagnostics, customer tools, and troubleshooting for ${orgName}`}
