@@ -492,6 +492,31 @@ export default function TestsTab({ organizationId }: Props) {
               </div>
             </div>
 
+            {/* AWS IoT Test */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <FlaskConical className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">AWS IoT Core Integration Test</h4>
+                    <Badge variant="outline" className="text-[10px]">Story #99</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests AWS IoT Core integration — Thing listing, Thing details, Shadow retrieval, telemetry verification
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ node scripts/test-aws-iot.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-aws-iot.js</code> | 📚 <code>docs/AWS_IOT_ARCHITECTURE.md</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Encryption Test */}
             <div className="border rounded-lg p-4">
               <div className="flex items-start gap-3">

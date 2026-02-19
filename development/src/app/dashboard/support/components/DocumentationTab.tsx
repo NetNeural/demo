@@ -169,6 +169,17 @@ const DOCS: DocEntry[] = [
     lastUpdated: '2026-02-19',
   },
   {
+    id: 'aws-iot-architecture',
+    title: 'AWS IoT Core Architecture',
+    filename: 'AWS_IOT_ARCHITECTURE.md',
+    description: 'AWS IoT Core integration — Thing management, Thing Shadows, telemetry options via IoT Analytics, security, IAM permissions.',
+    icon: Network,
+    category: 'developer',
+    lines: 452,
+    audience: ['Developers', 'Integrators', 'Org Admins'],
+    lastUpdated: '2025-11-13',
+  },
+  {
     id: 'golioth-architecture',
     title: 'Golioth Integration Architecture',
     filename: 'GOLIOTH_INTEGRATION_ARCHITECTURE.md',
