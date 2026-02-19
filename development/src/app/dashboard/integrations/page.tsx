@@ -9,7 +9,6 @@ import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
-import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { integrationSyncService } from '@/services/integration-sync.service'
@@ -32,9 +31,7 @@ export default function IntegrationsPage() {
   
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
-  const [configOpen, setConfigOpen] = useState(false)
   const [conflictOpen, setConflictOpen] = useState(false)
-  const [selectedIntegration, setSelectedIntegration] = useState<string | undefined>()
   const [pendingConflicts, setPendingConflicts] = useState(0)
 
   const loadIntegrations = useCallback(async () => {
@@ -93,8 +90,9 @@ export default function IntegrationsPage() {
   }
 
   const handleAdd = () => {
-    setSelectedIntegration(undefined)
-    setConfigOpen(true)
+    if (!currentOrganization) return
+    // Navigate to integration type selector via settings page
+    router.push(`/dashboard/organizations?tab=integrations&action=add`)
   }
 
   const handleDelete = async (integrationId: string) => {
@@ -255,28 +253,15 @@ export default function IntegrationsPage() {
 
       {/* Dialogs */}
       {currentOrganization && (
-        <>
-          <GoliothConfigDialog
-            open={configOpen}
-            onOpenChange={setConfigOpen}
-            integrationId={selectedIntegration}
-            organizationId={currentOrganization.id}
-            onSaved={() => {
-              loadIntegrations()
-              setConfigOpen(false)
-            }}
-          />
-
-          <ConflictResolutionDialog
-            open={conflictOpen}
-            onOpenChange={setConflictOpen}
-            organizationId={currentOrganization.id}
-            onResolved={() => {
-              loadPendingConflicts()
-              setConflictOpen(false)
-            }}
-          />
-        </>
+        <ConflictResolutionDialog
+          open={conflictOpen}
+          onOpenChange={setConflictOpen}
+          organizationId={currentOrganization.id}
+          onResolved={() => {
+            loadPendingConflicts()
+            setConflictOpen(false)
+          }}
+        />
       )}
     </div>
   )
