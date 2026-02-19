@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Users, Wrench, Activity, Settings2, FlaskConical, BookOpen, Shield } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/ui/page-header'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -69,14 +68,6 @@ export default function SupportPage() {
       <PageHeader
         title={orgName ? `${orgName} Support & Administration` : 'Support & Administration'}
         description={`Diagnostics, customer tools, and troubleshooting for ${orgName}`}
-        action={
-          isSuperAdmin ? (
-            <Badge variant="destructive" className="flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Super Admin — Cross-Org Access
-            </Badge>
-          ) : undefined
-        }
       />
 
       <Tabs defaultValue="customer-assistance" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
