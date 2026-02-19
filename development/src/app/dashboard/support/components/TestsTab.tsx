@@ -426,6 +426,137 @@ export default function TestsTab({ organizationId }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Manual Integration Test Scripts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TestTubes className="w-5 h-5" />
+            Manual Integration Test Scripts
+          </CardTitle>
+          <CardDescription>
+            Node.js scripts for testing integrations with external services — requires service credentials
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {/* MQTT Test */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <FlaskConical className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">MQTT Broker Integration Test</h4>
+                    <Badge variant="outline" className="text-[10px]">Story #97</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests MQTT integration with external broker (test.mosquitto.org) — connection, publish, subscribe, activity logging
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-mqtt-broker.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-mqtt-broker.js</code> | 📚 <code>docs/MQTT_ARCHITECTURE.md</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Azure IoT Test */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <FlaskConical className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Azure IoT Hub Integration Test</h4>
+                    <Badge variant="outline" className="text-[10px]">Story #98</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests Azure IoT Hub integration — connection, device listing, status retrieval, telemetry query
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx AZURE_IOT_CONNECTION_STRING="..." node scripts/test-azure-iot.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-azure-iot.js</code> | 📚 <code>docs/AZURE_IOT_ARCHITECTURE.md</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Encryption Test */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Shield className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">API Key Encryption Test</h4>
+                    <Badge variant="outline" className="text-[10px]">Story #96</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests pgsodium encryption functions — encrypt, decrypt, round-trip, deterministic, base64 fallback
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-encryption.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-encryption.js</code> | ⚠️ Requires pgsodium permissions on Supabase
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Device Types Check */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Database className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Device Types Database Check</h4>
+                    <Badge variant="outline" className="text-[10px]">Utility</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Verifies 42 industry-standard device types are seeded correctly in database
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/check-device-types.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/check-device-types.js</code> | Expected: 42 device types
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Important note */}
+          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
+            <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-amber-900 dark:text-amber-200">
+              <Shield className="w-4 h-4" />
+              Credentials Required
+            </h4>
+            <p className="text-xs text-amber-800 dark:text-amber-300">
+              These scripts require service credentials (Supabase service role key, Azure connection strings, etc.)
+              and are intended for manual testing by developers. They are not run in CI/CD.
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-300 mt-2">
+              Store credentials in <code className="bg-amber-100 dark:bg-amber-900 px-1 py-0.5 rounded">.env.local</code> (gitignored) or pass as environment variables. Never commit credentials to the repository.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

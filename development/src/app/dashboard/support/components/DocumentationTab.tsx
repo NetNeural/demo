@@ -146,6 +146,28 @@ const DOCS: DocEntry[] = [
     audience: ['All Roles'],
     lastUpdated: '2026-02-18',
   },
+  {
+    id: 'mqtt-architecture',
+    title: 'MQTT Integration Architecture',
+    filename: 'MQTT_ARCHITECTURE.md',
+    description: 'MQTT integration design — stateless Edge Functions, HTTP ingestion with PGMQ, external broker support, topic structure, security.',
+    icon: Network,
+    category: 'developer',
+    lines: 561,
+    audience: ['Developers', 'Integrators', 'Org Admins'],
+    lastUpdated: '2026-02-19',
+  },
+  {
+    id: 'azure-iot-architecture',
+    title: 'Azure IoT Hub Architecture',
+    filename: 'AZURE_IOT_ARCHITECTURE.md',
+    description: 'Azure IoT Hub integration — Device Registry, Device Twin, telemetry storage options, security, customer configuration guide.',
+    icon: Network,
+    category: 'developer',
+    lines: 131,
+    audience: ['Developers', 'Integrators', 'Org Admins'],
+    lastUpdated: '2026-02-19',
+  },
 ]
 
 const CATEGORIES = [
