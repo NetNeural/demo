@@ -16,6 +16,7 @@ import { RecentActivityCard } from '@/components/sensors/RecentActivityCard'
 import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
 import { StatisticalSummaryCard } from '@/components/sensors/StatisticalSummaryCard'
 import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
+import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
 import type { Device } from '@/types/sensor-details'
 
 /**
@@ -118,6 +119,7 @@ export default function SensorDetailsPage() {
         id: deviceData.id as string,
         name: deviceData.name as string,
         device_type: (deviceData.device_type as string) || 'unknown',
+        device_type_id: (deviceData.device_type_id as string) || null,
         model: (deviceData.model as string) || undefined,
         serial_number: (deviceData.serial_number as string) || undefined,
         status: (deviceData.status as Device['status']) || 'offline',
@@ -232,13 +234,18 @@ export default function SensorDetailsPage() {
           <HistoricalDataViewer device={device} />
         )}
 
-        {/* 3. Location + Health - Always shown */}
+        {/* 3. Inherited Device Type Configuration - Only when type assigned */}
+        {device.device_type_id && (
+          <InheritedConfigCard deviceTypeId={device.device_type_id} />
+        )}
+
+        {/* 4. Location + Health - Always shown */}
         <div className="grid gap-6 md:grid-cols-2">
           <LocationDetailsCard device={device} />
           <DeviceHealthCard device={device} telemetryReadings={telemetryReadings} />
         </div>
 
-        {/* 4. Alerts + Activity - Alerts only for sensors */}
+        {/* 5. Alerts + Activity - Alerts only for sensors */}
         <div className={`grid gap-6 ${isGateway ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}>
           {!isGateway && (
             <AlertsThresholdsCard 
@@ -250,7 +257,7 @@ export default function SensorDetailsPage() {
           <RecentActivityCard device={device} />
         </div>
 
-        {/* 5. Statistics - Only for sensors */}
+        {/* 6. Statistics - Only for sensors */}
         {!isGateway && (
           <StatisticalSummaryCard 
             device={device} 

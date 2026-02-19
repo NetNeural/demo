@@ -81,6 +81,7 @@ export interface Device {
   id: string
   name: string
   device_type: string
+  device_type_id?: string | null
   model?: string
   serial_number?: string
   external_device_id?: string

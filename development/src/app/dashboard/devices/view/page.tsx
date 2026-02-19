@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
+import { DeviceTypeSelector } from '@/components/device-types/DeviceTypeSelector'
+import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { toast } from 'sonner'
 
@@ -43,6 +45,7 @@ interface Device {
   integration_id?: string | null
   integrationName?: string | null
   integrationType?: string | null
+  device_type_id?: string | null
   description?: string
   metadata?: Record<string, unknown>
   hardware_ids?: string[]
@@ -71,6 +74,7 @@ export default function DeviceViewPage() {
   // Form state
   const [name, setName] = useState('')
   const [deviceType, setDeviceType] = useState('')
+  const [deviceTypeId, setDeviceTypeId] = useState<string | null>(null)
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [firmwareVersion, setFirmwareVersion] = useState('')
@@ -108,6 +112,7 @@ export default function DeviceViewPage() {
         id: deviceData.id || '',
         name: deviceData.name || '',
         device_type: deviceData.device_type || deviceData.type || '',
+        device_type_id: deviceData.device_type_id || null,
         type: deviceData.type || deviceData.device_type || '',
         status: deviceData.status || 'offline',
         model: deviceData.model,
@@ -134,6 +139,7 @@ export default function DeviceViewPage() {
       setDevice(mappedDevice)
       setName(mappedDevice.name || '')
       setDeviceType(mappedDevice.device_type || mappedDevice.type || '')
+      setDeviceTypeId(mappedDevice.device_type_id || null)
       setModel(mappedDevice.model || '')
       setSerialNumber(mappedDevice.serial_number || '')
       setFirmwareVersion(mappedDevice.firmware_version || '')
@@ -169,8 +175,13 @@ export default function DeviceViewPage() {
   }, [loadDevice, loadLocations])
 
   const handleSave = async () => {
-    if (!name.trim() || !deviceType.trim()) {
-      toast.error('Name and type are required')
+    if (!name.trim()) {
+      toast.error('Name is required')
+      return
+    }
+
+    if (!deviceTypeId && !deviceType.trim()) {
+      toast.error('Device type is required')
       return
     }
 
@@ -181,6 +192,7 @@ export default function DeviceViewPage() {
       const response = await edgeFunctions.devices.update(deviceId, {
         name: name.trim(),
         device_type: deviceType.trim(),
+        device_type_id: deviceTypeId,
         model: model.trim() || undefined,
         serial_number: serialNumber.trim() || undefined,
         firmware_version: firmwareVersion.trim() || undefined,
@@ -379,6 +391,14 @@ export default function DeviceViewPage() {
                 </div>
               </div>
 
+              {/* Inherited Device Type Config */}
+              {device.device_type_id && (
+                <>
+                  <Separator />
+                  <InheritedConfigCard deviceTypeId={device.device_type_id} />
+                </>
+              )}
+
               <Separator />
 
               {/* Connection & Activity */}
@@ -522,12 +542,19 @@ export default function DeviceViewPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Device Type *</Label>
-                  <Input
-                    id="type"
-                    value={deviceType}
-                    onChange={(e) => setDeviceType(e.target.value)}
-                    placeholder="e.g., Sensor, Gateway, Controller"
+                  <DeviceTypeSelector
+                    value={deviceTypeId}
+                    onValueChange={(typeId, dt) => {
+                      setDeviceTypeId(typeId)
+                      if (dt) setDeviceType(dt.name)
+                      else if (!typeId) setDeviceType('')
+                    }}
+                    allowNone={true}
+                    placeholder="Select or assign a device type..."
                   />
+                  {!deviceTypeId && deviceType && (
+                    <p className="text-xs text-muted-foreground">Legacy type: {deviceType}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -626,7 +653,7 @@ export default function DeviceViewPage() {
 
                 <Button
                   onClick={handleSave}
-                  disabled={saving || deleting || !name.trim() || !deviceType.trim()}
+                  disabled={saving || deleting || !name.trim()}
                 >
                   {saving ? (
                     <>

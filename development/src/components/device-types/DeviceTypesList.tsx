@@ -8,7 +8,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -45,8 +45,10 @@ import {
   Gauge,
   Ruler,
   PackageOpen,
+  Loader2,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { createClient } from '@/lib/supabase/client'
 import {
   useDeviceTypesQuery,
   useDeleteDeviceTypeMutation,
@@ -132,6 +134,37 @@ export function DeviceTypesList() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingType, setEditingType] = useState<DeviceType | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeviceType | null>(null)
+  const [deleteDeviceCount, setDeleteDeviceCount] = useState<number | null>(null)
+  const [checkingDevices, setCheckingDevices] = useState(false)
+
+  // When a delete target is set, check how many devices reference it
+  useEffect(() => {
+    if (!deleteTarget) {
+      setDeleteDeviceCount(null)
+      return
+    }
+    let cancelled = false
+    async function check() {
+      setCheckingDevices(true)
+      try {
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count, error } = await (supabase as any)
+          .from('devices')
+          .select('id', { count: 'exact', head: true })
+          .eq('device_type_id', deleteTarget!.id)
+        if (!cancelled) {
+          setDeleteDeviceCount(error ? 0 : (count ?? 0))
+        }
+      } catch {
+        if (!cancelled) setDeleteDeviceCount(0)
+      } finally {
+        if (!cancelled) setCheckingDevices(false)
+      }
+    }
+    check()
+    return () => { cancelled = true }
+  }, [deleteTarget])
 
   function handleEdit(dt: DeviceType) {
     setEditingType(dt)
@@ -317,16 +350,37 @@ export function DeviceTypesList() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Device Type</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-              This action cannot be undone. Existing devices referencing this type
-              will not be affected.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
+                  This action cannot be undone.
+                </p>
+                {checkingDevices && (
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking assigned devices...
+                  </p>
+                )}
+                {!checkingDevices && deleteDeviceCount != null && deleteDeviceCount > 0 && (
+                  <p className="text-destructive font-medium">
+                    ⚠️ {deleteDeviceCount} device{deleteDeviceCount !== 1 ? 's are' : ' is'} currently
+                    assigned to this type. Their device_type_id will be set to NULL.
+                  </p>
+                )}
+                {!checkingDevices && deleteDeviceCount === 0 && (
+                  <p className="text-muted-foreground">
+                    No devices are currently assigned to this type.
+                  </p>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={checkingDevices}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteMutation.isPending ? 'Deleting...' : 'Delete'}

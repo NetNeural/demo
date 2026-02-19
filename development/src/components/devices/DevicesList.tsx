@@ -37,6 +37,7 @@ interface Device {
   id: string
   name: string
   device_type: string
+  device_type_id?: string | null
   model?: string
   serial_number?: string
   status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
@@ -794,6 +795,11 @@ export function DevicesList() {
                   return <Monitor className="w-4 h-4 text-muted-foreground/60" />
                 })()}
                 {device.type}
+                {device.device_type_id && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
+                    Configured
+                  </Badge>
+                )}
               </p>
             </CardHeader>
             <CardContent>
