@@ -272,10 +272,9 @@ export default function DocumentationTab() {
   const totalLines = DOCS.reduce((acc, d) => acc + d.lines, 0)
 
   const handleOpenDoc = (filename: string) => {
-    // In a real deployment this would link to a rendered doc viewer
-    // For now, open the raw markdown file in a new tab
-    const basePath = '/docs/'
-    window.open(`https://github.com/search?q=repo%3A${filename}&type=code`, '_blank')
+    // Link to the documentation file in the GitHub repository
+    const repoUrl = 'https://github.com/NetNeural/MonoRepo-Staging/blob/main/development/docs'
+    window.open(`${repoUrl}/${filename}`, '_blank')
   }
 
   return (
