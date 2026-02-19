@@ -673,22 +673,22 @@ export default function TestsTab({ organizationId }: Props) {
     {
       id: 'integration-mqtt',
       name: 'MQTT Broker Integration',
-      description: 'Test connection to configured MQTT broker integration',
+      description: 'Test connection to configured MQTT broker integration (pub/sub test)',
       icon: Network,
       category: 'integration',
       run: async () => {
         const start = Date.now()
         try {
-          const { data: integrations, error: listError } = await supabase
+          const { data: integration, error: listError } = await supabase
             .from('device_integrations')
-            .select('id, name, integration_type, status')
+            .select('id, name, integration_type, status, settings, base_url')
             .eq('organization_id', organizationId)
             .ilike('integration_type', 'mqtt%')
             .eq('status', 'active')
             .limit(1)
             .single()
 
-          if (listError || !integrations) {
+          if (listError || !integration) {
             const durationMs = Date.now() - start
             return { 
               success: false, 
@@ -697,38 +697,35 @@ export default function TestsTab({ organizationId }: Props) {
             }
           }
 
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          const { data: { session } } = await supabase.auth.getSession()
+          // Import and instantiate the MQTT provider
+          const { MqttIntegrationProvider } = await import('@/lib/integrations/mqtt-integration-provider')
           
-          if (!session) {
-            return { success: false, message: 'No active session', durationMs: Date.now() - start }
-          }
-
-          const response = await fetch(
-            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json'
-              }
+          const provider = new MqttIntegrationProvider({
+            type: 'mqtt',
+            projectId: integration.id,
+            endpoint: integration.base_url || undefined,
+            credentials: {
+              organizationId: organizationId,
+              integrationId: integration.id,
+              ...(integration.settings as Record<string, unknown> || {})
             }
-          )
+          })
 
-          const result = await response.json()
+          // Use the provider's native testConnection method
+          const result = await provider.testConnection()
           const durationMs = Date.now() - start
 
-          if (!response.ok || !result.success) {
+          if (!result.success) {
             return { 
               success: false, 
-              message: result.error?.message || result.message || 'Test failed', 
+              message: result.message || 'MQTT broker connection test failed', 
               durationMs 
             }
           }
 
           return { 
             success: true, 
-            message: `${integrations.name}: ${result.message || 'Connection successful'}`, 
+            message: `${integration.name}: ${result.message || 'MQTT broker connection successful'}`, 
             durationMs 
           }
         } catch (err) {
@@ -953,22 +950,22 @@ export default function TestsTab({ organizationId }: Props) {
     {
       id: 'integration-netneural-hub',
       name: 'NetNeural Hub Integration',
-      description: 'Test connection to configured NetNeural Hub integration',
+      description: 'Test connection to configured NetNeural Hub integration (CoAP, MQTT, HTTPS)',
       icon: Network,
       category: 'integration',
       run: async () => {
         const start = Date.now()
         try {
-          const { data: integrations, error: listError } = await supabase
+          const { data: integration, error: listError } = await supabase
             .from('device_integrations')
-            .select('id, name, integration_type, status')
+            .select('id, name, integration_type, status, settings')
             .eq('organization_id', organizationId)
             .eq('integration_type', 'netneural_hub')
             .eq('status', 'active')
             .limit(1)
             .single()
 
-          if (listError || !integrations) {
+          if (listError || !integration) {
             const durationMs = Date.now() - start
             return { 
               success: false, 
@@ -977,38 +974,34 @@ export default function TestsTab({ organizationId }: Props) {
             }
           }
 
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          const { data: { session } } = await supabase.auth.getSession()
+          // Import and instantiate the NetNeural Hub provider
+          const { NetNeuralHubIntegrationProvider } = await import('@/lib/integrations/netneural-hub-integration-provider')
           
-          if (!session) {
-            return { success: false, message: 'No active session', durationMs: Date.now() - start }
-          }
-
-          const response = await fetch(
-            `${supabaseUrl}/functions/v1/integrations/test?id=${integrations.id}`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json'
-              }
+          const provider = new NetNeuralHubIntegrationProvider({
+            type: 'netneural_hub',
+            projectId: integration.id,
+            credentials: {
+              organizationId: organizationId,
+              integrationId: integration.id,
+              config: integration.settings
             }
-          )
+          })
 
-          const result = await response.json()
+          // Use the provider's native testConnection method
+          const result = await provider.testConnection()
           const durationMs = Date.now() - start
 
-          if (!response.ok || !result.success) {
+          if (!result.success) {
             return { 
               success: false, 
-              message: result.error?.message || result.message || 'Test failed', 
+              message: result.message || 'Hub connection test failed', 
               durationMs 
             }
           }
 
           return { 
             success: true, 
-            message: `${integrations.name}: ${result.message || 'Hub connection successful'}`, 
+            message: `${integration.name}: ${result.message || 'Hub connection successful (all protocols tested)'}`, 
             durationMs 
           }
         } catch (err) {
