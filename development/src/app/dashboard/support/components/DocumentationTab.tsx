@@ -385,7 +385,6 @@ export default function DocumentationTab() {
                       <ExternalLink className="w-4 h-4 mr-1" />
                       View
                     </Button>
-                    </Button>
                   </div>
                 </div>
               )
