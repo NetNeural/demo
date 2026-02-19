@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AIReportSummary } from '@/components/reports/AIReportSummary'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -365,6 +366,33 @@ export function TelemetryTrendsReport() {
           </p>
         </div>
       </div>
+
+      {/* AI Report Summary */}
+      {telemetryData.length > 0 && currentOrganization && (
+        <AIReportSummary
+          reportType="telemetry-trends"
+          reportData={{
+            dateRange: timeRange === '24h' ? 'Last 24 hours'
+              : timeRange === '7d' ? 'Last 7 days'
+              : timeRange === '30d' ? 'Last 30 days'
+              : customDateRange.from && customDateRange.to
+              ? `${format(customDateRange.from, 'MMM d, yyyy')} - ${format(customDateRange.to, 'MMM d, yyyy')}`
+              : 'Custom',
+            totalRecords: telemetryData.length,
+            metadata: {
+              selectedDevices: selectedDevices.length,
+              sensorType: selectedSensor,
+              deviceStats: statistics.map(stat => ({
+                device: stat.deviceName,
+                min: stat.min,
+                max: stat.max,
+                avg: stat.avg
+              }))
+            }
+          }}
+          organizationId={currentOrganization.id}
+        />
+      )}
 
       {/* Filters */}
       <Card>

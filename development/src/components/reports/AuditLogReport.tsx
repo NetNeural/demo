@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { AIReportSummary } from '@/components/reports/AIReportSummary'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
@@ -445,6 +446,30 @@ export function AuditLogReport() {
           </p>
         </div>
       </div>
+
+      {/* AI Report Summary */}
+      {logs.length > 0 && currentOrganization && (
+        <AIReportSummary
+          reportType="audit-log"
+          reportData={{
+            dateRange: dateRangePreset === '24h' ? 'Last 24 hours'
+              : dateRangePreset === '7d' ? 'Last 7 days'
+              : dateRangePreset === '30d' ? 'Last 30 days'
+              : startDate && endDate
+              ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
+              : 'Custom',
+            totalRecords: stats.totalActions,
+            metadata: {
+              successfulActions: stats.successfulActions,
+              failedActions: stats.failedActions,
+              uniqueUsers: stats.uniqueUsers,
+              criticalActions: stats.criticalActions,
+              successRate: stats.totalActions > 0 ? (stats.successfulActions / stats.totalActions * 100).toFixed(1) : '0'
+            }
+          }}
+          organizationId={currentOrganization.id}
+        />
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
