@@ -19,7 +19,12 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Wand2,
+  Check,
+  X
 } from 'lucide-react';
 
 interface Session {
@@ -50,11 +55,65 @@ function formatTimeAgo(date: Date): string {
   return date.toLocaleDateString();
 }
 
+// ─── Password strength utilities ────────────────────────────────────
+interface PasswordRequirement {
+  label: string;
+  test: (pw: string) => boolean;
+}
+
+const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
+  { label: 'At least 12 characters', test: (pw) => pw.length >= 12 },
+  { label: 'Uppercase letter (A-Z)', test: (pw) => /[A-Z]/.test(pw) },
+  { label: 'Lowercase letter (a-z)', test: (pw) => /[a-z]/.test(pw) },
+  { label: 'Number (0-9)', test: (pw) => /[0-9]/.test(pw) },
+  { label: 'Special character (!@#$...)', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+];
+
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  if (!pw) return { score: 0, label: '', color: '' };
+  const passed = PASSWORD_REQUIREMENTS.filter(r => r.test(pw)).length;
+  // Bonus for length
+  const lengthBonus = pw.length >= 16 ? 1 : 0;
+  const total = passed + lengthBonus;
+  if (total <= 1) return { score: 1, label: 'Very Weak', color: 'bg-red-500' };
+  if (total <= 2) return { score: 2, label: 'Weak', color: 'bg-orange-500' };
+  if (total <= 3) return { score: 3, label: 'Fair', color: 'bg-yellow-500' };
+  if (total <= 4) return { score: 4, label: 'Strong', color: 'bg-blue-500' };
+  return { score: 5, label: 'Very Strong', color: 'bg-green-500' };
+}
+
+function generateStrongPassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const special = '!@#$%&*_+-=';
+  const all = upper + lower + digits + special;
+
+  // Guarantee at least one of each category
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)]!;
+  const required = [pick(upper), pick(lower), pick(digits), pick(special)];
+
+  // Fill to 20 characters
+  const remaining = Array.from({ length: 16 }, () => pick(all));
+  const chars = [...required, ...remaining];
+
+  // Fisher-Yates shuffle
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j]!, chars[i]!];
+  }
+  return chars.join('');
+}
+
 export function SecurityTab() {
   const { toast } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // 2FA state
   const [mfaLoading, setMfaLoading] = useState(true);
@@ -177,16 +236,27 @@ export function SecurityTab() {
       });
       return;
     }
-    if (newPassword.length < 6) {
+    // Require all password rules to pass
+    const failedRules = PASSWORD_REQUIREMENTS.filter(r => !r.test(newPassword));
+    if (failedRules.length > 0) {
+      toast({
+        title: "Password too weak",
+        description: `Missing: ${failedRules.map(r => r.label).join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (newPassword === currentPassword) {
       toast({
         title: "Error",
-        description: "New password must be at least 6 characters",
+        description: "New password must be different from current password",
         variant: "destructive",
       });
       return;
     }
 
     try {
+      setChangingPassword(true);
       const supabase = createClient();
       
       // First verify current password by attempting to sign in
@@ -225,6 +295,9 @@ export function SecurityTab() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     } catch (err) {
       console.error('Error changing password:', err);
       toast({
@@ -232,6 +305,8 @@ export function SecurityTab() {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -439,39 +514,147 @@ export function SecurityTab() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Current Password</Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter current password"
-            />
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password">New Password</Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="new-password">New Password</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-auto py-0.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  const pw = generateStrongPassword();
+                  setNewPassword(pw);
+                  setConfirmPassword(pw);
+                  setShowNewPassword(true);
+                  setShowConfirmPassword(true);
+                  navigator.clipboard.writeText(pw);
+                  toast({ title: 'Password generated', description: 'Strong password generated and copied to clipboard. Save it in your password manager!' });
+                }}
+              >
+                <Wand2 className="w-3 h-3 mr-1" />
+                Generate Strong Password
+              </Button>
+            </div>
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Password strength meter */}
+            {newPassword && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${getPasswordStrength(newPassword).color}`}
+                      style={{ width: `${(getPasswordStrength(newPassword).score / 5) * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-medium min-w-[70px] text-right ${
+                    getPasswordStrength(newPassword).score <= 2 ? 'text-red-500' :
+                    getPasswordStrength(newPassword).score <= 3 ? 'text-yellow-500' :
+                    'text-green-500'
+                  }`}>
+                    {getPasswordStrength(newPassword).label}
+                  </span>
+                </div>
+
+                {/* Requirements checklist */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                  {PASSWORD_REQUIREMENTS.map((req) => {
+                    const met = req.test(newPassword);
+                    return (
+                      <div key={req.label} className={`flex items-center gap-1.5 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {met ? <Check className="w-3 h-3 flex-shrink-0" /> : <X className="w-3 h-3 flex-shrink-0" />}
+                        {req.label}
+                      </div>
+                    );
+                  })}
+                  <div className={`flex items-center gap-1.5 text-xs ${newPassword.length >= 16 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {newPassword.length >= 16 ? <Check className="w-3 h-3 flex-shrink-0" /> : <X className="w-3 h-3 flex-shrink-0" />}
+                    16+ characters (bonus)
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-            />
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {confirmPassword && newPassword && confirmPassword !== newPassword && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <X className="w-3 h-3" /> Passwords do not match
+              </p>
+            )}
+            {confirmPassword && newPassword && confirmPassword === newPassword && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="w-3 h-3" /> Passwords match
+              </p>
+            )}
           </div>
 
-          <Button onClick={handleChangePassword}>
-            Change Password
+          <Button
+            onClick={handleChangePassword}
+            disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+          >
+            {changingPassword ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Changing...</>
+            ) : (
+              'Change Password'
+            )}
           </Button>
         </CardContent>
       </Card>
