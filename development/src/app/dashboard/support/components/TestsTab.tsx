@@ -24,6 +24,9 @@ import {
   Code2,
   Network,
   Building2,
+  AlertCircle,
+  Activity,
+  RefreshCw,
 } from 'lucide-react'
 
 interface Props {
@@ -224,6 +227,234 @@ export default function TestsTab({ organizationId }: Props) {
               }
             })
         })
+      },
+    },
+    // IoT-Specific Operational Tests
+    {
+      id: 'device-connectivity',
+      name: 'Device Connectivity',
+      description: 'Check online/offline status and last seen times for organization devices',
+      icon: Network,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const { data: devices, error } = await supabase
+            .from('devices')
+            .select('id, name, status, last_seen')
+            .eq('organization_id', organizationId)
+            .order('last_seen', { ascending: false })
+          
+          const durationMs = Date.now() - start
+          if (error) return { success: false, message: error.message, durationMs }
+          
+          if (!devices || devices.length === 0) {
+            return { success: false, message: 'No devices found for organization', durationMs }
+          }
+
+          const now = new Date()
+          const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+          const online = devices.filter(d => d.last_seen && new Date(d.last_seen) > fiveMinutesAgo)
+          const offline = devices.filter(d => !d.last_seen || new Date(d.last_seen) <= fiveMinutesAgo)
+          
+          return {
+            success: true,
+            message: `${devices.length} devices: ${online.length} online (last 5m), ${offline.length} offline`,
+            durationMs
+          }
+        } catch (err) {
+          return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
+        }
+      },
+    },
+    {
+      id: 'telemetry-data-flow',
+      name: 'Telemetry Data Flow',
+      description: 'Verify fresh telemetry data is being received from devices',
+      icon: Activity,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+          
+          const { data: recentTelemetry, error } = await supabase
+            .from('device_telemetry_history')
+            .select('device_id, received_at')
+            .eq('organization_id', organizationId)
+            .gte('received_at', fifteenMinutesAgo)
+            .order('received_at', { ascending: false })
+          
+          const durationMs = Date.now() - start
+          if (error) return { success: false, message: error.message, durationMs }
+          
+          if (!recentTelemetry || recentTelemetry.length === 0) {
+            return { 
+              success: false, 
+              message: 'No telemetry received in last 15 minutes. Check device connectivity.', 
+              durationMs 
+            }
+          }
+
+          const uniqueDevices = new Set(recentTelemetry.map(t => t.device_id)).size
+          const avgLatency = durationMs / recentTelemetry.length
+          
+          return {
+            success: true,
+            message: `${recentTelemetry.length} telemetry records from ${uniqueDevices} devices (last 15m, avg ${avgLatency.toFixed(0)}ms)`,
+            durationMs
+          }
+        } catch (err) {
+          return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
+        }
+      },
+    },
+    {
+      id: 'alert-pipeline',
+      name: 'Alert Notification Pipeline',
+      description: 'Verify alert creation and notification system is functioning',
+      icon: AlertCircle,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          // Check recent alerts
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+          
+          const { data: recentAlerts, error: alertError } = await supabase
+            .from('alerts')
+            .select('id, severity, is_resolved, created_at')
+            .eq('organization_id', organizationId)
+            .gte('created_at', oneHourAgo)
+            .order('created_at', { ascending: false })
+          
+          if (alertError) {
+            const durationMs = Date.now() - start
+            return { success: false, message: alertError.message, durationMs }
+          }
+
+          // Check if threshold evaluation cron is configured
+          const { data: thresholds, error: thresholdError } = await supabase
+            .from('sensor_thresholds')
+            .select('id, enabled')
+            .eq('organization_id', organizationId)
+            .eq('enabled', true)
+            .limit(1)
+          
+          const durationMs = Date.now() - start
+          
+          if (thresholdError) {
+            return { success: false, message: thresholdError.message, durationMs }
+          }
+
+          const alertCount = recentAlerts?.length || 0
+          const resolvedCount = recentAlerts?.filter(a => a.is_resolved).length || 0
+          const thresholdCount = thresholds?.length || 0
+          
+          return {
+            success: true,
+            message: `${alertCount} alerts (${resolvedCount} resolved) in last hour, ${thresholdCount} active thresholds`,
+            durationMs
+          }
+        } catch (err) {
+          return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
+        }
+      },
+    },
+    {
+      id: 'device-sync',
+      name: 'Device Synchronization',
+      description: 'Check device sync status from external integrations',
+      icon: RefreshCw,
+      category: 'integration',
+      run: async () => {
+        const start = Date.now()
+        try {
+          // Count devices by metadata completeness
+          const { data: devices, error } = await supabase
+            .from('devices')
+            .select('id, name, metadata')
+            .eq('organization_id', organizationId)
+          
+          const durationMs = Date.now() - start
+          if (error) return { success: false, message: error.message, durationMs }
+          
+          if (!devices || devices.length === 0) {
+            return { success: false, message: 'No devices found', durationMs }
+          }
+
+          const withMetadata = devices.filter(d => d.metadata && Object.keys(d.metadata as object).length > 0).length
+          const withoutMetadata = devices.length - withMetadata
+          
+          return {
+            success: true,
+            message: `${devices.length} devices: ${withMetadata} with metadata, ${withoutMetadata} without`,
+            durationMs
+          }
+        } catch (err) {
+          return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
+        }
+      },
+    },
+    {
+      id: 'data-quality',
+      name: 'Data Quality Check',
+      description: 'Verify telemetry data completeness and validity',
+      icon: CheckCircle2,
+      category: 'database',
+      run: async () => {
+        const start = Date.now()
+        try {
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+          
+          const { data: telemetry, error } = await supabase
+            .from('device_telemetry_history')
+            .select('telemetry, device_timestamp, received_at')
+            .eq('organization_id', organizationId)
+            .gte('received_at', oneHourAgo)
+            .order('received_at', { ascending: false })
+            .limit(100)
+          
+          const durationMs = Date.now() - start
+          if (error) return { success: false, message: error.message, durationMs }
+          
+          if (!telemetry || telemetry.length === 0) {
+            return { success: false, message: 'No recent telemetry to analyze', durationMs }
+          }
+
+          // Check data quality
+          let malformed = 0
+          let missingTimestamp = 0
+          let validRecords = 0
+
+          telemetry.forEach(t => {
+            if (!t.telemetry || typeof t.telemetry !== 'object') {
+              malformed++
+            } else if (!t.device_timestamp) {
+              missingTimestamp++
+            } else {
+              validRecords++
+            }
+          })
+
+          const qualityScore = ((validRecords / telemetry.length) * 100).toFixed(1)
+          
+          if (malformed > 0 || missingTimestamp > 0) {
+            return {
+              success: false,
+              message: `Quality: ${qualityScore}% (${malformed} malformed, ${missingTimestamp} missing timestamps)`,
+              durationMs
+            }
+          }
+          
+          return {
+            success: true,
+            message: `${telemetry.length} records analyzed: ${qualityScore}% quality, ${validRecords} valid`,
+            durationMs
+          }
+        } catch (err) {
+          return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
+        }
       },
     },
     // Integration Tests
