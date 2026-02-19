@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { AIReportSummary } from '@/components/reports/AIReportSummary'
+import { DataFreshness } from '@/components/ui/data-freshness'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'

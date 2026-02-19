@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LocationsCard } from '@/components/dashboard/LocationsCard'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import { MetricTooltip, METRIC_DEFINITIONS } from '@/components/ui/metric-tooltip'
+import { DataFreshness } from '@/components/ui/data-freshness'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { 
@@ -84,7 +86,10 @@ export default function DashboardPage() {
         {/* Total Devices */}
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/devices')}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+              Total Devices
+              <MetricTooltip {...METRIC_DEFINITIONS.totalDevices} />
+            </CardTitle>
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -102,7 +107,10 @@ export default function DashboardPage() {
         {/* Online Devices */}
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/devices')}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Online Devices</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+              Online Devices
+              <MetricTooltip {...METRIC_DEFINITIONS.onlineDevices} />
+            </CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -124,7 +132,10 @@ export default function DashboardPage() {
         {/* Active Alerts */}
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/dashboard/alerts')}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+              Active Alerts
+              <MetricTooltip {...METRIC_DEFINITIONS.activeAlerts} />
+            </CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
