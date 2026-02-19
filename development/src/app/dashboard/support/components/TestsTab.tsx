@@ -21,6 +21,8 @@ import {
   FileCode2,
   TestTubes,
   Bug,
+  Code2,
+  Network,
 } from 'lucide-react'
 
 interface Props {
@@ -535,6 +537,81 @@ export default function TestsTab({ organizationId }: Props) {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">
                     📄 <code>scripts/check-device-types.js</code> | Expected: 42 device types
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Comprehensive Validation */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Comprehensive System Validation</h4>
+                    <Badge variant="outline" className="text-[10px]">Validation</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Complete system health check — database, API, edge functions, RLS policies, integrations, alerts
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/comprehensive-validation.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/comprehensive-validation.js</code> | Full system validation
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Check Integrations */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Network className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Check Integrations Status</h4>
+                    <Badge variant="outline" className="text-[10px]">Diagnostic</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Lists all configured integrations with status, type, and configuration details
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/check-integrations.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/check-integrations.js</code> | Integrations inventory
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Edge Functions */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Code2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Edge Functions Test Suite</h4>
+                    <Badge variant="outline" className="text-[10px]">E2E</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests all deployed Edge Functions — integrations, webhooks, device sync, alert processing
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-edge-functions.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-edge-functions.js</code> | All Edge Functions
                   </p>
                 </div>
               </div>
