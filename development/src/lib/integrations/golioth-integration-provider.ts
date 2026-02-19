@@ -22,6 +22,7 @@ import {
   TestConnectionResult,
   PaginationOptions,
   ProviderCapabilities,
+  ProviderConfig,
 } from './base-integration-provider';
 import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 

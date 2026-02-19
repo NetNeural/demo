@@ -41,6 +41,7 @@ import {
   DeviceUpdate,
   ProviderCapabilities,
   PaginationOptions,
+  ProviderConfig,
 } from './base-integration-provider';
 import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
@@ -50,8 +51,10 @@ import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
 interface MqttConfig {
   brokerUrl: string; // mqtt://broker:1883 or mqtts://broker:8883
+  port?: number; // Default: 1883 (or 8883 for TLS)
   username?: string;
   password?: string;
+  useTls?: boolean; // Default: false
   clientId?: string;
   topicPrefix?: string; // Default: "devices/"
   statusTopic?: string; // Default: "{prefix}{deviceId}/status"
@@ -302,7 +305,7 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
           
           // Extract device ID from topic (e.g., "org_xxx/devices/sensor01/telemetry" -> "sensor01")
           const deviceIdMatch = topic.match(/\/devices\/([^/]+)\//);
-          const deviceId = deviceIdMatch ? deviceIdMatch[1] : 'unknown';
+          const deviceId: string = (deviceIdMatch && deviceIdMatch[1]) ? deviceIdMatch[1] : 'unknown';
 
           // Extract timestamp from payload or use received_at
           let timestamp: Date;
