@@ -36,8 +36,8 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
       'input[type="text"][placeholder*="Search" i], input[type="search"]'
     )
     if (searchInputs.length > 0) {
-      searchInputs[0].focus()
-      searchInputs[0].select()
+      searchInputs[0]?.focus()
+      searchInputs[0]?.select()
     }
   }, [])
 
