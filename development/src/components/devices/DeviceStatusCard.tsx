@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDeviceStatus } from '@/hooks/useDeviceStatus';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 import type { DeviceConnectionStatus } from '@/types/unified-device-status';
 
 interface DeviceStatusCardProps {
@@ -24,24 +25,6 @@ const statusLabels: Record<DeviceConnectionStatus, string> = {
   unknown: 'Unknown',
 };
 
-function formatTimestamp(timestamp: string | null | undefined): string {
-  if (!timestamp) return 'Never';
-  
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
 /**
  * DeviceStatusCard Component
  * Displays unified device status with real-time updates
@@ -55,6 +38,7 @@ export function DeviceStatusCard({
     deviceId,
     refreshInterval,
   });
+  const { fmt } = useDateFormatter();
 
   if (isLoading && !status) {
     return (
@@ -145,7 +129,7 @@ export function DeviceStatusCard({
         <div>
           <p className="text-xs text-gray-500 uppercase">Last Seen</p>
           <p className="text-sm font-medium">
-            {formatTimestamp(status.lastSeen)}
+            {fmt.timeAgo(status.lastSeen)}
           </p>
         </div>
         <div>

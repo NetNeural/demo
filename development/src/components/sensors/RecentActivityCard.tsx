@@ -9,6 +9,7 @@ import { Clock, RefreshCw, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Device } from '@/types/sensor-details'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface RecentActivityCardProps {
   device: Device
@@ -342,17 +343,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
     fetchActivities(false)
   }
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`
-    return `${Math.floor(diffMins / 1440)}d ago`
-  }
+  const { fmt } = useDateFormatter()
 
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
@@ -452,7 +443,7 @@ export function RecentActivityCard({ device }: RecentActivityCardProps) {
                       )}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{formatTime(activity.occurred_at)}</span>
+                      <span>{fmt.timeAgo(activity.occurred_at)}</span>
                       {activity.sensor_name && (
                         <>
                           <span>•</span>

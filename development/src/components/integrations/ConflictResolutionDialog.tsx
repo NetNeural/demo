@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface Conflict {
   id: string
@@ -37,6 +38,7 @@ export function ConflictResolutionDialog({
   organizationId,
   onResolved,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
@@ -203,7 +205,7 @@ export function ConflictResolutionDialog({
               </Button>
 
               <p className="text-sm text-muted-foreground">
-                Detected {new Date(currentConflict.detected_at).toLocaleString()}
+                Detected {fmt.dateTime(currentConflict.detected_at)}
               </p>
 
               <Button

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { LocationsCard } from '@/components/dashboard/LocationsCard'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { 
   Smartphone, 
   Users, 
@@ -21,6 +22,7 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { fmt } = useDateFormatter()
   const [loading, setLoading] = useState(true)
   const { currentOrganization, stats, isLoading: isLoadingOrg } = useOrganization()
 
@@ -285,11 +287,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-muted-foreground">Created</span>
                 <span className="text-sm font-medium">
                   {currentOrganization.created_at 
-                    ? new Date(currentOrganization.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })
+                    ? fmt.shortDate(currentOrganization.created_at)
                     : 'Unknown'
                   }
                 </span>

@@ -21,7 +21,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   Dialog,
   DialogContent,
@@ -70,6 +70,7 @@ type TabType = 'all' | 'unacknowledged' | 'connectivity' | 'security' | 'environ
 
 export function AlertsList() {
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
@@ -517,7 +518,7 @@ export function AlertsList() {
                                       {alert.description}
                                     </AlertDescription>
                                     <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                                      <span className="font-medium">{alert.device}</span> • {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
+                                      <span className="font-medium">{alert.device}</span> • {fmt.timeAgo(alert.timestamp)}
                                     </AlertDescription>
                                   </div>
                                 </div>
@@ -605,7 +606,7 @@ export function AlertsList() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Timestamp</label>
-                  <p className="text-sm mt-1">{selectedAlert.rawTimestamp.toLocaleString()}</p>
+                  <p className="text-sm mt-1">{fmt.dateTime(selectedAlert.rawTimestamp)}</p>
                 </div>
               </div>
 
@@ -717,7 +718,7 @@ export function AlertsList() {
                     </p>
                     {selectedAlert.acknowledgedAt && (
                       <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                        {selectedAlert.acknowledgedAt.toLocaleString()}
+                        {fmt.dateTime(selectedAlert.acknowledgedAt)}
                       </p>
                     )}
                   </div>

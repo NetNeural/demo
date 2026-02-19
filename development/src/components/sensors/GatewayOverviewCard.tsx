@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type { Device } from '@/types/sensor-details'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface TelemetryReading {
   telemetry: {
@@ -43,6 +44,8 @@ interface GatewayOverviewCardProps {
  * - Gateway metadata (ICCID, IMEI, carrier, etc.)
  */
 export function GatewayOverviewCard({ device, telemetryReadings }: GatewayOverviewCardProps) {
+  const { fmt } = useDateFormatter()
+
   // Get status badge
   const getStatusBadge = () => {
     const status = device.status
@@ -55,19 +58,6 @@ export function GatewayOverviewCard({ device, telemetryReadings }: GatewayOvervi
 
   const statusBadge = getStatusBadge()
 
-  // Format time ago
-  const formatTimeAgo = (timestamp: string | null | undefined) => {
-    if (!timestamp) return 'Never'
-    const diff = Date.now() - new Date(timestamp).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours}h ${mins % 60}m ago`
-    const days = Math.floor(hours / 24)
-    return `${days}d ${hours % 24}h ago`
-  }
-
   // Calculate uptime from last_seen
   const uptimeDisplay = useMemo(() => {
     if (!device.last_seen) return null
@@ -79,8 +69,8 @@ export function GatewayOverviewCard({ device, telemetryReadings }: GatewayOvervi
     if (diffMs < 15 * 60 * 1000) {
       return 'Active'
     }
-    return formatTimeAgo(device.last_seen)
-  }, [device.last_seen])
+    return fmt.timeAgo(device.last_seen)
+  }, [device.last_seen, fmt])
 
   // Extract gateway-specific metadata
   const gatewayMeta = useMemo(() => {
@@ -150,7 +140,7 @@ export function GatewayOverviewCard({ device, telemetryReadings }: GatewayOvervi
         {/* Last Communication */}
         <div className="flex items-center justify-between py-3 border-y">
           <span className="text-sm font-medium">Last Communication:</span>
-          <span className="text-sm text-muted-foreground">{formatTimeAgo(device.last_seen)}</span>
+          <span className="text-sm text-muted-foreground">{fmt.timeAgo(device.last_seen)}</span>
         </div>
 
         {/* Primary Metrics Grid */}

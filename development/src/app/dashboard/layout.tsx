@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { OrganizationProvider, useOrganization } from '@/contexts/OrganizationContext'
+import { PreferencesProvider } from '@/contexts/PreferencesContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -137,7 +138,9 @@ export default function DashboardLayout({
   return (
     <UserProvider>
       <OrganizationProvider>
-        <DashboardContent>{children}</DashboardContent>
+        <PreferencesProvider>
+          <DashboardContent>{children}</DashboardContent>
+        </PreferencesProvider>
       </OrganizationProvider>
     </UserProvider>
   )

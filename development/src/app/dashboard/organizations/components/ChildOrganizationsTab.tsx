@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +54,7 @@ interface ChildOrganizationsTabProps {
 }
 
 export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabProps) {
+  const { fmt } = useDateFormatter();
   const { currentOrganization, refreshOrganizations } = useOrganization();
   const { user } = useUser();
   const [childOrgs, setChildOrgs] = useState<ChildOrg[]>([]);
@@ -333,7 +335,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-2 border-t text-xs text-muted-foreground">
-                    <span>Created {new Date(org.createdAt).toLocaleDateString()}</span>
+                    <span>Created {fmt.dateOnly(org.createdAt)}</span>
                     <Button variant="ghost" size="sm" className="h-7 text-xs" title="Switch to this org to manage it">
                       <ExternalLink className="w-3 h-3 mr-1" />
                       Manage

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
@@ -27,6 +28,7 @@ interface Integration {
 export default function IntegrationsPage() {
   const router = useRouter()
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
   
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
@@ -212,7 +214,7 @@ export default function IntegrationsPage() {
                     <CardDescription>
                       {integration.last_sync_at ? (
                         <>
-                          Last synced: {new Date(integration.last_sync_at).toLocaleString()}
+                          Last synced: {fmt.dateTime(integration.last_sync_at)}
                           {integration.last_sync_status && (
                             <Badge
                               variant={integration.last_sync_status === 'completed' ? 'default' : 'destructive'}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,7 @@ interface MembersTabProps {
 }
 
 export function MembersTab({ organizationId }: MembersTabProps) {
+  const { fmt } = useDateFormatter();
   const { permissions, userRole } = useOrganization();
   const { canManageMembers, canRemoveMembers } = permissions;
   const { toast } = useToast();
@@ -387,16 +389,11 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(member.joinedAt).toLocaleDateString()}
+                        {fmt.dateOnly(member.joinedAt)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {member.lastLogin 
-                          ? new Date(member.lastLogin).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
+                          ? fmt.shortDateTime(member.lastLogin)
                           : <span className="text-muted-foreground/50">Never</span>
                         }
                       </TableCell>

@@ -17,7 +17,6 @@ import {
   Droplets,
   Signal,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import type { TimeRange } from '../types/analytics.types';
 import { getTimeRangeHours } from '../types/analytics.types';
 import { extractMetricValue } from '@/lib/telemetry-utils';

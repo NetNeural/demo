@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMemo } from 'react'
 import type { Device } from '@/types/sensor-details'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface TelemetryReading {
   telemetry: {
@@ -20,15 +21,17 @@ interface SensorTrendCardProps {
 }
 
 export function SensorTrendCard({ device, telemetryReadings }: SensorTrendCardProps) {
+  const { fmt } = useDateFormatter()
+
   const chartData = useMemo(() => {
     return telemetryReadings
       .slice(0, 100)
       .map(r => ({
-        time: new Date(r.device_timestamp || r.received_at).toLocaleString(),
+        time: fmt.dateTime(r.device_timestamp || r.received_at),
         value: r.telemetry.value || 0
       }))
       .reverse()
-  }, [telemetryReadings])
+  }, [telemetryReadings, fmt])
 
   return (
     <Card>

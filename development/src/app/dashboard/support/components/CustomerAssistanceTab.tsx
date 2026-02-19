@@ -27,7 +27,7 @@ import {
   UserCheck,
   RefreshCw,
 } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface OrgMember {
   id: string
@@ -61,6 +61,7 @@ interface Props {
 
 export default function CustomerAssistanceTab({ organizationId }: Props) {
   const { user } = useUser()
+  const { fmt } = useDateFormatter()
   const [members, setMembers] = useState<OrgMember[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -357,11 +358,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {member.lastLogin
-                              ? formatDistanceToNow(new Date(member.lastLogin), { addSuffix: true })
+                              ? fmt.timeAgo(member.lastLogin)
                               : 'Never'}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(member.joinedAt), 'MMM d, yyyy')}
+                            {fmt.shortDate(member.joinedAt)}
                           </TableCell>
                           <TableCell>
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -461,9 +462,9 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                           </Badge>
                                           <span
                                             className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap"
-                                            title={format(new Date(entry.created_at), 'PPpp')}
+                                            title={fmt.dateTime(entry.created_at)}
                                           >
-                                            {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                                            {fmt.timeAgo(entry.created_at)}
                                           </span>
                                         </div>
                                       ))}
@@ -493,9 +494,9 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                             </span>
                                             <span
                                               className="text-xs text-muted-foreground"
-                                              title={format(new Date(login.created_at), 'PPpp')}
+                                              title={fmt.dateTime(login.created_at)}
                                             >
-                                              {formatDistanceToNow(new Date(login.created_at), { addSuffix: true })}
+                                              {fmt.timeAgo(login.created_at)}
                                             </span>
                                           </div>
                                         ))}

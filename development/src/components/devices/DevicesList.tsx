@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
@@ -145,20 +146,10 @@ function formatSensorValue(telemetry: TelemetryReading['telemetry'], useFahrenhe
   return `${value.toFixed(1)}${unit}`
 }
 
-function formatTimeAgo(timestamp: string | null): string {
-  if (!timestamp) return ''
-  const diff = Date.now() - new Date(timestamp).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
-}
-
 export function DevicesList() {
   const { currentOrganization } = useOrganization()
   const router = useRouter()
+  const { fmt } = useDateFormatter()
   const { exportToCSV, isExporting, progress } = useExport()
   const [devices, setDevices] = useState<Device[]>([])
   const [locations, setLocations] = useState<Location[]>([])
@@ -860,7 +851,7 @@ export function DevicesList() {
                     const timestamp = r.device_timestamp || r.received_at
                     return !latest || new Date(timestamp) > new Date(latest) ? timestamp : latest
                   }, '')
-                  const timeAgo = formatTimeAgo(mostRecentTimestamp)
+                  const timeAgo = fmt.timeAgo(mostRecentTimestamp)
                   
                   return (
                     <div className="mt-2 pt-2 border-t border-border/50 space-y-1.5">

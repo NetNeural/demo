@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,7 @@ interface ResellerAgreementSectionProps {
 export function ResellerAgreementSection({ organizationId }: ResellerAgreementSectionProps) {
   const { currentOrganization, isOwner } = useOrganization();
   const { user } = useUser();
+  const { fmt } = useDateFormatter();
   const [agreement, setAgreement] = useState<ResellerAgreement | null>(null);
   const [application, setApplication] = useState<ResellerApplication | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -283,9 +285,7 @@ export function ResellerAgreementSection({ organizationId }: ResellerAgreementSe
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Effective Date</p>
                   <p className="text-sm">
-                    {new Date(agreement.effective_date).toLocaleDateString('en-US', {
-                      year: 'numeric', month: 'long', day: 'numeric',
-                    })}
+                    {fmt.longDate(agreement.effective_date)}
                   </p>
                 </div>
               )}
@@ -293,9 +293,7 @@ export function ResellerAgreementSection({ organizationId }: ResellerAgreementSe
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Expiration Date</p>
                   <p className="text-sm">
-                    {new Date(agreement.expiration_date).toLocaleDateString('en-US', {
-                      year: 'numeric', month: 'long', day: 'numeric',
-                    })}
+                    {fmt.longDate(agreement.expiration_date)}
                   </p>
                 </div>
               )}
@@ -305,9 +303,7 @@ export function ResellerAgreementSection({ organizationId }: ResellerAgreementSe
             <div className="mt-4 pt-4 border-t">
               <p className="text-xs text-muted-foreground">
                 Agreement accepted on{' '}
-                {new Date(agreement.accepted_at).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'long', day: 'numeric',
-                })}
+                {fmt.longDate(agreement.accepted_at)}
               </p>
             </div>
           )}
@@ -340,9 +336,7 @@ export function ResellerAgreementSection({ organizationId }: ResellerAgreementSe
                 <p className="font-semibold text-blue-700 dark:text-blue-400">Application Under Review</p>
                 <p className="text-muted-foreground mt-1">
                   Your reseller agreement application for <strong>{application.company_legal_name}</strong> was
-                  submitted on {new Date(application.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                  })}. Our team is reviewing your application and will notify you once a decision has been made.
+                  submitted on {fmt.longDate(application.created_at)}. Our team is reviewing your application and will notify you once a decision has been made.
                 </p>
               </div>
             </div>

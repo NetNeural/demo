@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -63,6 +64,7 @@ interface FeedbackHistoryProps {
 
 export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
   const supabase = createClient()
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -259,13 +261,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                   )}
 
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>{new Date(item.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}</span>
+                    <span>{fmt.shortDateTime(item.created_at)}</span>
                     {item.github_issue_url && (
                       <a
                         href={item.github_issue_url}

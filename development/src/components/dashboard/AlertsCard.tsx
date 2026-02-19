@@ -9,6 +9,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { AcknowledgeAlertDialog, type AcknowledgementType } from '@/components/alerts/AcknowledgeAlertDialog'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface AlertItem {
   id: string
@@ -20,23 +21,8 @@ interface AlertItem {
   acknowledged: boolean
 }
 
-// Helper function to format timestamp
-const formatTimestamp = (timestamp: string): string => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  return date.toLocaleDateString();
-};
-
 export function AlertsCard() {
+  const { fmt } = useDateFormatter()
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showAckDialog, setShowAckDialog] = useState(false)
@@ -85,7 +71,7 @@ export function AlertsCard() {
         description: alert.message,
         severity: alert.severity,
         device: alert.deviceName,
-        timestamp: formatTimestamp(alert.timestamp),
+        timestamp: alert.timestamp,
         acknowledged: alert.isResolved
       }));
       
@@ -203,7 +189,7 @@ export function AlertsCard() {
                         {alert.description}
                       </AlertDescription>
                       <AlertDescription className="text-xs text-muted-foreground mt-1">
-                        {alert.device} • {alert.timestamp}
+                        {alert.device} • {fmt.timeAgo(alert.timestamp)}
                       </AlertDescription>
                     </div>
                   </div>

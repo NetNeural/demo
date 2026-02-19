@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 export interface Alert {
   id: string
@@ -41,6 +41,7 @@ export function AlertsTable({
   onAcknowledge,
   onViewDetails
 }: AlertsTableProps) {
+  const { fmt } = useDateFormatter()
   const allSelected = alerts.length > 0 && alerts.every(a => selectedIds.has(a.id))
   const someSelected = alerts.some(a => selectedIds.has(a.id)) && !allSelected
 
@@ -131,7 +132,7 @@ export function AlertsTable({
                 </TableCell>
                 <TableCell className="font-medium">{alert.device}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
+                  {fmt.timeAgo(alert.timestamp)}
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">

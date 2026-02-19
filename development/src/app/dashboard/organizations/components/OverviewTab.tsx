@@ -12,12 +12,14 @@ import {
   Activity
 } from 'lucide-react';
 import { ResellerAgreementSection } from './ResellerAgreementSection';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 
 interface OverviewTabProps {
   organizationId: string;
 }
 
 export function OverviewTab({ organizationId }: OverviewTabProps) {
+  const { fmt } = useDateFormatter();
   const { currentOrganization, stats, userRole } = useOrganization();
 
   if (!currentOrganization) {
@@ -109,11 +111,7 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
               <p className="text-sm font-medium text-muted-foreground">Created</p>
               <p className="text-base">
                 {currentOrganization.created_at 
-                  ? new Date(currentOrganization.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })
+                  ? fmt.longDate(currentOrganization.created_at)
                   : 'Unknown'
                 }
               </p>

@@ -17,7 +17,8 @@ import {
   TrendingUp,
   BarChart3,
 } from 'lucide-react'
-import { formatDistanceToNow, format, subHours } from 'date-fns'
+import { format, subHours } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface Props {
   organizationId: string
@@ -56,6 +57,7 @@ interface ErrorMetric {
 
 export default function SystemHealthTab({ organizationId, isSuperAdmin }: Props) {
   const supabase = createClient()
+  const { fmt } = useDateFormatter()
   const [loading, setLoading] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState<string>('off')
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
@@ -276,7 +278,7 @@ export default function SystemHealthTab({ organizationId, isSuperAdmin }: Props)
       {/* Refresh Controls */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Last refreshed: {formatDistanceToNow(lastRefresh, { addSuffix: true })}
+          Last refreshed: {fmt.timeAgo(lastRefresh)}
         </p>
         <div className="flex items-center gap-2">
           <Select value={autoRefresh} onValueChange={setAutoRefresh}>
@@ -434,7 +436,7 @@ export default function SystemHealthTab({ organizationId, isSuperAdmin }: Props)
                     </Badge>
                     <span className="font-mono font-bold text-sm">{entry.response_time_ms}ms</span>
                     <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                      {fmt.timeAgo(entry.created_at)}
                     </span>
                   </div>
                 </div>

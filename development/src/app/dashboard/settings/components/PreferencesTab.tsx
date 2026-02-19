@@ -16,9 +16,11 @@ import {
 } from '@/components/ui/select';
 import { Moon, Sun, Monitor, Globe, Bell, Palette, Building2, Thermometer } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 
 export function PreferencesTab() {
   const { currentOrganization } = useOrganization();
+  const { updatePreferences } = usePreferences();
   const [saving, setSaving] = useState(false);
   const [useOrgDefault, setUseOrgDefault] = useState(true); // Default to organization theme
   const [theme, setTheme] = useState('system');
@@ -172,6 +174,15 @@ export function PreferencesTab() {
       // Also save to localStorage as backup
       localStorage.setItem('user_preferences', JSON.stringify(preferences));
       localStorage.setItem('temperatureUnit', temperatureUnit);
+
+      // Update live context so all components re-render with new preferences
+      updatePreferences({
+        language: language as import('@/contexts/PreferencesContext').LanguageOption,
+        timezone,
+        dateFormat: dateFormat as import('@/contexts/PreferencesContext').DateFormatOption,
+        timeFormat: timeFormat as import('@/contexts/PreferencesContext').TimeFormatOption,
+        temperatureUnit,
+      });
       
       toast.success('Preferences saved successfully!');
     } catch (err) {

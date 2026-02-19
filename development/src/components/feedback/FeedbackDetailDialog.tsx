@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   Dialog,
   DialogContent,
@@ -89,32 +90,8 @@ interface FeedbackDetailDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatRelativeDate(dateStr: string) {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return formatDate(dateStr)
-}
-
 export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetailDialogProps) {
+  const { fmt } = useDateFormatter()
   const { currentOrganization } = useOrganization()
   const supabase = createClient()
   const [issueDetail, setIssueDetail] = useState<GitHubIssueDetail | null>(null)
@@ -222,7 +199,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
           <div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
               <Clock className="w-3 h-3" />
-              Submitted {formatDate(item.created_at)}
+              Submitted {fmt.shortDateTime(item.created_at)}
             </div>
             <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
               {item.description}
@@ -277,7 +254,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                           Issue Created
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {formatRelativeDate(issueDetail.createdAt)}
+                          {fmt.timeAgo(issueDetail.createdAt)}
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-6">
@@ -320,7 +297,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                           <Badge variant="outline" className="text-[9px] px-1 py-0">bot</Badge>
                         )}
                         <span className="text-[10px] text-muted-foreground">
-                          {formatRelativeDate(comment.createdAt)}
+                          {fmt.timeAgo(comment.createdAt)}
                         </span>
                       </div>
                       <div className="text-sm text-foreground whitespace-pre-wrap">
@@ -338,7 +315,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                           {issueDetail.stateReason === 'not_planned' ? 'Closed as not planned' : 'Closed as resolved'}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {formatRelativeDate(issueDetail.closedAt)}
+                          {fmt.timeAgo(issueDetail.closedAt)}
                         </span>
                       </div>
                     </div>

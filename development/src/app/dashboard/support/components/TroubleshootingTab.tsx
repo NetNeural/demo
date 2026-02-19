@@ -29,7 +29,8 @@ import {
   ChevronUp,
   Wrench,
 } from 'lucide-react'
-import { formatDistanceToNow, format, subHours } from 'date-fns'
+import { format, subHours } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface Device {
   id: string
@@ -84,6 +85,7 @@ interface Props {
 
 export default function TroubleshootingTab({ organizationId }: Props) {
   const supabase = createClient()
+  const { fmt } = useDateFormatter()
 
   // Device diagnostics state
   const [devices, setDevices] = useState<Device[]>([])
@@ -264,8 +266,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     const summary = [
       `Device: ${device?.name || 'Unknown'} (${device?.serial_number || 'N/A'})`,
       `Status: ${device?.status || 'Unknown'}`,
-      `Last Seen: ${device?.last_seen ? format(new Date(device.last_seen), 'PPpp') : 'Never'}`,
-      `Last Telemetry: ${lastTelemetry ? format(new Date(lastTelemetry.received_at), 'PPpp') : 'None'}`,
+      `Last Seen: ${device?.last_seen ? fmt.dateTime(device.last_seen) : 'Never'}`,
+      `Last Telemetry: ${lastTelemetry ? fmt.dateTime(lastTelemetry.received_at) : 'None'}`,
       `Recent Alerts: ${deviceAlerts.length}`,
       lastTelemetry ? `Telemetry Data: ${JSON.stringify(lastTelemetry.telemetry, null, 2)}` : '',
     ].filter(Boolean).join('\n')
@@ -367,7 +369,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                       </Badge>
                       <p className="text-xs text-muted-foreground mt-1">
                         Last seen: {selectedDevice.last_seen
-                          ? formatDistanceToNow(new Date(selectedDevice.last_seen), { addSuffix: true })
+                          ? fmt.timeAgo(selectedDevice.last_seen)
                           : 'Never'}
                       </p>
                     </div>
@@ -380,7 +382,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                       {lastTelemetry ? (
                         <>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(lastTelemetry.received_at), { addSuffix: true })}
+                            {fmt.timeAgo(lastTelemetry.received_at)}
                           </p>
                           <pre className="text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">
                             {JSON.stringify(lastTelemetry.telemetry, null, 2)}
@@ -577,8 +579,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                           onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
                         >
                           <TableCell className="text-xs">
-                            <span title={format(new Date(log.created_at), 'PPpp')}>
-                              {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                            <span title={fmt.dateTime(log.created_at)}>
+                              {fmt.timeAgo(log.created_at)}
                             </span>
                           </TableCell>
                           <TableCell>

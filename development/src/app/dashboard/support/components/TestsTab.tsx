@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   FlaskConical,
   CheckCircle2,
@@ -104,6 +105,7 @@ const CATEGORIES = [...new Set(TEST_SUITES.map(s => s.category))]
 
 export default function TestsTab({ organizationId }: Props) {
   const supabase = createClient()
+  const { fmt } = useDateFormatter()
   const [healthResults, setHealthResults] = useState<Record<string, { status: TestStatus; message: string; durationMs: number }>>({})
   const [runningAll, setRunningAll] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -141,7 +143,7 @@ export default function TestsTab({ organizationId }: Props) {
           const durationMs = Date.now() - start
           if (error) return { success: false, message: error.message, durationMs }
           if (!data.session) return { success: false, message: 'No active session', durationMs }
-          return { success: true, message: `Session valid, expires ${new Date(data.session.expires_at! * 1000).toLocaleString()}`, durationMs }
+          return { success: true, message: `Session valid, expires ${fmt.dateTime(new Date(data.session.expires_at! * 1000))}`, durationMs }
         } catch (err) {
           return { success: false, message: err instanceof Error ? err.message : 'Failed', durationMs: Date.now() - start }
         }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { 
   RefreshCw, 
   CheckCircle2, 
@@ -33,6 +34,7 @@ export function SyncHistoryList({
   limit = 50,
   autoRefresh = false,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [logs, setLogs] = useState<SyncLog[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -178,7 +180,7 @@ export function SyncHistoryList({
 
                     {/* Timestamp */}
                     <p className="text-xs text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString()}
+                      {fmt.dateTime(log.created_at)}
                       {log.completed_at && (
                         <> • Duration: {
                           Math.round(

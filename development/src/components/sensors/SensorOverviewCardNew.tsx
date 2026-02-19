@@ -6,6 +6,7 @@ import { Battery, Signal, Activity, Thermometer, Droplets } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { Device } from '@/types/sensor-details'
 import { TemperatureToggle } from '@/components/ui/temperature-toggle'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface TelemetryReading {
   telemetry: {
@@ -173,18 +174,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
   }
 
   const statusBadge = getStatusBadge()
-
-  // Format time ago
-  const formatTimeAgo = (timestamp: string | null | undefined) => {
-    if (!timestamp) return 'Never'
-    const diff = Date.now() - new Date(timestamp).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours}h ago`
-    return `${Math.floor(hours / 24)}d ago`
-  }
+  const { fmt } = useDateFormatter()
 
   // Get most recent timestamp
   const lastReading = telemetryReadings[0]
@@ -289,7 +279,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                       {displayValue}
                       <span className="text-xl ml-1">{unit}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatTimeAgo(readingTime)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{fmt.timeAgo(readingTime)}</p>
                   </div>
                 </div>
               )
@@ -417,7 +407,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                             {formatSensorValue(reading)}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {formatTimeAgo(reading.received_at)}
+                            {fmt.timeAgo(reading.received_at)}
                           </span>
                         </div>
                       )
@@ -471,7 +461,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                           </span>
                         </div>
                         <div className="text-[10px] text-muted-foreground">
-                          {formatTimeAgo(stats.minTime)}
+                          {fmt.timeAgo(stats.minTime)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -482,7 +472,7 @@ export function SensorOverviewCard({ device, telemetryReadings }: SensorOverview
                           </span>
                         </div>
                         <div className="text-[10px] text-muted-foreground">
-                          {formatTimeAgo(stats.maxTime)}
+                          {fmt.timeAgo(stats.maxTime)}
                         </div>
                       </div>
                     </div>

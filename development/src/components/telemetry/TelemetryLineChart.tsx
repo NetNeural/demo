@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { extractMetricValue } from '@/lib/telemetry-utils'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   LineChart,
   Line,
@@ -56,6 +57,7 @@ export function TelemetryLineChart({
   const [deviceIds, setDeviceIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { fmt } = useDateFormatter()
   const supabase = createClient()
 
   const isMultiDevice = !deviceId && !!organizationId
@@ -109,7 +111,7 @@ export function TelemetryLineChart({
           if (value === null) continue
 
           const ts = item.device_timestamp || item.received_at
-          const timeKey = new Date(ts).toLocaleString()
+          const timeKey = fmt.dateTime(ts)
           const devId = item.device_id as string
           seenDevices.add(devId)
 
@@ -129,7 +131,7 @@ export function TelemetryLineChart({
             if (value === null) return null
             const ts = item.device_timestamp || item.received_at
             return {
-              timestamp: new Date(ts).toLocaleString(),
+              timestamp: fmt.dateTime(ts),
               value: parseFloat(String(value)),
             }
           })

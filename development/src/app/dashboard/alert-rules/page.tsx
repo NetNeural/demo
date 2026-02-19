@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +17,7 @@ import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
 export default function AlertRulesPage() {
   const router = useRouter()
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
   const [rules, setRules] = useState<AlertRule[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'telemetry' | 'offline'>('all')
@@ -246,7 +248,7 @@ export default function AlertRulesPage() {
                     <p className="text-muted-foreground">Last Triggered</p>
                     <p className="font-medium">
                       {rule.last_triggered_at
-                        ? new Date(rule.last_triggered_at).toLocaleString()
+                        ? fmt.dateTime(rule.last_triggered_at)
                         : 'Never'}
                     </p>
                   </div>

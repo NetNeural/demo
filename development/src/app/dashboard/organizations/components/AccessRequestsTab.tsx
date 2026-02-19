@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ interface AccessRequestsTabProps {
 }
 
 export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
+  const { fmt } = useDateFormatter();
   const { currentOrganization, userOrganizations, isOwner, isAdmin } = useOrganization();
   const { user } = useUser();
   const { toast } = useToast();
@@ -340,7 +342,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                         <TableCell>{renderTimeInfo(request)}</TableCell>
                         <TableCell>{renderStatusBadge(request.status, request.expires_at)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(request.created_at).toLocaleDateString()}
+                          {fmt.dateOnly(request.created_at)}
                         </TableCell>
                         <TableCell>
                           {request.status === 'pending' && (
@@ -407,7 +409,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                         <TableCell>{renderTimeInfo(request)}</TableCell>
                         <TableCell>{renderStatusBadge(request.status, request.expires_at)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(request.created_at).toLocaleDateString()}
+                          {fmt.dateOnly(request.created_at)}
                         </TableCell>
                         <TableCell>
                           {request.status === 'pending' && (isOwner || isAdmin) && (

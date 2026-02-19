@@ -26,7 +26,7 @@ import {
   Download
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import type { Database } from '@/types/supabase'
 
 type ActivityLog = Database['public']['Tables']['integration_activity_log']['Row']
@@ -44,6 +44,7 @@ export function IntegrationActivityLog({
   limit = 100,
   autoRefresh = false,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null)
@@ -343,9 +344,9 @@ export function IntegrationActivityLog({
 
                       {/* Timestamp */}
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                        {fmt.timeAgo(log.created_at)}
                         {' • '}
-                        {new Date(log.created_at).toLocaleString()}
+                        {fmt.dateTime(log.created_at)}
                       </p>
                     </div>
 
@@ -396,7 +397,7 @@ export function IntegrationActivityLog({
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Timestamp</label>
-                    <p className="mt-1 text-sm">{new Date(selectedLog.created_at).toLocaleString()}</p>
+                    <p className="mt-1 text-sm">{fmt.dateTime(selectedLog.created_at)}</p>
                   </div>
                 </div>
 
@@ -500,7 +501,7 @@ export function IntegrationActivityLog({
                   {selectedLog.completed_at && (
                     <div>
                       <label className="text-sm text-muted-foreground">Completed At</label>
-                      <p className="text-sm">{new Date(selectedLog.completed_at).toLocaleString()}</p>
+                      <p className="text-sm">{fmt.dateTime(selectedLog.completed_at)}</p>
                     </div>
                   )}
                 </div>

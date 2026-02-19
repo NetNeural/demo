@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Activity, Battery, Signal, HardDrive, Clock } from 'lucide-react'
 import type { Device } from '@/types/sensor-details'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface TelemetryReading {
   device_id: string
@@ -31,6 +32,8 @@ const SENSOR_LABELS: Record<number, string> = {
 }
 
 export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealthCardProps) {
+  const { fmt } = useDateFormatter()
+
   // Get last timestamp for each sensor type
   const getLastTelemetryTimestamps = () => {
     const sensorTimestamps: Record<string, string> = {}
@@ -49,29 +52,6 @@ export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealt
     })
     
     return sensorTimestamps
-  }
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp)
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
-
-  const formatTimeAgo = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`
-    return `${Math.floor(diffMins / 1440)}d ago`
   }
 
   const sensorTimestamps = getLastTelemetryTimestamps()
@@ -110,8 +90,8 @@ export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealt
               <div key={sensor} className="flex items-center justify-between pl-6">
                 <span className="text-sm">{sensor}</span>
                 <div className="text-right">
-                  <div className="font-medium text-sm">{formatTimeAgo(timestamp)}</div>
-                  <div className="text-xs text-muted-foreground">{formatTimestamp(timestamp)}</div>
+                  <div className="font-medium text-sm">{fmt.timeAgo(timestamp)}</div>
+                  <div className="text-xs text-muted-foreground">{fmt.shortDateTime(timestamp)}</div>
                 </div>
               </div>
             ))}

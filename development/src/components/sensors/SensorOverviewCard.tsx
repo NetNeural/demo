@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import type { SensorReading, SensorStatistics, SensorThreshold, Device } from '@/types/sensor-details'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface SensorOverviewCardProps {
   latestReading: SensorReading | null
@@ -68,19 +69,7 @@ export function SensorOverviewCard({
   }
 
   const trend = getTrend()
-
-  // Format last reading time
-  const formatTimeAgo = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`
-    return `${Math.floor(diffMins / 1440)}d ago`
-  }
+  const { fmt } = useDateFormatter()
 
   return (
     <Card>
@@ -105,7 +94,7 @@ export function SensorOverviewCard({
           </div>
           <p className="text-xs text-muted-foreground">
             {latestReading
-              ? `Updated ${formatTimeAgo(latestReading.timestamp)}`
+              ? `Updated ${fmt.timeAgo(latestReading.timestamp)}`
               : 'No recent data'}
           </p>
         </div>

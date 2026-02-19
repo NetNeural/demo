@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { toast } from 'sonner'
 
 interface Device {
@@ -65,6 +66,7 @@ export default function DeviceViewPage() {
   const [activeTab, setActiveTab] = useState('details')
   const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
 
   // Form state
   const [name, setName] = useState('')
@@ -396,21 +398,21 @@ export default function DeviceViewPage() {
                       <p className="text-sm text-muted-foreground">Last Seen</p>
                       <p className="font-medium">
                         {device.last_seen 
-                          ? new Date(device.last_seen).toLocaleString()
-                          : new Date(device.lastSeen).toLocaleString()}
+                          ? fmt.dateTime(device.last_seen)
+                          : fmt.dateTime(device.lastSeen)}
                       </p>
                     </div>
                   )}
                   {device.last_seen_online && (
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen Online</p>
-                      <p className="font-medium">{new Date(device.last_seen_online).toLocaleString()}</p>
+                      <p className="font-medium">{fmt.dateTime(device.last_seen_online)}</p>
                     </div>
                   )}
                   {device.last_seen_offline && (
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen Offline</p>
-                      <p className="font-medium">{new Date(device.last_seen_offline).toLocaleString()}</p>
+                      <p className="font-medium">{fmt.dateTime(device.last_seen_offline)}</p>
                     </div>
                   )}
                   {(device.batteryLevel != null || device.battery_level != null) && (
@@ -748,7 +750,7 @@ export default function DeviceViewPage() {
                         <Calendar className="w-3 h-3" />
                         Created At
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.created_at).toLocaleString()}</p>
+                      <p className="font-medium text-sm">{fmt.dateTime(device.created_at)}</p>
                       <p className="text-xs text-muted-foreground mt-1">{device.created_at}</p>
                     </div>
                   )}
@@ -758,7 +760,7 @@ export default function DeviceViewPage() {
                         <Calendar className="w-3 h-3" />
                         Updated At
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.updated_at).toLocaleString()}</p>
+                      <p className="font-medium text-sm">{fmt.dateTime(device.updated_at)}</p>
                       <p className="text-xs text-muted-foreground mt-1">{device.updated_at}</p>
                     </div>
                   )}
@@ -768,7 +770,7 @@ export default function DeviceViewPage() {
                         <Activity className="w-3 h-3" />
                         Last Seen
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen).toLocaleString()}</p>
+                      <p className="font-medium text-sm">{fmt.dateTime(device.last_seen)}</p>
                       <p className="text-xs text-muted-foreground mt-1">{device.last_seen}</p>
                     </div>
                   )}
@@ -778,7 +780,7 @@ export default function DeviceViewPage() {
                         <Activity className="w-3 h-3" />
                         Last Seen Online
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen_online).toLocaleString()}</p>
+                      <p className="font-medium text-sm">{fmt.dateTime(device.last_seen_online)}</p>
                       <p className="text-xs text-muted-foreground mt-1">{device.last_seen_online}</p>
                     </div>
                   )}
@@ -788,7 +790,7 @@ export default function DeviceViewPage() {
                         <Activity className="w-3 h-3" />
                         Last Seen Offline
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen_offline).toLocaleString()}</p>
+                      <p className="font-medium text-sm">{fmt.dateTime(device.last_seen_offline)}</p>
                       <p className="text-xs text-muted-foreground mt-1">{device.last_seen_offline}</p>
                     </div>
                   )}

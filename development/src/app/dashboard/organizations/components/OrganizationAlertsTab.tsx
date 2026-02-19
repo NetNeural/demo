@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Plus } from 'lucide-react';
 import { edgeFunctions } from '@/lib/edge-functions';
+import { useDateFormatter } from '@/hooks/useDateFormatter';
 
 interface Alert {
   id: string;
@@ -23,6 +24,7 @@ interface OrganizationAlertsTabProps {
 
 export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabProps) {
   const router = useRouter();
+  const { fmt } = useDateFormatter();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -113,7 +115,7 @@ export function OrganizationAlertsTab({ organizationId }: OrganizationAlertsTabP
                   <div>
                     <p className="font-medium">{alert.message}</p>
                     <p className="text-sm text-muted-foreground">
-                      {alert.deviceName || 'Unknown Device'} • {new Date(alert.timestamp).toLocaleString()}
+                      {alert.deviceName || 'Unknown Device'} • {fmt.dateTime(alert.timestamp)}
                     </p>
                   </div>
                 </div>
