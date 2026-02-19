@@ -187,7 +187,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
         .eq('device_id', deviceId)
         .order('received_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (telemetry) setLastTelemetry(telemetry as unknown as TelemetryEntry)
 
@@ -226,7 +226,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
         .eq('integration_type', integrationType)
         .eq('status', 'active')
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (listError || !integration) {
         const durationMs = Date.now() - start
