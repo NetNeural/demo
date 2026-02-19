@@ -142,6 +142,12 @@ export function DeviceTypesList() {
   const [deleteDeviceCount, setDeleteDeviceCount] = useState<number | null>(null)
   const [checkingDevices, setCheckingDevices] = useState(false)
 
+  // Debug logging
+  console.log('[DeviceTypesList] Org ID:', currentOrganization?.id)
+  console.log('[DeviceTypesList] Device types:', deviceTypes?.length ?? 0)
+  console.log('[DeviceTypesList] Loading:', isLoading)
+  console.log('[DeviceTypesList] Error:', error)
+
   // When a delete target is set, check how many devices reference it
   useEffect(() => {
     if (!deleteTarget) {
