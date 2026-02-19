@@ -22,6 +22,7 @@ import {
   DeviceUpdate,
   ProviderCapabilities,
   PaginationOptions,
+  ProviderConfig,
 } from './base-integration-provider';
 import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
 
