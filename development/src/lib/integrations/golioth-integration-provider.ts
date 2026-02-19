@@ -42,19 +42,27 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
   private organizationId: string;
   private integrationId: string;
 
-  constructor(config: GoliothProviderConfig & { organizationId?: string; integrationId?: string }) {
+  constructor(config: ProviderConfig) {
     super();
-    this.config = config;
-    this.providerId = `golioth-${config.projectId}`;
-    this.organizationId = config.organizationId || '';
-    this.integrationId = config.integrationId || this.providerId;
+    
+    // Extract Golioth-specific config from generic ProviderConfig
+    const apiKey = config.apiKey || '';
+    const projectId = config.projectId || '';
+    const baseUrl = config.endpoint;
+    const organizationId = (config.credentials?.organizationId as string) || '';
+    const integrationId = (config.credentials?.integrationId as string) || `golioth-${projectId}`;
+    
+    this.config = { apiKey, projectId, baseUrl };
+    this.providerId = `golioth-${projectId}`;
+    this.organizationId = organizationId;
+    this.integrationId = integrationId;
     this.activityLogger = new FrontendActivityLogger();
     
     // Initialize Golioth API client
     this.api = new GoliothAPI({
-      apiKey: config.apiKey,
-      projectId: config.projectId,
-      baseUrl: config.baseUrl,
+      apiKey,
+      projectId,
+      baseUrl,
     });
   }
 

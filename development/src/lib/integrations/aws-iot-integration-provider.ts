@@ -70,22 +70,29 @@ export class AwsIotIntegrationProvider extends DeviceIntegrationProvider {
   private organizationId: string;
   private integrationId: string;
 
-  constructor(integration: { id: string; config: AwsIotConfig; organizationId?: string }) {
+  constructor(config: ProviderConfig) {
     super();
-    this.providerId = integration.id;
-    this.integrationId = integration.id;
-    this.organizationId = integration.organizationId || '';
+    
+    // Extract AWS-specific config from generic ProviderConfig
+    const region = (config.region || config.credentials?.region as string) || 'us-east-1';
+    const accessKeyId = (config.credentials?.accessKeyId as string) || '';
+    const secretAccessKey = (config.credentials?.secretAccessKey as string) || '';
+    const endpoint = config.endpoint;
+    const integrationId = (config.credentials?.integrationId as string) || config.projectId || 'aws-iot';
+    const organizationId = (config.credentials?.organizationId as string) || '';
+    
+    this.providerId = integrationId;
+    this.integrationId = integrationId;
+    this.organizationId = organizationId;
     this.activityLogger = new FrontendActivityLogger();
-
-    const config = integration.config;
-    this.region = config.region;
+    this.region = region;
 
     // Initialize AWS IoT Control Plane client
     this.iotClient = new IoTClient({
-      region: config.region,
+      region,
       credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
+        accessKeyId,
+        secretAccessKey,
       },
     });
 
@@ -95,15 +102,15 @@ export class AwsIotIntegrationProvider extends DeviceIntegrationProvider {
       credentials: { accessKeyId: string; secretAccessKey: string };
       endpoint?: string;
     } = {
-      region: config.region,
+      region,
       credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
+        accessKeyId,
+        secretAccessKey,
       },
     };
 
-    if (config.endpoint) {
-      dataPlaneConfig.endpoint = config.endpoint;
+    if (endpoint) {
+      dataPlaneConfig.endpoint = endpoint;
     }
 
     this.iotDataClient = new IoTDataPlaneClient(dataPlaneConfig);

@@ -814,13 +814,30 @@ export default createEdgeFunction(async ({ req }) => {
       const finalProjectId = project_id || settings?.projectId || settings?.project_id
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
 
+      // Encrypt API key using pgsodium
+      let encryptedApiKey: string | null = null
+      if (finalApiKey) {
+        const { data: encrypted, error: encryptError } = await supabase
+          .rpc('encrypt_api_key', {
+            plaintext_key: finalApiKey,
+            key_id: 'default'
+          })
+        
+        if (encryptError) {
+          console.error('API key encryption failed:', encryptError)
+          throw new DatabaseError(`Failed to encrypt API key: ${encryptError.message}`, 500)
+        }
+        
+        encryptedApiKey = encrypted as string
+      }
+
       // Build insert object
       const insertData: any = {
         organization_id,
         integration_type,
         name,
         settings: settings || {},
-        api_key_encrypted: finalApiKey, // TODO: Encrypt this properly
+        api_key_encrypted: encryptedApiKey,
         project_id: finalProjectId,
         base_url: finalBaseUrl,
         status: 'active'
@@ -897,7 +914,21 @@ export default createEdgeFunction(async ({ req }) => {
       const finalWebhookEnabled = settings?.webhookEnabled
       const finalWebhookSecret = settings?.webhookSecret
       
-      if (finalApiKey !== undefined) updates.api_key_encrypted = finalApiKey // TODO: Encrypt properly
+      // Encrypt API key if provided
+      if (finalApiKey !== undefined) {
+        const { data: encrypted, error: encryptError } = await supabase
+          .rpc('encrypt_api_key', {
+            plaintext_key: finalApiKey,
+            key_id: 'default'
+          })
+        
+        if (encryptError) {
+          console.error('API key encryption failed:', encryptError)
+          throw new DatabaseError(`Failed to encrypt API key: ${encryptError.message}`, 500)
+        }
+        
+        updates.api_key_encrypted = encrypted as string
+      }
       if (finalProjectId !== undefined) updates.project_id = finalProjectId
       if (finalBaseUrl !== undefined) updates.base_url = finalBaseUrl
       if (finalWebhookEnabled !== undefined) updates.webhook_enabled = finalWebhookEnabled

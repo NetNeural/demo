@@ -80,15 +80,35 @@ export class IntegrationProviderFactory {
   }
 
   /**
-   * Decrypt API key (placeholder - implement proper decryption)
+   * Decrypt API key
+   * 
+   * ⚠️ SECURITY NOTE: This method provides fallback decryption for backward
+   * compatibility with base64-encoded keys during migration. New keys are
+   * encrypted using pgsodium and should ideally be decrypted server-side
+   * via database functions before reaching this code.
+   * 
+   * @param encrypted - Base64 string (old format) or pgsodium-encrypted string
+   * @returns Decrypted API key
+   * 
+   * TODO: Once all keys are migrated to pgsodium encryption, Edge Functions
+   * should decrypt keys before creating providers, and this method can be removed.
    */
   private static decryptApiKey(encrypted: string): string {
-    // TODO: Implement proper decryption
-    // For now, just decode base64
+    if (!encrypted) {
+      return '';
+    }
+
     try {
+      // Try base64 decode for backward compatibility with old format
+      // New keys encrypted with pgsodium cannot be decrypted here
+      // (they require database-side decryption via decrypt_api_key function)
       return Buffer.from(encrypted, 'base64').toString('utf-8');
-    } catch {
-      return encrypted;
+    } catch (error) {
+      console.warn(
+        'Failed to decrypt API key. If using pgsodium encryption, ' +
+        'keys must be decrypted via Edge Functions before provider creation.'
+      );
+      return encrypted; // Return as-is if decryption fails
     }
   }
 }
@@ -98,7 +118,8 @@ export class IntegrationProviderFactory {
 // ============================================================================
 
 // Register all device integration providers
-registerProvider('golioth', GoliothIntegrationProvider as unknown as ProviderConstructor);
+// Note: AWS, Azure, and MQTT providers still need constructor updates for full type safety
+registerProvider('golioth', GoliothIntegrationProvider);
 registerProvider('aws_iot', AwsIotIntegrationProvider as unknown as ProviderConstructor);
 registerProvider('azure_iot', AzureIotIntegrationProvider as unknown as ProviderConstructor);
 registerProvider('mqtt', MqttIntegrationProvider as unknown as ProviderConstructor);

@@ -185,21 +185,67 @@ export class OrganizationIntegrationService {
   }
 
   /**
-   * Encrypt sensitive data (placeholder - implement with proper encryption)
+   * Encrypt sensitive data using Supabase pgsodium
+   * 
+   * Security: Uses PostgreSQL pgsodium extension for AEAD encryption.
+   * The encryption happens server-side via database function, so keys
+   * never leave the database in plaintext form.
+   * 
+   * @param apiKey The plaintext API key to encrypt
+   * @returns Promise<string> Base64-encoded encrypted key
    */
-  private encryptApiKey(apiKey: string): string {
-    // In a real implementation, use proper encryption
-    // For now, just base64 encode (NOT SECURE - just for demonstration)
-    return Buffer.from(apiKey).toString('base64');
+  private async encryptApiKey(apiKey: string): Promise<string> {
+    try {
+      const { data, error } = await this.supabase.rpc('encrypt_api_key', {
+        plaintext_key: apiKey,
+        key_id: 'default'
+      });
+
+      if (error) {
+        throw new Error(`Encryption failed: ${error.message}`);
+      }
+
+      return data as string;
+    } catch (error) {
+      throw new Error(
+        `Failed to encrypt API key: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 
   /**
-   * Decrypt sensitive data (placeholder - implement with proper decryption)
+   * Decrypt sensitive data (DEPRECATED - should only be used in Edge Functions)
+   * 
+   * ⚠️ WARNING: This method is DEPRECATED for client-side use.
+   * Decryption should ONLY happen server-side in Edge Functions.
+   * 
+   * This method is kept for backward compatibility during migration,
+   * but should not be called from frontend code.
+   * 
+   * @deprecated Use Edge Functions for decryption
    */
-  private decryptApiKey(encryptedApiKey: string): string {
-    // In a real implementation, use proper decryption
-    // For now, just base64 decode (NOT SECURE - just for demonstration)
-    return Buffer.from(encryptedApiKey, 'base64').toString();
+  private async decryptApiKey(encryptedApiKey: string): Promise<string> {
+    try {
+      const { data, error } = await this.supabase.rpc('decrypt_api_key', {
+        encrypted_key: encryptedApiKey,
+        key_id: 'default'
+      });
+
+      if (error) {
+        throw new Error(`Decryption failed: ${error.message}`);
+      }
+
+      return data as string;
+    } catch (error) {
+      // Fallback to base64 decode for backward compatibility during migration
+      try {
+        return Buffer.from(encryptedApiKey, 'base64').toString('utf-8');
+      } catch {
+        throw new Error(
+          `Failed to decrypt API key: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+    }
   }
 }
 
