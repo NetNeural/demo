@@ -1,7 +1,7 @@
 /**
  * Device Types List
  * 
- * Displays device types in cards with inline actions.
+ * Displays device types in cards or table with inline actions.
  * Supports edit, delete, and visual range indicators.
  * 
  * @see Issue #118
@@ -9,6 +9,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +45,9 @@ import {
   Gauge,
   PackageOpen,
   Loader2,
+  Grid3x3,
+  Table2,
+  Ruler,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
@@ -117,11 +128,14 @@ function RangeBar({ type }: { type: DeviceType }) {
   )
 }
 
+type ViewMode = 'cards' | 'table'
+
 export function DeviceTypesList() {
   const { currentOrganization } = useOrganization()
   const { data: deviceTypes, isLoading, error } = useDeviceTypesQuery(currentOrganization?.id)
   const deleteMutation = useDeleteDeviceTypeMutation()
 
+  const [viewMode, setViewMode] = useState<ViewMode>('cards')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingType, setEditingType] = useState<DeviceType | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeviceType | null>(null)
@@ -235,7 +249,28 @@ export function DeviceTypesList() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-end space-x-2 mb-4">
+        <Button
+          variant={viewMode === 'cards' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('cards')}
+        >
+          <Grid3x3 className="h-4 w-4 mr-1" />
+          Cards
+        </Button>
+        <Button
+          variant={viewMode === 'table' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('table')}
+        >
+          <Table2 className="h-4 w-4 mr-1" />
+          Table
+        </Button>
+      </div>
+
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {deviceTypes.map(dt => (
           <Card key={dt.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
@@ -333,6 +368,101 @@ export function DeviceTypesList() {
           </Card>
         ))}
       </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Name</TableHead>
+                  <TableHead className="w-[120px]">Class</TableHead>
+                  <TableHead className="w-[80px] text-center">Unit</TableHead>
+                  <TableHead className="min-w-[200px]">Range</TableHead>
+                  <TableHead className="w-[120px] text-center">Alert Thresholds</TableHead>
+                  <TableHead className="w-[50px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deviceTypes.map(dt => (
+                  <TableRow key={dt.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{dt.name}</p>
+                        {dt.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {dt.description}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {dt.device_class ? (
+                        <Badge variant="secondary" className="text-xs">
+                          {getClassLabel(dt.device_class)}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {dt.unit ? (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {dt.unit}
+                        </Badge>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Gauge className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-[160px]">
+                          <RangeBar type={dt} />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {dt.lower_alert != null || dt.upper_alert != null ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <Ruler className="h-3.5 w-3.5 text-destructive" />
+                          <span className="text-xs font-mono">
+                            {fmt(dt.lower_alert, dt.precision_digits)}
+                            {' / '}
+                            {fmt(dt.upper_alert, dt.precision_digits)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">None</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(dt)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteTarget(dt)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit dialog */}
       <DeviceTypeFormDialog
