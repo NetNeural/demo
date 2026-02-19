@@ -20,6 +20,8 @@ import { AwsIotIntegrationProvider } from './aws-iot-integration-provider';
 import { AzureIotIntegrationProvider } from './azure-iot-integration-provider';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { MqttIntegrationProvider } from './mqtt-integration-provider';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { NetNeuralHubIntegrationProvider } from './netneural-hub-integration-provider';
 import { OrganizationIntegration } from './organization-integrations';
 
 type ProviderConstructor = new (config: ProviderConfig) => DeviceIntegrationProvider;
@@ -119,10 +121,11 @@ export class IntegrationProviderFactory {
 
 // Register all device integration providers
 // All providers now accept ProviderConfig for type safety
-registerProvider('goli oth', GoliothIntegrationProvider);
+registerProvider('golioth', GoliothIntegrationProvider);
 registerProvider('aws_iot', AwsIotIntegrationProvider);
 registerProvider('azure_iot', AzureIotIntegrationProvider);
 registerProvider('mqtt', MqttIntegrationProvider);
+registerProvider('netneural_hub', NetNeuralHubIntegrationProvider);
 
 // Note: Google IoT Core was discontinued by Google in August 2023
 // Legacy 'google_iot' type entries should be migrated to alternative providers
