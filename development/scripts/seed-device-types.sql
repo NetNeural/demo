@@ -155,7 +155,7 @@ VALUES
 INSERT INTO device_types (organization_id, name, description, device_class, unit, lower_normal, upper_normal, lower_alert, upper_alert, precision_digits)
 VALUES
   -- Water Leak Detection
-  (:'org_id', 'Water Leak Detection', 'Binary leak sensor (0=dry, 1=wet)', 'leak_detection', 'status', 0.0, 0.0, NULL, 1.0, 0),
+  (:'org_id', 'Water Leak Detection', 'Binary leak sensor (0=dry, 1=wet)', 'leak_detection', 'status', 0.0, 0.1, NULL, 1.0, 0),
   
   -- Flow Rate
   (:'org_id', 'Water Flow Rate', 'Liquid flow monitoring for pipes/systems', 'flow', 'L/min', 0.0, 100.0, NULL, 200.0, 1),
