@@ -36,8 +36,10 @@ export default function DashboardShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
-  const { user } = useUser()
+  const { user, profile } = useUser()
   const { currentOrganization } = useOrganization()
+
+  const isSuperAdmin = profile?.role === 'super_admin'
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -163,7 +165,7 @@ export default function DashboardShell({
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              {user?.isSuperAdmin && (
+              {isSuperAdmin && (
                 <Badge variant="destructive" className="flex items-center gap-1">
                   <Shield className="w-3 h-3" />
                   Super Admin — Cross-Org Access
