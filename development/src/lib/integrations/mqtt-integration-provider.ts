@@ -263,10 +263,79 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    * Query telemetry (from cache - limited history)
    */
   override async queryTelemetry(): Promise<TelemetryData[]> {
-    // MQTT doesn't store historical data
-    // This would require a separate time-series database
-    // For now, return empty array
-    return [];
+    try {
+      // Query mqtt_messages table for telemetry data
+      // We need to import Supabase client to query the database
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Query mqtt_messages for this integration
+      const{ data: messages, error } = await supabase
+        .from('mqtt_messages')
+        .select('*')
+        .eq('integration_id', this.integrationId)
+        .eq('organization_id', this.organizationId)
+        .order('received_at', { ascending: false })
+        .limit(100); // Limit to last 100 messages
+
+      if (error) {
+        console.error('Error querying MQTT messages:', error);
+        throw new Error(`Failed to query telemetry: ${error.message}`);
+      }
+
+      if (!messages || messages.length === 0) {
+        return [];
+      }
+
+      // Parse messages and extract telemetry data
+      const telemetryData: TelemetryData[] = messages
+        .filter(msg => {
+          // Filter for telemetry topics
+          const topic = msg.topic as string;
+          return topic.includes('/telemetry') || topic.includes('/data') || topic.includes('/sensor');
+        })
+        .map(msg => {
+          const payload = msg.payload as Record<string, unknown>;
+          const topic = msg.topic as string;
+          
+          // Extract device ID from topic (e.g., "org_xxx/devices/sensor01/telemetry" -> "sensor01")
+          const deviceIdMatch = topic.match(/\/devices\/([^/]+)\//);
+          const deviceId = deviceIdMatch ? deviceIdMatch[1] : 'unknown';
+
+          // Extract timestamp from payload or use received_at
+          let timestamp: Date;
+          if (payload.timestamp) {
+            timestamp = new Date(payload.timestamp as string | number);
+          } else if (payload.ts) {
+            timestamp = new Date(payload.ts as string | number);
+          } else {
+            timestamp = new Date(msg.received_at as string);
+          }
+
+          // Extract metrics from payload (exclude metadata fields)
+          const metrics: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(payload)) {
+            if (!['timestamp', 'ts', 'device_id', 'deviceId'].includes(key)) {
+              metrics[key] = value;
+            }
+          }
+
+          return {
+            deviceId,
+            timestamp,
+            metrics,
+            path: topic,
+          };
+        });
+
+      return telemetryData;
+    } catch (error) {
+      console.error('Error in queryTelemetry:', error);
+      // Return empty array instead of throwing to maintain backward compatibility
+      return [];
+    }
   }
 
   /**
