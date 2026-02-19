@@ -41,7 +41,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'quick-start',
     title: 'User Quick Start Guide',
-    filename: 'USER_QUICK_START.md',
+    filename: 'USER_QUICK_START.txt',
     description: 'Getting started walkthrough for new platform users — login, dashboard overview, device monitoring, alerts, and common workflows.',
     icon: Rocket,
     category: 'user',
@@ -52,7 +52,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'admin-guide',
     title: 'Administrator Guide',
-    filename: 'ADMINISTRATOR_GUIDE.md',
+    filename: 'ADMINISTRATOR_GUIDE.txt',
     description: 'Complete admin reference — organization setup, member management, role assignments, integration configuration, alert rule management.',
     icon: ShieldCheck,
     category: 'admin',
@@ -63,7 +63,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'api-docs',
     title: 'API Documentation',
-    filename: 'API_DOCUMENTATION.md',
+    filename: 'API_DOCUMENTATION.txt',
     description: 'Full REST and Edge Function API reference — authentication, endpoints, request/response schemas, error codes, rate limits.',
     icon: Code2,
     category: 'developer',
@@ -74,7 +74,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'dev-setup',
     title: 'Developer Setup Guide',
-    filename: 'DEVELOPER_SETUP_GUIDE.md',
+    filename: 'DEVELOPER_SETUP_GUIDE.txt',
     description: 'Local development environment setup — prerequisites, Supabase CLI, Next.js dev server, Edge Functions, VS Code debugging.',
     icon: Monitor,
     category: 'developer',
@@ -85,7 +85,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'integrations',
     title: 'Integrations Guide',
-    filename: 'INTEGRATIONS_GUIDE.md',
+    filename: 'INTEGRATIONS_GUIDE.txt',
     description: 'Setting up and managing integrations — MQTT brokers, webhooks, Golioth, custom endpoints, testing connections.',
     icon: Network,
     category: 'admin',
@@ -96,7 +96,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'troubleshooting',
     title: 'Troubleshooting Guide',
-    filename: 'troubleshooting.md',
+    filename: 'troubleshooting.txt',
     description: 'Common issues and solutions — device connectivity, alert failures, integration errors, authentication problems, performance.',
     icon: Wrench,
     category: 'operations',
@@ -107,7 +107,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'triage',
     title: 'Triage Checklist',
-    filename: 'TRIAGE_CHECKLIST.md',
+    filename: 'TRIAGE_CHECKLIST.txt',
     description: 'Step-by-step triage guide for production incidents — severity classification, diagnostic steps, escalation matrix.',
     icon: AlertTriangle,
     category: 'operations',
@@ -118,7 +118,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'monitoring',
     title: 'Monitoring Guide',
-    filename: 'MONITORING.md',
+    filename: 'MONITORING.txt',
     description: 'System monitoring and observability — edge function metrics, database health, realtime performance, Sentry integration.',
     icon: Activity,
     category: 'operations',
@@ -129,7 +129,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'video-tutorials',
     title: 'Video Tutorials Plan',
-    filename: 'VIDEO_TUTORIALS_PLAN.md',
+    filename: 'VIDEO_TUTORIALS_PLAN.txt',
     description: 'Planned video tutorial series — getting started, device management, integration setup, admin workflows, advanced features.',
     icon: Video,
     category: 'user',
@@ -140,7 +140,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'changelog',
     title: 'Changelog',
-    filename: 'CHANGELOG.md',
+    filename: 'CHANGELOG.txt',
     description: 'Release history and version notes — features, bug fixes, breaking changes, migration steps.',
     icon: History,
     category: 'developer',
@@ -151,7 +151,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'mqtt-architecture',
     title: 'MQTT Integration Architecture',
-    filename: 'MQTT_ARCHITECTURE.md',
+    filename: 'MQTT_ARCHITECTURE.txt',
     description: 'MQTT integration design — stateless Edge Functions, HTTP ingestion with PGMQ, external broker support, topic structure, security.',
     icon: Network,
     category: 'developer',
@@ -162,7 +162,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'azure-iot-architecture',
     title: 'Azure IoT Hub Architecture',
-    filename: 'AZURE_IOT_ARCHITECTURE.md',
+    filename: 'AZURE_IOT_ARCHITECTURE.txt',
     description: 'Azure IoT Hub integration — Device Registry, Device Twin, telemetry storage options, security, customer configuration guide.',
     icon: Network,
     category: 'developer',
@@ -173,7 +173,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'aws-iot-architecture',
     title: 'AWS IoT Core Architecture',
-    filename: 'AWS_IOT_ARCHITECTURE.md',
+    filename: 'AWS_IOT_ARCHITECTURE.txt',
     description: 'AWS IoT Core integration — Thing management, Thing Shadows, telemetry options via IoT Analytics, security, IAM permissions.',
     icon: Network,
     category: 'developer',
@@ -184,7 +184,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'golioth-architecture',
     title: 'Golioth Integration Architecture',
-    filename: 'GOLIOTH_INTEGRATION_ARCHITECTURE.md',
+    filename: 'GOLIOTH_INTEGRATION_ARCHITECTURE.txt',
     description: 'Golioth IoT Platform integration — Device management, telemetry, OTA updates, webhooks, API key management, security.',
     icon: Network,
     category: 'developer',
@@ -195,7 +195,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'secrets-inventory',
     title: 'Secrets Inventory & Management',
-    filename: 'SECRETS_INVENTORY.md',
+    filename: 'SECRETS_INVENTORY.txt',
     description: 'Complete catalog of all production secrets — GitHub Secrets, rotation schedules, tier classification, access audit trail.',
     icon: ShieldCheck,
     category: 'operations',
@@ -206,7 +206,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'secrets-governance',
     title: 'Secrets Governance Policy',
-    filename: 'SECRETS_GOVERNANCE.md',
+    filename: 'SECRETS_GOVERNANCE.txt',
     description: 'Security policies for secrets management — 4-tier classification, rotation requirements, access control, incident response.',
     icon: ShieldCheck,
     category: 'operations',
@@ -217,7 +217,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'sentry-setup',
     title: 'Sentry Setup & Integration',
-    filename: 'SENTRY_SETUP_GUIDE.md',
+    filename: 'SENTRY_SETUP_GUIDE.txt',
     description: 'Error tracking and performance monitoring — Sentry configuration, Supabase integration, alert rules, dashboard setup.',
     icon: Activity,
     category: 'operations',
@@ -228,7 +228,7 @@ const DOCS: DocEntry[] = [
   {
     id: 'soc2-compliance',
     title: 'SOC 2 Compliance Checklist',
-    filename: 'SOC2_COMPLIANCE_CHECKLIST.md',
+    filename: 'SOC2_COMPLIANCE_CHECKLIST.txt',
     description: 'SOC 2 Type II compliance requirements — Trust Service Criteria, controls, evidence, audit preparation, continuous monitoring.',
     icon: ClipboardList,
     category: 'operations',
@@ -410,7 +410,7 @@ export default function DocumentationTab() {
               Updates to documentation should be made via pull requests and reviewed before merge.
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              The changelog is maintained at <code className="bg-background px-1 py-0.5 rounded">development/CHANGELOG.md</code> following Keep a Changelog format.
+              The changelog is maintained at <code className="bg-background px-1 py-0.5 rounded">development/CHANGELOG.txt</code> following Keep a Changelog format.
             </p>
           </div>
         </CardContent>
