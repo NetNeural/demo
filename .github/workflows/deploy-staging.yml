@@ -119,6 +119,9 @@ jobs:
           rm -rf node_modules/.cache
           rm -rf .turbo
           rm -rf .swc
+          # Force clean rebuild - CRITICAL for test changes
+          rm -rf node_modules/.vite
+          find . -name "*.tsbuildinfo" -delete
           echo "✅ Build cache cleared completely"
 
       - name: ✅ Verify environment
