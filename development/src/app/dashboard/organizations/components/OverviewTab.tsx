@@ -120,8 +120,10 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Reseller Agreement Section */}
-      <ResellerAgreementSection organizationId={organizationId} />
+      {/* Reseller Agreement Section — hidden for main (root) org */}
+      {currentOrganization.parent_organization_id && (
+        <ResellerAgreementSection organizationId={organizationId} />
+      )}
 
       {/* Recent Activity */}
       <Card>

@@ -64,23 +64,40 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
 
   const isSuperAdmin = user?.isSuperAdmin || false;
 
+  const isMainOrg = !currentOrganization?.parent_organization_id;
+
   const fetchChildOrgs = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await edgeFunctions.organizations.listChildren(organizationId);
-      if (response.success && response.data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const orgs = (response.data as any).organizations || [];
-        setChildOrgs(orgs);
+
+      if (isMainOrg && isSuperAdmin) {
+        // Main (root) org: list ALL organizations
+        const response = await edgeFunctions.organizations.list();
+        if (response.success && response.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const allOrgs = ((response.data as any).organizations || []) as ChildOrg[];
+          // Exclude the current (main) org from the customer list
+          setChildOrgs(allOrgs.filter((o) => o.id !== organizationId));
+        }
+      } else {
+        // Child / reseller org: list only children
+        const response = await edgeFunctions.organizations.listChildren(organizationId);
+        if (response.success && response.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const orgs = (response.data as any).organizations || [];
+          setChildOrgs(orgs);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch child organizations:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId]);
+  }, [organizationId, isMainOrg, isSuperAdmin]);
 
   const fetchAgreement = useCallback(async () => {
+    // Main org doesn't have a reseller agreement
+    if (isMainOrg) return;
     try {
       const supabase = createClient();
       // reseller_agreements table is new — not yet in generated types
@@ -99,7 +116,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
     } catch (err) {
       console.error('Failed to fetch reseller agreement:', err);
     }
-  }, [organizationId]);
+  }, [organizationId, isMainOrg]);
 
   useEffect(() => {
     fetchChildOrgs();
@@ -141,7 +158,8 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
 
   return (
     <div className="space-y-6">
-      {/* Reseller Agreement Summary */}
+      {/* Reseller Agreement Summary — only shown for child (reseller) orgs */}
+      {currentOrganization?.parent_organization_id && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -203,6 +221,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Customer Organizations Header */}
       <div className="flex items-center justify-between">
@@ -212,7 +231,9 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
             Customer Organizations
           </h3>
           <p className="text-sm text-muted-foreground">
-            Organizations managed through your reseller account
+            {isMainOrg
+              ? 'All customer organizations on the platform'
+              : 'Organizations managed through your reseller account'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -348,10 +369,10 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
         </>
       )}
 
-      {/* Reseller Badge Footer */}
+      {/* Footer */}
       <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
         <Crown className="w-4 h-4" />
-        <span>Reseller Account — {currentOrganization?.name}</span>
+        <span>{isMainOrg ? 'Main Account' : 'Reseller Account'} — {currentOrganization?.name}</span>
       </div>
 
       {/* Create Dialog */}
