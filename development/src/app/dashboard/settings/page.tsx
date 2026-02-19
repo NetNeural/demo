@@ -9,17 +9,21 @@ import { PreferencesTab } from './components/PreferencesTab';
 import { SecurityTab } from './components/SecurityTab';
 import { UserOrganizationsTab } from './components/UserOrganizationsTab';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useUser } from '@/contexts/UserContext';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { currentOrganization } = useOrganization();
+  const { user } = useUser();
 
-  const orgPrefix = currentOrganization?.name ? `${currentOrganization.name} ` : '';
+  const fullName = user?.fullName;
+  const orgName = currentOrganization?.name;
+  const titlePrefix = fullName && orgName ? `${fullName} @ ${orgName} ` : fullName ? `${fullName} ` : orgName ? `${orgName} ` : '';
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${orgPrefix}Personal Settings`}
+        title={`${titlePrefix}Personal Settings`}
         description="Manage your profile, preferences, and security settings"
       />
 

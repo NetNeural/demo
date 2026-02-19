@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/client'
 export interface UserProfile {
   id: string
   email: string
+  fullName: string | null
   organizationId: string | null  // NULL for super admins
   organizationName: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
@@ -28,9 +29,9 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   // Note: organization can be NULL for super admins
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('role, organization_id, password_change_required')
+    .select('role, organization_id, password_change_required, full_name')
     .eq('id', user.id)
-    .single() as { data: { role: string; organization_id: string | null; password_change_required: boolean | null } | null; error: any }
+    .single() as { data: { role: string; organization_id: string | null; password_change_required: boolean | null; full_name: string | null } | null; error: any }
 
   if (profileError || !profile) {
     console.error('Failed to fetch user profile:', profileError)
@@ -57,6 +58,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     return {
       id: user.id,
       email: user.email || '',
+      fullName: profile.full_name || null,
       organizationId: null,
       organizationName: null,
       role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
@@ -74,6 +76,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   return {
     id: user.id,
     email: user.email || '',
+    fullName: profile.full_name || null,
     organizationId: organization.id,
     organizationName: organization.name,
     role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',

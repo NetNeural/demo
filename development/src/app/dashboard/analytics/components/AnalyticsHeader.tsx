@@ -4,17 +4,18 @@ import { Download } from 'lucide-react';
 import type { TimeRange } from '../types/analytics.types';
 
 interface AnalyticsHeaderProps {
+  titlePrefix: string;
   organizationName: string;
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
   onExport: () => void;
 }
 
-export function AnalyticsHeader({ organizationName, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
+export function AnalyticsHeader({ titlePrefix, organizationName, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">{organizationName} AI Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h1>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
             <SelectTrigger className="w-[160px]">
