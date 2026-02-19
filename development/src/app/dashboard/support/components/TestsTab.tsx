@@ -1037,13 +1037,14 @@ export default function TestsTab({ organizationId }: Props) {
 
   const runAllHealthChecks = async () => {
     setRunningAll(true)
-    for (const check of healthChecks) {
+    const nonIntegrationChecks = healthChecks.filter(check => check.category !== 'integration')
+    for (const check of nonIntegrationChecks) {
       await runHealthCheck(check)
     }
     setRunningAll(false)
     const results = Object.values(healthResults)
     const passed = results.filter(r => r.status === 'passed').length
-    toast.success(`Health checks complete: ${passed}/${healthChecks.length} passed`)
+    toast.success(`Health checks complete: ${passed}/${nonIntegrationChecks.length} passed`)
   }
 
   const getStatusIcon = (status: TestStatus) => {
@@ -1085,7 +1086,7 @@ export default function TestsTab({ organizationId }: Props) {
           </div>
 
           <div className="space-y-2">
-            {healthChecks.map((check) => {
+            {healthChecks.filter(check => check.category !== 'integration').map((check) => {
               const result = healthResults[check.id]
               const Icon = check.icon
               return (
