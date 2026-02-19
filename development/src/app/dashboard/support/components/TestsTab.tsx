@@ -484,7 +484,7 @@ export default function TestsTab({ organizationId }: Props) {
                   </p>
                   <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
                     <p className="text-muted-foreground">$ cd development</p>
-                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx AZURE_IOT_CONNECTION_STRING="..." node scripts/test-azure-iot.js</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx AZURE_IOT_CONNECTION_STRING=&quot;...&quot; node scripts/test-azure-iot.js</p>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">
                     📄 <code>scripts/test-azure-iot.js</code> | 📚 <code>docs/AZURE_IOT_ARCHITECTURE.md</code>

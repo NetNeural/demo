@@ -667,7 +667,7 @@ export default function IntegrationsTab({
                   <li>Create account at golioth.io</li>
                   <li>Generate API key from Golioth Console</li>
                   <li>Copy your Project ID</li>
-                  <li>Click "Add Integration" → Select Golioth</li>
+                  <li>Click &quot;Add Integration&quot; → Select Golioth</li>
                   <li>Paste API key and Project ID</li>
                   <li>Test connection and save</li>
                 </ol>
@@ -717,7 +717,7 @@ export default function IntegrationsTab({
                   <li>Create IAM user with IoT permissions</li>
                   <li>Generate Access Key ID and Secret</li>
                   <li>Note your AWS region and IoT endpoint</li>
-                  <li>Click "Add Integration" → Select AWS IoT</li>
+                  <li>Click &quot;Add Integration&quot; → Select AWS IoT</li>
                   <li>Enter credentials and test connection</li>
                 </ol>
                 <p className="text-xs text-muted-foreground mt-2">
@@ -768,7 +768,7 @@ export default function IntegrationsTab({
                   <li>Create Azure account and IoT Hub</li>
                   <li>Get IoT Hub connection string</li>
                   <li>Note your Hub Name</li>
-                  <li>Click "Add Integration" → Select Azure IoT</li>
+                  <li>Click &quot;Add Integration&quot; → Select Azure IoT</li>
                   <li>Paste connection string</li>
                   <li>Test connection and save</li>
                 </ol>
@@ -818,8 +818,8 @@ export default function IntegrationsTab({
                 <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
                 <p className="text-sm font-medium mb-1">Option 1: Hosted (Easiest)</p>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside mb-3">
-                  <li>Click "Add Integration" → Select MQTT</li>
-                  <li>Choose "Hosted" broker type</li>
+                  <li>Click &quot;Add Integration&quot; → Select MQTT</li>
+                  <li>Choose &quot;Hosted&quot; broker type</li>
                   <li>Configure topic patterns</li>
                   <li>Devices connect automatically</li>
                 </ol>
@@ -827,8 +827,8 @@ export default function IntegrationsTab({
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Set up MQTT broker (Mosquitto, HiveMQ, etc.)</li>
                   <li>Get broker URL, port, credentials</li>
-                  <li>Click "Add Integration" → Select MQTT</li>
-                  <li>Choose "External" and enter broker details</li>
+                  <li>Click &quot;Add Integration&quot; → Select MQTT</li>
+                  <li>Choose &quot;External&quot; and enter broker details</li>
                 </ol>
                 <p className="text-xs text-muted-foreground mt-2">
                   📚 See <code>docs/MQTT_ARCHITECTURE.md</code> for detailed setup
@@ -876,9 +876,9 @@ export default function IntegrationsTab({
                 <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Get SMTP credentials (Gmail, SendGrid, etc.)</li>
-                  <li>Click "Add Integration" → Select Email</li>
+                  <li>Click &quot;Add Integration&quot; → Select Email</li>
                   <li>Enter SMTP host, port, username, password</li>
-                  <li>Configure "From" address</li>
+                  <li>Configure &quot;From&quot; address</li>
                   <li>Test with sample email</li>
                   <li>Set up alert rules to trigger emails</li>
                 </ol>
@@ -928,10 +928,10 @@ export default function IntegrationsTab({
                 <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Go to Slack App Directory</li>
-                  <li>Create "Incoming Webhook" app</li>
+                  <li>Create &quot;Incoming Webhook&quot; app</li>
                   <li>Choose channel for notifications</li>
                   <li>Copy webhook URL</li>
-                  <li>Click "Add Integration" → Select Slack</li>
+                  <li>Click &quot;Add Integration&quot; → Select Slack</li>
                   <li>Paste webhook URL and test</li>
                 </ol>
                 <p className="text-xs text-muted-foreground mt-2">
@@ -981,7 +981,7 @@ export default function IntegrationsTab({
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Create HTTP endpoint to receive POSTs</li>
                   <li>Implement webhook signature verification</li>
-                  <li>Click "Add Integration" → Select Webhook</li>
+                  <li>Click &quot;Add Integration&quot; → Select Webhook</li>
                   <li>Enter your webhook URL</li>
                   <li>Configure events to forward</li>
                   <li>Test with sample payload</li>
@@ -1032,7 +1032,7 @@ export default function IntegrationsTab({
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Ensure both NetNeural instances are accessible</li>
                   <li>Get API key from remote instance</li>
-                  <li>Click "Add Integration" → Select NetNeural Hub</li>
+                  <li>Click &quot;Add Integration&quot; → Select NetNeural Hub</li>
                   <li>Enter remote instance URL and API key</li>
                   <li>Test connection</li>
                   <li>Configure sync settings</li>
