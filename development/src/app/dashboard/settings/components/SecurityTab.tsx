@@ -36,6 +36,18 @@ interface ApiKey {
   lastUsed: string;
 }
 
+function formatTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
 export function SecurityTab() {
   const { toast } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -55,14 +67,34 @@ export function SecurityTab() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Current session
+        // Parse browser and OS from user agent
+        const ua = navigator.userAgent;
+        let browser = 'Unknown Browser';
+        if (ua.includes('Edg/')) browser = 'Edge';
+        else if (ua.includes('Chrome/')) browser = 'Chrome';
+        else if (ua.includes('Firefox/')) browser = 'Firefox';
+        else if (ua.includes('Safari/')) browser = 'Safari';
+
+        let os = 'Unknown OS';
+        if (ua.includes('Win')) os = 'Windows';
+        else if (ua.includes('Mac')) os = 'macOS';
+        else if (ua.includes('Linux')) os = 'Linux';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+
+        // Calculate session age from token issued time
+        const tokenIssuedAt = session.expires_at
+          ? new Date((session.expires_at - 3600) * 1000) // expires_at minus 1 hour default TTL
+          : null;
+
+        const signedInText = tokenIssuedAt
+          ? `Signed in ${formatTimeAgo(tokenIssuedAt)}`
+          : 'Active now';
+
         const currentSession: Session = {
           id: session.access_token.substring(0, 10),
-          device: navigator.userAgent.includes('Chrome') ? 'Chrome on ' + (navigator.platform || 'Windows') :
-                 navigator.userAgent.includes('Firefox') ? 'Firefox on ' + (navigator.platform || 'Windows') :
-                 navigator.userAgent.includes('Safari') ? 'Safari on ' + (navigator.platform || 'macOS') :
-                 'Unknown Device',
-          location: 'Current Location', // Could use IP geolocation API
+          device: `${browser} on ${os}`,
+          location: signedInText,
           lastActive: 'Active now',
           current: true
         };
