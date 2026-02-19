@@ -125,7 +125,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </nav>
         <main className="main-content">
           {user.isSuperAdmin && (
-            <div className="flex justify-center sticky top-0 z-50 py-1.5 pointer-events-none">
+            <div className="flex justify-end sticky top-0 z-50 py-1.5 pr-4 md:pr-8 pointer-events-none">
               <span className="pointer-events-auto inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
                 🛡️ Super Admin — Cross-Org Access
               </span>
