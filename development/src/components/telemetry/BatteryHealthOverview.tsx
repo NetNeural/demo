@@ -53,7 +53,7 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
           .not('telemetry->battery', 'is', null)
           .order('device_timestamp', { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
 
         if (telemetry?.telemetry?.battery) {
           const batteryLevel = parseFloat(String(telemetry.telemetry.battery))
