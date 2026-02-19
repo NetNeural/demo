@@ -91,14 +91,34 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     lastUpdate: Date;
   }>();
 
-  constructor(config: MqttConfig, providerId: string, organizationId?: string) {
+  constructor(config: ProviderConfig) {
     super();
+    
+    // Extract MQTT-specific config from generic ProviderConfig
+    const brokerUrl = config.endpoint || (config.credentials?.brokerUrl as string) || '';
+    const port = (config.credentials?.port as number) || 1883;
+    const username = config.apiKey || (config.credentials?.username as string);
+    const password = (config.credentials?.password as string);
+    const useTls = (config.credentials?.useTls as boolean) || false;
+    const clientId = (config.credentials?.clientId as string) || `netneural-${Date.now()}`;
+    const topicPrefix = (config.credentials?.topicPrefix as string) || 'devices/';
+    const providerId = (config.credentials?.integrationId as string) || config.projectId || 'mqtt';
+    const organizationId = (config.credentials?.organizationId as string) || '';
+    
     this.providerId = providerId;
     this.integrationId = providerId;
-    this.organizationId = organizationId || '';
+    this.organizationId = organizationId;
     this.activityLogger = new FrontendActivityLogger();
-    this.config = config;
-    this.topicPrefix = config.topicPrefix || 'devices/';
+    this.config = {
+      brokerUrl,
+      port,
+      username,
+      password,
+      useTls,
+      clientId,
+      topicPrefix,
+    };
+    this.topicPrefix = topicPrefix;
   }
 
   /**

@@ -820,7 +820,7 @@ export default createEdgeFunction(async ({ req }) => {
         const { data: encrypted, error: encryptError } = await supabase
           .rpc('encrypt_api_key', {
             plaintext_key: finalApiKey,
-            key_id: 'default'
+            p_key_id: 'default'
           })
         
         if (encryptError) {
@@ -919,7 +919,7 @@ export default createEdgeFunction(async ({ req }) => {
         const { data: encrypted, error: encryptError } = await supabase
           .rpc('encrypt_api_key', {
             plaintext_key: finalApiKey,
-            key_id: 'default'
+            p_key_id: 'default'
           })
         
         if (encryptError) {

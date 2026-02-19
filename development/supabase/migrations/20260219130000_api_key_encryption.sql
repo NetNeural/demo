@@ -35,7 +35,7 @@ CREATE EXTENSION IF NOT EXISTS pgsodium;
  */
 CREATE OR REPLACE FUNCTION encrypt_api_key(
   plaintext_key TEXT,
-  key_id TEXT DEFAULT 'default'
+  p_key_id TEXT DEFAULT 'default'
 ) RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER -- Runs with database owner privileges
@@ -53,7 +53,7 @@ BEGIN
   -- In production, you should manage keys via Supabase Vault UI
   SELECT id INTO encryption_key_id
   FROM pgsodium.key
-  WHERE name = key_id
+  WHERE name = p_key_id
   LIMIT 1;
 
   -- If key doesn't exist, use Supabase's default encryption
@@ -94,7 +94,7 @@ $$;
  */
 CREATE OR REPLACE FUNCTION decrypt_api_key(
   encrypted_key TEXT,
-  key_id TEXT DEFAULT 'default'
+  p_key_id TEXT DEFAULT 'default'
 ) RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -121,7 +121,7 @@ BEGIN
   -- Get encryption key
   SELECT id INTO encryption_key_id
   FROM pgsodium.key
-  WHERE name = key_id
+  WHERE name = p_key_id
   LIMIT 1;
 
   -- Decrypt using matching key

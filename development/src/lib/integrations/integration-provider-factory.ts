@@ -118,11 +118,11 @@ export class IntegrationProviderFactory {
 // ============================================================================
 
 // Register all device integration providers
-// Note: AWS, Azure, and MQTT providers still need constructor updates for full type safety
-registerProvider('golioth', GoliothIntegrationProvider);
-registerProvider('aws_iot', AwsIotIntegrationProvider as unknown as ProviderConstructor);
-registerProvider('azure_iot', AzureIotIntegrationProvider as unknown as ProviderConstructor);
-registerProvider('mqtt', MqttIntegrationProvider as unknown as ProviderConstructor);
+// All providers now accept ProviderConfig for type safety
+registerProvider('goli oth', GoliothIntegrationProvider);
+registerProvider('aws_iot', AwsIotIntegrationProvider);
+registerProvider('azure_iot', AzureIotIntegrationProvider);
+registerProvider('mqtt', MqttIntegrationProvider);
 
 // Note: Google IoT Core was discontinued by Google in August 2023
 // Legacy 'google_iot' type entries should be migrated to alternative providers

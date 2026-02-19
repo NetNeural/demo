@@ -99,17 +99,24 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
   private organizationId: string;
   private integrationId: string;
 
-  constructor(config: AzureIotConfig, providerId: string, organizationId?: string) {
+  constructor(config: ProviderConfig) {
     super();
+    
+    // Extract Azure-specific config from generic ProviderConfig
+    const connectionString = (config.credentials?.connectionString as string) || '';
+    const hubName = (config.credentials?.hubName as string) || '';
+    const providerId = (config.credentials?.integrationId as string) || config.projectId || 'azure-iot';
+    const organizationId = (config.credentials?.organizationId as string) || '';
+    
     this.providerId = providerId;
     this.integrationId = providerId;
-    this.organizationId = organizationId || '';
+    this.organizationId = organizationId;
     this.activityLogger = new FrontendActivityLogger();
-    this.registry = Registry.fromConnectionString(config.connectionString);
+    this.registry = Registry.fromConnectionString(connectionString);
     
-    // Extract hub name from connection string
-    const hubNameMatch = config.connectionString.match(/HostName=([^.]+)\./);
-    this.hubName = config.hubName || (hubNameMatch ? hubNameMatch[1] : '') || 'unknown';
+    // Extract hub name from connection string if not provided
+    const hubNameMatch = connectionString.match(/HostName=([^.]+)\./);
+    this.hubName = hubName || (hubNameMatch ? hubNameMatch[1] : '') || 'unknown';
   }
 
   /**

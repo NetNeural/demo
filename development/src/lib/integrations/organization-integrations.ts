@@ -198,7 +198,7 @@ export class OrganizationIntegrationService {
     try {
       const { data, error } = await this.supabase.rpc('encrypt_api_key', {
         plaintext_key: apiKey,
-        key_id: 'default'
+        p_key_id: 'default'
       });
 
       if (error) {
@@ -228,7 +228,7 @@ export class OrganizationIntegrationService {
     try {
       const { data, error } = await this.supabase.rpc('decrypt_api_key', {
         encrypted_key: encryptedApiKey,
-        key_id: 'default'
+        p_key_id: 'default'
       });
 
       if (error) {
