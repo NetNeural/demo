@@ -1,7 +1,7 @@
 /**
  * Device Types List
  * 
- * Displays device types in a table with inline actions.
+ * Displays device types in cards with inline actions.
  * Supports edit, delete, and visual range indicators.
  * 
  * @see Issue #118
@@ -9,14 +9,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +35,6 @@ import {
   MoreHorizontal,
   AlertTriangle,
   Gauge,
-  Ruler,
   PackageOpen,
   Loader2,
 } from 'lucide-react'
@@ -191,19 +182,22 @@ export function DeviceTypesList() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-10 w-40" />
-                <Skeleton className="h-10 flex-1" />
-                <Skeleton className="h-10 w-20" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-full mb-4" />
+              <div className="flex gap-2 mb-4">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-16" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <Skeleton className="h-16 w-full mb-3" />
+              <Skeleton className="h-12 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     )
   }
 
@@ -241,99 +235,104 @@ export function DeviceTypesList() {
 
   return (
     <>
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">Name</TableHead>
-                <TableHead className="w-[120px]">Class</TableHead>
-                <TableHead className="w-[80px] text-center">Unit</TableHead>
-                <TableHead className="min-w-[200px]">Range</TableHead>
-                <TableHead className="w-[120px] text-center">Alert Thresholds</TableHead>
-                <TableHead className="w-[50px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {deviceTypes.map(dt => (
-                <TableRow key={dt.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{dt.name}</p>
-                      {dt.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {dt.description}
-                        </p>
-                      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {deviceTypes.map(dt => (
+          <Card key={dt.id} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              {/* Header with name and actions */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">{dt.name}</h3>
+                  {dt.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {dt.description}
+                    </p>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(dt)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setDeleteTarget(dt)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Badges */}
+              <div className="flex items-center gap-2 mb-4">
+                {dt.device_class ? (
+                  <Badge variant="secondary" className="text-xs">
+                    {getClassLabel(dt.device_class)}
+                  </Badge>
+                ) : null}
+                {dt.unit ? (
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {dt.unit}
+                  </Badge>
+                ) : null}
+              </div>
+
+              {/* Normal Range Section */}
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gauge className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Normal Range</p>
+                  </div>
+                  <RangeBar type={dt} />
+                </div>
+
+                {/* Alert Thresholds */}
+                {(dt.lower_alert != null || dt.upper_alert != null) && (
+                  <div className="pt-3 border-t">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <p className="text-sm font-medium">Alert Thresholds</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {dt.device_class ? (
-                      <Badge variant="secondary" className="text-xs">
-                        {getClassLabel(dt.device_class)}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {dt.unit ? (
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {dt.unit}
-                      </Badge>
-                    ) : '—'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Gauge className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-[160px]">
-                        <RangeBar type={dt} />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {dt.lower_alert != null || dt.upper_alert != null ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <Ruler className="h-3.5 w-3.5 text-destructive" />
-                        <span className="text-xs font-mono">
-                          {fmt(dt.lower_alert, dt.precision_digits)}
-                          {' / '}
-                          {fmt(dt.upper_alert, dt.precision_digits)}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Low:</span>{' '}
+                        <span className="font-mono">
+                          {dt.lower_alert != null
+                            ? `${fmt(dt.lower_alert, dt.precision_digits)} ${dt.unit || ''}`
+                            : '—'}
                         </span>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">None</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(dt)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteTarget(dt)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      <div>
+                        <span className="text-muted-foreground">High:</span>{' '}
+                        <span className="font-mono">
+                          {dt.upper_alert != null
+                            ? `${fmt(dt.upper_alert, dt.precision_digits)} ${dt.unit || ''}`
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Precision info */}
+                <div className="pt-3 border-t text-xs text-muted-foreground">
+                  <span>Precision: {dt.precision_digits} decimal{dt.precision_digits !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Edit dialog */}
       <DeviceTypeFormDialog
