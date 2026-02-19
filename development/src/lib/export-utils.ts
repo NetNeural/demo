@@ -17,7 +17,11 @@ export function convertToCSV<T extends Record<string, any>>(
   }
 
   // If columns not provided, use all keys from first object
-  const cols = columns || Object.keys(data[0]).map(key => ({ key, label: key }))
+  const firstRow = data[0]
+  if (!firstRow) {
+    return ''
+  }
+  const cols = columns || Object.keys(firstRow).map(key => ({ key, label: key }))
 
   // Create header row
   const headers = cols.map(col => escapeCSVValue(col.label)).join(',')
