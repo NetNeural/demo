@@ -121,6 +121,275 @@ const INTEGRATION_TYPES = [
   }
 ] as const;
 
+// Integration Guides Data
+const INTEGRATION_GUIDES = [
+  {
+    id: 'golioth',
+    name: 'Golioth IoT Platform',
+    icon: '🌐',
+    description: 'Device management, OTA updates, and cloud services',
+    pros: [
+      'Purpose-built for IoT devices',
+      'Automatic device provisioning',
+      'Built-in OTA firmware updates',
+      'Real-time device state management',
+      'Easy integration with embedded devices'
+    ],
+    cons: [
+      'Requires Golioth account',
+      'Platform-specific protocols',
+      'Additional subscription cost',
+      'Learning curve for Golioth SDK'
+    ],
+    quickStart: [
+      'Create account at golioth.io',
+      'Generate API key from Golioth Console',
+      'Copy your Project ID',
+      'Click "Add Integration" → Select Golioth',
+      'Paste API key and Project ID',
+      'Test connection and save'
+    ],
+    bestFor: 'IoT embedded devices',
+    complexity: 'Medium',
+    cost: '$$',
+    setupTime: '30 min'
+  },
+  {
+    id: 'aws',
+    name: 'AWS IoT Core',
+    icon: '☁️',
+    description: 'Enterprise-grade cloud IoT with AWS service integration',
+    pros: [
+      'Massive scalability (billions of devices)',
+      'Integrates with all AWS services',
+      'Thing Shadows for device state',
+      'IoT Jobs for firmware updates',
+      'Enterprise security and compliance',
+      'Pay-as-you-go pricing'
+    ],
+    cons: [
+      'Complex setup and configuration',
+      'Requires AWS expertise',
+      'Can be expensive at scale',
+      'Steep learning curve',
+      'No built-in telemetry storage (requires IoT Analytics)'
+    ],
+    quickStart: [
+      'Create AWS account and log into IAM console',
+      'Create IAM user with IoT permissions',
+      'Generate Access Key ID and Secret Key',
+      'Click "Add Integration" → Select AWS IoT',
+      'Enter credentials and region',
+      'Test connection and save'
+    ],
+    docs: 'docs/AWS_IOT_ARCHITECTURE.md',
+    bestFor: 'Enterprise scale, AWS users',
+    complexity: 'High',
+    cost: '$$$',
+    setupTime: '2 hours'
+  },
+  {
+    id: 'azure',
+    name: 'Azure IoT Hub',
+    icon: '🔵',
+    description: 'Microsoft Azure cloud IoT platform with device twins',
+    pros: [
+      'Seamless Azure ecosystem integration',
+      'Device Twins for state management',
+      'Strong security with Azure AD',
+      'Azure IoT Central for rapid development',
+      'Excellent documentation and support'
+    ],
+    cons: [
+      'Complex pricing model',
+      'Requires Azure subscription',
+      'Learning curve for Azure services',
+      'Can be expensive for small deployments'
+    ],
+    quickStart: [
+      'Create Azure account and IoT Hub',
+      'Generate connection string from Azure Portal',
+      'Copy IoT Hub name and resource group',
+      'Click "Add Integration" → Select Azure IoT',
+      'Paste connection string',
+      'Test connection and save'
+    ],
+    docs: 'docs/AZURE_IOT_ARCHITECTURE.md',
+    bestFor: 'Microsoft ecosystem',
+    complexity: 'High',
+    cost: '$$$',
+    setupTime: '2 hours'
+  },
+  {
+    id: 'mqtt',
+    name: 'MQTT Broker',
+    icon: '📡',
+    description: 'Standard MQTT protocol for flexible device communication',
+    pros: [
+      'Industry standard protocol',
+      'Flexible topic structure',
+      'Low bandwidth overhead',
+      'Wide device support',
+      'Open source brokers available'
+    ],
+    cons: [
+      'Requires broker setup (or use hosted)',
+      'No built-in device registry',
+      'Manual topic management',
+      'Security depends on broker configuration'
+    ],
+    quickStart: [
+      {
+        title: 'Option 1: Hosted (Easiest)',
+        steps: [
+          'Click "Add Integration" → Select MQTT',
+          'Choose "Hosted" broker type',
+          'Configure topic patterns',
+          'Devices connect automatically'
+        ]
+      },
+      {
+        title: 'Option 2: External Broker',
+        steps: [
+          'Set up MQTT broker (Mosquitto, HiveMQ, etc.)',
+          'Get broker URL, port, credentials',
+          'Click "Add Integration" → Select MQTT',
+          'Choose "External" and enter broker details'
+        ]
+      }
+    ],
+    docs: 'docs/MQTT_ARCHITECTURE.md',
+    bestFor: 'Standard devices, flexibility',
+    complexity: 'Low-Medium',
+    cost: '$',
+    setupTime: '15 min'
+  },
+  {
+    id: 'email',
+    name: 'Email/SMTP',
+    icon: '📧',
+    description: 'Send email notifications for alerts and reports',
+    pros: [
+      'Universal - everyone has email',
+      'Simple to set up',
+      'Works with any SMTP provider',
+      'Good for reports and summaries'
+    ],
+    cons: [
+      'Not real-time',
+      'Can end up in spam',
+      'Limited formatting options',
+      'Not suitable for high-frequency alerts'
+    ],
+    quickStart: [
+      'Get SMTP credentials (Gmail, SendGrid, etc.)',
+      'Click "Add Integration" → Select Email',
+      'Enter SMTP host, port, username, password',
+      'Configure "From" address',
+      'Test with sample email',
+      'Set up alert rules to trigger emails'
+    ],
+    bestFor: 'Notifications, reports',
+    complexity: 'Low',
+    cost: '$',
+    setupTime: '10 min'
+  },
+  {
+    id: 'slack',
+    name: 'Slack',
+    icon: '💬',
+    description: 'Real-time team notifications via Slack channels',
+    pros: [
+      'Real-time notifications',
+      'Team collaboration features',
+      'Rich message formatting',
+      'Mobile app support',
+      'Easy webhook setup'
+    ],
+    cons: [
+      'Requires Slack workspace',
+      'Can be noisy with too many alerts',
+      'Limited to Slack users',
+      'Webhook URLs must be kept secret'
+    ],
+    quickStart: [
+      'Go to Slack workspace Settings & permissions',
+      'Create "Incoming Webhook" app',
+      'Select channel for notifications',
+      'Copy webhook URL',
+      'Click "Add Integration" → Select Slack',
+      'Paste webhook URL and test'
+    ],
+    bestFor: 'Team collaboration',
+    complexity: 'Low',
+    cost: 'Free-$',
+    setupTime: '5 min'
+  },
+  {
+    id: 'webhook',
+    name: 'Custom Webhook',
+    icon: '🔗',
+    description: 'HTTP POST to your custom endpoint for any integration',
+    pros: [
+      'Complete flexibility',
+      'Integrate with any service',
+      'Custom data transformation',
+      'No platform lock-in',
+      'Free (just hosting costs)'
+    ],
+    cons: [
+      'Requires development work',
+      'You handle security and scaling',
+      'No built-in retry logic',
+      'Debugging can be challenging',
+      'Need to maintain endpoint'
+    ],
+    quickStart: [
+      'Set up HTTP endpoint to receive POST requests',
+      'Get the full URL (e.g., https://api.example.com/iot/webhook)',
+      'Click "Add Integration" → Select Webhook',
+      'Enter URL and configure payload format',
+      'Set up authentication if required',
+      'Test with sample device event'
+    ],
+    bestFor: 'Custom integrations',
+    complexity: 'Medium-High',
+    cost: 'Free',
+    setupTime: '1 hour'
+  },
+  {
+    id: 'netneural',
+    name: 'NetNeural Hub',
+    icon: '🌟',
+    description: 'Multi-protocol hub for custom NetNeural devices',
+    pros: [
+      'Supports CoAP, MQTT, and HTTPS',
+      'Auto-discovery of devices',
+      'Protocol routing and fallback',
+      'Optimized for NetNeural hardware',
+      'Built-in device capability detection'
+    ],
+    cons: [
+      'Specific to NetNeural devices',
+      'Requires hub instance',
+      'More complex initial setup',
+      'Additional infrastructure cost'
+    ],
+    quickStart: [
+      'Set up NetNeural Hub instance (optional)',
+      'Get Hub URL and authentication credentials',
+      'Click "Add Integration" → Select NetNeural Hub',
+      'Configure protocols (CoAP, MQTT, HTTPS)',
+      'Set device routing rules',
+      'Enable auto-discovery and test'
+    ],
+    bestFor: 'Multi-instance sync',
+    complexity: 'Low',
+    cost: '$$',
+    setupTime: '15 min'
+  }
+];
+
 interface Integration {
   id: string;
   type: string;
@@ -168,6 +437,7 @@ export default function IntegrationsTab({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [integrationToCopy, setIntegrationToCopy] = useState<Integration | null>(null);
+  const [selectedGuide, setSelectedGuide] = useState<string | null>(null);
   const { toast } = useToast();
 
   // State for new integration
@@ -619,511 +889,235 @@ export default function IntegrationsTab({
         </div>
       </SettingsSection>
 
-      {/* Quick Start Guides & Comparison */}
+      {/* Quick Start Guides - Interactive Grid */}
       {selectedOrganization && (
         <SettingsSection
           icon={<Plug className="w-5 h-5" />}
           title="Integration Guides"
-          description="Quick start guides and comparison for each integration type"
+          description="Click any integration to view detailed setup guide and comparison"
         >
-          <div className="space-y-8">
-            {/* Golioth */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">🌐</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">Golioth IoT Platform</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Device management, OTA updates, and cloud services
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {INTEGRATION_GUIDES.map((guide) => (
+              <button
+                key={guide.id}
+                onClick={() => setSelectedGuide(guide.id)}
+                className="group relative flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-200 bg-card hover:bg-accent"
+              >
+                <span className="text-5xl group-hover:scale-110 transition-transform duration-200">
+                  {guide.icon}
+                </span>
+                <div className="text-center">
+                  <h3 className="font-semibold text-sm">{guide.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {guide.description}
                   </p>
                 </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Purpose-built for IoT devices</li>
-                    <li>Automatic device provisioning</li>
-                    <li>Built-in OTA firmware updates</li>
-                    <li>Real-time device state management</li>
-                    <li>Easy integration with embedded devices</li>
-                  </ul>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Badge variant="secondary" className="text-xs">
+                    Click for details
+                  </Badge>
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires Golioth account</li>
-                    <li>Platform-specific protocols</li>
-                    <li>Additional subscription cost</li>
-                    <li>Learning curve for Golioth SDK</li>
-                  </ul>
-                </div>
-              </div>
+              </button>
+            ))}
+          </div>
 
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Create account at golioth.io</li>
-                  <li>Generate API key from Golioth Console</li>
-                  <li>Copy your Project ID</li>
-                  <li>Click &quot;Add Integration&quot; → Select Golioth</li>
-                  <li>Paste API key and Project ID</li>
-                  <li>Test connection and save</li>
-                </ol>
-              </div>
-            </div>
-
-            {/* AWS IoT Core */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">☁️</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">AWS IoT Core</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Enterprise-grade cloud IoT with AWS service integration
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Massive scalability (billions of devices)</li>
-                    <li>Integrates with all AWS services</li>
-                    <li>Thing Shadows for device state</li>
-                    <li>IoT Jobs for firmware updates</li>
-                    <li>Enterprise security and compliance</li>
-                    <li>Pay-as-you-go pricing</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires AWS account and IAM setup</li>
-                    <li>Complex pricing model</li>
-                    <li>Steeper learning curve</li>
-                    <li>No built-in telemetry storage</li>
-                    <li>Requires IoT Analytics for history</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Create AWS account and enable IoT Core</li>
-                  <li>Create IAM user with IoT permissions</li>
-                  <li>Generate Access Key ID and Secret</li>
-                  <li>Note your AWS region and IoT endpoint</li>
-                  <li>Click &quot;Add Integration&quot; → Select AWS IoT</li>
-                  <li>Enter credentials and test connection</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  📚 See <code>docs/AWS_IOT_ARCHITECTURE.md</code> for detailed setup
-                </p>
-              </div>
-            </div>
-
-            {/* Azure IoT Hub */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">🔵</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">Azure IoT Hub</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Microsoft cloud IoT with enterprise integration
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Excellent Microsoft ecosystem integration</li>
-                    <li>Device Twins for state management</li>
-                    <li>Direct Methods for commands</li>
-                    <li>Azure IoT Central for easy setup</li>
-                    <li>Strong security features</li>
-                    <li>Good documentation</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires Azure subscription</li>
-                    <li>No built-in telemetry storage</li>
-                    <li>Needs Time Series Insights for history</li>
-                    <li>Complex pricing tiers</li>
-                    <li>Less flexible than AWS IoT</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Create Azure account and IoT Hub</li>
-                  <li>Get IoT Hub connection string</li>
-                  <li>Note your Hub Name</li>
-                  <li>Click &quot;Add Integration&quot; → Select Azure IoT</li>
-                  <li>Paste connection string</li>
-                  <li>Test connection and save</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  📚 See <code>docs/AZURE_IOT_ARCHITECTURE.md</code> for detailed setup
-                </p>
-              </div>
-            </div>
-
-            {/* MQTT */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">📡</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">MQTT Broker</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Standard IoT messaging protocol (hosted or external)
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Industry standard protocol</li>
-                    <li>Works with any MQTT-compatible device</li>
-                    <li>Both hosted and external options</li>
-                    <li>Low bandwidth, efficient</li>
-                    <li>Flexible topic structure</li>
-                    <li>No vendor lock-in</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires MQTT broker setup/management</li>
-                    <li>No built-in device management</li>
-                    <li>Manual topic configuration needed</li>
-                    <li>Security must be configured separately</li>
-                    <li>No automatic firmware updates</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <p className="text-sm font-medium mb-1">Option 1: Hosted (Easiest)</p>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside mb-3">
-                  <li>Click &quot;Add Integration&quot; → Select MQTT</li>
-                  <li>Choose &quot;Hosted&quot; broker type</li>
-                  <li>Configure topic patterns</li>
-                  <li>Devices connect automatically</li>
-                </ol>
-                <p className="text-sm font-medium mb-1">Option 2: External Broker</p>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Set up MQTT broker (Mosquitto, HiveMQ, etc.)</li>
-                  <li>Get broker URL, port, credentials</li>
-                  <li>Click &quot;Add Integration&quot; → Select MQTT</li>
-                  <li>Choose &quot;External&quot; and enter broker details</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  📚 See <code>docs/MQTT_ARCHITECTURE.md</code> for detailed setup
-                </p>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">📧</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">Email (SMTP)</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Send alert notifications and reports via email
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Universal - everyone has email</li>
-                    <li>No additional accounts needed</li>
-                    <li>Works with any SMTP server</li>
-                    <li>Supports rich HTML formatting</li>
-                    <li>Good for reports and summaries</li>
-                    <li>Easy to set up</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Not real-time (delivery delays)</li>
-                    <li>Can be filtered to spam</li>
-                    <li>Rate limits on sending</li>
-                    <li>No interactive actions</li>
-                    <li>SMTP credentials required</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Get SMTP credentials (Gmail, SendGrid, etc.)</li>
-                  <li>Click &quot;Add Integration&quot; → Select Email</li>
-                  <li>Enter SMTP host, port, username, password</li>
-                  <li>Configure &quot;From&quot; address</li>
-                  <li>Test with sample email</li>
-                  <li>Set up alert rules to trigger emails</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 Tip: Use app-specific passwords for Gmail
-                </p>
-              </div>
-            </div>
-
-            {/* Slack */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">💬</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">Slack</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Real-time team notifications in Slack channels
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Real-time notifications</li>
-                    <li>Rich formatting and attachments</li>
-                    <li>Team collaboration built-in</li>
-                    <li>Thread discussions</li>
-                    <li>Mobile notifications</li>
-                    <li>Easy webhook setup</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires Slack workspace</li>
-                    <li>Can be noisy with many alerts</li>
-                    <li>Rate limits apply</li>
-                    <li>Team must use Slack</li>
-                    <li>No guaranteed delivery</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Go to Slack App Directory</li>
-                  <li>Create &quot;Incoming Webhook&quot; app</li>
-                  <li>Choose channel for notifications</li>
-                  <li>Copy webhook URL</li>
-                  <li>Click &quot;Add Integration&quot; → Select Slack</li>
-                  <li>Paste webhook URL and test</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 Tip: Use different channels for different alert severities
-                </p>
-              </div>
-            </div>
-
-            {/* Webhook */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">🔗</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">Custom Webhook</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    HTTP POST to any endpoint for custom integrations
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Unlimited flexibility</li>
-                    <li>Works with any HTTP endpoint</li>
-                    <li>Custom data transformation</li>
-                    <li>Integrate with any platform</li>
-                    <li>Full control over payload</li>
-                    <li>Event-driven automation</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires development work</li>
-                    <li>Must host your own endpoint</li>
-                    <li>No built-in error handling UI</li>
-                    <li>Need to handle authentication</li>
-                    <li>Must monitor webhook health</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Create HTTP endpoint to receive POSTs</li>
-                  <li>Implement webhook signature verification</li>
-                  <li>Click &quot;Add Integration&quot; → Select Webhook</li>
-                  <li>Enter your webhook URL</li>
-                  <li>Configure events to forward</li>
-                  <li>Test with sample payload</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  📚 Full OpenAPI spec available in configuration dialog
-                </p>
-              </div>
-            </div>
-
-            {/* NetNeural Hub */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">🌟</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">NetNeural Hub</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Connect multiple NetNeural instances together
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">✅ Pros</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Native NetNeural integration</li>
-                    <li>Share devices across instances</li>
-                    <li>Centralized monitoring</li>
-                    <li>Multi-site deployments</li>
-                    <li>Automatic sync</li>
-                    <li>Built-in authentication</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">⚠️ Cons</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Requires multiple NetNeural instances</li>
-                    <li>Enterprise feature</li>
-                    <li>Network connectivity required</li>
-                    <li>Sync conflicts possible</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded p-3">
-                <h4 className="font-medium text-sm mb-2">🚀 Quick Start</h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Ensure both NetNeural instances are accessible</li>
-                  <li>Get API key from remote instance</li>
-                  <li>Click &quot;Add Integration&quot; → Select NetNeural Hub</li>
-                  <li>Enter remote instance URL and API key</li>
-                  <li>Test connection</li>
-                  <li>Configure sync settings</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mt-2">
-                  💡 Use for disaster recovery and multi-region deployments
-                </p>
-              </div>
-            </div>
-
-            {/* Comparison Table */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <h3 className="text-lg font-semibold">Integration Comparison</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-3">Integration</th>
-                      <th className="text-left py-2 px-3">Best For</th>
-                      <th className="text-left py-2 px-3">Complexity</th>
-                      <th className="text-left py-2 px-3">Cost</th>
-                      <th className="text-left py-2 px-3">Setup Time</th>
+          {/* Quick Reference Table */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Quick Comparison</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left py-2 px-3 font-semibold">Integration</th>
+                    <th className="text-left py-2 px-3 font-semibold">Best For</th>
+                    <th className="text-left py-2 px-3 font-semibold">Complexity</th>
+                    <th className="text-left py-2 px-3 font-semibold">Cost</th>
+                    <th className="text-left py-2 px-3 font-semibold">Setup Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INTEGRATION_GUIDES.map((guide) => (
+                    <tr
+                      key={guide.id}
+                      className="border-b border-border hover:bg-accent cursor-pointer"
+                      onClick={() => setSelectedGuide(guide.id)}
+                    >
+                      <td className="py-2 px-3">
+                        <span className="mr-2">{guide.icon}</span>
+                        {guide.name}
+                      </td>
+                      <td className="py-2 px-3">{guide.bestFor}</td>
+                      <td className={`py-2 px-3 ${
+                        guide.complexity.includes('High') ? 'text-red-600' :
+                        guide.complexity.includes('Medium') ? 'text-amber-600' :
+                        'text-green-600'
+                      }`}>
+                        {guide.complexity}
+                      </td>
+                      <td className={`py-2 px-3 ${
+                        guide.cost === '$$$' ? 'text-red-600' :
+                        guide.cost === '$$' ? 'text-amber-600' :
+                        'text-green-600'
+                      }`}>
+                        {guide.cost}
+                      </td>
+                      <td className="py-2 px-3">{guide.setupTime}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">🌐 Golioth</td>
-                      <td className="py-2 px-3">IoT devices, OTA updates</td>
-                      <td className="py-2 px-3 text-green-600">Medium</td>
-                      <td className="py-2 px-3 text-amber-600">$$</td>
-                      <td className="py-2 px-3">30 min</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">☁️ AWS IoT</td>
-                      <td className="py-2 px-3">Enterprise scale, AWS users</td>
-                      <td className="py-2 px-3 text-red-600">High</td>
-                      <td className="py-2 px-3 text-red-600">$$$</td>
-                      <td className="py-2 px-3">2 hours</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">🔵 Azure IoT</td>
-                      <td className="py-2 px-3">Microsoft ecosystem</td>
-                      <td className="py-2 px-3 text-red-600">High</td>
-                      <td className="py-2 px-3 text-red-600">$$$</td>
-                      <td className="py-2 px-3">2 hours</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">📡 MQTT</td>
-                      <td className="py-2 px-3">Standard devices, flexibility</td>
-                      <td className="py-2 px-3 text-green-600">Low-Medium</td>
-                      <td className="py-2 px-3 text-green-600">$</td>
-                      <td className="py-2 px-3">15 min</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">📧 Email</td>
-                      <td className="py-2 px-3">Notifications, reports</td>
-                      <td className="py-2 px-3 text-green-600">Low</td>
-                      <td className="py-2 px-3 text-green-600">$</td>
-                      <td className="py-2 px-3">10 min</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">💬 Slack</td>
-                      <td className="py-2 px-3">Team collaboration</td>
-                      <td className="py-2 px-3 text-green-600">Low</td>
-                      <td className="py-2 px-3 text-green-600">Free-$</td>
-                      <td className="py-2 px-3">5 min</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-2 px-3">🔗 Webhook</td>
-                      <td className="py-2 px-3">Custom integrations</td>
-                      <td className="py-2 px-3 text-amber-600">Medium-High</td>
-                      <td className="py-2 px-3 text-green-600">Free</td>
-                      <td className="py-2 px-3">1 hour</td>
-                    </tr>
-                    <tr>
-                      <td className="py-2 px-3">🌟 NetNeural Hub</td>
-                      <td className="py-2 px-3">Multi-instance sync</td>
-                      <td className="py-2 px-3 text-green-600">Low</td>
-                      <td className="py-2 px-3 text-amber-600">$$</td>
-                      <td className="py-2 px-3">15 min</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                * Complexity and cost ratings are approximate. Actual values depend on scale and requirements.
-              </p>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              * Complexity and cost ratings are approximate. Actual values depend on scale and requirements.
+            </p>
           </div>
         </SettingsSection>
       )}
+
+      {/* Integration Guide Detail Dialog */}
+      {selectedGuide && (
+        <Dialog open={!!selectedGuide} onOpenChange={() => setSelectedGuide(null)}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            {(() => {
+              const guide = INTEGRATION_GUIDES.find((g) => g.id === selectedGuide);
+              if (!guide) return null;
+
+              return (
+                <>
+                  <DialogHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-5xl">{guide.icon}</span>
+                      <div>
+                        <DialogTitle className="text-2xl">{guide.name}</DialogTitle>
+                        <DialogDescription className="text-base mt-1">
+                          {guide.description}
+                        </DialogDescription>
+                      </div>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6 mt-4">
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xs text-muted-foreground">Complexity</div>
+                        <div className={`font-semibold mt-1 ${
+                          guide.complexity.includes('High') ? 'text-red-600' :
+                          guide.complexity.includes('Medium') ? 'text-amber-600' :
+                          'text-green-600'
+                        }`}>
+                          {guide.complexity}
+                        </div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xs text-muted-foreground">Cost</div>
+                        <div className={`font-semibold mt-1 ${
+                          guide.cost === '$$$' ? 'text-red-600' :
+                          guide.cost === '$$' ? 'text-amber-600' :
+                          'text-green-600'
+                        }`}>
+                          {guide.cost}
+                        </div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xs text-muted-foreground">Setup Time</div>
+                        <div className="font-semibold mt-1">{guide.setupTime}</div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <div className="text-xs text-muted-foreground">Best For</div>
+                        <div className="font-semibold mt-1 text-xs">{guide.bestFor}</div>
+                      </div>
+                    </div>
+
+                    {/* Pros and Cons */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Check className="w-4 h-4 text-green-600" />
+                          Pros
+                        </h4>
+                        <ul className="space-y-2">
+                          {guide.pros.map((pro, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm">
+                              <span className="text-green-600 mt-0.5">✓</span>
+                              <span>{pro}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600" />
+                          Cons
+                        </h4>
+                        <ul className="space-y-2">
+                          {guide.cons.map((con, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm">
+                              <span className="text-amber-600 mt-0.5">⚠</span>
+                              <span>{con}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Quick Start Guide */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <span className="text-xl">🚀</span>
+                        Quick Start Guide
+                      </h4>
+                      {typeof guide.quickStart[0] === 'string' ? (
+                        <ol className="space-y-2 list-decimal list-inside">
+                          {(guide.quickStart as string[]).map((step, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground">
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <div className="space-y-4">
+                          {(guide.quickStart as Array<{title: string; steps: string[]}>).map((option, idx) => (
+                            <div key={idx}>
+                              <p className="font-medium text-sm mb-2">{option.title}</p>
+                              <ol className="space-y-1 list-decimal list-inside ml-4">
+                                {option.steps.map((step, stepIdx) => (
+                                  <li key={stepIdx} className="text-sm text-muted-foreground">
+                                    {step}
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {guide.docs && (
+                        <p className="text-xs text-muted-foreground mt-3">
+                          📚 Detailed documentation: <code className="bg-background px-1 py-0.5 rounded">{guide.docs}</code>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <DialogFooter className="mt-6">
+                    <Button variant="outline" onClick={() => setSelectedGuide(null)}>
+                      Close
+                    </Button>
+                    <Button onClick={() => {
+                      setSelectedGuide(null);
+                      // Scroll to integrations list to add new integration
+                      document.querySelector('[data-integrations-list]')?.scrollIntoView({ behavior: 'smooth' });
+                    }}>
+                      Add This Integration
+                    </Button>
+                  </DialogFooter>
+                </>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+      )}
+            {/* Golioth */}
 
       {/* Configuration Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
