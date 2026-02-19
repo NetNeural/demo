@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { User, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator';
 import {
   Select,
   SelectContent,
@@ -23,6 +25,7 @@ export function ProfileTab() {
   const [jobTitle, setJobTitle] = useState('');
   const [department, setDepartment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   // Load profile from Supabase on mount
   useEffect(() => {
@@ -52,12 +55,56 @@ export function ProfileTab() {
       
       // Email comes from auth
       if (user.email) setEmail(user.email);
+
+      // Mark loaded so auto-save starts watching
+      setLoaded(true);
     };
     
     loadProfile();
   }, []);
 
-  const handleSave = async () => {
+  // Data object for auto-save — only profile fields (not email, which needs confirmation)
+  const profileData = useMemo(
+    () => ({ profileName, jobTitle, department }),
+    [profileName, jobTitle, department]
+  );
+
+  const saveProfile = useCallback(async (data: typeof profileData) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not logged in');
+
+    // Update full_name in users table
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        full_name: data.profileName,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (userError) throw userError;
+
+    // Store other profile fields in user_metadata
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: {
+        job_title: data.jobTitle,
+        department: data.department,
+      }
+    });
+
+    if (metadataError) throw metadataError;
+  }, []);
+
+  const { status: autoSaveStatus } = useAutoSave({
+    data: profileData,
+    onSave: saveProfile,
+    delay: 1200,
+    enabled: loaded,
+  });
+
+  // Manual email update (requires confirmation flow)
+  const handleEmailChange = async () => {
     setIsLoading(true);
     try {
       const supabase = createClient();
@@ -66,87 +113,37 @@ export function ProfileTab() {
       if (!user) {
         toast({
           title: "Error",
-          description: "You must be logged in to save profile",
+          description: "You must be logged in",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
 
-      // Update full_name in users table
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          full_name: profileName,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      if (email === user.email) return;
 
-      if (userError) {
+      const { error } = await supabase.auth.updateUser({ email });
+      if (error) {
         toast({
           title: "Error",
-          description: "Failed to save profile: " + userError.message,
+          description: "Failed to update email: " + error.message,
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
-      }
-
-      // Store other profile fields in user_metadata
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          job_title: jobTitle,
-          department: department,
-        }
-      });
-
-      if (metadataError) {
-        toast({
-          title: "Partial Success",
-          description: "Profile saved partially. Metadata update failed: " + metadataError.message,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // If email changed, update auth user
-      if (email !== user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: email
-        });
-        
-        if (emailError) {
-          toast({
-            title: "Partial Success",
-            description: "Profile saved but email update failed: " + emailError.message,
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
       }
 
       toast({
-        title: "Success",
-        description: "Profile saved successfully!",
+        title: "Confirmation sent",
+        description: "Check your new email to confirm the change.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save profile: " + (error as Error).message,
+        description: "Failed to update email: " + (error as Error).message,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleReset = () => {
-    setProfileName('');
-    setEmail('');
-    setJobTitle('');
-    setDepartment('');
   };
 
   return (
@@ -156,6 +153,7 @@ export function ProfileTab() {
         icon={<User className="w-5 h-5" />}
         title="Personal Information"
         description="Manage your personal details and contact information"
+        actions={<AutoSaveIndicator status={autoSaveStatus} />}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SettingsFormGroup label="Full Name" required>
@@ -167,12 +165,20 @@ export function ProfileTab() {
           </SettingsFormGroup>
 
           <SettingsFormGroup label="Email Address" required>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@company.com"
-            />
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@company.com"
+                className="flex-1"
+              />
+              <Button size="sm" variant="outline" onClick={handleEmailChange} disabled={isLoading}>
+                <Send className="w-3 h-3 mr-1" />
+                Update
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Email changes require confirmation via email.</p>
           </SettingsFormGroup>
 
           <SettingsFormGroup label="Job Title">
@@ -201,25 +207,9 @@ export function ProfileTab() {
         </div>
       </SettingsSection>
 
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        <Button onClick={handleSave} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Send className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
-        <Button variant="outline" onClick={handleReset} disabled={isLoading}>
-          Reset Changes
-        </Button>
-      </div>
+      <p className="text-xs text-muted-foreground text-center">
+        Changes are saved automatically.
+      </p>
     </div>
   );
 }

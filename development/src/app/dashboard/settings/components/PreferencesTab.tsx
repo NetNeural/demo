@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { 
   Select,
   SelectContent,
@@ -17,11 +16,13 @@ import {
 import { Moon, Sun, Monitor, Globe, Bell, Palette, Building2, Thermometer } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator';
 
 export function PreferencesTab() {
   const { currentOrganization } = useOrganization();
   const { updatePreferences } = usePreferences();
-  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [useOrgDefault, setUseOrgDefault] = useState(true); // Default to organization theme
   const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('en');
@@ -131,67 +132,70 @@ export function PreferencesTab() {
       } catch (error) {
         console.error('Error loading preferences:', error);
       }
+
+      // Mark loaded so auto-save starts watching
+      setLoaded(true);
     };
     
     loadPreferences();
   }, []);
 
-  const handleSavePreferences = async () => {
-    setSaving(true);
-    try {
-      const preferences = {
-        useOrgDefaultTheme: useOrgDefault,
-        theme,
-        language,
-        timezone,
-        dateFormat,
-        timeFormat,
-        compactMode,
-        animationsEnabled,
-        soundEnabled,
-        emailNotifications,
-        smsNotifications,
-        pushNotifications,
-        minSeverity,
-        quietHoursEnabled,
-        quietHoursStart,
-        quietHoursEnd,
-        muteWeekends,
-        temperatureUnit,
-      };
+  // Memoized preferences object for auto-save change detection
+  const prefsData = useMemo(() => ({
+    useOrgDefaultTheme: useOrgDefault,
+    theme,
+    language,
+    timezone,
+    dateFormat,
+    timeFormat,
+    compactMode,
+    animationsEnabled,
+    soundEnabled,
+    emailNotifications,
+    smsNotifications,
+    pushNotifications,
+    minSeverity,
+    quietHoursEnabled,
+    quietHoursStart,
+    quietHoursEnd,
+    muteWeekends,
+    temperatureUnit,
+  }), [
+    useOrgDefault, theme, language, timezone, dateFormat, timeFormat,
+    compactMode, animationsEnabled, soundEnabled,
+    emailNotifications, smsNotifications, pushNotifications,
+    minSeverity, quietHoursEnabled, quietHoursStart, quietHoursEnd,
+    muteWeekends, temperatureUnit,
+  ]);
 
-      // Save to Supabase user metadata
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
-        data: { preferences }
-      });
+  const savePreferences = useCallback(async (data: typeof prefsData) => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({
+      data: { preferences: data }
+    });
 
-      if (error) {
-        toast.error('Failed to save preferences: ' + error.message);
-        return;
-      }
+    if (error) throw error;
 
-      // Also save to localStorage as backup
-      localStorage.setItem('user_preferences', JSON.stringify(preferences));
-      localStorage.setItem('temperatureUnit', temperatureUnit);
+    // Also save to localStorage as backup
+    localStorage.setItem('user_preferences', JSON.stringify(data));
+    localStorage.setItem('temperatureUnit', data.temperatureUnit);
 
-      // Update live context so all components re-render with new preferences
-      updatePreferences({
-        language: language as import('@/contexts/PreferencesContext').LanguageOption,
-        timezone,
-        dateFormat: dateFormat as import('@/contexts/PreferencesContext').DateFormatOption,
-        timeFormat: timeFormat as import('@/contexts/PreferencesContext').TimeFormatOption,
-        temperatureUnit,
-      });
-      
-      toast.success('Preferences saved successfully!');
-    } catch (err) {
-      console.error('Error saving preferences:', err);
-      toast.error('An unexpected error occurred. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
+    // Update live context so all components re-render with new preferences
+    updatePreferences({
+      language: data.language as import('@/contexts/PreferencesContext').LanguageOption,
+      timezone: data.timezone,
+      dateFormat: data.dateFormat as import('@/contexts/PreferencesContext').DateFormatOption,
+      timeFormat: data.timeFormat as import('@/contexts/PreferencesContext').TimeFormatOption,
+      temperatureUnit: data.temperatureUnit,
+    });
+  }, [updatePreferences]);
+
+  const { status: autoSaveStatus } = useAutoSave({
+    data: prefsData,
+    onSave: savePreferences,
+    delay: 1000,
+    enabled: loaded,
+  });
 
   return (
     <div className="space-y-6">
@@ -654,11 +658,10 @@ export function PreferencesTab() {
         </CardContent>
       </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSavePreferences} size="lg" disabled={saving}>
-          {saving ? 'Saving...' : 'Save Preferences'}
-        </Button>
+      {/* Auto-save status */}
+      <div className="flex items-center justify-center gap-2">
+        <AutoSaveIndicator status={autoSaveStatus} />
+        <p className="text-xs text-muted-foreground">Changes are saved automatically.</p>
       </div>
     </div>
   );
