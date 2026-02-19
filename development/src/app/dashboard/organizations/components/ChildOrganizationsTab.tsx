@@ -16,6 +16,8 @@ import {
   RefreshCw,
   ScrollText,
   Crown,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { edgeFunctions } from '@/lib/edge-functions/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -61,6 +63,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
   const [agreement, setAgreement] = useState<ResellerAgreement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
   const isSuperAdmin = user?.isSuperAdmin || false;
 
@@ -237,6 +240,24 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
           </p>
         </div>
         <div className="flex gap-2">
+          <div className="flex items-center border rounded-md">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-r-none"
+              onClick={() => setViewMode('cards')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-l-none"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={fetchChildOrgs}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
@@ -312,7 +333,8 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
             </Card>
           </div>
 
-          {/* Org Cards */}
+          {/* Org Cards / List */}
+          {viewMode === 'cards' ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {childOrgs.map((org) => (
               <Card key={org.id} className="hover:border-primary/50 transition-colors">
@@ -366,6 +388,62 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
               </Card>
             ))}
           </div>
+          ) : (
+          /* List / Table View */
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left font-medium p-3">Organization</th>
+                      <th className="text-left font-medium p-3">Tier</th>
+                      <th className="text-center font-medium p-3">Status</th>
+                      <th className="text-center font-medium p-3">Devices</th>
+                      <th className="text-center font-medium p-3">Users</th>
+                      <th className="text-center font-medium p-3">Alerts</th>
+                      <th className="text-left font-medium p-3">Created</th>
+                      <th className="text-right font-medium p-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {childOrgs.map((org) => (
+                      <tr key={org.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                              {org.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{org.name}</p>
+                              <p className="text-xs text-muted-foreground">{org.slug}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">{getTierBadge(org.subscriptionTier || 'starter')}</td>
+                        <td className="p-3 text-center">
+                          <Badge variant={org.isActive ? 'default' : 'destructive'} className={`text-xs ${org.isActive ? 'bg-green-600' : ''}`}>
+                            {org.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-center font-medium">{org.deviceCount || 0}</td>
+                        <td className="p-3 text-center font-medium">{org.userCount || 0}</td>
+                        <td className="p-3 text-center font-medium">{org.alertCount || 0}</td>
+                        <td className="p-3 text-muted-foreground">{fmt.dateOnly(org.createdAt)}</td>
+                        <td className="p-3 text-right">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" title="Switch to this org to manage it">
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Manage
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          )}
         </>
       )}
 
