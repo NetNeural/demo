@@ -2,7 +2,7 @@
 
 **Date:** February 19, 2026  
 **Prepared for:** Upper Management & Project Stakeholders  
-**Version:** 3.1  
+**Version:** 3.2  
 **Classification:** Internal — Confidential
 
 ---
@@ -40,6 +40,7 @@ Migrated from 31 Go microservices to a serverless Supabase-first stack. Result: 
 - **Analytics & audit trail** — every user action tracked for compliance
 - **Reporting dashboard** with CSV/PDF export across 6 report types
 - **Enterprise documentation** — 39,500+ words across 6 guides
+- **Integration Hub** — 8 third-party integrations (Golioth, AWS IoT, Azure IoT, MQTT, Email, Slack, Webhook, NetNeural Hub) with interactive guides, live health checks, and multi-protocol device support
 
 ### Performance (Epic 3 — 100% Complete)
 | Query | Before | After | Improvement |
@@ -77,16 +78,18 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ## 4. Most Recent Changes (Last Session)
 
+### Epic #95: Integration Hub Revival (Stories #97-#101 Complete)
+
 | Commit | Description |
 |--------|-------------|
+| `82225c9` | **Integration tests**: Added 8 integration tests to Support Dashboard (Golioth, AWS IoT, Azure IoT, MQTT, Email, Slack, Webhook, NetNeural Hub) |
+| `6ab980f` | **Interactive integration guides**: Transformed static blocks to icon grid with dialogs (4-column responsive layout) |
+| `366b50f` | **ESLint fixes**: Fixed 24 quote escaping errors blocking 9 consecutive deploys |
+| `c052d13` | **Story #101**: NetNeural Hub provider (556 lines) - multi-protocol device integration (CoAP/MQTT/HTTPS) |
+| `3f061ed` | **Build fixes**: Fixed 6 TypeScript errors in Golioth, MQTT providers, org-integrations |
+| `e6208b8` | **Build fixes**: Added missing ProviderConfig imports to AWS/Azure providers |
 | `61014f7` | Testing improvements: Jest config fixes, 71 new tests, coverage to 21.4% |
 | `19c4d21` | Cast device status to union type for type safety |
-| `63adc4d` | Device details page uses edge function (not direct Supabase) |
-| `c57206a` | Hide super_admin accounts from members list |
-| `23cb039` | Multi-org device visibility fix (service_role + org members) |
-| `94ca68a` | Type safety fix in TransferDeviceDialog |
-| `376449b` | Device transfer via edge function + copy mode (closes #33) |
-| `696ea1e` | Device location data in alert emails |
 
 ---
 
@@ -112,6 +115,13 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 ### Epic & Stories
 | # | Title | Priority | Status |
 |---|-------|----------|--------|
+| 95 | **Integration Hub Revival** (Stories #96-#101) | High | **5/6 Complete** (90% - Story #96 pgsodium blocker) |
+| 96 | API Key Encryption with pgsodium | Medium | 90% (awaiting permissions) |
+| 97 | MQTT Broker Integration | Medium | ✅ Complete |
+| 98 | Azure IoT Hub Integration | Medium | ✅ Complete |
+| 99 | AWS IoT Core Integration | Medium | ✅ Complete |
+| 100 | UI Integration Flow Fixes | Medium | ✅ Complete |
+| 101 | NetNeural Hub Provider (Multi-protocol) | Medium | ✅ Complete |
 | 133 | Incremental Test Coverage to 70% (4-week plan) | Medium | Open |
 | 134 | Phase 1: React Hooks & Auth Tests (→30%) | Medium | Open |
 | 135 | Phase 2: Dialog & Form Tests (→45%) | Medium | Open |
@@ -129,6 +139,12 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | Deploy Production | ✅ Passing | GitHub Pages |
 | Deploy Edge Functions | ✅ Passing | Supabase |
 | Run Tests | ⚠️ Failing | Does **not** block deploys |
+
+**Recent CI/CD Issue Resolved**:
+- Fixed 9 consecutive deploy failures caused by ESLint errors (commit `366b50f`)
+- Root cause: 24 unescaped quotes in integration guides JSX
+- Resolution: Replaced all `"text"` with `&quot;text&quot;` in JSX content
+- Current status: ✅ All deploys passing, 0 ESLint errors
 
 **Test workflow failures** (non-blocking):
 1. `force-dynamic` route incompatible with static export
