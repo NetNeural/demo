@@ -349,10 +349,15 @@ export default function DocumentationTab() {
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{doc.description}</p>
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenDoc(doc.filename)}
+                            className="text-[10px] text-primary hover:underline font-mono flex items-center gap-1 cursor-pointer"
+                            title="Click to view documentation"
+                          >
                             <FileText className="w-3 h-3" />
                             {doc.filename}
-                          </span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
                           <span className="text-[10px] text-muted-foreground">
                             {doc.lines} lines
                           </span>
@@ -371,13 +376,15 @@ export default function DocumentationTab() {
                       </div>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                      className="flex-shrink-0"
                       title={`View ${doc.filename}`}
                       onClick={() => handleOpenDoc(doc.filename)}
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
                     </Button>
                   </div>
                 </div>
