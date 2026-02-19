@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { toast } from 'sonner'
 import { format, subDays } from 'date-fns'
 import { 
@@ -431,14 +432,21 @@ export function AuditLogReport() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileText className="h-8 w-8" />
-          User Activity Audit Log
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          View and track all user actions in the system for compliance and troubleshooting
-        </p>
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <FileText className="h-8 w-8" />
+            User Activity Audit Log
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            View and track all user actions in the system for compliance and troubleshooting
+          </p>
+        </div>
       </div>
 
       {/* Statistics Cards */}

@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { 
   LineChart as LineChartIcon, 
   Table as TableIcon, 
@@ -351,11 +352,18 @@ export function TelemetryTrendsReport() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Telemetry Trends</h1>
-        <p className="text-muted-foreground mt-2">
-          Compare sensor data across devices over time
-        </p>
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Telemetry Trends</h1>
+          <p className="text-muted-foreground mt-2">
+            Compare sensor data across devices over time
+          </p>
+        </div>
       </div>
 
       {/* Filters */}

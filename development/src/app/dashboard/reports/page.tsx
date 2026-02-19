@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FileText, TrendingUp, ArrowRight, Shield, Activity, Clock, Calendar, BarChart } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { format } from 'date-fns'
@@ -117,11 +118,18 @@ export default function ReportsIndexPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{currentOrganization?.name ? `${currentOrganization.name} Reports` : 'Reports'}</h1>
-        <p className="text-muted-foreground mt-2">
-          Analyze your IoT data with comprehensive reporting tools
-        </p>
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{currentOrganization?.name ? `${currentOrganization.name} Reports` : 'Reports'}</h1>
+          <p className="text-muted-foreground mt-2">
+            Analyze your IoT data with comprehensive reporting tools
+          </p>
+        </div>
       </div>
 
       {/* Quick Stats */}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Plus, Power, PowerOff, Copy, Trash2, Edit } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
@@ -113,11 +114,18 @@ export default function AlertRulesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{currentOrganization?.name ? `${currentOrganization.name} Alert Rules` : 'Alert Rules'}</h1>
-          <p className="text-muted-foreground mt-1">
-            Create automated rules to monitor your devices and trigger actions
-          </p>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h1 className="text-3xl font-bold">{currentOrganization?.name ? `${currentOrganization.name} Alert Rules` : 'Alert Rules'}</h1>
+            <p className="text-muted-foreground mt-1">
+              Create automated rules to monitor your devices and trigger actions
+            </p>
+          </div>
         </div>
         <Button onClick={() => router.push('/dashboard/alert-rules/new')}>
           <Plus className="mr-2 h-4 w-4" />

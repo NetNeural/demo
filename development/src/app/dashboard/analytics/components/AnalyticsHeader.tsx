@@ -1,21 +1,31 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download } from 'lucide-react';
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
 import type { TimeRange } from '../types/analytics.types';
+import type { OrganizationSettings } from '@/types/organization';
 
 interface AnalyticsHeaderProps {
   titlePrefix: string;
   organizationName: string;
+  organizationSettings?: OrganizationSettings;
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
   onExport: () => void;
 }
 
-export function AnalyticsHeader({ titlePrefix, organizationName, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
+export function AnalyticsHeader({ titlePrefix, organizationName, organizationSettings, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h1>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={organizationSettings}
+            name={organizationName || 'NetNeural'}
+            size="xl"
+          />
+          <h1 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h1>
+        </div>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
             <SelectTrigger className="w-[160px]">

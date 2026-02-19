@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { GoliothConfigDialog } from '@/components/integrations/GoliothConfigDialog'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
 import { edgeFunctions } from '@/lib/edge-functions'
@@ -131,11 +132,18 @@ export default function IntegrationsPage() {
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} Integrations</h2>
-          <p className="text-muted-foreground">
-            Manage platform integrations for {currentOrganization.name}
-          </p>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization.settings}
+            name={currentOrganization.name}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} Integrations</h2>
+            <p className="text-muted-foreground">
+              Manage platform integrations for {currentOrganization.name}
+            </p>
+          </div>
         </div>
         <Button onClick={handleAdd}>
           <Plus className="w-4 h-4 mr-2" />

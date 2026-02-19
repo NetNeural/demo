@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { toast } from 'sonner'
 import { format, subDays, subHours } from 'date-fns'
 import { 
@@ -394,11 +395,18 @@ export function AlertHistoryReport() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Alert History Report</h2>
-          <p className="text-muted-foreground">
-            Analyze historical alert data and identify patterns
-          </p>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Alert History Report</h2>
+            <p className="text-muted-foreground">
+              Analyze historical alert data and identify patterns
+            </p>
+          </div>
         </div>
         <Button onClick={handleExport} disabled={loading || alerts.length === 0}>
           <Download className="mr-2 h-4 w-4" />
