@@ -6,7 +6,6 @@ import type { TimeRange } from '../types/analytics.types';
 import type { OrganizationSettings } from '@/types/organization';
 
 interface AnalyticsHeaderProps {
-  titlePrefix: string;
   organizationName: string;
   organizationSettings?: OrganizationSettings;
   timeRange: TimeRange;
@@ -14,7 +13,7 @@ interface AnalyticsHeaderProps {
   onExport: () => void;
 }
 
-export function AnalyticsHeader({ titlePrefix, organizationName, organizationSettings, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
+export function AnalyticsHeader({ organizationName, organizationSettings, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -24,7 +23,7 @@ export function AnalyticsHeader({ titlePrefix, organizationName, organizationSet
             name={organizationName || 'NetNeural'}
             size="xl"
           />
-          <h1 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight">AI Analytics</h1>
         </div>
         <div className="flex items-center gap-3">
           <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>

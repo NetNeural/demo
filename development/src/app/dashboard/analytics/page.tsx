@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalyticsData } from './hooks/useAnalyticsData';
-import { useUser } from '@/contexts/UserContext';
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
 import {
   AnalyticsHeader,
@@ -20,11 +19,6 @@ import type { TimeRange } from './types/analytics.types';
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const { data, loading, exportToCSV, currentOrganization } = useAnalyticsData(timeRange);
-  const { user } = useUser();
-
-  const fullName = user?.fullName;
-  const orgName = currentOrganization?.name;
-  const titlePrefix = fullName && orgName ? `${fullName} @ ${orgName} ` : fullName ? `${fullName} ` : orgName ? `${orgName} ` : '';
 
   if (!currentOrganization) {
     return (
@@ -51,7 +45,7 @@ export default function AnalyticsPage() {
               name={currentOrganization?.name || 'NetNeural'}
               size="xl"
             />
-            <h2 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h2>
+            <h2 className="text-3xl font-bold tracking-tight">AI Analytics</h2>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -80,7 +74,7 @@ export default function AnalyticsPage() {
               name={currentOrganization?.name || 'NetNeural'}
               size="xl"
             />
-            <h2 className="text-3xl font-bold tracking-tight">{titlePrefix}AI Analytics</h2>
+            <h2 className="text-3xl font-bold tracking-tight">AI Analytics</h2>
           </div>
         </div>
         <div className="text-center">
@@ -93,7 +87,6 @@ export default function AnalyticsPage() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       <AnalyticsHeader
-        titlePrefix={titlePrefix}
         organizationName={currentOrganization.name}
         organizationSettings={currentOrganization.settings}
         timeRange={timeRange}
