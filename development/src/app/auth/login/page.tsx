@@ -64,6 +64,12 @@ function LoginForm() {
   const [error, setError] = useState('')
   const hasCheckedAuth = useRef(false)
 
+  // MFA challenge state
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaVerifying, setMfaVerifying] = useState(false)
+
   // Branding state
   const [branding, setBranding] = useState<OrgBranding | null>(null)
   const [brandingLoaded, setBrandingLoaded] = useState(false)
@@ -155,6 +161,20 @@ function LoginForm() {
         })
       }
 
+      // Check if MFA is required
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aal && aal.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+        // User has MFA enrolled — need verification
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        const totpFactor = factors?.totp?.find(f => f.status === 'verified')
+        if (totpFactor) {
+          setMfaFactorId(totpFactor.id)
+          setMfaRequired(true)
+          setIsLoading(false)
+          return
+        }
+      }
+
       await new Promise(resolve => setTimeout(resolve, 100))
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -171,6 +191,49 @@ function LoginForm() {
       setIsLoading(false)
     }
   }, [email, password, rememberMe, router])
+
+  const handleMfaVerify = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!mfaFactorId || mfaCode.length !== 6) {
+      setError('Please enter the 6-digit code from your authenticator app.')
+      return
+    }
+    setMfaVerifying(true)
+    setError('')
+
+    try {
+      const supabase = createClient()
+
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      })
+      if (challengeError) {
+        setError(`Verification failed: ${challengeError.message}`)
+        setMfaVerifying(false)
+        return
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaCode,
+      })
+      if (verifyError) {
+        setError('Invalid verification code. Please try again.')
+        setMfaCode('')
+        setMfaVerifying(false)
+        return
+      }
+
+      // MFA verified — proceed to dashboard
+      hasCheckedAuth.current = true
+      router.push('/dashboard')
+      setTimeout(() => router.refresh(), 50)
+    } catch {
+      setError('An unexpected error occurred during verification.')
+      setMfaVerifying(false)
+    }
+  }, [mfaFactorId, mfaCode, router])
 
   // Don't render until branding is resolved (prevents flash)
   if (!brandingLoaded) {
@@ -291,8 +354,12 @@ function LoginForm() {
           }}
         >
           <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-100">Welcome back</h2>
-            <p className="text-gray-400 text-sm mt-1">Sign in to continue</p>
+            <h2 className="text-xl font-semibold text-gray-100">
+              {mfaRequired ? 'Two-Factor Authentication' : 'Welcome back'}
+            </h2>
+            <p className="text-gray-400 text-sm mt-1">
+              {mfaRequired ? 'Enter the code from your authenticator app' : 'Sign in to continue'}
+            </p>
           </div>
 
           {/* Error */}
@@ -305,7 +372,7 @@ function LoginForm() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setError(''); setEmail(''); setPassword(''); hasCheckedAuth.current = false }}
+                      onClick={() => { setError(''); setEmail(''); setPassword(''); hasCheckedAuth.current = false; setMfaRequired(false); setMfaCode(''); setMfaFactorId(null) }}
                       className="ml-2 h-auto py-0 px-2 text-xs text-red-300 hover:text-white"
                     >
                       Reset
@@ -316,8 +383,76 @@ function LoginForm() {
             </Alert>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
+          {mfaRequired ? (
+            /* ── MFA Verification Form ── */
+            <form onSubmit={handleMfaVerify}>
+              <div className="mb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: `${colors.primary}20` }}>
+                    <Shield className="w-6 h-6" style={{ color: colors.primary }} />
+                  </div>
+                </div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5 text-center" htmlFor="mfa-code">
+                  Verification Code
+                </label>
+                <input
+                  id="mfa-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  required
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  className="w-full px-4 py-4 rounded-lg bg-gray-800/60 text-gray-100 border border-gray-700/60 placeholder:text-gray-500 focus:outline-none focus:ring-2 transition-all text-center text-2xl font-mono tracking-[0.5em]"
+                  style={{ ['--tw-ring-color' as string]: `${colors.primary}80` }}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={mfaVerifying || mfaCode.length !== 6}
+                className="w-full h-12 text-base font-semibold rounded-lg text-white transition-all shadow-lg hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                  boxShadow: `0 4px 20px ${colors.primary}30`,
+                }}
+              >
+                {mfaVerifying ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Verifying...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Verify & Sign In
+                  </span>
+                )}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMfaRequired(false)
+                  setMfaFactorId(null)
+                  setMfaCode('')
+                  setError('')
+                  // Sign out the partial session
+                  const supabase = createClient()
+                  supabase.auth.signOut()
+                }}
+                className="w-full mt-3 text-sm text-gray-500 hover:text-gray-300 transition-colors text-center"
+              >
+                ← Back to sign in
+              </button>
+            </form>
+          ) : (
+            /* ── Normal Login Form ── */
+            <form onSubmit={handleSubmit}>
             {/* Email */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-1.5" htmlFor="email">
@@ -400,6 +535,7 @@ function LoginForm() {
               )}
             </Button>
           </form>
+          )}
 
           {/* Footer */}
           <p className="text-center mt-6 text-xs text-gray-500">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,9 @@ import {
   Trash2,
   Copy,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 
 interface Session {
@@ -53,9 +55,19 @@ export function SecurityTab() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [showSetup2FA, setShowSetup2FA] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState('');
+
+  // 2FA state
+  const [mfaLoading, setMfaLoading] = useState(true);
+  const [mfaEnrolled, setMfaEnrolled] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollQrCode, setEnrollQrCode] = useState<string | null>(null);
+  const [enrollSecret, setEnrollSecret] = useState<string | null>(null);
+  const [enrollFactorId, setEnrollFactorId] = useState<string | null>(null);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [unenrolling, setUnenrolling] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -104,6 +116,36 @@ export function SecurityTab() {
     
     loadSessions();
   }, []);
+
+  // Check MFA enrollment status on mount
+  const checkMfaStatus = useCallback(async () => {
+    try {
+      setMfaLoading(true);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) {
+        console.error('Failed to list MFA factors:', error);
+        return;
+      }
+      // Find verified TOTP factor
+      const verified = data.totp.find(f => f.status === 'verified');
+      if (verified) {
+        setMfaEnrolled(true);
+        setMfaFactorId(verified.id);
+      } else {
+        setMfaEnrolled(false);
+        setMfaFactorId(null);
+      }
+    } catch (err) {
+      console.error('MFA status check error:', err);
+    } finally {
+      setMfaLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkMfaStatus();
+  }, [checkMfaStatus]);
 
   // Load API keys from Supabase (stored in a custom api_keys table)
   // Load API keys from database
@@ -234,38 +276,151 @@ export function SecurityTab() {
 
   const handleToggle2FA = async (checked: boolean) => {
     if (checked) {
-      toast({
-        title: "2FA Setup (Coming Soon)",
-        description: "Two-factor authentication requires Supabase MFA enrollment. The UI is ready but backend MFA enrollment is pending.",
-      });
-      setShowSetup2FA(true);
-      setTwoFactorEnabled(true);
-      
-      // Generate a demo QR code data (in production this would come from Supabase MFA enrollment)
-      setQrCodeData('otpauth://totp/NetNeural:admin@netneural.ai?secret=DEMO&issuer=NetNeural');
+      // Start MFA enrollment
+      try {
+        setEnrolling(true);
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.mfa.enroll({
+          factorType: 'totp',
+          friendlyName: 'Authenticator App',
+        });
+        if (error) {
+          toast({
+            title: 'Error',
+            description: `Failed to start 2FA setup: ${error.message}`,
+            variant: 'destructive',
+          });
+          setEnrolling(false);
+          return;
+        }
+        setEnrollQrCode(data.totp.qr_code);
+        setEnrollSecret(data.totp.secret);
+        setEnrollFactorId(data.id);
+      } catch (err) {
+        console.error('MFA enroll error:', err);
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred starting 2FA setup.',
+          variant: 'destructive',
+        });
+        setEnrolling(false);
+      }
     } else {
-      setTwoFactorEnabled(false);
-      setShowSetup2FA(false);
-      setQrCodeData('');
-      toast({
-        title: "2FA Disabled",
-        description: "Two-factor authentication has been disabled.",
-      });
+      // Unenroll MFA
+      if (!mfaFactorId) return;
+      try {
+        setUnenrolling(true);
+        const supabase = createClient();
+        const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+        if (error) {
+          toast({
+            title: 'Error',
+            description: `Failed to disable 2FA: ${error.message}`,
+            variant: 'destructive',
+          });
+          return;
+        }
+        setMfaEnrolled(false);
+        setMfaFactorId(null);
+        toast({
+          title: '2FA Disabled',
+          description: 'Two-factor authentication has been removed from your account.',
+        });
+      } catch (err) {
+        console.error('MFA unenroll error:', err);
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred removing 2FA.',
+          variant: 'destructive',
+        });
+      } finally {
+        setUnenrolling(false);
+      }
     }
   };
 
-  const handleShowQRCode = () => {
-    toast({
-      title: "QR Code (Coming Soon)",
-      description: "In production, a QR code from Supabase MFA enrollment would be displayed here for scanning with your authenticator app.",
-    });
+  const handleVerifyEnrollment = async () => {
+    if (!enrollFactorId || verifyCode.length !== 6) {
+      toast({
+        title: 'Error',
+        description: 'Please enter the 6-digit code from your authenticator app.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      setVerifying(true);
+      const supabase = createClient();
+
+      // Challenge the factor first
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: enrollFactorId,
+      });
+      if (challengeError) {
+        toast({
+          title: 'Error',
+          description: `Challenge failed: ${challengeError.message}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Verify with the code
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: enrollFactorId,
+        challengeId: challengeData.id,
+        code: verifyCode,
+      });
+      if (verifyError) {
+        toast({
+          title: 'Invalid Code',
+          description: 'The verification code was incorrect. Please check your authenticator app and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Success
+      setMfaEnrolled(true);
+      setMfaFactorId(enrollFactorId);
+      setEnrolling(false);
+      setEnrollQrCode(null);
+      setEnrollSecret(null);
+      setEnrollFactorId(null);
+      setVerifyCode('');
+      setShowSecret(false);
+      toast({
+        title: '2FA Enabled',
+        description: 'Two-factor authentication is now active. You\'ll need your authenticator app when signing in.',
+      });
+    } catch (err) {
+      console.error('MFA verify error:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred during verification.',
+        variant: 'destructive',
+      });
+    } finally {
+      setVerifying(false);
+    }
   };
 
-  const handleShowSetupKey = () => {
-    toast({
-      title: "Setup Key (Coming Soon)",
-      description: "In production, the TOTP secret from Supabase MFA enrollment would be shown here for manual entry in your authenticator app.",
-    });
+  const handleCancelEnrollment = async () => {
+    // Unenroll the unverified factor to clean up
+    if (enrollFactorId) {
+      try {
+        const supabase = createClient();
+        await supabase.auth.mfa.unenroll({ factorId: enrollFactorId });
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    setEnrolling(false);
+    setEnrollQrCode(null);
+    setEnrollSecret(null);
+    setEnrollFactorId(null);
+    setVerifyCode('');
+    setShowSecret(false);
   };
 
   return (
@@ -333,45 +488,128 @@ export function SecurityTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="2fa">Enable 2FA</Label>
-              <p className="text-sm text-muted-foreground">
-                Require a verification code from your phone when signing in
-              </p>
+          {mfaLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking 2FA status...
             </div>
-            <Switch
-              id="2fa"
-              checked={twoFactorEnabled}
-              onCheckedChange={handleToggle2FA}
-            />
-          </div>
+          ) : enrolling && enrollQrCode ? (
+            /* ── Enrollment flow: QR code + verify ── */
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg space-y-4">
+                <div className="flex items-start gap-2">
+                  <Smartphone className="w-5 h-5 mt-0.5 text-primary" />
+                  <div className="space-y-2 flex-1">
+                    <p className="text-sm font-medium">Setup Instructions</p>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Open your authenticator app (Google Authenticator, Authy, 1Password, etc.)</li>
+                      <li>Scan the QR code below, or enter the setup key manually</li>
+                      <li>Enter the 6-digit code shown in the app to confirm</li>
+                    </ol>
+                  </div>
+                </div>
 
-          {showSetup2FA && twoFactorEnabled && (
-            <div className="p-4 bg-muted rounded-lg space-y-3">
-              <div className="flex items-start gap-2">
-                <Smartphone className="w-5 h-5 mt-0.5 text-primary" />
-                <div className="space-y-2 flex-1">
-                  <p className="text-sm font-medium">Setup Instructions</p>
-                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Install an authenticator app (Google Authenticator, Authy, etc.)</li>
-                    <li>Scan the QR code or enter the setup key</li>
-                    <li>Enter the 6-digit code to verify</li>
-                  </ol>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" onClick={handleShowQRCode}>Show QR Code</Button>
-                    <Button size="sm" variant="outline" onClick={handleShowSetupKey}>Show Setup Key</Button>
+                {/* QR Code */}
+                <div className="flex justify-center py-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={enrollQrCode}
+                      alt="Scan this QR code with your authenticator app"
+                      width={200}
+                      height={200}
+                    />
+                  </div>
+                </div>
+
+                {/* Manual setup key */}
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSecret(!showSecret)}
+                  >
+                    {showSecret ? 'Hide' : 'Show'} Setup Key
+                  </Button>
+                  {showSecret && enrollSecret && (
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs bg-background px-3 py-2 rounded border font-mono tracking-wider">
+                        {enrollSecret}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(enrollSecret);
+                          toast({ title: 'Copied', description: 'Setup key copied to clipboard' });
+                        }}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Verification input */}
+                <div className="space-y-2 pt-2 border-t">
+                  <Label htmlFor="verify-code">Enter 6-digit code from your app</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="verify-code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder="000000"
+                      value={verifyCode}
+                      onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-32 text-center font-mono text-lg tracking-widest"
+                      autoComplete="one-time-code"
+                    />
+                    <Button
+                      onClick={handleVerifyEnrollment}
+                      disabled={verifying || verifyCode.length !== 6}
+                    >
+                      {verifying ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying...</>
+                      ) : (
+                        <><CheckCircle2 className="w-4 h-4 mr-2" />Verify & Enable</>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {twoFactorEnabled && !showSetup2FA && (
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <Shield className="w-4 h-4" />
-              Two-factor authentication is enabled
+              <Button variant="ghost" size="sm" onClick={handleCancelEnrollment}>
+                Cancel Setup
+              </Button>
             </div>
+          ) : (
+            /* ── Normal state: toggle on/off ── */
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="2fa">Enable 2FA</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Require a verification code from your phone when signing in
+                  </p>
+                </div>
+                <Switch
+                  id="2fa"
+                  checked={mfaEnrolled}
+                  onCheckedChange={handleToggle2FA}
+                  disabled={unenrolling}
+                />
+              </div>
+
+              {mfaEnrolled && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Shield className="w-4 h-4" />
+                  Two-factor authentication is enabled
+                  {unenrolling && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
