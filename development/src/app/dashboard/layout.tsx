@@ -125,9 +125,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </nav>
         <main className="main-content">
           {user.isSuperAdmin && (
-            <div className="bg-red-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 sticky top-0 z-50">
-              <span>🛡️</span>
-              <span>Super Admin — Cross-Org Access Active</span>
+            <div className="flex justify-center sticky top-0 z-50 py-1.5 pointer-events-none">
+              <span className="pointer-events-auto inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                🛡️ Super Admin — Cross-Org Access
+              </span>
             </div>
           )}
           {children}
