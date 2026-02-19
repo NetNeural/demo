@@ -23,6 +23,7 @@ import {
   Bug,
   Code2,
   Network,
+  Building2,
 } from 'lucide-react'
 
 interface Props {
@@ -562,6 +563,81 @@ export default function TestsTab({ organizationId }: Props) {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">
                     📄 <code>scripts/check-device-types.js</code> | Expected: 42 device types
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Check Organization Hierarchy */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Check Organization Hierarchy</h4>
+                    <Badge variant="outline" className="text-[10px]">Organizations</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Displays organization structure — root vs child orgs, parent relationships, hierarchy tree
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/check-org-hierarchy.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/check-org-hierarchy.js</code> | 📚 <code>docs/ADMINISTRATOR_GUIDE.md</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Organization Creation */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Test Organization Creation</h4>
+                    <Badge variant="outline" className="text-[10px]">Organizations</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tests organization creation via direct insert and Edge Function — verifies CRUD operations
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-org-creation.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/test-org-creation.js</code> | Tests direct & Edge Function paths
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Check Organizations Status */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">Check Organizations Status</h4>
+                    <Badge variant="outline" className="text-[10px]">Organizations</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Lists all organizations with status, subscription tier, member count, and configuration
+                  </p>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-[10px] font-mono">
+                    <p className="text-muted-foreground">$ cd development</p>
+                    <p className="text-foreground">$ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/check-orgs.js</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    📄 <code>scripts/check-orgs.js</code> | Organization inventory
                   </p>
                 </div>
               </div>
