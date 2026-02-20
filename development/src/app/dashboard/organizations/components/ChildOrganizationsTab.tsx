@@ -81,7 +81,11 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const orgs = (response.data as any).organizations || [];
-        setChildOrgs(orgs);
+        
+        // Filter out the parent organization from the list (shouldn't be a child of itself)
+        const filtered = orgs.filter((org: ChildOrg) => org.id !== organizationId);
+        
+        setChildOrgs(filtered);
       }
     } catch (err) {
       console.error('Failed to fetch child organizations:', err);

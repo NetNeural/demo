@@ -157,7 +157,8 @@ export default createEdgeFunction(
       // If filtering by parent org, validate the requester has access
       if (parentOrgFilter) {
         if (!userContext.isSuperAdmin) {
-          // Must be owner/admin of the parent org
+          // Check if user is owner or admin of the parent org
+          // First check organization_members for explicit membership
           const { data: membership } = await supabaseAdmin
             .from('organization_members')
             .select('role')
@@ -165,7 +166,19 @@ export default createEdgeFunction(
             .eq('user_id', userContext.userId)
             .maybeSingle()
 
-          if (!membership || !['owner', 'admin'].includes(membership.role)) {
+          // Also check if user is the organization creator
+          const { data: org } = await supabaseAdmin
+            .from('organizations')
+            .select('created_by')
+            .eq('id', parentOrgFilter)
+            .maybeSingle()
+
+          // Also check if the parent org is the user's default organization
+          const isUserDefaultOrg = userContext.organizationId === parentOrgFilter
+          const isOrgCreator = org?.created_by === userContext.userId
+          const isMemberAdmin = membership && ['owner', 'admin'].includes(membership.role)
+
+          if (!isUserDefaultOrg && !isOrgCreator && !isMemberAdmin) {
             throw new DatabaseError('You must be an owner or admin of the parent organization to view child orgs', 403)
           }
         }
