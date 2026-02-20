@@ -173,12 +173,13 @@ export default createEdgeFunction(
             .eq('id', parentOrgFilter)
             .maybeSingle()
 
-          // Also check if the parent org is the user's default organization
+          // Check if the parent org is the user's default organization AND they're an owner/admin
           const isUserDefaultOrg = userContext.organizationId === parentOrgFilter
+          const isDefaultOrgAdmin = isUserDefaultOrg && ['owner', 'admin'].includes(userContext.role)
           const isOrgCreator = org?.created_by === userContext.userId
           const isMemberAdmin = membership && ['owner', 'admin'].includes(membership.role)
 
-          if (!isUserDefaultOrg && !isOrgCreator && !isMemberAdmin) {
+          if (!isDefaultOrgAdmin && !isOrgCreator && !isMemberAdmin) {
             throw new DatabaseError('You must be an owner or admin of the parent organization to view child orgs', 403)
           }
         }
