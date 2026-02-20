@@ -3,12 +3,13 @@
  * 
  * Displays device types in cards or table with inline actions.
  * Supports edit, delete, and visual range indicators.
+ * Includes sorting and filtering by Device Class and Unit.
  * 
- * @see Issue #118
+ * @see Issue #118, #168
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -48,6 +49,9 @@ import {
   Grid3x3,
   Table2,
   Ruler,
+  ChevronUp,
+  ChevronDown,
+  X,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
@@ -130,6 +134,9 @@ function RangeBar({ type }: { type: DeviceType }) {
 
 type ViewMode = 'cards' | 'table'
 
+type SortField = 'name' | 'device_class' | 'unit'
+type SortDirection = 'asc' | 'desc'
+
 export function DeviceTypesList() {
   const { currentOrganization } = useOrganization()
   const { data: deviceTypes, isLoading, error } = useDeviceTypesQuery(currentOrganization?.id)
@@ -141,12 +148,75 @@ export function DeviceTypesList() {
   const [deleteTarget, setDeleteTarget] = useState<DeviceType | null>(null)
   const [deleteDeviceCount, setDeleteDeviceCount] = useState<number | null>(null)
   const [checkingDevices, setCheckingDevices] = useState(false)
+  
+  // Sort and filter state
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [filterDeviceClass, setFilterDeviceClass] = useState<string | null>(null)
+  const [filterUnit, setFilterUnit] = useState<string | null>(null)
 
   // Debug logging
   console.log('[DeviceTypesList] Org ID:', currentOrganization?.id)
   console.log('[DeviceTypesList] Device types:', deviceTypes?.length ?? 0)
   console.log('[DeviceTypesList] Loading:', isLoading)
   console.log('[DeviceTypesList] Error:', error)
+
+  // Get unique device classes and units for filter dropdowns
+  const uniqueDeviceClasses = useMemo(() => {
+    if (!deviceTypes?.length) return []
+    const classes = new Set<string>()
+    deviceTypes.forEach(dt => {
+      if (dt.device_class) classes.add(dt.device_class)
+    })
+    return Array.from(classes).sort()
+  }, [deviceTypes])
+
+  const uniqueUnits = useMemo(() => {
+    if (!deviceTypes?.length) return []
+    const units = new Set<string>()
+    deviceTypes.forEach(dt => {
+      if (dt.unit) units.add(dt.unit)
+    })
+    return Array.from(units).sort()
+  }, [deviceTypes])
+
+  // Apply filters and sorting
+  const filteredAndSorted = useMemo(() => {
+    if (!deviceTypes?.length) return []
+
+    // Apply filters
+    let filtered = deviceTypes.filter(dt => {
+      if (filterDeviceClass && dt.device_class !== filterDeviceClass) return false
+      if (filterUnit && dt.unit !== filterUnit) return false
+      return true
+    })
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal: string | null = null
+      let bVal: string | null = null
+
+      if (sortField === 'name') {
+        aVal = a.name
+        bVal = b.name
+      } else if (sortField === 'device_class') {
+        aVal = a.device_class || ''
+        bVal = b.device_class || ''
+      } else if (sortField === 'unit') {
+        aVal = a.unit || ''
+        bVal = b.unit || ''
+      }
+
+      if (!aVal || !bVal) {
+        return (aVal ? 1 : -1) * (sortDirection === 'asc' ? 1 : -1)
+      }
+
+      const comparison = aVal.localeCompare(bVal)
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+
+    return filtered
+  }, [deviceTypes, filterDeviceClass, filterUnit, sortField, sortDirection])
 
   // When a delete target is set, check how many devices reference it
   useEffect(() => {
@@ -255,29 +325,185 @@ export function DeviceTypesList() {
 
   return (
     <>
-      {/* View Mode Toggle */}
-      <div className="flex items-center justify-end space-x-2 mb-4">
-        <Button
-          variant={viewMode === 'cards' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setViewMode('cards')}
-        >
-          <Grid3x3 className="h-4 w-4 mr-1" />
-          Cards
-        </Button>
-        <Button
-          variant={viewMode === 'table' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setViewMode('table')}
-        >
-          <Table2 className="h-4 w-4 mr-1" />
-          Table
-        </Button>
+      {/* View Mode Toggle + Sort/Filter Controls */}
+      <div className="space-y-4 mb-6">
+        <div className="flex items-center justify-between gap-4">
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <Table2 className="h-4 w-4 mr-1" />
+              Table
+            </Button>
+          </div>
+
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  {sortField === 'name' && 'Name'}
+                  {sortField === 'device_class' && 'Device Class'}
+                  {sortField === 'unit' && 'Unit'}
+                  {sortDirection === 'asc' ? (
+                    <ChevronUp className="h-4 w-4 ml-1" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                {(['name', 'device_class', 'unit'] as SortField[]).map(field => (
+                  <div key={field}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSortField(field)
+                        setSortDirection('asc')
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <span>
+                        {field === 'name' && 'Name'}
+                        {field === 'device_class' && 'Device Class'}
+                        {field === 'unit' && 'Unit'}
+                      </span>
+                      {sortField === field && sortDirection === 'asc' && (
+                        <ChevronUp className="h-3 w-3" />
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSortField(field)
+                        setSortDirection('desc')
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <span>
+                        {field === 'name' && 'Name'}
+                        {field === 'device_class' && 'Device Class'}
+                        {field === 'unit' && 'Unit'}
+                        {' (Z-A)'}
+                      </span>
+                      {sortField === field && sortDirection === 'desc' && (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                    </DropdownMenuItem>
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <span className="text-sm text-muted-foreground">Filters:</span>
+
+          {/* Device Class Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={filterDeviceClass ? 'default' : 'outline'}
+                size="sm"
+              >
+                Device Class
+                {filterDeviceClass && (
+                  <>
+                    :{' '}
+                    <span className="font-semibold">
+                      {getClassLabel(filterDeviceClass)}
+                    </span>
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={() => setFilterDeviceClass(null)}>
+                <span>All Device Classes</span>
+              </DropdownMenuItem>
+              {uniqueDeviceClasses.map(cls => (
+                <DropdownMenuItem
+                  key={cls}
+                  onClick={() => setFilterDeviceClass(cls)}
+                  className="flex items-center justify-between"
+                >
+                  <span>{getClassLabel(cls)}</span>
+                  {filterDeviceClass === cls && <span className="text-xs">✓</span>}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Unit Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={filterUnit ? 'default' : 'outline'}
+                size="sm"
+              >
+                Unit
+                {filterUnit && <span className="font-mono font-semibold ml-1">{filterUnit}</span>}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem onClick={() => setFilterUnit(null)}>
+                <span>All Units</span>
+              </DropdownMenuItem>
+              {uniqueUnits.map(unit => (
+                <DropdownMenuItem
+                  key={unit}
+                  onClick={() => setFilterUnit(unit)}
+                  className="flex items-center justify-between font-mono"
+                >
+                  <span>{unit}</span>
+                  {filterUnit === unit && <span className="text-xs">✓</span>}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Active filters badge */}
+          {(filterDeviceClass || filterUnit) && (
+            <div className="text-sm text-muted-foreground">
+              ({filteredAndSorted.length} of {deviceTypes.length})
+            </div>
+          )}
+        </div>
       </div>
 
-      {viewMode === 'cards' ? (
+      {/* No results state */}
+      {filteredAndSorted.length === 0 && (
+        <Card>
+          <CardContent className="p-12">
+            <div className="text-center space-y-3">
+              <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground" />
+              <h3 className="text-lg font-semibold">No device types found</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {filterDeviceClass || filterUnit
+                  ? 'Try adjusting your filters to see more results.'
+                  : 'Create your first device type to get started.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cards View */}
+      {filteredAndSorted.length > 0 && viewMode === 'cards' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {deviceTypes.map(dt => (
+        {filteredAndSorted.map(dt => (
           <Card key={dt.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               {/* Header with name and actions */}
@@ -374,7 +600,10 @@ export function DeviceTypesList() {
           </Card>
         ))}
       </div>
-      ) : (
+      )}
+
+      {/* Table View */}
+      {filteredAndSorted.length > 0 && viewMode === 'table' && (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -389,7 +618,7 @@ export function DeviceTypesList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {deviceTypes.map(dt => (
+                {filteredAndSorted.map(dt => (
                   <TableRow key={dt.id}>
                     <TableCell>
                       <div>
