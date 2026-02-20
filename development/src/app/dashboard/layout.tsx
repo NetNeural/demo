@@ -13,8 +13,9 @@ import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/Keyboard
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
-import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, Smartphone, Bell, BarChart3, Building2, Settings, FileText, Menu, X, MessageSquarePlus, LifeBuoy, SlidersHorizontal, Shield } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
+import { Badge } from '@/components/ui/badge'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
@@ -129,10 +130,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
         <main className="main-content">
-          {/* Top bar with Quick Actions */}
+          {/* Top bar with Super Admin badge and Quick Actions */}
           <div className="flex justify-between items-center sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
+              {user.role === 'super_admin' && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  <span className="hidden sm:inline">Super Admin</span>
+                </Badge>
+              )}
               <QuickActionsDropdown />
             </div>
           </div>
