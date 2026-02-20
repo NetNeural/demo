@@ -25,13 +25,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor, FlaskConical } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
 import { TemperatureToggle } from '@/components/ui/temperature-toggle'
 import { useExport } from '@/hooks/useExport'
 import { format } from 'date-fns'
+import { TestDeviceDialog } from './TestDeviceDialog'
+import { TestDeviceControls } from './TestDeviceControls'
 
 interface Device {
   id: string
@@ -50,6 +52,7 @@ interface Device {
   isExternallyManaged?: boolean
   externalDeviceId?: string | null
   integrationName?: string | null
+  is_test_device?: boolean
   // For display purposes
   type?: string
   location?: string
@@ -183,6 +186,9 @@ export function DevicesList() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  
+  // Test device states
+  const [testDeviceDialogOpen, setTestDeviceDialogOpen] = useState(false)
 
   const fetchDevices = useCallback(async (isManualRefresh = false) => {
     if (!currentOrganization) {
@@ -621,6 +627,14 @@ export function DevicesList() {
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <Button
+                variant="default"
+                size="sm"
+                onClick={() => setTestDeviceDialogOpen(true)}
+              >
+                <FlaskConical className="h-4 w-4 mr-2" />
+                Create Test Device
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRefresh}
@@ -772,6 +786,12 @@ export function DevicesList() {
                 <CardTitle className="text-lg">{device.name}</CardTitle>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{getStatusIcon(device.status)}</span>
+                  {device.is_test_device && (
+                    <Badge className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/30 gap-1">
+                      <FlaskConical className="h-3 w-3" />
+                      Active Test Sensor
+                    </Badge>
+                  )}
                   {device.isExternallyManaged && (
                     <span className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-1 rounded-full border border-blue-500/20">
                       {device.integrationName || 'External'}
@@ -888,6 +908,19 @@ export function DevicesList() {
                   )
                 })()}
               </div>
+              
+              {/* Test Device Controls - Only shown for test devices */}
+              {device.is_test_device && (
+                <div className="mt-3">
+                  <TestDeviceControls
+                    deviceId={device.id}
+                    deviceTypeId={device.device_type_id || null}
+                    currentStatus={device.status}
+                    onDataSent={() => fetchDevices(true)}
+                  />
+                </div>
+              )}
+              
               <div className="flex space-x-2 mt-4">
                 <Button 
                   variant="outline" 
@@ -922,6 +955,13 @@ export function DevicesList() {
         </Card>
       )}
 
+      {/* Test Device Creation Dialog */}
+      <TestDeviceDialog
+        open={testDeviceDialogOpen}
+        onOpenChange={setTestDeviceDialogOpen}
+        onSuccess={() => fetchDevices(true)}
+      />
+      
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
