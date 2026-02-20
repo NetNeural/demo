@@ -4,6 +4,23 @@
 
 Your insight was **100% correct** - we should utilize `integration_activity_log` instead of duplicating functionality!
 
+## 🔄 MQTT Integration Methods
+
+The platform supports **two complementary MQTT architectures**:
+
+### 1. **HTTP Push Model** (Stateless)
+- **Edge Function**: `mqtt-ingest`
+- **Purpose**: HTTP POST endpoint for devices to push data
+- **Best for**: HTTP-capable devices, serverless architecture
+- **Status**: ✅ Production ready
+
+### 2. **MQTT Subscribe Model** (Stateful)
+- **Service**: `services/mqtt-subscriber/` (Docker)
+- **Purpose**: Persistent MQTT subscriptions for inbound messages
+- **Best for**: MQTT-only devices, real-time topic monitoring
+- **Status**: ✅ Production ready (deployed February 2026)
+- **Features**: Multi-broker support, auto-reconnection, structured logging
+
 ## 🏗️ Final Architecture
 
 ### **Two-Table Strategy**

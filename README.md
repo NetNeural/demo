@@ -30,11 +30,12 @@ The NetNeural platform is built on a modern cloud-native microservices architect
 
 ### Technology Stack
 
-- **Backend**: Go microservices (31 services) - Cloud-native, high-performance
+- **Backend**: Go microservices (31 services) + Next.js 15 (Supabase-first) - Cloud-native, high-performance
 - **Frontend**: React 19 + TypeScript (7 applications) - Modern, responsive UI
 - **Mobile**: Native iOS (Swift), Android (Java) - Real-time alerts and monitoring
 - **Infrastructure**: Docker, Kubernetes, GitHub Actions - Production-ready DevOps
-- **Communication**: MQTT, WebSocket, REST APIs - Multi-protocol IoT connectivity
+- **Communication**: MQTT (persistent subscribers + Edge Functions), WebSocket, REST APIs - Multi-protocol IoT connectivity
+- **IoT Integration**: Dual MQTT architecture (HTTP push + persistent subscriptions) - Flexible device connectivity
 - **Databases**: PostgreSQL (primary), MySQL - Enterprise data management
 - **Security**: JWT authentication, role-based access, encryption - Enterprise security
 - **Monitoring**: Real-time dashboards, predictive analytics - Business intelligence
@@ -50,7 +51,40 @@ The NetNeural platform is built on a modern cloud-native microservices architect
 | **Overall Score** | **7.0/10** | **8.0/10** | **7.0/10** | **7.3/10** |
 
 *See [Complete Competitive Analysis](docs/generated/business/COMPETITIVE_ANALYSIS.md) for detailed comparison.*
+## 🌐 IoT Integration Capabilities
 
+### Dual MQTT Architecture
+
+NetNeural provides **flexible MQTT integration** with two complementary approaches:
+
+#### 1. HTTP Push Model (Stateless)
+- **Edge Function**: `mqtt-ingest` (Supabase Edge Function)
+- **Use Case**: Devices push data via HTTP POST
+- **Advantages**: Serverless, auto-scaling, no infrastructure maintenance
+- **Best For**: HTTP-capable devices, cloud-native architectures
+
+#### 2. MQTT Subscribe Model (Stateful)  
+- **Service**: Persistent MQTT Subscriber (Docker containerized)
+- **Location**: `development/services/mqtt-subscriber/`
+- **Use Case**: Subscribe to MQTT topics for inbound messages
+- **Features**:
+  - ✅ Multi-broker support (connect to multiple MQTT brokers simultaneously)
+  - ✅ Auto-reconnection with exponential backoff
+  - ✅ Structured logging with Pino
+  - ✅ Telemetry parsing (standard, VMark, custom formats)
+  - ✅ Real-time database storage
+  - ✅ Activity logging for all MQTT events
+- **Best For**: MQTT-only devices, persistent topic monitoring, real-time subscriptions
+- **Status**: Production-ready (February 2026)
+
+#### Integration Support
+- ✅ **Golioth IoT Platform** - Full integration via Edge Functions
+- ✅ **Generic MQTT Brokers** - Mosquitto, HiveMQ, AWS IoT Core, Azure IoT Hub
+- ✅ **AWS IoT** - Native connectivity
+- ✅ **Azure IoT Hub** - Native connectivity
+- ✅ **Custom Brokers** - Configurable MQTT v3.1.1 and v5.0 support
+
+**See** [MQTT Data Architecture](development/MQTT_DATA_ARCHITECTURE.md) for technical details.
 ## � Business Intelligence & Documentation
 
 ### 📈 Interactive Dashboards

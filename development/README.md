@@ -117,7 +117,14 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 ┌─────────────────────────────────────────────────────────────┐
 │                   External Integrations                    │
 │  • Golioth IoT Platform (via Edge Functions)               │
+│  • MQTT Brokers (Edge Functions + Persistent Subscriber)   │
 │  • Third-party APIs (via Edge Functions)                   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Optional Standalone Services                  │
+│  • MQTT Subscriber (Docker) - Persistent topic monitoring  │
+│    Running at: services/mqtt-subscriber/                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -225,6 +232,38 @@ supabase functions deploy my-function
 supabase functions logs my-function --follow
 ```
 
+### MQTT Subscriber Service (Optional)
+
+For persistent MQTT subscriptions:
+
+```bash
+# Navigate to service
+cd services/mqtt-subscriber
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your Supabase credentials
+
+# Start service
+./start.sh
+
+# Check status
+./status.sh
+
+# View logs
+./logs.sh
+
+# Stop service
+./stop.sh
+```
+
+**Use cases**:
+- Persistent MQTT topic subscriptions
+- Inbound device messages via MQTT protocol
+- Multi-broker monitoring
+
+**Note**: Not needed if using HTTP push model (mqtt-ingest Edge Function)
+
 ---
 
 ## 🔐 Environment Configuration
@@ -274,8 +313,17 @@ development/
 │   ├── functions/         # Edge Functions (Deno)
 │   │   ├── _shared/       # Shared utilities
 │   │   ├── device-sync/   # Golioth integration
+│   │   ├── mqtt-ingest/   # MQTT HTTP push endpoint
+│   │   ├── mqtt-hybrid/   # MQTT operations
+│   │   ├── integration-test/ # Integration testing
 │   │   └── notifications/ # Alert system
 │   └── config.toml        # Supabase configuration
+├── services/
+│   └── mqtt-subscriber/   # Persistent MQTT subscriber
+│       ├── src/           # TypeScript source code
+│       ├── Dockerfile     # Container definition
+│       ├── docker-compose.yml  # Deployment config
+│       └── *.sh           # Management scripts
 ├── package.json           # Latest dependencies
 ├── next.config.js         # Next.js 15 configuration
 └── tailwind.config.js     # Tailwind CSS setup
