@@ -65,6 +65,8 @@
     "setup:users": "node scripts/create-test-users.js",
     "setup:dev": "bash scripts/setup-dev-db.sh",
     "setup:fresh": "npm run clean && npm install && npm run supabase:reset && npm run supabase:types",
+    "seed:device-types": "node scripts/backfill-device-types-all-orgs.js",
+    "seed:device-types:staging": "SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co node scripts/backfill-device-types-all-orgs.js",
     "health": "bash scripts/health-check.sh",
     "check": "npm run type-check && npm run lint && npm run format:check && npm run test",
     "postinstall": "exit 0",
