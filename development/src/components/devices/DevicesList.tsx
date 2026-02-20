@@ -767,6 +767,7 @@ export function DevicesList() {
                 </Button>
               </div>
             </div>
+          </div>
         </CardContent>
       </Card>
       
