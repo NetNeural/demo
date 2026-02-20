@@ -13,23 +13,34 @@ import type {
 export interface AccessRequestsAPI {
   /** List access requests - sent by me or received by my org */
   list: (options?: {
-    view?: 'sent' | 'received' | 'all';
-    status?: string;
-    organizationId?: string;
+    view?: 'sent' | 'received' | 'all'
+    status?: string
+    organizationId?: string
   }) => Promise<EdgeFunctionResponse<{ requests: AccessRequest[] }>>
-  
+
   /** Create a new access request */
-  create: (data: CreateAccessRequestData) => Promise<EdgeFunctionResponse<{ request: AccessRequest; target_org_name: string }>>
-  
+  create: (
+    data: CreateAccessRequestData
+  ) => Promise<
+    EdgeFunctionResponse<{ request: AccessRequest; target_org_name: string }>
+  >
+
   /** Approve or deny a request */
-  respond: (data: ApproveAccessRequestData) => Promise<EdgeFunctionResponse<{ request_id: string; status: string }>>
-  
+  respond: (
+    data: ApproveAccessRequestData
+  ) => Promise<EdgeFunctionResponse<{ request_id: string; status: string }>>
+
   /** Cancel or revoke a request */
-  revoke: (requestId: string) => Promise<EdgeFunctionResponse<{ request_id: string; status: string }>>
+  revoke: (
+    requestId: string
+  ) => Promise<EdgeFunctionResponse<{ request_id: string; status: string }>>
 }
 
 export function createAccessRequestsAPI(
-  call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
 ): AccessRequestsAPI {
   return {
     list: (options = {}) =>
@@ -37,15 +48,20 @@ export function createAccessRequestsAPI(
         params: {
           view: options.view || 'sent',
           ...(options.status && { status: options.status }),
-          ...(options.organizationId && { organization_id: options.organizationId }),
+          ...(options.organizationId && {
+            organization_id: options.organizationId,
+          }),
         },
       }),
 
     create: (data) =>
-      call<{ request: AccessRequest; target_org_name: string }>('request-access', {
-        method: 'POST',
-        body: data,
-      }),
+      call<{ request: AccessRequest; target_org_name: string }>(
+        'request-access',
+        {
+          method: 'POST',
+          body: data,
+        }
+      ),
 
     respond: (data) =>
       call<{ request_id: string; status: string }>('request-access', {

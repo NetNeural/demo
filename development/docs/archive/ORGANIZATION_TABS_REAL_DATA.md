@@ -11,6 +11,7 @@ All organization page tabs now pull real data filtered by `organization_id`. Rem
 **File:** `src/app/dashboard/organizations/components/MembersTab.tsx`
 
 **Changes:**
+
 - ❌ **REMOVED:** Invite functionality (was "Send invitation" workflow)
 - ✅ **ADDED:** Direct "Add Member" functionality (add existing users by email)
 - ✅ **ADDED:** Real-time member list from API
@@ -21,6 +22,7 @@ All organization page tabs now pull real data filtered by `organization_id`. Rem
 - ✅ **ADDED:** Toast notifications for all actions
 
 **API Integration:**
+
 ```typescript
 // GET - List members
 GET /functions/v1/members?organization_id={id}
@@ -39,6 +41,7 @@ Body: { memberId: string }
 ```
 
 **Permissions Logic:**
+
 - Only admins and owners can add/edit/remove members
 - Only owners can add/edit other owners
 - Cannot change your own role
@@ -46,6 +49,7 @@ Body: { memberId: string }
 - Cannot modify owner roles unless you're an owner
 
 **UI Changes:**
+
 - Replaced "Invite New Member" with "Add Member" (no email sent, direct add)
 - Removed "Last Active" column (not tracked in API)
 - Role selector in table for quick role changes
@@ -59,6 +63,7 @@ Body: { memberId: string }
 **File:** `src/app/dashboard/organizations/components/OrganizationIntegrationsTab.tsx`
 
 **Changes:**
+
 - ❌ **REMOVED:** Hardcoded 3 integrations array:
   ```typescript
   // REMOVED:
@@ -66,7 +71,7 @@ Body: { memberId: string }
     { id: 'i1', name: 'Golioth Cloud', type: 'golioth', status: 'active' },
     { id: 'i2', name: 'Email Notifications', type: 'email', status: 'active' },
     { id: 'i3', name: 'Slack Alerts', type: 'slack', status: 'inactive' },
-  ];
+  ]
   ```
 - ✅ **ADDED:** Real API call to integrations edge function
 - ✅ **ADDED:** Organization filtering via `organization_id` parameter
@@ -75,6 +80,7 @@ Body: { memberId: string }
 - ✅ **ADDED:** Integration count in header
 
 **API Integration:**
+
 ```typescript
 // GET - List integrations for organization
 GET /functions/v1/integrations?organization_id={id}
@@ -98,6 +104,7 @@ Response: {
 **File:** `src/app/dashboard/organizations/components/OrganizationAlertsTab.tsx`
 
 **Changes:**
+
 - ❌ **REMOVED:** Hardcoded 3 alert rules array:
   ```typescript
   // REMOVED:
@@ -105,7 +112,7 @@ Response: {
     { id: 'a1', name: 'High Temperature', severity: 'critical', enabled: true },
     { id: 'a2', name: 'Low Battery', severity: 'medium', enabled: true },
     { id: 'a3', name: 'Device Offline', severity: 'high', enabled: false },
-  ];
+  ]
   ```
 - ✅ **ADDED:** Real API call to alerts edge function
 - ✅ **ADDED:** Organization filtering via `organization_id` parameter
@@ -116,6 +123,7 @@ Response: {
 - ✅ **CHANGED:** Displays actual alerts from devices with timestamps
 
 **API Integration:**
+
 ```typescript
 // GET - List recent alerts for organization
 GET /functions/v1/alerts?organization_id={id}
@@ -135,6 +143,7 @@ Response: {
 ```
 
 **UI Changes:**
+
 - Changed from "Alert Rules" to "Recent Alerts"
 - Shows up to 10 most recent alerts
 - Displays device name, message, and timestamp
@@ -148,12 +157,14 @@ Response: {
 **File:** `supabase/functions/members/index.ts` (NEW)
 
 **Functionality:**
+
 - **GET:** List all members in an organization
 - **POST:** Add a new member to organization
 - **PATCH:** Update a member's role
 - **DELETE:** Remove a member from organization
 
 **Features:**
+
 - ✅ Automatic permission validation
 - ✅ Role-based access control
 - ✅ Prevents self-modification
@@ -164,6 +175,7 @@ Response: {
 - ✅ Organization membership verification
 
 **Deployment:**
+
 ```bash
 cd c:/Development/NetNeural/SoftwareMono/development
 supabase functions deploy members
@@ -316,23 +328,27 @@ Follow testing checklist above.
 ## Expected Behavior
 
 ### Members Tab
+
 - **Admin/Owner users:** Can add, edit, remove members
 - **Member/Viewer users:** See "Permission Denied" message
 - **Owner users only:** Can manage other owner roles
 - **All users:** Cannot modify own role or remove self
 
 ### Integrations Tab
+
 - Shows real integrations filtered by organization
 - Empty state if no integrations
 - Integration count updates when switching orgs
 
 ### Alerts Tab
+
 - Shows recent alerts from organization's devices
 - Displays device name, message, timestamp, severity
 - Empty state if no alerts
 - Alert count updates when switching orgs
 
 ### All Tabs
+
 - Loading state while fetching data
 - Empty states with helpful messages
 - Consistent data across all organization pages
@@ -352,6 +368,7 @@ Follow testing checklist above.
 ## Database Schema Used
 
 ### organization_members Table
+
 ```sql
 - id: uuid (primary key)
 - organization_id: uuid (foreign key)
@@ -361,11 +378,12 @@ Follow testing checklist above.
 ```
 
 ### Relationships
+
 ```sql
 organization_members.user_id -> users.id
   - users.email
   - users.full_name
-  
+
 organization_members.organization_id -> organizations.id
 ```
 
@@ -373,14 +391,15 @@ organization_members.organization_id -> organizations.id
 
 ## Permission Matrix
 
-| Role    | View Members | Add Members | Edit Roles | Remove Members | Manage Owners |
-|---------|--------------|-------------|------------|----------------|---------------|
-| Viewer  | ✅           | ❌          | ❌         | ❌             | ❌            |
-| Member  | ✅           | ❌          | ❌         | ❌             | ❌            |
-| Admin   | ✅           | ✅          | ✅         | ✅             | ❌            |
-| Owner   | ✅           | ✅          | ✅         | ✅             | ✅            |
+| Role   | View Members | Add Members | Edit Roles | Remove Members | Manage Owners |
+| ------ | ------------ | ----------- | ---------- | -------------- | ------------- |
+| Viewer | ✅           | ❌          | ❌         | ❌             | ❌            |
+| Member | ✅           | ❌          | ❌         | ❌             | ❌            |
+| Admin  | ✅           | ✅          | ✅         | ✅             | ❌            |
+| Owner  | ✅           | ✅          | ✅         | ✅             | ✅            |
 
 **Special Rules:**
+
 - Cannot modify own role
 - Cannot remove self
 - Only owners can add/edit/remove other owners
@@ -407,11 +426,13 @@ organization_members.organization_id -> organizations.id
 ## Next Steps
 
 1. **Deploy members edge function:**
+
    ```bash
    supabase functions deploy members
    ```
 
 2. **Restart dev server:**
+
    ```bash
    npm run dev
    ```
@@ -432,27 +453,32 @@ organization_members.organization_id -> organizations.id
 ## Troubleshooting
 
 ### Members Tab Shows "Permission Denied"
+
 - Check your role in OrganizationContext
 - Only admins and owners can manage members
 - Viewer and member roles see the permission denied message
 
 ### Members Tab Shows "No members"
+
 - Check if organization has any members in database
 - Run: `SELECT * FROM organization_members WHERE organization_id = 'your-org-id'`
 - Add yourself as a test member using Supabase dashboard
 
 ### Integrations/Alerts Show Empty
+
 - This is expected if organization has no integrations/alerts
 - Empty state is working correctly
 - Add test data to verify filtering
 
 ### Edge Function Errors
+
 - Check console for specific error messages
 - Verify edge function is deployed: `supabase functions list`
 - Check Authorization header is being sent
 - Verify organization_id is in URL parameters
 
 ### Data Not Updating When Switching Orgs
+
 - Hard refresh (Ctrl+F5)
 - Check console for errors
 - Verify useEffect dependencies include organizationId

@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
@@ -28,7 +34,7 @@ export default function IntegrationsPage() {
   const router = useRouter()
   const { currentOrganization } = useOrganization()
   const { fmt } = useDateFormatter()
-  
+
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [conflictOpen, setConflictOpen] = useState(false)
@@ -39,12 +45,18 @@ export default function IntegrationsPage() {
 
     setLoading(true)
     try {
-      const response = await edgeFunctions.integrations.list(currentOrganization.id)
-      
+      const response = await edgeFunctions.integrations.list(
+        currentOrganization.id
+      )
+
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to load integrations'
+        )
       }
-      
+
       const allIntegrations = (response.data as any)?.integrations || []
       // Map all integrations
       const mappedIntegrations = allIntegrations.map((i: any) => ({
@@ -54,9 +66,9 @@ export default function IntegrationsPage() {
         status: i.status,
         created_at: i.createdAt || i.created_at,
         last_sync_at: i.lastSyncAt || i.last_sync_at,
-        last_sync_status: i.lastSyncStatus || i.last_sync_status
+        last_sync_status: i.lastSyncStatus || i.last_sync_status,
       }))
-      
+
       setIntegrations(mappedIntegrations)
     } catch (error) {
       console.error('Failed to load integrations:', error)
@@ -70,7 +82,9 @@ export default function IntegrationsPage() {
     if (!currentOrganization) return
 
     try {
-      const conflicts = await integrationSyncService.getPendingConflicts(currentOrganization.id)
+      const conflicts = await integrationSyncService.getPendingConflicts(
+        currentOrganization.id
+      )
       setPendingConflicts(conflicts.length)
     } catch (error) {
       console.error('Failed to load conflicts:', error)
@@ -86,7 +100,9 @@ export default function IntegrationsPage() {
 
   const handleEdit = (integration: Integration) => {
     if (!currentOrganization) return
-    router.push(`/dashboard/integrations/view?id=${integration.id}&organizationId=${currentOrganization.id}&type=${integration.integration_type}`)
+    router.push(
+      `/dashboard/integrations/view?id=${integration.id}&organizationId=${currentOrganization.id}&type=${integration.integration_type}`
+    )
   }
 
   const handleAdd = () => {
@@ -102,7 +118,11 @@ export default function IntegrationsPage() {
       const response = await edgeFunctions.integrations.delete(integrationId)
 
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to delete integration')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to delete integration'
+        )
       }
 
       toast.success('Integration deleted successfully')
@@ -115,12 +135,13 @@ export default function IntegrationsPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
-          <div className="text-center space-y-3">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
             <p className="text-muted-foreground">No organization selected</p>
             <p className="text-sm text-muted-foreground">
-              Please select an organization from the sidebar to manage integrations
+              Please select an organization from the sidebar to manage
+              integrations
             </p>
           </div>
         </div>
@@ -129,7 +150,7 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -139,14 +160,16 @@ export default function IntegrationsPage() {
             size="xl"
           />
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} Integrations</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {currentOrganization.name} Integrations
+            </h2>
             <p className="text-muted-foreground">
               Manage platform integrations for {currentOrganization.name}
             </p>
           </div>
         </div>
         <Button onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Integration
         </Button>
       </div>
@@ -171,7 +194,9 @@ export default function IntegrationsPage() {
               </Button>
             </div>
             <CardDescription className="text-amber-800 dark:text-amber-200">
-              {pendingConflicts} device conflict{pendingConflicts > 1 ? 's' : ''} need{pendingConflicts === 1 ? 's' : ''} resolution
+              {pendingConflicts} device conflict
+              {pendingConflicts > 1 ? 's' : ''} need
+              {pendingConflicts === 1 ? 's' : ''} resolution
             </CardDescription>
           </CardHeader>
         </Card>
@@ -188,10 +213,12 @@ export default function IntegrationsPage() {
         ) : integrations.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
-              <div className="text-center space-y-3">
-                <p className="text-muted-foreground">No integrations configured</p>
+              <div className="space-y-3 text-center">
+                <p className="text-muted-foreground">
+                  No integrations configured
+                </p>
                 <Button onClick={handleAdd} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add Your First Integration
                 </Button>
               </div>
@@ -205,8 +232,16 @@ export default function IntegrationsPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <CardTitle>{integration.name}</CardTitle>
-                      <Badge variant={integration.status === 'active' ? 'default' : 'secondary'}>
-                        {integration.status === 'active' ? 'Active' : integration.status || 'Inactive'}
+                      <Badge
+                        variant={
+                          integration.status === 'active'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {integration.status === 'active'
+                          ? 'Active'
+                          : integration.status || 'Inactive'}
                       </Badge>
                     </div>
                     <CardDescription>
@@ -215,7 +250,11 @@ export default function IntegrationsPage() {
                           Last synced: {fmt.dateTime(integration.last_sync_at)}
                           {integration.last_sync_status && (
                             <Badge
-                              variant={integration.last_sync_status === 'completed' ? 'default' : 'destructive'}
+                              variant={
+                                integration.last_sync_status === 'completed'
+                                  ? 'default'
+                                  : 'destructive'
+                              }
                               className="ml-2"
                             >
                               {integration.last_sync_status}
@@ -233,7 +272,7 @@ export default function IntegrationsPage() {
                       size="sm"
                       onClick={() => handleEdit(integration)}
                     >
-                      <Settings className="w-4 h-4 mr-2" />
+                      <Settings className="mr-2 h-4 w-4" />
                       Configure
                     </Button>
                     <Button
@@ -241,7 +280,7 @@ export default function IntegrationsPage() {
                       size="sm"
                       onClick={() => handleDelete(integration.id)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

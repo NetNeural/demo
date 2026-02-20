@@ -1,6 +1,6 @@
 /**
  * Test Suite for GitHub Issue #40 - MQTT Integration Not Saving
- * 
+ *
  * Tests:
  * - Frontend: MqttConfigDialog component validation and error handling
  * - Backend: Integrations Edge Function for MQTT operations
@@ -59,7 +59,6 @@ describe('Issue #40 - MQTT Integration Save', () => {
         })),
       })),
     }
-
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
 
     // Setup global fetch mock

@@ -1,9 +1,11 @@
 # Apply Storage Policies for Organization Branding
 
 ## Issue
+
 Logo uploads are failing with: "new row violates row-level security policy"
 
 ## Solution
+
 The storage policies need to be applied manually in the Supabase Dashboard.
 
 ## Steps to Apply
@@ -97,7 +99,7 @@ USING (
 
 - **SELECT**: Any authenticated user can view logos
 - **INSERT**: Only organization owners can upload new logos to their org folder
-- **UPDATE**: Only organization owners can update/replace logos in their org folder  
+- **UPDATE**: Only organization owners can update/replace logos in their org folder
 - **DELETE**: Only organization owners can delete logos from their org folder
 
 The folder structure is: `organization-assets/{organization-id}/{filename}`

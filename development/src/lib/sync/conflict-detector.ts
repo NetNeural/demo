@@ -1,28 +1,33 @@
 /**
  * Conflict Detector (Issue #87)
- * 
+ *
  * Detects and resolves conflicts between local and remote device data
  * using per-field merge strategies.
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client'
 
-export type MergeStrategy = 'prefer_local' | 'prefer_remote' | 'manual' | 'merge' | 'prompt';
+export type MergeStrategy =
+  | 'prefer_local'
+  | 'prefer_remote'
+  | 'manual'
+  | 'merge'
+  | 'prompt'
 
 export interface FieldConflict {
-  fieldName: string;
-  localValue: any;
-  remoteValue: any;
-  recommendedStrategy: MergeStrategy;
+  fieldName: string
+  localValue: any
+  remoteValue: any
+  recommendedStrategy: MergeStrategy
 }
 
 export interface ConflictResolution {
-  autoResolved: number;
-  manualReview: number;
+  autoResolved: number
+  manualReview: number
 }
 
 export class ConflictDetector {
-  private supabase = createClient();
+  private supabase = createClient()
 
   // Field-specific merge strategies
   private readonly fieldStrategies: Record<string, MergeStrategy> = {
@@ -31,7 +36,7 @@ export class ConflictDetector {
     description: 'prefer_local',
     tags: 'merge', // Array union
     notes: 'prefer_local',
-    
+
     // IoT platform authoritative fields (prefer remote)
     status: 'prefer_remote',
     battery_level: 'prefer_remote',
@@ -41,20 +46,20 @@ export class ConflictDetector {
     hardware_ids: 'prefer_remote',
     cohort_id: 'prefer_remote',
     golioth_status: 'prefer_remote',
-    
+
     // Metadata (manual review)
-    metadata: 'manual'
-  };
+    metadata: 'manual',
+  }
 
   /**
    * Detect conflicts between local and remote device data
    */
   detectConflicts(localDevice: any, remoteDevice: any): FieldConflict[] {
-    const conflicts: FieldConflict[] = [];
+    const conflicts: FieldConflict[] = []
 
     for (const field of Object.keys(this.fieldStrategies)) {
-      const localValue = localDevice[field];
-      const remoteValue = remoteDevice[field];
+      const localValue = localDevice[field]
+      const remoteValue = remoteDevice[field]
 
       // Only report conflicts if values differ
       if (this.valuesConflict(localValue, remoteValue)) {
@@ -62,12 +67,12 @@ export class ConflictDetector {
           fieldName: field,
           localValue,
           remoteValue,
-          recommendedStrategy: this.fieldStrategies[field] || 'prompt'
-        });
+          recommendedStrategy: this.fieldStrategies[field] || 'prompt',
+        })
       }
     }
 
-    return conflicts;
+    return conflicts
   }
 
   /**
@@ -77,40 +82,38 @@ export class ConflictDetector {
     deviceId: string,
     conflicts: FieldConflict[]
   ): Promise<ConflictResolution> {
-    let autoResolved = 0;
-    let manualReview = 0;
+    let autoResolved = 0
+    let manualReview = 0
 
     for (const conflict of conflicts) {
       if (conflict.recommendedStrategy === 'manual') {
         // Queue for manual review
-        await this.supabase
-          .from('sync_conflicts')
-          .insert({
-            device_id: deviceId,
-            field_name: conflict.fieldName,
-            local_value: conflict.localValue,
-            remote_value: conflict.remoteValue,
-            resolution_strategy: 'manual'
-          });
-        manualReview++;
+        await this.supabase.from('sync_conflicts').insert({
+          device_id: deviceId,
+          field_name: conflict.fieldName,
+          local_value: conflict.localValue,
+          remote_value: conflict.remoteValue,
+          resolution_strategy: 'manual',
+        })
+        manualReview++
       } else {
         // Auto-resolve based on strategy
         const resolvedValue = this.applyStrategy(
           conflict.localValue,
           conflict.remoteValue,
           conflict.recommendedStrategy
-        );
+        )
 
         await this.supabase
           .from('devices')
           .update({ [conflict.fieldName]: resolvedValue })
-          .eq('id', deviceId);
+          .eq('id', deviceId)
 
-        autoResolved++;
+        autoResolved++
       }
     }
 
-    return { autoResolved, manualReview };
+    return { autoResolved, manualReview }
   }
 
   /**
@@ -118,11 +121,11 @@ export class ConflictDetector {
    */
   private valuesConflict(localValue: any, remoteValue: any): boolean {
     // Handle null/undefined
-    if (localValue == null && remoteValue == null) return false;
-    if (localValue == null || remoteValue == null) return true;
+    if (localValue == null && remoteValue == null) return false
+    if (localValue == null || remoteValue == null) return true
 
     // Deep comparison for objects/arrays
-    return JSON.stringify(localValue) !== JSON.stringify(remoteValue);
+    return JSON.stringify(localValue) !== JSON.stringify(remoteValue)
   }
 
   /**
@@ -135,25 +138,25 @@ export class ConflictDetector {
   ): any {
     switch (strategy) {
       case 'prefer_local':
-        return localValue;
-      
+        return localValue
+
       case 'prefer_remote':
-        return remoteValue;
-      
+        return remoteValue
+
       case 'merge':
         // Array union (for tags, etc.)
         if (Array.isArray(localValue) && Array.isArray(remoteValue)) {
-          return [...new Set([...localValue, ...remoteValue])];
+          return [...new Set([...localValue, ...remoteValue])]
         }
         // Object merge
         if (typeof localValue === 'object' && typeof remoteValue === 'object') {
-          return { ...localValue, ...remoteValue };
+          return { ...localValue, ...remoteValue }
         }
         // Default to remote if can't merge
-        return remoteValue;
-      
+        return remoteValue
+
       default:
-        return remoteValue;
+        return remoteValue
     }
   }
 
@@ -166,10 +169,10 @@ export class ConflictDetector {
       .select('*')
       .eq('device_id', deviceId)
       .is('resolved_at', null)
-      .order('conflict_detected_at', { ascending: false });
+      .order('conflict_detected_at', { ascending: false })
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   }
 
   /**
@@ -187,25 +190,25 @@ export class ConflictDetector {
       .from('sync_conflicts')
       .select('*')
       .eq('id', conflictId)
-      .single();
+      .single()
 
-    if (!conflict) throw new Error('Conflict not found');
+    if (!conflict) throw new Error('Conflict not found')
 
     // Determine final value
-    let finalValue;
+    let finalValue
     if (resolution === 'use_local') {
-      finalValue = conflict.local_value;
+      finalValue = conflict.local_value
     } else if (resolution === 'use_remote') {
-      finalValue = conflict.remote_value;
+      finalValue = conflict.remote_value
     } else {
-      finalValue = customValue;
+      finalValue = customValue
     }
 
     // Apply resolution
     await this.supabase
       .from('devices')
       .update({ [conflict.field_name]: finalValue })
-      .eq('id', conflict.device_id);
+      .eq('id', conflict.device_id)
 
     // Mark as resolved
     await this.supabase
@@ -213,8 +216,8 @@ export class ConflictDetector {
       .update({
         resolved_at: new Date().toISOString(),
         resolved_by: userId,
-        resolution_notes: notes
+        resolution_notes: notes,
       })
-      .eq('id', conflictId);
+      .eq('id', conflictId)
   }
 }

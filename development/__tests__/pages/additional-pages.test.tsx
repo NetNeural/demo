@@ -34,7 +34,9 @@ jest.mock('@/contexts/UserContext', () => ({
     loading: false,
     refreshUser: jest.fn(),
   }),
-  UserProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  UserProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 jest.mock('@/contexts/OrganizationContext', () => ({
@@ -45,7 +47,9 @@ jest.mock('@/contexts/OrganizationContext', () => ({
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
   }),
-  OrganizationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 describe('Additional Pages', () => {

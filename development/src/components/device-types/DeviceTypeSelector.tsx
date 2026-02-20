@@ -1,9 +1,9 @@
 /**
  * Device Type Selector
- * 
+ *
  * Reusable dropdown for selecting a device type from the organization's
  * configured types. Shows name, unit, and normal range in the options.
- * 
+ *
  * @see Issue #119
  */
 'use client'
@@ -43,11 +43,13 @@ export function DeviceTypeSelector({
   className,
 }: DeviceTypeSelectorProps) {
   const { currentOrganization } = useOrganization()
-  const { data: deviceTypes, isLoading } = useDeviceTypesQuery(currentOrganization?.id)
+  const { data: deviceTypes, isLoading } = useDeviceTypesQuery(
+    currentOrganization?.id
+  )
 
   const typesMap = useMemo(() => {
     const map = new Map<string, DeviceType>()
-    deviceTypes?.forEach(dt => map.set(dt.id, dt))
+    deviceTypes?.forEach((dt) => map.set(dt.id, dt))
     return map
   }, [deviceTypes])
 
@@ -74,12 +76,15 @@ export function DeviceTypeSelector({
             <span className="text-muted-foreground">None (no device type)</span>
           </SelectItem>
         )}
-        {deviceTypes?.map(dt => (
+        {deviceTypes?.map((dt) => (
           <SelectItem key={dt.id} value={dt.id}>
             <span className="flex items-center gap-2">
               <span className="font-medium">{dt.name}</span>
               {dt.unit && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono">
+                <Badge
+                  variant="outline"
+                  className="px-1 py-0 font-mono text-[10px]"
+                >
                   {dt.unit}
                 </Badge>
               )}
@@ -90,10 +95,12 @@ export function DeviceTypeSelector({
           </SelectItem>
         ))}
         {!isLoading && (!deviceTypes || deviceTypes.length === 0) && (
-          <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
             No device types defined.
             <br />
-            <span className="text-xs">Create one in Device Types page first.</span>
+            <span className="text-xs">
+              Create one in Device Types page first.
+            </span>
           </div>
         )}
       </SelectContent>

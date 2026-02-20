@@ -5,30 +5,35 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 ## 🚀 Latest Technology Stack
 
 ### Core Framework
+
 - **Next.js 15.0.x** - React framework with Turbopack bundler
 - **React 18.3.x** - UI library with concurrent features
 - **TypeScript 5.6.x** - Type-safe JavaScript with enhanced inference
 - **Node.js 20.x LTS** - JavaScript runtime
 
 ### Backend & Database
+
 - **Supabase Latest** - Backend-as-a-Service with PostgreSQL 15
 - **Edge Functions** - Serverless functions with Deno 2.0 runtime
 - **Real-time Database** - Live data synchronization
 - **Row Level Security** - Database-level authorization
 
 ### Styling & UI
+
 - **Tailwind CSS 3.4.x** - Utility-first CSS framework
 - **Radix UI** - Headless component primitives
 - **Lucide React** - Beautiful icon library
 - **CSS Custom Properties** - Design token system
 
 ### Development Tools
+
 - **Turbopack** - Next.js 15 native bundler (faster than Webpack)
 - **ESLint 9.x** - Code linting with TypeScript integration
 - **Prettier 3.x** - Code formatting
 - **Husky** - Git hooks for quality gates
 
 ### Testing
+
 - **Playwright** - Modern E2E testing framework
 - **Jest 29.x** - Unit testing with React Testing Library
 - **MSW** - API mocking for tests
@@ -37,6 +42,7 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 ## 🛠️ Quick Start
 
 ### Prerequisites
+
 - **Node.js 20.x LTS**
 - **Docker Desktop** (for Supabase)
 - **Git**
@@ -44,27 +50,32 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 ### Setup
 
 1. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Environment setup**
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your Supabase credentials
    ```
 
 3. **Start Supabase locally**
+
    ```bash
    supabase start
    ```
 
 4. **Generate TypeScript types**
+
    ```bash
    supabase gen types typescript --local > src/types/supabase.ts
    ```
 
 5. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -76,12 +87,12 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 
 ### 🎯 Development URLs
 
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **Next.js App** | http://localhost:3000 | Main application |
-| **Supabase Studio** | http://localhost:54323 | Database management |
-| **Supabase API** | http://localhost:54321 | Backend API |
-| **Edge Functions** | http://localhost:54321/functions/v1 | Serverless functions |
+| Service             | URL                                 | Purpose              |
+| ------------------- | ----------------------------------- | -------------------- |
+| **Next.js App**     | http://localhost:3000               | Main application     |
+| **Supabase Studio** | http://localhost:54323              | Database management  |
+| **Supabase API**    | http://localhost:54321              | Backend API          |
+| **Edge Functions**  | http://localhost:54321/functions/v1 | Serverless functions |
 
 ---
 
@@ -122,17 +133,17 @@ A modern, full-stack IoT platform built with the latest web technologies and Sup
 
 ## 📦 Latest Technology Stack
 
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **Next.js** | 15.0.x | Frontend framework with Turbopack |
-| **React** | 18.3.x | UI library with concurrent features |
-| **TypeScript** | 5.6.x | Type-safe JavaScript |
-| **Supabase** | Latest | Complete backend platform |
-| **Tailwind CSS** | 3.4.x | Utility-first CSS framework |
-| **Radix UI** | Latest | Accessible component primitives |
-| **React Query** | 5.x | Server state management |
-| **React Hook Form** | 7.x | Form management |
-| **Zod** | 3.x | Schema validation |
+| Component           | Version | Purpose                             |
+| ------------------- | ------- | ----------------------------------- |
+| **Next.js**         | 15.0.x  | Frontend framework with Turbopack   |
+| **React**           | 18.3.x  | UI library with concurrent features |
+| **TypeScript**      | 5.6.x   | Type-safe JavaScript                |
+| **Supabase**        | Latest  | Complete backend platform           |
+| **Tailwind CSS**    | 3.4.x   | Utility-first CSS framework         |
+| **Radix UI**        | Latest  | Accessible component primitives     |
+| **React Query**     | 5.x     | Server state management             |
+| **React Hook Form** | 7.x     | Form management                     |
+| **Zod**             | 3.x     | Schema validation                   |
 
 ---
 
@@ -377,4 +388,5 @@ npm run clean && npm run setup:fresh
 ---
 
 **Need Help?** Check our [troubleshooting guide](./docs/troubleshooting.md) or create an issue.# Trigger deploy Mon 26 Jan 2026 05:18:51 PM UTC
+
 # Force deployment - NODE_ENV=production fix

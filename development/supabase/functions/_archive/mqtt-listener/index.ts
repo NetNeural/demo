@@ -12,12 +12,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  * 3. Logs events to integration_activity_log
  * 4. Stores telemetry to device_telemetry_history (time-series only)
  * 5. Generates alerts when needed
- * 
+ *
  * ARCHITECTURE:
  * - High-level events (device discovered, status change) → integration_activity_log
  * - Telemetry data (temperature, battery, etc.) → device_telemetry_history
  * - Metadata in activity_log links to telemetry via activity_log_id
- * 
+ *
  * This is a long-running edge function with persistent MQTT connections.
  */
 
@@ -95,20 +95,20 @@ function parseCustomPayload(
 ): ParsedMessage | null {
   try {
     const data = JSON.parse(payload)
-    
+
     // Extract fields using configured paths
     const deviceId = config?.device_id_path
       ? getNestedValue(data, config.device_id_path)
       : data.device || data.deviceId
-      
+
     const telemetry = config?.telemetry_path
       ? getNestedValue(data, config.telemetry_path)
       : data.data || data
-      
+
     const timestamp = config?.timestamp_path
       ? getNestedValue(data, config.timestamp_path)
       : data.timestamp
-    
+
     return {
       deviceId,
       telemetry,
@@ -137,7 +137,7 @@ async function handleMqttMessage(
 ) {
   // Parse message based on configured parser
   let parsed: ParsedMessage | null = null
-  
+
   switch (config.payload_parser) {
     case 'vmark':
       parsed = parseVMarkPayload(payload)
@@ -148,12 +148,12 @@ async function handleMqttMessage(
     default:
       parsed = parseStandardPayload(payload)
   }
-  
+
   if (!parsed || !parsed.deviceId) {
     console.error('Failed to parse MQTT message:', { topic, payload })
     return
   }
-  
+
   // Find or create device in database
   const { data: device, error: deviceError } = await supabase
     .from('devices')
@@ -161,16 +161,16 @@ async function handleMqttMessage(
     .eq('external_id', parsed.deviceId)
     .eq('organization_id', integration.organization_id)
     .single()
-  
+
   if (deviceError && deviceError.code !== 'PGRST116') {
     console.error('Device lookup failed:', deviceError)
     return
   }
-  
+
   let deviceId: string
   let previousStatus: string | undefined
   let isNewDevice = false
-  
+
   if (!device) {
     // Create new device (discovered via MQTT)
     const { data: newDevice, error: createError } = await supabase
@@ -189,16 +189,16 @@ async function handleMqttMessage(
       })
       .select()
       .single()
-    
+
     if (createError) {
       console.error('Device creation failed:', createError)
       return
     }
-    
+
     deviceId = newDevice.id
     previousStatus = undefined
     isNewDevice = true
-    
+
     // Log device discovery to activity log
     await supabase.from('integration_activity_log').insert({
       organization_id: integration.organization_id,
@@ -217,7 +217,7 @@ async function handleMqttMessage(
     deviceId = device.id
     previousStatus = device.status
   }
-  
+
   // 1. ALWAYS log message received to activity log (high-level event)
   const { data: activityLog, error: activityError } = await supabase
     .from('integration_activity_log')
@@ -232,47 +232,60 @@ async function handleMqttMessage(
         external_id: parsed.deviceId,
         topic,
         parser_type: config.payload_parser || 'standard',
-        has_telemetry: !!(parsed.telemetry && Object.keys(parsed.telemetry).length > 0),
+        has_telemetry: !!(
+          parsed.telemetry && Object.keys(parsed.telemetry).length > 0
+        ),
         telemetry_fields: parsed.telemetry ? Object.keys(parsed.telemetry) : [],
         message_timestamp: parsed.timestamp,
       },
     })
     .select()
     .single()
-    
+
   if (activityError) {
     console.error('Activity log insert failed:', activityError)
   }
-  
+
   // 2. Save telemetry if present (time-series table, link to activity log)
   if (parsed.telemetry && Object.keys(parsed.telemetry).length > 0) {
-    const { error: telemetryError } = await supabase.rpc('record_device_telemetry', {
-      p_device_id: deviceId,
-      p_organization_id: integration.organization_id,
-      p_telemetry: parsed.telemetry,
-      p_device_timestamp: parsed.timestamp ? new Date(parsed.timestamp).toISOString() : null,
-      p_activity_log_id: activityLog?.id || null,
-    })
-    
+    const { error: telemetryError } = await supabase.rpc(
+      'record_device_telemetry',
+      {
+        p_device_id: deviceId,
+        p_organization_id: integration.organization_id,
+        p_telemetry: parsed.telemetry,
+        p_device_timestamp: parsed.timestamp
+          ? new Date(parsed.timestamp).toISOString()
+          : null,
+        p_activity_log_id: activityLog?.id || null,
+      }
+    )
+
     if (telemetryError) {
       console.error('Telemetry insert failed:', telemetryError)
     }
-    
+
     // Check alert rules for telemetry thresholds
-    await checkTelemetryAlerts(deviceId, parsed.telemetry, integration.organization_id, supabase)
+    await checkTelemetryAlerts(
+      deviceId,
+      parsed.telemetry,
+      integration.organization_id,
+      supabase
+    )
   }
-  
+
   // 3. Handle status changes (log to activity log, NOT separate table)
   const isLwtTopic = topic.includes('/lwt') || topic.includes('/last-will')
-  const newStatus = isLwtTopic ? 'offline' : (parsed.status || 'online')
-  
+  const newStatus = isLwtTopic ? 'offline' : parsed.status || 'online'
+
   if (previousStatus !== newStatus) {
     // Log status change to activity log
     await supabase.from('integration_activity_log').insert({
       organization_id: integration.organization_id,
       integration_id: integration.id,
       direction: 'incoming',
-      activity_type: newStatus === 'online' ? 'mqtt_device_online' : 'mqtt_device_offline',
+      activity_type:
+        newStatus === 'online' ? 'mqtt_device_online' : 'mqtt_device_offline',
       status: 'success',
       metadata: {
         device_id: deviceId,
@@ -284,20 +297,24 @@ async function handleMqttMessage(
         connection_quality: extractConnectionQuality(parsed.telemetry),
       },
     })
-    
+
     // Update device status in devices table
     await supabase
       .from('devices')
-      .update({ 
+      .update({
         status: newStatus,
         last_seen: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', deviceId)
-    
+
     // Generate alert if device went offline
     if (newStatus === 'offline') {
-      await generateDeviceOfflineAlert(deviceId, integration.organization_id, supabase)
+      await generateDeviceOfflineAlert(
+        deviceId,
+        integration.organization_id,
+        supabase
+      )
     }
   }
 }
@@ -308,8 +325,10 @@ async function handleMqttMessage(
 
 function determineTelemetryType(telemetry: Record<string, unknown>): string {
   // Auto-detect telemetry type based on fields
-  if ('temperature' in telemetry || 'humidity' in telemetry) return 'environmental'
-  if ('lat' in telemetry || 'lon' in telemetry || 'latitude' in telemetry) return 'location'
+  if ('temperature' in telemetry || 'humidity' in telemetry)
+    return 'environmental'
+  if ('lat' in telemetry || 'lon' in telemetry || 'latitude' in telemetry)
+    return 'location'
   if ('battery' in telemetry || 'voltage' in telemetry) return 'power'
   if ('rssi' in telemetry || 'snr' in telemetry) return 'connectivity'
   return 'custom'
@@ -317,13 +336,13 @@ function determineTelemetryType(telemetry: Record<string, unknown>): string {
 
 function extractConnectionQuality(telemetry?: Record<string, unknown>): any {
   if (!telemetry) return null
-  
+
   const quality: any = {}
   if ('rssi' in telemetry) quality.rssi = telemetry.rssi
   if ('snr' in telemetry) quality.snr = telemetry.snr
   if ('RSSI' in telemetry) quality.rssi = telemetry.RSSI
   if ('SNR' in telemetry) quality.snr = telemetry.SNR
-  
+
   return Object.keys(quality).length > 0 ? quality : null
 }
 
@@ -340,12 +359,12 @@ async function checkTelemetryAlerts(
     .eq('organization_id', organizationId)
     .eq('enabled', true)
     .or(`device_id.eq.${deviceId},device_id.is.null`) // Device-specific or org-wide rules
-  
+
   if (!rules || rules.length === 0) return
-  
+
   for (const rule of rules) {
     const triggered = evaluateAlertRule(rule, telemetry)
-    
+
     if (triggered) {
       // Create alert
       await supabase.from('alerts').insert({
@@ -366,23 +385,33 @@ async function checkTelemetryAlerts(
   }
 }
 
-function evaluateAlertRule(rule: any, telemetry: Record<string, unknown>): boolean {
+function evaluateAlertRule(
+  rule: any,
+  telemetry: Record<string, unknown>
+): boolean {
   // Simple rule evaluation (extend as needed)
   try {
     const condition = rule.condition // e.g., "temperature > 30"
     const [field, operator, value] = condition.split(' ')
     const actualValue = telemetry[field]
-    
+
     if (actualValue === undefined) return false
-    
+
     switch (operator) {
-      case '>': return Number(actualValue) > Number(value)
-      case '<': return Number(actualValue) < Number(value)
-      case '>=': return Number(actualValue) >= Number(value)
-      case '<=': return Number(actualValue) <= Number(value)
-      case '==': return actualValue == value
-      case '!=': return actualValue != value
-      default: return false
+      case '>':
+        return Number(actualValue) > Number(value)
+      case '<':
+        return Number(actualValue) < Number(value)
+      case '>=':
+        return Number(actualValue) >= Number(value)
+      case '<=':
+        return Number(actualValue) <= Number(value)
+      case '==':
+        return actualValue == value
+      case '!=':
+        return actualValue != value
+      default:
+        return false
     }
   } catch {
     return false
@@ -417,17 +446,18 @@ async function generateDeviceOfflineAlert(
 
 serve(async (_req) => {
   return new Response(
-    JSON.stringify({ 
-      error: 'MQTT Listener requires persistent connections - not supported in edge functions',
+    JSON.stringify({
+      error:
+        'MQTT Listener requires persistent connections - not supported in edge functions',
       message: 'Use mqtt-broker function with webhook/polling instead',
-      status: 'disabled'
+      status: 'disabled',
     }),
-    { 
+    {
       status: 501,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     }
   )
-  
+
   /* DISABLED - Requires persistent connections
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

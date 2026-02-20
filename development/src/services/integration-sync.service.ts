@@ -109,7 +109,7 @@ export class IntegrationSyncService {
     resolvedValue?: Record<string, unknown>
   ): Promise<void> {
     const user = await this.supabase.auth.getUser()
-    
+
     const { error } = await this.supabase
       .from('device_conflicts')
       .update({
@@ -132,8 +132,13 @@ export class IntegrationSyncService {
       .single()
 
     if (conflict) {
-      const valueToApply = resolvedValue || (conflict.remote_value as Record<string, unknown>)
-      await this.applyConflictResolution(conflict.device_id, strategy, valueToApply)
+      const valueToApply =
+        resolvedValue || (conflict.remote_value as Record<string, unknown>)
+      await this.applyConflictResolution(
+        conflict.device_id,
+        strategy,
+        valueToApply
+      )
     }
   }
 
@@ -184,26 +189,37 @@ export class IntegrationSyncService {
   /**
    * Test integration connection
    */
-  async testConnection(integrationId: string, organizationId: string): Promise<boolean> {
+  async testConnection(
+    integrationId: string,
+    organizationId: string
+  ): Promise<boolean> {
     try {
-      console.log('[Integration Service] Starting test connection...', { integrationId, organizationId })
-      
+      console.log('[Integration Service] Starting test connection...', {
+        integrationId,
+        organizationId,
+      })
+
       // Trigger a test sync using SDK
       const response = await edgeFunctions.integrations.sync({
-        integrationId, 
+        integrationId,
         organizationId,
         operation: 'test',
-        deviceIds: []
+        deviceIds: [],
       })
 
       console.log('[Integration Service] Response received:', response)
 
       if (!response.success) {
         const errorMessage = response.error?.message || 'Connection test failed'
-        console.error('[Integration Service] Test failed:', errorMessage, 'Full response:', response)
+        console.error(
+          '[Integration Service] Test failed:',
+          errorMessage,
+          'Full response:',
+          response
+        )
         throw new Error(errorMessage)
       }
-      
+
       console.log('[Integration Service] Test connection successful')
       return true
     } catch (error) {

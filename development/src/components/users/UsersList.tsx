@@ -25,7 +25,7 @@ export function UsersList() {
       role: 'super_admin',
       status: 'active',
       lastLogin: '5 minutes ago',
-      department: 'IT Administration'
+      department: 'IT Administration',
     },
     {
       id: '2',
@@ -34,7 +34,7 @@ export function UsersList() {
       role: 'org_admin',
       status: 'active',
       lastLogin: '2 hours ago',
-      department: 'Operations'
+      department: 'Operations',
     },
     {
       id: '3',
@@ -43,7 +43,7 @@ export function UsersList() {
       role: 'user',
       status: 'active',
       lastLogin: '1 day ago',
-      department: 'Quality Control'
+      department: 'Quality Control',
     },
     {
       id: '4',
@@ -52,8 +52,8 @@ export function UsersList() {
       role: 'user',
       status: 'inactive',
       lastLogin: '1 week ago',
-      department: 'Maintenance'
-    }
+      department: 'Maintenance',
+    },
   ])
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -62,32 +62,48 @@ export function UsersList() {
 
   const getRoleIcon = (role: User['role']) => {
     switch (role) {
-      case 'super_admin': return '👑'
-      case 'org_admin': return '🔑'
-      case 'org_owner': return '🏢'
-      case 'user': return '👤'
-      case 'viewer': return '👁️'
-      default: return '❓'
+      case 'super_admin':
+        return '👑'
+      case 'org_admin':
+        return '🔑'
+      case 'org_owner':
+        return '🏢'
+      case 'user':
+        return '👤'
+      case 'viewer':
+        return '👁️'
+      default:
+        return '❓'
     }
   }
 
   const getStatusColor = (status: User['status']) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-100'
-      case 'inactive': return 'text-gray-600 bg-gray-100'
-      case 'pending': return 'text-yellow-600 bg-yellow-100'
-      default: return 'text-gray-400 bg-gray-50'
+      case 'active':
+        return 'text-green-600 bg-green-100'
+      case 'inactive':
+        return 'text-gray-600 bg-gray-100'
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-100'
+      default:
+        return 'text-gray-400 bg-gray-50'
     }
   }
 
   const getRoleColor = (role: User['role']) => {
     switch (role) {
-      case 'super_admin': return 'text-purple-600 bg-purple-100'
-      case 'org_admin': return 'text-blue-600 bg-blue-100'
-      case 'org_owner': return 'text-indigo-600 bg-indigo-100'
-      case 'user': return 'text-green-600 bg-green-100'
-      case 'viewer': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-400 bg-gray-50'
+      case 'super_admin':
+        return 'text-purple-600 bg-purple-100'
+      case 'org_admin':
+        return 'text-blue-600 bg-blue-100'
+      case 'org_owner':
+        return 'text-indigo-600 bg-indigo-100'
+      case 'user':
+        return 'text-green-600 bg-green-100'
+      case 'viewer':
+        return 'text-gray-600 bg-gray-100'
+      default:
+        return 'text-gray-400 bg-gray-50'
     }
   }
 
@@ -100,25 +116,36 @@ export function UsersList() {
         <CardContent>
           <div className="space-y-4">
             {users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+              <div
+                key={user.id}
+                className="flex items-center justify-between rounded-lg border p-4 hover:bg-gray-50"
+              >
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
                     <span className="text-lg">{getRoleIcon(user.role)}</span>
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{user.department}</p>
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {user.department}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <div className="flex space-x-2 mb-1">
-                      <span className={`text-xs px-2 py-1 rounded ${getRoleColor(user.role)}`}>
+                    <div className="mb-1 flex space-x-2">
+                      <span
+                        className={`rounded px-2 py-1 text-xs ${getRoleColor(user.role)}`}
+                      >
                         {user.role.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className={`text-xs px-2 py-1 rounded ${getStatusColor(user.status)}`}>
+                      <span
+                        className={`rounded px-2 py-1 text-xs ${getStatusColor(user.status)}`}
+                      >
                         {user.status.toUpperCase()}
                       </span>
                     </div>
@@ -126,10 +153,10 @@ export function UsersList() {
                       Last login: {user.lastLogin}
                     </p>
                   </div>
-                  
+
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         setSelectedUser(user)
@@ -138,8 +165,8 @@ export function UsersList() {
                     >
                       Edit
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => {
                         setSelectedUser(user)
@@ -153,9 +180,9 @@ export function UsersList() {
               </div>
             ))}
           </div>
-          
+
           {users.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground">
               <p>No users found</p>
               <Button className="mt-4">Invite Your First User</Button>
             </div>

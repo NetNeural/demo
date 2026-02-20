@@ -1,6 +1,6 @@
 /**
  * COMPREHENSIVE TEST SUITE: Alert System
- * 
+ *
  * Tests alert creation, triggering, notifications, rules, and lifecycle
  * Coverage: Alerts, Alert Rules, Notifications, Business Logic
  */
@@ -109,7 +109,7 @@ describe('Alert System - Complete Coverage', () => {
 
     test('should validate severity levels', async () => {
       const validSeverities = ['info', 'warning', 'critical']
-      
+
       for (const severity of validSeverities) {
         const mockFrom = mockSupabase.from as jest.Mock
         mockFrom.mockReturnValue({
@@ -153,7 +153,11 @@ describe('Alert System - Complete Coverage', () => {
 
       const result = await mockSupabase
         .from('alerts')
-        .insert({ device_id: 'device-123', alert_type: 'test', severity: 'info' })
+        .insert({
+          device_id: 'device-123',
+          alert_type: 'test',
+          severity: 'info',
+        })
         .select()
         .single()
 
@@ -242,7 +246,11 @@ describe('Alert System - Complete Coverage', () => {
         .select('*')
         .eq('severity', 'critical')
 
-      expect(result.data?.every((a: { severity: string }) => a.severity === 'critical')).toBe(true)
+      expect(
+        result.data?.every(
+          (a: { severity: string }) => a.severity === 'critical'
+        )
+      ).toBe(true)
     })
 
     test('should filter alerts by device', async () => {
@@ -286,7 +294,11 @@ describe('Alert System - Complete Coverage', () => {
         .from('alerts')
         .select('severity, count:id.count()')
 
-      expect(result.data?.find((r: { severity: string }) => r.severity === 'critical').count).toBe(5)
+      expect(
+        result.data?.find(
+          (r: { severity: string }) => r.severity === 'critical'
+        ).count
+      ).toBe(5)
     })
 
     test('should get recent alerts (last 24 hours)', async () => {
@@ -472,7 +484,8 @@ describe('Alert System - Complete Coverage', () => {
       }
 
       const lastSeenTime = new Date(device.last_seen).getTime()
-      const thresholdTime = Date.now() - rule.condition.duration_minutes * 60 * 1000
+      const thresholdTime =
+        Date.now() - rule.condition.duration_minutes * 60 * 1000
       const shouldAlert = lastSeenTime < thresholdTime
 
       expect(shouldAlert).toBe(true)
@@ -600,7 +613,8 @@ describe('Alert System - Complete Coverage', () => {
       }
 
       const alert = { severity: 'info' }
-      const shouldNotify = alert.severity !== 'info' || preferences.min_severity === 'info'
+      const shouldNotify =
+        alert.severity !== 'info' || preferences.min_severity === 'info'
 
       expect(shouldNotify).toBe(false) // info is below warning threshold
     })
@@ -673,7 +687,13 @@ describe('Alert System - Complete Coverage', () => {
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
               lte: jest.fn().mockResolvedValue({
-                data: [{ id: 'alert-123', severity: 'critical', created_at: oldAlert }],
+                data: [
+                  {
+                    id: 'alert-123',
+                    severity: 'critical',
+                    created_at: oldAlert,
+                  },
+                ],
                 error: null,
               }),
             }),
@@ -698,7 +718,7 @@ describe('Alert System - Complete Coverage', () => {
         { id: 'alert-3', device_id: 'device-789', alert_type: 'offline' },
       ]
 
-      type AlertType = typeof alerts[0]
+      type AlertType = (typeof alerts)[0]
       type GroupedAlerts = Record<string, AlertType[]>
 
       const grouped = alerts.reduce((acc: GroupedAlerts, alert) => {
@@ -715,7 +735,8 @@ describe('Alert System - Complete Coverage', () => {
     test('should calculate alert resolution time', async () => {
       const createdAt = new Date('2024-01-01T10:00:00Z')
       const resolvedAt = new Date('2024-01-01T10:15:00Z')
-      const resolutionTime = (resolvedAt.getTime() - createdAt.getTime()) / 1000 / 60
+      const resolutionTime =
+        (resolvedAt.getTime() - createdAt.getTime()) / 1000 / 60
 
       expect(resolutionTime).toBe(15) // 15 minutes
     })

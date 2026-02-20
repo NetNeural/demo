@@ -1,10 +1,14 @@
 /**
  * Tests for src/lib/telemetry-utils.ts
- * 
+ *
  * Testing telemetry data extraction from various formats
  */
 
-import { extractMetricValue, METRIC_TO_SENSOR_TYPE, METRIC_TO_SENSOR_NAMES } from '@/lib/telemetry-utils'
+import {
+  extractMetricValue,
+  METRIC_TO_SENSOR_TYPE,
+  METRIC_TO_SENSOR_NAMES,
+} from '@/lib/telemetry-utils'
 
 describe('extractMetricValue', () => {
   describe('Flat key format', () => {
@@ -142,7 +146,7 @@ describe('extractMetricValue', () => {
 
     test('extracts multiple metrics from env', () => {
       const telemetry = { env: { temp: 23.5, hum: 65.2, press: 1013.25 } }
-      
+
       expect(extractMetricValue(telemetry, 'temperature')).toBe(23.5)
       expect(extractMetricValue(telemetry, 'humidity')).toBe(65.2)
       expect(extractMetricValue(telemetry, 'pressure')).toBe(1013.25)
@@ -264,7 +268,7 @@ describe('extractMetricValue', () => {
         humidity: 65.2,
         battery: 85,
       }
-      
+
       expect(extractMetricValue(telemetry, 'temperature')).toBe(23.5)
       expect(extractMetricValue(telemetry, 'humidity')).toBe(65.2)
       expect(extractMetricValue(telemetry, 'battery')).toBe(85)
@@ -281,7 +285,7 @@ describe('extractMetricValue', () => {
           bat: 85,
         },
       }
-      
+
       expect(extractMetricValue(telemetry, 'temperature')).toBe(23.5)
       expect(extractMetricValue(telemetry, 'humidity')).toBe(65.2)
       expect(extractMetricValue(telemetry, 'pressure')).toBe(1013.25)

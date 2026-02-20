@@ -1,11 +1,11 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAnalyticsData } from './hooks/useAnalyticsData';
-import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAnalyticsData } from './hooks/useAnalyticsData'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import {
   AnalyticsHeader,
   SystemHealthCards,
@@ -14,45 +14,46 @@ import {
   TelemetryChartsSection,
   DevicePerformanceTable,
   AlertStatsCards,
-} from './components';
-import type { TimeRange } from './types/analytics.types';
+} from './components'
+import type { TimeRange } from './types/analytics.types'
 
 export default function AnalyticsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
-  const { data, loading, exportToCSV, currentOrganization } = useAnalyticsData(timeRange);
-  
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+  const { data, loading, exportToCSV, currentOrganization } =
+    useAnalyticsData(timeRange)
+
   // Initialize activeTab from URL parameter or default
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
-      return searchParams.get('tab') || 'devices';
+      return searchParams.get('tab') || 'devices'
     }
-    return 'devices';
-  });
+    return 'devices'
+  })
 
   // Update activeTab when URL parameter changes
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
+    const tabParam = searchParams.get('tab')
     if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+      setActiveTab(tabParam)
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams, activeTab])
 
   // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {
-    setActiveTab(newTab);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', newTab);
-    router.push(`?${params.toString()}`, { scroll: false });
-  };
+    setActiveTab(newTab)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', newTab)
+    router.push(`?${params.toString()}`, { scroll: false })
+  }
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
-          <div className="text-center space-y-3">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
             <p className="text-muted-foreground">No organization selected</p>
             <p className="text-sm text-muted-foreground">
               Please select an organization from the sidebar to view analytics
@@ -60,62 +61,70 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div className="flex items-center gap-3">
-            <OrganizationLogo
-              settings={currentOrganization?.settings}
-              name={currentOrganization?.name || 'NetNeural'}
-              size="xl"
-            />
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
-              <p className="text-muted-foreground">AI-powered insights, forecasting, and fleet health</p>
-            </div>
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {currentOrganization.name} AI Analytics
+            </h2>
+            <p className="text-muted-foreground">
+              AI-powered insights, forecasting, and fleet health
+            </p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-8 bg-gray-200 rounded w-1/2" />
+                  <div className="mb-2 h-4 w-3/4 rounded bg-gray-200" />
+                  <div className="h-8 w-1/2 rounded bg-gray-200" />
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (!data) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div className="flex items-center gap-3">
-            <OrganizationLogo
-              settings={currentOrganization?.settings}
-              name={currentOrganization?.name || 'NetNeural'}
-              size="xl"
-            />
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} AI Analytics</h2>
-              <p className="text-muted-foreground">AI-powered insights, forecasting, and fleet health</p>
-            </div>
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {currentOrganization.name} AI Analytics
+            </h2>
+            <p className="text-muted-foreground">
+              AI-powered insights, forecasting, and fleet health
+            </p>
+          </div>
         </div>
         <div className="text-center">
           <p className="text-red-500">Failed to load analytics data</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <AnalyticsHeader
         organizationName={currentOrganization.name}
         organizationSettings={currentOrganization.settings}
@@ -128,11 +137,21 @@ export default function AnalyticsPage() {
 
       <ProblematicDevicesCard devices={data.devicePerformance} />
 
-      <AIForecastingSection organizationId={currentOrganization.id} timeRange={timeRange} />
+      <AIForecastingSection
+        organizationId={currentOrganization.id}
+        timeRange={timeRange}
+      />
 
-      <TelemetryChartsSection organizationId={currentOrganization.id} timeRange={timeRange} />
+      <TelemetryChartsSection
+        organizationId={currentOrganization.id}
+        timeRange={timeRange}
+      />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="devices">Device Performance</TabsTrigger>
           <TabsTrigger value="alerts">Alert Analytics</TabsTrigger>
@@ -147,5 +166,5 @@ export default function AnalyticsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

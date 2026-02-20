@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -8,33 +8,39 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, Plus, Loader2, ScrollText, AlertTriangle } from 'lucide-react';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import type { SubscriptionTier } from '@/types/organization';
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Building2,
+  Plus,
+  Loader2,
+  ScrollText,
+  AlertTriangle,
+} from 'lucide-react'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import type { SubscriptionTier } from '@/types/organization'
 
 interface CreateOrganizationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
   /** If provided, the new org will be created as a child of this parent org */
-  parentOrganizationId?: string;
-  parentOrganizationName?: string;
+  parentOrganizationId?: string
+  parentOrganizationName?: string
   /** Whether the current user is a super_admin (can set reseller tier) */
-  isSuperAdmin?: boolean;
+  isSuperAdmin?: boolean
   /** Called after successful creation */
-  onCreated?: (org: { id: string; name: string; slug: string }) => void;
+  onCreated?: (org: { id: string; name: string; slug: string }) => void
 }
 
 const RESELLER_AGREEMENT_TEXT = `NetNeural Reseller Agreement (v1.0)
@@ -53,7 +59,7 @@ By accepting this agreement, your organization ("Reseller") agrees to the follow
 
 6. TERMINATION: Either party may terminate with 90 days written notice. Upon termination, Child Organizations will be migrated to direct NetNeural management.
 
-7. CONFIDENTIALITY: Reseller agrees to maintain confidentiality of customer data and platform credentials.`;
+7. CONFIDENTIALITY: Reseller agrees to maintain confidentiality of customer data and platform credentials.`
 
 export function CreateOrganizationDialog({
   open,
@@ -63,66 +69,72 @@ export function CreateOrganizationDialog({
   isSuperAdmin = false,
   onCreated,
 }: CreateOrganizationDialogProps) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('starter');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [description, setDescription] = useState('')
+  const [subscriptionTier, setSubscriptionTier] =
+    useState<SubscriptionTier>('starter')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Reseller agreement state (only for setting reseller tier)
-  const [showAgreement, setShowAgreement] = useState(false);
-  const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const [showAgreement, setShowAgreement] = useState(false)
+  const [agreementAccepted, setAgreementAccepted] = useState(false)
 
-  const isChildOrg = !!parentOrganizationId;
+  const isChildOrg = !!parentOrganizationId
 
   // Auto-generate slug from name
   const handleNameChange = useCallback((value: string) => {
-    setName(value);
+    setName(value)
     // Only auto-generate slug if user hasn't manually edited it
     const autoSlug = value
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .slice(0, 60);
-    setSlug(autoSlug);
-  }, []);
+      .slice(0, 60)
+    setSlug(autoSlug)
+  }, [])
 
   const handleTierChange = useCallback((tier: SubscriptionTier) => {
-    setSubscriptionTier(tier);
+    setSubscriptionTier(tier)
     // Show reseller agreement when selecting reseller/enterprise
     if (tier === 'reseller' || tier === 'enterprise') {
-      setShowAgreement(true);
-      setAgreementAccepted(false);
+      setShowAgreement(true)
+      setAgreementAccepted(false)
     } else {
-      setShowAgreement(false);
-      setAgreementAccepted(false);
+      setShowAgreement(false)
+      setAgreementAccepted(false)
     }
-  }, []);
+  }, [])
 
   const handleSubmit = async () => {
-    setError(null);
+    setError(null)
 
     if (!name.trim()) {
-      setError('Organization name is required');
-      return;
+      setError('Organization name is required')
+      return
     }
     if (!slug.trim()) {
-      setError('Organization slug is required');
-      return;
+      setError('Organization slug is required')
+      return
     }
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      setError('Slug can only contain lowercase letters, numbers, and hyphens');
-      return;
+      setError('Slug can only contain lowercase letters, numbers, and hyphens')
+      return
     }
     // Require agreement acceptance for reseller tier
-    if ((subscriptionTier === 'reseller' || subscriptionTier === 'enterprise') && !agreementAccepted) {
-      setError('You must accept the Reseller Agreement to create a reseller organization');
-      return;
+    if (
+      (subscriptionTier === 'reseller' || subscriptionTier === 'enterprise') &&
+      !agreementAccepted
+    ) {
+      setError(
+        'You must accept the Reseller Agreement to create a reseller organization'
+      )
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
       const response = await edgeFunctions.organizations.create({
         name: name.trim(),
@@ -130,62 +142,93 @@ export function CreateOrganizationDialog({
         description: description.trim() || undefined,
         subscriptionTier: isChildOrg ? 'starter' : subscriptionTier,
         parentOrganizationId: parentOrganizationId || undefined,
-      });
+      })
 
       if (!response.success) {
-        const errMsg = typeof response.error === 'string' 
-          ? response.error 
-          : (response.error as { message?: string })?.message || 'Failed to create organization';
-        setError(errMsg);
-        return;
+        const errMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : (response.error as { message?: string })?.message ||
+              'Failed to create organization'
+        setError(errMsg)
+        return
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const newOrg = (response.data as any)?.organization;
+      const newOrg = (response.data as any)?.organization
       if (onCreated && newOrg) {
-        onCreated({ id: newOrg.id, name: newOrg.name, slug: newOrg.slug });
+        onCreated({ id: newOrg.id, name: newOrg.name, slug: newOrg.slug })
       }
 
       // Reset form
-      setName('');
-      setSlug('');
-      setDescription('');
-      setSubscriptionTier('starter');
-      setShowAgreement(false);
-      setAgreementAccepted(false);
-      onOpenChange(false);
+      setName('')
+      setSlug('')
+      setDescription('')
+      setSubscriptionTier('starter')
+      setShowAgreement(false)
+      setAgreementAccepted(false)
+      onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      )
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
-  const availableTiers: { value: SubscriptionTier; label: string; description: string; adminOnly?: boolean }[] = [
-    { value: 'free', label: 'Free', description: 'Basic access, limited devices' },
-    { value: 'starter', label: 'Starter', description: 'Standard features, default tier' },
-    { value: 'professional', label: 'Professional', description: 'Advanced features, priority support' },
-    { value: 'reseller', label: 'Reseller', description: 'Can create & manage customer organizations', adminOnly: true },
-    { value: 'enterprise', label: 'Enterprise', description: 'Full platform access, custom terms', adminOnly: true },
-  ];
+  const availableTiers: {
+    value: SubscriptionTier
+    label: string
+    description: string
+    adminOnly?: boolean
+  }[] = [
+    {
+      value: 'free',
+      label: 'Free',
+      description: 'Basic access, limited devices',
+    },
+    {
+      value: 'starter',
+      label: 'Starter',
+      description: 'Standard features, default tier',
+    },
+    {
+      value: 'professional',
+      label: 'Professional',
+      description: 'Advanced features, priority support',
+    },
+    {
+      value: 'reseller',
+      label: 'Reseller',
+      description: 'Can create & manage customer organizations',
+      adminOnly: true,
+    },
+    {
+      value: 'enterprise',
+      label: 'Enterprise',
+      description: 'Full platform access, custom terms',
+      adminOnly: true,
+    },
+  ]
 
   const visibleTiers = isSuperAdmin
     ? availableTiers
-    : availableTiers.filter(t => !t.adminOnly);
+    : availableTiers.filter((t) => !t.adminOnly)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isChildOrg ? (
               <>
-                <Plus className="w-5 h-5" />
+                <Plus className="h-5 w-5" />
                 Create Customer Organization
               </>
             ) : (
               <>
-                <Building2 className="w-5 h-5" />
+                <Building2 className="h-5 w-5" />
                 Create Organization
               </>
             )}
@@ -216,7 +259,9 @@ export function CreateOrganizationDialog({
             <Input
               id="org-slug"
               value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+              onChange={(e) =>
+                setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+              }
               placeholder="e.g., acme-industries"
               disabled={isSubmitting}
             />
@@ -255,7 +300,9 @@ export function CreateOrganizationDialog({
                       <div className="flex items-center gap-2">
                         <span>{tier.label}</span>
                         {tier.adminOnly && (
-                          <Badge variant="outline" className="text-xs">Admin</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Admin
+                          </Badge>
                         )}
                       </div>
                     </SelectItem>
@@ -263,15 +310,18 @@ export function CreateOrganizationDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {availableTiers.find(t => t.value === subscriptionTier)?.description}
+                {
+                  availableTiers.find((t) => t.value === subscriptionTier)
+                    ?.description
+                }
               </p>
             </div>
           )}
 
           {/* Parent org badge for child orgs */}
           {isChildOrg && parentOrganizationName && (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Parent:</span>
               <Badge variant="secondary">{parentOrganizationName}</Badge>
             </div>
@@ -279,13 +329,15 @@ export function CreateOrganizationDialog({
 
           {/* Reseller Agreement */}
           {showAgreement && (
-            <div className="space-y-3 border rounded-lg p-4">
+            <div className="space-y-3 rounded-lg border p-4">
               <div className="flex items-center gap-2 text-amber-600">
-                <ScrollText className="w-5 h-5" />
-                <span className="font-semibold text-sm">Reseller Agreement Required</span>
+                <ScrollText className="h-5 w-5" />
+                <span className="text-sm font-semibold">
+                  Reseller Agreement Required
+                </span>
               </div>
-              
-              <div className="max-h-48 overflow-y-auto border rounded p-3 bg-muted/50 text-xs font-mono whitespace-pre-wrap">
+
+              <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded border bg-muted/50 p-3 font-mono text-xs">
                 {RESELLER_AGREEMENT_TEXT}
               </div>
 
@@ -293,11 +345,17 @@ export function CreateOrganizationDialog({
                 <Checkbox
                   id="agree"
                   checked={agreementAccepted}
-                  onCheckedChange={(checked) => setAgreementAccepted(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setAgreementAccepted(checked === true)
+                  }
                   disabled={isSubmitting}
                 />
-                <label htmlFor="agree" className="text-sm leading-tight cursor-pointer">
-                  I have read and accept the NetNeural Reseller Agreement on behalf of this organization
+                <label
+                  htmlFor="agree"
+                  className="cursor-pointer text-sm leading-tight"
+                >
+                  I have read and accept the NetNeural Reseller Agreement on
+                  behalf of this organization
                 </label>
               </div>
             </div>
@@ -305,29 +363,40 @@ export function CreateOrganizationDialog({
 
           {/* Error display */}
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               {error}
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !name.trim() || !slug.trim() || ((subscriptionTier === 'reseller' || subscriptionTier === 'enterprise') && !agreementAccepted)}
+            disabled={
+              isSubmitting ||
+              !name.trim() ||
+              !slug.trim() ||
+              ((subscriptionTier === 'reseller' ||
+                subscriptionTier === 'enterprise') &&
+                !agreementAccepted)
+            }
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating...
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 {isChildOrg ? 'Create Customer Org' : 'Create Organization'}
               </>
             )}
@@ -335,5 +404,5 @@ export function CreateOrganizationDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

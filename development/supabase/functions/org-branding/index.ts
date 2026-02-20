@@ -26,7 +26,10 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'GET') {
     return new Response(
       JSON.stringify({ error: 'Only GET method is supported' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
   }
 
@@ -37,7 +40,10 @@ Deno.serve(async (req: Request) => {
     if (!slug) {
       return new Response(
         JSON.stringify({ error: 'slug parameter is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -51,10 +57,10 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error || !org) {
-      return new Response(
-        JSON.stringify({ error: 'Organization not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Organization not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const settings = (org.settings || {}) as Record<string, unknown>
@@ -70,22 +76,19 @@ Deno.serve(async (req: Request) => {
       accentColor: branding.accent_color || null,
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: response }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
-        },
-      }
-    )
+    return new Response(JSON.stringify({ success: true, data: response }), {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+      },
+    })
   } catch (err) {
     console.error('org-branding error:', err)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 
 interface DeviceScopeStepProps {
@@ -20,7 +26,11 @@ interface Device {
   tags?: string[]
 }
 
-export function DeviceScopeStep({ organizationId, state, updateState }: DeviceScopeStepProps) {
+export function DeviceScopeStep({
+  organizationId,
+  state,
+  updateState,
+}: DeviceScopeStepProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -33,7 +43,11 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
       const response = await edgeFunctions.devices.list(organizationId)
       if (response.success && response.data) {
         // Handle both array and paginated response formats
-        const deviceList = (Array.isArray(response.data) ? response.data : response.data.devices || []) as Device[]
+        const deviceList = (
+          Array.isArray(response.data)
+            ? response.data
+            : response.data.devices || []
+        ) as Device[]
         setDevices(deviceList)
       }
     } catch (error) {
@@ -61,12 +75,8 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
   }
 
   // Extract unique groups and tags
-  const allGroups = Array.from(
-    new Set(devices.flatMap((d) => d.groups || []))
-  )
-  const allTags = Array.from(
-    new Set(devices.flatMap((d) => d.tags || []))
-  )
+  const allGroups = Array.from(new Set(devices.flatMap((d) => d.groups || [])))
+  const allTags = Array.from(new Set(devices.flatMap((d) => d.tags || [])))
 
   return (
     <div className="space-y-6">
@@ -76,14 +86,17 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
           value={state.deviceScope.type}
           onValueChange={(value) => updateScope(value)}
         >
-          <Card className={state.deviceScope.type === 'all' ? 'border-primary' : ''}>
+          <Card
+            className={state.deviceScope.type === 'all' ? 'border-primary' : ''}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start space-x-3">
                 <RadioGroupItem value="all" id="all" className="mt-1" />
                 <div>
                   <CardTitle>All Devices</CardTitle>
                   <CardDescription>
-                    Monitor all devices in your organization ({devices.length} devices)
+                    Monitor all devices in your organization ({devices.length}{' '}
+                    devices)
                   </CardDescription>
                 </div>
               </div>
@@ -91,13 +104,19 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
           </Card>
 
           {allGroups.length > 0 && (
-            <Card className={state.deviceScope.type === 'groups' ? 'border-primary' : ''}>
+            <Card
+              className={
+                state.deviceScope.type === 'groups' ? 'border-primary' : ''
+              }
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start space-x-3">
                   <RadioGroupItem value="groups" id="groups" className="mt-1" />
                   <div className="flex-1">
                     <CardTitle>Specific Groups</CardTitle>
-                    <CardDescription>Monitor devices in selected groups</CardDescription>
+                    <CardDescription>
+                      Monitor devices in selected groups
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -107,7 +126,9 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
                     <div key={group} className="flex items-center space-x-2">
                       <Checkbox
                         id={`group-${group}`}
-                        checked={(state.deviceScope.values || []).includes(group)}
+                        checked={(state.deviceScope.values || []).includes(
+                          group
+                        )}
                         onCheckedChange={(checked) => {
                           const current = state.deviceScope.values || []
                           const updated = checked
@@ -125,13 +146,19 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
           )}
 
           {allTags.length > 0 && (
-            <Card className={state.deviceScope.type === 'tags' ? 'border-primary' : ''}>
+            <Card
+              className={
+                state.deviceScope.type === 'tags' ? 'border-primary' : ''
+              }
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start space-x-3">
                   <RadioGroupItem value="tags" id="tags" className="mt-1" />
                   <div className="flex-1">
                     <CardTitle>Specific Tags</CardTitle>
-                    <CardDescription>Monitor devices with selected tags</CardDescription>
+                    <CardDescription>
+                      Monitor devices with selected tags
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -158,23 +185,35 @@ export function DeviceScopeStep({ organizationId, state, updateState }: DeviceSc
             </Card>
           )}
 
-          <Card className={state.deviceScope.type === 'specific' ? 'border-primary' : ''}>
+          <Card
+            className={
+              state.deviceScope.type === 'specific' ? 'border-primary' : ''
+            }
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start space-x-3">
-                <RadioGroupItem value="specific" id="specific" className="mt-1" />
+                <RadioGroupItem
+                  value="specific"
+                  id="specific"
+                  className="mt-1"
+                />
                 <div className="flex-1">
                   <CardTitle>Specific Devices</CardTitle>
-                  <CardDescription>Choose individual devices to monitor</CardDescription>
+                  <CardDescription>
+                    Choose individual devices to monitor
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             {state.deviceScope.type === 'specific' && (
-              <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+              <CardContent className="max-h-64 space-y-2 overflow-y-auto">
                 {devices.map((device) => (
                   <div key={device.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`device-${device.id}`}
-                      checked={(state.deviceScope.values || []).includes(device.id)}
+                      checked={(state.deviceScope.values || []).includes(
+                        device.id
+                      )}
                       onCheckedChange={() => toggleDevice(device.id)}
                     />
                     <Label htmlFor={`device-${device.id}`}>{device.name}</Label>

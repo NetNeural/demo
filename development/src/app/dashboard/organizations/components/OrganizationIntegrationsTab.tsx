@@ -1,12 +1,18 @@
-'use client';
+'use client'
 
-import IntegrationsTab from '@/app/dashboard/settings/components/IntegrationsTab';
+import IntegrationsTab from '@/app/dashboard/settings/components/IntegrationsTab'
 
 interface OrganizationIntegrationsTabProps {
-  organizationId: string;
+  organizationId: string
 }
 
-export function OrganizationIntegrationsTab({ organizationId }: OrganizationIntegrationsTabProps) {
-  return <IntegrationsTab initialOrganization={organizationId} hideOrganizationSelector={true} />;
+export function OrganizationIntegrationsTab({
+  organizationId,
+}: OrganizationIntegrationsTabProps) {
+  return (
+    <IntegrationsTab
+      initialOrganization={organizationId}
+      hideOrganizationSelector={true}
+    />
+  )
 }
-

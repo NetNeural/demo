@@ -1,13 +1,36 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AIReportSummary } from '@/components/reports/AIReportSummary'
 import { DataFreshness } from '@/components/ui/data-freshness'
@@ -16,14 +39,14 @@ import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { toast } from 'sonner'
 import { format, subDays, subHours } from 'date-fns'
-import { 
-  CalendarIcon, 
-  Download, 
-  Filter, 
-  Clock, 
+import {
+  CalendarIcon,
+  Download,
+  Filter,
+  Clock,
   AlertTriangle,
   CheckCircle2,
-  XCircle
+  XCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -53,7 +76,11 @@ interface AlertAcknowledgement {
   alert_id: string
   user_id: string
   user_email?: string
-  acknowledgement_type: 'acknowledged' | 'resolved' | 'dismissed' | 'false_positive'
+  acknowledgement_type:
+    | 'acknowledged'
+    | 'resolved'
+    | 'dismissed'
+    | 'false_positive'
   acknowledged_at: string
   notes?: string
 }
@@ -93,19 +120,23 @@ export function AlertHistoryReport() {
     unresolvedAlerts: 0,
     avgResponseTimeMinutes: 0,
     falsePositiveCount: 0,
-    falsePositiveRate: 0
+    falsePositiveRate: 0,
   })
 
   // Filters
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('7d')
-  const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 7))
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    subDays(new Date(), 7)
+  )
   const [endDate, setEndDate] = useState<Date | undefined>(new Date())
   const [severityFilter, setSeverityFilter] = useState<string>('all')
   const [deviceFilter, setDeviceFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // Device list for filter
-  const [devices, setDevices] = useState<Array<{ id: string; name: string }>>([])
+  const [devices, setDevices] = useState<Array<{ id: string; name: string }>>(
+    []
+  )
 
   // Fetch devices for filter dropdown
   const fetchDevices = useCallback(async () => {
@@ -143,16 +174,21 @@ export function AlertHistoryReport() {
 
     try {
       setLoading(true)
-      console.log('[AlertHistoryReport] Fetching alerts for org:', currentOrganization.id)
+      console.log(
+        '[AlertHistoryReport] Fetching alerts for org:',
+        currentOrganization.id
+      )
 
       const supabase = createClient()
-      
+
       // Log Supabase connection details
       const supabaseUrl = (supabase as any).supabaseUrl || 'unknown'
       console.log('[AlertHistoryReport] Supabase URL:', supabaseUrl)
       console.log('[AlertHistoryReport] Environment:', {
-        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'not set',
-        hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+        NEXT_PUBLIC_SUPABASE_URL:
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'not set',
+        hostname:
+          typeof window !== 'undefined' ? window.location.hostname : 'server',
       })
 
       // Build query - simplified without device join to avoid RLS issues
@@ -164,15 +200,22 @@ export function AlertHistoryReport() {
         .limit(1000)
 
       const { data: alertsData, error } = await query
-      
-      console.log('[AlertHistoryReport] Query result:', { data: alertsData, error, orgId: currentOrganization.id })
+
+      console.log('[AlertHistoryReport] Query result:', {
+        data: alertsData,
+        error,
+        orgId: currentOrganization.id,
+      })
 
       if (error) {
         console.error('[AlertHistoryReport] Database error:', error)
         throw new Error(`Failed to fetch alerts: ${error.message}`)
       }
 
-      console.log('[AlertHistoryReport] Fetched alerts:', alertsData?.length || 0)
+      console.log(
+        '[AlertHistoryReport] Fetched alerts:',
+        alertsData?.length || 0
+      )
 
       if (!alertsData || alertsData.length === 0) {
         console.warn('[AlertHistoryReport] No alerts found for organization')
@@ -187,7 +230,7 @@ export function AlertHistoryReport() {
           unresolvedAlerts: 0,
           avgResponseTimeMinutes: 0,
           falsePositiveCount: 0,
-          falsePositiveRate: 0
+          falsePositiveRate: 0,
         })
         setLoading(false)
         return
@@ -196,12 +239,15 @@ export function AlertHistoryReport() {
       // Fetch acknowledgements for all alerts
       // Note: This would need to be implemented in the edge function
       const acknowledgementsMap = new Map<string, AlertAcknowledgement>()
-      
+
       try {
         // For now, we'll calculate stats based on is_resolved flag
         // In a full implementation, you'd fetch from alert_acknowledgements table
       } catch (ackError) {
-        console.warn('[AlertHistoryReport] Could not fetch acknowledgements:', ackError)
+        console.warn(
+          '[AlertHistoryReport] Could not fetch acknowledgements:',
+          ackError
+        )
       }
 
       // Combine alerts with acknowledgements and calculate response times
@@ -217,7 +263,9 @@ export function AlertHistoryReport() {
           responseTimeMinutes = (acknowledgedTime - createdTime) / 1000 / 60
 
           // False positive: acknowledged within 5 minutes
-          isFalsePositive = responseTimeMinutes < 5 && ack.acknowledgement_type === 'false_positive'
+          isFalsePositive =
+            responseTimeMinutes < 5 &&
+            ack.acknowledgement_type === 'false_positive'
         }
 
         return {
@@ -235,7 +283,7 @@ export function AlertHistoryReport() {
           metadata: alert.metadata,
           acknowledgement: ack,
           responseTimeMinutes,
-          isFalsePositive
+          isFalsePositive,
         }
       })
 
@@ -244,7 +292,7 @@ export function AlertHistoryReport() {
 
       // Date range filter
       if (startDate && endDate) {
-        filteredAlerts = filteredAlerts.filter(alert => {
+        filteredAlerts = filteredAlerts.filter((alert) => {
           const alertDate = new Date(alert.created_at)
           return alertDate >= startDate && alertDate <= endDate
         })
@@ -252,38 +300,61 @@ export function AlertHistoryReport() {
 
       // Severity filter
       if (severityFilter !== 'all') {
-        filteredAlerts = filteredAlerts.filter(alert => alert.severity === severityFilter)
+        filteredAlerts = filteredAlerts.filter(
+          (alert) => alert.severity === severityFilter
+        )
       }
 
       // Device filter
       if (deviceFilter !== 'all') {
-        filteredAlerts = filteredAlerts.filter(alert => alert.device_id === deviceFilter)
+        filteredAlerts = filteredAlerts.filter(
+          (alert) => alert.device_id === deviceFilter
+        )
       }
 
       // Status filter
       if (statusFilter !== 'all') {
         if (statusFilter === 'resolved') {
-          filteredAlerts = filteredAlerts.filter(alert => alert.is_resolved)
+          filteredAlerts = filteredAlerts.filter((alert) => alert.is_resolved)
         } else if (statusFilter === 'unresolved') {
-          filteredAlerts = filteredAlerts.filter(alert => !alert.is_resolved)
+          filteredAlerts = filteredAlerts.filter((alert) => !alert.is_resolved)
         }
       }
 
       // Calculate statistics
       const totalAlerts = filteredAlerts.length
-      const criticalAlerts = filteredAlerts.filter(a => a.severity === 'critical').length
-      const highAlerts = filteredAlerts.filter(a => a.severity === 'high').length
-      const mediumAlerts = filteredAlerts.filter(a => a.severity === 'medium').length
-      const lowAlerts = filteredAlerts.filter(a => a.severity === 'low').length
-      const acknowledgedAlerts = filteredAlerts.filter(a => a.is_resolved).length
+      const criticalAlerts = filteredAlerts.filter(
+        (a) => a.severity === 'critical'
+      ).length
+      const highAlerts = filteredAlerts.filter(
+        (a) => a.severity === 'high'
+      ).length
+      const mediumAlerts = filteredAlerts.filter(
+        (a) => a.severity === 'medium'
+      ).length
+      const lowAlerts = filteredAlerts.filter(
+        (a) => a.severity === 'low'
+      ).length
+      const acknowledgedAlerts = filteredAlerts.filter(
+        (a) => a.is_resolved
+      ).length
       const unresolvedAlerts = totalAlerts - acknowledgedAlerts
-      const falsePositiveCount = filteredAlerts.filter(a => a.isFalsePositive).length
-      const falsePositiveRate = totalAlerts > 0 ? (falsePositiveCount / totalAlerts) * 100 : 0
+      const falsePositiveCount = filteredAlerts.filter(
+        (a) => a.isFalsePositive
+      ).length
+      const falsePositiveRate =
+        totalAlerts > 0 ? (falsePositiveCount / totalAlerts) * 100 : 0
 
-      const alertsWithResponseTime = filteredAlerts.filter(a => a.responseTimeMinutes !== undefined)
-      const avgResponseTimeMinutes = alertsWithResponseTime.length > 0
-        ? alertsWithResponseTime.reduce((sum, a) => sum + (a.responseTimeMinutes || 0), 0) / alertsWithResponseTime.length
-        : 0
+      const alertsWithResponseTime = filteredAlerts.filter(
+        (a) => a.responseTimeMinutes !== undefined
+      )
+      const avgResponseTimeMinutes =
+        alertsWithResponseTime.length > 0
+          ? alertsWithResponseTime.reduce(
+              (sum, a) => sum + (a.responseTimeMinutes || 0),
+              0
+            ) / alertsWithResponseTime.length
+          : 0
 
       setStats({
         totalAlerts,
@@ -295,7 +366,7 @@ export function AlertHistoryReport() {
         unresolvedAlerts,
         avgResponseTimeMinutes,
         falsePositiveCount,
-        falsePositiveRate
+        falsePositiveRate,
       })
 
       setAlerts(filteredAlerts)
@@ -306,7 +377,14 @@ export function AlertHistoryReport() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrganization, startDate, endDate, severityFilter, deviceFilter, statusFilter])
+  }, [
+    currentOrganization,
+    startDate,
+    endDate,
+    severityFilter,
+    deviceFilter,
+    statusFilter,
+  ])
 
   useEffect(() => {
     fetchDevices()
@@ -347,18 +425,32 @@ export function AlertHistoryReport() {
   // Export to CSV
   const handleExport = () => {
     const csv = [
-      ['Date', 'Alert Type', 'Severity', 'Device', 'Status', 'Response Time (min)', 'Acknowledged By', 'Title', 'Description'].join(','),
-      ...alerts.map(alert => [
-        format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm:ss'),
-        alert.alert_type,
-        alert.severity,
-        alert.device_name || 'N/A',
-        alert.is_resolved ? 'Resolved' : 'Unresolved',
-        alert.responseTimeMinutes ? alert.responseTimeMinutes.toFixed(2) : 'N/A',
-        alert.acknowledgement?.user_email || 'N/A',
-        `"${alert.title}"`,
-        `"${alert.message}"`
-      ].join(','))
+      [
+        'Date',
+        'Alert Type',
+        'Severity',
+        'Device',
+        'Status',
+        'Response Time (min)',
+        'Acknowledged By',
+        'Title',
+        'Description',
+      ].join(','),
+      ...alerts.map((alert) =>
+        [
+          format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm:ss'),
+          alert.alert_type,
+          alert.severity,
+          alert.device_name || 'N/A',
+          alert.is_resolved ? 'Resolved' : 'Unresolved',
+          alert.responseTimeMinutes
+            ? alert.responseTimeMinutes.toFixed(2)
+            : 'N/A',
+          alert.acknowledgement?.user_email || 'N/A',
+          `"${alert.title}"`,
+          `"${alert.message}"`,
+        ].join(',')
+      ),
     ].join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -373,11 +465,16 @@ export function AlertHistoryReport() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'destructive'
-      case 'high': return 'default'
-      case 'medium': return 'secondary'
-      case 'low': return 'outline'
-      default: return 'outline'
+      case 'critical':
+        return 'destructive'
+      case 'high':
+        return 'default'
+      case 'medium':
+        return 'secondary'
+      case 'low':
+        return 'outline'
+      default:
+        return 'outline'
     }
   }
 
@@ -404,13 +501,18 @@ export function AlertHistoryReport() {
             size="xl"
           />
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Alert History Report</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Alert History Report
+            </h2>
             <p className="text-muted-foreground">
               Analyze historical alert data and identify patterns
             </p>
           </div>
         </div>
-        <Button onClick={handleExport} disabled={loading || alerts.length === 0}>
+        <Button
+          onClick={handleExport}
+          disabled={loading || alerts.length === 0}
+        >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
@@ -421,19 +523,23 @@ export function AlertHistoryReport() {
         <AIReportSummary
           reportType="alert-history"
           reportData={{
-            dateRange: dateRangePreset === 'custom' && startDate && endDate
-              ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
-              : dateRangePreset === '24h' ? 'Last 24 hours'
-              : dateRangePreset === '7d' ? 'Last 7 days'
-              : dateRangePreset === '30d' ? 'Last 30 days'
-              : 'Today',
+            dateRange:
+              dateRangePreset === 'custom' && startDate && endDate
+                ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
+                : dateRangePreset === '24h'
+                  ? 'Last 24 hours'
+                  : dateRangePreset === '7d'
+                    ? 'Last 7 days'
+                    : dateRangePreset === '30d'
+                      ? 'Last 30 days'
+                      : 'Today',
             totalRecords: stats.totalAlerts,
             criticalCount: stats.criticalAlerts,
             metadata: {
               resolvedCount: stats.acknowledgedAlerts,
               avgResponseTime: stats.avgResponseTimeMinutes,
               falsePositiveRate: stats.falsePositiveRate,
-            }
+            },
           }}
           organizationId={currentOrganization.id}
         />
@@ -448,22 +554,30 @@ export function AlertHistoryReport() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalAlerts}</div>
-            <div className="text-xs text-muted-foreground space-y-1 mt-2">
+            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
               <div className="flex justify-between">
                 <span>Critical:</span>
-                <span className="font-semibold text-red-600">{stats.criticalAlerts}</span>
+                <span className="font-semibold text-red-600">
+                  {stats.criticalAlerts}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>High:</span>
-                <span className="font-semibold text-orange-600">{stats.highAlerts}</span>
+                <span className="font-semibold text-orange-600">
+                  {stats.highAlerts}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Medium:</span>
-                <span className="font-semibold text-yellow-600">{stats.mediumAlerts}</span>
+                <span className="font-semibold text-yellow-600">
+                  {stats.mediumAlerts}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Low:</span>
-                <span className="font-semibold text-blue-600">{stats.lowAlerts}</span>
+                <span className="font-semibold text-blue-600">
+                  {stats.lowAlerts}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -471,14 +585,16 @@ export function AlertHistoryReport() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Response Time
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {stats.avgResponseTimeMinutes.toFixed(1)} min
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="mt-2 text-xs text-muted-foreground">
               Time from alert to acknowledgement
             </p>
           </CardContent>
@@ -486,14 +602,22 @@ export function AlertHistoryReport() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolution Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Resolution Rate
+            </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.totalAlerts > 0 ? ((stats.acknowledgedAlerts / stats.totalAlerts) * 100).toFixed(1) : 0}%
+              {stats.totalAlerts > 0
+                ? (
+                    (stats.acknowledgedAlerts / stats.totalAlerts) *
+                    100
+                  ).toFixed(1)
+                : 0}
+              %
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="mt-2 text-xs text-muted-foreground">
               {stats.acknowledgedAlerts} of {stats.totalAlerts} resolved
             </p>
           </CardContent>
@@ -501,14 +625,16 @@ export function AlertHistoryReport() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">False Positive Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              False Positive Rate
+            </CardTitle>
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {stats.falsePositiveRate.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="mt-2 text-xs text-muted-foreground">
               {stats.falsePositiveCount} false positives identified
             </p>
           </CardContent>
@@ -528,7 +654,12 @@ export function AlertHistoryReport() {
             {/* Date Range Presets */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
-              <Select value={dateRangePreset} onValueChange={(value) => handleDateRangePreset(value as DateRangePreset)}>
+              <Select
+                value={dateRangePreset}
+                onValueChange={(value) =>
+                  handleDateRangePreset(value as DateRangePreset)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -557,7 +688,11 @@ export function AlertHistoryReport() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, 'PPP') : <span>Pick a date</span>}
+                        {startDate ? (
+                          format(startDate, 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -583,7 +718,11 @@ export function AlertHistoryReport() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, 'PPP') : <span>Pick a date</span>}
+                        {endDate ? (
+                          format(endDate, 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -625,7 +764,7 @@ export function AlertHistoryReport() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Devices</SelectItem>
-                  {devices.map(device => (
+                  {devices.map((device) => (
                     <SelectItem key={device.id} value={device.id}>
                       {device.name}
                     </SelectItem>
@@ -666,7 +805,7 @@ export function AlertHistoryReport() {
               <LoadingSpinner />
             </div>
           ) : alerts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground">
               No alerts found for the selected filters
             </div>
           ) : (
@@ -684,7 +823,7 @@ export function AlertHistoryReport() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {alerts.map(alert => (
+                  {alerts.map((alert) => (
                     <TableRow key={alert.id}>
                       <TableCell className="whitespace-nowrap">
                         <div className="text-sm">
@@ -702,17 +841,21 @@ export function AlertHistoryReport() {
                       <TableCell className="font-medium">
                         {alert.alert_type}
                       </TableCell>
-                      <TableCell>
-                        {alert.device_name || 'Unknown'}
-                      </TableCell>
+                      <TableCell>{alert.device_name || 'Unknown'}</TableCell>
                       <TableCell>
                         {alert.is_resolved ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="border-green-200 bg-green-50 text-green-700"
+                          >
                             <CheckCircle2 className="mr-1 h-3 w-3" />
                             Resolved
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                          <Badge
+                            variant="outline"
+                            className="border-yellow-200 bg-yellow-50 text-yellow-700"
+                          >
                             <AlertTriangle className="mr-1 h-3 w-3" />
                             Unresolved
                           </Badge>
@@ -725,11 +868,15 @@ export function AlertHistoryReport() {
                       </TableCell>
                       <TableCell className="text-sm">
                         {alert.responseTimeMinutes !== undefined ? (
-                          <span className={cn(
-                            alert.responseTimeMinutes < 5 ? 'text-green-600' :
-                            alert.responseTimeMinutes < 30 ? 'text-yellow-600' :
-                            'text-red-600'
-                          )}>
+                          <span
+                            className={cn(
+                              alert.responseTimeMinutes < 5
+                                ? 'text-green-600'
+                                : alert.responseTimeMinutes < 30
+                                  ? 'text-yellow-600'
+                                  : 'text-red-600'
+                            )}
+                          >
                             {alert.responseTimeMinutes.toFixed(1)} min
                           </span>
                         ) : (
@@ -738,11 +885,11 @@ export function AlertHistoryReport() {
                       </TableCell>
                       <TableCell className="max-w-md">
                         <div className="text-sm font-medium">{alert.title}</div>
-                        <div className="text-xs text-muted-foreground line-clamp-2">
+                        <div className="line-clamp-2 text-xs text-muted-foreground">
                           {alert.message}
                         </div>
                         {alert.acknowledgement && (
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="mt-1 text-xs text-muted-foreground">
                             Acknowledged by {alert.acknowledgement.user_email}
                           </div>
                         )}

@@ -153,7 +153,7 @@ describe('Utils Library - Real Source Code Tests', () => {
     })
 
     test('should handle special characters', () => {
-      const result = getInitials('O\'Brien Smith')
+      const result = getInitials("O'Brien Smith")
       expect(result).toBe('OS')
     })
 
@@ -310,13 +310,17 @@ describe('Utils Library - Real Source Code Tests', () => {
     })
 
     test('should calculate hours ago', () => {
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      const twoHoursAgo = new Date(
+        Date.now() - 2 * 60 * 60 * 1000
+      ).toISOString()
       const result = calculateUptime(twoHoursAgo)
       expect(result).toMatch(/2h/)
     })
 
     test('should calculate days ago', () => {
-      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      const threeDaysAgo = new Date(
+        Date.now() - 3 * 24 * 60 * 60 * 1000
+      ).toISOString()
       const result = calculateUptime(threeDaysAgo)
       expect(result).toMatch(/3d/)
     })
@@ -374,7 +378,7 @@ describe('Utils Library - Real Source Code Tests', () => {
     test('should get initials and validate email', () => {
       const email = 'john.doe@example.com'
       const name = 'John Doe'
-      
+
       expect(isValidEmail(email)).toBe(true)
       expect(getInitials(name)).toBe('JD')
     })
@@ -382,7 +386,7 @@ describe('Utils Library - Real Source Code Tests', () => {
     test('should handle device status and alert severity together', () => {
       const deviceStatus = getDeviceStatusColor('error')
       const alertSeverity = getAlertSeverityColor('critical')
-      
+
       expect(deviceStatus).toContain('red')
       expect(alertSeverity).toContain('red')
     })

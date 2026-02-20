@@ -1,19 +1,25 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import { useDateFormatter } from '@/hooks/useDateFormatter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect, useCallback } from 'react'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +27,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -29,8 +35,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Shield,
   Clock,
@@ -41,144 +47,149 @@ import {
   AlertTriangle,
   Loader2,
   Ban,
-} from 'lucide-react';
-import { useOrganization } from '@/contexts/OrganizationContext';
-import { useUser } from '@/contexts/UserContext';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import { useToast } from '@/hooks/use-toast';
+} from 'lucide-react'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useToast } from '@/hooks/use-toast'
 import type {
   AccessRequest,
   AccessRequestDuration,
   AccessRequestStatus,
-} from '@/types/access-request';
+} from '@/types/access-request'
 import {
   DURATION_OPTIONS,
   getStatusColor,
   formatDuration,
   getTimeRemaining,
   isRequestExpired,
-} from '@/types/access-request';
+} from '@/types/access-request'
 
 interface AccessRequestsTabProps {
-  organizationId: string;
+  organizationId: string
 }
 
 export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
-  const { fmt } = useDateFormatter();
-  const { currentOrganization, userOrganizations, isOwner, isAdmin } = useOrganization();
-  const { user } = useUser();
-  const { toast } = useToast();
+  const { fmt } = useDateFormatter()
+  const { currentOrganization, userOrganizations, isOwner, isAdmin } =
+    useOrganization()
+  const { user } = useUser()
+  const { toast } = useToast()
 
-  const [sentRequests, setSentRequests] = useState<AccessRequest[]>([]);
-  const [receivedRequests, setReceivedRequests] = useState<AccessRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'sent' | 'received'>('sent');
+  const [sentRequests, setSentRequests] = useState<AccessRequest[]>([])
+  const [receivedRequests, setReceivedRequests] = useState<AccessRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeView, setActiveView] = useState<'sent' | 'received'>('sent')
 
   // New request dialog
-  const [showNewRequest, setShowNewRequest] = useState(false);
-  const [targetOrgId, setTargetOrgId] = useState('');
-  const [reason, setReason] = useState('');
-  const [duration, setDuration] = useState<AccessRequestDuration>('4h');
-  const [submitting, setSubmitting] = useState(false);
+  const [showNewRequest, setShowNewRequest] = useState(false)
+  const [targetOrgId, setTargetOrgId] = useState('')
+  const [reason, setReason] = useState('')
+  const [duration, setDuration] = useState<AccessRequestDuration>('4h')
+  const [submitting, setSubmitting] = useState(false)
 
   // Approval dialog
-  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
-  const [denialReason, setDenialReason] = useState('');
-  const [approving, setApproving] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(
+    null
+  )
+  const [denialReason, setDenialReason] = useState('')
+  const [approving, setApproving] = useState(false)
 
   const fetchRequests = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const [sentRes, receivedRes] = await Promise.all([
         edgeFunctions.accessRequests.list({ view: 'sent' }),
         edgeFunctions.accessRequests.list({ view: 'received', organizationId }),
-      ]);
+      ])
 
       if (sentRes.success && sentRes.data) {
-        setSentRequests(sentRes.data.requests);
+        setSentRequests(sentRes.data.requests)
       }
       if (receivedRes.success && receivedRes.data) {
-        setReceivedRequests(receivedRes.data.requests);
+        setReceivedRequests(receivedRes.data.requests)
       }
     } catch (error) {
-      console.error('Error fetching access requests:', error);
+      console.error('Error fetching access requests:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [organizationId]);
+  }, [organizationId])
 
   useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+    fetchRequests()
+  }, [fetchRequests])
 
   // Available orgs to request access to (exclude current)
-  const targetOrgs = userOrganizations?.filter(o => o.id !== organizationId) || [];
+  const targetOrgs =
+    userOrganizations?.filter((o) => o.id !== organizationId) || []
 
   const handleCreateRequest = async () => {
     if (!targetOrgId || !reason || reason.length < 10) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a target organization and provide a reason (min 10 characters).',
+        description:
+          'Please select a target organization and provide a reason (min 10 characters).',
         variant: 'destructive',
-      });
-      return;
+      })
+      return
     }
 
-    setSubmitting(true);
+    setSubmitting(true)
     try {
       const res = await edgeFunctions.accessRequests.create({
         target_org_id: targetOrgId,
         reason,
         requested_duration: duration,
-      });
+      })
 
       if (res.success) {
         toast({
           title: 'Request Sent',
           description: `Access request sent to ${res.data?.target_org_name || 'target organization'}. Waiting for approval.`,
-        });
-        setShowNewRequest(false);
-        setTargetOrgId('');
-        setReason('');
-        setDuration('4h');
-        fetchRequests();
+        })
+        setShowNewRequest(false)
+        setTargetOrgId('')
+        setReason('')
+        setDuration('4h')
+        fetchRequests()
       } else {
         toast({
           title: 'Request Failed',
           description: res.error?.message || 'Failed to create access request',
           variant: 'destructive',
-        });
+        })
       }
     } catch (error) {
       toast({
         title: 'Error',
         description: 'An unexpected error occurred',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleApproveRequest = async (approve: boolean) => {
-    if (!selectedRequest) return;
+    if (!selectedRequest) return
     if (!approve && !denialReason) {
       toast({
         title: 'Required',
         description: 'Please provide a reason for denying the request.',
         variant: 'destructive',
-      });
-      return;
+      })
+      return
     }
 
-    setApproving(true);
+    setApproving(true)
     try {
       const res = await edgeFunctions.accessRequests.respond({
         request_id: selectedRequest.id,
         action: approve ? 'approve' : 'deny',
-        ...((!approve && denialReason) && { denial_reason: denialReason }),
-      });
+        ...(!approve && denialReason && { denial_reason: denialReason }),
+      })
 
       if (res.success) {
         toast({
@@ -186,84 +197,92 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
           description: approve
             ? 'Temporary access has been granted.'
             : 'The access request has been denied.',
-        });
-        setShowApprovalDialog(false);
-        setSelectedRequest(null);
-        setDenialReason('');
-        fetchRequests();
+        })
+        setShowApprovalDialog(false)
+        setSelectedRequest(null)
+        setDenialReason('')
+        fetchRequests()
       } else {
         toast({
           title: 'Error',
           description: res.error?.message || 'Failed to process request',
           variant: 'destructive',
-        });
+        })
       }
     } catch (error) {
       toast({
         title: 'Error',
         description: 'An unexpected error occurred',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setApproving(false);
+      setApproving(false)
     }
-  };
+  }
 
   const handleRevokeRequest = async (requestId: string) => {
     try {
-      const res = await edgeFunctions.accessRequests.revoke(requestId);
+      const res = await edgeFunctions.accessRequests.revoke(requestId)
       if (res.success) {
         toast({
           title: 'Request Cancelled',
           description: 'The access request has been cancelled.',
-        });
-        fetchRequests();
+        })
+        fetchRequests()
       } else {
         toast({
           title: 'Error',
           description: res.error?.message || 'Failed to cancel request',
           variant: 'destructive',
-        });
+        })
       }
     } catch (error) {
       toast({
         title: 'Error',
         description: 'An unexpected error occurred',
         variant: 'destructive',
-      });
+      })
     }
-  };
+  }
 
-  const pendingReceivedCount = receivedRequests.filter(r => r.status === 'pending').length;
+  const pendingReceivedCount = receivedRequests.filter(
+    (r) => r.status === 'pending'
+  ).length
 
-  const renderStatusBadge = (status: AccessRequestStatus, expiresAt?: string) => {
-    const expired = status === 'approved' && expiresAt && isRequestExpired({ status, expires_at: expiresAt } as AccessRequest);
-    const displayStatus = expired ? 'expired' : status;
+  const renderStatusBadge = (
+    status: AccessRequestStatus,
+    expiresAt?: string
+  ) => {
+    const expired =
+      status === 'approved' &&
+      expiresAt &&
+      isRequestExpired({ status, expires_at: expiresAt } as AccessRequest)
+    const displayStatus = expired ? 'expired' : status
     return (
       <Badge className={getStatusColor(displayStatus as AccessRequestStatus)}>
         {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
       </Badge>
-    );
-  };
+    )
+  }
 
   const renderTimeInfo = (request: AccessRequest) => {
     if (request.status === 'approved' && request.expires_at) {
-      const expired = isRequestExpired(request);
+      const expired = isRequestExpired(request)
       if (expired) {
-        return <span className="text-xs text-muted-foreground">Expired</span>;
+        return <span className="text-xs text-muted-foreground">Expired</span>
       }
       return (
-        <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+        <span className="text-xs font-medium text-green-600 dark:text-green-400">
           {getTimeRemaining(request.expires_at)}
         </span>
-      );
+      )
     }
     return (
       <span className="text-xs text-muted-foreground">
         {formatDuration(request.requested_duration)}
       </span>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -272,16 +291,17 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
+                <Shield className="h-5 w-5" />
                 Cross-Org Access Requests
               </CardTitle>
               <CardDescription>
-                Request temporary access to other organizations or manage incoming requests.
+                Request temporary access to other organizations or manage
+                incoming requests.
               </CardDescription>
             </div>
             {(isOwner || isAdmin) && (
               <Button onClick={() => setShowNewRequest(true)} className="gap-2">
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
                 Request Access
               </Button>
             )}
@@ -289,17 +309,20 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
         </CardHeader>
 
         <CardContent>
-          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'sent' | 'received')}>
+          <Tabs
+            value={activeView}
+            onValueChange={(v) => setActiveView(v as 'sent' | 'received')}
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="sent" className="gap-2">
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
                 Sent Requests
               </TabsTrigger>
-              <TabsTrigger value="received" className="gap-2 relative">
-                <Inbox className="w-4 h-4" />
+              <TabsTrigger value="received" className="relative gap-2">
+                <Inbox className="h-4 w-4" />
                 Incoming Requests
                 {pendingReceivedCount > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                     {pendingReceivedCount}
                   </span>
                 )}
@@ -310,13 +333,16 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <TabsContent value="sent">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : sentRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Send className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <div className="py-8 text-center text-muted-foreground">
+                  <Send className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>No access requests sent yet.</p>
-                  <p className="text-sm mt-1">Use &quot;Request Access&quot; to request temporary access to another organization.</p>
+                  <p className="mt-1 text-sm">
+                    Use &quot;Request Access&quot; to request temporary access
+                    to another organization.
+                  </p>
                 </div>
               ) : (
                 <Table>
@@ -336,11 +362,19 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                         <TableCell className="font-medium">
                           {request.target_org?.name || 'Unknown'}
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={request.reason}>
+                        <TableCell
+                          className="max-w-[200px] truncate"
+                          title={request.reason}
+                        >
                           {request.reason}
                         </TableCell>
                         <TableCell>{renderTimeInfo(request)}</TableCell>
-                        <TableCell>{renderStatusBadge(request.status, request.expires_at)}</TableCell>
+                        <TableCell>
+                          {renderStatusBadge(
+                            request.status,
+                            request.expires_at
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {fmt.dateOnly(request.created_at)}
                         </TableCell>
@@ -352,15 +386,19 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                               onClick={() => handleRevokeRequest(request.id)}
                               className="text-destructive"
                             >
-                              <Ban className="w-4 h-4 mr-1" />
+                              <Ban className="mr-1 h-4 w-4" />
                               Cancel
                             </Button>
                           )}
-                          {request.status === 'denied' && request.denial_reason && (
-                            <span className="text-xs text-muted-foreground" title={request.denial_reason}>
-                              Reason: {request.denial_reason}
-                            </span>
-                          )}
+                          {request.status === 'denied' &&
+                            request.denial_reason && (
+                              <span
+                                className="text-xs text-muted-foreground"
+                                title={request.denial_reason}
+                              >
+                                Reason: {request.denial_reason}
+                              </span>
+                            )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -373,11 +411,11 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <TabsContent value="received">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : receivedRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <div className="py-8 text-center text-muted-foreground">
+                  <Inbox className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>No incoming access requests.</p>
                 </div>
               ) : (
@@ -395,50 +433,74 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                   </TableHeader>
                   <TableBody>
                     {receivedRequests.map((request) => (
-                      <TableRow key={request.id} className={request.status === 'pending' ? 'bg-yellow-50/50 dark:bg-yellow-950/20' : ''}>
+                      <TableRow
+                        key={request.id}
+                        className={
+                          request.status === 'pending'
+                            ? 'bg-yellow-50/50 dark:bg-yellow-950/20'
+                            : ''
+                        }
+                      >
                         <TableCell className="font-medium">
                           <div>
-                            <div>{request.requester?.full_name || 'Unknown'}</div>
-                            <div className="text-xs text-muted-foreground">{request.requester?.email}</div>
+                            <div>
+                              {request.requester?.full_name || 'Unknown'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {request.requester?.email}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>{request.requester_org?.name || 'Unknown'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={request.reason}>
+                        <TableCell>
+                          {request.requester_org?.name || 'Unknown'}
+                        </TableCell>
+                        <TableCell
+                          className="max-w-[200px] truncate"
+                          title={request.reason}
+                        >
                           {request.reason}
                         </TableCell>
                         <TableCell>{renderTimeInfo(request)}</TableCell>
-                        <TableCell>{renderStatusBadge(request.status, request.expires_at)}</TableCell>
+                        <TableCell>
+                          {renderStatusBadge(
+                            request.status,
+                            request.expires_at
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {fmt.dateOnly(request.created_at)}
                         </TableCell>
                         <TableCell>
-                          {request.status === 'pending' && (isOwner || isAdmin) && (
-                            <div className="flex gap-1">
+                          {request.status === 'pending' &&
+                            (isOwner || isAdmin) && (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="gap-1"
+                                  onClick={() => {
+                                    setSelectedRequest(request)
+                                    setShowApprovalDialog(true)
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Review
+                                </Button>
+                              </div>
+                            )}
+                          {request.status === 'approved' &&
+                            !isRequestExpired(request) &&
+                            (isOwner || isAdmin) && (
                               <Button
                                 size="sm"
-                                variant="default"
+                                variant="destructive"
                                 className="gap-1"
-                                onClick={() => {
-                                  setSelectedRequest(request);
-                                  setShowApprovalDialog(true);
-                                }}
+                                onClick={() => handleRevokeRequest(request.id)}
                               >
-                                <CheckCircle2 className="w-3 h-3" />
-                                Review
+                                <Ban className="h-3 w-3" />
+                                Revoke
                               </Button>
-                            </div>
-                          )}
-                          {request.status === 'approved' && !isRequestExpired(request) && (isOwner || isAdmin) && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="gap-1"
-                              onClick={() => handleRevokeRequest(request.id)}
-                            >
-                              <Ban className="w-3 h-3" />
-                              Revoke
-                            </Button>
-                          )}
+                            )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -451,29 +513,37 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
       </Card>
 
       {/* Active Temporary Access Summary */}
-      {sentRequests.filter(r => r.status === 'approved' && !isRequestExpired(r)).length > 0 && (
+      {sentRequests.filter(
+        (r) => r.status === 'approved' && !isRequestExpired(r)
+      ).length > 0 && (
         <Card className="border-green-200 dark:border-green-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-              <Clock className="w-5 h-5" />
+              <Clock className="h-5 w-5" />
               Active Temporary Access
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {sentRequests
-                .filter(r => r.status === 'approved' && !isRequestExpired(r))
-                .map(request => (
-                  <div key={request.id} className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                .filter((r) => r.status === 'approved' && !isRequestExpired(r))
+                .map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between rounded-lg bg-green-50 p-3 dark:bg-green-950/30"
+                  >
                     <div>
-                      <span className="font-medium">{request.target_org?.name}</span>
-                      <span className="text-sm text-muted-foreground ml-2">
+                      <span className="font-medium">
+                        {request.target_org?.name}
+                      </span>
+                      <span className="ml-2 text-sm text-muted-foreground">
                         — {request.reason}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                        {request.expires_at && getTimeRemaining(request.expires_at)}
+                        {request.expires_at &&
+                          getTimeRemaining(request.expires_at)}
                       </span>
                     </div>
                   </div>
@@ -488,11 +558,12 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
+              <Shield className="h-5 w-5" />
               Request Cross-Org Access
             </DialogTitle>
             <DialogDescription>
-              Request temporary access to another organization. The org owner will be notified and can approve or deny.
+              Request temporary access to another organization. The org owner
+              will be notified and can approve or deny.
             </DialogDescription>
           </DialogHeader>
 
@@ -509,7 +580,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                       No other organizations available
                     </SelectItem>
                   ) : (
-                    targetOrgs.map(org => (
+                    targetOrgs.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         {org.name}
                       </SelectItem>
@@ -521,16 +592,21 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
 
             <div className="space-y-2">
               <Label>Access Duration</Label>
-              <Select value={duration} onValueChange={(v) => setDuration(v as AccessRequestDuration)}>
+              <Select
+                value={duration}
+                onValueChange={(v) => setDuration(v as AccessRequestDuration)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DURATION_OPTIONS.map(opt => (
+                  {DURATION_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       <div className="flex flex-col">
                         <span>{opt.label}</span>
-                        <span className="text-xs text-muted-foreground">{opt.description}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {opt.description}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -547,14 +623,16 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
-                This will be visible to the organization owner when reviewing your request.
+                This will be visible to the organization owner when reviewing
+                your request.
               </p>
             </div>
 
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30">
-              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 dark:bg-amber-950/30">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                Temporary access grants member-level permissions. All access is logged in the audit trail.
+                Temporary access grants member-level permissions. All access is
+                logged in the audit trail.
               </p>
             </div>
           </div>
@@ -563,11 +641,14 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <Button variant="outline" onClick={() => setShowNewRequest(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateRequest} disabled={submitting || !targetOrgId || reason.length < 10}>
+            <Button
+              onClick={handleCreateRequest}
+              disabled={submitting || !targetOrgId || reason.length < 10}
+            >
               {submitting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Send className="w-4 h-4 mr-2" />
+                <Send className="mr-2 h-4 w-4" />
               )}
               Send Request
             </Button>
@@ -576,13 +657,16 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
       </Dialog>
 
       {/* Approval/Denial Dialog */}
-      <Dialog open={showApprovalDialog} onOpenChange={(open) => {
-        setShowApprovalDialog(open);
-        if (!open) {
-          setSelectedRequest(null);
-          setDenialReason('');
-        }
-      }}>
+      <Dialog
+        open={showApprovalDialog}
+        onOpenChange={(open) => {
+          setShowApprovalDialog(open)
+          if (!open) {
+            setSelectedRequest(null)
+            setDenialReason('')
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>Review Access Request</DialogTitle>
@@ -593,28 +677,39 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
 
           {selectedRequest && (
             <div className="space-y-4 py-4">
-              <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+              <div className="space-y-2 rounded-lg bg-muted/50 p-3">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Requester</span>
-                  <span className="text-sm">{selectedRequest.requester?.full_name || selectedRequest.requester?.email}</span>
+                  <span className="text-sm">
+                    {selectedRequest.requester?.full_name ||
+                      selectedRequest.requester?.email}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">From</span>
-                  <span className="text-sm">{selectedRequest.requester_org?.name}</span>
+                  <span className="text-sm">
+                    {selectedRequest.requester_org?.name}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Duration</span>
-                  <span className="text-sm">{formatDuration(selectedRequest.requested_duration)}</span>
+                  <span className="text-sm">
+                    {formatDuration(selectedRequest.requested_duration)}
+                  </span>
                 </div>
               </div>
 
               <div className="space-y-1">
                 <Label className="text-sm font-medium">Reason</Label>
-                <p className="text-sm p-3 rounded-lg bg-muted/50">{selectedRequest.reason}</p>
+                <p className="rounded-lg bg-muted/50 p-3 text-sm">
+                  {selectedRequest.reason}
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm">Denial Reason (required if denying)</Label>
+                <Label className="text-sm">
+                  Denial Reason (required if denying)
+                </Label>
                 <Textarea
                   placeholder="Why is this request being denied..."
                   value={denialReason}
@@ -631,19 +726,27 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
               onClick={() => handleApproveRequest(false)}
               disabled={approving}
             >
-              {approving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+              {approving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="mr-2 h-4 w-4" />
+              )}
               Deny
             </Button>
             <Button
               onClick={() => handleApproveRequest(true)}
               disabled={approving}
             >
-              {approving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {approving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
               Approve Access
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

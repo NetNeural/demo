@@ -1,8 +1,18 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { useMemo } from 'react'
-import type { SensorTrendPoint, SensorThreshold, TimeRange } from '@/types/sensor-details'
+import type {
+  SensorTrendPoint,
+  SensorThreshold,
+  TimeRange,
+} from '@/types/sensor-details'
 
 interface SensorTrendGraphProps {
   data: SensorTrendPoint[]
@@ -23,7 +33,8 @@ export function SensorTrendGraph({
 
     // Sort by timestamp
     const sorted = [...data].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     )
 
     return sorted.map((point) => ({
@@ -47,10 +58,14 @@ export function SensorTrendGraph({
     let rangeMax = dataMax
 
     if (threshold) {
-      if (threshold.min_value !== null) rangeMin = Math.min(rangeMin, threshold.min_value)
-      if (threshold.max_value !== null) rangeMax = Math.max(rangeMax, threshold.max_value)
-      if (threshold.critical_min !== null) rangeMin = Math.min(rangeMin, threshold.critical_min)
-      if (threshold.critical_max !== null) rangeMax = Math.max(rangeMax, threshold.critical_max)
+      if (threshold.min_value !== null)
+        rangeMin = Math.min(rangeMin, threshold.min_value)
+      if (threshold.max_value !== null)
+        rangeMax = Math.max(rangeMax, threshold.max_value)
+      if (threshold.critical_min !== null)
+        rangeMin = Math.min(rangeMin, threshold.critical_min)
+      if (threshold.critical_max !== null)
+        rangeMax = Math.max(rangeMax, threshold.critical_max)
     }
 
     // Add 10% padding
@@ -65,7 +80,7 @@ export function SensorTrendGraph({
   const renderChart = () => {
     if (chartData.length === 0) {
       return (
-        <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+        <div className="flex h-[300px] items-center justify-center text-muted-foreground">
           No data available for selected time range
         </div>
       )
@@ -83,7 +98,8 @@ export function SensorTrendGraph({
     }
 
     const yScale = (value: number) => {
-      const normalized = (value - yAxisRange.min) / (yAxisRange.max - yAxisRange.min)
+      const normalized =
+        (value - yAxisRange.min) / (yAxisRange.max - yAxisRange.min)
       return height - padding.bottom - normalized * chartHeight
     }
 
@@ -214,7 +230,8 @@ export function SensorTrendGraph({
 
           {/* Y-axis labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-            const value = yAxisRange.min + ratio * (yAxisRange.max - yAxisRange.min)
+            const value =
+              yAxisRange.min + ratio * (yAxisRange.max - yAxisRange.min)
             const y = padding.top + (1 - ratio) * chartHeight
             return (
               <text
@@ -241,23 +258,25 @@ export function SensorTrendGraph({
           />
 
           {/* X-axis labels (show first, middle, last) */}
-          {[0, Math.floor(chartData.length / 2), chartData.length - 1].map((index) => {
-            if (index >= chartData.length) return null
-            const point = chartData[index]
-            if (!point) return null
-            return (
-              <text
-                key={index}
-                x={xScale(index)}
-                y={height - padding.bottom + 20}
-                textAnchor="middle"
-                fontSize="12"
-                fill="#6b7280"
-              >
-                {point.formattedTime}
-              </text>
-            )
-          })}
+          {[0, Math.floor(chartData.length / 2), chartData.length - 1].map(
+            (index) => {
+              if (index >= chartData.length) return null
+              const point = chartData[index]
+              if (!point) return null
+              return (
+                <text
+                  key={index}
+                  x={xScale(index)}
+                  y={height - padding.bottom + 20}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#6b7280"
+                >
+                  {point.formattedTime}
+                </text>
+              )
+            }
+          )}
         </svg>
       </div>
     )
@@ -283,7 +302,10 @@ function formatTimestamp(timestamp: string, timeRange: TimeRange): string {
   const date = new Date(timestamp)
 
   if (timeRange === '48h') {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   } else if (timeRange === '7d') {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   } else {
@@ -297,7 +319,7 @@ function getTimeRangeDescription(timeRange: TimeRange): string {
     '7d': 'Last 7 Days',
     '30d': 'Last 30 Days',
     '90d': 'Last 90 Days',
-    'custom': 'Custom Range',
+    custom: 'Custom Range',
   }
   return descriptions[timeRange] || 'Unknown Range'
 }

@@ -32,7 +32,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertTriangle, Edit, Bell, Mail, MessageSquare, Plus, Trash2, TestTube, Sparkles, Loader2, Info } from 'lucide-react'
+import {
+  AlertTriangle,
+  Edit,
+  Bell,
+  Mail,
+  MessageSquare,
+  Plus,
+  Trash2,
+  TestTube,
+  Sparkles,
+  Loader2,
+  Info,
+} from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { toast as sonnerToast } from 'sonner'
@@ -54,15 +66,21 @@ interface OrganizationMember {
   role: string
 }
 
-export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUnitChange }: AlertsThresholdsCardProps) {
+export function AlertsThresholdsCard({
+  device,
+  temperatureUnit,
+  onTemperatureUnitChange,
+}: AlertsThresholdsCardProps) {
   const { toast } = useToast()
   const [thresholds, setThresholds] = useState<SensorThreshold[]>([])
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [loading, setLoading] = useState(true)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedThreshold, setSelectedThreshold] = useState<SensorThreshold | null>(null)
-  const [thresholdToDelete, setThresholdToDelete] = useState<SensorThreshold | null>(null)
+  const [selectedThreshold, setSelectedThreshold] =
+    useState<SensorThreshold | null>(null)
+  const [thresholdToDelete, setThresholdToDelete] =
+    useState<SensorThreshold | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [testing, setTesting] = useState<string | null>(null)
@@ -70,7 +88,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
   // AI recommendation state
   const [aiEnabled, setAiEnabled] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null)
+  const [aiRecommendation, setAiRecommendation] =
+    useState<AIRecommendation | null>(null)
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -101,8 +120,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
   const fetchThresholds = async () => {
     try {
       setLoading(true)
-      const response = await edgeFunctions.thresholds.list(device.id) as any
-      
+      const response = (await edgeFunctions.thresholds.list(device.id)) as any
+
       if (response.success) {
         setThresholds(response.data.thresholds || [])
       } else {
@@ -122,12 +141,14 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         console.warn('No organization_id on device:', device)
         return
       }
-      
+
       console.log('Fetching members for organization:', device.organization_id)
-      const response = await edgeFunctions.members.list(device.organization_id) as any
-      
+      const response = (await edgeFunctions.members.list(
+        device.organization_id
+      )) as any
+
       console.log('Members API response:', response)
-      
+
       if (response.success && response.data?.members) {
         console.log('Setting members:', response.data.members)
         setMembers(response.data.members)
@@ -152,7 +173,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       alert_message: threshold.alert_message || '',
       temperature_unit: (threshold as any).temperature_unit || temperatureUnit,
       notify_on_breach: threshold.notify_on_breach,
-      notification_cooldown_minutes: threshold.notification_cooldown_minutes || 15,
+      notification_cooldown_minutes:
+        threshold.notification_cooldown_minutes || 15,
       notification_channels: threshold.notification_channels || [],
       notify_user_ids: threshold.notify_user_ids || [],
       notify_emails: threshold.notify_emails || [],
@@ -202,7 +224,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     const sensorType = formData.sensor_type || selectedThreshold?.sensor_type
     if (!sensorType) {
       sonnerToast.error('Select a sensor type first', {
-        description: 'AI recommendations require a sensor type to analyze the correct telemetry data.',
+        description:
+          'AI recommendations require a sensor type to analyze the correct telemetry data.',
       })
       setAiEnabled(false)
       return
@@ -210,11 +233,11 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
     setAiLoading(true)
     try {
-      const response = await edgeFunctions.thresholds.recommend(
+      const response = (await edgeFunctions.thresholds.recommend(
         device.id,
         sensorType,
-        formData.temperature_unit,
-      ) as any
+        formData.temperature_unit
+      )) as any
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to get AI recommendations')
@@ -225,7 +248,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
       if (rec.available && rec.recommended) {
         // Auto-fill form with recommended values
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           min_value: rec.recommended!.min_value.toString(),
           max_value: rec.recommended!.max_value.toString(),
@@ -243,7 +266,10 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     } catch (error) {
       console.error('AI recommendation error:', error)
       sonnerToast.error('AI recommendation failed', {
-        description: error instanceof Error ? error.message : 'Could not analyze telemetry data',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not analyze telemetry data',
       })
       setAiEnabled(false)
     } finally {
@@ -255,7 +281,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     console.log('🔵 [THRESHOLD SAVE] handleSave called')
     console.log('🔵 [THRESHOLD SAVE] Form data:', formData)
     console.log('🔵 [THRESHOLD SAVE] Selected threshold:', selectedThreshold)
-    
+
     try {
       setSaving(true)
       console.log('🔵 [THRESHOLD SAVE] Saving state set to true')
@@ -263,8 +289,12 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       // Validate threshold hierarchy: critical_min ≤ min_value ≤ max_value ≤ critical_max
       const minVal = formData.min_value ? parseFloat(formData.min_value) : null
       const maxVal = formData.max_value ? parseFloat(formData.max_value) : null
-      const critMin = formData.critical_min ? parseFloat(formData.critical_min) : null
-      const critMax = formData.critical_max ? parseFloat(formData.critical_max) : null
+      const critMin = formData.critical_min
+        ? parseFloat(formData.critical_min)
+        : null
+      const critMax = formData.critical_max
+        ? parseFloat(formData.critical_max)
+        : null
 
       if (minVal != null && maxVal != null && minVal >= maxVal) {
         sonnerToast.error('Invalid thresholds', {
@@ -276,7 +306,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
       if (critMin != null && minVal != null && critMin > minVal) {
         sonnerToast.error('Invalid thresholds', {
-          description: 'Critical Minimum must be less than or equal to Warning Minimum. Critical min represents the extreme low boundary below which the situation is critical.',
+          description:
+            'Critical Minimum must be less than or equal to Warning Minimum. Critical min represents the extreme low boundary below which the situation is critical.',
         })
         setSaving(false)
         return
@@ -284,7 +315,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
       if (critMax != null && maxVal != null && critMax < maxVal) {
         sonnerToast.error('Invalid thresholds', {
-          description: 'Critical Maximum must be greater than or equal to Warning Maximum. Critical max represents the extreme high boundary above which the situation is critical.',
+          description:
+            'Critical Maximum must be greater than or equal to Warning Maximum. Critical max represents the extreme high boundary above which the situation is critical.',
         })
         setSaving(false)
         return
@@ -301,22 +333,26 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       // Parse manual emails from comma-separated string
       const manualEmails = formData.manualEmails
         .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0)
 
       // Parse manual phone numbers from comma-separated string
       const manualPhones = formData.manualPhones
         .split(',')
-        .map(phone => phone.trim())
-        .filter(phone => phone.length > 0)
+        .map((phone) => phone.trim())
+        .filter((phone) => phone.length > 0)
 
       const payload = {
         device_id: device.id,
         sensor_type: formData.sensor_type,
         min_value: formData.min_value ? parseFloat(formData.min_value) : null,
         max_value: formData.max_value ? parseFloat(formData.max_value) : null,
-        critical_min: formData.critical_min ? parseFloat(formData.critical_min) : null,
-        critical_max: formData.critical_max ? parseFloat(formData.critical_max) : null,
+        critical_min: formData.critical_min
+          ? parseFloat(formData.critical_min)
+          : null,
+        critical_max: formData.critical_max
+          ? parseFloat(formData.critical_max)
+          : null,
         temperature_unit: formData.temperature_unit,
         alert_enabled: formData.alert_enabled,
         alert_severity: formData.alert_severity,
@@ -349,13 +385,18 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         console.log('✅ [THRESHOLD SAVE] Thresholds refreshed')
       } else {
         console.error('❌ [THRESHOLD SAVE] Save failed:', response.error)
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to save threshold')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to save threshold'
+        )
       }
     } catch (error) {
       console.error('❌ [THRESHOLD SAVE] Exception caught:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save threshold',
+        description:
+          error instanceof Error ? error.message : 'Failed to save threshold',
         variant: 'destructive',
       })
     } finally {
@@ -371,7 +412,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
   const handleTestAlert = async (threshold: SensorThreshold) => {
     console.log('[TEST ALERT] Button clicked for threshold:', threshold.id)
-    
+
     try {
       setTesting(threshold.id)
       console.log('[TEST ALERT] Creating test alert...')
@@ -379,23 +420,24 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       // Get sensor type name mapping
       const sensorNames: Record<string, string> = {
         '1': 'Temperature',
-        'temperature': 'Temperature',
+        temperature: 'Temperature',
         '2': 'Humidity',
-        'humidity': 'Humidity',
+        humidity: 'Humidity',
         '3': 'Pressure',
-        'pressure': 'Pressure',
+        pressure: 'Pressure',
         '4': 'Battery',
-        'battery': 'Battery',
+        battery: 'Battery',
       }
 
-      const sensorName = sensorNames[threshold.sensor_type] || threshold.sensor_type
-      
+      const sensorName =
+        sensorNames[threshold.sensor_type] || threshold.sensor_type
+
       // Map to valid category
       const categoryMap: Record<string, string> = {
-        'temperature': 'temperature',
-        'humidity': 'temperature',
-        'pressure': 'temperature',
-        'battery': 'battery',
+        temperature: 'temperature',
+        humidity: 'temperature',
+        pressure: 'temperature',
+        battery: 'battery',
       }
       const category = categoryMap[sensorName.toLowerCase()] || 'system'
 
@@ -416,17 +458,28 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
           max_value: threshold.max_value,
           critical_min: threshold.critical_min,
           critical_max: threshold.critical_max,
-        }
+        },
       }
 
-      console.log('[TEST ALERT] Inserting alert data via edge function:', alertData)
+      console.log(
+        '[TEST ALERT] Inserting alert data via edge function:',
+        alertData
+      )
 
       // Create test alert via edge function (bypasses RLS)
-      const response = await edgeFunctions.alerts.create(alertData) as { success: boolean; data?: { alert?: { id: string } }; error?: string }
+      const response = (await edgeFunctions.alerts.create(alertData)) as {
+        success: boolean
+        data?: { alert?: { id: string } }
+        error?: string
+      }
 
       if (!response.success) {
         console.error('[TEST ALERT] Insert error:', response.error)
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to create test alert')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to create test alert'
+        )
       }
 
       const alertId = response.data?.alert?.id
@@ -441,11 +494,23 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
       // Send notifications via all configured channels (email, slack, sms)
       if (alertId) {
         console.log('[TEST ALERT] Sending notifications for alert:', alertId)
-        console.log('[TEST ALERT] Threshold channels:', threshold.notification_channels)
-        console.log('[TEST ALERT] Threshold notify_emails:', threshold.notify_emails)
-        console.log('[TEST ALERT] Threshold notify_user_ids:', threshold.notify_user_ids)
-        console.log('[TEST ALERT] Threshold notify_phone_numbers:', threshold.notify_phone_numbers)
-        
+        console.log(
+          '[TEST ALERT] Threshold channels:',
+          threshold.notification_channels
+        )
+        console.log(
+          '[TEST ALERT] Threshold notify_emails:',
+          threshold.notify_emails
+        )
+        console.log(
+          '[TEST ALERT] Threshold notify_user_ids:',
+          threshold.notify_user_ids
+        )
+        console.log(
+          '[TEST ALERT] Threshold notify_phone_numbers:',
+          threshold.notify_phone_numbers
+        )
+
         try {
           const notifResponse = await fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-alert-notifications`,
@@ -453,7 +518,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
               },
               body: JSON.stringify({
                 alert_id: alertId,
@@ -468,21 +533,31 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
           if (notifResult.success && notifResult.channels_succeeded > 0) {
             const channelsSummary = (notifResult.results || [])
               .filter((r: { success: boolean }) => r.success)
-              .map((r: { channel: string; detail?: string }) => `${r.channel}: ${r.detail || 'OK'}`)
+              .map(
+                (r: { channel: string; detail?: string }) =>
+                  `${r.channel}: ${r.detail || 'OK'}`
+              )
               .join(', ')
             sonnerToast.success('📨 Notifications Sent!', {
               description: `${notifResult.channels_succeeded}/${notifResult.channels_dispatched} channels succeeded. ${channelsSummary}`,
               duration: 7000,
             })
-          } else if (notifResult.success && notifResult.channels_dispatched === 0) {
+          } else if (
+            notifResult.success &&
+            notifResult.channels_dispatched === 0
+          ) {
             sonnerToast.info('ℹ️ No Notification Channels', {
-              description: 'No notification channels configured for this threshold. Add email, Slack, or SMS in the threshold settings.',
+              description:
+                'No notification channels configured for this threshold. Add email, Slack, or SMS in the threshold settings.',
               duration: 5000,
             })
           } else {
             const failedChannels = (notifResult.results || [])
               .filter((r: { success: boolean }) => !r.success)
-              .map((r: { channel: string; error?: string }) => `${r.channel}: ${r.error || 'failed'}`)
+              .map(
+                (r: { channel: string; error?: string }) =>
+                  `${r.channel}: ${r.error || 'failed'}`
+              )
               .join(', ')
             sonnerToast.warning('⚠️ Some Notifications Failed', {
               description: `Test alert created but some channels failed: ${failedChannels}`,
@@ -500,7 +575,8 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     } catch (error) {
       console.error('[TEST ALERT] Error creating test alert:', error)
       sonnerToast.error('Failed to Create Test Alert', {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description:
+          error instanceof Error ? error.message : 'An unknown error occurred',
       })
     } finally {
       setTesting(null)
@@ -513,7 +589,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
     try {
       setDeleting(true)
 
-      const response = await edgeFunctions.thresholds.delete(thresholdToDelete.id)
+      const response = await edgeFunctions.thresholds.delete(
+        thresholdToDelete.id
+      )
 
       if (response.success) {
         toast({
@@ -524,13 +602,18 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
         setThresholdToDelete(null)
         await fetchThresholds()
       } else {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to delete threshold')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to delete threshold'
+        )
       }
     } catch (error) {
       console.error('Error deleting threshold:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete threshold',
+        description:
+          error instanceof Error ? error.message : 'Failed to delete threshold',
         variant: 'destructive',
       })
     } finally {
@@ -539,24 +622,24 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
   }
 
   const toggleNotificationChannel = (channel: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       notification_channels: prev.notification_channels.includes(channel)
-        ? prev.notification_channels.filter(c => c !== channel)
-        : [...prev.notification_channels, channel]
+        ? prev.notification_channels.filter((c) => c !== channel)
+        : [...prev.notification_channels, channel],
     }))
   }
 
   const toggleUserNotification = (userId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       notify_user_ids: prev.notify_user_ids.includes(userId)
-        ? prev.notify_user_ids.filter(id => id !== userId)
-        : [...prev.notify_user_ids, userId]
+        ? prev.notify_user_ids.filter((id) => id !== userId)
+        : [...prev.notify_user_ids, userId],
     }))
   }
 
-  const activeAlerts = thresholds.filter(t => t.alert_enabled).length
+  const activeAlerts = thresholds.filter((t) => t.alert_enabled).length
 
   // Helper to get unit symbol for sensor values
   const getUnitSymbol = (threshold: SensorThreshold) => {
@@ -602,7 +685,7 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
               </p>
             </div>
             <Button onClick={handleAddNew} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Threshold
             </Button>
           </div>
@@ -616,41 +699,46 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
           </div>
 
           {thresholds.length === 0 ? (
-            <div className="text-center py-8 border rounded-lg bg-muted/20">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-medium mb-1">
+            <div className="rounded-lg border bg-muted/20 py-8 text-center">
+              <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="mb-1 text-sm font-medium">
                 No thresholds configured yet
               </p>
-              <p className="text-xs text-muted-foreground mb-4">
-                Set up thresholds for temperature, humidity, battery, and other sensors
+              <p className="mb-4 text-xs text-muted-foreground">
+                Set up thresholds for temperature, humidity, battery, and other
+                sensors
               </p>
               <Button onClick={handleAddNew} variant="outline" size="sm">
                 Create First Threshold
               </Button>
             </div>
           ) : (
-            <div className="space-y-3 pt-3 border-t">
+            <div className="space-y-3 border-t pt-3">
               {thresholds.map((threshold) => (
                 <div
                   key={threshold.id}
-                  className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                  className="flex items-start justify-between rounded-lg border p-3 transition-colors hover:bg-muted/30"
                 >
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <p className="font-medium text-sm capitalize">
+                    <div className="mb-2 flex items-center gap-3">
+                      <p className="text-sm font-medium capitalize">
                         {threshold.sensor_type.replace(/_/g, ' ')}
                       </p>
                       <Badge
-                        variant={threshold.alert_enabled ? 'default' : 'secondary'}
+                        variant={
+                          threshold.alert_enabled ? 'default' : 'secondary'
+                        }
                         className="text-xs"
                       >
                         {threshold.alert_enabled ? 'Active' : 'Disabled'}
                       </Badge>
                       <Badge
                         variant={
-                          threshold.alert_severity === 'critical' ? 'destructive' :
-                          threshold.alert_severity === 'high' ? 'destructive' :
-                          'secondary'
+                          threshold.alert_severity === 'critical'
+                            ? 'destructive'
+                            : threshold.alert_severity === 'high'
+                              ? 'destructive'
+                              : 'secondary'
                         }
                         className="text-xs"
                       >
@@ -659,22 +747,35 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       {threshold.min_value && (
-                        <div>Min: {threshold.min_value}{getUnitSymbol(threshold)}</div>
+                        <div>
+                          Min: {threshold.min_value}
+                          {getUnitSymbol(threshold)}
+                        </div>
                       )}
                       {threshold.max_value && (
-                        <div>Max: {threshold.max_value}{getUnitSymbol(threshold)}</div>
+                        <div>
+                          Max: {threshold.max_value}
+                          {getUnitSymbol(threshold)}
+                        </div>
                       )}
                       {threshold.critical_min && (
-                        <div className="text-red-600">Critical Min: {threshold.critical_min}{getUnitSymbol(threshold)}</div>
+                        <div className="text-red-600">
+                          Critical Min: {threshold.critical_min}
+                          {getUnitSymbol(threshold)}
+                        </div>
                       )}
                       {threshold.critical_max && (
-                        <div className="text-red-600">Critical Max: {threshold.critical_max}{getUnitSymbol(threshold)}</div>
+                        <div className="text-red-600">
+                          Critical Max: {threshold.critical_max}
+                          {getUnitSymbol(threshold)}
+                        </div>
                       )}
                     </div>
                     {threshold.notify_on_breach && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                         <Bell className="h-3 w-3" />
-                        Notifications enabled (cooldown: {threshold.notification_cooldown_minutes}min)
+                        Notifications enabled (cooldown:{' '}
+                        {threshold.notification_cooldown_minutes}min)
                       </div>
                     )}
                   </div>
@@ -713,20 +814,22 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
       {/* Edit/Create Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col">
           <DialogHeader>
             <DialogTitle>
-              {selectedThreshold ? `Edit ${selectedThreshold.sensor_type} Threshold` : 'Create New Threshold'}
+              {selectedThreshold
+                ? `Edit ${selectedThreshold.sensor_type} Threshold`
+                : 'Create New Threshold'}
             </DialogTitle>
             <DialogDescription>
-              {selectedThreshold 
+              {selectedThreshold
                 ? `Configure alert thresholds and notification preferences for ${selectedThreshold.sensor_type} sensor`
-                : 'Each sensor type (temperature, humidity, battery, etc.) can have its own threshold configuration'
-              }
+                : 'Each sensor type (temperature, humidity, battery, etc.) can have its own threshold configuration'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4 overflow-y-auto flex-1 pr-2">{/* Sensor Type */}
+          <div className="flex-1 space-y-6 overflow-y-auto py-4 pr-2">
+            {/* Sensor Type */}
             {/* Sensor Type */}
             {!selectedThreshold && (
               <div className="space-y-2">
@@ -735,9 +838,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                   value={formData.sensor_type}
                   onValueChange={(value) => {
                     if (value === 'custom') {
-                      setFormData(prev => ({ ...prev, sensor_type: '' }))
+                      setFormData((prev) => ({ ...prev, sensor_type: '' }))
                     } else {
-                      setFormData(prev => ({ ...prev, sensor_type: value }))
+                      setFormData((prev) => ({ ...prev, sensor_type: value }))
                     }
                   }}
                 >
@@ -749,7 +852,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                     <SelectItem value="humidity">Humidity</SelectItem>
                     <SelectItem value="pressure">Pressure</SelectItem>
                     <SelectItem value="battery">Battery</SelectItem>
-                    <SelectItem value="battery_voltage">Battery Voltage</SelectItem>
+                    <SelectItem value="battery_voltage">
+                      Battery Voltage
+                    </SelectItem>
                     <SelectItem value="rssi">Signal Strength (RSSI)</SelectItem>
                     <SelectItem value="co2">CO2 Level</SelectItem>
                     <SelectItem value="light">Light Level</SelectItem>
@@ -758,10 +863,27 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                     <SelectItem value="custom">Custom...</SelectItem>
                   </SelectContent>
                 </Select>
-                {(formData.sensor_type === '' || !['temperature', 'humidity', 'pressure', 'battery', 'battery_voltage', 'rssi', 'co2', 'light', 'motion', 'vibration'].includes(formData.sensor_type)) && (
+                {(formData.sensor_type === '' ||
+                  ![
+                    'temperature',
+                    'humidity',
+                    'pressure',
+                    'battery',
+                    'battery_voltage',
+                    'rssi',
+                    'co2',
+                    'light',
+                    'motion',
+                    'vibration',
+                  ].includes(formData.sensor_type)) && (
                   <Input
                     value={formData.sensor_type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sensor_type: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sensor_type: e.target.value,
+                      }))
+                    }
                     placeholder="Enter custom sensor type"
                     className="mt-2"
                   />
@@ -779,7 +901,10 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                 <Select
                   value={formData.temperature_unit}
                   onValueChange={(value: 'celsius' | 'fahrenheit') => {
-                    setFormData(prev => ({ ...prev, temperature_unit: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      temperature_unit: value,
+                    }))
                     // Immediately notify parent for instant UI update
                     onTemperatureUnitChange(value)
                   }}
@@ -799,48 +924,76 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
             )}
 
             {/* AI Auto-Threshold */}
-            <div className="space-y-3 p-4 border rounded-lg bg-gradient-to-r from-violet-50/50 to-blue-50/50 dark:from-violet-950/20 dark:to-blue-950/20">
+            <div className="space-y-3 rounded-lg border bg-gradient-to-r from-violet-50/50 to-blue-50/50 p-4 dark:from-violet-950/20 dark:to-blue-950/20">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="ai_thresholds"
                   checked={aiEnabled}
-                  onCheckedChange={(checked) => handleAIToggle(checked === true)}
+                  onCheckedChange={(checked) =>
+                    handleAIToggle(checked === true)
+                  }
                   disabled={aiLoading}
                 />
                 <div className="flex-1">
-                  <label htmlFor="ai_thresholds" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  <label
+                    htmlFor="ai_thresholds"
+                    className="flex cursor-pointer items-center gap-2 text-sm font-medium"
+                  >
                     <Sparkles className="h-4 w-4 text-violet-500" />
                     Set thresholds from telemetry data
                     {aiLoading && <Loader2 className="h-3 w-3 animate-spin" />}
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Analyzes historical sensor readings to calculate optimal warning and critical ranges using statistical modeling (mean ± standard deviations).
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Analyzes historical sensor readings to calculate optimal
+                    warning and critical ranges using statistical modeling (mean
+                    ± standard deviations).
                   </p>
                 </div>
               </div>
 
               {/* AI Recommendation Result */}
               {aiRecommendation && (
-                <div className="mt-3 text-xs space-y-2">
+                <div className="mt-3 space-y-2 text-xs">
                   {aiRecommendation.available && aiRecommendation.statistics ? (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 font-medium">
+                      <div className="flex items-center gap-1.5 font-medium text-violet-600 dark:text-violet-400">
                         <Sparkles className="h-3 w-3" />
                         Analysis of {aiRecommendation.data_points} readings
                       </div>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                        <div>Mean: <span className="font-mono">{aiRecommendation.statistics.mean}</span></div>
-                        <div>Std Dev: <span className="font-mono">{aiRecommendation.statistics.stddev}</span></div>
-                        <div>Observed Min: <span className="font-mono">{aiRecommendation.statistics.min_observed}</span></div>
-                        <div>Observed Max: <span className="font-mono">{aiRecommendation.statistics.max_observed}</span></div>
+                        <div>
+                          Mean:{' '}
+                          <span className="font-mono">
+                            {aiRecommendation.statistics.mean}
+                          </span>
+                        </div>
+                        <div>
+                          Std Dev:{' '}
+                          <span className="font-mono">
+                            {aiRecommendation.statistics.stddev}
+                          </span>
+                        </div>
+                        <div>
+                          Observed Min:{' '}
+                          <span className="font-mono">
+                            {aiRecommendation.statistics.min_observed}
+                          </span>
+                        </div>
+                        <div>
+                          Observed Max:{' '}
+                          <span className="font-mono">
+                            {aiRecommendation.statistics.max_observed}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-muted-foreground">
-                        Thresholds have been filled in below. You can still adjust the values before saving.
+                        Thresholds have been filled in below. You can still
+                        adjust the values before saving.
                       </p>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-700 dark:text-amber-400">
-                      <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div className="flex items-start gap-2 rounded bg-amber-50 p-2 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <p>{aiRecommendation.message}</p>
                     </div>
                   )}
@@ -850,34 +1003,51 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
 
             {/* Threshold Values */}
             <div className="space-y-4">
-              <h4 className="font-medium text-sm">Warning Thresholds</h4>
+              <h4 className="text-sm font-medium">Warning Thresholds</h4>
               <p className="text-xs text-muted-foreground">
-                Defines the normal operating range. A warning alert fires when the value drops below the minimum or rises above the maximum.
+                Defines the normal operating range. A warning alert fires when
+                the value drops below the minimum or rises above the maximum.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="min_value">
-                    Minimum Value{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}{formData.sensor_type === 'humidity' && ' (%)'}
+                    Minimum Value
+                    {formData.sensor_type === 'temperature' &&
+                      ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    {formData.sensor_type === 'humidity' && ' (%)'}
                   </Label>
                   <Input
                     id="min_value"
                     type="number"
                     step="0.01"
                     value={formData.min_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, min_value: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        min_value: e.target.value,
+                      }))
+                    }
                     placeholder="Enter minimum"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="max_value">
-                    Maximum Value{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}{formData.sensor_type === 'humidity' && ' (%)'}
+                    Maximum Value
+                    {formData.sensor_type === 'temperature' &&
+                      ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    {formData.sensor_type === 'humidity' && ' (%)'}
                   </Label>
                   <Input
                     id="max_value"
                     type="number"
                     step="0.01"
                     value={formData.max_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, max_value: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        max_value: e.target.value,
+                      }))
+                    }
                     placeholder="Enter maximum"
                   />
                 </div>
@@ -885,34 +1055,54 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-medium text-sm text-red-600">Critical Thresholds</h4>
+              <h4 className="text-sm font-medium text-red-600">
+                Critical Thresholds
+              </h4>
               <p className="text-xs text-muted-foreground">
-                Optional. Defines extreme boundaries beyond the warning range. Critical min must be ≤ warning min, and critical max must be ≥ warning max. Example: Warning 60–90°F, Critical 40–100°F.
+                Optional. Defines extreme boundaries beyond the warning range.
+                Critical min must be ≤ warning min, and critical max must be ≥
+                warning max. Example: Warning 60–90°F, Critical 40–100°F.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="critical_min">
-                    Critical Minimum{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}{formData.sensor_type === 'humidity' && ' (%)'}
+                    Critical Minimum
+                    {formData.sensor_type === 'temperature' &&
+                      ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    {formData.sensor_type === 'humidity' && ' (%)'}
                   </Label>
                   <Input
                     id="critical_min"
                     type="number"
                     step="0.01"
                     value={formData.critical_min}
-                    onChange={(e) => setFormData(prev => ({ ...prev, critical_min: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        critical_min: e.target.value,
+                      }))
+                    }
                     placeholder="Below warning min (e.g. 40)"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="critical_max">
-                    Critical Maximum{formData.sensor_type === 'temperature' && ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}{formData.sensor_type === 'humidity' && ' (%)'}
+                    Critical Maximum
+                    {formData.sensor_type === 'temperature' &&
+                      ` (°${formData.temperature_unit === 'fahrenheit' ? 'F' : 'C'})`}
+                    {formData.sensor_type === 'humidity' && ' (%)'}
                   </Label>
                   <Input
                     id="critical_max"
                     type="number"
                     step="0.01"
                     value={formData.critical_max}
-                    onChange={(e) => setFormData(prev => ({ ...prev, critical_max: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        critical_max: e.target.value,
+                      }))
+                    }
                     placeholder="Above warning max (e.g. 100)"
                   />
                 </div>
@@ -920,9 +1110,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
             </div>
 
             {/* Alert Configuration */}
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="font-medium text-sm">Alert Configuration</h4>
-              
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="text-sm font-medium">Alert Configuration</h4>
+
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="alert_enabled">Enable Alerts</Label>
@@ -933,7 +1123,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                 <Switch
                   id="alert_enabled"
                   checked={formData.alert_enabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, alert_enabled: checked }))}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, alert_enabled: checked }))
+                  }
                 />
               </div>
 
@@ -941,7 +1133,9 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                 <Label htmlFor="alert_severity">Alert Severity</Label>
                 <Select
                   value={formData.alert_severity}
-                  onValueChange={(value: any) => setFormData(prev => ({ ...prev, alert_severity: value }))}
+                  onValueChange={(value: any) =>
+                    setFormData((prev) => ({ ...prev, alert_severity: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -960,16 +1154,21 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                 <Input
                   id="alert_message"
                   value={formData.alert_message}
-                  onChange={(e) => setFormData(prev => ({ ...prev, alert_message: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      alert_message: e.target.value,
+                    }))
+                  }
                   placeholder="Custom alert message"
                 />
               </div>
             </div>
 
             {/* Notification Configuration */}
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="font-medium text-sm">Notification Settings</h4>
-              
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="text-sm font-medium">Notification Settings</h4>
+
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify_on_breach">Send Notifications</Label>
@@ -980,23 +1179,33 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                 <Switch
                   id="notify_on_breach"
                   checked={formData.notify_on_breach}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, notify_on_breach: checked }))}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      notify_on_breach: checked,
+                    }))
+                  }
                 />
               </div>
 
               {formData.notify_on_breach && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="cooldown">Notification Cooldown (minutes)</Label>
+                    <Label htmlFor="cooldown">
+                      Notification Cooldown (minutes)
+                    </Label>
                     <Input
                       id="cooldown"
                       type="number"
                       min="1"
                       value={formData.notification_cooldown_minutes}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        notification_cooldown_minutes: parseInt(e.target.value) || 15 
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          notification_cooldown_minutes:
+                            parseInt(e.target.value) || 15,
+                        }))
+                      }
                     />
                     <p className="text-xs text-muted-foreground">
                       Minimum time between notifications for the same alert
@@ -1006,45 +1215,63 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                   <div className="space-y-3">
                     <Label>Notification Channels</Label>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="flex items-center gap-3">
                           <Mail className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm font-medium">Email</p>
-                            <p className="text-xs text-muted-foreground">Send email notifications</p>
+                            <p className="text-xs text-muted-foreground">
+                              Send email notifications
+                            </p>
                           </div>
                         </div>
                         <Switch
-                          checked={formData.notification_channels.includes('email')}
-                          onCheckedChange={() => toggleNotificationChannel('email')}
+                          checked={formData.notification_channels.includes(
+                            'email'
+                          )}
+                          onCheckedChange={() =>
+                            toggleNotificationChannel('email')
+                          }
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="flex items-center gap-3">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm font-medium">Slack</p>
-                            <p className="text-xs text-muted-foreground">Post to Slack channel</p>
+                            <p className="text-xs text-muted-foreground">
+                              Post to Slack channel
+                            </p>
                           </div>
                         </div>
                         <Switch
-                          checked={formData.notification_channels.includes('slack')}
-                          onCheckedChange={() => toggleNotificationChannel('slack')}
+                          checked={formData.notification_channels.includes(
+                            'slack'
+                          )}
+                          onCheckedChange={() =>
+                            toggleNotificationChannel('slack')
+                          }
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="flex items-center gap-3">
                           <Bell className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm font-medium">SMS</p>
-                            <p className="text-xs text-muted-foreground">Send text messages</p>
+                            <p className="text-xs text-muted-foreground">
+                              Send text messages
+                            </p>
                           </div>
                         </div>
                         <Switch
-                          checked={formData.notification_channels.includes('sms')}
-                          onCheckedChange={() => toggleNotificationChannel('sms')}
+                          checked={formData.notification_channels.includes(
+                            'sms'
+                          )}
+                          onCheckedChange={() =>
+                            toggleNotificationChannel('sms')
+                          }
                         />
                       </div>
                     </div>
@@ -1054,19 +1281,32 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                   {formData.notification_channels.includes('email') && (
                     <div className="space-y-3">
                       <Label>Notify Users</Label>
-                      <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                      <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border p-2">
                         {members.length === 0 ? (
-                          <p className="text-sm text-muted-foreground p-2">No organization members found</p>
+                          <p className="p-2 text-sm text-muted-foreground">
+                            No organization members found
+                          </p>
                         ) : (
-                          members.map(member => (
-                            <div key={member.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
+                          members.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center justify-between rounded p-2 hover:bg-muted/50"
+                            >
                               <div className="flex-1">
-                                <p className="text-sm font-medium">{member.full_name}</p>
-                                <p className="text-xs text-muted-foreground">{member.email}</p>
+                                <p className="text-sm font-medium">
+                                  {member.full_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {member.email}
+                                </p>
                               </div>
                               <Switch
-                                checked={formData.notify_user_ids.includes(member.id)}
-                                onCheckedChange={() => toggleUserNotification(member.id)}
+                                checked={formData.notify_user_ids.includes(
+                                  member.id
+                                )}
+                                onCheckedChange={() =>
+                                  toggleUserNotification(member.id)
+                                }
                               />
                             </div>
                           ))
@@ -1081,15 +1321,23 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                   {/* Manual Email Addresses */}
                   {formData.notification_channels.includes('email') && (
                     <div className="space-y-2">
-                      <Label htmlFor="manual_emails">Additional Email Addresses</Label>
+                      <Label htmlFor="manual_emails">
+                        Additional Email Addresses
+                      </Label>
                       <Input
                         id="manual_emails"
                         value={formData.manualEmails}
-                        onChange={(e) => setFormData(prev => ({ ...prev, manualEmails: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            manualEmails: e.target.value,
+                          }))
+                        }
                         placeholder="email1@example.com, email2@example.com"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Enter email addresses separated by commas for external contacts
+                        Enter email addresses separated by commas for external
+                        contacts
                       </p>
                     </div>
                   )}
@@ -1101,24 +1349,33 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
                       <Input
                         id="manual_phones"
                         value={formData.manualPhones}
-                        onChange={(e) => setFormData(prev => ({ ...prev, manualPhones: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            manualPhones: e.target.value,
+                          }))
+                        }
                         placeholder="+15551234567, +15559876543"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Enter phone numbers in E.164 format (e.g. +15551234567), separated by commas. Requires Twilio configuration in organization settings.
+                        Enter phone numbers in E.164 format (e.g. +15551234567),
+                        separated by commas. Requires Twilio configuration in
+                        organization settings.
                       </p>
                     </div>
                   )}
 
                   {/* Slack Info */}
                   {formData.notification_channels.includes('slack') && (
-                    <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
-                      <p className="text-sm font-medium flex items-center gap-2">
+                    <div className="space-y-2 rounded-lg bg-muted/50 p-3">
+                      <p className="flex items-center gap-2 text-sm font-medium">
                         <MessageSquare className="h-4 w-4" />
                         Slack Notifications
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Slack alerts will be posted to the webhook URL configured in your organization&apos;s notification settings (Settings → Alerts).
+                        Slack alerts will be posted to the webhook URL
+                        configured in your organization&apos;s notification
+                        settings (Settings → Alerts).
                       </p>
                     </div>
                   )}
@@ -1148,8 +1405,11 @@ export function AlertsThresholdsCard({ device, temperatureUnit, onTemperatureUni
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the threshold for <strong>{thresholdToDelete?.sensor_type.replace(/_/g, ' ')}</strong>.
-              This action cannot be undone.
+              This will permanently delete the threshold for{' '}
+              <strong>
+                {thresholdToDelete?.sensor_type.replace(/_/g, ' ')}
+              </strong>
+              . This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

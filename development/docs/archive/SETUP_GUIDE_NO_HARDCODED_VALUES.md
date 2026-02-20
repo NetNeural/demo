@@ -25,6 +25,7 @@ npm run dev
 ## What This Sets Up
 
 ### Database
+
 - ✅ 1 organization: "NetNeural Demo"
 - ✅ 20 test devices (various types)
 - ✅ 7 test alerts
@@ -33,11 +34,13 @@ npm run dev
 - ✅ 1 device integration
 
 ### Users (in database)
+
 - ✅ Admin User (org_owner)
 - ✅ Regular User (user role)
 - ✅ Viewer User (viewer role)
 
 ### Authentication (via setup:users script)
+
 - ✅ Creates auth.users entries
 - ✅ Links to database users
 - ✅ Email confirmed
@@ -53,11 +56,13 @@ npm run supabase:reset
 ```
 
 **What this does**:
+
 - Drops all tables
 - Runs migrations
 - Loads seed data from `supabase/seed.sql`
 
 **Output**:
+
 ```
 Resetting local database...
 Applying migrations...
@@ -66,6 +71,7 @@ Seeding data...
 ```
 
 **Verify**:
+
 ```bash
 npm run supabase:studio
 # Open http://localhost:54323
@@ -80,6 +86,7 @@ npm run setup:users
 ```
 
 **What this does**:
+
 - Reads `.env.local` for Supabase credentials
 - Uses service role key to create users
 - Creates 3 test users in `auth.users`
@@ -87,6 +94,7 @@ npm run setup:users
 - Confirms emails automatically
 
 **Output**:
+
 ```
 🚀 Creating test users...
 
@@ -109,6 +117,7 @@ npm run setup:users
 ```
 
 **Verify**:
+
 ```bash
 npm run supabase:studio
 # Go to Authentication → Users
@@ -122,11 +131,13 @@ npm run supabase:functions:serve
 ```
 
 **What this does**:
+
 - Starts Deno runtime for edge functions
 - Serves functions on port 54321
 - Watches for code changes
 
 **Output**:
+
 ```
 Serving functions on http://127.0.0.1:54321/functions/v1/<function-name>
  - http://127.0.0.1:54321/functions/v1/devices
@@ -137,6 +148,7 @@ Serving functions on http://127.0.0.1:54321/functions/v1/<function-name>
 ```
 
 **Test manually**:
+
 ```bash
 curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
   http://localhost:54321/functions/v1/devices?organization_id=00000000-0000-0000-0000-000000000001
@@ -154,6 +166,7 @@ npm run dev
 ```
 
 **Output**:
+
 ```
   ▲ Next.js 15.x.x
   - Local:        http://localhost:3000
@@ -182,22 +195,22 @@ npm run dev
 // ❌ BAD: Hardcoded everywhere
 const mockUser = {
   id: '00000000-0000-0000-0000-000000000001',
-  email: 'admin@netneural.ai'
+  email: 'admin@netneural.ai',
 }
 
 const organizationId = '00000000-0000-0000-0000-000000000001'
 
-fetch('/api/devices')  // Returns ALL devices from ALL orgs
+fetch('/api/devices') // Returns ALL devices from ALL orgs
 ```
 
 ### After (Dynamic)
 
 ```typescript
 // ✅ GOOD: From authentication
-const { user } = useUser()  // From Supabase Auth + Database
+const { user } = useUser() // From Supabase Auth + Database
 
 fetchEdgeFunction('devices', {
-  organization_id: user.organizationId  // Dynamic from user's org
+  organization_id: user.organizationId, // Dynamic from user's org
 })
 
 // Returns ONLY devices for user's organization
@@ -269,6 +282,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## Testing Different Users
 
 ### Admin User (Full Access)
+
 ```
 Email: admin@netneural.ai
 Password: password123
@@ -276,6 +290,7 @@ Role: org_owner
 ```
 
 ### Regular User (Standard Access)
+
 ```
 Email: user@netneural.ai
 Password: password123
@@ -283,6 +298,7 @@ Role: user
 ```
 
 ### Viewer (Read-Only)
+
 ```
 Email: viewer@netneural.ai
 Password: password123
@@ -290,6 +306,7 @@ Role: viewer
 ```
 
 To test:
+
 1. Sign out
 2. Sign in with different user
 3. Should see same devices (same org)
@@ -302,6 +319,7 @@ To test:
 **Cause**: Auth user not created
 
 **Solution**:
+
 ```bash
 npm run setup:users
 ```
@@ -311,6 +329,7 @@ npm run setup:users
 **Cause**: Edge functions not running or organization_id mismatch
 
 **Solution**:
+
 ```bash
 # Check edge functions are running
 curl -I http://localhost:54321/functions/v1/devices
@@ -325,6 +344,7 @@ npm run supabase:functions:serve
 **Cause**: User not authenticated
 
 **Solution**:
+
 1. Go to http://localhost:3000/auth/login
 2. Sign in with `admin@netneural.ai` / `password123`
 
@@ -333,6 +353,7 @@ npm run supabase:functions:serve
 **Cause**: Database not seeded
 
 **Solution**:
+
 ```bash
 npm run supabase:reset
 npm run setup:users
@@ -344,6 +365,7 @@ npm run setup:users
 
 **Solution**:
 Check `.env.local` has:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
@@ -352,6 +374,7 @@ Check `.env.local` has:
 **Cause**: Running `setup:users` before `supabase:reset`
 
 **Solution**:
+
 ```bash
 # Always run in this order:
 npm run supabase:reset      # 1. Creates database users
@@ -363,6 +386,7 @@ npm run setup:users         # 2. Creates auth users with matching IDs
 ### Environment Variables
 
 Production requires:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -372,6 +396,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ### User Creation
 
 In production, users should:
+
 1. Sign up via `/auth/signup`
 2. Trigger creates entry in both `auth.users` and `users` tables
 3. Assigned to organization automatically
@@ -380,19 +405,22 @@ In production, users should:
 ### Organization Assignment
 
 Add logic in signup flow:
+
 ```typescript
 // After user signs up
-const { data: { user } } = await supabase.auth.signUp({
+const {
+  data: { user },
+} = await supabase.auth.signUp({
   email,
-  password
+  password,
 })
 
 // Create users table entry
 await supabase.from('users').insert({
   id: user.id,
   email: user.email,
-  organization_id: defaultOrgId,  // From invite link or default
-  role: 'user'
+  organization_id: defaultOrgId, // From invite link or default
+  role: 'user',
 })
 ```
 
@@ -403,6 +431,7 @@ await supabase.from('users').insert({
    - Other components
 
 2. ✅ **Add role-based permissions**
+
    ```typescript
    if (user.role === 'org_owner') {
      // Can delete devices
@@ -424,6 +453,7 @@ await supabase.from('users').insert({
 ✅ **No more hardcoded values!**
 
 All user and organization data now comes from:
+
 1. Supabase Auth (`auth.users`)
 2. Database (`users`, `organizations` tables)
 3. React Context (`UserContext`)

@@ -3,7 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, TrendingUp, TrendingDown, Activity } from 'lucide-react'
-import type { SensorReading, SensorStatistics, SensorThreshold, Device } from '@/types/sensor-details'
+import type {
+  SensorReading,
+  SensorStatistics,
+  SensorThreshold,
+  Device,
+} from '@/types/sensor-details'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface SensorOverviewCardProps {
@@ -30,18 +35,34 @@ export function SensorOverviewCard({
 
     // Check critical thresholds
     if (threshold.critical_min !== null && value < threshold.critical_min) {
-      return { level: 'critical', message: 'Critical: Below minimum', color: 'destructive' } as const
+      return {
+        level: 'critical',
+        message: 'Critical: Below minimum',
+        color: 'destructive',
+      } as const
     }
     if (threshold.critical_max !== null && value > threshold.critical_max) {
-      return { level: 'critical', message: 'Critical: Above maximum', color: 'destructive' } as const
+      return {
+        level: 'critical',
+        message: 'Critical: Above maximum',
+        color: 'destructive',
+      } as const
     }
 
     // Check warning thresholds
     if (threshold.min_value !== null && value < threshold.min_value) {
-      return { level: 'warning', message: 'Warning: Below threshold', color: 'secondary' } as const
+      return {
+        level: 'warning',
+        message: 'Warning: Below threshold',
+        color: 'secondary',
+      } as const
     }
     if (threshold.max_value !== null && value > threshold.max_value) {
-      return { level: 'warning', message: 'Warning: Above threshold', color: 'secondary' } as const
+      return {
+        level: 'warning',
+        message: 'Warning: Above threshold',
+        color: 'secondary',
+      } as const
     }
 
     return { level: 'normal', message: 'Normal', color: 'default' } as const
@@ -74,8 +95,10 @@ export function SensorOverviewCard({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center justify-between">
-          <span>{sensorType.charAt(0).toUpperCase() + sensorType.slice(1)} Overview</span>
+        <CardTitle className="flex items-center justify-between text-sm font-medium">
+          <span>
+            {sensorType.charAt(0).toUpperCase() + sensorType.slice(1)} Overview
+          </span>
           {alertStatus && alertStatus.level !== 'normal' && (
             <AlertTriangle className="h-4 w-4 text-destructive" />
           )}
@@ -102,9 +125,7 @@ export function SensorOverviewCard({
         {/* Alert Status */}
         {alertStatus && (
           <div className="flex items-center gap-2">
-            <Badge variant={alertStatus.color}>
-              {alertStatus.message}
-            </Badge>
+            <Badge variant={alertStatus.color}>{alertStatus.message}</Badge>
           </div>
         )}
 
@@ -138,7 +159,7 @@ export function SensorOverviewCard({
 
         {/* Statistics */}
         {statistics && (
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+          <div className="grid grid-cols-2 gap-3 border-t pt-3">
             <div>
               <p className="text-xs text-muted-foreground">Min</p>
               <p className="text-sm font-medium">
@@ -166,7 +187,7 @@ export function SensorOverviewCard({
 
         {/* Threshold Configuration */}
         {threshold && threshold.alert_enabled && (
-          <div className="pt-3 border-t space-y-2">
+          <div className="space-y-2 border-t pt-3">
             <p className="text-xs font-medium">Configured Thresholds</p>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {threshold.min_value !== null && (
@@ -198,10 +219,20 @@ export function SensorOverviewCard({
         )}
 
         {/* Device Health Indicator */}
-        <div className="pt-3 border-t flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between border-t pt-3 text-xs">
           <span className="text-muted-foreground">Data Quality</span>
-          <Badge variant={latestReading && latestReading.quality && latestReading.quality > 80 ? 'default' : 'secondary'}>
-            {latestReading && latestReading.quality !== null ? `${latestReading.quality}%` : 'Unknown'}
+          <Badge
+            variant={
+              latestReading &&
+              latestReading.quality &&
+              latestReading.quality > 80
+                ? 'default'
+                : 'secondary'
+            }
+          >
+            {latestReading && latestReading.quality !== null
+              ? `${latestReading.quality}%`
+              : 'Unknown'}
           </Badge>
         </div>
       </CardContent>

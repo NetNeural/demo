@@ -6,20 +6,24 @@
 // warning and critical boundaries based on observed sensor behavior.
 // ===========================================================================
 
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { getUserContext } from '../_shared/auth.ts'
 
 // Sensor type name to telemetry type ID mapping
 const SENSOR_TYPE_TO_ID: Record<string, string> = {
-  'temperature': '1',
-  'humidity': '2',
-  'pressure': '3',
-  'battery': '4',
-  'co2': '7',
-  'tvoc': '8',
-  'light': '9',
-  'motion': '10',
+  temperature: '1',
+  humidity: '2',
+  pressure: '3',
+  battery: '4',
+  co2: '7',
+  tvoc: '8',
+  light: '9',
+  motion: '10',
 }
 
 // Minimum number of data points needed for reliable recommendations
@@ -39,8 +43,8 @@ interface RecommendationResult {
     stddev: number
     min_observed: number
     max_observed: number
-    p5: number   // 5th percentile
-    p95: number  // 95th percentile
+    p5: number // 5th percentile
+    p95: number // 95th percentile
   } | null
   recommended: {
     min_value: number
@@ -72,7 +76,9 @@ export default createEdgeFunction(async ({ req }) => {
     throw new Error('device_id and sensor_type are required')
   }
 
-  console.log(`[threshold-ai-recommend] Analyzing telemetry for device=${deviceId}, sensor=${sensorType}, unit=${temperatureUnit}`)
+  console.log(
+    `[threshold-ai-recommend] Analyzing telemetry for device=${deviceId}, sensor=${sensorType}, unit=${temperatureUnit}`
+  )
 
   // Resolve sensor type to telemetry type ID
   const sensorTypeId = SENSOR_TYPE_TO_ID[sensorType.toLowerCase()] || sensorType
@@ -90,7 +96,9 @@ export default createEdgeFunction(async ({ req }) => {
     .order('received_at', { ascending: true })
 
   if (readingsError) {
-    throw new DatabaseError(`Failed to fetch telemetry: ${readingsError.message}`)
+    throw new DatabaseError(
+      `Failed to fetch telemetry: ${readingsError.message}`
+    )
   }
 
   // Not enough data
@@ -103,18 +111,22 @@ export default createEdgeFunction(async ({ req }) => {
       latest_reading: readings?.[readings.length - 1]?.received_at || null,
       statistics: null,
       recommended: null,
-      message: readings?.length === 0
-        ? `No telemetry data found for this sensor. Once the device begins reporting data, AI recommendations will become available after ${MIN_DATA_POINTS} readings are collected.`
-        : `Only ${readings.length} data points available (need at least ${MIN_DATA_POINTS}). Continue collecting data — AI recommendations will be available soon.`,
+      message:
+        readings?.length === 0
+          ? `No telemetry data found for this sensor. Once the device begins reporting data, AI recommendations will become available after ${MIN_DATA_POINTS} readings are collected.`
+          : `Only ${readings.length} data points available (need at least ${MIN_DATA_POINTS}). Continue collecting data — AI recommendations will be available soon.`,
     }
     return createSuccessResponse(result)
   }
 
   // Extract values (telemetry is always in Celsius for temperature)
-  const rawValues: number[] = readings.map((r: any) => {
-    const val = typeof r.telemetry === 'string' ? JSON.parse(r.telemetry) : r.telemetry
-    return Number(val.value)
-  }).filter((v: number) => !isNaN(v) && isFinite(v))
+  const rawValues: number[] = readings
+    .map((r: any) => {
+      const val =
+        typeof r.telemetry === 'string' ? JSON.parse(r.telemetry) : r.telemetry
+      return Number(val.value)
+    })
+    .filter((v: number) => !isNaN(v) && isFinite(v))
 
   if (rawValues.length < MIN_DATA_POINTS) {
     const result: RecommendationResult = {
@@ -132,15 +144,19 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Convert to target unit if needed
   let values = rawValues
-  if (sensorType.toLowerCase() === 'temperature' && temperatureUnit === 'fahrenheit') {
-    values = rawValues.map(v => (v * 9 / 5) + 32)
+  if (
+    sensorType.toLowerCase() === 'temperature' &&
+    temperatureUnit === 'fahrenheit'
+  ) {
+    values = rawValues.map((v) => (v * 9) / 5 + 32)
   }
 
   // Calculate statistics
   const sorted = [...values].sort((a, b) => a - b)
   const n = sorted.length
   const mean = values.reduce((sum, v) => sum + v, 0) / n
-  const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (n - 1)
+  const variance =
+    values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (n - 1)
   const stddev = Math.sqrt(variance)
   const minObserved = sorted[0]
   const maxObserved = sorted[n - 1]
@@ -185,7 +201,9 @@ export default createEdgeFunction(async ({ req }) => {
     max_value: warningMax,
     critical_min: finalCritMin,
     critical_max: finalCritMax,
-    ...(sensorType.toLowerCase() === 'temperature' ? { temperature_unit: temperatureUnit } : {}),
+    ...(sensorType.toLowerCase() === 'temperature'
+      ? { temperature_unit: temperatureUnit }
+      : {}),
   }
 
   console.log(`[threshold-ai-recommend] Analysis complete:`, {

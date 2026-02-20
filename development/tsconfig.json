@@ -14,16 +14,16 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    
+
     // Enhanced type checking
     "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    
+
     "forceConsistentCasingInFileNames": true,
-    
+
     // Path mapping for cleaner imports
     "baseUrl": ".",
     "paths": {
@@ -34,7 +34,7 @@
       "@/types/*": ["./src/types/*"],
       "@/app/*": ["./src/app/*"]
     },
-    
+
     // Next.js specific
     "plugins": [
       {
@@ -42,12 +42,7 @@
       }
     ]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
     ".next",

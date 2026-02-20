@@ -1,12 +1,31 @@
 'use client'
 
 import { useState, useEffect, useCallback, Fragment } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
@@ -79,7 +98,8 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
     try {
       const response = await edgeFunctions.members.list(organizationId)
       if (!response.success) throw new Error('Failed to fetch members')
-      const membersData = (response.data as { members: OrgMember[] })?.members || []
+      const membersData =
+        (response.data as { members: OrgMember[] })?.members || []
       setMembers(membersData)
     } catch (err) {
       console.error('Failed to fetch members:', err)
@@ -93,25 +113,30 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
     fetchMembers()
   }, [fetchMembers])
 
-  const fetchActivityTimeline = useCallback(async (userId: string) => {
-    setActivityLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('user_audit_log')
-        .select('id, action_category, action_type, resource_type, resource_name, status, created_at, ip_address, user_agent, metadata')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50)
+  const fetchActivityTimeline = useCallback(
+    async (userId: string) => {
+      setActivityLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('user_audit_log')
+          .select(
+            'id, action_category, action_type, resource_type, resource_name, status, created_at, ip_address, user_agent, metadata'
+          )
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50)
 
-      if (error) throw error
-      setActivityTimeline((data as unknown as AuditEntry[]) || [])
-    } catch (err) {
-      console.error('Failed to fetch activity timeline:', err)
-      toast.error('Failed to load user activity')
-    } finally {
-      setActivityLoading(false)
-    }
-  }, [supabase])
+        if (error) throw error
+        setActivityTimeline((data as unknown as AuditEntry[]) || [])
+      } catch (err) {
+        console.error('Failed to fetch activity timeline:', err)
+        toast.error('Failed to load user activity')
+      } finally {
+        setActivityLoading(false)
+      }
+    },
+    [supabase]
+  )
 
   const handleExpandUser = (userId: string) => {
     if (expandedUserId === userId) {
@@ -139,7 +164,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
     }
   }
 
-  const handleChangeRole = async (memberId: string, memberEmail: string, newRole: string) => {
+  const handleChangeRole = async (
+    memberId: string,
+    memberEmail: string,
+    newRole: string
+  ) => {
     setActionLoading(`role-${memberId}`)
     try {
       const { error } = await supabase
@@ -169,17 +198,28 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
     return matchesSearch && matchesRole
   })
 
-  const getMemberStatus = (member: OrgMember): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
+  const getMemberStatus = (
+    member: OrgMember
+  ): {
+    label: string
+    variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  } => {
     if (!member.lastLogin) return { label: 'Invited', variant: 'outline' }
     return { label: 'Active', variant: 'default' }
   }
 
-  const getRoleBadgeVariant = (role: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  const getRoleBadgeVariant = (
+    role: string
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (role) {
-      case 'super_admin': return 'destructive'
-      case 'org_owner': return 'default'
-      case 'org_admin': return 'secondary'
-      default: return 'outline'
+      case 'super_admin':
+        return 'destructive'
+      case 'org_owner':
+        return 'default'
+      case 'org_admin':
+        return 'secondary'
+      default:
+        return 'outline'
     }
   }
 
@@ -193,12 +233,18 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'authentication': return '🔐'
-      case 'device_management': return '📱'
-      case 'alert_management': return '🔔'
-      case 'organization': return '🏢'
-      case 'integration': return '🔗'
-      default: return '📋'
+      case 'authentication':
+        return '🔐'
+      case 'device_management':
+        return '📱'
+      case 'alert_management':
+        return '🔔'
+      case 'organization':
+        return '🏢'
+      case 'integration':
+        return '🔗'
+      default:
+        return '📋'
     }
   }
 
@@ -221,11 +267,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-blue-500" />
+              <Users className="h-8 w-8 text-blue-500" />
               <div>
                 <p className="text-2xl font-bold">{members.length}</p>
                 <p className="text-sm text-muted-foreground">Total Members</p>
@@ -236,9 +282,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <UserCheck className="w-8 h-8 text-green-500" />
+              <UserCheck className="h-8 w-8 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{members.filter(m => m.lastLogin).length}</p>
+                <p className="text-2xl font-bold">
+                  {members.filter((m) => m.lastLogin).length}
+                </p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
@@ -247,9 +295,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Mail className="w-8 h-8 text-yellow-500" />
+              <Mail className="h-8 w-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">{members.filter(m => !m.lastLogin).length}</p>
+                <p className="text-2xl font-bold">
+                  {members.filter((m) => !m.lastLogin).length}
+                </p>
                 <p className="text-sm text-muted-foreground">Pending Invite</p>
               </div>
             </div>
@@ -258,7 +308,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <UserX className="w-8 h-8 text-red-500" />
+              <UserX className="h-8 w-8 text-red-500" />
               <div>
                 <p className="text-2xl font-bold">0</p>
                 <p className="text-sm text-muted-foreground">Disabled</p>
@@ -272,16 +322,18 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <Users className="h-5 w-5" />
             Organization Members
           </CardTitle>
-          <CardDescription>Manage members, view activity, and take support actions</CardDescription>
+          <CardDescription>
+            Manage members, view activity, and take support actions
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchQuery}
@@ -302,7 +354,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
               </SelectContent>
             </Select>
             <Button variant="outline" size="icon" onClick={fetchMembers}>
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
 
@@ -322,8 +374,13 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
               <TableBody>
                 {filteredMembers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {searchQuery || roleFilter !== 'all' ? 'No members match your filters' : 'No members found'}
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      {searchQuery || roleFilter !== 'all'
+                        ? 'No members match your filters'
+                        : 'No members found'}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -340,21 +397,33 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                         >
                           <TableCell>
                             <div>
-                              <p className="font-medium">{fullName || member.email || 'Unknown'}</p>
-                              {fullName && <p className="text-xs text-muted-foreground">{member.email}</p>}
+                              <p className="font-medium">
+                                {fullName || member.email || 'Unknown'}
+                              </p>
+                              {fullName && (
+                                <p className="text-xs text-muted-foreground">
+                                  {member.email}
+                                </p>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={getRoleBadgeVariant(member.role)}>
-                              {member.role === 'org_owner' ? 'Owner' :
-                               member.role === 'org_admin' ? 'Admin' :
-                               member.role === 'user' ? 'Member' :
-                               member.role === 'viewer' ? 'Viewer' :
-                               member.role}
+                              {member.role === 'org_owner'
+                                ? 'Owner'
+                                : member.role === 'org_admin'
+                                  ? 'Admin'
+                                  : member.role === 'user'
+                                    ? 'Member'
+                                    : member.role === 'viewer'
+                                      ? 'Viewer'
+                                      : member.role}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
+                            <Badge variant={status.variant}>
+                              {status.label}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {member.lastLogin
@@ -365,7 +434,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                             {fmt.shortDate(member.joinedAt)}
                           </TableCell>
                           <TableCell>
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
                           </TableCell>
                         </TableRow>
 
@@ -373,128 +446,199 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                         {isExpanded && (
                           <TableRow>
                             <TableCell colSpan={6} className="bg-muted/30 p-0">
-                              <div className="p-4 space-y-4">
+                              <div className="space-y-4 p-4">
                                 {/* Quick Actions */}
                                 <div className="flex flex-wrap gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    disabled={actionLoading === 'reset-password'}
+                                    disabled={
+                                      actionLoading === 'reset-password'
+                                    }
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       handleResetPassword(member.email || '')
                                     }}
                                   >
-                                    <KeyRound className="w-4 h-4 mr-1" />
-                                    {actionLoading === 'reset-password' ? 'Sending...' : 'Reset Password'}
+                                    <KeyRound className="mr-1 h-4 w-4" />
+                                    {actionLoading === 'reset-password'
+                                      ? 'Sending...'
+                                      : 'Reset Password'}
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      navigator.clipboard.writeText(member.email || '')
+                                      navigator.clipboard.writeText(
+                                        member.email || ''
+                                      )
                                       toast.success('Email copied to clipboard')
                                     }}
                                   >
-                                    <Copy className="w-4 h-4 mr-1" />
+                                    <Copy className="mr-1 h-4 w-4" />
                                     Copy Email
                                   </Button>
 
                                   {/* Role Change Dropdown */}
-                                  {availableRoles.length > 0 && member.role !== 'super_admin' && (
-                                    <Select
-                                      value={member.role}
-                                      onValueChange={(newRole) => {
-                                        if (newRole !== member.role) {
-                                          handleChangeRole(member.membership_id, member.email || '', newRole)
+                                  {availableRoles.length > 0 &&
+                                    member.role !== 'super_admin' && (
+                                      <Select
+                                        value={member.role}
+                                        onValueChange={(newRole) => {
+                                          if (newRole !== member.role) {
+                                            handleChangeRole(
+                                              member.membership_id,
+                                              member.email || '',
+                                              newRole
+                                            )
+                                          }
+                                        }}
+                                        disabled={
+                                          actionLoading ===
+                                          `role-${member.membership_id}`
                                         }
-                                      }}
-                                      disabled={actionLoading === `role-${member.membership_id}`}
-                                    >
-                                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                                        <UserCog className="w-3 h-3 mr-1" />
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {availableRoles.map((role) => (
-                                          <SelectItem key={role} value={role}>
-                                            {role === 'org_owner' ? 'Owner' :
-                                             role === 'org_admin' ? 'Admin' :
-                                             role === 'user' ? 'Member' : 'Viewer'}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  )}
+                                      >
+                                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                                          <UserCog className="mr-1 h-3 w-3" />
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {availableRoles.map((role) => (
+                                            <SelectItem key={role} value={role}>
+                                              {role === 'org_owner'
+                                                ? 'Owner'
+                                                : role === 'org_admin'
+                                                  ? 'Admin'
+                                                  : role === 'user'
+                                                    ? 'Member'
+                                                    : 'Viewer'}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
                                 </div>
 
                                 {/* Activity Timeline */}
                                 <div>
-                                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
+                                  <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                                    <Clock className="h-4 w-4" />
                                     Recent Activity
                                   </h4>
                                   {activityLoading ? (
                                     <div className="space-y-2">
                                       {[...Array(3)].map((_, i) => (
-                                        <Skeleton key={i} className="h-8 w-full" />
+                                        <Skeleton
+                                          key={i}
+                                          className="h-8 w-full"
+                                        />
                                       ))}
                                     </div>
                                   ) : activityTimeline.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No recent activity recorded</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      No recent activity recorded
+                                    </p>
                                   ) : (
-                                    <div className="max-h-64 overflow-y-auto space-y-1">
-                                      {activityTimeline.slice(0, 20).map((entry) => (
-                                        <div
-                                          key={entry.id}
-                                          className="flex items-start gap-2 text-sm py-1.5 px-2 rounded hover:bg-muted/50"
-                                        >
-                                          <span className="flex-shrink-0 mt-0.5">{getCategoryIcon(entry.action_category)}</span>
-                                          <div className="flex-1 min-w-0">
-                                            <span className="font-medium">{entry.action_type.replace(/_/g, ' ')}</span>
-                                            {entry.resource_name && (
-                                              <span className="text-muted-foreground"> — {entry.resource_name}</span>
-                                            )}
-                                          </div>
-                                          <Badge variant={entry.status === 'success' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
-                                            {entry.status}
-                                          </Badge>
-                                          <span
-                                            className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap"
-                                            title={fmt.dateTime(entry.created_at)}
+                                    <div className="max-h-64 space-y-1 overflow-y-auto">
+                                      {activityTimeline
+                                        .slice(0, 20)
+                                        .map((entry) => (
+                                          <div
+                                            key={entry.id}
+                                            className="flex items-start gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted/50"
                                           >
-                                            {fmt.timeAgo(entry.created_at)}
-                                          </span>
-                                        </div>
-                                      ))}
+                                            <span className="mt-0.5 flex-shrink-0">
+                                              {getCategoryIcon(
+                                                entry.action_category
+                                              )}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                              <span className="font-medium">
+                                                {entry.action_type.replace(
+                                                  /_/g,
+                                                  ' '
+                                                )}
+                                              </span>
+                                              {entry.resource_name && (
+                                                <span className="text-muted-foreground">
+                                                  {' '}
+                                                  — {entry.resource_name}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <Badge
+                                              variant={
+                                                entry.status === 'success'
+                                                  ? 'default'
+                                                  : 'destructive'
+                                              }
+                                              className="flex-shrink-0 text-xs"
+                                            >
+                                              {entry.status}
+                                            </Badge>
+                                            <span
+                                              className="flex-shrink-0 whitespace-nowrap text-xs text-muted-foreground"
+                                              title={fmt.dateTime(
+                                                entry.created_at
+                                              )}
+                                            >
+                                              {fmt.timeAgo(entry.created_at)}
+                                            </span>
+                                          </div>
+                                        ))}
                                     </div>
                                   )}
                                 </div>
 
                                 {/* Login History subset */}
-                                {activityTimeline.filter(e => e.action_category === 'authentication').length > 0 && (
+                                {activityTimeline.filter(
+                                  (e) => e.action_category === 'authentication'
+                                ).length > 0 && (
                                   <div>
-                                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                                      <Shield className="w-4 h-4" />
+                                    <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                                      <Shield className="h-4 w-4" />
                                       Recent Logins
                                     </h4>
                                     <div className="space-y-1">
                                       {activityTimeline
-                                        .filter(e => e.action_category === 'authentication')
+                                        .filter(
+                                          (e) =>
+                                            e.action_category ===
+                                            'authentication'
+                                        )
                                         .slice(0, 10)
                                         .map((login) => (
-                                          <div key={login.id} className="flex items-center gap-2 text-sm py-1 px-2 rounded hover:bg-muted/50">
-                                            <Badge variant={login.status === 'success' ? 'default' : 'destructive'} className="text-xs">
-                                              {login.action_type.replace(/_/g, ' ')}
+                                          <div
+                                            key={login.id}
+                                            className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50"
+                                          >
+                                            <Badge
+                                              variant={
+                                                login.status === 'success'
+                                                  ? 'default'
+                                                  : 'destructive'
+                                              }
+                                              className="text-xs"
+                                            >
+                                              {login.action_type.replace(
+                                                /_/g,
+                                                ' '
+                                              )}
                                             </Badge>
-                                            <span className="text-muted-foreground text-xs">{login.ip_address || 'Unknown IP'}</span>
-                                            <span className="text-muted-foreground text-xs flex-1 truncate">
-                                              {login.user_agent?.split(' ')[0] || ''}
+                                            <span className="text-xs text-muted-foreground">
+                                              {login.ip_address || 'Unknown IP'}
+                                            </span>
+                                            <span className="flex-1 truncate text-xs text-muted-foreground">
+                                              {login.user_agent?.split(
+                                                ' '
+                                              )[0] || ''}
                                             </span>
                                             <span
                                               className="text-xs text-muted-foreground"
-                                              title={fmt.dateTime(login.created_at)}
+                                              title={fmt.dateTime(
+                                                login.created_at
+                                              )}
                                             >
                                               {fmt.timeAgo(login.created_at)}
                                             </span>

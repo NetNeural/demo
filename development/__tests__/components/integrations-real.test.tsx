@@ -53,13 +53,17 @@ jest.mock('@/contexts/OrganizationContext', () => ({
 
 describe('Integration Components', () => {
   test('OrganizationIntegrationManager component exists', async () => {
-    const integrationModule = await import('@/components/integrations/OrganizationIntegrationManager')
+    const integrationModule =
+      await import('@/components/integrations/OrganizationIntegrationManager')
     expect(integrationModule.OrganizationIntegrationManager).toBeDefined()
   })
 
   test('OrganizationIntegrationManager renders', async () => {
-    const { OrganizationIntegrationManager } = await import('@/components/integrations/OrganizationIntegrationManager')
-    const { container } = render(<OrganizationIntegrationManager organizationId="test-org-id" />)
+    const { OrganizationIntegrationManager } =
+      await import('@/components/integrations/OrganizationIntegrationManager')
+    const { container } = render(
+      <OrganizationIntegrationManager organizationId="test-org-id" />
+    )
     await waitFor(() => expect(container).toBeTruthy())
   })
 })

@@ -1,6 +1,6 @@
 /**
  * Comprehensive Tests for Form Validation and API Helpers
- * 
+ *
  * Tests for form validation logic, API request/response handling, and error management
  */
 
@@ -12,7 +12,9 @@ describe('Form Validation - Device Configuration', () => {
     description?: string
   }
 
-  const validateDeviceForm = (data: DeviceForm): { isValid: boolean; errors: string[] } => {
+  const validateDeviceForm = (
+    data: DeviceForm
+  ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
     if (!data.name || data.name.trim().length === 0) {
@@ -83,7 +85,9 @@ describe('Form Validation - Device Configuration', () => {
     const result = validateDeviceForm(form)
 
     expect(result.isValid).toBe(false)
-    expect(result.errors).toContain('Device name must be less than 100 characters')
+    expect(result.errors).toContain(
+      'Device name must be less than 100 characters'
+    )
   })
 })
 
@@ -95,7 +99,9 @@ describe('Form Validation - User Registration', () => {
     fullName: string
   }
 
-  const validateUserForm = (data: UserForm): { isValid: boolean; errors: Record<string, string> } => {
+  const validateUserForm = (
+    data: UserForm
+  ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {}
 
     // Email validation
@@ -168,7 +174,9 @@ describe('Form Validation - User Registration', () => {
     const result = validateUserForm(form)
 
     expect(result.isValid).toBe(false)
-    expect(result.errors.password).toBe('Password must be at least 8 characters')
+    expect(result.errors.password).toBe(
+      'Password must be at least 8 characters'
+    )
   })
 
   test('rejects mismatched passwords', () => {
@@ -222,8 +230,16 @@ describe('API Response Handling', () => {
       return response.error || 'An unknown error occurred'
     }
 
-    const errorResponse: ApiResponse<any> = { data: null, error: 'Server error', status: 500 }
-    const successResponse: ApiResponse<any> = { data: {}, error: null, status: 200 }
+    const errorResponse: ApiResponse<any> = {
+      data: null,
+      error: 'Server error',
+      status: 500,
+    }
+    const successResponse: ApiResponse<any> = {
+      data: {},
+      error: null,
+      status: 200,
+    }
 
     expect(extractError(errorResponse)).toBe('Server error')
     expect(extractError(successResponse)).toBe('An unknown error occurred')
@@ -232,8 +248,10 @@ describe('API Response Handling', () => {
 
 describe('HTTP Status Code Helpers', () => {
   const isSuccess = (status: number): boolean => status >= 200 && status < 300
-  const isClientError = (status: number): boolean => status >= 400 && status < 500
-  const isServerError = (status: number): boolean => status >= 500 && status < 600
+  const isClientError = (status: number): boolean =>
+    status >= 400 && status < 500
+  const isServerError = (status: number): boolean =>
+    status >= 500 && status < 600
 
   test('identifies success status codes', () => {
     expect(isSuccess(200)).toBe(true)
@@ -258,43 +276,47 @@ describe('HTTP Status Code Helpers', () => {
 
 describe('Query String Building', () => {
   const buildQueryString = (params: Record<string, any>): string => {
-    const entries = Object.entries(params).filter(([_, value]) => value !== undefined && value !== null)
+    const entries = Object.entries(params).filter(
+      ([_, value]) => value !== undefined && value !== null
+    )
     if (entries.length === 0) return ''
-    
+
     const queryParts = entries.map(([key, value]) => {
       if (Array.isArray(value)) {
-        return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join('&')
+        return value
+          .map((v) => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
+          .join('&')
       }
       return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
     })
-    
+
     return '?' + queryParts.join('&')
   }
 
   test('builds query string from object', () => {
     const params = { page: 1, limit: 10, search: 'test' }
     const queryString = buildQueryString(params)
-    
+
     expect(queryString).toBe('?page=1&limit=10&search=test')
   })
 
   test('handles empty params', () => {
     const queryString = buildQueryString({})
-    
+
     expect(queryString).toBe('')
   })
 
   test('filters out null and undefined', () => {
     const params = { page: 1, limit: null, search: undefined, status: 'active' }
     const queryString = buildQueryString(params)
-    
+
     expect(queryString).toBe('?page=1&status=active')
   })
 
   test('encodes special characters', () => {
     const params = { search: 'test & demo', filter: 'a=b' }
     const queryString = buildQueryString(params)
-    
+
     expect(queryString).toContain('test%20%26%20demo')
     expect(queryString).toContain('a%3Db')
   })
@@ -311,7 +333,9 @@ describe('Error Message Formatting', () => {
   }
 
   test('formats string errors', () => {
-    expect(formatErrorMessage('Something went wrong')).toBe('Something went wrong')
+    expect(formatErrorMessage('Something went wrong')).toBe(
+      'Something went wrong'
+    )
   })
 
   test('formats Error objects', () => {
@@ -340,7 +364,10 @@ describe('Retry Logic', () => {
       return 'Success'
     })
 
-    const retry = async (fn: () => Promise<any>, maxAttempts: number = 3): Promise<any> => {
+    const retry = async (
+      fn: () => Promise<any>,
+      maxAttempts: number = 3
+    ): Promise<any> => {
       let lastError
       for (let i = 0; i < maxAttempts; i++) {
         try {
@@ -363,7 +390,10 @@ describe('Retry Logic', () => {
       throw new Error('Always fails')
     })
 
-    const retry = async (fn: () => Promise<any>, maxAttempts: number = 3): Promise<any> => {
+    const retry = async (
+      fn: () => Promise<any>,
+      maxAttempts: number = 3
+    ): Promise<any> => {
       let lastError
       for (let i = 0; i < maxAttempts; i++) {
         try {
@@ -390,8 +420,10 @@ describe('Request Timeout', () => {
       })
     }
 
-    const longRequest = new Promise(resolve => setTimeout(() => resolve('Done'), 5000))
-    
+    const longRequest = new Promise((resolve) =>
+      setTimeout(() => resolve('Done'), 5000)
+    )
+
     const racePromise = Promise.race([longRequest, timeout(1000)])
 
     jest.advanceTimersByTime(1000)

@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface SensorThreshold {
@@ -65,7 +66,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     console.log('[sensor-threshold-evaluator] Starting threshold evaluation...')
@@ -73,26 +74,33 @@ serve(async (req) => {
     // Get all enabled sensor thresholds
     const { data: thresholds, error: thresholdsError } = await supabaseClient
       .from('sensor_thresholds')
-      .select(`
+      .select(
+        `
         *,
         devices!sensor_thresholds_device_id_fkey (
           id,
           name,
           organization_id
         )
-      `)
+      `
+      )
       .eq('alert_enabled', true)
       .eq('notify_on_breach', true)
 
     if (thresholdsError) {
-      console.error('[sensor-threshold-evaluator] Error fetching thresholds:', thresholdsError)
+      console.error(
+        '[sensor-threshold-evaluator] Error fetching thresholds:',
+        thresholdsError
+      )
       return new Response(JSON.stringify({ error: thresholdsError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    console.log(`[sensor-threshold-evaluator] Found ${thresholds?.length || 0} enabled thresholds`)
+    console.log(
+      `[sensor-threshold-evaluator] Found ${thresholds?.length || 0} enabled thresholds`
+    )
 
     const results = {
       evaluated: 0,
@@ -103,25 +111,29 @@ serve(async (req) => {
 
     // Mapping from sensor type names to telemetry type IDs
     const SENSOR_TYPE_TO_ID: Record<string, string> = {
-      'temperature': '1',
-      'humidity': '2',
-      'pressure': '3',
-      'battery': '4',
-      'co2': '7',
-      'tvoc': '8',
-      'light': '9',
-      'motion': '10',
+      temperature: '1',
+      humidity: '2',
+      pressure: '3',
+      battery: '4',
+      co2: '7',
+      tvoc: '8',
+      light: '9',
+      motion: '10',
     }
 
     // Process each threshold
     for (const threshold of thresholds || []) {
       try {
-        const device = (threshold.devices as unknown) as Device
+        const device = threshold.devices as unknown as Device
 
-        console.log(`[sensor-threshold-evaluator] Evaluating threshold for device: ${device.name}, sensor: ${threshold.sensor_type}`)
+        console.log(
+          `[sensor-threshold-evaluator] Evaluating threshold for device: ${device.name}, sensor: ${threshold.sensor_type}`
+        )
 
         // Convert sensor type name to ID for querying
-        const sensorTypeId = SENSOR_TYPE_TO_ID[threshold.sensor_type.toLowerCase()] || threshold.sensor_type
+        const sensorTypeId =
+          SENSOR_TYPE_TO_ID[threshold.sensor_type.toLowerCase()] ||
+          threshold.sensor_type
 
         // Get most recent telemetry reading for this device and sensor type
         const { data: readings, error: readingsError } = await supabaseClient
@@ -133,13 +145,18 @@ serve(async (req) => {
           .limit(1)
 
         if (readingsError) {
-          console.error(`[sensor-threshold-evaluator] Error fetching readings:`, readingsError)
+          console.error(
+            `[sensor-threshold-evaluator] Error fetching readings:`,
+            readingsError
+          )
           results.errors++
           continue
         }
 
         if (!readings || readings.length === 0) {
-          console.log(`[sensor-threshold-evaluator] No recent readings for device ${device.name}`)
+          console.log(
+            `[sensor-threshold-evaluator] No recent readings for device ${device.name}`
+          )
           results.skipped++
           continue
         }
@@ -150,20 +167,29 @@ serve(async (req) => {
         // Handle temperature unit conversion
         // Device telemetry is always in Celsius (units: 1)
         // Convert to Fahrenheit if threshold is set in Fahrenheit
-        if (threshold.sensor_type.toLowerCase() === 'temperature' && threshold.temperature_unit === 'fahrenheit') {
-          value = (value * 9/5) + 32
-          console.log(`[sensor-threshold-evaluator] Converted ${reading.telemetry.value}°C to ${value}°F`)
+        if (
+          threshold.sensor_type.toLowerCase() === 'temperature' &&
+          threshold.temperature_unit === 'fahrenheit'
+        ) {
+          value = (value * 9) / 5 + 32
+          console.log(
+            `[sensor-threshold-evaluator] Converted ${reading.telemetry.value}°C to ${value}°F`
+          )
         }
 
         // Check if value breaches thresholds
-        let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null = null
+        let breachType: 'critical_max' | 'critical_min' | 'max' | 'min' | null =
+          null
         let breachMessage = ''
 
         // Check critical thresholds first
         if (threshold.critical_max != null && value >= threshold.critical_max) {
           breachType = 'critical_max'
           breachMessage = `Critical maximum threshold exceeded: ${value} >= ${threshold.critical_max}`
-        } else if (threshold.critical_min != null && value <= threshold.critical_min) {
+        } else if (
+          threshold.critical_min != null &&
+          value <= threshold.critical_min
+        ) {
           breachType = 'critical_min'
           breachMessage = `Critical minimum threshold breached: ${value} <= ${threshold.critical_min}`
         } else if (threshold.max_value != null && value > threshold.max_value) {
@@ -175,25 +201,32 @@ serve(async (req) => {
         }
 
         if (breachType) {
-          console.log(`[sensor-threshold-evaluator] BREACH DETECTED: ${breachMessage}`)
+          console.log(
+            `[sensor-threshold-evaluator] BREACH DETECTED: ${breachMessage}`
+          )
 
           // Create alert
-          const sensorName = SENSOR_TYPE_NAMES[parseInt(threshold.sensor_type)] || `Sensor ${threshold.sensor_type}`
-          const severity = (breachType === 'critical_max' || breachType === 'critical_min') ? 'critical' : 'high'
-          
+          const sensorName =
+            SENSOR_TYPE_NAMES[parseInt(threshold.sensor_type)] ||
+            `Sensor ${threshold.sensor_type}`
+          const severity =
+            breachType === 'critical_max' || breachType === 'critical_min'
+              ? 'critical'
+              : 'high'
+
           // Map sensor name to category
           const categoryMap: Record<string, string> = {
-            'Temperature': 'temperature',
-            'Humidity': 'temperature',
-            'Pressure': 'temperature',
-            'Battery': 'battery',
-            'CO2': 'system',
-            'TVOC': 'system',
-            'Light': 'system',
-            'Motion': 'vibration',
+            Temperature: 'temperature',
+            Humidity: 'temperature',
+            Pressure: 'temperature',
+            Battery: 'battery',
+            CO2: 'system',
+            TVOC: 'system',
+            Light: 'system',
+            Motion: 'vibration',
           }
           const category = categoryMap[sensorName] || 'system'
-          
+
           const { data: alertData, error: alertError } = await supabaseClient
             .from('alerts')
             .insert({
@@ -215,53 +248,77 @@ serve(async (req) => {
                 max_value: threshold.max_value,
                 critical_min: threshold.critical_min,
                 critical_max: threshold.critical_max,
-              }
+              },
             })
             .select()
             .single()
 
           if (alertError) {
-            console.error(`[sensor-threshold-evaluator] Error creating alert:`, alertError)
+            console.error(
+              `[sensor-threshold-evaluator] Error creating alert:`,
+              alertError
+            )
             results.errors++
             continue
           }
 
           // Send notifications via all configured channels (email, slack, sms)
-          const hasRecipients = 
-            (threshold.notify_user_ids && threshold.notify_user_ids.length > 0) ||
+          const hasRecipients =
+            (threshold.notify_user_ids &&
+              threshold.notify_user_ids.length > 0) ||
             (threshold.notify_emails && threshold.notify_emails.length > 0) ||
-            (threshold.notify_phone_numbers && threshold.notify_phone_numbers.length > 0) ||
-            (threshold.notification_channels && threshold.notification_channels.includes('slack'))
+            (threshold.notify_phone_numbers &&
+              threshold.notify_phone_numbers.length > 0) ||
+            (threshold.notification_channels &&
+              threshold.notification_channels.includes('slack'))
 
           if (alertData && hasRecipients) {
-            console.log(`[sensor-threshold-evaluator] Sending notifications for alert ${alertData.id}, channels: ${(threshold.notification_channels || ['email']).join(', ')}`)
-            
+            console.log(
+              `[sensor-threshold-evaluator] Sending notifications for alert ${alertData.id}, channels: ${(threshold.notification_channels || ['email']).join(', ')}`
+            )
+
             try {
               const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-              const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-              
-              const notifResponse = await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${supabaseServiceKey}`,
-                },
-                body: JSON.stringify({
-                  alert_id: alertData.id,
-                  threshold_id: threshold.id,
-                }),
-              })
+              const supabaseServiceKey = Deno.env.get(
+                'SUPABASE_SERVICE_ROLE_KEY'
+              )!
+
+              const notifResponse = await fetch(
+                `${supabaseUrl}/functions/v1/send-alert-notifications`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${supabaseServiceKey}`,
+                  },
+                  body: JSON.stringify({
+                    alert_id: alertData.id,
+                    threshold_id: threshold.id,
+                  }),
+                }
+              )
 
               const notifResult = await notifResponse.json()
-              console.log(`[sensor-threshold-evaluator] Notification result:`, notifResult)
-              
+              console.log(
+                `[sensor-threshold-evaluator] Notification result:`,
+                notifResult
+              )
+
               if (notifResult.success) {
-                console.log(`[sensor-threshold-evaluator] ${notifResult.channels_succeeded}/${notifResult.channels_dispatched} channels succeeded`)
+                console.log(
+                  `[sensor-threshold-evaluator] ${notifResult.channels_succeeded}/${notifResult.channels_dispatched} channels succeeded`
+                )
               } else {
-                console.error(`[sensor-threshold-evaluator] Notification dispatch failed:`, notifResult.error)
+                console.error(
+                  `[sensor-threshold-evaluator] Notification dispatch failed:`,
+                  notifResult.error
+                )
               }
             } catch (notifError) {
-              console.error(`[sensor-threshold-evaluator] Error sending notifications:`, notifError)
+              console.error(
+                `[sensor-threshold-evaluator] Error sending notifications:`,
+                notifError
+              )
             }
           }
 
@@ -276,7 +333,10 @@ serve(async (req) => {
 
         results.evaluated++
       } catch (error) {
-        console.error(`[sensor-threshold-evaluator] Error evaluating threshold:`, error)
+        console.error(
+          `[sensor-threshold-evaluator] Error evaluating threshold:`,
+          error
+        )
         results.errors++
       }
     }
@@ -289,7 +349,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('[sensor-threshold-evaluator] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

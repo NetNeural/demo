@@ -122,6 +122,7 @@ docker-compose logs mqtt-subscriber | grep "Connected to"
 ### 1. Service Startup
 
 On startup, the service:
+
 1. Connects to Supabase
 2. Queries `device_integrations` table for active MQTT integrations
 3. Connects to each MQTT broker
@@ -131,6 +132,7 @@ On startup, the service:
 ### 2. Message Processing
 
 When a message arrives:
+
 1. Extract device ID from topic (e.g., `devices/DEV-001/telemetry` → `DEV-001`)
 2. Parse JSON payload
 3. Extract telemetry fields (temperature, humidity, battery, etc.)
@@ -140,6 +142,7 @@ When a message arrives:
 ### 3. Auto-Reconnect
 
 If connection is lost:
+
 - Automatically retries with exponential backoff
 - Max 10 reconnect attempts (configurable)
 - Logs all reconnection attempts
@@ -148,13 +151,13 @@ If connection is lost:
 
 ### Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `SUPABASE_URL` | ✅ Yes | - | Your Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes | - | Service role key (has RLS bypass) |
-| `LOG_LEVEL` | No | `info` | Log level: `debug`, `info`, `warn`, `error` |
-| `MAX_RECONNECT_ATTEMPTS` | No | `10` | Max reconnection attempts before giving up |
-| `RECONNECT_INTERVAL` | No | `5000` | Base reconnect interval in milliseconds |
+| Variable                    | Required | Default | Description                                 |
+| --------------------------- | -------- | ------- | ------------------------------------------- |
+| `SUPABASE_URL`              | ✅ Yes   | -       | Your Supabase project URL                   |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes   | -       | Service role key (has RLS bypass)           |
+| `LOG_LEVEL`                 | No       | `info`  | Log level: `debug`, `info`, `warn`, `error` |
+| `MAX_RECONNECT_ATTEMPTS`    | No       | `10`    | Max reconnection attempts before giving up  |
+| `RECONNECT_INTERVAL`        | No       | `5000`  | Base reconnect interval in milliseconds     |
 
 ### Database Schema
 
@@ -259,11 +262,13 @@ See `k8s/` directory for deployment manifests (coming soon).
 ### Service Won't Start
 
 **Check logs:**
+
 ```bash
 docker-compose logs mqtt-subscriber
 ```
 
 **Common issues:**
+
 - Missing environment variables → Check `.env` file
 - Invalid Supabase credentials → Verify `SUPABASE_SERVICE_ROLE_KEY`
 - No MQTT integrations found → Check database for active integrations
@@ -332,12 +337,12 @@ Edit `src/message-processor.ts`:
 private parsePayload(payload: string): Record<string, unknown> {
   // Add your custom parsing logic here
   const data = JSON.parse(payload);
-  
+
   // Example: Custom VMark format
   if (data.deviceType === 'vmark') {
     return this.parseVMarkFormat(data);
   }
-  
+
   return data;
 }
 ```

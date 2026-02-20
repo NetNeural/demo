@@ -18,8 +18,16 @@ import { Loader2 } from 'lucide-react'
 
 // Color palette for multi-device lines
 const DEVICE_COLORS = [
-  '#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
+  '#3b82f6',
+  '#ef4444',
+  '#22c55e',
+  '#f59e0b',
+  '#8b5cf6',
+  '#ec4899',
+  '#06b6d4',
+  '#f97316',
+  '#14b8a6',
+  '#6366f1',
 ]
 
 interface TelemetryLineChartProps {
@@ -68,7 +76,9 @@ export function TelemetryLineChart({
       setError(null)
 
       const hours = TIME_RANGE_HOURS[timeRange] || 24
-      const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+      const startTime = new Date(
+        Date.now() - hours * 60 * 60 * 1000
+      ).toISOString()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
@@ -107,7 +117,10 @@ export function TelemetryLineChart({
         const seenDevices = new Set<string>()
 
         for (const item of telemetryData) {
-          const value = extractMetricValue(item.telemetry as Record<string, unknown>, metric)
+          const value = extractMetricValue(
+            item.telemetry as Record<string, unknown>,
+            metric
+          )
           if (value === null) continue
 
           const ts = item.device_timestamp || item.received_at
@@ -126,15 +139,21 @@ export function TelemetryLineChart({
       } else {
         // Single device mode — flat array
         const processed = telemetryData
-          .map((item: { device_timestamp: string | null; received_at: string; telemetry: Record<string, unknown> }) => {
-            const value = extractMetricValue(item.telemetry, metric)
-            if (value === null) return null
-            const ts = item.device_timestamp || item.received_at
-            return {
-              timestamp: fmt.dateTime(ts),
-              value: parseFloat(String(value)),
+          .map(
+            (item: {
+              device_timestamp: string | null
+              received_at: string
+              telemetry: Record<string, unknown>
+            }) => {
+              const value = extractMetricValue(item.telemetry, metric)
+              if (value === null) return null
+              const ts = item.device_timestamp || item.received_at
+              return {
+                timestamp: fmt.dateTime(ts),
+                value: parseFloat(String(value)),
+              }
             }
-          })
+          )
           .filter(Boolean)
 
         setDeviceIds([])
@@ -176,7 +195,8 @@ export function TelemetryLineChart({
     )
   }
 
-  const getDeviceLabel = (devId: string) => deviceNames[devId] || devId.slice(0, 8)
+  const getDeviceLabel = (devId: string) =>
+    deviceNames[devId] || devId.slice(0, 8)
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -190,18 +210,29 @@ export function TelemetryLineChart({
           height={80}
         />
         <YAxis
-          label={{ value: unit ? `${metricLabel || metric} (${unit})` : metricLabel || metric, angle: -90, position: 'insideLeft' }}
+          label={{
+            value: unit
+              ? `${metricLabel || metric} (${unit})`
+              : metricLabel || metric,
+            angle: -90,
+            position: 'insideLeft',
+          }}
           tick={{ fontSize: 12 }}
         />
         <Tooltip
           labelFormatter={(label) => `Time: ${label}`}
           formatter={(value: number | undefined, name: string | undefined) => {
-            if (value === undefined || name === undefined) return ['N/A', name || 'Unknown']
-            const label = isMultiDevice ? getDeviceLabel(name) : (metricLabel || metric)
+            if (value === undefined || name === undefined)
+              return ['N/A', name || 'Unknown']
+            const label = isMultiDevice
+              ? getDeviceLabel(name)
+              : metricLabel || metric
             return [`${value}${unit}`, label]
           }}
         />
-        {isMultiDevice && deviceIds.length > 1 && <Legend formatter={(value) => getDeviceLabel(value)} />}
+        {isMultiDevice && deviceIds.length > 1 && (
+          <Legend formatter={(value) => getDeviceLabel(value)} />
+        )}
         {isMultiDevice ? (
           deviceIds.map((devId, idx) => (
             <Line

@@ -24,7 +24,8 @@ export function DataFreshness({
   variant = 'inline',
   className,
 }: DataFreshnessProps) {
-  const date = typeof lastUpdated === 'string' ? new Date(lastUpdated) : lastUpdated
+  const date =
+    typeof lastUpdated === 'string' ? new Date(lastUpdated) : lastUpdated
   const now = new Date()
   const minutesAgo = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
 
@@ -32,19 +33,19 @@ export function DataFreshness({
     minutesAgo > staleThreshold
       ? 'stale'
       : minutesAgo > warningThreshold
-      ? 'warning'
-      : 'fresh'
+        ? 'warning'
+        : 'fresh'
 
   const timeAgo = formatDistanceToNow(date, { addSuffix: true })
 
   const getIcon = () => {
     switch (status) {
       case 'stale':
-        return <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+        return <AlertCircle className="h-3.5 w-3.5 text-red-500" />
       case 'warning':
-        return <Clock className="w-3.5 h-3.5 text-yellow-500" />
+        return <Clock className="h-3.5 w-3.5 text-yellow-500" />
       case 'fresh':
-        return <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+        return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
     }
   }
 
@@ -62,7 +63,13 @@ export function DataFreshness({
   if (variant === 'badge') {
     return (
       <Badge
-        variant={status === 'stale' ? 'destructive' : status === 'warning' ? 'secondary' : 'outline'}
+        variant={
+          status === 'stale'
+            ? 'destructive'
+            : status === 'warning'
+              ? 'secondary'
+              : 'outline'
+        }
         className={cn('text-xs', className)}
       >
         {showIcon && getIcon()}
@@ -100,7 +107,7 @@ export function DataFreshness({
       {showIcon && getIcon()}
       <div>
         <span className="font-medium">{getStatusText()}</span>
-        <span className="text-muted-foreground ml-1">· Updated {timeAgo}</span>
+        <span className="ml-1 text-muted-foreground">· Updated {timeAgo}</span>
       </div>
     </div>
   )
@@ -122,10 +129,14 @@ export function useDataFreshness(lastUpdated: Date | string) {
     return () => clearInterval(interval)
   }, [])
 
-  const date = typeof lastUpdated === 'string' ? new Date(lastUpdated) : lastUpdated
+  const date =
+    typeof lastUpdated === 'string' ? new Date(lastUpdated) : lastUpdated
   const minutesAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60))
 
-  return { minutesAgo, formattedTime: formatDistanceToNow(date, { addSuffix: true }) }
+  return {
+    minutesAgo,
+    formattedTime: formatDistanceToNow(date, { addSuffix: true }),
+  }
 }
 
 // Import statement for useEffect and useState

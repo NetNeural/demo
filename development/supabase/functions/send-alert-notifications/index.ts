@@ -3,7 +3,8 @@ import { Resend } from 'npm:resend@2.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface NotificationRequest {
@@ -31,13 +32,17 @@ interface NotificationResult {
 
 function supabaseHeaders(serviceKey: string) {
   return {
-    'apikey': serviceKey,
-    'Authorization': `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
     'Content-Type': 'application/json',
   }
 }
 
-async function fetchAlert(supabaseUrl: string, serviceKey: string, alertId: string) {
+async function fetchAlert(
+  supabaseUrl: string,
+  serviceKey: string,
+  alertId: string
+) {
   const res = await fetch(
     `${supabaseUrl}/rest/v1/alerts?id=eq.${alertId}&select=*,devices!alerts_device_id_fkey(name,device_type,organization_id,location_id,locations!devices_location_id_fkey(name,address,city,state,country))`,
     { headers: supabaseHeaders(serviceKey) }
@@ -46,7 +51,11 @@ async function fetchAlert(supabaseUrl: string, serviceKey: string, alertId: stri
   return alerts?.[0] || null
 }
 
-async function fetchThreshold(supabaseUrl: string, serviceKey: string, thresholdId: string) {
+async function fetchThreshold(
+  supabaseUrl: string,
+  serviceKey: string,
+  thresholdId: string
+) {
   const res = await fetch(
     `${supabaseUrl}/rest/v1/sensor_thresholds?id=eq.${thresholdId}&select=*`,
     { headers: supabaseHeaders(serviceKey) }
@@ -55,7 +64,11 @@ async function fetchThreshold(supabaseUrl: string, serviceKey: string, threshold
   return thresholds?.[0] || null
 }
 
-async function fetchOrgSettings(supabaseUrl: string, serviceKey: string, orgId: string) {
+async function fetchOrgSettings(
+  supabaseUrl: string,
+  serviceKey: string,
+  orgId: string
+) {
   const res = await fetch(
     `${supabaseUrl}/rest/v1/organizations?id=eq.${orgId}&select=settings`,
     { headers: supabaseHeaders(serviceKey) }
@@ -64,7 +77,11 @@ async function fetchOrgSettings(supabaseUrl: string, serviceKey: string, orgId: 
   return orgs?.[0]?.settings?.notification_settings || {}
 }
 
-async function resolveUserEmails(supabaseUrl: string, serviceKey: string, userIds: string[]): Promise<string[]> {
+async function resolveUserEmails(
+  supabaseUrl: string,
+  serviceKey: string,
+  userIds: string[]
+): Promise<string[]> {
   if (!userIds?.length) return []
   const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_user_emails`, {
     method: 'POST',
@@ -88,30 +105,45 @@ async function sendEmailNotification(
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     if (!resendApiKey) {
-      return { channel: 'email', success: false, error: 'RESEND_API_KEY not configured' }
+      return {
+        channel: 'email',
+        success: false,
+        error: 'RESEND_API_KEY not configured',
+      }
     }
 
     // Resolve user IDs → emails
-    const userEmails = await resolveUserEmails(supabaseUrl, serviceKey, recipientUserIds)
+    const userEmails = await resolveUserEmails(
+      supabaseUrl,
+      serviceKey,
+      recipientUserIds
+    )
     const allEmails = [...new Set([...recipientEmails, ...userEmails])]
 
     if (allEmails.length === 0) {
-      return { channel: 'email', success: true, detail: 'No email recipients configured' }
+      return {
+        channel: 'email',
+        success: true,
+        detail: 'No email recipients configured',
+      }
     }
 
     // Call existing send-alert-email edge function (it has the HTML template)
-    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-alert-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({
-        alert_id: (alert as { id: string }).id,
-        recipient_emails: allEmails,
-        recipient_user_ids: [], // Already resolved above
-      }),
-    })
+    const emailRes = await fetch(
+      `${supabaseUrl}/functions/v1/send-alert-email`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          alert_id: (alert as { id: string }).id,
+          recipient_emails: allEmails,
+          recipient_user_ids: [], // Already resolved above
+        }),
+      }
+    )
 
     const emailResult = await emailRes.json()
     return {
@@ -121,15 +153,28 @@ async function sendEmailNotification(
       error: emailResult.error,
     }
   } catch (err) {
-    return { channel: 'email', success: false, error: err instanceof Error ? err.message : String(err) }
+    return {
+      channel: 'email',
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 
 // ─── Slack via Incoming Webhook ───────────────────────────────────────
 
 function buildSlackBlocks(alert: Record<string, unknown>) {
-  const device = (alert as { devices?: { name?: string; device_type?: string; locations?: { name?: string } } }).devices
-  const isTest = (alert as { metadata?: { is_test?: boolean } }).metadata?.is_test || false
+  const device = (
+    alert as {
+      devices?: {
+        name?: string
+        device_type?: string
+        locations?: { name?: string }
+      }
+    }
+  ).devices
+  const isTest =
+    (alert as { metadata?: { is_test?: boolean } }).metadata?.is_test || false
   const severity = (alert as { severity: string }).severity
   const title = (alert as { title: string }).title
   const message = (alert as { message: string }).message
@@ -148,13 +193,17 @@ function buildSlackBlocks(alert: Record<string, unknown>) {
   return {
     text: `${isTest ? '🧪 TEST: ' : ''}${emoji} ${title}`,
     blocks: [
-      ...(isTest ? [{
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '⚠️ *THIS IS A TEST ALERT — No action required*',
-        },
-      }] : []),
+      ...(isTest
+        ? [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '⚠️ *THIS IS A TEST ALERT — No action required*',
+              },
+            },
+          ]
+        : []),
       {
         type: 'header',
         text: {
@@ -168,8 +217,17 @@ function buildSlackBlocks(alert: Record<string, unknown>) {
         fields: [
           { type: 'mrkdwn', text: `*Severity:*\n${severity.toUpperCase()}` },
           { type: 'mrkdwn', text: `*Device:*\n${device?.name || 'Unknown'}` },
-          ...(device?.device_type ? [{ type: 'mrkdwn', text: `*Type:*\n${device.device_type}` }] : []),
-          ...(device?.locations?.name ? [{ type: 'mrkdwn', text: `*Location:*\n${device.locations.name}` }] : []),
+          ...(device?.device_type
+            ? [{ type: 'mrkdwn', text: `*Type:*\n${device.device_type}` }]
+            : []),
+          ...(device?.locations?.name
+            ? [
+                {
+                  type: 'mrkdwn',
+                  text: `*Location:*\n${device.locations.name}`,
+                },
+              ]
+            : []),
         ],
       },
       {
@@ -188,15 +246,25 @@ function buildSlackBlocks(alert: Record<string, unknown>) {
           },
         ],
       },
-      ...(isTest ? [] : [{
-        type: 'actions',
-        elements: [{
-          type: 'button',
-          text: { type: 'plain_text', text: '📊 View in Dashboard', emoji: true },
-          url: 'https://demo-stage.netneural.ai/dashboard/alerts/',
-          style: 'primary',
-        }],
-      }]),
+      ...(isTest
+        ? []
+        : [
+            {
+              type: 'actions',
+              elements: [
+                {
+                  type: 'button',
+                  text: {
+                    type: 'plain_text',
+                    text: '📊 View in Dashboard',
+                    emoji: true,
+                  },
+                  url: 'https://demo-stage.netneural.ai/dashboard/alerts/',
+                  style: 'primary',
+                },
+              ],
+            },
+          ]),
     ],
   }
 }
@@ -207,7 +275,11 @@ async function sendSlackNotification(
 ): Promise<NotificationResult> {
   try {
     if (!webhookUrl) {
-      return { channel: 'slack', success: false, error: 'No Slack webhook URL configured' }
+      return {
+        channel: 'slack',
+        success: false,
+        error: 'No Slack webhook URL configured',
+      }
     }
 
     const payload = buildSlackBlocks(alert)
@@ -221,12 +293,24 @@ async function sendSlackNotification(
 
     if (!res.ok) {
       const errorText = await res.text()
-      return { channel: 'slack', success: false, error: `Slack webhook returned ${res.status}: ${errorText}` }
+      return {
+        channel: 'slack',
+        success: false,
+        error: `Slack webhook returned ${res.status}: ${errorText}`,
+      }
     }
 
-    return { channel: 'slack', success: true, detail: 'Message posted to Slack' }
+    return {
+      channel: 'slack',
+      success: true,
+      detail: 'Message posted to Slack',
+    }
   } catch (err) {
-    return { channel: 'slack', success: false, error: err instanceof Error ? err.message : String(err) }
+    return {
+      channel: 'slack',
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 
@@ -241,14 +325,24 @@ async function sendSmsNotification(
     const { account_sid, auth_token, from_number } = twilioConfig
 
     if (!account_sid || !auth_token || !from_number) {
-      return { channel: 'sms', success: false, error: 'Twilio not configured — set account_sid, auth_token, from_number in org notification settings' }
+      return {
+        channel: 'sms',
+        success: false,
+        error:
+          'Twilio not configured — set account_sid, auth_token, from_number in org notification settings',
+      }
     }
 
     if (!phoneNumbers?.length) {
-      return { channel: 'sms', success: true, detail: 'No SMS recipients configured' }
+      return {
+        channel: 'sms',
+        success: true,
+        detail: 'No SMS recipients configured',
+      }
     }
 
-    const isTest = (alert as { metadata?: { is_test?: boolean } }).metadata?.is_test || false
+    const isTest =
+      (alert as { metadata?: { is_test?: boolean } }).metadata?.is_test || false
     const severity = (alert as { severity: string }).severity
     const title = (alert as { title: string }).title
     const device = (alert as { devices?: { name?: string } }).devices
@@ -259,7 +353,9 @@ async function sendSmsNotification(
       device?.name ? `Device: ${device.name}` : '',
       '',
       'View: https://demo-stage.netneural.ai/dashboard/alerts/',
-    ].filter(Boolean).join('\n')
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${account_sid}/Messages.json`
     const authHeader = 'Basic ' + btoa(`${account_sid}:${auth_token}`)
@@ -278,7 +374,7 @@ async function sendSmsNotification(
         const res = await fetch(twilioUrl, {
           method: 'POST',
           headers: {
-            'Authorization': authHeader,
+            Authorization: authHeader,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: params.toString(),
@@ -290,10 +386,15 @@ async function sendSmsNotification(
         } else {
           const errBody = await res.json()
           errors.push(`${phone}: ${errBody.message || res.statusText}`)
-          console.error(`[send-alert-notifications] SMS to ${phone} failed:`, errBody)
+          console.error(
+            `[send-alert-notifications] SMS to ${phone} failed:`,
+            errBody
+          )
         }
       } catch (smsErr) {
-        errors.push(`${phone}: ${smsErr instanceof Error ? smsErr.message : String(smsErr)}`)
+        errors.push(
+          `${phone}: ${smsErr instanceof Error ? smsErr.message : String(smsErr)}`
+        )
       }
     }
 
@@ -304,7 +405,11 @@ async function sendSmsNotification(
       error: errors.length > 0 ? errors.join('; ') : undefined,
     }
   } catch (err) {
-    return { channel: 'sms', success: false, error: err instanceof Error ? err.message : String(err) }
+    return {
+      channel: 'sms',
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    }
   }
 }
 
@@ -323,21 +428,23 @@ serve(async (req) => {
     const { alert_id, threshold_id, channels: overrideChannels } = body
 
     if (!alert_id) {
-      return new Response(
-        JSON.stringify({ error: 'alert_id is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'alert_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    console.log(`[send-alert-notifications] Processing alert=${alert_id}, threshold=${threshold_id}`)
+    console.log(
+      `[send-alert-notifications] Processing alert=${alert_id}, threshold=${threshold_id}`
+    )
 
     // 1. Fetch alert details (including device + location)
     const alert = await fetchAlert(supabaseUrl, serviceKey, alert_id)
     if (!alert) {
-      return new Response(
-        JSON.stringify({ error: 'Alert not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Alert not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // 2. Determine organization
@@ -345,7 +452,10 @@ serve(async (req) => {
     if (!orgId) {
       return new Response(
         JSON.stringify({ error: 'Cannot determine organization for alert' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -356,12 +466,15 @@ serve(async (req) => {
     }
 
     // 4. Fetch org notification settings (Slack webhook, Twilio creds)
-    const orgNotifSettings = await fetchOrgSettings(supabaseUrl, serviceKey, orgId)
+    const orgNotifSettings = await fetchOrgSettings(
+      supabaseUrl,
+      serviceKey,
+      orgId
+    )
 
     // 5. Determine which channels to use
-    const channels: string[] = overrideChannels
-      || (threshold?.notification_channels as string[])
-      || ['email'] // Default to email only
+    const channels: string[] = overrideChannels ||
+      (threshold?.notification_channels as string[]) || ['email'] // Default to email only
 
     console.log(`[send-alert-notifications] Channels: ${channels.join(', ')}`)
 
@@ -388,13 +501,20 @@ serve(async (req) => {
     const results: NotificationResult[] = []
 
     if (channels.includes('email')) {
-      const emailResult = await sendEmailNotification(alert, uniqueEmails, uniqueUserIds, supabaseUrl, serviceKey)
+      const emailResult = await sendEmailNotification(
+        alert,
+        uniqueEmails,
+        uniqueUserIds,
+        supabaseUrl,
+        serviceKey
+      )
       results.push(emailResult)
       console.log(`[send-alert-notifications] Email result:`, emailResult)
     }
 
     if (channels.includes('slack')) {
-      const slackUrl = body.slack_webhook_url || orgNotifSettings.slack_webhook_url
+      const slackUrl =
+        body.slack_webhook_url || orgNotifSettings.slack_webhook_url
       const slackResult = await sendSlackNotification(alert, slackUrl)
       results.push(slackResult)
       console.log(`[send-alert-notifications] Slack result:`, slackResult)
@@ -402,17 +522,30 @@ serve(async (req) => {
 
     if (channels.includes('sms')) {
       const twilioConfig = {
-        account_sid: orgNotifSettings.twilio_account_sid || Deno.env.get('TWILIO_ACCOUNT_SID') || '',
-        auth_token: orgNotifSettings.twilio_auth_token || Deno.env.get('TWILIO_AUTH_TOKEN') || '',
-        from_number: orgNotifSettings.twilio_from_number || Deno.env.get('TWILIO_FROM_NUMBER') || '',
+        account_sid:
+          orgNotifSettings.twilio_account_sid ||
+          Deno.env.get('TWILIO_ACCOUNT_SID') ||
+          '',
+        auth_token:
+          orgNotifSettings.twilio_auth_token ||
+          Deno.env.get('TWILIO_AUTH_TOKEN') ||
+          '',
+        from_number:
+          orgNotifSettings.twilio_from_number ||
+          Deno.env.get('TWILIO_FROM_NUMBER') ||
+          '',
       }
-      const smsResult = await sendSmsNotification(alert, uniquePhones, twilioConfig)
+      const smsResult = await sendSmsNotification(
+        alert,
+        uniquePhones,
+        twilioConfig
+      )
       results.push(smsResult)
       console.log(`[send-alert-notifications] SMS result:`, smsResult)
     }
 
     // 8. Summary
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter((r) => r.success).length
     const totalChannels = results.length
 
     return new Response(
@@ -427,8 +560,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('[send-alert-notifications] Error:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
   }
 })

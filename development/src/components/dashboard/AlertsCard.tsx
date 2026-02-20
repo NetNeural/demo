@@ -8,7 +8,10 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { AcknowledgeAlertDialog, type AcknowledgementType } from '@/components/alerts/AcknowledgeAlertDialog'
+import {
+  AcknowledgeAlertDialog,
+  type AcknowledgementType,
+} from '@/components/alerts/AcknowledgeAlertDialog'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface AlertItem {
@@ -40,46 +43,48 @@ export function AlertsCard() {
 
     try {
       const response = await edgeFunctions.alerts.list(currentOrganization.id, {
-        resolved: false
-      });
-      
+        resolved: false,
+      })
+
       if (!response.success || !response.data) {
-        console.error('Failed to fetch alerts:', response.error);
+        console.error('Failed to fetch alerts:', response.error)
         setAlerts([])
         setLoading(false)
         return
       }
-        
+
       // Define API response type
       interface AlertApiResponse {
-        id: string;
-        title: string;
-        message: string;
-        severity: 'low' | 'medium' | 'high' | 'critical';
-        deviceName: string;
-        timestamp: string;
-        isResolved: boolean;
+        id: string
+        title: string
+        message: string
+        severity: 'low' | 'medium' | 'high' | 'critical'
+        deviceName: string
+        timestamp: string
+        isResolved: boolean
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = response.data as any;
+      const data = response.data as any
 
       // Transform API response to match AlertItem interface
-      const transformedAlerts: AlertItem[] = (data.alerts || []).map((alert: AlertApiResponse) => ({
-        id: alert.id,
-        title: alert.title,
-        description: alert.message,
-        severity: alert.severity,
-        device: alert.deviceName,
-        timestamp: alert.timestamp,
-        acknowledged: alert.isResolved
-      }));
-      
-      setAlerts(transformedAlerts);
+      const transformedAlerts: AlertItem[] = (data.alerts || []).map(
+        (alert: AlertApiResponse) => ({
+          id: alert.id,
+          title: alert.title,
+          description: alert.message,
+          severity: alert.severity,
+          device: alert.deviceName,
+          timestamp: alert.timestamp,
+          acknowledged: alert.isResolved,
+        })
+      )
+
+      setAlerts(transformedAlerts)
     } catch (error) {
-      console.error('Failed to fetch alerts:', error);
+      console.error('Failed to fetch alerts:', error)
       // Show empty state instead of mock data
-      setAlerts([]);
+      setAlerts([])
     } finally {
       setLoading(false)
     }
@@ -90,17 +95,24 @@ export function AlertsCard() {
   }, [fetchAlerts])
 
   const handleAcknowledgeAlert = async (alertId: string) => {
-    const alert = alerts.find(a => a.id === alertId)
+    const alert = alerts.find((a) => a.id === alertId)
     setAckAlertId(alertId)
     setAckAlertTitle(alert?.title || '')
     setShowAckDialog(true)
   }
 
-  const handleAcknowledgeWithNotes = async (type: AcknowledgementType, notes: string) => {
+  const handleAcknowledgeWithNotes = async (
+    type: AcknowledgementType,
+    notes: string
+  ) => {
     if (!ackAlertId) return
 
     try {
-      const response = await edgeFunctions.userActions.acknowledgeAlert(ackAlertId, type, notes)
+      const response = await edgeFunctions.userActions.acknowledgeAlert(
+        ackAlertId,
+        type,
+        notes
+      )
 
       if (!response.success) {
         console.error('Failed to acknowledge alert:', response.error)
@@ -109,15 +121,15 @@ export function AlertsCard() {
       }
 
       // Optimistic UI update
-      setAlerts(prevAlerts => 
-        prevAlerts.map(alert => 
-          alert.id === ackAlertId 
-            ? { ...alert, acknowledged: true }
-            : alert
+      setAlerts((prevAlerts) =>
+        prevAlerts.map((alert) =>
+          alert.id === ackAlertId ? { ...alert, acknowledged: true } : alert
         )
       )
 
-      toast.success(`Alert ${type === 'resolved' ? 'resolved' : 'acknowledged'}`)
+      toast.success(
+        `Alert ${type === 'resolved' ? 'resolved' : 'acknowledged'}`
+      )
       setAckAlertId(null)
     } catch (error) {
       console.error('Error acknowledging alert:', error)
@@ -129,21 +141,31 @@ export function AlertsCard() {
 
   const getSeverityIcon = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return '🚨'
-      case 'high': return '⚠️'
-      case 'medium': return '🟡'
-      case 'low': return 'ℹ️'
-      default: return '❓'
+      case 'critical':
+        return '🚨'
+      case 'high':
+        return '⚠️'
+      case 'medium':
+        return '🟡'
+      case 'low':
+        return 'ℹ️'
+      default:
+        return '❓'
     }
   }
 
   const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return 'border-red-500 bg-red-50'
-      case 'high': return 'border-orange-500 bg-orange-50'
-      case 'medium': return 'border-yellow-500 bg-yellow-50'
-      case 'low': return 'border-blue-500 bg-blue-50'
-      default: return 'border-gray-500 bg-gray-50'
+      case 'critical':
+        return 'border-red-500 bg-red-50'
+      case 'high':
+        return 'border-orange-500 bg-orange-50'
+      case 'medium':
+        return 'border-yellow-500 bg-yellow-50'
+      case 'low':
+        return 'border-blue-500 bg-blue-50'
+      default:
+        return 'border-gray-500 bg-gray-50'
     }
   }
 
@@ -152,8 +174,8 @@ export function AlertsCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Active Alerts</CardTitle>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => router.push('/dashboard/alerts')}
           >
@@ -165,48 +187,55 @@ export function AlertsCard() {
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-3 border rounded-lg animate-pulse">
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              <div key={i} className="animate-pulse rounded-lg border p-3">
+                <div className="mb-2 h-4 rounded bg-gray-200"></div>
+                <div className="h-3 w-3/4 rounded bg-gray-200"></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="max-h-80 space-y-3 overflow-y-auto">
             {alerts.map((alert) => (
-              <Alert 
-                key={alert.id} 
+              <Alert
+                key={alert.id}
                 className={`${getSeverityColor(alert.severity)}`}
               >
-                <div className="flex items-start justify-between w-full">
+                <div className="flex w-full items-start justify-between">
                   <div className="flex items-start space-x-2">
-                    <span className="text-lg mt-0.5">{getSeverityIcon(alert.severity)}</span>
+                    <span className="mt-0.5 text-lg">
+                      {getSeverityIcon(alert.severity)}
+                    </span>
                     <div>
-                      <AlertDescription className="font-medium text-sm">
+                      <AlertDescription className="text-sm font-medium">
                         {alert.title}
                       </AlertDescription>
-                      <AlertDescription className="text-xs text-muted-foreground mt-1">
+                      <AlertDescription className="mt-1 text-xs text-muted-foreground">
                         {alert.description}
                       </AlertDescription>
-                      <AlertDescription className="text-xs text-muted-foreground mt-1">
+                      <AlertDescription className="mt-1 text-xs text-muted-foreground">
                         {alert.device} • {fmt.timeAgo(alert.timestamp)}
                       </AlertDescription>
                     </div>
                   </div>
                   <div className="flex flex-col items-end space-y-1">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                      alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                      alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
+                    <span
+                      className={`rounded px-2 py-1 text-xs ${
+                        alert.severity === 'critical'
+                          ? 'bg-red-100 text-red-800'
+                          : alert.severity === 'high'
+                            ? 'bg-orange-100 text-orange-800'
+                            : alert.severity === 'medium'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
                       {alert.severity.toUpperCase()}
                     </span>
                     {!alert.acknowledged && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-6"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
                         onClick={() => handleAcknowledgeAlert(alert.id)}
                       >
                         Acknowledge
@@ -218,11 +247,11 @@ export function AlertsCard() {
             ))}
           </div>
         )}
-        
+
         {!loading && alerts.length === 0 && (
-          <div className="text-center py-6 text-muted-foreground">
+          <div className="py-6 text-center text-muted-foreground">
             <p className="text-green-600">🎉 No active alerts</p>
-            <p className="text-sm mt-1">All systems operating normally</p>
+            <p className="mt-1 text-sm">All systems operating normally</p>
           </div>
         )}
       </CardContent>

@@ -1,28 +1,39 @@
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
-import { 
-  getUserContext, 
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
+import {
+  getUserContext,
   resolveOrganizationId,
   getTargetOrganizationId,
-  createServiceClient
+  createServiceClient,
 } from '../_shared/auth.ts'
 
-export default createEdgeFunction(async ({ req }) => {
-  // Get authenticated user context
-  const userContext = await getUserContext(req)
-  
-  // Use service_role client to bypass RLS — authorization handled by resolveOrganizationId
-  const supabase = createServiceClient()
+export default createEdgeFunction(
+  async ({ req }) => {
+    // Get authenticated user context
+    const userContext = await getUserContext(req)
+
+    // Use service_role client to bypass RLS — authorization handled by resolveOrganizationId
+    const supabase = createServiceClient()
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
-      const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 500) // Cap at 500
+      const limit = Math.min(
+        parseInt(url.searchParams.get('limit') || '50'),
+        500
+      ) // Cap at 500
       const requestedOrgId = url.searchParams.get('organization_id')
       const severityFilter = url.searchParams.get('severity') // Filter by severity
       const resolvedFilter = url.searchParams.get('resolved') // Filter by resolution status
-      
+
       // Determine which organization to query — supports multi-org via organization_members
-      const organizationId = await resolveOrganizationId(userContext, requestedOrgId)
-      
+      const organizationId = await resolveOrganizationId(
+        userContext,
+        requestedOrgId
+      )
+
       if (!organizationId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)
       }
@@ -30,13 +41,15 @@ export default createEdgeFunction(async ({ req }) => {
       // Build query - RLS will enforce access automatically
       let query = supabase
         .from('alerts')
-        .select(`
+        .select(
+          `
           *,
           devices!device_id(name, device_type)
-        `)
+        `
+        )
         .order('created_at', { ascending: false })
         .limit(limit)
-      
+
       // Only filter by org if specified (super admins can query all orgs)
       if (organizationId) {
         query = query.eq('organization_id', organizationId)
@@ -62,39 +75,49 @@ export default createEdgeFunction(async ({ req }) => {
 
       // Transform alerts for response
       // deno-lint-ignore no-explicit-any
-      const transformedAlerts = alerts?.map((alert: any) => ({
-        id: alert.id,
-        title: alert.title,
-        message: alert.message,
-        severity: alert.severity,
-        alertType: alert.alert_type,
-        category: alert.category || 'system', // Added for Issue #108
-        deviceName: alert.devices?.name || 'Unknown Device',
-        deviceType: alert.devices?.device_type || 'Unknown',
-        deviceId: alert.device_id,
-        timestamp: alert.created_at,
-        isResolved: alert.is_resolved,
-        resolvedAt: alert.resolved_at,
-        resolvedBy: alert.resolved_by,
-        metadata: alert.metadata
-      })) || []
+      const transformedAlerts =
+        alerts?.map((alert: any) => ({
+          id: alert.id,
+          title: alert.title,
+          message: alert.message,
+          severity: alert.severity,
+          alertType: alert.alert_type,
+          category: alert.category || 'system', // Added for Issue #108
+          deviceName: alert.devices?.name || 'Unknown Device',
+          deviceType: alert.devices?.device_type || 'Unknown',
+          deviceId: alert.device_id,
+          timestamp: alert.created_at,
+          isResolved: alert.is_resolved,
+          resolvedAt: alert.resolved_at,
+          resolvedBy: alert.resolved_by,
+          metadata: alert.metadata,
+        })) || []
 
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         alerts: transformedAlerts,
         count: transformedAlerts.length,
         limit,
         organizationId,
         filters: {
           severity: severityFilter,
-          resolved: resolvedFilter
-        }
+          resolved: resolvedFilter,
+        },
       })
     }
 
     // POST /alerts - Create a new alert (e.g., test alerts)
     if (req.method === 'POST' && !req.url.includes('/bulk-acknowledge')) {
       const body = await req.json()
-      const { organization_id, device_id, alert_type, category, title, message, severity, metadata } = body
+      const {
+        organization_id,
+        device_id,
+        alert_type,
+        category,
+        title,
+        message,
+        severity,
+        metadata,
+      } = body
 
       if (!organization_id || !device_id || !title) {
         throw new Error('organization_id, device_id, and title are required')
@@ -103,7 +126,10 @@ export default createEdgeFunction(async ({ req }) => {
       // Verify user has access to the organization
       const orgId = await resolveOrganizationId(userContext, organization_id)
       if (!orgId) {
-        throw new DatabaseError('User does not have access to this organization', 403)
+        throw new DatabaseError(
+          'User does not have access to this organization',
+          403
+        )
       }
 
       const { data: alert, error: insertError } = await supabase
@@ -123,7 +149,9 @@ export default createEdgeFunction(async ({ req }) => {
         .single()
 
       if (insertError) {
-        throw new DatabaseError(`Failed to create alert: ${insertError.message}`)
+        throw new DatabaseError(
+          `Failed to create alert: ${insertError.message}`
+        )
       }
 
       return createSuccessResponse({ alert })
@@ -151,25 +179,32 @@ export default createEdgeFunction(async ({ req }) => {
         .in('id', alert_ids)
 
       if (verifyError) {
-        throw new DatabaseError(`Failed to verify alerts: ${verifyError.message}`)
+        throw new DatabaseError(
+          `Failed to verify alerts: ${verifyError.message}`
+        )
       }
 
       // Check access for each alert
-      const invalidAlerts = alertsToAck?.filter(alert => 
-        !userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId
+      const invalidAlerts = alertsToAck?.filter(
+        (alert) =>
+          !userContext.isSuperAdmin &&
+          alert.organization_id !== userContext.organizationId
       )
 
       if (invalidAlerts && invalidAlerts.length > 0) {
-        throw new DatabaseError('You do not have access to some of these alerts', 403)
+        throw new DatabaseError(
+          'You do not have access to some of these alerts',
+          403
+        )
       }
 
       // Bulk insert acknowledgements
-      const acknowledgements = alert_ids.map(alertId => ({
+      const acknowledgements = alert_ids.map((alertId) => ({
         alert_id: alertId,
         user_id: userContext.userId,
         organization_id: targetOrgId,
         acknowledgement_type: acknowledgement_type || 'acknowledged',
-        notes: notes || null
+        notes: notes || null,
       }))
 
       const { data, error } = await supabase
@@ -179,13 +214,15 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (error) {
         console.error('Failed to bulk acknowledge alerts:', error)
-        throw new DatabaseError(`Failed to acknowledge alerts: ${error.message}`)
+        throw new DatabaseError(
+          `Failed to acknowledge alerts: ${error.message}`
+        )
       }
 
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         acknowledged_count: data?.length || 0,
         acknowledgements: data,
-        message: `Successfully acknowledged ${data?.length} alert(s)`
+        message: `Successfully acknowledged ${data?.length} alert(s)`,
       })
     }
 
@@ -212,7 +249,10 @@ export default createEdgeFunction(async ({ req }) => {
       }
 
       // Check if user has access to this organization
-      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
+      if (
+        !userContext.isSuperAdmin &&
+        alert.organization_id !== userContext.organizationId
+      ) {
         throw new DatabaseError('You do not have access to this alert', 403)
       }
 
@@ -232,25 +272,27 @@ export default createEdgeFunction(async ({ req }) => {
             user_id: userContext.userId,
             organization_id: alert.organization_id,
             acknowledgement_type: acknowledgementType,
-            notes: notes
+            notes: notes,
           })
           .select()
           .single()
 
         if (ackError) {
           console.error('Failed to acknowledge alert:', ackError)
-          throw new DatabaseError(`Failed to acknowledge alert: ${ackError.message}`)
+          throw new DatabaseError(
+            `Failed to acknowledge alert: ${ackError.message}`
+          )
         }
 
-        return createSuccessResponse({ 
+        return createSuccessResponse({
           acknowledgement,
-          message: 'Alert acknowledged successfully'
+          message: 'Alert acknowledged successfully',
         })
       } else if (action === 'resolve') {
         updateData = {
           is_resolved: true,
           resolved_by: userContext.userId,
-          resolved_at: new Date().toISOString()
+          resolved_at: new Date().toISOString(),
         }
       } else {
         // Generic update from request body
@@ -268,16 +310,20 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (updateError) {
         console.error('Failed to update alert:', updateError)
-        throw new DatabaseError(`Failed to update alert: ${updateError.message}`)
+        throw new DatabaseError(
+          `Failed to update alert: ${updateError.message}`
+        )
       }
 
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         alert: updated,
-        message: `Alert ${action || 'updated'} successfully`
+        message: `Alert ${action || 'updated'} successfully`,
       })
     }
 
-  throw new Error('Method not allowed')
-}, {
-  allowedMethods: ['GET', 'POST', 'PATCH', 'PUT']
-})
+    throw new Error('Method not allowed')
+  },
+  {
+    allowedMethods: ['GET', 'POST', 'PATCH', 'PUT'],
+  }
+)

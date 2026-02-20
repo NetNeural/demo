@@ -1,6 +1,6 @@
 /**
  * Web Vitals Monitoring
- * 
+ *
  * Reports Core Web Vitals to Sentry for performance monitoring.
  * Tracks:
  * - LCP (Largest Contentful Paint) - Loading performance
@@ -9,7 +9,7 @@
  * - FCP (First Contentful Paint) - Initial render
  * - TTFB (Time to First Byte) - Server response time
  * - INP (Interaction to Next Paint) - Responsiveness
- * 
+ *
  * @see https://web.dev/vitals/
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/analytics
  */
@@ -19,19 +19,19 @@ import * as Sentry from '@sentry/nextjs'
 
 /**
  * Web Vitals Thresholds (Good, Needs Improvement, Poor)
- * 
+ *
  * Based on Web Vitals recommendations:
  * - Good: 75th percentile
  * - Needs Improvement: 75th-90th percentile
  * - Poor: >90th percentile
  */
 const VITALS_THRESHOLDS = {
-  LCP: { good: 2500, needsImprovement: 4000 },  // Largest Contentful Paint (ms)
-  FID: { good: 100, needsImprovement: 300 },    // First Input Delay (ms)
-  CLS: { good: 0.1, needsImprovement: 0.25 },   // Cumulative Layout Shift (score)
-  FCP: { good: 1800, needsImprovement: 3000 },  // First Contentful Paint (ms)
-  TTFB: { good: 800, needsImprovement: 1800 },  // Time to First Byte (ms)
-  INP: { good: 200, needsImprovement: 500 },    // Interaction to Next Paint (ms)
+  LCP: { good: 2500, needsImprovement: 4000 }, // Largest Contentful Paint (ms)
+  FID: { good: 100, needsImprovement: 300 }, // First Input Delay (ms)
+  CLS: { good: 0.1, needsImprovement: 0.25 }, // Cumulative Layout Shift (score)
+  FCP: { good: 1800, needsImprovement: 3000 }, // First Contentful Paint (ms)
+  TTFB: { good: 800, needsImprovement: 1800 }, // Time to First Byte (ms)
+  INP: { good: 200, needsImprovement: 500 }, // Interaction to Next Paint (ms)
 } as const
 
 /**
@@ -54,19 +54,19 @@ function getRating(
  */
 function sendToSentry(metric: Metric) {
   const { name, value, id } = metric
-  
+
   // Convert to milliseconds for Sentry (most metrics are in ms already)
   const valueInMs = name === 'CLS' ? value * 1000 : value
-  
+
   // Get custom rating based on thresholds
   const customRating = getRating(name, value)
 
   // Send to Sentry with context
   Sentry.getCurrentScope().setContext('webVitals', {
     [name]: valueInMs,
-    rating: customRating
+    rating: customRating,
   })
-  
+
   // Add as breadcrumb for debugging
   Sentry.addBreadcrumb({
     type: 'metric',
@@ -84,7 +84,12 @@ function sendToSentry(metric: Metric) {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    const emoji = customRating === 'good' ? '✅' : customRating === 'needs-improvement' ? '⚠️' : '❌'
+    const emoji =
+      customRating === 'good'
+        ? '✅'
+        : customRating === 'needs-improvement'
+          ? '⚠️'
+          : '❌'
     console.log(
       `[Web Vitals] ${emoji} ${name}:`,
       value.toFixed(2),
@@ -97,26 +102,29 @@ function sendToSentry(metric: Metric) {
   // but do NOT fire captureMessage — it's too noisy and triggers transport
   // errors on static-export deployments where Sentry transport may be unavailable.
   if (customRating === 'poor') {
-    Sentry.getCurrentScope().setTag(`poor_vital_${name.toLowerCase()}`, value.toFixed(2))
+    Sentry.getCurrentScope().setTag(
+      `poor_vital_${name.toLowerCase()}`,
+      value.toFixed(2)
+    )
   }
 }
 
 /**
  * Initialize Web Vitals reporting
- * 
+ *
  * Call this once in your app root or _app.tsx
  */
 export function reportWebVitals() {
   try {
     // Core Web Vitals
-    onLCP(sendToSentry)  // Largest Contentful Paint
+    onLCP(sendToSentry) // Largest Contentful Paint
     // onFID has been replaced by onINP in web-vitals v4+
-    onCLS(sendToSentry)  // Cumulative Layout Shift
+    onCLS(sendToSentry) // Cumulative Layout Shift
 
     // Additional metrics
-    onFCP(sendToSentry)  // First Contentful Paint
+    onFCP(sendToSentry) // First Contentful Paint
     onTTFB(sendToSentry) // Time to First Byte
-    onINP(sendToSentry)  // Interaction to Next Paint (replaces FID)
+    onINP(sendToSentry) // Interaction to Next Paint (replaces FID)
 
     // Log initialization
     if (process.env.NODE_ENV === 'development') {
@@ -129,24 +137,24 @@ export function reportWebVitals() {
 
 /**
  * Manual Web Vital reporting (for custom page transitions)
- * 
+ *
  * @example
  * ```tsx
  * import { reportCustomVital } from '@/lib/monitoring/web-vitals'
- * 
+ *
  * // Measure custom operation
  * const start = performance.now()
  * await heavyOperation()
  * const duration = performance.now() - start
- * 
+ *
  * reportCustomVital('heavyOperation', duration)
  * ```
  */
 export function reportCustomVital(name: string, value: number) {
   Sentry.getCurrentScope().setContext('customVitals', {
-    [name]: value
+    [name]: value,
   })
-  
+
   Sentry.addBreadcrumb({
     type: 'metric',
     category: 'custom-vitals',
@@ -162,15 +170,15 @@ export function reportCustomVital(name: string, value: number) {
 
 /**
  * Performance mark helper
- * 
+ *
  * @example
  * ```tsx
  * import { perfMark, perfMeasure } from '@/lib/monitoring/web-vitals'
- * 
+ *
  * perfMark('data-fetch-start')
  * const data = await fetchData()
  * perfMark('data-fetch-end')
- * 
+ *
  * const duration = perfMeasure('data-fetch', 'data-fetch-start', 'data-fetch-end')
  * ```
  */
@@ -184,7 +192,7 @@ export function perfMark(name: string) {
 
 /**
  * Performance measure helper
- * 
+ *
  * @returns Duration in milliseconds
  */
 export function perfMeasure(
@@ -213,11 +221,11 @@ export function perfMeasure(
 
 /**
  * Hook: Monitor component render performance
- * 
+ *
  * @example
  * ```tsx
  * import { usePerformanceMonitor } from '@/lib/monitoring/web-vitals'
- * 
+ *
  * function MyComponent() {
  *   usePerformanceMonitor('MyComponent')
  *   // ... rest of component
@@ -228,9 +236,9 @@ export function usePerformanceMonitor(componentName: string) {
   // Mark component mount
   React.useEffect(() => {
     if (typeof window === 'undefined') return
-    
+
     perfMark(`${componentName}-mount`)
-    
+
     return () => {
       perfMark(`${componentName}-unmount`)
       perfMeasure(
@@ -247,37 +255,37 @@ export default reportWebVitals
 
 /**
  * Usage in Next.js App Router:
- * 
+ *
  * Create `instrumentation.ts` in project root:
- * 
+ *
  * ```typescript
  * export function register() {
  *   if (process.env.NEXT_RUNTIME === 'nodejs') {
  *     // Server-side instrumentation
  *     console.log('[Instrumentation] Server registered')
  *   }
- * 
+ *
  *   if (process.env.NEXT_RUNTIME === 'edge') {
  *     // Edge runtime instrumentation
  *     console.log('[Instrumentation] Edge registered')
  *   }
  * }
- * 
+ *
  * export function onRequestError(err: Error, request: Request) {
  *   console.error('[Request Error]', err, request.url)
  * }
  * ```
- * 
+ *
  * Then in app/layout.tsx, add:
- * 
+ *
  * ```typescript
  * import { reportWebVitals } from '@/lib/monitoring/web-vitals'
- * 
+ *
  * export default function RootLayout({ children }) {
  *   useEffect(() => {
  *     reportWebVitals()
  *   }, [])
- *   
+ *
  *   return (
  *     <html>
  *       <body>{children}</body>

@@ -9,14 +9,18 @@ jest.mock('@/contexts/OrganizationContext')
 jest.mock('@/lib/supabase/client')
 jest.mock('sonner')
 
-const mockUseOrganization = useOrganization as jest.MockedFunction<typeof useOrganization>
-const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>
+const mockUseOrganization = useOrganization as jest.MockedFunction<
+  typeof useOrganization
+>
+const mockCreateClient = createClient as jest.MockedFunction<
+  typeof createClient
+>
 const mockToast = toast as jest.Mocked<typeof toast>
 
 describe('AddDeviceDialog', () => {
   const mockOnOpenChange = jest.fn()
   const mockOnSuccess = jest.fn()
-  
+
   const mockOrganization = {
     id: 'org-123',
     name: 'Test Org',
@@ -28,7 +32,7 @@ describe('AddDeviceDialog', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     mockUseOrganization.mockReturnValue({
       currentOrganization: mockOrganization,
       canManageDevices: true,
@@ -125,7 +129,9 @@ describe('AddDeviceDialog', () => {
     fireEvent.click(addButton)
 
     await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith('Please select a device type')
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'Please select a device type'
+      )
     })
   })
 
@@ -210,7 +216,9 @@ describe('AddDeviceDialog', () => {
     )
 
     await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith('Failed to load device types')
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'Failed to load device types'
+      )
     })
   })
 

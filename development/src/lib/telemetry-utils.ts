@@ -13,7 +13,7 @@ export const METRIC_TO_SENSOR_TYPE: Record<string, string[]> = {
   humidity: ['2'],
   pressure: ['3'],
   battery: ['4'],
-  rssi: [],       // RSSI typically comes via flat key or connectivity data
+  rssi: [], // RSSI typically comes via flat key or connectivity data
   co2: ['7'],
   tvoc: ['8'],
   light: ['9'],
@@ -41,7 +41,10 @@ export const METRIC_TO_SENSOR_NAMES: Record<string, string[]> = {
  * 3. Nested env format: { env: { temp: 23.5 } }
  * 4. Alternative flat key aliases: { temp: 23.5 } when looking for "temperature"
  */
-export function extractMetricValue(telemetry: Record<string, unknown> | null | undefined, metric: string): number | null {
+export function extractMetricValue(
+  telemetry: Record<string, unknown> | null | undefined,
+  metric: string
+): number | null {
   if (!telemetry) return null
 
   // 1. Direct flat key match (e.g. telemetry.temperature)
@@ -80,7 +83,7 @@ export function extractMetricValue(telemetry: Record<string, unknown> | null | u
   }
 
   // 5. Check alternative flat key aliases
-  for (const alias of (METRIC_TO_SENSOR_NAMES[metric] || [])) {
+  for (const alias of METRIC_TO_SENSOR_NAMES[metric] || []) {
     const val = telemetry[alias]
     if (val !== undefined && val !== null) {
       const num = parseFloat(String(val))

@@ -3,7 +3,8 @@ import { Resend } from 'npm:resend@2.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface EmailRequest {
@@ -15,9 +16,9 @@ interface EmailRequest {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
+    return new Response('ok', {
       status: 200,
-      headers: corsHeaders 
+      headers: corsHeaders,
     })
   }
 
@@ -25,18 +26,22 @@ serve(async (req) => {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    const { alert_id, threshold_id, recipient_emails, recipient_user_ids } = await req.json() as EmailRequest
+
+    const { alert_id, threshold_id, recipient_emails, recipient_user_ids } =
+      (await req.json()) as EmailRequest
 
     console.log('[send-alert-email] Processing alert:', alert_id)
 
     // Get the alert details from database, including device and location
-    const alertResponse = await fetch(`${supabaseUrl}/rest/v1/alerts?id=eq.${alert_id}&select=*,devices!alerts_device_id_fkey(name,device_type,location_id,locations!devices_location_id_fkey(name,address,city,state,country))`, {
-      headers: {
-        'apikey': supabaseServiceKey,
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-    })
+    const alertResponse = await fetch(
+      `${supabaseUrl}/rest/v1/alerts?id=eq.${alert_id}&select=*,devices!alerts_device_id_fkey(name,device_type,location_id,locations!devices_location_id_fkey(name,address,city,state,country))`,
+      {
+        headers: {
+          apikey: supabaseServiceKey,
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+      }
+    )
 
     const alerts = await alertResponse.json()
     const alert = alerts[0]
@@ -58,36 +63,51 @@ serve(async (req) => {
 
     // Fetch emails for user IDs from auth.users using RPC
     if (recipient_user_ids && recipient_user_ids.length > 0) {
-      console.log(`[send-alert-email] Fetching emails for ${recipient_user_ids.length} user IDs:`, recipient_user_ids)
-      
+      console.log(
+        `[send-alert-email] Fetching emails for ${recipient_user_ids.length} user IDs:`,
+        recipient_user_ids
+      )
+
       const emailsResponse = await fetch(
         `${supabaseUrl}/rest/v1/rpc/get_user_emails`,
         {
           method: 'POST',
           headers: {
-            'apikey': supabaseServiceKey,
-            'Authorization': `Bearer ${supabaseServiceKey}`,
+            apikey: supabaseServiceKey,
+            Authorization: `Bearer ${supabaseServiceKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ user_ids: recipient_user_ids }),
         }
       )
-      
+
       if (emailsResponse.ok) {
         const emailRecords = await emailsResponse.json()
-        const fetchedEmails = emailRecords.map((r: any) => r.email).filter(Boolean)
-        console.log(`[send-alert-email] Found ${fetchedEmails.length} emails from auth.users:`, fetchedEmails)
+        const fetchedEmails = emailRecords
+          .map((r: any) => r.email)
+          .filter(Boolean)
+        console.log(
+          `[send-alert-email] Found ${fetchedEmails.length} emails from auth.users:`,
+          fetchedEmails
+        )
         allEmails.push(...fetchedEmails)
       } else {
         const errorText = await emailsResponse.text()
-        console.error(`[send-alert-email] Error fetching user emails: ${emailsResponse.status} ${emailsResponse.statusText}`, errorText)
+        console.error(
+          `[send-alert-email] Error fetching user emails: ${emailsResponse.status} ${emailsResponse.statusText}`,
+          errorText
+        )
       }
     }
 
     if (allEmails.length === 0) {
       console.log('[send-alert-email] No recipients found, skipping email')
       return new Response(
-        JSON.stringify({ success: true, message: 'No recipients configured', sent: 0 }),
+        JSON.stringify({
+          success: true,
+          message: 'No recipients configured',
+          sent: 0,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -95,12 +115,14 @@ serve(async (req) => {
     // Remove duplicates
     const uniqueEmails = [...new Set(allEmails)]
 
-    console.log(`[send-alert-email] Sending to ${uniqueEmails.length} recipient(s)`)
+    console.log(
+      `[send-alert-email] Sending to ${uniqueEmails.length} recipient(s)`
+    )
 
     // Determine if this is a test alert
     const isTest = alert.metadata?.is_test || false
     const testPrefix = isTest ? '🧪 TEST: ' : ''
-    
+
     // Build email HTML
     const emailHtml = `
 <!DOCTYPE html>
@@ -119,12 +141,16 @@ serve(async (req) => {
 </head>
 <body>
   <div class="container">
-    ${isTest ? `
+    ${
+      isTest
+        ? `
     <div class="test-notice">
       <strong>⚠️ THIS IS A TEST ALERT</strong><br>
       This email is a test of the alert notification system. No action is required.
     </div>
-    ` : ''}
+    `
+        : ''
+    }
     
     <div class="header">
       <h2>${testPrefix}${alert.title}</h2>
@@ -136,8 +162,12 @@ serve(async (req) => {
     <div class="content">
       <div class="device-info">
         <strong>Device:</strong> ${device?.name || 'Unknown'}<br>
-        <strong>Type:</strong> ${device?.device_type || 'N/A'}${location ? `<br>
-        <strong>Location:</strong> ${location.name}${location.address || location.city ? ` — ${[location.address, location.city, location.state, location.country].filter(Boolean).join(', ')}` : ''}` : ''}
+        <strong>Type:</strong> ${device?.device_type || 'N/A'}${
+          location
+            ? `<br>
+        <strong>Location:</strong> ${location.name}${location.address || location.city ? ` — ${[location.address, location.city, location.state, location.country].filter(Boolean).join(', ')}` : ''}`
+            : ''
+        }
       </div>
       
       <div class="alert-box">
@@ -150,14 +180,18 @@ serve(async (req) => {
         <strong>Time:</strong> ${new Date(alert.created_at).toLocaleString()}
       </div>
       
-      ${!isTest ? `
+      ${
+        !isTest
+          ? `
       <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 4px;">
         <a href="https://demo-stage.netneural.ai/dashboard/alerts/" 
            style="display: inline-block; background: #0ea5e9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
           View Alert in Dashboard
         </a>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
     
     <div class="footer">
@@ -170,11 +204,13 @@ serve(async (req) => {
     `
 
     // Send emails in batch to avoid rate limits
-    console.log(`[send-alert-email] Sending batch email to ${uniqueEmails.length} recipients`)
-    
+    console.log(
+      `[send-alert-email] Sending batch email to ${uniqueEmails.length} recipients`
+    )
+
     const results = []
     let successCount = 0
-    
+
     try {
       // Send to all recipients in a single API call
       const { data, error } = await resend.emails.send({
@@ -187,13 +223,19 @@ serve(async (req) => {
       if (error) {
         console.error(`[send-alert-email] Batch send error:`, error)
         // Mark all as failed
-        uniqueEmails.forEach(email => {
-          results.push({ email, success: false, error: error.message || String(error) })
+        uniqueEmails.forEach((email) => {
+          results.push({
+            email,
+            success: false,
+            error: error.message || String(error),
+          })
         })
       } else {
-        console.log(`[send-alert-email] Batch sent successfully, ID: ${data?.id}`)
+        console.log(
+          `[send-alert-email] Batch sent successfully, ID: ${data?.id}`
+        )
         // Mark all as success
-        uniqueEmails.forEach(email => {
+        uniqueEmails.forEach((email) => {
           results.push({ email, success: true, id: data?.id })
         })
         successCount = uniqueEmails.length
@@ -201,20 +243,26 @@ serve(async (req) => {
     } catch (error) {
       console.error(`[send-alert-email] Exception during batch send:`, error)
       // Mark all as failed
-      uniqueEmails.forEach(email => {
+      uniqueEmails.forEach((email) => {
         results.push({ email, success: false, error: String(error) })
       })
     }
 
     return new Response(
-      JSON.stringify({ success: true, sent: successCount, total: uniqueEmails.length, results }),
+      JSON.stringify({
+        success: true,
+        sent: successCount,
+        total: uniqueEmails.length,
+        results,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
   } catch (error) {
     console.error('[send-alert-email] Error:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

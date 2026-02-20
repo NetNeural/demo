@@ -23,7 +23,11 @@ jest.mock('@/contexts/OrganizationContext', () => ({
 }))
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
   usePathname: () => '/dashboard',
   useSearchParams: () => new URLSearchParams(),
 }))
@@ -50,13 +54,16 @@ describe('Dashboard Pages', () => {
   })
 
   test('Analytics page renders', async () => {
-    const AnalyticsPage = (await import('@/app/dashboard/analytics/page')).default
+    const AnalyticsPage = (await import('@/app/dashboard/analytics/page'))
+      .default
     const { container } = render(<AnalyticsPage />)
     await waitFor(() => expect(container.firstChild).toBeTruthy())
   })
 
   test('Organizations page renders', async () => {
-    const OrganizationsPage = (await import('@/app/dashboard/organizations/page')).default
+    const OrganizationsPage = (
+      await import('@/app/dashboard/organizations/page')
+    ).default
     const { container } = render(<OrganizationsPage />)
     await waitFor(() => expect(container.firstChild).toBeTruthy())
   })
@@ -68,7 +75,8 @@ describe('Dashboard Pages', () => {
   })
 
   test('Integrations page renders', async () => {
-    const IntegrationsPage = (await import('@/app/dashboard/integrations/page')).default
+    const IntegrationsPage = (await import('@/app/dashboard/integrations/page'))
+      .default
     const { container } = render(<IntegrationsPage />)
     await waitFor(() => expect(container.firstChild).toBeTruthy())
   })

@@ -1,74 +1,87 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Lock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 export default function ChangePasswordPage() {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
-  const { toast } = useToast();
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
 
     // Validation
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
+      setError('Password must be at least 8 characters long')
+      return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
+      setError('Passwords do not match')
+      return
     }
 
     // Check password strength
-    const hasUpperCase = /[A-Z]/.test(newPassword);
-    const hasLowerCase = /[a-z]/.test(newPassword);
-    const hasNumber = /[0-9]/.test(newPassword);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+    const hasUpperCase = /[A-Z]/.test(newPassword)
+    const hasLowerCase = /[a-z]/.test(newPassword)
+    const hasNumber = /[0-9]/.test(newPassword)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-      setError('Password must contain uppercase, lowercase, number, and special character');
-      return;
+      setError(
+        'Password must contain uppercase, lowercase, number, and special character'
+      )
+      return
     }
 
     try {
-      setIsSubmitting(true);
-      const supabase = createClient();
+      setIsSubmitting(true)
+      const supabase = createClient()
 
       // Update password in Supabase Auth
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
-      });
+      })
 
       if (updateError) {
-        throw updateError;
+        throw updateError
       }
 
       // Update password_change_required flag in public.users table
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await supabase
           .from('users')
           .update({ password_change_required: false } as any)
-          .eq('id', user.id);
+          .eq('id', user.id)
 
         if (dbError) {
-          console.error('Failed to update password_change_required flag:', dbError);
+          console.error(
+            'Failed to update password_change_required flag:',
+            dbError
+          )
           // Don't fail the operation, password was still changed
         }
       }
@@ -76,30 +89,33 @@ export default function ChangePasswordPage() {
       toast({
         title: 'Password Changed',
         description: 'Your password has been successfully changed.',
-      });
+      })
 
       // Redirect to dashboard
-      router.push('/dashboard');
+      router.push('/dashboard')
     } catch (err) {
-      console.error('Password change error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to change password');
+      console.error('Password change error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to change password')
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-orange-100 rounded-full">
-              <Lock className="w-6 h-6 text-orange-600" />
+          <div className="mb-4 flex items-center justify-center">
+            <div className="rounded-full bg-orange-100 p-3">
+              <Lock className="h-6 w-6 text-orange-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Change Your Password</CardTitle>
+          <CardTitle className="text-center text-2xl">
+            Change Your Password
+          </CardTitle>
           <CardDescription className="text-center">
-            You&apos;re using a temporary password. Please create a new secure password to continue.
+            You&apos;re using a temporary password. Please create a new secure
+            password to continue.
           </CardDescription>
         </CardHeader>
 
@@ -107,7 +123,8 @@ export default function ChangePasswordPage() {
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Your password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.
+              Your password must be at least 8 characters and include uppercase,
+              lowercase, numbers, and special characters.
             </AlertDescription>
           </Alert>
 
@@ -145,27 +162,23 @@ export default function ChangePasswordPage() {
               </Alert>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 'Changing Password...'
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
                   Change Password
                 </>
               )}
             </Button>
           </form>
 
-          <div className="mt-4 text-xs text-center text-muted-foreground">
+          <div className="mt-4 text-center text-xs text-muted-foreground">
             For security reasons, you cannot skip this step.
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

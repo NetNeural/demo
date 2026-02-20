@@ -1,43 +1,57 @@
 /**
  * React Query Hooks for Devices
- * 
+ *
  * Implements caching strategy per Story 3.3:
  * - Device status: 30 seconds cache
  * - Device list: 30 seconds cache
  * - Automatic cache invalidation on mutations
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryResult,
+  type UseMutationResult,
+} from '@tanstack/react-query'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { queryKeys, CACHE_TIME } from '@/lib/query-client'
-import type { UnifiedDeviceStatus, DeviceConnectionStatus } from '@/types/unified-device-status'
+import type {
+  UnifiedDeviceStatus,
+  DeviceConnectionStatus,
+} from '@/types/unified-device-status'
 
 /**
  * Hook: Fetch device status with caching
- * 
+ *
  * Cache: 30 seconds per Story 3.3 requirements
  * Replaces: useDeviceStatus hook
- * 
+ *
  * @example
  * ```tsx
  * const { data: status, isLoading, error } = useDeviceStatusQuery('device-123')
  * ```
  */
-export function useDeviceStatusQuery(deviceId: string, options?: {
-  enabled?: boolean
-  refetchInterval?: number | false
-}) {
+export function useDeviceStatusQuery(
+  deviceId: string,
+  options?: {
+    enabled?: boolean
+    refetchInterval?: number | false
+  }
+) {
   return useQuery({
     queryKey: queryKeys.deviceStatus(deviceId),
     queryFn: async (): Promise<UnifiedDeviceStatus> => {
       const response = await edgeFunctions.devices.getStatus(deviceId)
 
       if (!response.success) {
-        throw new Error(response.error?.message || 'Failed to fetch device status')
+        throw new Error(
+          response.error?.message || 'Failed to fetch device status'
+        )
       }
 
       const deviceData = response.data?.status as any
-      
+
       if (!deviceData) {
         throw new Error('Device not found')
       }
@@ -51,7 +65,7 @@ export function useDeviceStatusQuery(deviceId: string, options?: {
         integrationId: deviceData.integration?.id || '',
         providerType: deviceData.integration?.name || 'unknown',
 
-        // Status  
+        // Status
         status: (deviceData.status as DeviceConnectionStatus) || 'unknown',
         lastSeen: deviceData.lastSeen,
         lastSeenOnline: deviceData.lastSeen,
@@ -62,10 +76,13 @@ export function useDeviceStatusQuery(deviceId: string, options?: {
         deviceType: deviceData.deviceType || 'unknown',
 
         // Health metrics
-        health: (deviceData.batteryLevel || deviceData.signalStrength) ? {
-          battery: deviceData.batteryLevel || undefined,
-          signalStrength: deviceData.signalStrength || undefined,
-        } : undefined,
+        health:
+          deviceData.batteryLevel || deviceData.signalStrength
+            ? {
+                battery: deviceData.batteryLevel || undefined,
+                signalStrength: deviceData.signalStrength || undefined,
+              }
+            : undefined,
 
         // Timestamps
         createdAt: deviceData.createdAt || new Date().toISOString(),
@@ -80,9 +97,9 @@ export function useDeviceStatusQuery(deviceId: string, options?: {
 
 /**
  * Hook: Fetch all devices with caching
- * 
+ *
  * Cache: 30 seconds per Story 3.3 requirements
- * 
+ *
  * @example
  * ```tsx
  * const { data: devices, isLoading } = useDevicesQuery()
@@ -90,7 +107,7 @@ export function useDeviceStatusQuery(deviceId: string, options?: {
  */
 export function useDevicesQuery(organizationId?: string) {
   return useQuery({
-    queryKey: organizationId 
+    queryKey: organizationId
       ? queryKeys.devicesByOrg(organizationId)
       : queryKeys.devices,
     queryFn: async () => {
@@ -106,7 +123,7 @@ export function useDevicesQuery(organizationId?: string) {
 
 /**
  * Hook: Fetch single device with caching
- * 
+ *
  * @example
  * ```tsx
  * const { data: device } = useDeviceQuery('device-123')
@@ -129,13 +146,13 @@ export function useDeviceQuery(deviceId: string) {
 
 /**
  * Hook: Update device mutation with cache invalidation
- * 
+ *
  * Automatically invalidates device queries on success
- * 
+ *
  * @example
  * ```tsx
  * const updateDevice = useUpdateDeviceMutation()
- * 
+ *
  * updateDevice.mutate(
  *   { id: 'device-123', name: 'New Name' },
  *   {
@@ -159,15 +176,19 @@ export function useUpdateDeviceMutation() {
     onSuccess: (data, variables) => {
       // Invalidate all device queries
       queryClient.invalidateQueries({ queryKey: queryKeys.devices })
-      queryClient.invalidateQueries({ queryKey: queryKeys.device(variables.id) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.deviceStatus(variables.id) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.device(variables.id),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.deviceStatus(variables.id),
+      })
     },
   })
 }
 
 /**
  * Hook: Delete device mutation with cache invalidation
- * 
+ *
  * @example
  * ```tsx
  * const deleteDevice = useDeleteDeviceMutation()
@@ -197,7 +218,7 @@ export function useDeleteDeviceMutation() {
 
 /**
  * Migration Guide:
- * 
+ *
  * BEFORE (useDeviceStatus):
  * ```tsx
  * const { status, isLoading, error, refresh } = useDeviceStatus({
@@ -205,14 +226,14 @@ export function useDeleteDeviceMutation() {
  *   refreshInterval: 30000,
  * })
  * ```
- * 
+ *
  * AFTER (useDeviceStatusQuery):
  * ```tsx
  * const { data: status, isLoading, error, refetch: refresh } = useDeviceStatusQuery('abc123', {
  *   refetchInterval: 30000,
  * })
  * ```
- * 
+ *
  * Benefits:
  * - Automatic caching (30 seconds)
  * - Deduplication of requests

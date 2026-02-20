@@ -34,8 +34,12 @@ describe('Device Types Sorting and Filtering', () => {
   }
 
   // Helper function to filter device types (matching component logic)
-  const filterDeviceTypes = (types: any[], filterClass: string | null, filterUnit: string | null) => {
-    return types.filter(dt => {
+  const filterDeviceTypes = (
+    types: any[],
+    filterClass: string | null,
+    filterUnit: string | null
+  ) => {
+    return types.filter((dt) => {
       if (filterClass && dt.device_class !== filterClass) return false
       if (filterUnit && dt.unit !== filterUnit) return false
       return true
@@ -110,13 +114,25 @@ describe('Device Types Sorting and Filtering', () => {
     it('should sort by device_class ascending', () => {
       const sorted = sortDeviceTypes(mockDeviceTypes, 'device_class', 'asc')
       const classes = sorted.map((dt: any) => dt.device_class)
-      expect(classes).toEqual(['distance', 'humidity', 'pressure', 'temperature', 'voltage'])
+      expect(classes).toEqual([
+        'distance',
+        'humidity',
+        'pressure',
+        'temperature',
+        'voltage',
+      ])
     })
 
     it('should sort by device_class descending', () => {
       const sorted = sortDeviceTypes(mockDeviceTypes, 'device_class', 'desc')
       const classes = sorted.map((dt: any) => dt.device_class)
-      expect(classes).toEqual(['voltage', 'temperature', 'pressure', 'humidity', 'distance'])
+      expect(classes).toEqual([
+        'voltage',
+        'temperature',
+        'pressure',
+        'humidity',
+        'distance',
+      ])
     })
   })
 
@@ -232,16 +248,22 @@ describe('Device Types Sorting and Filtering', () => {
 
     it('should extract unique device classes', () => {
       const classes = new Set<string>()
-      mockDeviceTypes.forEach(dt => {
+      mockDeviceTypes.forEach((dt) => {
         if (dt.device_class) classes.add(dt.device_class)
       })
       const unique = Array.from(classes).sort()
-      expect(unique).toEqual(['distance', 'humidity', 'pressure', 'temperature', 'voltage'])
+      expect(unique).toEqual([
+        'distance',
+        'humidity',
+        'pressure',
+        'temperature',
+        'voltage',
+      ])
     })
 
     it('should extract unique units', () => {
       const units = new Set<string>()
-      mockDeviceTypes.forEach(dt => {
+      mockDeviceTypes.forEach((dt) => {
         if (dt.unit) units.add(dt.unit)
       })
       const unique = Array.from(units).sort()

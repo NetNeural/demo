@@ -21,7 +21,11 @@ import {
 } from '@/components/ui/select'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 
-export type AcknowledgementType = 'acknowledged' | 'resolved' | 'dismissed' | 'false_positive'
+export type AcknowledgementType =
+  | 'acknowledged'
+  | 'resolved'
+  | 'dismissed'
+  | 'false_positive'
 
 interface AcknowledgeAlertDialogProps {
   open: boolean
@@ -30,11 +34,31 @@ interface AcknowledgeAlertDialogProps {
   onConfirm: (type: AcknowledgementType, notes: string) => Promise<void>
 }
 
-const ACKNOWLEDGEMENT_OPTIONS: { value: AcknowledgementType; label: string; description: string }[] = [
-  { value: 'acknowledged', label: 'Acknowledged', description: 'Alert seen and noted — monitoring continues' },
-  { value: 'resolved', label: 'Resolved', description: 'Issue has been fixed — no further action needed' },
-  { value: 'dismissed', label: 'Dismissed', description: 'Alert is not actionable at this time' },
-  { value: 'false_positive', label: 'False Positive', description: 'This alert was triggered incorrectly' },
+const ACKNOWLEDGEMENT_OPTIONS: {
+  value: AcknowledgementType
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'acknowledged',
+    label: 'Acknowledged',
+    description: 'Alert seen and noted — monitoring continues',
+  },
+  {
+    value: 'resolved',
+    label: 'Resolved',
+    description: 'Issue has been fixed — no further action needed',
+  },
+  {
+    value: 'dismissed',
+    label: 'Dismissed',
+    description: 'Alert is not actionable at this time',
+  },
+  {
+    value: 'false_positive',
+    label: 'False Positive',
+    description: 'This alert was triggered incorrectly',
+  },
 ]
 
 export function AcknowledgeAlertDialog({
@@ -74,13 +98,17 @@ export function AcknowledgeAlertDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
             Acknowledge Alert
           </DialogTitle>
           <DialogDescription>
-            {alertTitle
-              ? <>Provide resolution details for: <strong>{alertTitle}</strong></>
-              : 'Provide resolution details for this alert'}
+            {alertTitle ? (
+              <>
+                Provide resolution details for: <strong>{alertTitle}</strong>
+              </>
+            ) : (
+              'Provide resolution details for this alert'
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +116,10 @@ export function AcknowledgeAlertDialog({
           {/* Resolution Type */}
           <div className="space-y-2">
             <Label htmlFor="ack-type">Resolution Type *</Label>
-            <Select value={type} onValueChange={(val) => setType(val as AcknowledgementType)}>
+            <Select
+              value={type}
+              onValueChange={(val) => setType(val as AcknowledgementType)}
+            >
               <SelectTrigger id="ack-type">
                 <SelectValue />
               </SelectTrigger>
@@ -97,7 +128,9 @@ export function AcknowledgeAlertDialog({
                   <SelectItem key={opt.value} value={opt.value}>
                     <div>
                       <span className="font-medium">{opt.label}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">{opt.description}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {opt.description}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
@@ -117,19 +150,27 @@ export function AcknowledgeAlertDialog({
               disabled={isSubmitting}
             />
             <p className="text-xs text-muted-foreground">
-              This will be recorded in the user audit log for compliance tracking.
+              This will be recorded in the user audit log for compliance
+              tracking.
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !notes.trim()}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !notes.trim()}
+          >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
               </>
             ) : (

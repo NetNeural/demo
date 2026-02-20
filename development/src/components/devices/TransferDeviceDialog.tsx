@@ -12,7 +12,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ArrowRightLeft, Copy, Loader2, AlertCircle, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseUrl } from '@/lib/supabase/config'
@@ -32,7 +38,11 @@ interface TransferDeviceDialogProps {
   onTransferComplete?: () => void
 }
 
-export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete }: TransferDeviceDialogProps) {
+export function TransferDeviceDialog({
+  device,
+  currentOrgId,
+  onTransferComplete,
+}: TransferDeviceDialogProps) {
   const [open, setOpen] = useState(false)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('')
@@ -48,7 +58,9 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
       const supabase = createClient()
 
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         toast.error('User not authenticated')
         return
@@ -64,20 +76,27 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
 
       // Only show orgs where user has admin/owner role (required for cross-org transfer)
       const adminRoles = ['owner', 'admin', 'org_owner', 'org_admin']
-      const orgs = memberships
-        ?.filter(m => {
-          const org = m.organizations as { id: string; name: string } | null
-          return org !== null && org.id !== currentOrgId && adminRoles.includes(m.role as string)
-        })
-        .map(m => {
-          const org = m.organizations as { id: string; name: string }
-          return { id: org.id, name: org.name }
-        }) || []
+      const orgs =
+        memberships
+          ?.filter((m) => {
+            const org = m.organizations as { id: string; name: string } | null
+            return (
+              org !== null &&
+              org.id !== currentOrgId &&
+              adminRoles.includes(m.role as string)
+            )
+          })
+          .map((m) => {
+            const org = m.organizations as { id: string; name: string }
+            return { id: org.id, name: org.name }
+          }) || []
 
       setOrganizations(orgs)
 
       if (orgs.length === 0) {
-        toast.info('No other organizations available where you have admin/owner role')
+        toast.info(
+          'No other organizations available where you have admin/owner role'
+        )
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
@@ -125,7 +144,9 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
       setLoading(true)
 
       const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
         toast.error('Not authenticated')
@@ -134,19 +155,22 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
 
       // Call the transfer-device edge function (uses service_role to bypass RLS)
       const supabaseUrl = getSupabaseUrl()
-      const response = await fetch(`${supabaseUrl}/functions/v1/transfer-device`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          deviceId: device.id,
-          targetOrgId: selectedOrgId,
-          mode,
-          includeTelemetry,
-        }),
-      })
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/transfer-device`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            deviceId: device.id,
+            targetOrgId: selectedOrgId,
+            mode,
+            includeTelemetry,
+          }),
+        }
+      )
 
       const result = await response.json()
 
@@ -154,9 +178,11 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
         throw new Error(result.message || result.error || 'Transfer failed')
       }
 
-      const targetOrg = organizations.find(org => org.id === selectedOrgId)
+      const targetOrg = organizations.find((org) => org.id === selectedOrgId)
       const actionWord = mode === 'move' ? 'transferred' : 'copied'
-      toast.success(`Device ${actionWord} to ${targetOrg?.name || 'target organization'}`)
+      toast.success(
+        `Device ${actionWord} to ${targetOrg?.name || 'target organization'}`
+      )
 
       setOpen(false)
       setSelectedOrgId('')
@@ -171,7 +197,9 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
       }
     } catch (error) {
       console.error('Error transferring device:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to transfer device')
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to transfer device'
+      )
     } finally {
       setLoading(false)
     }
@@ -184,7 +212,7 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <ArrowRightLeft className="h-4 w-4 mr-2" />
+          <ArrowRightLeft className="mr-2 h-4 w-4" />
           Transfer Device
         </Button>
       </DialogTrigger>
@@ -192,7 +220,8 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
         <DialogHeader>
           <DialogTitle>Transfer / Copy Device</DialogTitle>
           <DialogDescription>
-            {mode === 'move' ? 'Move' : 'Copy'} <strong>{device.name}</strong> to a different organization.
+            {mode === 'move' ? 'Move' : 'Copy'} <strong>{device.name}</strong>{' '}
+            to a different organization.
           </DialogDescription>
         </DialogHeader>
 
@@ -202,12 +231,15 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : organizations.length === 0 ? (
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-4">
               <AlertCircle className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">No Other Organizations Available</p>
+                <p className="text-sm font-medium">
+                  No Other Organizations Available
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  You need admin or owner role in at least one other organization to transfer devices.
+                  You need admin or owner role in at least one other
+                  organization to transfer devices.
                 </p>
               </div>
             </div>
@@ -224,7 +256,7 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
                     className="flex-1"
                     onClick={() => setMode('move')}
                   >
-                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
                     Move (transfer)
                   </Button>
                   <Button
@@ -234,7 +266,7 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
                     className="flex-1"
                     onClick={() => setMode('copy')}
                   >
-                    <Copy className="h-4 w-4 mr-2" />
+                    <Copy className="mr-2 h-4 w-4" />
                     Copy (clone)
                   </Button>
                 </div>
@@ -263,7 +295,7 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
               </div>
 
               {/* Telemetry Toggle */}
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
+              <div className="flex items-center gap-3 rounded-lg border p-3">
                 <input
                   type="checkbox"
                   id="include-telemetry"
@@ -271,10 +303,15 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
                   onChange={(e) => setIncludeTelemetry(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="include-telemetry" className="flex-1 cursor-pointer">
-                  <span className="text-sm font-medium">Include telemetry data</span>
+                <Label
+                  htmlFor="include-telemetry"
+                  className="flex-1 cursor-pointer"
+                >
+                  <span className="text-sm font-medium">
+                    Include telemetry data
+                  </span>
                   {telemetryCount !== null && (
-                    <span className="text-xs text-muted-foreground ml-2">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       ({telemetryCount.toLocaleString()} records)
                     </span>
                   )}
@@ -282,28 +319,32 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
               </div>
 
               {/* Summary */}
-              <div className="p-4 border rounded-lg bg-muted/50">
-                <p className="text-sm font-medium mb-2">
+              <div className="rounded-lg border bg-muted/50 p-4">
+                <p className="mb-2 text-sm font-medium">
                   What will be {mode === 'move' ? 'transferred' : 'copied'}:
                 </p>
-                <ul className="text-xs text-muted-foreground space-y-1">
+                <ul className="space-y-1 text-xs text-muted-foreground">
                   <li>• Device configuration &amp; metadata</li>
                   {mode === 'move' && <li>• Alert rules and history</li>}
                   <li>• Sensor thresholds</li>
                   {includeTelemetry && (
                     <li>
                       • Telemetry history
-                      {telemetryCount !== null && ` (${telemetryCount.toLocaleString()} records)`}
+                      {telemetryCount !== null &&
+                        ` (${telemetryCount.toLocaleString()} records)`}
                     </li>
                   )}
-                  {mode === 'copy' && <li>• Location/department will be cleared on copy</li>}
+                  {mode === 'copy' && (
+                    <li>• Location/department will be cleared on copy</li>
+                  )}
                 </ul>
 
                 {mode === 'move' && (
-                  <div className="flex items-start gap-2 mt-3 pt-3 border-t">
-                    <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div className="mt-3 flex items-start gap-2 border-t pt-3">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                     <p className="text-xs text-amber-600">
-                      Moving a device removes it from the current organization. This action cannot be undone from this dialog.
+                      Moving a device removes it from the current organization.
+                      This action cannot be undone from this dialog.
                     </p>
                   </div>
                 )}
@@ -322,20 +363,25 @@ export function TransferDeviceDialog({ device, currentOrgId, onTransferComplete 
           </Button>
           <Button
             onClick={handleTransfer}
-            disabled={loading || !selectedOrgId || loadingOrgs || organizations.length === 0}
+            disabled={
+              loading ||
+              !selectedOrgId ||
+              loadingOrgs ||
+              organizations.length === 0
+            }
             variant={mode === 'move' ? 'default' : 'secondary'}
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {actioningLabel}
               </>
             ) : (
               <>
                 {mode === 'move' ? (
-                  <ArrowRightLeft className="h-4 w-4 mr-2" />
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
                 ) : (
-                  <Copy className="h-4 w-4 mr-2" />
+                  <Copy className="mr-2 h-4 w-4" />
                 )}
                 {actionLabel} Device
               </>

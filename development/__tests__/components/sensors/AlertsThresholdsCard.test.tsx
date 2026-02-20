@@ -1,6 +1,6 @@
 /**
  * Unit Tests for AlertsThresholdsCard Component
- * 
+ *
  * Tests coverage:
  * - Loading and fetching thresholds
  * - Displaying threshold list
@@ -53,7 +53,9 @@ jest.mock('@/lib/supabase/client', () => ({
     from: jest.fn(() => ({
       insert: jest.fn(() => ({
         select: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: { id: 'alert-1' }, error: null })),
+          single: jest.fn(() =>
+            Promise.resolve({ data: { id: 'alert-1' }, error: null })
+          ),
         })),
       })),
     })),
@@ -274,7 +276,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText(/no thresholds|add threshold/i)).toBeInTheDocument()
+        expect(
+          screen.getByText(/no thresholds|add threshold/i)
+        ).toBeInTheDocument()
       })
     })
   })
@@ -291,12 +295,16 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
 
-      expect(screen.getByText(/add.*threshold|create.*threshold/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/add.*threshold|create.*threshold/i)
+      ).toBeInTheDocument()
     })
 
     it('creates new threshold with valid data', async () => {
@@ -315,7 +323,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -349,7 +359,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -388,7 +400,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -418,12 +432,16 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit/i })[0]
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getAllByRole('button', { name: /edit/i })[0])
 
-      expect(screen.getByText(/edit.*threshold|update.*threshold/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/edit.*threshold|update.*threshold/i)
+      ).toBeInTheDocument()
     })
 
     it('populates form with existing threshold data', async () => {
@@ -437,12 +455,16 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit/i })[0]
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getAllByRole('button', { name: /edit/i })[0])
 
-      const minInput = screen.getByLabelText(/min.*value|minimum/i) as HTMLInputElement
+      const minInput = screen.getByLabelText(
+        /min.*value|minimum/i
+      ) as HTMLInputElement
       expect(minInput.value).toBe('32')
     })
 
@@ -462,7 +484,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit/i })[0]
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getAllByRole('button', { name: /edit/i })[0])
@@ -495,12 +519,18 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete|remove/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete|remove/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete|remove/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete|remove/i })[0]
+      )
 
-      expect(screen.getByText(/delete.*threshold|confirm.*delete/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/delete.*threshold|confirm.*delete/i)
+      ).toBeInTheDocument()
     })
 
     it('deletes threshold on confirmation', async () => {
@@ -518,16 +548,24 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete|remove/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete|remove/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete|remove/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete|remove/i })[0]
+      )
 
-      const confirmButton = screen.getByRole('button', { name: /confirm|yes|delete/i })
+      const confirmButton = screen.getByRole('button', {
+        name: /confirm|yes|delete/i,
+      })
       await user.click(confirmButton)
 
       await waitFor(() => {
-        expect(edgeFunctions.thresholds.delete).toHaveBeenCalledWith('threshold-1')
+        expect(edgeFunctions.thresholds.delete).toHaveBeenCalledWith(
+          'threshold-1'
+        )
       })
     })
 
@@ -542,10 +580,14 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete|remove/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete|remove/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete|remove/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete|remove/i })[0]
+      )
 
       const cancelButton = screen.getByRole('button', { name: /cancel|no/i })
       await user.click(cancelButton)
@@ -594,7 +636,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('switch', { name: /temperature|unit/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('switch', { name: /temperature|unit/i })
+        ).toBeInTheDocument()
       })
 
       const toggle = screen.getByRole('switch', { name: /temperature|unit/i })
@@ -616,7 +660,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -640,7 +686,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -665,7 +713,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -688,7 +738,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /test/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /test/i })[0]
+        ).toBeInTheDocument()
       })
     })
 
@@ -703,14 +755,18 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /test/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /test/i })[0]
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getAllByRole('button', { name: /test/i })[0])
 
       // Should show loading state
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /testing|sending/i })).toBeDisabled()
+        expect(
+          screen.getByRole('button', { name: /testing|sending/i })
+        ).toBeDisabled()
       })
     })
   })
@@ -802,7 +858,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add|new/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /add|new/i })
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /add|new/i }))
@@ -838,7 +896,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit/i })[0]
+        ).toBeInTheDocument()
       })
 
       await user.click(screen.getAllByRole('button', { name: /edit/i })[0])
@@ -867,12 +927,18 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete|remove/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete|remove/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete|remove/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete|remove/i })[0]
+      )
 
-      const confirmButton = screen.getByRole('button', { name: /confirm|yes|delete/i })
+      const confirmButton = screen.getByRole('button', {
+        name: /confirm|yes|delete/i,
+      })
       await user.click(confirmButton)
 
       await waitFor(() => {

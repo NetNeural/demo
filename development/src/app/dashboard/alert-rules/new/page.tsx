@@ -36,7 +36,7 @@ export default function NewAlertRulePage() {
         />
         <div>
           <h1 className="text-3xl font-bold">Create Alert Rule</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 text-muted-foreground">
             Set up automated monitoring and alerts for your devices
           </p>
         </div>

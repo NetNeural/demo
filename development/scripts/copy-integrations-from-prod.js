@@ -9,73 +9,77 @@ const stagingUrl = 'https://atgbmxicqikmapfqouco.supabase.co'
 const stagingKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const prod = createClient(prodUrl, prodKey, { auth: { persistSession: false } })
-const staging = createClient(stagingUrl, stagingKey, { auth: { persistSession: false } })
+const staging = createClient(stagingUrl, stagingKey, {
+  auth: { persistSession: false },
+})
 
 async function copyIntegrations() {
   console.log('📦 Copying integrations from PRODUCTION to STAGING...\n')
-  
+
   // Step 1: Get all integrations from production
   console.log('1️⃣ Fetching integrations from production...')
   const { data: prodIntegrations, error: prodError } = await prod
     .from('device_integrations')
-    .select(`
+    .select(
+      `
       *,
       organizations (name, slug)
-    `)
+    `
+    )
     .order('created_at')
-  
+
   if (prodError) {
     console.error('❌ Error fetching from production:', prodError)
     return
   }
-  
+
   console.log(`   Found ${prodIntegrations.length} integrations\n`)
-  
+
   if (prodIntegrations.length === 0) {
     console.log('✅ No integrations to copy')
     return
   }
-  
+
   // Step 2: Get organization mapping (prod org slug -> staging org id)
   console.log('2️⃣ Mapping organizations...')
   const { data: stagingOrgs, error: orgError } = await staging
     .from('organizations')
     .select('id, slug')
-  
+
   if (orgError) {
     console.error('❌ Error fetching staging orgs:', orgError)
     return
   }
-  
+
   const orgMap = {}
-  stagingOrgs.forEach(org => {
+  stagingOrgs.forEach((org) => {
     orgMap[org.slug] = org.id
   })
-  
+
   console.log('   Organization mapping:')
-  prodIntegrations.forEach(int => {
+  prodIntegrations.forEach((int) => {
     const prodOrgSlug = int.organizations?.slug || 'unknown'
     const stagingOrgId = orgMap[prodOrgSlug] || stagingOrgs[0]?.id
     console.log(`   - ${prodOrgSlug} -> ${stagingOrgId}`)
   })
   console.log()
-  
+
   // Step 3: Copy each integration
   console.log('3️⃣ Copying integrations...\n')
   let successCount = 0
   let skipCount = 0
   let errorCount = 0
-  
+
   for (const prodInt of prodIntegrations) {
     const prodOrgSlug = prodInt.organizations?.slug
     const stagingOrgId = orgMap[prodOrgSlug] || stagingOrgs[0]?.id
-    
+
     if (!stagingOrgId) {
       console.log(`   ⚠️  Skipped: ${prodInt.name} (no matching org)`)
       skipCount++
       continue
     }
-    
+
     // Check if integration already exists
     const { data: existing } = await staging
       .from('device_integrations')
@@ -84,13 +88,13 @@ async function copyIntegrations() {
       .eq('integration_type', prodInt.integration_type)
       .eq('name', prodInt.name)
       .maybeSingle()
-    
+
     if (existing) {
       console.log(`   ⏭️  Skipped: ${prodInt.name} (already exists)`)
       skipCount++
       continue
     }
-    
+
     // Create new integration in staging
     const newIntegration = {
       organization_id: stagingOrgId,
@@ -108,15 +112,15 @@ async function copyIntegrations() {
       webhook_enabled: prodInt.webhook_enabled,
       webhook_url: prodInt.webhook_url,
       webhook_secret: prodInt.webhook_secret,
-      broker_type: prodInt.broker_type
+      broker_type: prodInt.broker_type,
     }
-    
+
     const { data: created, error: createError } = await staging
       .from('device_integrations')
       .insert(newIntegration)
       .select()
       .single()
-    
+
     if (createError) {
       console.log(`   ❌ Error: ${prodInt.name}`)
       console.log(`      ${createError.message}`)
@@ -126,24 +130,26 @@ async function copyIntegrations() {
       successCount++
     }
   }
-  
+
   console.log('\n📊 Summary:')
   console.log(`   ✅ Copied: ${successCount}`)
   console.log(`   ⏭️  Skipped: ${skipCount}`)
   console.log(`   ❌ Errors: ${errorCount}`)
   console.log()
-  
+
   // Step 4: Show final state
   console.log('4️⃣ Final state in staging:')
   const { data: finalIntegrations } = await staging
     .from('device_integrations')
     .select('name, integration_type, status')
     .order('created_at')
-  
+
   finalIntegrations.forEach((int, i) => {
-    console.log(`   ${i+1}. ${int.name} (${int.integration_type}) - ${int.status}`)
+    console.log(
+      `   ${i + 1}. ${int.name} (${int.integration_type}) - ${int.status}`
+    )
   })
-  
+
   console.log('\n🎉 Done!')
 }
 

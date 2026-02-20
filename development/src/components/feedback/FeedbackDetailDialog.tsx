@@ -90,7 +90,11 @@ interface FeedbackDetailDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetailDialogProps) {
+export function FeedbackDetailDialog({
+  item,
+  open,
+  onOpenChange,
+}: FeedbackDetailDialogProps) {
   const { fmt } = useDateFormatter()
   const { currentOrganization } = useOrganization()
   const supabase = createClient()
@@ -112,17 +116,20 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
         const supabaseUrl = getSupabaseUrl()
         const session = (await supabase.auth.getSession()).data.session
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/feedback-comments`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            feedbackId: item.id,
-            organizationId: currentOrganization.id,
-          }),
-        })
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/feedback-comments`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              feedbackId: item.id,
+              organizationId: currentOrganization.id,
+            }),
+          }
+        )
 
         const result = await response.json()
 
@@ -150,33 +157,39 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <div className="flex items-start gap-3 pr-8">
             <div className="mt-1">
               {isResolved ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
               ) : item.type === 'bug_report' ? (
-                <Bug className="w-5 h-5 text-red-500" />
+                <Bug className="h-5 w-5 text-red-500" />
               ) : (
-                <Lightbulb className="w-5 h-5 text-yellow-500" />
+                <Lightbulb className="h-5 w-5 text-yellow-500" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <DialogTitle className="text-base leading-snug">
                 {item.title}
               </DialogTitle>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <Badge className={`${STATUS_COLORS[item.status] || 'bg-gray-500'} text-white text-[10px] px-1.5 py-0`}>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge
+                  className={`${STATUS_COLORS[item.status] || 'bg-gray-500'} px-1.5 py-0 text-[10px] text-white`}
+                >
                   {STATUS_LABELS[item.status] || item.status}
                 </Badge>
                 {item.severity && (
-                  <Badge className={`${SEVERITY_COLORS[item.severity] || 'bg-gray-400'} text-white text-[10px] px-1.5 py-0`}>
+                  <Badge
+                    className={`${SEVERITY_COLORS[item.severity] || 'bg-gray-400'} px-1.5 py-0 text-[10px] text-white`}
+                  >
                     {item.severity}
                   </Badge>
                 )}
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {item.type === 'bug_report' ? 'Bug Report' : 'Feature Request'}
+                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                  {item.type === 'bug_report'
+                    ? 'Bug Report'
+                    : 'Feature Request'}
                 </Badge>
                 {item.github_issue_number && (
                   <a
@@ -185,8 +198,8 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 dark:text-blue-400"
                   >
-                    <ExternalLink className="w-3 h-3" />
-                    #{item.github_issue_number}
+                    <ExternalLink className="h-3 w-3" />#
+                    {item.github_issue_number}
                   </a>
                 )}
               </div>
@@ -194,62 +207,68 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
+        <div className="-mr-1 flex-1 space-y-4 overflow-y-auto pr-1">
           {/* Submitted description */}
           <div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <Clock className="w-3 h-3" />
+            <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
               Submitted {fmt.shortDateTime(item.created_at)}
             </div>
-            <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
+            <div className="whitespace-pre-wrap rounded-lg border bg-muted/50 p-3 text-sm">
               {item.description}
             </div>
           </div>
 
           {/* Resolution from sync (if available but no GitHub comments loaded) */}
-          {isResolved && item.github_resolution && !issueDetail && !loadingComments && (
-            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 text-xs font-medium text-green-700 dark:text-green-400 mb-1">
-                <GitPullRequestClosed className="w-3 h-3" />
-                Resolution
+          {isResolved &&
+            item.github_resolution &&
+            !issueDetail &&
+            !loadingComments && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-green-700 dark:text-green-400">
+                  <GitPullRequestClosed className="h-3 w-3" />
+                  Resolution
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-green-800 dark:text-green-300">
+                  {item.github_resolution}
+                </p>
               </div>
-              <p className="text-sm text-green-800 dark:text-green-300 whitespace-pre-wrap">
-                {item.github_resolution}
-              </p>
-            </div>
-          )}
+            )}
 
           <Separator />
 
           {/* GitHub Communication Thread */}
           {item.github_issue_number ? (
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+              <div className="mb-3 flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-sm font-semibold">Communication</h3>
                 {issueDetail && (
                   <span className="text-xs text-muted-foreground">
-                    {issueDetail.comments.length} {issueDetail.comments.length === 1 ? 'comment' : 'comments'}
+                    {issueDetail.comments.length}{' '}
+                    {issueDetail.comments.length === 1 ? 'comment' : 'comments'}
                   </span>
                 )}
               </div>
 
               {loadingComments ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">Loading GitHub conversation...</span>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Loading GitHub conversation...
+                  </span>
                 </div>
               ) : error ? (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
               ) : issueDetail ? (
                 <div className="space-y-3">
                   {/* Issue body (original GitHub issue description) */}
                   {issueDetail.body && (
-                    <div className="relative pl-4 border-l-2 border-blue-300 dark:border-blue-700">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="relative border-l-2 border-blue-300 pl-4 dark:border-blue-700">
+                      <div className="mb-1 flex items-center gap-2">
                         <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
                           Issue Created
                         </span>
@@ -257,7 +276,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                           {fmt.timeAgo(issueDetail.createdAt)}
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-6">
+                      <div className="line-clamp-6 whitespace-pre-wrap text-xs text-muted-foreground">
                         {issueDetail.body}
                       </div>
                     </div>
@@ -265,7 +284,7 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
 
                   {/* Comments */}
                   {issueDetail.comments.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic py-2">
+                    <p className="py-2 text-xs italic text-muted-foreground">
                       No comments yet on this issue.
                     </p>
                   )}
@@ -273,34 +292,39 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
                   {issueDetail.comments.map((comment, idx) => (
                     <div
                       key={idx}
-                      className={`relative pl-4 border-l-2 ${
-                        comment.isBot 
-                          ? 'border-gray-300 dark:border-gray-600' 
+                      className={`relative border-l-2 pl-4 ${
+                        comment.isBot
+                          ? 'border-gray-300 dark:border-gray-600'
                           : 'border-violet-300 dark:border-violet-700'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="mb-1 flex items-center gap-2">
                         {comment.authorAvatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={comment.authorAvatar}
                             alt={comment.author}
-                            className="w-4 h-4 rounded-full"
+                            className="h-4 w-4 rounded-full"
                           />
                         ) : (
-                          <User className="w-3 h-3 text-muted-foreground" />
+                          <User className="h-3 w-3 text-muted-foreground" />
                         )}
                         <span className="text-xs font-medium">
                           {comment.author}
                         </span>
                         {comment.isBot && (
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">bot</Badge>
+                          <Badge
+                            variant="outline"
+                            className="px-1 py-0 text-[9px]"
+                          >
+                            bot
+                          </Badge>
                         )}
                         <span className="text-[10px] text-muted-foreground">
                           {fmt.timeAgo(comment.createdAt)}
                         </span>
                       </div>
-                      <div className="text-sm text-foreground whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap text-sm text-foreground">
                         {comment.body}
                       </div>
                     </div>
@@ -308,11 +332,13 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
 
                   {/* Closed indicator */}
                   {issueDetail.state === 'closed' && issueDetail.closedAt && (
-                    <div className="relative pl-4 border-l-2 border-green-400 dark:border-green-600">
+                    <div className="relative border-l-2 border-green-400 pl-4 dark:border-green-600">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
                         <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                          {issueDetail.stateReason === 'not_planned' ? 'Closed as not planned' : 'Closed as resolved'}
+                          {issueDetail.stateReason === 'not_planned'
+                            ? 'Closed as not planned'
+                            : 'Closed as resolved'}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           {fmt.timeAgo(issueDetail.closedAt)}
@@ -324,32 +350,39 @@ export function FeedbackDetailDialog({ item, open, onOpenChange }: FeedbackDetai
               ) : null}
             </div>
           ) : (
-            <div className="text-center py-4 text-sm text-muted-foreground">
-              <MessageSquare className="w-5 h-5 mx-auto mb-2 opacity-50" />
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              <MessageSquare className="mx-auto mb-2 h-5 w-5 opacity-50" />
               <p>No GitHub issue linked to this feedback.</p>
-              <p className="text-xs mt-1">Communication tracking is available for items with linked GitHub issues.</p>
+              <p className="mt-1 text-xs">
+                Communication tracking is available for items with linked GitHub
+                issues.
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 flex items-center justify-between pt-4 border-t">
+        <div className="flex shrink-0 items-center justify-between border-t pt-4">
           <span className="text-xs text-muted-foreground">
             {item.github_issue_url ? (
               <a
                 href={item.github_issue_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
               >
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="h-3 w-3" />
                 View on GitHub
               </a>
             ) : (
               'Local feedback only'
             )}
           </span>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Close
           </Button>
         </div>

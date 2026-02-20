@@ -19,9 +19,7 @@ import {
   createErrorResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-} from '../_shared/auth.ts'
+import { createServiceClient } from '../_shared/auth.ts'
 
 interface ApplicationRequest {
   organizationId: string
@@ -53,7 +51,10 @@ export default createEdgeFunction(
       const url = new URL(req.url)
       const organizationId = url.searchParams.get('organizationId')?.trim()
       if (!organizationId) {
-        throw new DatabaseError('organizationId query parameter is required', 400)
+        throw new DatabaseError(
+          'organizationId query parameter is required',
+          400
+        )
       }
 
       // Check membership
@@ -65,7 +66,10 @@ export default createEdgeFunction(
         .single()
 
       if (!membership) {
-        throw new DatabaseError('You must be a member of this organization', 403)
+        throw new DatabaseError(
+          'You must be a member of this organization',
+          403
+        )
       }
 
       // Check for existing active agreement
@@ -118,11 +122,16 @@ export default createEdgeFunction(
     } = body
 
     // Validate required fields
-    if (!organizationId) throw new DatabaseError('organizationId is required', 400)
-    if (!applicantName?.trim()) throw new DatabaseError('applicantName is required', 400)
-    if (!applicantEmail?.trim()) throw new DatabaseError('applicantEmail is required', 400)
-    if (!companyLegalName?.trim()) throw new DatabaseError('companyLegalName is required', 400)
-    if (!companyAddress?.trim()) throw new DatabaseError('companyAddress is required', 400)
+    if (!organizationId)
+      throw new DatabaseError('organizationId is required', 400)
+    if (!applicantName?.trim())
+      throw new DatabaseError('applicantName is required', 400)
+    if (!applicantEmail?.trim())
+      throw new DatabaseError('applicantEmail is required', 400)
+    if (!companyLegalName?.trim())
+      throw new DatabaseError('companyLegalName is required', 400)
+    if (!companyAddress?.trim())
+      throw new DatabaseError('companyAddress is required', 400)
     if (!estimatedCustomers || estimatedCustomers < 1) {
       throw new DatabaseError('estimatedCustomers must be at least 1', 400)
     }
@@ -136,7 +145,10 @@ export default createEdgeFunction(
       .single()
 
     if (memberError || !membership || membership.role !== 'owner') {
-      throw new DatabaseError('Only organization owners can apply for reseller agreements', 403)
+      throw new DatabaseError(
+        'Only organization owners can apply for reseller agreements',
+        403
+      )
     }
 
     // Check for existing pending/active application
@@ -167,7 +179,10 @@ export default createEdgeFunction(
       .maybeSingle()
 
     if (existingAgreement) {
-      throw new DatabaseError('Your organization already has an active reseller agreement', 409)
+      throw new DatabaseError(
+        'Your organization already has an active reseller agreement',
+        409
+      )
     }
 
     // Get organization details
@@ -251,8 +266,8 @@ ${additionalNotes || 'None'}
           {
             method: 'POST',
             headers: {
-              'Authorization': `token ${githubToken}`,
-              'Accept': 'application/vnd.github.v3+json',
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github.v3+json',
               'Content-Type': 'application/json',
               'User-Agent': 'NetNeural-Reseller-App-Bot',
             },
@@ -268,7 +283,9 @@ ${additionalNotes || 'None'}
           const ghData = await ghResponse.json()
           githubIssueNumber = ghData.number
           githubIssueUrl = ghData.html_url
-          console.log(`GitHub issue created for reseller application: #${githubIssueNumber}`)
+          console.log(
+            `GitHub issue created for reseller application: #${githubIssueNumber}`
+          )
         } else {
           const errorText = await ghResponse.text()
           console.error(`GitHub API error (${ghResponse.status}):`, errorText)
@@ -277,12 +294,16 @@ ${additionalNotes || 'None'}
         console.error('GitHub API call failed:', ghError)
       }
     } else {
-      console.warn('GITHUB_TOKEN not configured — skipping GitHub issue creation')
+      console.warn(
+        'GITHUB_TOKEN not configured — skipping GitHub issue creation'
+      )
     }
 
     // ── Store application in database ──
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: application, error: insertError } = await (serviceClient as any)
+    const { data: application, error: insertError } = await (
+      serviceClient as any
+    )
       .from('reseller_agreement_applications')
       .insert({
         organization_id: organizationId,
@@ -309,12 +330,16 @@ ${additionalNotes || 'None'}
 
     if (insertError) {
       console.error('Application insert failed:', insertError)
-      throw new DatabaseError(`Failed to save application: ${insertError.message}`, 500)
+      throw new DatabaseError(
+        `Failed to save application: ${insertError.message}`,
+        500
+      )
     }
 
     return createSuccessResponse({
       application,
-      message: 'Your reseller agreement application has been submitted for review.',
+      message:
+        'Your reseller agreement application has been submitted for review.',
     })
   },
   { requireAuth: true, allowedMethods: ['GET', 'POST'] }

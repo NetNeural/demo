@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Bug, Lightbulb, Send, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,7 +30,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const { currentOrganization } = useOrganization()
   const supabase = createClient()
 
-  const [type, setType] = useState<'bug_report' | 'feature_request'>('bug_report')
+  const [type, setType] = useState<'bug_report' | 'feature_request'>(
+    'bug_report'
+  )
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<string>('medium')
@@ -46,29 +54,34 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     setSubmitting(true)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session?.access_token) {
         toast.error('Not authenticated')
         return
       }
 
       const supabaseUrl = getSupabaseUrl()
-      const response = await fetch(`${supabaseUrl}/functions/v1/feedback-submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          organizationId: currentOrganization.id,
-          type,
-          title: title.trim(),
-          description: description.trim(),
-          severity: type === 'bug_report' ? severity : undefined,
-          browserInfo: navigator.userAgent,
-          pageUrl: window.location.href,
-        }),
-      })
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/feedback-submit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            organizationId: currentOrganization.id,
+            type,
+            title: title.trim(),
+            description: description.trim(),
+            severity: type === 'bug_report' ? severity : undefined,
+            browserInfo: navigator.userAgent,
+            pageUrl: window.location.href,
+          }),
+        }
+      )
 
       const result = await response.json()
 
@@ -90,7 +103,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     } catch (error) {
       console.error('Feedback submission error:', error)
       toast.error(
-        error instanceof Error ? error.message : 'Submission failed. Please try again.'
+        error instanceof Error
+          ? error.message
+          : 'Submission failed. Please try again.'
       )
     } finally {
       setSubmitting(false)
@@ -114,7 +129,7 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                 onClick={() => setType('bug_report')}
                 className="flex-1"
               >
-                <Bug className="w-4 h-4 mr-2" />
+                <Bug className="mr-2 h-4 w-4" />
                 Bug Report
               </Button>
               <Button
@@ -123,7 +138,7 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                 onClick={() => setType('feature_request')}
                 className="flex-1"
               >
-                <Lightbulb className="w-4 h-4 mr-2" />
+                <Lightbulb className="mr-2 h-4 w-4" />
                 Feature Request
               </Button>
             </div>
@@ -134,7 +149,11 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
             <Label htmlFor="feedback-title">Title *</Label>
             <Input
               id="feedback-title"
-              placeholder={type === 'bug_report' ? 'Brief description of the bug...' : 'What feature would you like?'}
+              placeholder={
+                type === 'bug_report'
+                  ? 'Brief description of the bug...'
+                  : 'What feature would you like?'
+              }
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={255}
@@ -157,7 +176,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
               rows={6}
               required
             />
-            <p className="text-xs text-muted-foreground">Markdown formatting is supported.</p>
+            <p className="text-xs text-muted-foreground">
+              Markdown formatting is supported.
+            </p>
           </div>
 
           {/* Severity (bugs only) */}
@@ -171,7 +192,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                 <SelectContent>
                   <SelectItem value="critical">
                     <span className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">Critical</Badge>
+                      <Badge variant="destructive" className="text-xs">
+                        Critical
+                      </Badge>
                       System down or data loss
                     </span>
                   </SelectItem>
@@ -189,7 +212,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                   </SelectItem>
                   <SelectItem value="low">
                     <span className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">Low</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Low
+                      </Badge>
                       Cosmetic or minor inconvenience
                     </span>
                   </SelectItem>
@@ -199,22 +224,30 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           )}
 
           {/* Context info */}
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-            <p><strong>Organization:</strong> {currentOrganization?.name}</p>
-            <p><strong>Submitted by:</strong> {user?.email}</p>
+          <div className="space-y-1 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+            <p>
+              <strong>Organization:</strong> {currentOrganization?.name}
+            </p>
+            <p>
+              <strong>Submitted by:</strong> {user?.email}
+            </p>
             <p>Browser info and page URL will be included automatically.</p>
           </div>
 
           {/* Submit */}
-          <Button type="submit" disabled={submitting || !title.trim() || !description.trim()} className="w-full">
+          <Button
+            type="submit"
+            disabled={submitting || !title.trim() || !description.trim()}
+            className="w-full"
+          >
             {submitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 mr-2" />
+                <Send className="mr-2 h-4 w-4" />
                 Submit Feedback
               </>
             )}

@@ -50,7 +50,11 @@ function isGatewayDevice(device: Device): boolean {
   }
 
   // Check model
-  if (model.includes('gateway') || model.includes('nrf9151') || model.includes('nrf9160')) {
+  if (
+    model.includes('gateway') ||
+    model.includes('nrf9151') ||
+    model.includes('nrf9160')
+  ) {
     return true
   }
 
@@ -59,7 +63,7 @@ function isGatewayDevice(device: Device): boolean {
     if (
       device.metadata.is_gateway === true ||
       device.metadata.isGateway === true ||
-      (typeof device.metadata.device_category === 'string' && 
+      (typeof device.metadata.device_category === 'string' &&
         device.metadata.device_category.toLowerCase().includes('gateway'))
     ) {
       return true
@@ -84,9 +88,13 @@ export default function SensorDetailsPage() {
 
   const [loading, setLoading] = useState(true)
   const [device, setDevice] = useState<Device | null>(null)
-  const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
+  const [telemetryReadings, setTelemetryReadings] = useState<
+    TelemetryReading[]
+  >([])
   const [error, setError] = useState<string | null>(null)
-  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(() => {
+  const [temperatureUnit, setTemperatureUnit] = useState<
+    'celsius' | 'fahrenheit'
+  >(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('temperatureUnit')
       if (stored === 'C') return 'celsius'
@@ -95,7 +103,10 @@ export default function SensorDetailsPage() {
   })
 
   // Determine device category
-  const isGateway = useMemo(() => device ? isGatewayDevice(device) : false, [device])
+  const isGateway = useMemo(
+    () => (device ? isGatewayDevice(device) : false),
+    [device]
+  )
 
   const fetchDeviceData = useCallback(async () => {
     if (!currentOrganization || !deviceId) return
@@ -106,13 +117,15 @@ export default function SensorDetailsPage() {
 
       // Fetch device via edge function (bypasses RLS, supports multi-org)
       const deviceResponse = await edgeFunctions.devices.get(deviceId)
-      
+
       if (!deviceResponse.success || !deviceResponse.data) {
         throw new Error('Device not found')
       }
 
       // The edge function returns { device: {...} }
-      const deviceData = (deviceResponse.data as { device: Record<string, unknown> }).device
+      const deviceData = (
+        deviceResponse.data as { device: Record<string, unknown> }
+      ).device
       if (!deviceData) throw new Error('Device not found')
 
       setDevice({
@@ -126,8 +139,14 @@ export default function SensorDetailsPage() {
         location: (deviceData.location as string) || undefined,
         location_id: (deviceData.location_id as string) || undefined,
         firmware_version: (deviceData.firmware_version as string) || undefined,
-        battery_level: deviceData.battery_level != null ? (deviceData.battery_level as number) : undefined,
-        signal_strength: deviceData.signal_strength != null ? (deviceData.signal_strength as number) : undefined,
+        battery_level:
+          deviceData.battery_level != null
+            ? (deviceData.battery_level as number)
+            : undefined,
+        signal_strength:
+          deviceData.signal_strength != null
+            ? (deviceData.signal_strength as number)
+            : undefined,
         last_seen: (deviceData.last_seen as string) || undefined,
         metadata: deviceData.metadata as Record<string, unknown> | undefined,
         organization_id: deviceData.organization_id as string,
@@ -135,7 +154,9 @@ export default function SensorDetailsPage() {
 
       // Fetch telemetry readings (48 hours) - uses direct client (RLS allows via USING(true))
       const supabase = createClient()
-      const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+      const fortyEightHoursAgo = new Date(
+        Date.now() - 48 * 60 * 60 * 1000
+      ).toISOString()
       const { data: telemetryData, error: telemetryError } = await supabase
         .from('device_telemetry_history')
         .select('device_id, telemetry, device_timestamp, received_at')
@@ -154,16 +175,21 @@ export default function SensorDetailsPage() {
         .select('temperature_unit')
         .eq('device_id', deviceId)
         .limit(1)
-      
-      const thresholdsTyped = thresholds as Array<{ temperature_unit?: string }> | null
+
+      const thresholdsTyped = thresholds as Array<{
+        temperature_unit?: string
+      }> | null
       const firstThreshold = thresholdsTyped?.[0]
       if (firstThreshold?.temperature_unit) {
-        setTemperatureUnit(firstThreshold.temperature_unit as 'celsius' | 'fahrenheit')
+        setTemperatureUnit(
+          firstThreshold.temperature_unit as 'celsius' | 'fahrenheit'
+        )
       }
-
     } catch (err) {
       console.error('[SensorDetails] Error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load sensor data')
+      setError(
+        err instanceof Error ? err.message : 'Failed to load sensor data'
+      )
     } finally {
       setLoading(false)
     }
@@ -175,8 +201,8 @@ export default function SensorDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -189,11 +215,11 @@ export default function SensorDetailsPage() {
           onClick={() => router.push('/dashboard/devices')}
           className="mb-4"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Devices
         </Button>
-        <div className="text-center py-12">
-          <p className="text-destructive mb-4">{error || 'Device not found'}</p>
+        <div className="py-12 text-center">
+          <p className="mb-4 text-destructive">{error || 'Device not found'}</p>
           <Button onClick={fetchDeviceData}>Retry</Button>
         </div>
       </div>
@@ -201,7 +227,7 @@ export default function SensorDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -210,7 +236,7 @@ export default function SensorDetailsPage() {
             size="sm"
             onClick={() => router.push('/dashboard/devices')}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
           <div>
@@ -224,15 +250,19 @@ export default function SensorDetailsPage() {
       <div className="grid gap-6 md:grid-cols-1">
         {/* 1. Overview Card - Different for gateways vs sensors */}
         {isGateway ? (
-          <GatewayOverviewCard device={device} telemetryReadings={telemetryReadings} />
+          <GatewayOverviewCard
+            device={device}
+            telemetryReadings={telemetryReadings}
+          />
         ) : (
-          <SensorOverviewCard device={device} telemetryReadings={telemetryReadings} />
+          <SensorOverviewCard
+            device={device}
+            telemetryReadings={telemetryReadings}
+          />
         )}
 
         {/* 2. Historical Data Viewer - Only for sensors with telemetry data */}
-        {!isGateway && (
-          <HistoricalDataViewer device={device} />
-        )}
+        {!isGateway && <HistoricalDataViewer device={device} />}
 
         {/* 3. Inherited Device Type Configuration - Only when type assigned */}
         {device.device_type_id && (
@@ -242,14 +272,19 @@ export default function SensorDetailsPage() {
         {/* 4. Location + Health - Always shown */}
         <div className="grid gap-6 md:grid-cols-2">
           <LocationDetailsCard device={device} />
-          <DeviceHealthCard device={device} telemetryReadings={telemetryReadings} />
+          <DeviceHealthCard
+            device={device}
+            telemetryReadings={telemetryReadings}
+          />
         </div>
 
         {/* 5. Alerts + Activity - Alerts only for sensors */}
-        <div className={`grid gap-6 ${isGateway ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}>
+        <div
+          className={`grid gap-6 ${isGateway ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}
+        >
           {!isGateway && (
-            <AlertsThresholdsCard 
-              device={device} 
+            <AlertsThresholdsCard
+              device={device}
               temperatureUnit={temperatureUnit}
               onTemperatureUnitChange={setTemperatureUnit}
             />
@@ -259,8 +294,8 @@ export default function SensorDetailsPage() {
 
         {/* 6. Statistics - Only for sensors */}
         {!isGateway && (
-          <StatisticalSummaryCard 
-            device={device} 
+          <StatisticalSummaryCard
+            device={device}
             telemetryReadings={telemetryReadings}
             temperatureUnit={temperatureUnit}
           />
@@ -269,5 +304,3 @@ export default function SensorDetailsPage() {
     </div>
   )
 }
-
-

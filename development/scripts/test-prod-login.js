@@ -2,7 +2,7 @@
 
 /**
  * Test Production Login
- * 
+ *
  * Requires: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
  */
 
@@ -28,20 +28,22 @@ async function testLogin() {
   const password = 'password123'
 
   console.log(`Attempting login with: ${email}`)
-  
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password
+    password,
   })
 
   if (error) {
     console.error('\n❌ Login FAILED:', error.message)
     console.log('\n🔍 Possible reasons:')
-    
+
     if (error.message.includes('Email not confirmed')) {
       console.log('   → Email confirmation is required')
       console.log('   → SOLUTION: Go to Supabase Dashboard:')
-      console.log('      1. https://supabase.com/dashboard/project/bldojxpockljyivldxwf')
+      console.log(
+        '      1. https://supabase.com/dashboard/project/bldojxpockljyivldxwf'
+      )
       console.log('      2. Authentication → Providers → Email')
       console.log('      3. Disable "Confirm email"')
       console.log('      4. Save changes')
@@ -58,7 +60,10 @@ async function testLogin() {
     console.log('\n👤 User Info:')
     console.log('   ID:', data.user.id)
     console.log('   Email:', data.user.email)
-    console.log('   Email Confirmed:', data.user.email_confirmed_at ? 'Yes' : 'No')
+    console.log(
+      '   Email Confirmed:',
+      data.user.email_confirmed_at ? 'Yes' : 'No'
+    )
     console.log('   Created:', data.user.created_at)
     console.log('\n🎉 You can now login to the production app!')
   }

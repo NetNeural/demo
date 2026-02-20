@@ -5,6 +5,7 @@ This directory contains deprecated or superseded Edge Functions that are kept fo
 ## Archived Functions
 
 ### mqtt-broker (Archived: 2026-02-19)
+
 **Reason**: HTTP-based MQTT bridge placeholder, superseded by mqtt-hybrid which uses real MQTT library.
 
 **Original Purpose**: Provide MQTT functionality via HTTP fetch() calls while waiting for proper MQTT client library support in Deno.
@@ -12,6 +13,7 @@ This directory contains deprecated or superseded Edge Functions that are kept fo
 **Replacement**: Use `mqtt-hybrid` which implements real MQTT protocol via npm:mqtt@5.3.4.
 
 ### mqtt-listener (Archived: 2026-02-19)
+
 **Reason**: Designed for persistent MQTT connections, which are not possible in stateless Supabase Edge Functions.
 
 **Original Purpose**: Maintain persistent MQTT connection to broker, subscribe to topics, process incoming messages in real-time.
@@ -19,10 +21,12 @@ This directory contains deprecated or superseded Edge Functions that are kept fo
 **Issue**: Edge Functions are stateless and short-lived (max 30 seconds). Cannot maintain persistent TCP connections needed for MQTT subscriptions.
 
 **Valuable Components**:
+
 - Payload parsers (standard, VMark, custom) - could be extracted as library
 - Message processing logic - pattern for async message handling
 
 **Alternatives**:
+
 - `mqtt-hybrid` for stateless MQTT operations (publish, one-time subscribe)
 - `mqtt-ingest` for HTTP POST ingestion with PGMQ queue processing
 - External service (e.g., AWS IoT Rules, MQTT bridge) for persistent subscriptions

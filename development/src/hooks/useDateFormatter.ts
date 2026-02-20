@@ -16,10 +16,7 @@ import { createFormatter } from '@/lib/format-date'
 export function useDateFormatter() {
   const { preferences } = usePreferences()
 
-  const fmt = useMemo(
-    () => createFormatter(preferences),
-    [preferences],
-  )
+  const fmt = useMemo(() => createFormatter(preferences), [preferences])
 
   return { fmt, preferences }
 }

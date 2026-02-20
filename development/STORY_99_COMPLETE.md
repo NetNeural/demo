@@ -16,6 +16,7 @@ AWS IoT Core integration has been fully verified and documented. The integration
 ## What Was Done
 
 ### 1. **Code Audit** ✅
+
 - **File**: `src/lib/integrations/aws-iot-integration-provider.ts` (381 lines)
 - **SDK**: AWS SDK v3 (`@aws-sdk/client-iot`, `@aws-sdk/client-iot-data-plane`)
 - **Verified**:
@@ -27,6 +28,7 @@ AWS IoT Core integration has been fully verified and documented. The integration
   - ✅ Zero TypeScript errors
 
 ### 2. **Architecture Documentation** ✅
+
 - **File**: `docs/AWS_IOT_ARCHITECTURE.md` (452 lines)
 - **Contents**:
   - AWS IoT Core concepts (Things, Shadows, Thing Types, Registry)
@@ -42,6 +44,7 @@ AWS IoT Core integration has been fully verified and documented. The integration
   - Customer guidance and setup steps
 
 ### 3. **Integration Test Script** ✅
+
 - **File**: `scripts/test-aws-iot.js` (272 lines)
 - **Tests**:
   1. Connection validation (AWS credentials and region)
@@ -53,6 +56,7 @@ AWS IoT Core integration has been fully verified and documented. The integration
 - **Requirements**: AWS Access Key ID, Secret Key, Region, IoT Data endpoint
 
 ### 4. **Support Dashboard Integration** ✅
+
 - **Updated**: `DocumentationTab.tsx`
   - Added AWS_IOT_ARCHITECTURE.md entry
   - 452 lines, developer category
@@ -67,27 +71,29 @@ AWS IoT Core integration has been fully verified and documented. The integration
 ## Technical Details
 
 ### AWS IoT Core Integration
+
 ```typescript
 interface ProviderConfig {
   type: 'aws-iot'
   credentials: {
-    accessKeyId: string        // AWS Access Key
-    secretAccessKey: string    // AWS Secret Key
-    region: string             // AWS Region (e.g., us-east-1)
-    endpoint: string           // IoT Data endpoint
+    accessKeyId: string // AWS Access Key
+    secretAccessKey: string // AWS Secret Key
+    region: string // AWS Region (e.g., us-east-1)
+    endpoint: string // IoT Data endpoint
   }
 }
 ```
 
 ### Capabilities
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Real-time Status | ✅ Supported | Via Thing Shadows |
-| Telemetry History | ❌ Not Built-in | Requires IoT Analytics |
-| Firmware Management | ✅ Supported | Via IoT Jobs |
-| Remote Commands | ✅ Supported | Via Shadow desired state |
-| Bidirectional Sync | ✅ Supported | Read/write Things and Shadows |
-| Device Types | ✅ Supported | Via Thing Types |
+
+| Feature             | Status          | Notes                         |
+| ------------------- | --------------- | ----------------------------- |
+| Real-time Status    | ✅ Supported    | Via Thing Shadows             |
+| Telemetry History   | ❌ Not Built-in | Requires IoT Analytics        |
+| Firmware Management | ✅ Supported    | Via IoT Jobs                  |
+| Remote Commands     | ✅ Supported    | Via Shadow desired state      |
+| Bidirectional Sync  | ✅ Supported    | Read/write Things and Shadows |
+| Device Types        | ✅ Supported    | Via Thing Types               |
 
 ### Architecture Decision: Telemetry Storage
 
@@ -96,6 +102,7 @@ interface ProviderConfig {
 **Rationale**: AWS IoT Core is designed for device connectivity and management, NOT telemetry storage. This is intentional AWS architecture.
 
 **Customer Options**:
+
 1. **AWS IoT Analytics** (Recommended) - Purpose-built for IoT telemetry
 2. **Amazon Timestream** - Time-series database
 3. **S3 + Athena** - Custom storage with SQL queries
@@ -108,10 +115,12 @@ This matches Azure IoT Hub's design (see `AZURE_IOT_ARCHITECTURE.md`).
 ## Files Changed
 
 ### Created
+
 1. `development/docs/AWS_IOT_ARCHITECTURE.md` - 452 lines
 2. `scripts/test-aws-iot.js` - 272 lines (executable)
 
 ### Modified
+
 3. `development/src/app/dashboard/support/components/DocumentationTab.tsx` - Added AWS IoT entry
 4. `development/src/app/dashboard/support/components/TestsTab.tsx` - Added test-aws-iot.js card
 
@@ -122,6 +131,7 @@ This matches Azure IoT Hub's design (see `AZURE_IOT_ARCHITECTURE.md`).
 ## Testing
 
 ### Manual Testing
+
 ```bash
 node scripts/test-aws-iot.js
 # Enter: Access Key ID, Secret Key, Region, Endpoint
@@ -129,6 +139,7 @@ node scripts/test-aws-iot.js
 ```
 
 ### Expected Results
+
 ✅ Connection successful  
 ✅ Things listed (if any exist)  
 ✅ Thing details retrieved  
@@ -139,20 +150,21 @@ node scripts/test-aws-iot.js
 
 ## Comparison: Story #98 (Azure) vs Story #99 (AWS)
 
-| Aspect | Azure IoT Hub | AWS IoT Core |
-|--------|---------------|--------------|
-| Device Entity | Device | Thing |
-| State Management | Device Twin | Thing Shadow |
-| Types/Tags | Tags only | Thing Types ✅ |
+| Aspect            | Azure IoT Hub          | AWS IoT Core             |
+| ----------------- | ---------------------- | ------------------------ |
+| Device Entity     | Device                 | Thing                    |
+| State Management  | Device Twin            | Thing Shadow             |
+| Types/Tags        | Tags only              | Thing Types ✅           |
 | Telemetry Storage | ❌ (needs IoT Central) | ❌ (needs IoT Analytics) |
-| Pagination | 1000/page | 250/page |
-| SDK | azure-iot-hub | @aws-sdk/client-iot |
-| Auth | Connection String | Access Key + Secret |
-| Implementation | 366 lines | 381 lines |
-| Documentation | 131 lines | 452 lines |
-| Test Script | 242 lines | 272 lines |
+| Pagination        | 1000/page              | 250/page                 |
+| SDK               | azure-iot-hub          | @aws-sdk/client-iot      |
+| Auth              | Connection String      | Access Key + Secret      |
+| Implementation    | 366 lines              | 381 lines                |
+| Documentation     | 131 lines              | 452 lines                |
+| Test Script       | 242 lines              | 272 lines                |
 
 **Similarities**:
+
 - Both separate connectivity from telemetry storage
 - Both use "digital twin" concept (Twin/Shadow)
 - Both require external services for historical data
@@ -180,6 +192,7 @@ node scripts/test-aws-iot.js
 ## Support Dashboard
 
 Users can now access:
+
 - 📚 **Documentation**: `AWS IoT Core Architecture` (18 total docs)
 - 🧪 **Test Script**: `AWS IoT Core Integration Test` (9 total scripts)
 
@@ -253,6 +266,7 @@ Provider correctly extracts credentials from `config.credentials` and initialize
 ## Next Steps
 
 ### Epic #95 Progress
+
 - ✅ Story #96: API Key Encryption (90% - pgsodium blocker)
 - ✅ Story #97: MQTT Broker Integration (100%)
 - ✅ Story #98: Azure IoT Hub Verification (100%)
@@ -261,6 +275,7 @@ Provider correctly extracts credentials from `config.credentials` and initialize
 - ⏳ Story #102: AWS IoT Analytics Integration (telemetry)
 
 ### Future Enhancements
+
 - AWS IoT Jobs integration (firmware updates)
 - AWS IoT Device Defender (security insights)
 - AWS IoT Events (event detection)
@@ -271,6 +286,7 @@ Provider correctly extracts credentials from `config.credentials` and initialize
 ## Metrics
 
 ### Story Completion
+
 - **Story Points**: 3
 - **Time to Complete**: ~1 hour (audit, document, test, dashboard)
 - **Files Created**: 2 (docs + script)
@@ -278,6 +294,7 @@ Provider correctly extracts credentials from `config.credentials` and initialize
 - **Lines Added**: 775 (452 doc + 272 script + 51 dashboard)
 
 ### Epic Progress
+
 - **Stories Complete**: 3 of 12 (Golioth, MQTT, Azure, AWS)
 - **Integration Coverage**: 4 of 4 verified (100%)
 - **Support Dashboard**: 18 docs, 9 test scripts
@@ -288,17 +305,20 @@ Provider correctly extracts credentials from `config.credentials` and initialize
 ## References
 
 ### Documentation
+
 - `development/docs/AWS_IOT_ARCHITECTURE.md` - Full architecture guide
 - `development/docs/AZURE_IOT_ARCHITECTURE.md` - Similar design patterns
 - `development/docs/MQTT_ARCHITECTURE.md` - MQTT integration
 - `development/docs/INTEGRATION_PROVIDER_GUIDE.md` - Provider interface
 
 ### Code
+
 - `development/src/lib/integrations/aws-iot-integration-provider.ts` - Implementation
 - `development/src/lib/integrations/integration-provider-factory.ts` - Registration
 - `scripts/test-aws-iot.js` - Test script
 
 ### External Resources
+
 - [AWS IoT Core Documentation](https://docs.aws.amazon.com/iot/)
 - [Thing Shadows](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-shadows.html)
 - [AWS IoT Analytics](https://docs.aws.amazon.com/iotanalytics/)
@@ -313,16 +333,16 @@ Author: GitHub Copilot Agent
 Date:   February 19, 2026
 
     feat(integrations): Story #99 - AWS IoT Core verification complete
-    
+
     - Add AWS_IOT_ARCHITECTURE.md (452 lines) - Thing/Shadow design, ADR for telemetry
-    - Add test-aws-iot.js - Manual integration test script  
+    - Add test-aws-iot.js - Manual integration test script
     - Update support dashboard with AWS IoT docs and test script
     - Verified 381-line implementation with AWS SDK v3
     - Documented customer options for telemetry history
-    
+
     Similar to Azure IoT Hub, AWS IoT Core separates connectivity from storage.
     Telemetry requires customer-configured IoT Analytics integration.
-    
+
     Epic #95: Revive NetNeural Integration Hub
     3 of 4 integrations verified (Golioth, MQTT, Azure, AWS)
 ```
@@ -337,5 +357,5 @@ Date:   February 19, 2026
 
 ---
 
-*Last Updated: February 19, 2026*  
-*Next Story: #100 - UI Integration Flow Improvements*
+_Last Updated: February 19, 2026_  
+_Next Story: #100 - UI Integration Flow Improvements_

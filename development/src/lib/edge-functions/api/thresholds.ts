@@ -5,11 +5,24 @@ import type { EdgeFunctionResponse } from '../types'
 import type { SensorThreshold } from '@/types/sensor-details'
 
 export interface ThresholdsAPI {
-  list: (deviceId: string) => Promise<EdgeFunctionResponse<{ thresholds: SensorThreshold[] }>>
-  create: (payload: ThresholdPayload) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
-  update: (thresholdId: string, payload: Partial<ThresholdPayload>) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
-  delete: (thresholdId: string) => Promise<EdgeFunctionResponse<{ success: boolean }>>
-  recommend: (deviceId: string, sensorType: string, temperatureUnit?: string) => Promise<EdgeFunctionResponse<AIRecommendation>>
+  list: (
+    deviceId: string
+  ) => Promise<EdgeFunctionResponse<{ thresholds: SensorThreshold[] }>>
+  create: (
+    payload: ThresholdPayload
+  ) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  update: (
+    thresholdId: string,
+    payload: Partial<ThresholdPayload>
+  ) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  delete: (
+    thresholdId: string
+  ) => Promise<EdgeFunctionResponse<{ success: boolean }>>
+  recommend: (
+    deviceId: string,
+    sensorType: string,
+    temperatureUnit?: string
+  ) => Promise<EdgeFunctionResponse<AIRecommendation>>
 }
 
 export interface AIRecommendation {
@@ -54,7 +67,10 @@ export interface ThresholdPayload {
 }
 
 export const createThresholdsAPI = (
-  call: <T>(functionName: string, options?: any) => Promise<EdgeFunctionResponse<T>>
+  call: <T>(
+    functionName: string,
+    options?: any
+  ) => Promise<EdgeFunctionResponse<T>>
 ): ThresholdsAPI => ({
   /**
    * List all thresholds for a device
@@ -96,9 +112,17 @@ export const createThresholdsAPI = (
   /**
    * Get AI-recommended thresholds based on historical telemetry
    */
-  recommend: (deviceId: string, sensorType: string, temperatureUnit = 'celsius') =>
+  recommend: (
+    deviceId: string,
+    sensorType: string,
+    temperatureUnit = 'celsius'
+  ) =>
     call('threshold-ai-recommend', {
       method: 'GET',
-      params: { device_id: deviceId, sensor_type: sensorType, temperature_unit: temperatureUnit },
+      params: {
+        device_id: deviceId,
+        sensor_type: sensorType,
+        temperature_unit: temperatureUnit,
+      },
     }),
 })

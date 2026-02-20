@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const router = useRouter()
-  
+
   useEffect(() => {
     // Client-side redirect for static export compatibility
     router.replace('/dashboard')

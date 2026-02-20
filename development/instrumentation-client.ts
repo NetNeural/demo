@@ -1,8 +1,11 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/nextjs'
 
 // Log to verify this file is being loaded
-console.log('[Sentry] Client config loading...');
-console.log('[Sentry] DSN:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured' : 'Missing');
+console.log('[Sentry] Client config loading...')
+console.log(
+  '[Sentry] DSN:',
+  process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured' : 'Missing'
+)
 
 export function onClientInit() {
   Sentry.init({
@@ -36,15 +39,18 @@ export function onClientInit() {
     // Customize breadcrumbs
     beforeBreadcrumb(breadcrumb) {
       // Don't capture console logs as breadcrumbs in production
-      if (breadcrumb.category === 'console' && process.env.NODE_ENV === 'production') {
-        return null;
+      if (
+        breadcrumb.category === 'console' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        return null
       }
 
       // Mask sensitive data in breadcrumbs
       if (breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') {
         // Remove authorization headers
         if (breadcrumb.data?.['Authorization']) {
-          breadcrumb.data['Authorization'] = '[Filtered]';
+          breadcrumb.data['Authorization'] = '[Filtered]'
         }
       }
 
@@ -52,10 +58,10 @@ export function onClientInit() {
       if (breadcrumb.message && typeof breadcrumb.message === 'string') {
         breadcrumb.message = breadcrumb.message
           .replace(/access_token=[^&]*/g, 'access_token=[Filtered]')
-          .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]');
+          .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]')
       }
 
-      return breadcrumb;
+      return breadcrumb
     },
 
     // Ignore certain errors
@@ -71,10 +77,10 @@ export function onClientInit() {
       // Random plugins/extensions
       'ChunkLoadError',
     ],
-  });
+  })
 
-  console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌');
+  console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌')
 }
 
 // Instrument navigation transitions for performance monitoring
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

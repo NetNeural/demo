@@ -37,34 +37,38 @@ export function QuickActionsDropdown() {
   const handleExport = () => {
     // Emit a custom event that table components can listen to
     const exportEvent = new CustomEvent('export-current-view', {
-      detail: { pathname }
+      detail: { pathname },
     })
     window.dispatchEvent(exportEvent)
-    
+
     // Show a toast if no handler was found
     setTimeout(() => {
       toast.info('Export functionality available on data pages', {
-        description: 'Navigate to Devices, Alerts, or other data pages to export'
+        description:
+          'Navigate to Devices, Alerts, or other data pages to export',
       })
     }, 100)
   }
 
   const handleHealthChecks = async () => {
     if (runningHealthChecks) return
-    
+
     setRunningHealthChecks(true)
     const toastId = toast.loading('Running health checks...', {
-      description: 'Testing API, database, and authentication'
+      description: 'Testing API, database, and authentication',
     })
-    
+
     try {
       let passed = 0
       let failed = 0
       const results: string[] = []
-      
+
       // Check 1: Supabase API Health
       try {
-        const { data, error } = await supabase.from('organizations').select('id').limit(1)
+        const { data, error } = await supabase
+          .from('organizations')
+          .select('id')
+          .limit(1)
         if (!error) {
           passed++
           results.push('✅ Supabase API')
@@ -76,7 +80,7 @@ export function QuickActionsDropdown() {
         failed++
         results.push('❌ Supabase API')
       }
-      
+
       // Check 2: Auth Status
       try {
         const { data, error } = await supabase.auth.getSession()
@@ -91,7 +95,7 @@ export function QuickActionsDropdown() {
         failed++
         results.push('❌ Authentication')
       }
-      
+
       // Check 3: Database Read
       if (currentOrganization?.id) {
         try {
@@ -111,22 +115,22 @@ export function QuickActionsDropdown() {
           results.push('❌ Database')
         }
       }
-      
+
       // Show results
       toast.dismiss(toastId)
       if (failed === 0) {
         toast.success(`Health checks passed (${passed}/${passed})`, {
-          description: results.join(' • ')
+          description: results.join(' • '),
         })
       } else {
         toast.warning(`Health checks: ${passed} passed, ${failed} failed`, {
-          description: results.join(' • ')
+          description: results.join(' • '),
         })
       }
     } catch (error) {
       toast.dismiss(toastId)
       toast.error('Health checks failed', {
-        description: error instanceof Error ? error.message : 'Unknown error'
+        description: error instanceof Error ? error.message : 'Unknown error',
       })
     } finally {
       setRunningHealthChecks(false)
@@ -141,37 +145,40 @@ export function QuickActionsDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <Zap className="w-4 h-4" />
+          <Zap className="h-4 w-4" />
           Quick Actions
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={handleRefresh}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh Page
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
+          <Download className="mr-2 h-4 w-4" />
           Export Current View
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem onClick={handleHealthChecks} disabled={runningHealthChecks}>
+
+        <DropdownMenuItem
+          onClick={handleHealthChecks}
+          disabled={runningHealthChecks}
+        >
           {runningHealthChecks ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Activity className="w-4 h-4 mr-2" />
+            <Activity className="mr-2 h-4 w-4" />
           )}
           {runningHealthChecks ? 'Running...' : 'Run Health Checks'}
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={handleDocs}>
-          <BookOpen className="w-4 h-4 mr-2" />
+          <BookOpen className="mr-2 h-4 w-4" />
           View Documentation
         </DropdownMenuItem>
       </DropdownMenuContent>

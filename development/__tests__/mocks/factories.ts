@@ -1,6 +1,6 @@
 /**
  * Mock Data Factories
- * 
+ *
  * Factory functions to generate consistent mock data for testing.
  * Use these to create realistic test data with sensible defaults.
  */
@@ -74,7 +74,9 @@ export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => {
 /**
  * Create a mock super admin user
  */
-export const createMockSuperAdmin = (overrides: Partial<MockUser> = {}): MockUser => {
+export const createMockSuperAdmin = (
+  overrides: Partial<MockUser> = {}
+): MockUser => {
   return createMockUser({
     email: 'admin@netneural.ai',
     user_metadata: { name: 'Super Admin' },
@@ -205,7 +207,7 @@ export const createMockAlert = (
 ): MockAlert => {
   const alertNumber = counter
   const severity = overrides.severity || 'medium'
-  
+
   return {
     id: mockUUID('alert'),
     organization_id: mockUUID('org'),
@@ -312,8 +314,8 @@ export const createMockTelemetrySeries = (
 ): MockTelemetryData[] => {
   return Array.from({ length: count }, (_, index) => {
     const date = new Date()
-    date.setHours(date.getHours() - (index * hoursApart))
-    
+    date.setHours(date.getHours() - index * hoursApart)
+
     return createMockTelemetryData({
       timestamp: date.toISOString(),
       value: 70 + Math.random() * 10, // Random value between 70-80

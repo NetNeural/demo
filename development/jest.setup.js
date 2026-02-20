@@ -14,8 +14,8 @@ global.fetch = jest.fn((url, options) => {
     redirected: false,
     type: 'basic',
     url: url,
-  });
-});
+  })
+})
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -71,27 +71,31 @@ const createMockQueryBuilder = () => {
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     then: jest.fn((resolve) => resolve({ data: [], error: null })),
-  };
-  return mockBuilder;
-};
+  }
+  return mockBuilder
+}
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getUser: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest
+        .fn()
+        .mockResolvedValue({ data: { session: null }, error: null }),
       signInWithPassword: jest.fn(),
       signOut: jest.fn(),
       updateUser: jest.fn(),
       setSession: jest.fn(),
     },
     from: jest.fn(() => {
-      const builder = createMockQueryBuilder();
-      builder.update = jest.fn(() => createMockQueryBuilder());
-      builder.insert = jest.fn().mockResolvedValue({ data: null, error: null });
-      builder.delete = jest.fn(() => createMockQueryBuilder());
-      builder.upsert = jest.fn().mockResolvedValue({ data: null, error: null });
-      return builder;
+      const builder = createMockQueryBuilder()
+      builder.update = jest.fn(() => createMockQueryBuilder())
+      builder.insert = jest.fn().mockResolvedValue({ data: null, error: null })
+      builder.delete = jest.fn(() => createMockQueryBuilder())
+      builder.upsert = jest.fn().mockResolvedValue({ data: null, error: null })
+      return builder
     }),
   })),
 }))
@@ -102,7 +106,7 @@ jest.mock('@/lib/supabase/client', () => ({
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,

@@ -1,6 +1,13 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -38,7 +45,8 @@ const PreferencesContext = createContext<PreferencesContextValue>({
 
 // ─── Provider ─────────────────────────────────────────────────────────
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES)
+  const [preferences, setPreferences] =
+    useState<UserPreferences>(DEFAULT_PREFERENCES)
   const [loading, setLoading] = useState(true)
 
   // Load preferences on mount from Supabase user_metadata, fallback to localStorage
@@ -50,16 +58,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         if (cached) {
           try {
             const parsed = JSON.parse(cached)
-            setPreferences(prev => ({ ...prev, ...parsed }))
-          } catch { /* ignore parse errors */ }
+            setPreferences((prev) => ({ ...prev, ...parsed }))
+          } catch {
+            /* ignore parse errors */
+          }
         }
 
         // Then fetch authoritative copy from Supabase
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (user?.user_metadata?.preferences) {
           const prefs = user.user_metadata.preferences
-          setPreferences(prev => ({
+          setPreferences((prev) => ({
             ...prev,
             language: prefs.language || prev.language,
             timezone: prefs.timezone || prev.timezone,
@@ -79,20 +91,24 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   // Local-only update (PreferencesTab saves to Supabase independently)
   const updatePreferences = useCallback((updates: Partial<UserPreferences>) => {
-    setPreferences(prev => {
+    setPreferences((prev) => {
       const next = { ...prev, ...updates }
       try {
         localStorage.setItem('user_preferences', JSON.stringify(next))
         if (updates.temperatureUnit) {
           localStorage.setItem('temperatureUnit', updates.temperatureUnit)
         }
-      } catch { /* localStorage might be full */ }
+      } catch {
+        /* localStorage might be full */
+      }
       return next
     })
   }, [])
 
   return (
-    <PreferencesContext.Provider value={{ preferences, loading, updatePreferences }}>
+    <PreferencesContext.Provider
+      value={{ preferences, loading, updatePreferences }}
+    >
       {children}
     </PreferencesContext.Provider>
   )

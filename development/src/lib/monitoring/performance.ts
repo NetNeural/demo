@@ -1,12 +1,12 @@
 /**
  * Performance Monitoring Utilities
- * 
+ *
  * Custom Sentry spans for tracking critical operations:
  * - Database queries
  * - API calls
  * - Edge Function invocations
  * - Heavy computations
- * 
+ *
  * Story 3.4: Real-time Performance Monitoring
  */
 
@@ -14,9 +14,9 @@ import * as Sentry from '@sentry/nextjs'
 
 /**
  * Monitor database query performance
- * 
+ *
  * Creates a Sentry span for the query and tracks duration
- * 
+ *
  * @example
  * ```tsx
  * const devices = await monitorDatabaseQuery(
@@ -52,11 +52,11 @@ export async function monitorDatabaseQuery<T>(
     },
     async (span) => {
       const startTime = performance.now()
-      
+
       try {
         const result = await queryFn()
         const duration = performance.now() - startTime
-        
+
         // Log slow queries (>1 second)
         if (duration > 1000) {
           Sentry.captureMessage(`Slow database query: ${queryName}`, {
@@ -89,7 +89,7 @@ export async function monitorDatabaseQuery<T>(
         return result
       } catch (error) {
         span.setStatus({ code: 2, message: String(error) }) // ERROR
-        
+
         // Capture database errors
         Sentry.captureException(error, {
           tags: {
@@ -101,7 +101,7 @@ export async function monitorDatabaseQuery<T>(
             filters: metadata?.filters,
           },
         })
-        
+
         throw error
       }
     }
@@ -110,9 +110,9 @@ export async function monitorDatabaseQuery<T>(
 
 /**
  * Monitor API call performance
- * 
+ *
  * Tracks external API calls (Golioth, OpenAI, etc.)
- * 
+ *
  * @example
  * ```tsx
  * const response = await monitorApiCall(
@@ -147,11 +147,11 @@ export async function monitorApiCall<T>(
     },
     async (span) => {
       const startTime = performance.now()
-      
+
       try {
         const result = await apiFn()
         const duration = performance.now() - startTime
-        
+
         // Log slow API calls (>2 seconds)
         if (duration > 2000) {
           Sentry.captureMessage(`Slow API call: ${callName}`, {
@@ -184,7 +184,7 @@ export async function monitorApiCall<T>(
         return result
       } catch (error) {
         span.setStatus({ code: 2, message: String(error) }) // ERROR
-        
+
         Sentry.captureException(error, {
           tags: {
             api: callName,
@@ -195,7 +195,7 @@ export async function monitorApiCall<T>(
             method: metadata?.method,
           },
         })
-        
+
         throw error
       }
     }
@@ -204,7 +204,7 @@ export async function monitorApiCall<T>(
 
 /**
  * Monitor Edge Function invocation
- * 
+ *
  * @example
  * ```tsx
  * const result = await monitorEdgeFunction(
@@ -230,11 +230,11 @@ export async function monitorEdgeFunction<T>(
     },
     async (span) => {
       const startTime = performance.now()
-      
+
       try {
         const result = await invokeFn()
         const duration = performance.now() - startTime
-        
+
         // Log slow Edge Functions (>5 seconds)
         if (duration > 5000) {
           Sentry.captureMessage(`Slow Edge Function: ${functionName}`, {
@@ -259,13 +259,13 @@ export async function monitorEdgeFunction<T>(
         return result
       } catch (error) {
         span.setStatus({ code: 2, message: String(error) }) // ERROR
-        
+
         Sentry.captureException(error, {
           tags: {
             function: functionName,
           },
         })
-        
+
         throw error
       }
     }
@@ -274,9 +274,9 @@ export async function monitorEdgeFunction<T>(
 
 /**
  * Monitor heavy computation performance
- * 
+ *
  * Use for CPU-intensive operations
- * 
+ *
  * @example
  * ```tsx
  * const processed = await monitorComputation(
@@ -307,11 +307,11 @@ export async function monitorComputation<T>(
     },
     async (span) => {
       const startTime = performance.now()
-      
+
       try {
         const result = await computeFn()
         const duration = performance.now() - startTime
-        
+
         // Log slow computations (>3 seconds)
         if (duration > 3000) {
           Sentry.captureMessage(`Slow computation: ${computationName}`, {
@@ -342,14 +342,14 @@ export async function monitorComputation<T>(
         return result
       } catch (error) {
         span.setStatus({ code: 2, message: String(error) }) // ERROR
-        
+
         Sentry.captureException(error, {
           tags: {
             computation: computationName,
           },
           extra: metadata,
         })
-        
+
         throw error
       }
     }
@@ -358,9 +358,9 @@ export async function monitorComputation<T>(
 
 /**
  * Track user action performance
- * 
+ *
  * For user-initiated actions like button clicks, form submissions
- * 
+ *
  * @example
  * ```tsx
  * const handleSubmit = async () => {
@@ -379,15 +379,18 @@ export async function trackUserAction<T>(
     {
       op: 'user.action',
       name: actionName,
-      attributes: metadata as Record<string, string | number | boolean | undefined>,
+      attributes: metadata as Record<
+        string,
+        string | number | boolean | undefined
+      >,
     },
     async (span) => {
       const startTime = performance.now()
-      
+
       try {
         const result = await actionFn()
         const duration = performance.now() - startTime
-        
+
         // Log slow user actions (>2 seconds - feels laggy to user)
         if (duration > 2000) {
           Sentry.captureMessage(`Slow user action: ${actionName}`, {
@@ -416,14 +419,14 @@ export async function trackUserAction<T>(
         return result
       } catch (error) {
         span.setStatus({ code: 2, message: String(error) }) // ERROR
-        
+
         Sentry.captureException(error, {
           tags: {
             action: actionName,
           },
           extra: metadata,
         })
-        
+
         throw error
       }
     }
@@ -432,16 +435,16 @@ export async function trackUserAction<T>(
 
 /**
  * Create custom transaction for complex operations
- * 
+ *
  * @example
  * ```tsx
  * const transaction = startTransaction('device_sync', 'background.job')
- * 
+ *
  * try {
  *   await fetchDevices()
  *   await updateDatabase()
  *   await notifyUsers()
- *   
+ *
  *   transaction.finish()
  * } catch (error) {
  *   transaction.setStatus('internal_error')
@@ -459,13 +462,13 @@ export function startTransaction(name: string, op: string) {
 
 /**
  * Performance alert helper
- * 
+ *
  * Send alert to Sentry if performance metric exceeds threshold
- * 
+ *
  * @example
  * ```tsx
  * const duration = performance.now() - start
- * 
+ *
  * alertIfSlow('page_load', duration, 3000, {
  *   page: '/dashboard',
  *   user: userId,

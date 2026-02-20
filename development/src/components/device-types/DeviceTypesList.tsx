@@ -1,10 +1,10 @@
 /**
  * Device Types List
- * 
+ *
  * Displays device types in cards or table with inline actions.
  * Supports edit, delete, and visual range indicators.
  * Includes sorting and filtering by Device Class and Unit.
- * 
+ *
  * @see Issue #118, #168
  */
 'use client'
@@ -71,19 +71,30 @@ function fmt(value: number | null, precision: number | null): string {
 /** Get device class label */
 function getClassLabel(deviceClass: string | null): string {
   if (!deviceClass) return ''
-  return DEVICE_CLASSES.find(c => c.value === deviceClass)?.label ?? deviceClass
+  return (
+    DEVICE_CLASSES.find((c) => c.value === deviceClass)?.label ?? deviceClass
+  )
 }
 
 /** Visual range bar showing normal range + alert thresholds scale */
 function RangeBar({ type }: { type: DeviceType }) {
-  const { lower_alert, lower_normal, upper_normal, upper_alert, unit, precision_digits } = type
+  const {
+    lower_alert,
+    lower_normal,
+    upper_normal,
+    upper_alert,
+    unit,
+    precision_digits,
+  } = type
 
   // Compute the full range for the bar
   const allValues = [lower_normal, upper_normal]
   if (lower_alert != null) allValues.push(lower_alert)
   if (upper_alert != null) allValues.push(upper_alert)
-  const min = Math.min(...allValues) - Math.abs(Math.min(...allValues) * 0.1 || 1)
-  const max = Math.max(...allValues) + Math.abs(Math.max(...allValues) * 0.1 || 1)
+  const min =
+    Math.min(...allValues) - Math.abs(Math.min(...allValues) * 0.1 || 1)
+  const max =
+    Math.max(...allValues) + Math.abs(Math.max(...allValues) * 0.1 || 1)
   const range = max - min || 1
 
   const pct = (v: number) => ((v - min) / range) * 100
@@ -93,12 +104,15 @@ function RangeBar({ type }: { type: DeviceType }) {
 
   return (
     <div className="w-full">
-      <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+      <div className="relative h-4 overflow-hidden rounded-full bg-muted">
         {/* Alert zone - left */}
         {lower_alert != null && (
           <div
             className="absolute top-0 h-full bg-destructive/20"
-            style={{ left: `${pct(lower_alert)}%`, width: `${normalLeft - pct(lower_alert)}%` }}
+            style={{
+              left: `${pct(lower_alert)}%`,
+              width: `${normalLeft - pct(lower_alert)}%`,
+            }}
           />
         )}
         {/* Normal zone */}
@@ -117,14 +131,22 @@ function RangeBar({ type }: { type: DeviceType }) {
           />
         )}
       </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 px-0.5">
+      <div className="mt-0.5 flex justify-between px-0.5 text-[10px] text-muted-foreground">
         {lower_alert != null && (
-          <span className="text-destructive">{fmt(lower_alert, precision_digits)}</span>
+          <span className="text-destructive">
+            {fmt(lower_alert, precision_digits)}
+          </span>
         )}
-        <span className="text-green-600">{fmt(lower_normal, precision_digits)}</span>
-        <span className="text-green-600">{fmt(upper_normal, precision_digits)}</span>
+        <span className="text-green-600">
+          {fmt(lower_normal, precision_digits)}
+        </span>
+        <span className="text-green-600">
+          {fmt(upper_normal, precision_digits)}
+        </span>
         {upper_alert != null && (
-          <span className="text-destructive">{fmt(upper_alert, precision_digits)}</span>
+          <span className="text-destructive">
+            {fmt(upper_alert, precision_digits)}
+          </span>
         )}
         {unit && <span>{unit}</span>}
       </div>
@@ -139,20 +161,28 @@ type SortDirection = 'asc' | 'desc'
 
 export function DeviceTypesList() {
   const { currentOrganization } = useOrganization()
-  const { data: deviceTypes, isLoading, error } = useDeviceTypesQuery(currentOrganization?.id)
+  const {
+    data: deviceTypes,
+    isLoading,
+    error,
+  } = useDeviceTypesQuery(currentOrganization?.id)
   const deleteMutation = useDeleteDeviceTypeMutation()
 
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingType, setEditingType] = useState<DeviceType | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeviceType | null>(null)
-  const [deleteDeviceCount, setDeleteDeviceCount] = useState<number | null>(null)
+  const [deleteDeviceCount, setDeleteDeviceCount] = useState<number | null>(
+    null
+  )
   const [checkingDevices, setCheckingDevices] = useState(false)
-  
+
   // Sort and filter state
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [filterDeviceClass, setFilterDeviceClass] = useState<string | null>(null)
+  const [filterDeviceClass, setFilterDeviceClass] = useState<string | null>(
+    null
+  )
   const [filterUnit, setFilterUnit] = useState<string | null>(null)
 
   // Debug logging
@@ -165,7 +195,7 @@ export function DeviceTypesList() {
   const uniqueDeviceClasses = useMemo(() => {
     if (!deviceTypes?.length) return []
     const classes = new Set<string>()
-    deviceTypes.forEach(dt => {
+    deviceTypes.forEach((dt) => {
       if (dt.device_class) classes.add(dt.device_class)
     })
     return Array.from(classes).sort()
@@ -174,7 +204,7 @@ export function DeviceTypesList() {
   const uniqueUnits = useMemo(() => {
     if (!deviceTypes?.length) return []
     const units = new Set<string>()
-    deviceTypes.forEach(dt => {
+    deviceTypes.forEach((dt) => {
       if (dt.unit) units.add(dt.unit)
     })
     return Array.from(units).sort()
@@ -185,8 +215,9 @@ export function DeviceTypesList() {
     if (!deviceTypes?.length) return []
 
     // Apply filters
-    let filtered = deviceTypes.filter(dt => {
-      if (filterDeviceClass && dt.device_class !== filterDeviceClass) return false
+    let filtered = deviceTypes.filter((dt) => {
+      if (filterDeviceClass && dt.device_class !== filterDeviceClass)
+        return false
       if (filterUnit && dt.unit !== filterUnit) return false
       return true
     })
@@ -244,7 +275,9 @@ export function DeviceTypesList() {
       }
     }
     check()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [deleteTarget])
 
   function handleEdit(dt: DeviceType) {
@@ -272,17 +305,17 @@ export function DeviceTypesList() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="p-6">
-              <Skeleton className="h-6 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-full mb-4" />
-              <div className="flex gap-2 mb-4">
+              <Skeleton className="mb-2 h-6 w-3/4" />
+              <Skeleton className="mb-4 h-4 w-full" />
+              <div className="mb-4 flex gap-2">
                 <Skeleton className="h-5 w-20" />
                 <Skeleton className="h-5 w-16" />
               </div>
-              <Skeleton className="h-16 w-full mb-3" />
+              <Skeleton className="mb-3 h-16 w-full" />
               <Skeleton className="h-12 w-full" />
             </CardContent>
           </Card>
@@ -310,12 +343,13 @@ export function DeviceTypesList() {
     return (
       <Card>
         <CardContent className="p-12">
-          <div className="text-center space-y-3">
-            <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground" />
+          <div className="space-y-3 text-center">
+            <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="text-lg font-semibold">No device types defined</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Device types let you define normal operating ranges and alert thresholds
-              for different sensor categories. Create your first device type to get started.
+            <p className="mx-auto max-w-md text-sm text-muted-foreground">
+              Device types let you define normal operating ranges and alert
+              thresholds for different sensor categories. Create your first
+              device type to get started.
             </p>
           </div>
         </CardContent>
@@ -326,7 +360,7 @@ export function DeviceTypesList() {
   return (
     <>
       {/* Sort/Filter Controls + View Mode Toggle */}
-      <div className="space-y-4 mb-6">
+      <div className="mb-6 space-y-4">
         <div className="flex items-center justify-between gap-4">
           {/* Sort Controls */}
           <div className="flex items-center gap-2">
@@ -338,54 +372,56 @@ export function DeviceTypesList() {
                   {sortField === 'device_class' && 'Device Class'}
                   {sortField === 'unit' && 'Unit'}
                   {sortDirection === 'asc' ? (
-                    <ChevronUp className="h-4 w-4 ml-1" />
+                    <ChevronUp className="ml-1 h-4 w-4" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 ml-1" />
+                    <ChevronDown className="ml-1 h-4 w-4" />
                   )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                {(['name', 'device_class', 'unit'] as SortField[]).map(field => (
-                  <div key={field}>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField(field)
-                        setSortDirection('asc')
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <span>
-                        {field === 'name' && 'Name'}
-                        {field === 'device_class' && 'Device Class'}
-                        {field === 'unit' && 'Unit'}
-                      </span>
-                      {sortField === field && sortDirection === 'asc' && (
-                        <ChevronUp className="h-3 w-3" />
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSortField(field)
-                        setSortDirection('desc')
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <span>
-                        {field === 'name' && 'Name'}
-                        {field === 'device_class' && 'Device Class'}
-                        {field === 'unit' && 'Unit'}
-                        {' (Z-A)'}
-                      </span>
-                      {sortField === field && sortDirection === 'desc' && (
-                        <ChevronDown className="h-3 w-3" />
-                      )}
-                    </DropdownMenuItem>
-                  </div>
-                ))}
+                {(['name', 'device_class', 'unit'] as SortField[]).map(
+                  (field) => (
+                    <div key={field}>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSortField(field)
+                          setSortDirection('asc')
+                        }}
+                        className="flex items-center justify-between"
+                      >
+                        <span>
+                          {field === 'name' && 'Name'}
+                          {field === 'device_class' && 'Device Class'}
+                          {field === 'unit' && 'Unit'}
+                        </span>
+                        {sortField === field && sortDirection === 'asc' && (
+                          <ChevronUp className="h-3 w-3" />
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSortField(field)
+                          setSortDirection('desc')
+                        }}
+                        className="flex items-center justify-between"
+                      >
+                        <span>
+                          {field === 'name' && 'Name'}
+                          {field === 'device_class' && 'Device Class'}
+                          {field === 'unit' && 'Unit'}
+                          {' (Z-A)'}
+                        </span>
+                        {sortField === field && sortDirection === 'desc' && (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </DropdownMenuItem>
+                    </div>
+                  )
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           {/* View Mode Toggle */}
           <div className="flex items-center space-x-2">
             <Button
@@ -393,7 +429,7 @@ export function DeviceTypesList() {
               size="sm"
               onClick={() => setViewMode('cards')}
             >
-              <Grid3x3 className="h-4 w-4 mr-1" />
+              <Grid3x3 className="mr-1 h-4 w-4" />
               Cards
             </Button>
             <Button
@@ -401,14 +437,14 @@ export function DeviceTypesList() {
               size="sm"
               onClick={() => setViewMode('table')}
             >
-              <Table2 className="h-4 w-4 mr-1" />
+              <Table2 className="mr-1 h-4 w-4" />
               Table
             </Button>
           </div>
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-muted-foreground">Filters:</span>
 
           {/* Device Class Filter */}
@@ -433,14 +469,16 @@ export function DeviceTypesList() {
               <DropdownMenuItem onClick={() => setFilterDeviceClass(null)}>
                 <span>All Device Classes</span>
               </DropdownMenuItem>
-              {uniqueDeviceClasses.map(cls => (
+              {uniqueDeviceClasses.map((cls) => (
                 <DropdownMenuItem
                   key={cls}
                   onClick={() => setFilterDeviceClass(cls)}
                   className="flex items-center justify-between"
                 >
                   <span>{getClassLabel(cls)}</span>
-                  {filterDeviceClass === cls && <span className="text-xs">✓</span>}
+                  {filterDeviceClass === cls && (
+                    <span className="text-xs">✓</span>
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -449,19 +487,20 @@ export function DeviceTypesList() {
           {/* Unit Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant={filterUnit ? 'default' : 'outline'}
-                size="sm"
-              >
+              <Button variant={filterUnit ? 'default' : 'outline'} size="sm">
                 Unit
-                {filterUnit && <span className="font-mono font-semibold ml-1">{filterUnit}</span>}
+                {filterUnit && (
+                  <span className="ml-1 font-mono font-semibold">
+                    {filterUnit}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
               <DropdownMenuItem onClick={() => setFilterUnit(null)}>
                 <span>All Units</span>
               </DropdownMenuItem>
-              {uniqueUnits.map(unit => (
+              {uniqueUnits.map((unit) => (
                 <DropdownMenuItem
                   key={unit}
                   onClick={() => setFilterUnit(unit)}
@@ -487,10 +526,10 @@ export function DeviceTypesList() {
       {filteredAndSorted.length === 0 && (
         <Card>
           <CardContent className="p-12">
-            <div className="text-center space-y-3">
-              <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div className="space-y-3 text-center">
+              <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="text-lg font-semibold">No device types found</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              <p className="mx-auto max-w-md text-sm text-muted-foreground">
                 {filterDeviceClass || filterUnit
                   ? 'Try adjusting your filters to see more results.'
                   : 'Create your first device type to get started.'}
@@ -502,104 +541,111 @@ export function DeviceTypesList() {
 
       {/* Cards View */}
       {filteredAndSorted.length > 0 && viewMode === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAndSorted.map(dt => (
-          <Card key={dt.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              {/* Header with name and actions */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{dt.name}</h3>
-                  {dt.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {dt.description}
-                    </p>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredAndSorted.map((dt) => (
+            <Card key={dt.id} className="transition-shadow hover:shadow-lg">
+              <CardContent className="p-6">
+                {/* Header with name and actions */}
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="mb-1 text-lg font-semibold">{dt.name}</h3>
+                    {dt.description && (
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {dt.description}
+                      </p>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="-mt-1 h-8 w-8"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(dt)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setDeleteTarget(dt)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Badges */}
+                <div className="mb-4 flex items-center gap-2">
+                  {dt.device_class ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {getClassLabel(dt.device_class)}
+                    </Badge>
+                  ) : null}
+                  {dt.unit ? (
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {dt.unit}
+                    </Badge>
+                  ) : null}
+                </div>
+
+                {/* Normal Range Section */}
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Normal Range</p>
+                    </div>
+                    <RangeBar type={dt} />
+                  </div>
+
+                  {/* Alert Thresholds */}
+                  {(dt.lower_alert != null || dt.upper_alert != null) && (
+                    <div className="border-t pt-3">
+                      <div className="mb-2 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <p className="text-sm font-medium">Alert Thresholds</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Low:</span>{' '}
+                          <span className="font-mono">
+                            {dt.lower_alert != null
+                              ? `${fmt(dt.lower_alert, dt.precision_digits)} ${dt.unit || ''}`
+                              : '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">High:</span>{' '}
+                          <span className="font-mono">
+                            {dt.upper_alert != null
+                              ? `${fmt(dt.upper_alert, dt.precision_digits)} ${dt.unit || ''}`
+                              : '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(dt)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setDeleteTarget(dt)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              {/* Badges */}
-              <div className="flex items-center gap-2 mb-4">
-                {dt.device_class ? (
-                  <Badge variant="secondary" className="text-xs">
-                    {getClassLabel(dt.device_class)}
-                  </Badge>
-                ) : null}
-                {dt.unit ? (
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {dt.unit}
-                  </Badge>
-                ) : null}
-              </div>
-
-              {/* Normal Range Section */}
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gauge className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Normal Range</p>
+                  {/* Precision info */}
+                  <div className="border-t pt-3 text-xs text-muted-foreground">
+                    <span>
+                      Precision: {dt.precision_digits} decimal
+                      {dt.precision_digits !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <RangeBar type={dt} />
                 </div>
-
-                {/* Alert Thresholds */}
-                {(dt.lower_alert != null || dt.upper_alert != null) && (
-                  <div className="pt-3 border-t">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <p className="text-sm font-medium">Alert Thresholds</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Low:</span>{' '}
-                        <span className="font-mono">
-                          {dt.lower_alert != null
-                            ? `${fmt(dt.lower_alert, dt.precision_digits)} ${dt.unit || ''}`
-                            : '—'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">High:</span>{' '}
-                        <span className="font-mono">
-                          {dt.upper_alert != null
-                            ? `${fmt(dt.upper_alert, dt.precision_digits)} ${dt.unit || ''}`
-                            : '—'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Precision info */}
-                <div className="pt-3 border-t text-xs text-muted-foreground">
-                  <span>Precision: {dt.precision_digits} decimal{dt.precision_digits !== 1 ? 's' : ''}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Table View */}
@@ -613,18 +659,20 @@ export function DeviceTypesList() {
                   <TableHead className="w-[120px]">Class</TableHead>
                   <TableHead className="w-[80px] text-center">Unit</TableHead>
                   <TableHead className="min-w-[200px]">Range</TableHead>
-                  <TableHead className="w-[120px] text-center">Alert Thresholds</TableHead>
+                  <TableHead className="w-[120px] text-center">
+                    Alert Thresholds
+                  </TableHead>
                   <TableHead className="w-[50px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSorted.map(dt => (
+                {filteredAndSorted.map((dt) => (
                   <TableRow key={dt.id}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{dt.name}</p>
                         {dt.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
+                          <p className="line-clamp-1 text-xs text-muted-foreground">
                             {dt.description}
                           </p>
                         )}
@@ -644,12 +692,14 @@ export function DeviceTypesList() {
                         <Badge variant="outline" className="font-mono text-xs">
                           {dt.unit}
                         </Badge>
-                      ) : '—'}
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Gauge className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="flex-1 min-w-[160px]">
+                        <Gauge className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <div className="min-w-[160px] flex-1">
                           <RangeBar type={dt} />
                         </div>
                       </div>
@@ -658,34 +708,40 @@ export function DeviceTypesList() {
                       {dt.lower_alert != null || dt.upper_alert != null ? (
                         <div className="flex items-center justify-center gap-1">
                           <Ruler className="h-3.5 w-3.5 text-destructive" />
-                          <span className="text-xs font-mono">
+                          <span className="font-mono text-xs">
                             {fmt(dt.lower_alert, dt.precision_digits)}
                             {' / '}
                             {fmt(dt.upper_alert, dt.precision_digits)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-xs">None</span>
+                        <span className="text-xs text-muted-foreground">
+                          None
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(dt)}>
-                            <Pencil className="h-4 w-4 mr-2" />
+                            <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setDeleteTarget(dt)}
                             className="text-destructive"
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -709,7 +765,7 @@ export function DeviceTypesList() {
       {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteTarget}
-        onOpenChange={open => !open && setDeleteTarget(null)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -717,8 +773,9 @@ export function DeviceTypesList() {
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>
-                  Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-                  This action cannot be undone.
+                  Are you sure you want to delete{' '}
+                  <strong>{deleteTarget?.name}</strong>? This action cannot be
+                  undone.
                 </p>
                 {checkingDevices && (
                   <p className="flex items-center gap-2 text-muted-foreground">
@@ -726,12 +783,16 @@ export function DeviceTypesList() {
                     Checking assigned devices...
                   </p>
                 )}
-                {!checkingDevices && deleteDeviceCount != null && deleteDeviceCount > 0 && (
-                  <p className="text-destructive font-medium">
-                    ⚠️ {deleteDeviceCount} device{deleteDeviceCount !== 1 ? 's are' : ' is'} currently
-                    assigned to this type. Their device_type_id will be set to NULL.
-                  </p>
-                )}
+                {!checkingDevices &&
+                  deleteDeviceCount != null &&
+                  deleteDeviceCount > 0 && (
+                    <p className="font-medium text-destructive">
+                      ⚠️ {deleteDeviceCount} device
+                      {deleteDeviceCount !== 1 ? 's are' : ' is'} currently
+                      assigned to this type. Their device_type_id will be set to
+                      NULL.
+                    </p>
+                  )}
                 {!checkingDevices && deleteDeviceCount === 0 && (
                   <p className="text-muted-foreground">
                     No devices are currently assigned to this type.

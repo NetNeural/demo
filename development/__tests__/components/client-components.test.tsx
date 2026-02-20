@@ -32,7 +32,14 @@ jest.mock('@/contexts/OrganizationContext', () => ({
       canManageSettings: true,
     },
     userRole: 'admin',
-    stats: { totalDevices: 0, onlineDevices: 0, totalUsers: 0, activeAlerts: 0, totalLocations: 0, activeIntegrations: 0 },
+    stats: {
+      totalDevices: 0,
+      onlineDevices: 0,
+      totalUsers: 0,
+      activeAlerts: 0,
+      totalLocations: 0,
+      activeIntegrations: 0,
+    },
   }),
 }))
 
@@ -56,19 +63,25 @@ jest.mock('@/lib/auth/user-context', () => ({
 jest.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
-      getUser: async () => ({ data: { user: { id: 'user1', email: 'admin@netneural.ai', user_metadata: {} } } }),
-      getSession: async () => ({ data: { session: { access_token: 'tok12345', expires_at: Date.now() } } }),
+      getUser: async () => ({
+        data: {
+          user: { id: 'user1', email: 'admin@netneural.ai', user_metadata: {} },
+        },
+      }),
+      getSession: async () => ({
+        data: { session: { access_token: 'tok12345', expires_at: Date.now() } },
+      }),
       updateUser: async () => ({ data: null, error: null }),
       signInWithPassword: async () => ({ error: null }),
     },
     from: (table: string) => ({
       select: (s: string) => ({
         eq: (col: string, val: any) => ({
-          single: async () => ({ data: { full_name: 'NetNeural Admin' } })
-        })
-      })
-    })
-  })
+          single: async () => ({ data: { full_name: 'NetNeural Admin' } }),
+        }),
+      }),
+    }),
+  }),
 }))
 
 jest.mock('next/navigation', () => ({
@@ -78,8 +91,14 @@ jest.mock('next/navigation', () => ({
 
 describe('Dashboard Components', () => {
   test('DashboardShell renders', async () => {
-    const DashboardShell = (await import('@/components/dashboard/DashboardShell')).default
-    const { container } = render(<DashboardShell><div>Content</div></DashboardShell>)
+    const DashboardShell = (
+      await import('@/components/dashboard/DashboardShell')
+    ).default
+    const { container } = render(
+      <DashboardShell>
+        <div>Content</div>
+      </DashboardShell>
+    )
     expect(container).toBeTruthy()
   })
 
@@ -90,31 +109,36 @@ describe('Dashboard Components', () => {
   })
 
   test('DeviceStatusCard renders', async () => {
-    const { DeviceStatusCard } = await import('@/components/dashboard/DeviceStatusCard')
+    const { DeviceStatusCard } =
+      await import('@/components/dashboard/DeviceStatusCard')
     const { container } = render(<DeviceStatusCard />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('LocationsCard renders', async () => {
-    const { LocationsCard } = await import('@/components/dashboard/LocationsCard')
+    const { LocationsCard } =
+      await import('@/components/dashboard/LocationsCard')
     const { container } = render(<LocationsCard />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('RecentActivityCard renders', async () => {
-    const { RecentActivityCard } = await import('@/components/dashboard/RecentActivityCard')
+    const { RecentActivityCard } =
+      await import('@/components/dashboard/RecentActivityCard')
     const { container } = render(<RecentActivityCard />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('SystemStatsCard renders', async () => {
-    const { SystemStatsCard } = await import('@/components/dashboard/SystemStatsCard')
+    const { SystemStatsCard } =
+      await import('@/components/dashboard/SystemStatsCard')
     const { container } = render(<SystemStatsCard />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('DashboardOverview renders', async () => {
-    const { DashboardOverview } = await import('@/components/dashboard/DashboardOverview')
+    const { DashboardOverview } =
+      await import('@/components/dashboard/DashboardOverview')
     const { container } = render(<DashboardOverview />)
     await waitFor(() => expect(container).toBeTruthy())
   })
@@ -122,19 +146,22 @@ describe('Dashboard Components', () => {
 
 describe('Settings Components', () => {
   test('ProfileTab renders', async () => {
-    const { ProfileTab } = await import('@/app/dashboard/settings/components/ProfileTab')
+    const { ProfileTab } =
+      await import('@/app/dashboard/settings/components/ProfileTab')
     const { container } = render(<ProfileTab />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('SecurityTab renders', async () => {
-    const { SecurityTab } = await import('@/app/dashboard/settings/components/SecurityTab')
+    const { SecurityTab } =
+      await import('@/app/dashboard/settings/components/SecurityTab')
     const { container } = render(<SecurityTab />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('PreferencesTab renders', async () => {
-    const { PreferencesTab } = await import('@/app/dashboard/settings/components/PreferencesTab')
+    const { PreferencesTab } =
+      await import('@/app/dashboard/settings/components/PreferencesTab')
     const { container } = render(<PreferencesTab />)
     await waitFor(() => expect(container).toBeTruthy())
   })
@@ -142,21 +169,23 @@ describe('Settings Components', () => {
 
 describe('Organization Components', () => {
   test('OverviewTab renders with organizationId', async () => {
-    const { OverviewTab } = await import('@/app/dashboard/organizations/components/OverviewTab')
+    const { OverviewTab } =
+      await import('@/app/dashboard/organizations/components/OverviewTab')
     const { container } = render(<OverviewTab organizationId="1" />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('MembersTab renders with organizationId', async () => {
-    const { MembersTab } = await import('@/app/dashboard/organizations/components/MembersTab')
+    const { MembersTab } =
+      await import('@/app/dashboard/organizations/components/MembersTab')
     const { container } = render(<MembersTab organizationId="1" />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('LocationsTab renders with organizationId', async () => {
-    const { LocationsTab } = await import('@/app/dashboard/organizations/components/LocationsTab')
+    const { LocationsTab } =
+      await import('@/app/dashboard/organizations/components/LocationsTab')
     const { container } = render(<LocationsTab organizationId="1" />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 })
-

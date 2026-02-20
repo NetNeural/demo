@@ -1,19 +1,31 @@
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download } from 'lucide-react';
-import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
-import type { TimeRange } from '../types/analytics.types';
-import type { OrganizationSettings } from '@/types/organization';
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Download } from 'lucide-react'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import type { TimeRange } from '../types/analytics.types'
+import type { OrganizationSettings } from '@/types/organization'
 
 interface AnalyticsHeaderProps {
-  organizationName: string;
-  organizationSettings?: OrganizationSettings;
-  timeRange: TimeRange;
-  onTimeRangeChange: (range: TimeRange) => void;
-  onExport: () => void;
+  organizationName: string
+  organizationSettings?: OrganizationSettings
+  timeRange: TimeRange
+  onTimeRangeChange: (range: TimeRange) => void
+  onExport: () => void
 }
 
-export function AnalyticsHeader({ organizationName, organizationSettings, timeRange, onTimeRangeChange, onExport }: AnalyticsHeaderProps) {
+export function AnalyticsHeader({
+  organizationName,
+  organizationSettings,
+  timeRange,
+  onTimeRangeChange,
+  onExport,
+}: AnalyticsHeaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -24,14 +36,20 @@ export function AnalyticsHeader({ organizationName, organizationSettings, timeRa
             size="xl"
           />
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">{organizationName} AI Analytics</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {organizationName} AI Analytics
+            </h2>
             <p className="text-muted-foreground">
-              AI-powered insights, forecasting, and fleet health for {organizationName}
+              AI-powered insights, forecasting, and fleet health for{' '}
+              {organizationName}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={timeRange} onValueChange={(v) => onTimeRangeChange(v as TimeRange)}>
+          <Select
+            value={timeRange}
+            onValueChange={(v) => onTimeRangeChange(v as TimeRange)}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Time range" />
             </SelectTrigger>
@@ -44,11 +62,11 @@ export function AnalyticsHeader({ organizationName, organizationSettings, timeRa
             </SelectContent>
           </Select>
           <Button onClick={onExport} variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
         </div>
       </div>
     </div>
-  );
+  )
 }

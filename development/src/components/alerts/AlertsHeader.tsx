@@ -16,9 +16,12 @@ export function AlertsHeader() {
           size="xl"
         />
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{orgName ? `${orgName} Alert Management` : 'Alert Management'}</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {orgName ? `${orgName} Alert Management` : 'Alert Management'}
+          </h2>
           <p className="text-muted-foreground">
-            Monitor and respond to active alerts{orgName ? ` from ${orgName}` : ' from your organization'}
+            Monitor and respond to active alerts
+            {orgName ? ` from ${orgName}` : ' from your organization'}
           </p>
         </div>
       </div>

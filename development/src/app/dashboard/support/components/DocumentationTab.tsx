@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,7 +48,8 @@ const DOCS: DocEntry[] = [
     id: 'quick-start',
     title: 'User Quick Start Guide',
     filename: 'USER_QUICK_START.txt',
-    description: 'Getting started walkthrough for new platform users — login, dashboard overview, device monitoring, alerts, and common workflows.',
+    description:
+      'Getting started walkthrough for new platform users — login, dashboard overview, device monitoring, alerts, and common workflows.',
     icon: Rocket,
     category: 'user',
     lines: 411,
@@ -53,7 +60,8 @@ const DOCS: DocEntry[] = [
     id: 'admin-guide',
     title: 'Administrator Guide',
     filename: 'ADMINISTRATOR_GUIDE.txt',
-    description: 'Complete admin reference — organization setup, member management, role assignments, integration configuration, alert rule management.',
+    description:
+      'Complete admin reference — organization setup, member management, role assignments, integration configuration, alert rule management.',
     icon: ShieldCheck,
     category: 'admin',
     lines: 954,
@@ -64,7 +72,8 @@ const DOCS: DocEntry[] = [
     id: 'api-docs',
     title: 'API Documentation',
     filename: 'API_DOCUMENTATION.txt',
-    description: 'Full REST and Edge Function API reference — authentication, endpoints, request/response schemas, error codes, rate limits.',
+    description:
+      'Full REST and Edge Function API reference — authentication, endpoints, request/response schemas, error codes, rate limits.',
     icon: Code2,
     category: 'developer',
     lines: 1354,
@@ -75,7 +84,8 @@ const DOCS: DocEntry[] = [
     id: 'dev-setup',
     title: 'Developer Setup Guide',
     filename: 'DEVELOPER_SETUP_GUIDE.txt',
-    description: 'Local development environment setup — prerequisites, Supabase CLI, Next.js dev server, Edge Functions, VS Code debugging.',
+    description:
+      'Local development environment setup — prerequisites, Supabase CLI, Next.js dev server, Edge Functions, VS Code debugging.',
     icon: Monitor,
     category: 'developer',
     lines: 1122,
@@ -86,7 +96,8 @@ const DOCS: DocEntry[] = [
     id: 'integrations',
     title: 'Integrations Guide',
     filename: 'INTEGRATIONS_GUIDE.txt',
-    description: 'Setting up and managing integrations — MQTT brokers, webhooks, Golioth, custom endpoints, testing connections.',
+    description:
+      'Setting up and managing integrations — MQTT brokers, webhooks, Golioth, custom endpoints, testing connections.',
     icon: Network,
     category: 'admin',
     lines: 603,
@@ -97,7 +108,8 @@ const DOCS: DocEntry[] = [
     id: 'troubleshooting',
     title: 'Troubleshooting Guide',
     filename: 'troubleshooting.txt',
-    description: 'Common issues and solutions — device connectivity, alert failures, integration errors, authentication problems, performance.',
+    description:
+      'Common issues and solutions — device connectivity, alert failures, integration errors, authentication problems, performance.',
     icon: Wrench,
     category: 'operations',
     lines: 738,
@@ -108,7 +120,8 @@ const DOCS: DocEntry[] = [
     id: 'triage',
     title: 'Triage Checklist',
     filename: 'TRIAGE_CHECKLIST.txt',
-    description: 'Step-by-step triage guide for production incidents — severity classification, diagnostic steps, escalation matrix.',
+    description:
+      'Step-by-step triage guide for production incidents — severity classification, diagnostic steps, escalation matrix.',
     icon: AlertTriangle,
     category: 'operations',
     lines: 207,
@@ -119,7 +132,8 @@ const DOCS: DocEntry[] = [
     id: 'monitoring',
     title: 'Monitoring Guide',
     filename: 'MONITORING.txt',
-    description: 'System monitoring and observability — edge function metrics, database health, realtime performance, Sentry integration.',
+    description:
+      'System monitoring and observability — edge function metrics, database health, realtime performance, Sentry integration.',
     icon: Activity,
     category: 'operations',
     lines: 657,
@@ -130,7 +144,8 @@ const DOCS: DocEntry[] = [
     id: 'video-tutorials',
     title: 'Video Tutorials Plan',
     filename: 'VIDEO_TUTORIALS_PLAN.txt',
-    description: 'Planned video tutorial series — getting started, device management, integration setup, admin workflows, advanced features.',
+    description:
+      'Planned video tutorial series — getting started, device management, integration setup, admin workflows, advanced features.',
     icon: Video,
     category: 'user',
     lines: 854,
@@ -141,7 +156,8 @@ const DOCS: DocEntry[] = [
     id: 'changelog',
     title: 'Changelog',
     filename: 'CHANGELOG.txt',
-    description: 'Release history and version notes — features, bug fixes, breaking changes, migration steps.',
+    description:
+      'Release history and version notes — features, bug fixes, breaking changes, migration steps.',
     icon: History,
     category: 'developer',
     lines: 537,
@@ -152,7 +168,8 @@ const DOCS: DocEntry[] = [
     id: 'mqtt-architecture',
     title: 'MQTT Integration Architecture',
     filename: 'MQTT_ARCHITECTURE.txt',
-    description: 'MQTT integration design — stateless Edge Functions, HTTP ingestion with PGMQ, external broker support, topic structure, security.',
+    description:
+      'MQTT integration design — stateless Edge Functions, HTTP ingestion with PGMQ, external broker support, topic structure, security.',
     icon: Network,
     category: 'developer',
     lines: 561,
@@ -163,7 +180,8 @@ const DOCS: DocEntry[] = [
     id: 'azure-iot-architecture',
     title: 'Azure IoT Hub Architecture',
     filename: 'AZURE_IOT_ARCHITECTURE.txt',
-    description: 'Azure IoT Hub integration — Device Registry, Device Twin, telemetry storage options, security, customer configuration guide.',
+    description:
+      'Azure IoT Hub integration — Device Registry, Device Twin, telemetry storage options, security, customer configuration guide.',
     icon: Network,
     category: 'developer',
     lines: 131,
@@ -174,7 +192,8 @@ const DOCS: DocEntry[] = [
     id: 'aws-iot-architecture',
     title: 'AWS IoT Core Architecture',
     filename: 'AWS_IOT_ARCHITECTURE.txt',
-    description: 'AWS IoT Core integration — Thing management, Thing Shadows, telemetry options via IoT Analytics, security, IAM permissions.',
+    description:
+      'AWS IoT Core integration — Thing management, Thing Shadows, telemetry options via IoT Analytics, security, IAM permissions.',
     icon: Network,
     category: 'developer',
     lines: 452,
@@ -185,7 +204,8 @@ const DOCS: DocEntry[] = [
     id: 'golioth-architecture',
     title: 'Golioth Integration Architecture',
     filename: 'GOLIOTH_INTEGRATION_ARCHITECTURE.txt',
-    description: 'Golioth IoT Platform integration — Device management, telemetry, OTA updates, webhooks, API key management, security.',
+    description:
+      'Golioth IoT Platform integration — Device management, telemetry, OTA updates, webhooks, API key management, security.',
     icon: Network,
     category: 'developer',
     lines: 450,
@@ -196,7 +216,8 @@ const DOCS: DocEntry[] = [
     id: 'secrets-inventory',
     title: 'Secrets Inventory & Management',
     filename: 'SECRETS_INVENTORY.txt',
-    description: 'Complete catalog of all production secrets — GitHub Secrets, rotation schedules, tier classification, access audit trail.',
+    description:
+      'Complete catalog of all production secrets — GitHub Secrets, rotation schedules, tier classification, access audit trail.',
     icon: ShieldCheck,
     category: 'operations',
     lines: 252,
@@ -207,7 +228,8 @@ const DOCS: DocEntry[] = [
     id: 'secrets-governance',
     title: 'Secrets Governance Policy',
     filename: 'SECRETS_GOVERNANCE.txt',
-    description: 'Security policies for secrets management — 4-tier classification, rotation requirements, access control, incident response.',
+    description:
+      'Security policies for secrets management — 4-tier classification, rotation requirements, access control, incident response.',
     icon: ShieldCheck,
     category: 'operations',
     lines: 108,
@@ -218,7 +240,8 @@ const DOCS: DocEntry[] = [
     id: 'sentry-setup',
     title: 'Sentry Setup & Integration',
     filename: 'SENTRY_SETUP_GUIDE.txt',
-    description: 'Error tracking and performance monitoring — Sentry configuration, Supabase integration, alert rules, dashboard setup.',
+    description:
+      'Error tracking and performance monitoring — Sentry configuration, Supabase integration, alert rules, dashboard setup.',
     icon: Activity,
     category: 'operations',
     lines: 560,
@@ -229,7 +252,8 @@ const DOCS: DocEntry[] = [
     id: 'soc2-compliance',
     title: 'SOC 2 Compliance Checklist',
     filename: 'SOC2_COMPLIANCE_CHECKLIST.txt',
-    description: 'SOC 2 Type II compliance requirements — Trust Service Criteria, controls, evidence, audit preparation, continuous monitoring.',
+    description:
+      'SOC 2 Type II compliance requirements — Trust Service Criteria, controls, evidence, audit preparation, continuous monitoring.',
     icon: ClipboardList,
     category: 'operations',
     lines: 636,
@@ -240,17 +264,36 @@ const DOCS: DocEntry[] = [
 
 const CATEGORIES = [
   { id: 'all', label: 'All Docs', count: DOCS.length },
-  { id: 'user', label: 'User Guides', count: DOCS.filter(d => d.category === 'user').length },
-  { id: 'admin', label: 'Admin', count: DOCS.filter(d => d.category === 'admin').length },
-  { id: 'developer', label: 'Developer', count: DOCS.filter(d => d.category === 'developer').length },
-  { id: 'operations', label: 'Operations', count: DOCS.filter(d => d.category === 'operations').length },
+  {
+    id: 'user',
+    label: 'User Guides',
+    count: DOCS.filter((d) => d.category === 'user').length,
+  },
+  {
+    id: 'admin',
+    label: 'Admin',
+    count: DOCS.filter((d) => d.category === 'admin').length,
+  },
+  {
+    id: 'developer',
+    label: 'Developer',
+    count: DOCS.filter((d) => d.category === 'developer').length,
+  },
+  {
+    id: 'operations',
+    label: 'Operations',
+    count: DOCS.filter((d) => d.category === 'operations').length,
+  },
 ]
 
 const categoryColors: Record<string, string> = {
   user: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  developer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  operations: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  admin:
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  developer:
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  operations:
+    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
 }
 
 export default function DocumentationTab() {
@@ -258,14 +301,14 @@ export default function DocumentationTab() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { fmt } = useDateFormatter()
 
-  const filtered = DOCS.filter(doc => {
-    const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory
-    const matchesSearch = search === '' || [
-      doc.title,
-      doc.description,
-      doc.filename,
-      ...doc.audience,
-    ].some(text => text.toLowerCase().includes(search.toLowerCase()))
+  const filtered = DOCS.filter((doc) => {
+    const matchesCategory =
+      selectedCategory === 'all' || doc.category === selectedCategory
+    const matchesSearch =
+      search === '' ||
+      [doc.title, doc.description, doc.filename, ...doc.audience].some((text) =>
+        text.toLowerCase().includes(search.toLowerCase())
+      )
     return matchesCategory && matchesSearch
   })
 
@@ -273,7 +316,8 @@ export default function DocumentationTab() {
 
   const handleOpenDoc = (filename: string) => {
     // Link to the documentation file in the GitHub repository
-    const repoUrl = 'https://github.com/NetNeural/MonoRepo-Staging/blob/main/development/docs'
+    const repoUrl =
+      'https://github.com/NetNeural/MonoRepo-Staging/blob/main/development/docs'
     window.open(`${repoUrl}/${filename}`, '_blank')
   }
 
@@ -283,18 +327,20 @@ export default function DocumentationTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
+            <BookOpen className="h-5 w-5" />
             Platform Documentation
           </CardTitle>
           <CardDescription>
-            {DOCS.length} documents, {totalLines.toLocaleString()} lines of documentation covering user guides, admin procedures, API references, and operational runbooks.
+            {DOCS.length} documents, {totalLines.toLocaleString()} lines of
+            documentation covering user guides, admin procedures, API
+            references, and operational runbooks.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Search and filter */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search documentation..."
                 value={search}
@@ -305,21 +351,25 @@ export default function DocumentationTab() {
           </div>
 
           {/* Category filter chips */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {CATEGORIES.map(cat => (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer border ${
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                   selectedCategory === cat.id
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background hover:bg-muted border-border'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-background hover:bg-muted'
                 }`}
               >
                 {cat.label}
-                <span className={`text-[10px] ${
-                  selectedCategory === cat.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                }`}>
+                <span
+                  className={`text-[10px] ${
+                    selectedCategory === cat.id
+                      ? 'text-primary-foreground/70'
+                      : 'text-muted-foreground'
+                  }`}
+                >
                   ({cat.count})
                 </span>
               </button>
@@ -328,46 +378,59 @@ export default function DocumentationTab() {
 
           {/* Doc cards */}
           <div className="grid gap-3">
-            {filtered.map(doc => {
+            {filtered.map((doc) => {
               const Icon = doc.icon
               return (
                 <div
                   key={doc.id}
-                  className="border rounded-lg p-4 hover:bg-muted/30 transition-colors group"
+                  className="group rounded-lg border p-4 transition-colors hover:bg-muted/30"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="p-2 bg-muted rounded-lg flex-shrink-0">
-                        <Icon className="w-5 h-5 text-muted-foreground" />
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <div className="flex-shrink-0 rounded-lg bg-muted p-2">
+                        <Icon className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-sm">{doc.title}</h3>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${categoryColors[doc.category]}`}>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm font-medium">{doc.title}</h3>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${categoryColors[doc.category]}`}
+                          >
                             {doc.category}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{doc.description}</p>
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {doc.description}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
                           <button
                             onClick={() => handleOpenDoc(doc.filename)}
-                            className="text-[10px] text-primary hover:underline font-mono flex items-center gap-1 cursor-pointer"
+                            className="flex cursor-pointer items-center gap-1 font-mono text-[10px] text-primary hover:underline"
                             title="Click to view documentation"
                           >
-                            <FileText className="w-3 h-3" />
+                            <FileText className="h-3 w-3" />
                             {doc.filename}
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="h-3 w-3" />
                           </button>
                           <span className="text-[10px] text-muted-foreground">
                             {doc.lines} lines
                           </span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1" title={new Date(doc.lastUpdated).toLocaleDateString()}>
-                            <Clock className="w-3 h-3" />
+                          <span
+                            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                            title={new Date(
+                              doc.lastUpdated
+                            ).toLocaleDateString()}
+                          >
+                            <Clock className="h-3 w-3" />
                             Updated {fmt.timeAgo(doc.lastUpdated)}
                           </span>
                           <div className="flex gap-1">
-                            {doc.audience.map(a => (
-                              <Badge key={a} variant="outline" className="text-[10px] py-0">
+                            {doc.audience.map((a) => (
+                              <Badge
+                                key={a}
+                                variant="outline"
+                                className="py-0 text-[10px]"
+                              >
                                 {a}
                               </Badge>
                             ))}
@@ -382,7 +445,7 @@ export default function DocumentationTab() {
                       title={`View ${doc.filename}`}
                       onClick={() => handleOpenDoc(doc.filename)}
                     >
-                      <ExternalLink className="w-4 h-4 mr-1" />
+                      <ExternalLink className="mr-1 h-4 w-4" />
                       View
                     </Button>
                   </div>
@@ -392,24 +455,33 @@ export default function DocumentationTab() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <div className="py-8 text-center text-muted-foreground">
+              <BookOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
               <p className="text-sm">No documents match your search.</p>
             </div>
           )}
 
           {/* Doc location info */}
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" />
+          <div className="mt-6 rounded-lg bg-muted p-4">
+            <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
+              <ClipboardList className="h-4 w-4" />
               Documentation Location
             </h4>
             <p className="text-xs text-muted-foreground">
-              All documentation lives in <code className="bg-background px-1 py-0.5 rounded">development/docs/</code> and is version-controlled alongside the codebase.
-              Updates to documentation should be made via pull requests and reviewed before merge.
+              All documentation lives in{' '}
+              <code className="rounded bg-background px-1 py-0.5">
+                development/docs/
+              </code>{' '}
+              and is version-controlled alongside the codebase. Updates to
+              documentation should be made via pull requests and reviewed before
+              merge.
             </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              The changelog is maintained at <code className="bg-background px-1 py-0.5 rounded">development/CHANGELOG.txt</code> following Keep a Changelog format.
+            <p className="mt-2 text-xs text-muted-foreground">
+              The changelog is maintained at{' '}
+              <code className="rounded bg-background px-1 py-0.5">
+                development/CHANGELOG.txt
+              </code>{' '}
+              following Keep a Changelog format.
             </p>
           </div>
         </CardContent>

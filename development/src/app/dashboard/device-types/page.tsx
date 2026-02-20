@@ -1,9 +1,9 @@
 /**
  * Device Types Configuration Page
- * 
+ *
  * Admin page for managing device types with normal ranges,
  * alert thresholds, and measurement metadata.
- * 
+ *
  * @see Issue #118
  */
 'use client'
@@ -24,7 +24,7 @@ export default function DeviceTypesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <LoadingSpinner />
       </div>
     )
@@ -32,12 +32,13 @@ export default function DeviceTypesPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
-          <div className="text-center space-y-3">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
             <p className="text-muted-foreground">No organization selected</p>
             <p className="text-sm text-muted-foreground">
-              Please select an organization from the sidebar to manage device types
+              Please select an organization from the sidebar to manage device
+              types
             </p>
           </div>
         </div>
@@ -46,7 +47,7 @@ export default function DeviceTypesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <OrganizationLogo
@@ -56,16 +57,19 @@ export default function DeviceTypesPage() {
           />
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
-              {currentOrganization?.name ? `${currentOrganization.name} Device Types` : 'Device Types'}
+              {currentOrganization?.name
+                ? `${currentOrganization.name} Device Types`
+                : 'Device Types'}
             </h2>
             <p className="text-muted-foreground">
-              Manage device type configurations, normal operating ranges, and alert thresholds
+              Manage device type configurations, normal operating ranges, and
+              alert thresholds
             </p>
           </div>
         </div>
-        
+
         <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           New Device Type
         </Button>
       </div>

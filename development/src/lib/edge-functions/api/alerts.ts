@@ -16,18 +16,33 @@ export interface CreateAlertData {
 }
 
 export interface AlertsAPI {
-  list: (organizationId: string, options?: {
-    limit?: number
-    severity?: 'info' | 'warning' | 'error' | 'critical'
-    resolved?: boolean
-  }) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number }>>
-  create: (data: CreateAlertData) => Promise<EdgeFunctionResponse<{ alert: unknown }>>
+  list: (
+    organizationId: string,
+    options?: {
+      limit?: number
+      severity?: 'info' | 'warning' | 'error' | 'critical'
+      resolved?: boolean
+    }
+  ) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number }>>
+  create: (
+    data: CreateAlertData
+  ) => Promise<EdgeFunctionResponse<{ alert: unknown }>>
   acknowledge: (alertId: string) => Promise<EdgeFunctionResponse<unknown>>
-  bulkAcknowledge: (alertIds: string[], organizationId: string, acknowledgementType?: string, notes?: string) => Promise<EdgeFunctionResponse<{ acknowledged_count: number }>>
+  bulkAcknowledge: (
+    alertIds: string[],
+    organizationId: string,
+    acknowledgementType?: string,
+    notes?: string
+  ) => Promise<EdgeFunctionResponse<{ acknowledged_count: number }>>
   resolve: (alertId: string) => Promise<EdgeFunctionResponse<unknown>>
 }
 
-export function createAlertsAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): AlertsAPI {
+export function createAlertsAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): AlertsAPI {
   return {
     /**
      * List alerts for an organization
@@ -38,10 +53,12 @@ export function createAlertsAPI(call: <T>(functionName: string, options?: EdgeFu
           organization_id: organizationId,
           ...(options?.limit && { limit: options.limit }),
           ...(options?.severity && { severity: options.severity }),
-          ...(options?.resolved !== undefined && { resolved: options.resolved }),
+          ...(options?.resolved !== undefined && {
+            resolved: options.resolved,
+          }),
         },
       }),
-    
+
     /**
      * Create a new alert
      */
@@ -58,11 +75,16 @@ export function createAlertsAPI(call: <T>(functionName: string, options?: EdgeFu
       call(`alerts/${alertId}/acknowledge`, {
         method: 'PATCH',
       }),
-    
+
     /**
      * Bulk acknowledge multiple alerts (Issue #108)
      */
-    bulkAcknowledge: (alertIds, organizationId, acknowledgementType = 'acknowledged', notes) =>
+    bulkAcknowledge: (
+      alertIds,
+      organizationId,
+      acknowledgementType = 'acknowledged',
+      notes
+    ) =>
       call<{ acknowledged_count: number }>('alerts/bulk-acknowledge', {
         method: 'POST',
         body: {
@@ -72,7 +94,7 @@ export function createAlertsAPI(call: <T>(functionName: string, options?: EdgeFu
           notes,
         },
       }),
-    
+
     /**
      * Resolve an alert
      */

@@ -6,7 +6,13 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -54,10 +60,12 @@ export default function AlertRulesPage() {
   const handleToggle = async (ruleId: string, enabled: boolean) => {
     try {
       const response = await edgeFunctions.alertRules.toggle(ruleId, !enabled)
-      
+
       if (response.success) {
         setRules((prev) =>
-          prev.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !enabled } : rule))
+          prev.map((rule) =>
+            rule.id === ruleId ? { ...rule, enabled: !enabled } : rule
+          )
         )
         toast.success(`Rule ${!enabled ? 'enabled' : 'disabled'}`)
       } else {
@@ -72,7 +80,7 @@ export default function AlertRulesPage() {
   const handleDuplicate = async (ruleId: string) => {
     try {
       const response = await edgeFunctions.alertRules.duplicate(ruleId)
-      
+
       if (response.success) {
         toast.success('Rule duplicated')
         await fetchRules()
@@ -92,7 +100,7 @@ export default function AlertRulesPage() {
 
     try {
       const response = await edgeFunctions.alertRules.delete(ruleId)
-      
+
       if (response.success) {
         setRules((prev) => prev.filter((rule) => rule.id !== ruleId))
         toast.success('Rule deleted')
@@ -107,7 +115,7 @@ export default function AlertRulesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <LoadingSpinner />
       </div>
     )
@@ -123,8 +131,12 @@ export default function AlertRulesPage() {
             size="xl"
           />
           <div>
-            <h1 className="text-3xl font-bold">{currentOrganization?.name ? `${currentOrganization.name} Alert Rules` : 'Alert Rules'}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl font-bold">
+              {currentOrganization?.name
+                ? `${currentOrganization.name} Alert Rules`
+                : 'Alert Rules'}
+            </h1>
+            <p className="mt-1 text-muted-foreground">
               Create automated rules to monitor your devices and trigger actions
             </p>
           </div>
@@ -159,7 +171,7 @@ export default function AlertRulesPage() {
       {rules.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No alert rules yet</p>
+            <p className="mb-4 text-muted-foreground">No alert rules yet</p>
             <Button onClick={() => router.push('/dashboard/alert-rules/new')}>
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Rule
@@ -179,7 +191,9 @@ export default function AlertRulesPage() {
                         {rule.enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
                       <Badge variant="outline">
-                        {rule.rule_type === 'telemetry' ? 'Telemetry' : 'Offline Detection'}
+                        {rule.rule_type === 'telemetry'
+                          ? 'Telemetry'
+                          : 'Offline Detection'}
                       </Badge>
                     </div>
                     {rule.description && (
@@ -202,7 +216,9 @@ export default function AlertRulesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/alert-rules/${rule.id}/edit`)}
+                      onClick={() =>
+                        router.push(`/dashboard/alert-rules/${rule.id}/edit`)
+                      }
                       title="Edit rule"
                     >
                       <Edit className="h-4 w-4" />
@@ -227,7 +243,7 @@ export default function AlertRulesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                   <div>
                     <p className="text-muted-foreground">Device Scope</p>
                     <p className="font-medium">
@@ -238,11 +254,15 @@ export default function AlertRulesPage() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Actions</p>
-                    <p className="font-medium">{rule.actions.length} configured</p>
+                    <p className="font-medium">
+                      {rule.actions.length} configured
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Cooldown</p>
-                    <p className="font-medium">{rule.cooldown_minutes} minutes</p>
+                    <p className="font-medium">
+                      {rule.cooldown_minutes} minutes
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Last Triggered</p>

@@ -1,6 +1,12 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -38,7 +44,9 @@ export function ReviewStep({ state }: ReviewStepProps) {
           <div>
             <p className="text-sm text-muted-foreground">Type</p>
             <Badge variant="outline" className="mt-1">
-              {state.ruleType === 'telemetry' ? 'Telemetry Rule' : 'Offline Detection'}
+              {state.ruleType === 'telemetry'
+                ? 'Telemetry Rule'
+                : 'Offline Detection'}
             </Badge>
           </div>
         </CardContent>
@@ -58,20 +66,24 @@ export function ReviewStep({ state }: ReviewStepProps) {
                 <strong>Metric:</strong> {state.condition.metric}
               </p>
               <p>
-                <strong>Condition:</strong> {state.condition.operator} {state.condition.value}
+                <strong>Condition:</strong> {state.condition.operator}{' '}
+                {state.condition.value}
               </p>
               <p>
-                <strong>Time Window:</strong> {state.condition.duration_minutes || 5} minutes
+                <strong>Time Window:</strong>{' '}
+                {state.condition.duration_minutes || 5} minutes
               </p>
             </div>
           ) : (
             <div className="space-y-2">
               <p>
-                <strong>Offline Duration:</strong> {state.condition.offline_minutes} minutes
+                <strong>Offline Duration:</strong>{' '}
+                {state.condition.offline_minutes} minutes
               </p>
               {state.condition.grace_period_hours > 0 && (
                 <p>
-                  <strong>Grace Period:</strong> {state.condition.grace_period_hours} hours
+                  <strong>Grace Period:</strong>{' '}
+                  {state.condition.grace_period_hours} hours
                 </p>
               )}
             </div>
@@ -111,7 +123,7 @@ export function ReviewStep({ state }: ReviewStepProps) {
                   </span>
                 )}
                 {action.type === 'webhook' && (
-                  <span className="text-sm text-muted-foreground truncate max-w-xs">
+                  <span className="max-w-xs truncate text-sm text-muted-foreground">
                     {action.webhook_url}
                   </span>
                 )}
@@ -135,19 +147,16 @@ export function ReviewStep({ state }: ReviewStepProps) {
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="enabled">Enable rule immediately</Label>
-            <Switch
-              id="enabled"
-              checked={state.enabled}
-              disabled
-            />
+            <Switch id="enabled" checked={state.enabled} disabled />
           </div>
         </CardContent>
       </Card>
 
-      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-        <h4 className="font-medium mb-2">Ready to Create</h4>
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
+        <h4 className="mb-2 font-medium">Ready to Create</h4>
         <p className="text-sm text-muted-foreground">
-          Review the configuration above. Click &quot;Create Rule&quot; to activate monitoring for your devices.
+          Review the configuration above. Click &quot;Create Rule&quot; to
+          activate monitoring for your devices.
         </p>
       </div>
     </div>

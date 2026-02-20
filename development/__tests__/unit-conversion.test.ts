@@ -1,6 +1,6 @@
 /**
  * Unit Conversion Tests
- * 
+ *
  * Tests for the unit conversion utility to verify accurate conversions
  * across different measurement types.
  */
@@ -106,7 +106,14 @@ describe('Unit Conversion Utilities', () => {
 
   describe('convertMeasurementValues', () => {
     test('converts temperature thresholds from Celsius to Fahrenheit', () => {
-      const result = convertMeasurementValues('18', '26', '10', '35', '°C', '°F')
+      const result = convertMeasurementValues(
+        '18',
+        '26',
+        '10',
+        '35',
+        '°C',
+        '°F'
+      )
       expect(parseFloat(result.lowerNormal)).toBeCloseTo(64.4, 1)
       expect(parseFloat(result.upperNormal)).toBeCloseTo(78.8, 1)
       expect(parseFloat(result.lowerAlert)).toBeCloseTo(50, 1)
@@ -122,13 +129,27 @@ describe('Unit Conversion Utilities', () => {
     })
 
     test('handles invalid numeric values gracefully', () => {
-      const result = convertMeasurementValues('invalid', '26', '10', '35', '°C', '°F')
+      const result = convertMeasurementValues(
+        'invalid',
+        '26',
+        '10',
+        '35',
+        '°C',
+        '°F'
+      )
       expect(result.lowerNormal).toBe('')
       expect(result.upperNormal).toBeCloseTo(78.8, 1)
     })
 
     test('returns empty strings when conversion not available', () => {
-      const result = convertMeasurementValues('18', '26', '10', '35', '°C', 'ppm')
+      const result = convertMeasurementValues(
+        '18',
+        '26',
+        '10',
+        '35',
+        '°C',
+        'ppm'
+      )
       expect(result.lowerNormal).toBe('')
       expect(result.upperNormal).toBe('')
       expect(result.lowerAlert).toBe('')

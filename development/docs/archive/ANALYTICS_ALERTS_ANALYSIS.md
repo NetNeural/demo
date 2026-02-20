@@ -27,6 +27,7 @@
   - 91% overall health
 
 **Code Change:**
+
 ```typescript
 // Before: Static mock data
 const devicePerformance = [
@@ -36,7 +37,7 @@ const devicePerformance = [
 // After: Dynamic mock data based on organization
 const orgSeed = currentOrganization.id === 'org-1' ? 1 : 2;
 const devicePerformance = [
-  { 
+  {
     device_name: `${currentOrganization.name} - Temperature Sensor`,
     uptime_percentage: 98.5 - (orgSeed * 2),
     data_points_count: 8542 + (orgSeed * 1000)
@@ -45,6 +46,7 @@ const devicePerformance = [
 ```
 
 **Now when you switch organizations, you'll see:**
+
 - ✅ Different device names (includes org name)
 - ✅ Different uptime percentages
 - ✅ Different data point counts
@@ -62,9 +64,11 @@ const devicePerformance = [
 You currently have **TWO** places to manage alerts:
 
 ### 1. **Main Alerts Page** (`/dashboard/alerts`)
+
 **Purpose:** Monitor and respond to active alerts
 **Location:** Sidebar > Alerts
 **Features:**
+
 - Alert Rules button
 - Notification Settings button
 - AlertsList component (shows actual alert instances)
@@ -72,9 +76,11 @@ You currently have **TWO** places to manage alerts:
 **Use Case:** Day-to-day alert monitoring
 
 ### 2. **Organization Alerts Tab** (`/dashboard/organizations` > Alerts tab)
+
 **Purpose:** Organization-specific alert configuration
 **Location:** Sidebar > Organization > Alerts tab
 **Features:**
+
 - Alert rules management
 - Organization-scoped alert settings
 
@@ -85,6 +91,7 @@ You currently have **TWO** places to manage alerts:
 Both pages serve similar but slightly different purposes:
 
 ### Main Alerts Page Should Show:
+
 - ✅ **Active Alerts** - Real-time alert instances (e.g., "Temperature exceeded threshold at 2:34 PM")
 - ✅ **Alert History** - Past alerts, resolved alerts
 - ✅ **Quick Actions** - Acknowledge, resolve, dismiss alerts
@@ -92,6 +99,7 @@ Both pages serve similar but slightly different purposes:
 - ❓ **Notification Settings** - Personal notification preferences
 
 ### Organization Alerts Tab Should Show:
+
 - ✅ **Alert Rules** - Define what triggers alerts (e.g., "Alert when temp > 80°F")
 - ✅ **Rule Configuration** - Thresholds, conditions, escalation
 - ✅ **Org Notification Settings** - Organization-wide notification channels
@@ -100,7 +108,9 @@ Both pages serve similar but slightly different purposes:
 ## Recommended Structure
 
 ### Option 1: Separate Concerns (Recommended)
+
 **Main Alerts Page:** Active alerts and personal preferences
+
 ```
 /dashboard/alerts
 ├── Active Alerts List (current alerts)
@@ -109,6 +119,7 @@ Both pages serve similar but slightly different purposes:
 ```
 
 **Organization Alerts Tab:** Rules and org-wide settings
+
 ```
 /dashboard/organizations > Alerts Tab
 ├── Alert Rules (create/edit rules)
@@ -117,7 +128,9 @@ Both pages serve similar but slightly different purposes:
 ```
 
 ### Option 2: All-in-One
+
 Keep everything on the main Alerts page with tabs:
+
 ```
 /dashboard/alerts
 ├── Tab 1: Active Alerts
@@ -130,16 +143,19 @@ And simplify Organization page to just show a summary.
 ## Current Implementation Status
 
 **Main Alerts Page (`/dashboard/alerts/page.tsx`):**
+
 ```tsx
 <AlertsHeader />  // Has "Alert Rules" and "Notification Settings" buttons
 <AlertsList />    // Shows active alerts
 ```
 
 **AlertsHeader Component:**
+
 ```tsx
 <Button variant="outline">Alert Rules</Button>
 <Button variant="outline">Notification Settings</Button>
 ```
+
 These buttons currently don't do anything (no onClick handlers).
 
 **Organization Alerts Tab (`OrganizationAlertsTab.tsx`):**
@@ -150,12 +166,14 @@ Shows alert rules with severity badges, enabled/disabled status, and "Create Rul
 **Keep the current structure** with these clarifications:
 
 ### Main Alerts Page Should:
+
 1. Show **active alert instances** (the AlertsList)
 2. Show **alert history**
 3. Have a button linking to Organization > Alerts tab for rule management
 4. Have personal notification preferences
 
 ### Organization Alerts Tab Should:
+
 1. Manage **alert rules** (what triggers alerts)
 2. Configure **thresholds and conditions**
 3. Set **organization-wide notification channels**
@@ -166,13 +184,18 @@ Shows alert rules with severity badges, enabled/disabled status, and "Create Rul
 ### 1. AlertsHeader Buttons Need Actions
 
 **Option A:** Link to Organization Alerts Tab
+
 ```tsx
-<Button variant="outline" onClick={() => router.push('/dashboard/organizations?tab=alerts')}>
+<Button
+  variant="outline"
+  onClick={() => router.push('/dashboard/organizations?tab=alerts')}
+>
   Alert Rules
 </Button>
 ```
 
 **Option B:** Open modal/drawer for quick rule creation
+
 ```tsx
 <Button variant="outline" onClick={() => setShowRulesModal(true)}>
   Alert Rules
@@ -200,9 +223,10 @@ Shows alert rules with severity badges, enabled/disabled status, and "Create Rul
 ### 3. Add Context to Organization Alerts Tab
 
 Show which organization's rules you're managing:
+
 ```tsx
 // In OrganizationAlertsTab.tsx
-<div className="flex items-center justify-between mb-4">
+<div className="mb-4 flex items-center justify-between">
   <div>
     <h3 className="text-lg font-semibold">Alert Rules</h3>
     <p className="text-sm text-muted-foreground">
@@ -216,11 +240,13 @@ Show which organization's rules you're managing:
 ## Summary
 
 ### Question 1: Analytics Not Changing
+
 - ✅ **Fixed:** Mock data now varies by organization
 - ✅ The useEffect was already working correctly
 - ✅ Now you'll see different numbers when switching orgs
 
 ### Question 2: Alerts Page Buttons
+
 - ✅ **Correct:** The buttons should be there
 - ❌ **Problem:** They don't do anything yet (no onClick)
 - 💡 **Recommendation:** Link them to the Organization Alerts tab OR open modals

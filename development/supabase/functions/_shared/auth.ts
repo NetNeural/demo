@@ -21,12 +21,12 @@ export function extractAuthToken(req: Request): string | null {
   if (!authHeader) {
     return null
   }
-  
+
   // Handle both "Bearer token" and just "token" formats
   if (authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7)
   }
-  
+
   return authHeader
 }
 
@@ -35,7 +35,7 @@ export function extractAuthToken(req: Request): string | null {
  */
 export function createAuthenticatedClient(req: Request) {
   const authToken = extractAuthToken(req)
-  
+
   if (!authToken) {
     throw new Error('Missing authorization header')
   }
@@ -47,21 +47,17 @@ export function createAuthenticatedClient(req: Request) {
     throw new Error('Missing Supabase configuration')
   }
 
-  return createClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
       },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
 
 /**
@@ -75,16 +71,12 @@ export function createServiceClient() {
     throw new Error('Missing Supabase service configuration')
   }
 
-  return createClient<Database>(
-    supabaseUrl,
-    supabaseServiceKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
+  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
 
 /**
@@ -93,10 +85,13 @@ export function createServiceClient() {
  */
 export async function getUserContext(req: Request): Promise<UserContext> {
   const supabase = createAuthenticatedClient(req)
-  
+
   // Get the authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
   if (authError) {
     console.error('Auth error:', authError)
     // In staging: if JWT validation fails, try to extract user ID from token payload
@@ -106,8 +101,10 @@ export async function getUserContext(req: Request): Promise<UserContext> {
       try {
         // Decode JWT payload without verification (staging only!)
         const payload = JSON.parse(atob(token.split('.')[1]))
-        console.log('Fallback: Using unverified token payload', { sub: payload.sub })
-        
+        console.log('Fallback: Using unverified token payload', {
+          sub: payload.sub,
+        })
+
         // Use service role to get user profile
         const serviceClient = createServiceClient()
         const { data: profile } = await serviceClient
@@ -115,7 +112,7 @@ export async function getUserContext(req: Request): Promise<UserContext> {
           .select('organization_id, role, email')
           .eq('id', payload.sub)
           .single()
-        
+
         if (profile) {
           return {
             userId: payload.sub,
@@ -131,7 +128,7 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     }
     throw new Error('Unauthorized - invalid or expired token')
   }
-  
+
   if (!user) {
     throw new Error('Unauthorized - no user found')
   }
@@ -168,7 +165,7 @@ export async function getUserContext(req: Request): Promise<UserContext> {
  * - Super admins can specify organization_id in query params
  * - Regular users get their default organization from users table
  * - Returns null if user has no organization and isn't super admin
- * 
+ *
  * @deprecated Use resolveOrganizationId() for multi-org support
  */
 export function getTargetOrganizationId(
@@ -179,7 +176,7 @@ export function getTargetOrganizationId(
   if (userContext.isSuperAdmin) {
     return requestedOrgId || null
   }
-  
+
   // Regular users can only access their own organization
   return userContext.organizationId
 }
@@ -189,7 +186,7 @@ export function getTargetOrganizationId(
  * - Super admins can access any organization
  * - Regular users can access any org they're a member of (via organization_members)
  * - Falls back to users.organization_id if no membership found
- * 
+ *
  * Uses service_role to bypass RLS when checking organization_members
  */
 export async function resolveOrganizationId(
@@ -221,7 +218,9 @@ export async function resolveOrganizationId(
     if (membership.is_temporary && membership.expires_at) {
       const expiresAt = new Date(membership.expires_at)
       if (expiresAt < new Date()) {
-        console.warn(`User ${userContext.email} temporary access to org ${requestedOrgId} has expired.`)
+        console.warn(
+          `User ${userContext.email} temporary access to org ${requestedOrgId} has expired.`
+        )
         // Clean up expired membership
         await serviceClient
           .from('organization_members')
@@ -236,7 +235,9 @@ export async function resolveOrganizationId(
   }
 
   // Not a member of the requested org — fall back to default
-  console.warn(`User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org.`)
+  console.warn(
+    `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org.`
+  )
   return userContext.organizationId
 }
 
@@ -267,14 +268,14 @@ export function hasPermission(
   switch (action) {
     case 'view':
       return true // All authenticated users can view their org's data
-    
+
     case 'create':
     case 'update':
       return ['org_owner', 'org_admin', 'user'].includes(userContext.role)
-    
+
     case 'delete':
       return ['org_owner', 'org_admin'].includes(userContext.role)
-    
+
     default:
       return false
   }
@@ -285,7 +286,8 @@ export function hasPermission(
  */
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-integration-id, x-golioth-signature, x-amz-sns-message-id, x-azure-signature, x-webhook-signature',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-integration-id, x-golioth-signature, x-amz-sns-message-id, x-azure-signature, x-webhook-signature',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
 }
 
@@ -311,7 +313,10 @@ export function createAuthErrorResponse(message: string, status: number = 401) {
 /**
  * Create success response with CORS headers
  */
-export function createSuccessResponse(data: Record<string, unknown>, status: number = 200) {
+export function createSuccessResponse(
+  data: Record<string, unknown>,
+  status: number = 200
+) {
   return new Response(
     JSON.stringify({
       ...data,

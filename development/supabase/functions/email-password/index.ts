@@ -1,11 +1,15 @@
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { getUserContext } from '../_shared/auth.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 export default createEdgeFunction(async ({ req }) => {
   // Get authenticated user context
   const userContext = await getUserContext(req)
-  
+
   // Create service_role client for bypassing RLS
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -21,15 +25,18 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   const body = await req.json()
-  console.log('📥 Email password request received:', { 
+  console.log('📥 Email password request received:', {
     userId: body.userId,
     hasPassword: !!body.password,
   })
-  
+
   const { userId, password } = body
 
   if (!userId || !password) {
-    console.error('❌ Missing required fields:', { hasUserId: !!userId, hasPassword: !!password })
+    console.error('❌ Missing required fields:', {
+      hasUserId: !!userId,
+      hasPassword: !!password,
+    })
     throw new Error('userId and password are required')
   }
 
@@ -48,7 +55,7 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Check if requester has permission
   const isSuperAdmin = userContext.role === 'super_admin'
-  
+
   if (!isSuperAdmin) {
     // Check if target user is in the same organization
     const { data: membership } = await supabaseAdmin
@@ -59,7 +66,10 @@ export default createEdgeFunction(async ({ req }) => {
       .maybeSingle()
 
     if (!membership) {
-      throw new DatabaseError('You can only email passwords for users in your organization', 403)
+      throw new DatabaseError(
+        'You can only email passwords for users in your organization',
+        403
+      )
     }
 
     // Check requester's role in the organization
@@ -82,18 +92,18 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Send email notification to user (WITHOUT resetting password)
   const resendApiKey = Deno.env.get('RESEND_API_KEY')
-  
+
   if (!resendApiKey) {
     throw new Error('Email service not configured')
   }
 
   try {
     console.log('📧 Sending password email...')
-    
+
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -162,7 +172,7 @@ export default createEdgeFunction(async ({ req }) => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json()
       console.error('❌ Resend API error:', errorData)
-      
+
       // Return the error details instead of throwing
       return createSuccessResponse({
         success: false,
@@ -174,7 +184,7 @@ export default createEdgeFunction(async ({ req }) => {
 
     const emailData = await emailResponse.json()
     console.log('✅ Email sent successfully:', { emailId: emailData.id })
-    
+
     return createSuccessResponse({
       message: 'Password email sent successfully',
       emailId: emailData.id,
@@ -182,7 +192,7 @@ export default createEdgeFunction(async ({ req }) => {
   } catch (error) {
     console.error('❌ Error sending email:', error)
     console.log('⚠️ Email error details:', error)
-    
+
     // Return error details instead of throwing
     return createSuccessResponse({
       success: false,

@@ -8,7 +8,10 @@
  * should use the `format()` export from date-fns directly.
  */
 
-import type { DateFormatOption, TimeFormatOption } from '@/contexts/PreferencesContext'
+import type {
+  DateFormatOption,
+  TimeFormatOption,
+} from '@/contexts/PreferencesContext'
 
 // ─── Intl option builders ─────────────────────────────────────────────
 
@@ -42,11 +45,16 @@ export interface FormatOptions {
  */
 export function formatDateTime(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
-  const { timezone, dateFormat = 'MM/DD/YYYY', timeFormat = '12h', language = 'en' } = opts
+  const {
+    timezone,
+    dateFormat = 'MM/DD/YYYY',
+    timeFormat = '12h',
+    language = 'en',
+  } = opts
   const locale = getLocale(language)
   const options: Intl.DateTimeFormatOptions = {
     ...dateOptions(dateFormat),
@@ -68,7 +76,7 @@ export function formatDateTime(
  */
 export function formatDateOnly(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
@@ -91,7 +99,7 @@ export function formatDateOnly(
  */
 export function formatTimeOnly(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
@@ -116,11 +124,16 @@ export function formatTimeOnly(
  */
 export function formatDateTimeWithSeconds(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
-  const { timezone, dateFormat = 'MM/DD/YYYY', timeFormat = '12h', language = 'en' } = opts
+  const {
+    timezone,
+    dateFormat = 'MM/DD/YYYY',
+    timeFormat = '12h',
+    language = 'en',
+  } = opts
   const locale = getLocale(language)
   const options: Intl.DateTimeFormatOptions = {
     ...dateOptions(dateFormat),
@@ -143,7 +156,7 @@ export function formatDateTimeWithSeconds(
  */
 export function formatShortDate(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
@@ -167,7 +180,7 @@ export function formatShortDate(
  */
 export function formatShortDateTime(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
@@ -194,7 +207,7 @@ export function formatShortDateTime(
  */
 export function formatLongDate(
   date: Date | string | number,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   const d = toDate(date)
   if (!d) return 'N/A'
@@ -221,7 +234,7 @@ export function formatLongDate(
  */
 export function formatTimeAgo(
   date: Date | string | number | null | undefined,
-  opts: FormatOptions = {},
+  opts: FormatOptions = {}
 ): string {
   if (!date) return 'Never'
   const d = toDate(date)
@@ -278,11 +291,13 @@ export function createFormatter(prefs: {
     dateTime: (d: Date | string | number) => formatDateTime(d, opts),
     dateOnly: (d: Date | string | number) => formatDateOnly(d, opts),
     timeOnly: (d: Date | string | number) => formatTimeOnly(d, opts),
-    dateTimeSeconds: (d: Date | string | number) => formatDateTimeWithSeconds(d, opts),
+    dateTimeSeconds: (d: Date | string | number) =>
+      formatDateTimeWithSeconds(d, opts),
     shortDate: (d: Date | string | number) => formatShortDate(d, opts),
     shortDateTime: (d: Date | string | number) => formatShortDateTime(d, opts),
     longDate: (d: Date | string | number) => formatLongDate(d, opts),
-    timeAgo: (d: Date | string | number | null | undefined) => formatTimeAgo(d, opts),
+    timeAgo: (d: Date | string | number | null | undefined) =>
+      formatTimeAgo(d, opts),
     duration: formatDuration,
   }
 }

@@ -26,7 +26,8 @@ jest.mock('sonner', () => ({
   },
 }))
 
-const mockAlertsListEdgeFunction = edgeFunctions.alerts.list as jest.MockedFunction<typeof edgeFunctions.alerts.list>
+const mockAlertsListEdgeFunction = edgeFunctions.alerts
+  .list as jest.MockedFunction<typeof edgeFunctions.alerts.list>
 
 describe('AlertsList - Simplified Integration Tests', () => {
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     // Component renders successfully
     expect(screen.getByRole('textbox', { name: /search/i })).toBeInTheDocument()
   })
@@ -67,7 +68,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     await waitFor(() => {
       expect(mockAlertsListEdgeFunction).toHaveBeenCalled()
     })
@@ -81,7 +82,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     await waitFor(() => {
       expect(screen.getByText(/no alerts/i)).toBeInTheDocument()
     })
@@ -95,7 +96,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     await waitFor(() => {
       expect(mockAlertsListEdgeFunction).toHaveBeenCalled()
     })
@@ -109,7 +110,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     const searchInput = screen.getByRole('textbox', { name: /search/i })
     expect(searchInput).toBeInTheDocument()
   })
@@ -122,7 +123,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     const severityFilter = screen.getByRole('combobox', { name: /severity/i })
     expect(severityFilter).toBeInTheDocument()
   })
@@ -135,7 +136,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     const categoryFilter = screen.getByRole('combobox', { name: /category/i })
     expect(categoryFilter).toBeInTheDocument()
   })
@@ -161,7 +162,7 @@ describe('AlertsList - Simplified Integration Tests', () => {
     })
 
     render(<AlertsList />)
-    
+
     await waitFor(() => {
       expect(screen.getByText(/critical/i)).toBeInTheDocument()
     })

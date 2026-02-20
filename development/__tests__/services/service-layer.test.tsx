@@ -164,7 +164,9 @@ describe('Service Layer - Complete Coverage', () => {
       const result = await mockSupabase.auth.signInWithPassword(credentials)
 
       expect(result.data?.user).toBeDefined()
-      expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith(credentials)
+      expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith(
+        credentials
+      )
     })
 
     test('should get current user', async () => {
@@ -470,7 +472,9 @@ describe('Service Layer - Complete Coverage', () => {
         .select('*')
         .eq('severity', 'high')
 
-      expect(result.data?.every((a: { severity: string }) => a.severity === 'high')).toBe(true)
+      expect(
+        result.data?.every((a: { severity: string }) => a.severity === 'high')
+      ).toBe(true)
     })
   })
 
@@ -494,7 +498,9 @@ describe('Service Layer - Complete Coverage', () => {
         select: jest.fn().mockRejectedValue(new Error('Network error')),
       }))
 
-      await expect(mockSupabase.from('devices').select('*')).rejects.toThrow('Network error')
+      await expect(mockSupabase.from('devices').select('*')).rejects.toThrow(
+        'Network error'
+      )
     })
 
     test('should handle authentication errors', async () => {
@@ -511,7 +517,8 @@ describe('Service Layer - Complete Coverage', () => {
 
   describe('Data Validation', () => {
     test('should validate email format', () => {
-      const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      const isValidEmail = (email: string) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
       expect(isValidEmail('test@example.com')).toBe(true)
       expect(isValidEmail('invalid-email')).toBe(false)

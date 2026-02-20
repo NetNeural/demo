@@ -31,26 +31,30 @@ const SENSOR_LABELS: Record<number, string> = {
   7: 'Motion',
 }
 
-export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealthCardProps) {
+export function DeviceHealthCard({
+  device,
+  telemetryReadings = [],
+}: DeviceHealthCardProps) {
   const { fmt } = useDateFormatter()
 
   // Get last timestamp for each sensor type
   const getLastTelemetryTimestamps = () => {
     const sensorTimestamps: Record<string, string> = {}
-    
-    telemetryReadings.forEach(reading => {
+
+    telemetryReadings.forEach((reading) => {
       const sensorType = reading.telemetry?.type
-      
+
       if (sensorType === undefined) return
-      
+
       const label = SENSOR_LABELS[sensorType]
-      
+
       if (label && !sensorTimestamps[label]) {
         // Use device_timestamp if available, otherwise received_at
-        sensorTimestamps[label] = reading.device_timestamp || reading.received_at
+        sensorTimestamps[label] =
+          reading.device_timestamp || reading.received_at
       }
     })
-    
+
     return sensorTimestamps
   }
 
@@ -81,23 +85,30 @@ export function DeviceHealthCard({ device, telemetryReadings = [] }: DeviceHealt
       <CardContent className="space-y-4">
         {/* Last Telemetry Readings */}
         {Object.keys(sensorTimestamps).length > 0 ? (
-          <div className="space-y-3 pb-3 border-b">
+          <div className="space-y-3 border-b pb-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Clock className="h-4 w-4" />
               Last Telemetry Readings
             </div>
             {Object.entries(sensorTimestamps).map(([sensor, timestamp]) => (
-              <div key={sensor} className="flex items-center justify-between pl-6">
+              <div
+                key={sensor}
+                className="flex items-center justify-between pl-6"
+              >
                 <span className="text-sm">{sensor}</span>
                 <div className="text-right">
-                  <div className="font-medium text-sm">{fmt.timeAgo(timestamp)}</div>
-                  <div className="text-xs text-muted-foreground">{fmt.shortDateTime(timestamp)}</div>
+                  <div className="text-sm font-medium">
+                    {fmt.timeAgo(timestamp)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmt.shortDateTime(timestamp)}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-between pb-3 border-b">
+          <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Last Telemetry</span>

@@ -15,9 +15,7 @@ import {
   createErrorResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-} from '../_shared/auth.ts'
+import { createServiceClient } from '../_shared/auth.ts'
 
 const GITHUB_REPO = 'NetNeural/MonoRepo-Staging'
 
@@ -95,8 +93,8 @@ export default createEdgeFunction(
     }
 
     const headers = {
-      'Authorization': `token ${githubToken}`,
-      'Accept': 'application/vnd.github.v3+json',
+      Authorization: `token ${githubToken}`,
+      Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'NetNeural-Feedback-Comments',
     }
 
@@ -122,17 +120,19 @@ export default createEdgeFunction(
     let comments: GitHubComment[] = []
     if (commentsResponse.ok) {
       const rawComments = await commentsResponse.json()
-      comments = rawComments.map((c: {
-        user?: { login: string; avatar_url: string; type: string }
-        body: string
-        created_at: string
-      }) => ({
-        author: c.user?.login || 'Unknown',
-        authorAvatar: c.user?.avatar_url || '',
-        body: c.body || '',
-        createdAt: c.created_at,
-        isBot: c.user?.type === 'Bot',
-      }))
+      comments = rawComments.map(
+        (c: {
+          user?: { login: string; avatar_url: string; type: string }
+          body: string
+          created_at: string
+        }) => ({
+          author: c.user?.login || 'Unknown',
+          authorAvatar: c.user?.avatar_url || '',
+          body: c.body || '',
+          createdAt: c.created_at,
+          isBot: c.user?.type === 'Bot',
+        })
+      )
     }
 
     const issue: GitHubIssueDetail = {

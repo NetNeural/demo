@@ -21,9 +21,7 @@ import {
   createErrorResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-} from '../_shared/auth.ts'
+import { createServiceClient } from '../_shared/auth.ts'
 
 const GITHUB_REPO = 'NetNeural/MonoRepo-Staging'
 
@@ -92,10 +90,16 @@ export default createEdgeFunction(
       })
     }
 
-    console.log(`Syncing ${feedbackItems.length} feedback items for org ${organizationId}`)
+    console.log(
+      `Syncing ${feedbackItems.length} feedback items for org ${organizationId}`
+    )
 
     let synced = 0
-    const results: Array<{ id: string; issueNumber: number; newStatus: string }> = []
+    const results: Array<{
+      id: string
+      issueNumber: number
+      newStatus: string
+    }> = []
 
     for (const item of feedbackItems) {
       try {
@@ -104,28 +108,39 @@ export default createEdgeFunction(
           `https://api.github.com/repos/${GITHUB_REPO}/issues/${item.github_issue_number}`,
           {
             headers: {
-              'Authorization': `token ${githubToken}`,
-              'Accept': 'application/vnd.github.v3+json',
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github.v3+json',
               'User-Agent': 'NetNeural-Feedback-Sync',
             },
           }
         )
 
         if (!issueResponse.ok) {
-          console.error(`GitHub API error for issue #${item.github_issue_number}: ${issueResponse.status}`)
+          console.error(
+            `GitHub API error for issue #${item.github_issue_number}: ${issueResponse.status}`
+          )
           continue
         }
 
         const issueData = await issueResponse.json()
-        const newStatus = mapGitHubState(issueData.state, issueData.state_reason || null)
+        const newStatus = mapGitHubState(
+          issueData.state,
+          issueData.state_reason || null
+        )
 
         if (!newStatus) {
           // Still open — check if any labels map to status changes
-          const labels = (issueData.labels || []).map((l: { name: string }) => l.name.toLowerCase())
+          const labels = (issueData.labels || []).map((l: { name: string }) =>
+            l.name.toLowerCase()
+          )
           let labelStatus: string | null = null
           if (labels.includes('acknowledged') || labels.includes('triaged')) {
             labelStatus = 'acknowledged'
-          } else if (labels.includes('in-progress') || labels.includes('in_progress') || labels.includes('wip')) {
+          } else if (
+            labels.includes('in-progress') ||
+            labels.includes('in_progress') ||
+            labels.includes('wip')
+          ) {
             labelStatus = 'in_progress'
           }
 
@@ -140,7 +155,11 @@ export default createEdgeFunction(
 
             if (!updateError) {
               synced++
-              results.push({ id: item.id, issueNumber: item.github_issue_number, newStatus: labelStatus })
+              results.push({
+                id: item.id,
+                issueNumber: item.github_issue_number,
+                newStatus: labelStatus,
+              })
             }
           }
           continue
@@ -153,8 +172,8 @@ export default createEdgeFunction(
             `https://api.github.com/repos/${GITHUB_REPO}/issues/${item.github_issue_number}/comments?per_page=5&sort=created&direction=desc`,
             {
               headers: {
-                'Authorization': `token ${githubToken}`,
-                'Accept': 'application/vnd.github.v3+json',
+                Authorization: `token ${githubToken}`,
+                Accept: 'application/vnd.github.v3+json',
                 'User-Agent': 'NetNeural-Feedback-Sync',
               },
             }
@@ -175,9 +194,10 @@ export default createEdgeFunction(
 
         // If no comment, use GitHub's state_reason
         if (!resolution) {
-          resolution = issueData.state_reason === 'not_planned'
-            ? 'Closed as not planned'
-            : `Resolved and closed on ${new Date(issueData.closed_at).toLocaleDateString()}`
+          resolution =
+            issueData.state_reason === 'not_planned'
+              ? 'Closed as not planned'
+              : `Resolved and closed on ${new Date(issueData.closed_at).toLocaleDateString()}`
         }
 
         // Update feedback entry
@@ -194,8 +214,14 @@ export default createEdgeFunction(
           console.error(`Failed to update feedback ${item.id}:`, updateError)
         } else {
           synced++
-          results.push({ id: item.id, issueNumber: item.github_issue_number, newStatus })
-          console.log(`Updated feedback ${item.id}: issue #${item.github_issue_number} → ${newStatus}`)
+          results.push({
+            id: item.id,
+            issueNumber: item.github_issue_number,
+            newStatus,
+          })
+          console.log(
+            `Updated feedback ${item.id}: issue #${item.github_issue_number} → ${newStatus}`
+          )
         }
       } catch (err) {
         console.error(`Error syncing issue #${item.github_issue_number}:`, err)
@@ -206,9 +232,10 @@ export default createEdgeFunction(
       synced,
       total: feedbackItems.length,
       results,
-      message: synced > 0
-        ? `Updated ${synced} of ${feedbackItems.length} feedback items from GitHub`
-        : 'All feedback items are already up to date',
+      message:
+        synced > 0
+          ? `Updated ${synced} of ${feedbackItems.length} feedback items from GitHub`
+          : 'All feedback items are already up to date',
     })
   },
   {

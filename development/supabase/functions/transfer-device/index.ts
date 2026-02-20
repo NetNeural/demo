@@ -82,7 +82,10 @@ export default createEdgeFunction(
     const sourceOrgId = device.organization_id
 
     if (sourceOrgId === targetOrgId) {
-      throw new DatabaseError('Source and target organizations are the same', 400)
+      throw new DatabaseError(
+        'Source and target organizations are the same',
+        400
+      )
     }
 
     // 5. Verify target org exists
@@ -240,7 +243,9 @@ async function moveDevice(
         warnings.push(`Telemetry retry also failed: ${retryError.message}`)
       } else {
         telemetryCount = retryCount ?? 0
-        console.log(`Telemetry retry succeeded: ${telemetryCount} records moved`)
+        console.log(
+          `Telemetry retry succeeded: ${telemetryCount} records moved`
+        )
       }
     } else {
       telemetryCount = count ?? 0
@@ -272,10 +277,7 @@ async function moveDevice(
       .eq('organization_id', sourceOrgId)
       .in(
         'alert_id',
-        serviceClient
-          .from('alerts')
-          .select('id')
-          .eq('device_id', deviceId)
+        serviceClient.from('alerts').select('id').eq('device_id', deviceId)
       )
 
     if (notifError) {
@@ -330,7 +332,9 @@ async function moveDevice(
         .select('*', { count: 'exact', head: true })
 
       if (!syncError && (orphanedCount ?? 0) > 0) {
-        console.log(`Safety net: synced ${orphanedCount} additional orphaned telemetry records`)
+        console.log(
+          `Safety net: synced ${orphanedCount} additional orphaned telemetry records`
+        )
         telemetryCount += orphanedCount ?? 0
       }
     } catch {
@@ -472,11 +476,7 @@ async function copyDevice(
       const copiedRecords = telemetryBatch.map(
         // deno-lint-ignore no-explicit-any
         (record: any) => {
-          const {
-            id: _rId,
-            created_at: _rCreatedAt,
-            ...fields
-          } = record
+          const { id: _rId, created_at: _rCreatedAt, ...fields } = record
           return {
             ...fields,
             device_id: newDeviceId,

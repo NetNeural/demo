@@ -21,15 +21,16 @@ export function convertToCSV<T extends Record<string, any>>(
   if (!firstRow) {
     return ''
   }
-  const cols = columns || Object.keys(firstRow).map(key => ({ key, label: key }))
+  const cols =
+    columns || Object.keys(firstRow).map((key) => ({ key, label: key }))
 
   // Create header row
-  const headers = cols.map(col => escapeCSVValue(col.label)).join(',')
+  const headers = cols.map((col) => escapeCSVValue(col.label)).join(',')
 
   // Create data rows
-  const rows = data.map(row => {
+  const rows = data.map((row) => {
     return cols
-      .map(col => {
+      .map((col) => {
         const value = row[col.key]
         return escapeCSVValue(formatValue(value))
       })
@@ -73,7 +74,7 @@ function formatValue(value: any): string {
 export function downloadCSV(filename: string, csvContent: string): void {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
-  
+
   if (link.download !== undefined) {
     // Create a link to the file
     const url = URL.createObjectURL(blob)

@@ -1,6 +1,6 @@
 /**
  * React Query Hooks for Organizations and Users
- * 
+ *
  * Implements caching strategy per Story 3.3:
  * - Static data: 5 minutes cache (organizations, users)
  * - Efficient role-based access queries
@@ -16,15 +16,16 @@ export type Organization = Database['public']['Tables']['organizations']['Row']
 
 export type User = Database['public']['Tables']['users']['Row']
 
-export type OrganizationMember = Database['public']['Tables']['organization_members']['Row'] & {
-  user?: User
-}
+export type OrganizationMember =
+  Database['public']['Tables']['organization_members']['Row'] & {
+    user?: User
+  }
 
 /**
  * Hook: Fetch all organizations
- * 
+ *
  * Cache: 5 minutes (static data)
- * 
+ *
  * @example
  * ```tsx
  * const { data: organizations } = useOrganizationsQuery()
@@ -53,7 +54,7 @@ export function useOrganizationsQuery() {
 
 /**
  * Hook: Fetch single organization
- * 
+ *
  * @example
  * ```tsx
  * const { data: org } = useOrganizationQuery('org-123')
@@ -84,7 +85,7 @@ export function useOrganizationQuery(organizationId: string) {
 
 /**
  * Hook: Fetch organization members
- * 
+ *
  * @example
  * ```tsx
  * const { data: members } = useOrganizationMembersQuery('org-123')
@@ -98,10 +99,12 @@ export function useOrganizationMembersQuery(organizationId: string) {
     queryFn: async (): Promise<OrganizationMember[]> => {
       const { data, error } = await supabase
         .from('organization_members')
-        .select(`
+        .select(
+          `
           *,
           user:users!organization_members_user_id_fkey(*)
-        `)
+        `
+        )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
 
@@ -118,7 +121,7 @@ export function useOrganizationMembersQuery(organizationId: string) {
 
 /**
  * Hook: Fetch current user
- * 
+ *
  * @example
  * ```tsx
  * const { data: currentUser } = useCurrentUserQuery()
@@ -130,7 +133,10 @@ export function useCurrentUserQuery() {
   return useQuery({
     queryKey: queryKeys.currentUser,
     queryFn: async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser()
 
       if (error) {
         throw new Error(error.message || 'Failed to fetch current user')
@@ -144,7 +150,7 @@ export function useCurrentUserQuery() {
 
 /**
  * Hook: Fetch all users
- * 
+ *
  * @example
  * ```tsx
  * const { data: users } = useUsersQuery()
@@ -173,7 +179,7 @@ export function useUsersQuery() {
 
 /**
  * Hook: Fetch single user
- * 
+ *
  * @example
  * ```tsx
  * const { data: user } = useUserQuery('user-123')
@@ -204,7 +210,7 @@ export function useUserQuery(userId: string) {
 
 /**
  * Hook: Update organization mutation
- * 
+ *
  * @example
  * ```tsx
  * const updateOrg = useUpdateOrganizationMutation()
@@ -240,7 +246,7 @@ export function useUpdateOrganizationMutation() {
 
 /**
  * Hook: Add organization member mutation
- * 
+ *
  * @example
  * ```tsx
  * const addMember = useAddOrganizationMemberMutation()
@@ -280,7 +286,7 @@ export function useAddOrganizationMemberMutation() {
     onSuccess: (_, variables) => {
       // Invalidate organization members queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.organizationMembers(variables.organizationId)
+        queryKey: queryKeys.organizationMembers(variables.organizationId),
       })
     },
   })
@@ -288,7 +294,7 @@ export function useAddOrganizationMemberMutation() {
 
 /**
  * Hook: Remove organization member mutation
- * 
+ *
  * @example
  * ```tsx
  * const removeMember = useRemoveOrganizationMemberMutation()
@@ -300,10 +306,7 @@ export function useRemoveOrganizationMemberMutation() {
   const supabase = createClient()
 
   return useMutation({
-    mutationFn: async (params: {
-      organizationId: string
-      userId: string
-    }) => {
+    mutationFn: async (params: { organizationId: string; userId: string }) => {
       const { error } = await supabase
         .from('organization_members')
         .delete()
@@ -319,7 +322,7 @@ export function useRemoveOrganizationMemberMutation() {
     onSuccess: (params) => {
       // Invalidate organization members queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.organizationMembers(params.organizationId)
+        queryKey: queryKeys.organizationMembers(params.organizationId),
       })
     },
   })
@@ -327,18 +330,18 @@ export function useRemoveOrganizationMemberMutation() {
 
 /**
  * Migration Guide:
- * 
+ *
  * BEFORE (Context-based):
  * ```tsx
  * const { currentOrganization, members, loading } = useOrganization()
  * ```
- * 
+ *
  * AFTER (React Query):
  * ```tsx
  * const { data: organization } = useOrganizationQuery(orgId)
  * const { data: members } = useOrganizationMembersQuery(orgId)
  * ```
- * 
+ *
  * Benefits:
  * - 5-minute caching (minimal API calls for static data)
  * - Request deduplication

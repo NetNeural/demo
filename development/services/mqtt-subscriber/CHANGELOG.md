@@ -5,6 +5,7 @@ All notable changes to the MQTT Subscriber Service will be documented in this fi
 ## [1.0.0] - 2026-02-20
 
 ### Added
+
 - Initial release of persistent MQTT subscriber service
 - Multi-broker MQTT connection support
 - Auto-reconnection with exponential backoff
@@ -20,6 +21,7 @@ All notable changes to the MQTT Subscriber Service will be documented in this fi
 - Setup verification script
 
 ### Features
+
 - Connects to multiple MQTT integrations simultaneously
 - Subscribes to configured topics per integration
 - Parses device telemetry from MQTT messages
@@ -30,6 +32,7 @@ All notable changes to the MQTT Subscriber Service will be documented in this fi
 - Supports both TLS (mqtts://) and plain MQTT
 
 ### Technical Details
+
 - Node.js 20+ runtime
 - TypeScript for type safety
 - mqtt.js v5.3.4 for MQTT protocol
@@ -39,6 +42,7 @@ All notable changes to the MQTT Subscriber Service will be documented in this fi
 - Environment-based configuration
 
 ### Dependencies
+
 ```json
 {
   "mqtt": "^5.3.4",
@@ -50,23 +54,28 @@ All notable changes to the MQTT Subscriber Service will be documented in this fi
 ```
 
 ### Deployment Options
+
 1. Docker Compose (recommended for production)
 2. Systemd service (Linux servers)
 3. PM2 process manager (development/staging)
 4. Kubernetes (enterprise deployments)
 
 ### Architecture
+
 Complements existing Supabase Edge Functions:
+
 - `mqtt-ingest` - HTTP POST ingestion for push-based scenarios
 - `mqtt-hybrid` - Stateless MQTT operations
 - **mqtt-subscriber** (this service) - Persistent MQTT subscriptions
 
 ### Known Limitations
+
 - Requires external hosting (cannot run in Supabase Edge Functions due to stateless nature)
 - Service role key required (RLS bypass for writing to all organizations)
 - Memory usage scales with number of integrations and message volume
 
 ### Future Enhancements
+
 - Kubernetes deployment manifests
 - Prometheus metrics export
 - Health check endpoint

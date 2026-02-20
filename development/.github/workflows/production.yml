@@ -26,11 +26,11 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       environment: ${{ steps.env.outputs.environment }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 🔍 Determine environment
         id: env
         run: |
@@ -39,7 +39,7 @@ jobs:
           else
             echo "environment=production" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: 📊 Extract version
         id: version
         working-directory: development
@@ -54,7 +54,7 @@ jobs:
     defaults:
       run:
         working-directory: development
-    
+
     services:
       postgres:
         image: postgres:15
@@ -68,40 +68,40 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: development/package-lock.json
-      
+
       - name: 📥 Install dependencies
         run: npm ci
-      
+
       - name: 🏗️ Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-      
+
       - name: 🚀 Start Supabase local
         run: supabase start
-      
+
       - name: 📊 Apply migrations
         run: supabase db push
-      
+
       - name: 🔧 Generate types
         run: npm run supabase:types
-      
+
       - name: 🧪 Run full test suite
         run: npm run test:coverage
         env:
           NODE_ENV: test
-      
+
       - name: 🏗️ Test production build
         run: npm run build
         env:
@@ -115,48 +115,48 @@ jobs:
     name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
     needs: [prepare, test]
-    environment: 
+    environment:
       name: ${{ needs.prepare.outputs.environment }}
       url: https://platform.netneural.ai
-    
+
     defaults:
       run:
         working-directory: development
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: development/package-lock.json
-      
+
       - name: 📥 Install dependencies
         run: npm ci
-      
+
       - name: 🏗️ Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-      
+
       - name: 🔗 Link to remote Supabase project
         run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
+
       - name: 📊 Run database migrations
         run: supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
+
       - name: 🔧 Generate production TypeScript types
         run: supabase gen types typescript > src/lib/database.types.ts
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
+
       - name: 🏗️ Build application
         run: npm run build
         env:
@@ -166,7 +166,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_PROD }}
           GOLIOTH_API_KEY: ${{ secrets.GOLIOTH_API_KEY_PROD }}
           GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID_PROD }}
-      
+
       - name: 🚀 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -174,7 +174,7 @@ jobs:
           publish_dir: development/out
           cname: platform.netneural.ai
           commit_message: 'Deploy ${{ needs.prepare.outputs.version }} to production'
-      
+
       - name: 🏷️ Create Release Tag
         uses: actions/create-release@v1
         env:
@@ -184,17 +184,17 @@ jobs:
           release_name: NetNeural Platform v${{ needs.prepare.outputs.version }}
           body: |
             ## 🚀 NetNeural Platform v${{ needs.prepare.outputs.version }}
-            
+
             **Deployment Date:** ${{ github.event.head_commit.timestamp }}
             **Commit:** ${{ github.sha }}
             **Environment:** ${{ needs.prepare.outputs.environment }}
-            
+
             ### 📊 Build Information
             - **Node.js Version:** 20.x
             - **TypeScript:** Strict mode enabled
             - **Database:** PostgreSQL with migrations
             - **Platform:** GitHub Pages + Supabase
-            
+
             ### 🔗 Links
             - [Live Platform](https://platform.netneural.ai)
             - [Technical Documentation](https://github.com/NetNeural/MonoRepo/blob/main/development/TECHNICAL_SPECIFICATION.md)
@@ -206,7 +206,7 @@ jobs:
     name: 🏥 Post-deployment Health Check
     runs-on: ubuntu-latest
     needs: [deploy]
-    
+
     steps:
       - name: 🔍 Check website availability
         uses: jtalk/url-health-check-action@v3
@@ -215,15 +215,15 @@ jobs:
           max-attempts: 5
           retry-delay: 30s
           retry-all: true
-      
+
       - name: 🔍 Check API endpoints
         run: |
           # Check health endpoint
           curl -f https://platform.netneural.ai/api/health || exit 1
-          
+
           # Check auth endpoint
           curl -f https://platform.netneural.ai/api/auth/session || exit 1
-          
+
           echo "✅ All endpoints are healthy"
 
   notify:
@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare, deploy, health-check]
     if: always()
-    
+
     steps:
       - name: 📊 Determine status
         id: status
@@ -243,7 +243,7 @@ jobs:
             echo "status=failure" >> $GITHUB_OUTPUT
             echo "message=❌ Deployment failed" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: 📧 Send deployment notification
         uses: actions/github-script@v6
         with:
@@ -252,24 +252,24 @@ jobs:
             const message = '${{ steps.status.outputs.message }}';
             const version = '${{ needs.prepare.outputs.version }}';
             const environment = '${{ needs.prepare.outputs.environment }}';
-            
+
             const emoji = status === 'success' ? '🚀' : '💥';
-            
+
             const body = `
             ## ${emoji} Deployment to ${environment}
-            
+
             **Status:** ${message}
             **Version:** v${version}
             **Environment:** ${environment}
             **Commit:** \`${context.sha.substring(0, 7)}\`
             **Timestamp:** ${new Date().toISOString()}
-            
+
             ${status === 'success' ? 
               '🔗 **Live URL:** https://platform.netneural.ai' : 
               '🔍 **Check the logs:** [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})'
             }
             `;
-            
+
             // Create issue for deployment notification
             await github.rest.issues.create({
               owner: context.repo.owner,
@@ -284,9 +284,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy, health-check]
     if: failure() && github.ref == 'refs/heads/main'
-    environment: 
+    environment:
       name: production-rollback
-    
+
     steps:
       - name: ⚠️ Deployment Failed - Manual Rollback Required
         uses: actions/github-script@v6
@@ -294,17 +294,17 @@ jobs:
           script: |
             const body = `
             ## 🚨 Production Deployment Failed
-            
+
             **Failed Workflow:** [${context.runNumber}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
             **Commit:** \`${context.sha.substring(0, 7)}\`
             **Branch:** \`${context.ref}\`
-            
+
             ### 🔄 Rollback Instructions
-            
+
             1. **Immediate Action Required:**
                - Review the failed workflow logs
                - Determine if manual rollback is needed
-            
+
             2. **Manual Rollback Steps:**
                \`\`\`bash
                # Rollback to previous version
@@ -312,22 +312,22 @@ jobs:
                git reset --hard HEAD~1
                git push --force-with-lease
                \`\`\`
-            
+
             3. **Alternative - Revert Specific Commit:**
                \`\`\`bash
                git revert ${context.sha}
                git push origin main
                \`\`\`
-            
+
             ### 🔍 Investigation
             - Check application logs
             - Verify database migrations
             - Test critical user flows
             - Monitor error rates
-            
+
             **Auto-assign to:** @technical-lead @devops-team
             `;
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,

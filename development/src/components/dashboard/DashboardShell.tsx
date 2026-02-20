@@ -11,17 +11,17 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Smartphone, 
-  Building2, 
-  Bell, 
-  BarChart3, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Smartphone,
+  Building2,
+  Bell,
+  BarChart3,
+  FileText,
   Settings,
   Shield,
   SlidersHorizontal,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react'
 
 interface NavigationItem {
@@ -41,21 +41,29 @@ export default function DashboardShell({
   const { currentOrganization } = useOrganization()
 
   const isSuperAdmin = profile?.role === 'super_admin'
-  
+
   // Debug logging
   console.log('🔍 DashboardShell Debug:', {
     hasUser: !!user,
     hasProfile: !!profile,
     profileRole: profile?.role,
     isSuperAdmin,
-    userEmail: user?.email
+    userEmail: user?.email,
   })
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
-    { name: 'Device Types', href: '/dashboard/device-types', icon: SlidersHorizontal },
-    { name: 'Organizations', href: '/dashboard/organizations', icon: Building2 },
+    {
+      name: 'Device Types',
+      href: '/dashboard/device-types',
+      icon: SlidersHorizontal,
+    },
+    {
+      name: 'Organizations',
+      href: '/dashboard/organizations',
+      icon: Building2,
+    },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Reports', href: '/dashboard/reports', icon: FileText },
@@ -67,7 +75,7 @@ export default function DashboardShell({
     console.log('🔍 Navigation Icons Debug:', {
       dashboardIcon: typeof LayoutDashboard,
       devicesIcon: typeof Smartphone,
-      iconIsFunction: typeof LayoutDashboard === 'function'
+      iconIsFunction: typeof LayoutDashboard === 'function',
     })
   }
 
@@ -85,13 +93,15 @@ export default function DashboardShell({
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <nav className={cn(
-        "fixed top-0 left-0 h-screen w-[280px] bg-white border-r border-gray-200 z-[100] transition-transform duration-300 ease-in-out",
-        "lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <nav
+        className={cn(
+          'fixed left-0 top-0 z-[100] h-screen w-[280px] border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out',
+          'lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
         {/* Brand */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="border-b border-gray-200 p-6">
           <div className="flex items-center gap-3">
             <OrganizationLogo
               settings={currentOrganization?.settings}
@@ -99,8 +109,8 @@ export default function DashboardShell({
               size="lg"
             />
             <h1 className="text-xl font-bold text-gray-900">
-              {currentOrganization?.name === 'NetNeural' || !currentOrganization 
-                ? 'Sentinel by NetNeural' 
+              {currentOrganization?.name === 'NetNeural' || !currentOrganization
+                ? 'Sentinel by NetNeural'
                 : `Sentinel for ${currentOrganization.name}`}
             </h1>
           </div>
@@ -115,13 +125,13 @@ export default function DashboardShell({
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center px-4 py-3 mb-1 rounded-md transition-all duration-150 ease-in-out",
-                  "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                  pathname === item.href && "bg-blue-100 text-blue-700"
+                  'mb-1 flex items-center rounded-md px-4 py-3 transition-all duration-150 ease-in-out',
+                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                  pathname === item.href && 'bg-blue-100 text-blue-700'
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                 {item.name}
               </Link>
             )
@@ -129,7 +139,7 @@ export default function DashboardShell({
         </div>
 
         {/* User Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
           <div className="mb-2">
             <p className="text-sm font-medium text-gray-900">
               {user?.email || 'Loading...'}
@@ -149,15 +159,15 @@ export default function DashboardShell({
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[99] lg:hidden"
+          className="fixed inset-0 z-[99] bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main content */}
-      <main className="ml-0 lg:ml-[280px] min-h-screen bg-gray-50 transition-[margin-left] duration-300 ease-in-out w-full">
+      <main className="ml-0 min-h-screen w-full bg-gray-50 transition-[margin-left] duration-300 ease-in-out lg:ml-[280px]">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+        <header className="sticky top-0 z-50 border-b border-gray-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <Button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -167,21 +177,25 @@ export default function DashboardShell({
             >
               ☰
             </Button>
-            <div className="hidden lg:flex items-center gap-3 flex-1">
+            <div className="hidden flex-1 items-center gap-3 lg:flex">
               <OrganizationLogo
                 settings={currentOrganization?.settings}
                 name={currentOrganization?.name || 'NetNeural'}
                 size="md"
               />
               <h1 className="text-xl font-semibold text-gray-900">
-                {currentOrganization?.name === 'NetNeural' || !currentOrganization 
-                  ? 'Sentinel by NetNeural' 
+                {currentOrganization?.name === 'NetNeural' ||
+                !currentOrganization
+                  ? 'Sentinel by NetNeural'
                   : `Sentinel for ${currentOrganization.name}`}
               </h1>
             </div>
             {isSuperAdmin && (
-              <Badge variant="destructive" className="flex items-center gap-1 flex-shrink-0">
-                <Shield className="w-3 h-3" />
+              <Badge
+                variant="destructive"
+                className="flex flex-shrink-0 items-center gap-1"
+              >
+                <Shield className="h-3 w-3" />
                 <span className="hidden sm:inline">Super Admin</span>
               </Badge>
             )}
@@ -189,9 +203,7 @@ export default function DashboardShell({
         </header>
 
         {/* Page content */}
-        <div className="p-8 px-6">
-          {children}
-        </div>
+        <div className="p-8 px-6">{children}</div>
       </main>
     </div>
   )

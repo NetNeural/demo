@@ -40,14 +40,14 @@ export function EditUserDialog({
   user,
   open,
   onOpenChange,
-  onUserUpdated
+  onUserUpdated,
 }: EditUserDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: '',
     status: '',
-    department: ''
+    department: '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -58,14 +58,14 @@ export function EditUserDialog({
         email: user.email,
         role: user.role,
         status: user.status,
-        department: user.department || ''
+        department: user.department || '',
       })
     }
   }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!user) return
 
     setSaving(true)
@@ -76,10 +76,10 @@ export function EditUserDialog({
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData)
       // })
-      
+
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
       toast.success('User updated successfully')
       onUserUpdated?.()
       onOpenChange(false)
@@ -109,7 +109,9 @@ export function EditUserDialog({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
             />
           </div>
@@ -120,7 +122,9 @@ export function EditUserDialog({
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
             />
           </div>
@@ -129,7 +133,9 @@ export function EditUserDialog({
             <Label htmlFor="role">Role</Label>
             <Select
               value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as User['role'] })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, role: value as User['role'] })
+              }
             >
               <SelectTrigger id="role">
                 <SelectValue placeholder="Select role" />
@@ -149,7 +155,9 @@ export function EditUserDialog({
             <Input
               id="department"
               value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, department: e.target.value })
+              }
             />
           </div>
 
@@ -157,7 +165,9 @@ export function EditUserDialog({
             <Label htmlFor="status">Status</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value as User['status'] })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, status: value as User['status'] })
+              }
             >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Select status" />

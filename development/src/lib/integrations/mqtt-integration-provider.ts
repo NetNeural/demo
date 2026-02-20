@@ -2,34 +2,34 @@
  * MQTT Broker Integration Provider
  * ==================================
  * Integrates with generic MQTT brokers for device communication and status tracking.
- * 
+ *
  * MQTT is a lightweight publish-subscribe messaging protocol commonly used in IoT.
  * This provider connects to any MQTT broker (Mosquitto, HiveMQ, AWS IoT, etc.)
- * 
+ *
  * Capabilities:
  * - Device presence detection via Last Will and Testament (LWT)
  * - Status updates via subscribed topics
  * - Telemetry collection from device topics
  * - Remote commands via command topics
- * 
+ *
  * Limitations:
  * - No centralized device registry (devices discovered via MQTT activity)
  * - Limited metadata (depends on message payloads)
  * - No built-in authentication/authorization (handled by broker)
  * - Telemetry depends on custom topic structure
- * 
+ *
  * MQTT Topic Structure (configurable):
  * - Status: devices/{deviceId}/status
  * - Telemetry: devices/{deviceId}/telemetry
  * - Commands: devices/{deviceId}/commands
  * - LWT: devices/{deviceId}/lwt
- * 
+ *
  * Date: 2025-11-09
  * Issue: #82 - Complete Integration Provider Implementation
  */
 
 // MQTT client imports
-import * as mqtt from 'mqtt';
+import * as mqtt from 'mqtt'
 
 import {
   DeviceIntegrationProvider,
@@ -42,33 +42,33 @@ import {
   ProviderCapabilities,
   PaginationOptions,
   ProviderConfig,
-} from './base-integration-provider';
-import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger';
+} from './base-integration-provider'
+import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger'
 
 // ============================================================================
 // MQTT Types
 // ============================================================================
 
 interface MqttConfig {
-  brokerUrl: string; // mqtt://broker:1883 or mqtts://broker:8883
-  port?: number; // Default: 1883 (or 8883 for TLS)
-  username?: string;
-  password?: string;
-  useTls?: boolean; // Default: false
-  clientId?: string;
-  topicPrefix?: string; // Default: "devices/"
-  statusTopic?: string; // Default: "{prefix}{deviceId}/status"
-  telemetryTopic?: string; // Default: "{prefix}{deviceId}/telemetry"
-  commandTopic?: string; // Default: "{prefix}{deviceId}/commands"
-  lwtTopic?: string; // Default: "{prefix}{deviceId}/lwt"
+  brokerUrl: string // mqtt://broker:1883 or mqtts://broker:8883
+  port?: number // Default: 1883 (or 8883 for TLS)
+  username?: string
+  password?: string
+  useTls?: boolean // Default: false
+  clientId?: string
+  topicPrefix?: string // Default: "devices/"
+  statusTopic?: string // Default: "{prefix}{deviceId}/status"
+  telemetryTopic?: string // Default: "{prefix}{deviceId}/telemetry"
+  commandTopic?: string // Default: "{prefix}{deviceId}/commands"
+  lwtTopic?: string // Default: "{prefix}{deviceId}/lwt"
 }
 
 interface MqttDeviceMessage {
-  deviceId: string;
-  timestamp: number;
-  status?: string;
-  metadata?: Record<string, unknown>;
-  telemetry?: Record<string, unknown>;
+  deviceId: string
+  timestamp: number
+  status?: string
+  metadata?: Record<string, unknown>
+  telemetry?: Record<string, unknown>
 }
 
 // ============================================================================
@@ -76,42 +76,51 @@ interface MqttDeviceMessage {
 // ============================================================================
 
 export class MqttIntegrationProvider extends DeviceIntegrationProvider {
-  override providerId: string;
-  override providerType = 'mqtt';
-  override providerName = 'MQTT Broker';
+  override providerId: string
+  override providerType = 'mqtt'
+  override providerName = 'MQTT Broker'
 
-  private client: mqtt.MqttClient | null = null;
-  private config: MqttConfig;
-  private topicPrefix: string;
-  private activityLogger: FrontendActivityLogger;
-  private organizationId: string;
-  private integrationId: string;
-  
+  private client: mqtt.MqttClient | null = null
+  private config: MqttConfig
+  private topicPrefix: string
+  private activityLogger: FrontendActivityLogger
+  private organizationId: string
+  private integrationId: string
+
   // In-memory device cache (MQTT doesn't have a registry)
-  private deviceCache = new Map<string, {
-    device: DeviceData;
-    status: DeviceStatus;
-    lastUpdate: Date;
-  }>();
+  private deviceCache = new Map<
+    string,
+    {
+      device: DeviceData
+      status: DeviceStatus
+      lastUpdate: Date
+    }
+  >()
 
   constructor(config: ProviderConfig) {
-    super();
-    
+    super()
+
     // Extract MQTT-specific config from generic ProviderConfig
-    const brokerUrl = config.endpoint || (config.credentials?.brokerUrl as string) || '';
-    const port = (config.credentials?.port as number) || 1883;
-    const username = config.apiKey || (config.credentials?.username as string);
-    const password = (config.credentials?.password as string);
-    const useTls = (config.credentials?.useTls as boolean) || false;
-    const clientId = (config.credentials?.clientId as string) || `netneural-${Date.now()}`;
-    const topicPrefix = (config.credentials?.topicPrefix as string) || 'devices/';
-    const providerId = (config.credentials?.integrationId as string) || config.projectId || 'mqtt';
-    const organizationId = (config.credentials?.organizationId as string) || '';
-    
-    this.providerId = providerId;
-    this.integrationId = providerId;
-    this.organizationId = organizationId;
-    this.activityLogger = new FrontendActivityLogger();
+    const brokerUrl =
+      config.endpoint || (config.credentials?.brokerUrl as string) || ''
+    const port = (config.credentials?.port as number) || 1883
+    const username = config.apiKey || (config.credentials?.username as string)
+    const password = config.credentials?.password as string
+    const useTls = (config.credentials?.useTls as boolean) || false
+    const clientId =
+      (config.credentials?.clientId as string) || `netneural-${Date.now()}`
+    const topicPrefix =
+      (config.credentials?.topicPrefix as string) || 'devices/'
+    const providerId =
+      (config.credentials?.integrationId as string) ||
+      config.projectId ||
+      'mqtt'
+    const organizationId = (config.credentials?.organizationId as string) || ''
+
+    this.providerId = providerId
+    this.integrationId = providerId
+    this.organizationId = organizationId
+    this.activityLogger = new FrontendActivityLogger()
     this.config = {
       brokerUrl,
       port,
@@ -120,8 +129,8 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
       useTls,
       clientId,
       topicPrefix,
-    };
-    this.topicPrefix = topicPrefix;
+    }
+    this.topicPrefix = topicPrefix
   }
 
   /**
@@ -129,18 +138,21 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    */
   override async testConnection(): Promise<TestConnectionResult> {
     if (!this.organizationId || !this.integrationId) {
-      return this._testConnectionInternal();
+      return this._testConnectionInternal()
     }
 
-    return this.activityLogger.withLog({
-      organizationId: this.organizationId,
-      integrationId: this.integrationId,
-      direction: 'outgoing',
-      activityType: 'test_connection',
-      endpoint: this.config.brokerUrl,
-    }, async () => {
-      return this._testConnectionInternal();
-    });
+    return this.activityLogger.withLog(
+      {
+        organizationId: this.organizationId,
+        integrationId: this.integrationId,
+        direction: 'outgoing',
+        activityType: 'test_connection',
+        endpoint: this.config.brokerUrl,
+      },
+      async () => {
+        return this._testConnectionInternal()
+      }
+    )
   }
 
   private async _testConnectionInternal(): Promise<TestConnectionResult> {
@@ -150,101 +162,108 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
         password: this.config.password,
         clientId: this.config.clientId || `test_${Date.now()}`,
         connectTimeout: 5000,
-      });
+      })
 
       testClient.on('connect', () => {
-        testClient.end();
+        testClient.end()
         resolve({
           success: true,
           message: `Successfully connected to MQTT broker: ${this.config.brokerUrl}`,
-        });
-      });
+        })
+      })
 
       testClient.on('error', (err: Error) => {
-        testClient.end();
+        testClient.end()
         resolve({
           success: false,
           message: err.message || 'Failed to connect to MQTT broker',
-        });
-      });
+        })
+      })
 
       // Timeout after 5 seconds
       setTimeout(() => {
         if (!testClient.connected) {
-          testClient.end();
+          testClient.end()
           resolve({
             success: false,
             message: 'Connection timeout',
-          });
+          })
         }
-      }, 5000);
-    });
+      }, 5000)
+    })
   }
 
   /**
    * List all devices (from cache)
    * MQTT doesn't have a device registry, so we return cached devices
    */
-  override async listDevices(options?: PaginationOptions): Promise<DeviceListResult> {
+  override async listDevices(
+    options?: PaginationOptions
+  ): Promise<DeviceListResult> {
     // Ensure client is connected and subscribed
-    await this.ensureConnected();
+    await this.ensureConnected()
 
-    const devices = Array.from(this.deviceCache.values()).map(entry => entry.device);
+    const devices = Array.from(this.deviceCache.values()).map(
+      (entry) => entry.device
+    )
 
     // Apply pagination
-    const page = options?.page || 0;
-    const limit = options?.limit || 100;
-    const offset = options?.offset || page * limit;
-    const paginatedDevices = devices.slice(offset, offset + limit);
+    const page = options?.page || 0
+    const limit = options?.limit || 100
+    const offset = options?.offset || page * limit
+    const paginatedDevices = devices.slice(offset, offset + limit)
 
     return {
       devices: paginatedDevices,
       total: devices.length,
       page,
       limit,
-    };
+    }
   }
 
   /**
    * Get a specific device from cache
    */
   override async getDevice(deviceId: string): Promise<DeviceData> {
-    await this.ensureConnected();
+    await this.ensureConnected()
 
-    const entry = this.deviceCache.get(deviceId);
+    const entry = this.deviceCache.get(deviceId)
     if (!entry) {
-      throw new Error(`Device ${deviceId} not found in cache`);
+      throw new Error(`Device ${deviceId} not found in cache`)
     }
 
-    return entry.device;
+    return entry.device
   }
 
   /**
    * Get device status from cache
    */
   override async getDeviceStatus(deviceId: string): Promise<DeviceStatus> {
-    await this.ensureConnected();
+    await this.ensureConnected()
 
-    const entry = this.deviceCache.get(deviceId);
+    const entry = this.deviceCache.get(deviceId)
     if (!entry) {
-      throw new Error(`Device ${deviceId} not found in cache`);
+      throw new Error(`Device ${deviceId} not found in cache`)
     }
 
-    return entry.status;
+    return entry.status
   }
 
   /**
    * Update device metadata (publish to MQTT)
    */
-  override async updateDevice(deviceId: string, updates: DeviceUpdate): Promise<DeviceData> {
-    await this.ensureConnected();
+  override async updateDevice(
+    deviceId: string,
+    updates: DeviceUpdate
+  ): Promise<DeviceData> {
+    await this.ensureConnected()
 
     if (!this.client) {
-      throw new Error('MQTT client not connected');
+      throw new Error('MQTT client not connected')
     }
 
     // Update cache
-    const entry = this.deviceCache.get(deviceId);
+    const entry = this.deviceCache.get(deviceId)
     if (entry) {
       entry.device = {
         ...entry.device,
@@ -252,14 +271,14 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
         tags: updates.tags || entry.device.tags,
         metadata: { ...entry.device.metadata, ...updates.metadata },
         updatedAt: new Date(),
-      };
+      }
     }
 
     // Publish metadata update to MQTT (optional - depends on device implementation)
-    const topic = this.getDeviceTopic(deviceId, 'metadata');
-    await this.publishAsync(topic, JSON.stringify(updates));
+    const topic = this.getDeviceTopic(deviceId, 'metadata')
+    await this.publishAsync(topic, JSON.stringify(updates))
 
-    return this.getDevice(deviceId);
+    return this.getDevice(deviceId)
   }
 
   /**
@@ -269,59 +288,64 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     try {
       // Query mqtt_messages table for telemetry data
       // We need to import Supabase client to query the database
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      const supabase = createClient(supabaseUrl, supabaseKey)
 
       // Query mqtt_messages for this integration
-      const{ data: messages, error } = await supabase
+      const { data: messages, error } = await supabase
         .from('mqtt_messages')
         .select('*')
         .eq('integration_id', this.integrationId)
         .eq('organization_id', this.organizationId)
         .order('received_at', { ascending: false })
-        .limit(100); // Limit to last 100 messages
+        .limit(100) // Limit to last 100 messages
 
       if (error) {
-        console.error('Error querying MQTT messages:', error);
-        throw new Error(`Failed to query telemetry: ${error.message}`);
+        console.error('Error querying MQTT messages:', error)
+        throw new Error(`Failed to query telemetry: ${error.message}`)
       }
 
       if (!messages || messages.length === 0) {
-        return [];
+        return []
       }
 
       // Parse messages and extract telemetry data
       const telemetryData: TelemetryData[] = messages
-        .filter(msg => {
+        .filter((msg) => {
           // Filter for telemetry topics
-          const topic = msg.topic as string;
-          return topic.includes('/telemetry') || topic.includes('/data') || topic.includes('/sensor');
+          const topic = msg.topic as string
+          return (
+            topic.includes('/telemetry') ||
+            topic.includes('/data') ||
+            topic.includes('/sensor')
+          )
         })
-        .map(msg => {
-          const payload = msg.payload as Record<string, unknown>;
-          const topic = msg.topic as string;
-          
+        .map((msg) => {
+          const payload = msg.payload as Record<string, unknown>
+          const topic = msg.topic as string
+
           // Extract device ID from topic (e.g., "org_xxx/devices/sensor01/telemetry" -> "sensor01")
-          const deviceIdMatch = topic.match(/\/devices\/([^/]+)\//);
-          const deviceId: string = (deviceIdMatch && deviceIdMatch[1]) ? deviceIdMatch[1] : 'unknown';
+          const deviceIdMatch = topic.match(/\/devices\/([^/]+)\//)
+          const deviceId: string =
+            deviceIdMatch && deviceIdMatch[1] ? deviceIdMatch[1] : 'unknown'
 
           // Extract timestamp from payload or use received_at
-          let timestamp: Date;
+          let timestamp: Date
           if (payload.timestamp) {
-            timestamp = new Date(payload.timestamp as string | number);
+            timestamp = new Date(payload.timestamp as string | number)
           } else if (payload.ts) {
-            timestamp = new Date(payload.ts as string | number);
+            timestamp = new Date(payload.ts as string | number)
           } else {
-            timestamp = new Date(msg.received_at as string);
+            timestamp = new Date(msg.received_at as string)
           }
 
           // Extract metrics from payload (exclude metadata fields)
-          const metrics: Record<string, unknown> = {};
+          const metrics: Record<string, unknown> = {}
           for (const [key, value] of Object.entries(payload)) {
             if (!['timestamp', 'ts', 'device_id', 'deviceId'].includes(key)) {
-              metrics[key] = value;
+              metrics[key] = value
             }
           }
 
@@ -330,14 +354,14 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
             timestamp,
             metrics,
             path: topic,
-          };
-        });
+          }
+        })
 
-      return telemetryData;
+      return telemetryData
     } catch (error) {
-      console.error('Error in queryTelemetry:', error);
+      console.error('Error in queryTelemetry:', error)
       // Return empty array instead of throwing to maintain backward compatibility
-      return [];
+      return []
     }
   }
 
@@ -351,7 +375,7 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
       supportsFirmwareManagement: false, // Not built-in
       supportsRemoteCommands: true, // Via command topics
       supportsBidirectionalSync: true, // Can read and write
-    };
+    }
   }
 
   /**
@@ -359,7 +383,7 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    */
   private async ensureConnected(): Promise<void> {
     if (this.client && this.client.connected) {
-      return;
+      return
     }
 
     return new Promise((resolve, reject) => {
@@ -368,7 +392,7 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
         password: this.config.password,
         clientId: this.config.clientId || `provider_${this.providerId}`,
         clean: false, // Persistent session
-      });
+      })
 
       this.client.on('connect', () => {
         // Subscribe to all device topics
@@ -376,25 +400,25 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
           `${this.topicPrefix}+/status`,
           `${this.topicPrefix}+/telemetry`,
           `${this.topicPrefix}+/lwt`,
-        ];
+        ]
 
         this.client!.subscribe(topics, (err: Error | null) => {
           if (err) {
-            reject(err);
+            reject(err)
           } else {
-            resolve();
+            resolve()
           }
-        });
-      });
+        })
+      })
 
       this.client.on('message', (topic: string, payload: Buffer) => {
-        this.handleMessage(topic, payload);
-      });
+        this.handleMessage(topic, payload)
+      })
 
       this.client.on('error', (err: Error) => {
-        reject(err);
-      });
-    });
+        reject(err)
+      })
+    })
   }
 
   /**
@@ -402,20 +426,20 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    */
   private handleMessage(topic: string, payload: Buffer): void {
     try {
-      const message: MqttDeviceMessage = JSON.parse(payload.toString());
-      const deviceId = this.extractDeviceIdFromTopic(topic);
+      const message: MqttDeviceMessage = JSON.parse(payload.toString())
+      const deviceId = this.extractDeviceIdFromTopic(topic)
 
-      if (!deviceId) return;
+      if (!deviceId) return
 
       // Update or create device cache entry
-      const existingEntry = this.deviceCache.get(deviceId);
+      const existingEntry = this.deviceCache.get(deviceId)
 
       if (topic.includes('/status')) {
-        this.handleStatusMessage(deviceId, message, existingEntry);
+        this.handleStatusMessage(deviceId, message, existingEntry)
       } else if (topic.includes('/telemetry')) {
-        this.handleTelemetryMessage(deviceId, message, existingEntry);
+        this.handleTelemetryMessage(deviceId, message, existingEntry)
       } else if (topic.includes('/lwt')) {
-        this.handleLwtMessage(deviceId, message, existingEntry);
+        this.handleLwtMessage(deviceId, message, existingEntry)
       }
     } catch {
       // Invalid JSON or message format - ignore
@@ -430,42 +454,48 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     message: MqttDeviceMessage,
     existing?: { device: DeviceData; status: DeviceStatus; lastUpdate: Date }
   ): void {
-    const now = new Date();
-    const status = message.status === 'online' ? 'online' :
-                   message.status === 'offline' ? 'offline' :
-                   'unknown';
+    const now = new Date()
+    const status =
+      message.status === 'online'
+        ? 'online'
+        : message.status === 'offline'
+          ? 'offline'
+          : 'unknown'
 
     if (existing) {
-      existing.device.status = status as 'online' | 'offline' | 'unknown';
-      existing.device.lastSeen = now;
-      existing.device.updatedAt = now;
-      existing.status.connectionState = status as 'online' | 'offline' | 'unknown';
-      existing.status.lastActivity = now;
-      existing.lastUpdate = now;
+      existing.device.status = status as 'online' | 'offline' | 'unknown'
+      existing.device.lastSeen = now
+      existing.device.updatedAt = now
+      existing.status.connectionState = status as
+        | 'online'
+        | 'offline'
+        | 'unknown'
+      existing.status.lastActivity = now
+      existing.lastUpdate = now
     } else {
       // Create new device entry
       const device: DeviceData = {
         id: deviceId,
-        name: message.metadata?.['name'] as string || deviceId,
+        name: (message.metadata?.['name'] as string) || deviceId,
         externalId: deviceId,
         status: status as 'online' | 'offline' | 'unknown',
         metadata: message.metadata,
         lastSeen: now,
         createdAt: now,
         updatedAt: now,
-      };
+      }
 
       const deviceStatus: DeviceStatus = {
         connectionState: status as 'online' | 'offline' | 'unknown',
         lastActivity: now,
         telemetry: {},
-      };
+      }
 
       this.deviceCache.set(deviceId, {
         device,
         status: deviceStatus,
         lastUpdate: now,
-      });
+      })
     }
   }
 
@@ -478,8 +508,11 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     existing?: { device: DeviceData; status: DeviceStatus; lastUpdate: Date }
   ): void {
     if (existing && message.telemetry) {
-      existing.status.telemetry = { ...existing.status.telemetry, ...message.telemetry };
-      existing.lastUpdate = new Date();
+      existing.status.telemetry = {
+        ...existing.status.telemetry,
+        ...message.telemetry,
+      }
+      existing.lastUpdate = new Date()
     }
   }
 
@@ -492,9 +525,9 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
     existing?: { device: DeviceData; status: DeviceStatus; lastUpdate: Date }
   ): void {
     if (existing) {
-      existing.device.status = 'offline';
-      existing.status.connectionState = 'offline';
-      existing.lastUpdate = new Date();
+      existing.device.status = 'offline'
+      existing.status.connectionState = 'offline'
+      existing.lastUpdate = new Date()
     }
   }
 
@@ -503,15 +536,15 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
    */
   private extractDeviceIdFromTopic(topic: string): string | null {
     // Topic format: devices/{deviceId}/status
-    const match = topic.match(/devices\/([^/]+)\//);
-    return match ? (match[1] ?? null) : null;
+    const match = topic.match(/devices\/([^/]+)\//)
+    return match ? (match[1] ?? null) : null
   }
 
   /**
    * Get topic for a specific device and message type
    */
   private getDeviceTopic(deviceId: string, type: string): string {
-    return `${this.topicPrefix}${deviceId}/${type}`;
+    return `${this.topicPrefix}${deviceId}/${type}`
   }
 
   /**
@@ -520,15 +553,15 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
   private async publishAsync(topic: string, message: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.client) {
-        reject(new Error('MQTT client not connected'));
-        return;
+        reject(new Error('MQTT client not connected'))
+        return
       }
 
       this.client.publish(topic, message, {}, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+        if (err) reject(err)
+        else resolve()
+      })
+    })
   }
 
   /**
@@ -537,9 +570,9 @@ export class MqttIntegrationProvider extends DeviceIntegrationProvider {
   async disconnect(): Promise<void> {
     if (this.client) {
       await new Promise<void>((resolve) => {
-        this.client!.end(false, {}, () => resolve());
-      });
-      this.client = null;
+        this.client!.end(false, {}, () => resolve())
+      })
+      this.client = null
     }
   }
 }

@@ -2,9 +2,9 @@
 
 /**
  * Create Test User for Staging Environment
- * 
+ *
  * This script creates a test user in your staging Supabase instance.
- * 
+ *
  * Usage:
  *   STAGING_URL=https://your-ref.supabase.co \
  *   STAGING_SERVICE_KEY=your-key \
@@ -35,8 +35,8 @@ console.log('')
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 })
 
 async function createStagingUser() {
@@ -56,7 +56,7 @@ async function createStagingUser() {
         name: 'NetNeural Staging',
         slug: 'netneural-staging',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -69,22 +69,24 @@ async function createStagingUser() {
 
     // Step 2: Check if user already exists
     console.log('\n2️⃣ Checking for existing user...')
-    const { data: existingAuthUser } = await supabase.auth.admin.getUserById(userId)
-    
+    const { data: existingAuthUser } =
+      await supabase.auth.admin.getUserById(userId)
+
     if (existingAuthUser && existingAuthUser.user) {
       console.log('ℹ️  Auth user already exists:', email)
     } else {
       // Create user in Supabase Auth
       console.log('📧 Creating auth user...')
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        id: userId,
-        email: email,
-        password: password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName
-        }
-      })
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          id: userId,
+          email: email,
+          password: password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+          },
+        })
 
       if (authError) {
         console.error('❌ Failed to create auth user:', authError.message)
@@ -100,18 +102,16 @@ async function createStagingUser() {
 
     // Step 3: Create profile in users table
     console.log('\n3️⃣ Creating user profile...')
-    const { error: profileError } = await supabase
-      .from('users')
-      .upsert({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        role: 'org_owner',
-        organization_id: orgId,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+    const { error: profileError } = await supabase.from('users').upsert({
+      id: userId,
+      email: email,
+      full_name: fullName,
+      role: 'org_owner',
+      organization_id: orgId,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
 
     if (profileError && !profileError.message.includes('duplicate')) {
       console.error('❌ Failed to create user profile:', profileError.message)
@@ -127,7 +127,7 @@ async function createStagingUser() {
         organization_id: orgId,
         user_id: userId,
         role: 'owner',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       })
 
     if (memberError && !memberError.message.includes('duplicate')) {
@@ -145,7 +145,6 @@ async function createStagingUser() {
     console.log('   Password:', password)
     console.log('\n🌐 Test at: https://demo-stage.netneural.ai')
     console.log('\n✅ User setup complete!')
-
   } catch (error) {
     console.error('\n💥 Error:', error.message)
     process.exit(1)

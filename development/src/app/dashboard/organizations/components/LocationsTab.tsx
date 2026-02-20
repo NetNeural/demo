@@ -1,47 +1,62 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MapPin, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import { toast } from 'sonner';
-import { handleApiError } from '@/lib/sentry-utils';
+import { useState, useEffect, useCallback } from 'react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { MapPin, Plus, Edit, Trash2, Loader2 } from 'lucide-react'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import { toast } from 'sonner'
+import { handleApiError } from '@/lib/sentry-utils'
 
 interface Location {
-  id: string;
-  organization_id: string;
-  name: string;
-  description: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  postal_code: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  created_at: string;
-  updated_at: string;
+  id: string
+  organization_id: string
+  name: string
+  description: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  country: string | null
+  postal_code: string | null
+  latitude: number | null
+  longitude: number | null
+  created_at: string
+  updated_at: string
 }
 
 interface LocationsTabProps {
-  organizationId: string;
+  organizationId: string
 }
 
 export function LocationsTab({ organizationId }: LocationsTabProps) {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showDialog, setShowDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [geocoding, setGeocoding] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showDialog, setShowDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null)
+  const [deletingLocation, setDeletingLocation] = useState<Location | null>(
+    null
+  )
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [geocoding, setGeocoding] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -52,49 +67,54 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
     postal_code: '',
     latitude: null as number | null,
     longitude: null as number | null,
-  });
+  })
 
   const fetchLocations = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const response = await edgeFunctions.locations.list(organizationId);
+      const response = await edgeFunctions.locations.list(organizationId)
 
       if (!response.success) {
-        const error = new Error(response.error?.message || 'Failed to load locations');
-        
+        const error = new Error(
+          response.error?.message || 'Failed to load locations'
+        )
+
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
           method: 'GET',
           status: response.error?.status || 500,
           errorData: response.error,
           context: { organizationId },
-        });
-        
-        toast.error('Failed to load locations');
-        return;
+        })
+
+        toast.error('Failed to load locations')
+        return
       }
 
-      setLocations((response.data as Location[]) || []);
+      setLocations((response.data as Location[]) || [])
     } catch (error) {
-      console.error('Error fetching locations:', error);
-      handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
-        endpoint: `/functions/v1/locations`,
-        method: 'GET',
-        context: { organizationId },
-      });
-      toast.error('Failed to load locations');
+      console.error('Error fetching locations:', error)
+      handleApiError(
+        error instanceof Error ? error : new Error('Unknown error'),
+        {
+          endpoint: `/functions/v1/locations`,
+          method: 'GET',
+          context: { organizationId },
+        }
+      )
+      toast.error('Failed to load locations')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [organizationId]);
+  }, [organizationId])
 
   useEffect(() => {
-    fetchLocations();
-  }, [fetchLocations]);
+    fetchLocations()
+  }, [fetchLocations])
 
   const handleAdd = () => {
-    setEditingLocation(null);
+    setEditingLocation(null)
     setFormData({
       name: '',
       description: '',
@@ -105,12 +125,12 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       postal_code: '',
       latitude: null,
       longitude: null,
-    });
-    setShowDialog(true);
-  };
+    })
+    setShowDialog(true)
+  }
 
   const handleEdit = (location: Location) => {
-    setEditingLocation(location);
+    setEditingLocation(location)
     setFormData({
       name: location.name,
       description: location.description || '',
@@ -121,9 +141,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       postal_code: location.postal_code || '',
       latitude: location.latitude,
       longitude: location.longitude,
-    });
-    setShowDialog(true);
-  };
+    })
+    setShowDialog(true)
+  }
 
   const handleGeocodeAddress = async () => {
     // Build address string from available fields
@@ -132,163 +152,203 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       formData.city,
       formData.state,
       formData.postal_code,
-      formData.country
-    ].filter(Boolean);
+      formData.country,
+    ].filter(Boolean)
 
     if (addressParts.length === 0) {
-      toast.error('Please enter address information to geocode');
-      return;
+      toast.error('Please enter address information to geocode')
+      return
     }
 
-    const addressString = addressParts.join(', ');
+    const addressString = addressParts.join(', ')
 
     try {
-      setGeocoding(true);
-      console.log('🗺️ [Geocoding] Looking up:', addressString);
+      setGeocoding(true)
+      console.log('🗺️ [Geocoding] Looking up:', addressString)
 
       // Use OpenStreetMap Nominatim API (free, no key required)
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressString)}&limit=1`,
         {
           headers: {
-            'User-Agent': 'NetNeural IoT Platform' // Required by Nominatim
-          }
+            'User-Agent': 'NetNeural IoT Platform', // Required by Nominatim
+          },
         }
-      );
+      )
 
       if (!response.ok) {
-        throw new Error('Geocoding service unavailable');
+        throw new Error('Geocoding service unavailable')
       }
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!data || data.length === 0) {
-        toast.error('No coordinates found for this address. Try adding more details.');
-        return;
+        toast.error(
+          'No coordinates found for this address. Try adding more details.'
+        )
+        return
       }
 
-      const result = data[0];
-      const lat = parseFloat(result.lat);
-      const lon = parseFloat(result.lon);
+      const result = data[0]
+      const lat = parseFloat(result.lat)
+      const lon = parseFloat(result.lon)
 
-      console.log('✅ [Geocoding] Found:', { lat, lon, display_name: result.display_name });
+      console.log('✅ [Geocoding] Found:', {
+        lat,
+        lon,
+        display_name: result.display_name,
+      })
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         latitude: lat,
-        longitude: lon
-      }));
+        longitude: lon,
+      }))
 
-      toast.success('Coordinates found! 🗺️');
+      toast.success('Coordinates found! 🗺️')
     } catch (error) {
-      console.error('Geocoding error:', error);
-      toast.error('Failed to geocode address. Please try again.');
+      console.error('Geocoding error:', error)
+      toast.error('Failed to geocode address. Please try again.')
     } finally {
-      setGeocoding(false);
+      setGeocoding(false)
     }
-  };
+  }
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('Location name is required');
-      return;
+      toast.error('Location name is required')
+      return
     }
 
     try {
-      setSaving(true);
-      
-      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Starting request:`, { 
-        formData, 
-        locationId: editingLocation?.id 
-      });
+      setSaving(true)
+
+      console.log(
+        `[Location ${editingLocation ? 'PATCH' : 'POST'}] Starting request:`,
+        {
+          formData,
+          locationId: editingLocation?.id,
+        }
+      )
 
       const response = editingLocation
         ? await edgeFunctions.locations.update(editingLocation.id, formData)
-        : await edgeFunctions.locations.create({ 
-            ...formData, 
-            organization_id: organizationId 
-          });
+        : await edgeFunctions.locations.create({
+            ...formData,
+            organization_id: organizationId,
+          })
 
-      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Response:`, response);
+      console.log(
+        `[Location ${editingLocation ? 'PATCH' : 'POST'}] Response:`,
+        response
+      )
 
       if (!response.success) {
-        console.error(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Failed:`, response.error);
-        const error = new Error(response.error?.message || 'Failed to save location');
-        
+        console.error(
+          `[Location ${editingLocation ? 'PATCH' : 'POST'}] Failed:`,
+          response.error
+        )
+        const error = new Error(
+          response.error?.message || 'Failed to save location'
+        )
+
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
           method: editingLocation ? 'PATCH' : 'POST',
           status: response.error?.status || 500,
           errorData: response.error,
-          context: { organizationId, locationId: editingLocation?.id, formData },
-        });
-        
-        toast.error(`Failed to ${editingLocation ? 'update' : 'create'} location`);
-        return;
+          context: {
+            organizationId,
+            locationId: editingLocation?.id,
+            formData,
+          },
+        })
+
+        toast.error(
+          `Failed to ${editingLocation ? 'update' : 'create'} location`
+        )
+        return
       }
 
-      console.log(`[Location ${editingLocation ? 'PATCH' : 'POST'}] Success:`, response.data);
+      console.log(
+        `[Location ${editingLocation ? 'PATCH' : 'POST'}] Success:`,
+        response.data
+      )
 
-      toast.success(`Location ${editingLocation ? 'updated' : 'created'} successfully`);
-      setShowDialog(false);
-      fetchLocations();
+      toast.success(
+        `Location ${editingLocation ? 'updated' : 'created'} successfully`
+      )
+      setShowDialog(false)
+      fetchLocations()
     } catch (error) {
-      console.error('Error saving location:', error);
-      handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
-        endpoint: `/functions/v1/locations`,
-        method: editingLocation ? 'PATCH' : 'POST',
-        context: { organizationId, locationId: editingLocation?.id },
-      });
-      toast.error('Failed to save location');
+      console.error('Error saving location:', error)
+      handleApiError(
+        error instanceof Error ? error : new Error('Unknown error'),
+        {
+          endpoint: `/functions/v1/locations`,
+          method: editingLocation ? 'PATCH' : 'POST',
+          context: { organizationId, locationId: editingLocation?.id },
+        }
+      )
+      toast.error('Failed to save location')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleDelete = async (location: Location) => {
-    setDeletingLocation(location);
-    setShowDeleteDialog(true);
-  };
+    setDeletingLocation(location)
+    setShowDeleteDialog(true)
+  }
 
   const confirmDelete = async () => {
-    if (!deletingLocation) return;
+    if (!deletingLocation) return
 
     try {
-      setDeleting(true);
+      setDeleting(true)
 
-      const response = await edgeFunctions.locations.delete(deletingLocation.id);
+      const response = await edgeFunctions.locations.delete(deletingLocation.id)
 
       if (!response.success) {
-        const error = new Error(response.error?.message || 'Failed to delete location');
-        
+        const error = new Error(
+          response.error?.message || 'Failed to delete location'
+        )
+
         handleApiError(error, {
           endpoint: `/functions/v1/locations`,
           method: 'DELETE',
           status: response.error?.status || 500,
           errorData: response.error,
-          context: { organizationId, locationId: deletingLocation.id, locationName: deletingLocation.name },
-        });
-        
-        toast.error('Failed to delete location');
-        return;
+          context: {
+            organizationId,
+            locationId: deletingLocation.id,
+            locationName: deletingLocation.name,
+          },
+        })
+
+        toast.error('Failed to delete location')
+        return
       }
 
-      toast.success('Location deleted successfully');
-      setShowDeleteDialog(false);
-      setDeletingLocation(null);
-      fetchLocations();
+      toast.success('Location deleted successfully')
+      setShowDeleteDialog(false)
+      setDeletingLocation(null)
+      fetchLocations()
     } catch (error) {
-      console.error('Error deleting location:', error);
-      handleApiError(error instanceof Error ? error : new Error('Unknown error'), {
-        endpoint: `/functions/v1/locations`,
-        method: 'DELETE',
-        context: { organizationId, locationId: deletingLocation.id },
-      });
-      toast.error('Failed to delete location');
+      console.error('Error deleting location:', error)
+      handleApiError(
+        error instanceof Error ? error : new Error('Unknown error'),
+        {
+          endpoint: `/functions/v1/locations`,
+          method: 'DELETE',
+          context: { organizationId, locationId: deletingLocation.id },
+        }
+      )
+      toast.error('Failed to delete location')
     } finally {
-      setDeleting(false);
+      setDeleting(false)
     }
-  };
+  }
 
   return (
     <>
@@ -297,7 +357,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
+                <MapPin className="h-5 w-5" />
                 Locations
               </CardTitle>
               <CardDescription>
@@ -305,7 +365,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               </CardDescription>
             </div>
             <Button onClick={handleAdd}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Location
             </Button>
           </div>
@@ -313,14 +373,16 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : locations.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground mb-4">No locations added yet</p>
+            <div className="py-8 text-center">
+              <MapPin className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+              <p className="mb-4 text-muted-foreground">
+                No locations added yet
+              </p>
               <Button onClick={handleAdd} variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Your First Location
               </Button>
             </div>
@@ -331,9 +393,11 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-base">{location.name}</CardTitle>
+                        <CardTitle className="text-base">
+                          {location.name}
+                        </CardTitle>
                         {location.description && (
-                          <CardDescription className="text-sm mt-1">
+                          <CardDescription className="mt-1 text-sm">
                             {location.description}
                           </CardDescription>
                         )}
@@ -344,14 +408,14 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                           size="sm"
                           onClick={() => handleEdit(location)}
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(location)}
                         >
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -361,7 +425,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                       {location.address && <p>{location.address}</p>}
                       {(location.city || location.state) && (
                         <p>
-                          {location.city}{location.city && location.state ? ', ' : ''}{location.state}
+                          {location.city}
+                          {location.city && location.state ? ', ' : ''}
+                          {location.state}
                         </p>
                       )}
                       {location.postal_code && <p>{location.postal_code}</p>}
@@ -376,14 +442,14 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-white">
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto bg-white dark:bg-white">
           <DialogHeader>
             <DialogTitle>
               {editingLocation ? 'Edit Location' : 'Add New Location'}
             </DialogTitle>
             <DialogDescription>
-              {editingLocation 
-                ? 'Update the location details below' 
+              {editingLocation
+                ? 'Update the location details below'
                 : 'Enter the details for the new location'}
             </DialogDescription>
           </DialogHeader>
@@ -396,7 +462,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="e.g., Headquarters, Warehouse 1"
               />
             </div>
@@ -406,7 +474,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Optional description of this location"
                 rows={3}
               />
@@ -417,7 +487,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               <Input
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
                 placeholder="123 Main St"
               />
             </div>
@@ -428,7 +500,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                 <Input
                   id="city"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
                   placeholder="Las Vegas"
                 />
               </div>
@@ -438,7 +512,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                 <Input
                   id="state"
                   value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, state: e.target.value })
+                  }
                   placeholder="NV"
                 />
               </div>
@@ -450,7 +526,9 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                 <Input
                   id="postal_code"
                   value={formData.postal_code}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, postal_code: e.target.value })
+                  }
                   placeholder="89101"
                 />
               </div>
@@ -460,19 +538,22 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                 <Input
                   id="country"
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, country: e.target.value })
+                  }
                   placeholder="United States"
                 />
               </div>
             </div>
 
             {/* GPS Coordinates Section */}
-            <div className="border-t pt-4 mt-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="mt-4 border-t pt-4">
+              <div className="mb-3 flex items-center justify-between">
                 <div>
                   <Label className="text-base">GPS Coordinates</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Required for map display. Auto-fill from address or enter manually.
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Required for map display. Auto-fill from address or enter
+                    manually.
                   </p>
                 </div>
                 <Button
@@ -484,18 +565,18 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                 >
                   {geocoding ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Geocoding...
                     </>
                   ) : (
                     <>
-                      <MapPin className="w-4 h-4 mr-2" />
+                      <MapPin className="mr-2 h-4 w-4" />
                       Geocode Address
                     </>
                   )}
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="latitude">Latitude</Label>
@@ -504,7 +585,14 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                     type="number"
                     step="any"
                     value={formData.latitude ?? ''}
-                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        latitude: e.target.value
+                          ? parseFloat(e.target.value)
+                          : null,
+                      })
+                    }
                     placeholder="e.g., 40.7128"
                   />
                 </div>
@@ -516,14 +604,21 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                     type="number"
                     step="any"
                     value={formData.longitude ?? ''}
-                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        longitude: e.target.value
+                          ? parseFloat(e.target.value)
+                          : null,
+                      })
+                    }
                     placeholder="e.g., -74.0060"
                   />
                 </div>
               </div>
 
               {formData.latitude && formData.longitude && (
-                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                <p className="mt-2 flex items-center gap-1 text-xs text-green-600">
                   ✓ Coordinates set - map will be displayed
                 </p>
               )}
@@ -539,7 +634,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingLocation ? 'Update Location' : 'Create Location'}
             </Button>
           </DialogFooter>
@@ -552,31 +647,32 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
           <DialogHeader>
             <DialogTitle>Delete Location</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deletingLocation?.name}&quot;? This action cannot be undone.
+              Are you sure you want to delete &quot;{deletingLocation?.name}
+              &quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
-                setShowDeleteDialog(false);
-                setDeletingLocation(null);
+                setShowDeleteDialog(false)
+                setDeletingLocation(null)
               }}
               disabled={deleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={confirmDelete}
               disabled={deleting}
             >
-              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Location
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }

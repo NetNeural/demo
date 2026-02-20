@@ -39,7 +39,7 @@ export interface SensorActivity {
   id: string
   device_id: string
   sensor_type: string
-  activity_type: 
+  activity_type:
     | 'threshold_updated'
     | 'alert_triggered'
     | 'alert_resolved'

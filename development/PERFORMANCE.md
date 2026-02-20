@@ -21,16 +21,16 @@ This document provides comprehensive guidance for performance testing, optimizat
 
 ### Target Performance Metrics
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| Dashboard Load Time (50 devices, 20 alerts) | < 3s | TBD | 🔍 |
-| Device List Render (200 devices) | < 2s | TBD | 🔍 |
-| Alert List Render (100 alerts) | < 2s | TBD | 🔍 |
-| Telemetry Chart Load (7 days) | < 5s | TBD | 🔍 |
-| Report Export (1,000 rows) | < 10s | TBD | 🔍 |
-| Threshold Evaluation (100 devices) | < 5s | TBD | 🔍 |
-| API Response Time (95th percentile) | < 500ms | TBD | 🔍 |
-| Concurrent Users | 50+ | TBD | 🔍 |
+| Metric                                      | Target  | Current | Status |
+| ------------------------------------------- | ------- | ------- | ------ |
+| Dashboard Load Time (50 devices, 20 alerts) | < 3s    | TBD     | 🔍     |
+| Device List Render (200 devices)            | < 2s    | TBD     | 🔍     |
+| Alert List Render (100 alerts)              | < 2s    | TBD     | 🔍     |
+| Telemetry Chart Load (7 days)               | < 5s    | TBD     | 🔍     |
+| Report Export (1,000 rows)                  | < 10s   | TBD     | 🔍     |
+| Threshold Evaluation (100 devices)          | < 5s    | TBD     | 🔍     |
+| API Response Time (95th percentile)         | < 500ms | TBD     | 🔍     |
+| Concurrent Users                            | 50+     | TBD     | 🔍     |
 
 ### Measurement Tools
 
@@ -67,55 +67,60 @@ k6 version
 **File**: `performance/load-tests/dashboard.js`
 
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from 'k6/http'
+import { check, sleep } from 'k6'
 
 export const options = {
   stages: [
     { duration: '30s', target: 10 }, // Ramp up to 10 users
-    { duration: '1m', target: 50 },  // Ramp up to 50 users
-    { duration: '2m', target: 50 },  // Stay at 50 users
-    { duration: '30s', target: 0 },  // Ramp down to 0 users
+    { duration: '1m', target: 50 }, // Ramp up to 50 users
+    { duration: '2m', target: 50 }, // Stay at 50 users
+    { duration: '30s', target: 0 }, // Ramp down to 0 users
   ],
   thresholds: {
     http_req_duration: ['p(95)<3000'], // 95% of requests under 3s
-    http_req_failed: ['rate<0.01'],    // Less than 1% failures
+    http_req_failed: ['rate<0.01'], // Less than 1% failures
   },
-};
+}
 
 export default function () {
   // Test user credentials
   const loginPayload = JSON.stringify({
     email: 'test@netneural.ai',
     password: 'TestPassword123!',
-  });
+  })
 
   // Login
-  const loginRes = http.post('http://localhost:3000/api/auth/login', loginPayload, {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const loginRes = http.post(
+    'http://localhost:3000/api/auth/login',
+    loginPayload,
+    {
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
 
   check(loginRes, {
     'login successful': (r) => r.status === 200,
-  });
+  })
 
   // Dashboard load
   const dashboardRes = http.get('http://localhost:3000/dashboard', {
     headers: {
-      'Authorization': `Bearer ${loginRes.json('access_token')}`,
+      Authorization: `Bearer ${loginRes.json('access_token')}`,
     },
-  });
+  })
 
   check(dashboardRes, {
     'dashboard loads': (r) => r.status === 200,
     'dashboard loads fast': (r) => r.timings.duration < 3000,
-  });
+  })
 
-  sleep(1);
+  sleep(1)
 }
 ```
 
 **Run**:
+
 ```bash
 k6 run performance/load-tests/dashboard.js
 ```
@@ -125,8 +130,8 @@ k6 run performance/load-tests/dashboard.js
 **File**: `performance/load-tests/devices.js`
 
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from 'k6/http'
+import { check, sleep } from 'k6'
 
 export const options = {
   stages: [
@@ -137,25 +142,28 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<2000'], // 95% under 2s
   },
-};
+}
 
 export default function () {
-  const token = __ENV.AUTH_TOKEN; // Set via: k6 run -e AUTH_TOKEN=xxx devices.js
-  
-  const res = http.get('http://localhost:54321/rest/v1/devices?select=*&order=name.asc&limit=200', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'apikey': __ENV.SUPABASE_ANON_KEY,
-    },
-  });
+  const token = __ENV.AUTH_TOKEN // Set via: k6 run -e AUTH_TOKEN=xxx devices.js
+
+  const res = http.get(
+    'http://localhost:54321/rest/v1/devices?select=*&order=name.asc&limit=200',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: __ENV.SUPABASE_ANON_KEY,
+      },
+    }
+  )
 
   check(res, {
     'devices list loads': (r) => r.status === 200,
     'devices list fast': (r) => r.timings.duration < 2000,
     'returns devices': (r) => JSON.parse(r.body).length > 0,
-  });
+  })
 
-  sleep(1);
+  sleep(1)
 }
 ```
 
@@ -164,8 +172,8 @@ export default function () {
 **File**: `performance/load-tests/alerts.js`
 
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from 'k6/http'
+import { check, sleep } from 'k6'
 
 export const options = {
   stages: [
@@ -176,24 +184,27 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<2000'],
   },
-};
+}
 
 export default function () {
-  const token = __ENV.AUTH_TOKEN;
-  
-  const res = http.get('http://localhost:54321/rest/v1/alerts?select=*,device:devices(*)&order=created_at.desc&limit=100', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'apikey': __ENV.SUPABASE_ANON_KEY,
-    },
-  });
+  const token = __ENV.AUTH_TOKEN
+
+  const res = http.get(
+    'http://localhost:54321/rest/v1/alerts?select=*,device:devices(*)&order=created_at.desc&limit=100',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: __ENV.SUPABASE_ANON_KEY,
+      },
+    }
+  )
 
   check(res, {
     'alerts list loads': (r) => r.status === 200,
     'alerts list fast': (r) => r.timings.duration < 2000,
-  });
+  })
 
-  sleep(1);
+  sleep(1)
 }
 ```
 
@@ -202,46 +213,46 @@ export default function () {
 **File**: `performance/load-tests/api-stress.js`
 
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from 'k6/http'
+import { check, sleep } from 'k6'
 
 export const options = {
   stages: [
-    { duration: '1m', target: 100 },  // Stress test with 100 users
+    { duration: '1m', target: 100 }, // Stress test with 100 users
     { duration: '2m', target: 100 },
     { duration: '1m', target: 0 },
   ],
   thresholds: {
     http_req_duration: ['p(95)<500'], // 95% under 500ms
-    http_req_failed: ['rate<0.05'],   // Less than 5% failures
+    http_req_failed: ['rate<0.05'], // Less than 5% failures
   },
-};
+}
 
 export default function () {
-  const token = __ENV.AUTH_TOKEN;
-  
+  const token = __ENV.AUTH_TOKEN
+
   // Test multiple endpoints
   const endpoints = [
     '/rest/v1/devices?limit=25',
     '/rest/v1/alerts?limit=20',
     '/rest/v1/device_telemetry_history?limit=50',
-  ];
-  
-  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
-  
+  ]
+
+  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)]
+
   const res = http.get(`http://localhost:54321${endpoint}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'apikey': __ENV.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      apikey: __ENV.SUPABASE_ANON_KEY,
     },
-  });
+  })
 
   check(res, {
     'api responds': (r) => r.status === 200,
     'api fast': (r) => r.timings.duration < 500,
-  });
+  })
 
-  sleep(0.5);
+  sleep(0.5)
 }
 ```
 
@@ -275,7 +286,7 @@ k6 run --out json=results.json performance/load-tests/dashboard.js
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 -- View slow queries (> 100ms average)
-SELECT 
+SELECT
   query,
   calls,
   total_exec_time,
@@ -293,7 +304,7 @@ SELECT pg_stat_statements_reset();
 
 -- Profile specific query with EXPLAIN ANALYZE
 EXPLAIN ANALYZE
-SELECT 
+SELECT
   d.*,
   COUNT(a.id) as alert_count
 FROM devices d
@@ -384,30 +395,30 @@ name: Lighthouse CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
         working-directory: ./development
-      
+
       - name: Build application
         run: npm run build
         working-directory: ./development
-      
+
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v10
         with:
@@ -439,12 +450,12 @@ jobs:
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", {"minScore": 0.9}],
-        "categories:accessibility": ["error", {"minScore": 0.9}],
-        "first-contentful-paint": ["error", {"maxNumericValue": 2000}],
-        "largest-contentful-paint": ["error", {"maxNumericValue": 3000}],
-        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}],
-        "total-blocking-time": ["error", {"maxNumericValue": 300}]
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }],
+        "first-contentful-paint": ["error", { "maxNumericValue": 2000 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 300 }]
       }
     },
     "upload": {
@@ -478,9 +489,12 @@ const sortedDevices = useMemo(() => {
 }, [devices])
 
 // Memoize callbacks
-const handleDeviceClick = useCallback((deviceId: string) => {
-  router.push(`/dashboard/devices/${deviceId}`)
-}, [router])
+const handleDeviceClick = useCallback(
+  (deviceId: string) => {
+    router.push(`/dashboard/devices/${deviceId}`)
+  },
+  [router]
+)
 ```
 
 #### 3. Virtual Scrolling
@@ -522,27 +536,30 @@ import { FixedSizeList } from 'react-window'
 export async function getDevices() {
   const cacheKey = 'devices-list'
   const cached = sessionStorage.getItem(cacheKey)
-  
+
   if (cached) {
     const { data, timestamp } = JSON.parse(cached)
     const age = Date.now() - timestamp
-    
+
     // Return cached data if less than 5 minutes old
     if (age < 5 * 60 * 1000) {
       return data
     }
   }
-  
+
   // Fetch fresh data
   const { data, error } = await supabase.from('devices').select('*')
-  
+
   if (!error) {
-    sessionStorage.setItem(cacheKey, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }))
+    sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      })
+    )
   }
-  
+
   return data
 }
 ```
@@ -590,6 +607,7 @@ export default function RootLayout({ children }: { children: React.Node }) {
 ### Sentry Performance Monitoring
 
 Already configured in the application. View performance metrics at:
+
 - https://sentry.io/organizations/netneural/performance/
 
 ### Custom Performance Tracking
@@ -598,19 +616,19 @@ Already configured in the application. View performance metrics at:
 // utils/performance.ts
 export function measurePageLoad() {
   if (typeof window === 'undefined') return
-  
+
   window.addEventListener('load', () => {
     const perfData = window.performance.timing
     const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart
-    
+
     console.log(`Page load time: ${pageLoadTime}ms`)
-    
+
     // Send to analytics
     if (window.gtag) {
       window.gtag('event', 'timing_complete', {
         name: 'page_load',
         value: pageLoadTime,
-        event_category: 'Performance'
+        event_category: 'Performance',
       })
     }
   })
@@ -657,6 +675,7 @@ export function measurePageLoad() {
 ## Performance Checklist
 
 ### Frontend
+
 - [ ] Code splitting implemented for large components
 - [ ] Images optimized and lazy-loaded
 - [ ] Unnecessary re-renders eliminated (React.memo, useMemo, useCallback)
@@ -665,12 +684,14 @@ export function measurePageLoad() {
 - [ ] Lighthouse score > 90
 
 ### API
+
 - [ ] API responses < 500ms (95th percentile)
 - [ ] Edge Functions < 1s execution time
 - [ ] Proper error handling and timeouts
 - [ ] Response caching where appropriate
 
 ### Database
+
 - [ ] All foreign keys indexed
 - [ ] Frequently queried columns indexed
 - [ ] Composite indexes for common query patterns
@@ -679,12 +700,14 @@ export function measurePageLoad() {
 - [ ] Slow query log monitored
 
 ### Caching
+
 - [ ] AI insights cached (15 minutes)
 - [ ] Static assets cached by CDN
 - [ ] Browser caching strategy implemented
 - [ ] Consider React Query for data fetching
 
 ### Monitoring
+
 - [ ] Lighthouse CI running on PRs
 - [ ] Sentry performance monitoring active
 - [ ] Core Web Vitals tracked

@@ -20,8 +20,11 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token)
+
     if (authError || !user) {
       throw new Error('Unauthorized')
     }
@@ -35,7 +38,11 @@ serve(async (req) => {
       throw new Error('Missing integration_id or organization_id')
     }
 
-    console.log('🔍 Verifying access:', { userId: user.id, integrationId, organizationId })
+    console.log('🔍 Verifying access:', {
+      userId: user.id,
+      integrationId,
+      organizationId,
+    })
 
     // Verify user has access to the integration via organization membership
     // First, check if the integration belongs to the organization
@@ -50,7 +57,7 @@ serve(async (req) => {
       console.error('❌ Integration not found or access denied:', {
         integrationId,
         organizationId,
-        error: integrationError?.message
+        error: integrationError?.message,
       })
       throw new Error('Integration not found or access denied')
     }
@@ -71,7 +78,10 @@ serve(async (req) => {
     }
 
     if (!orgUser) {
-      console.error('❌ User not a member:', { userId: user.id, organizationId })
+      console.error('❌ User not a member:', {
+        userId: user.id,
+        organizationId,
+      })
       throw new Error('Unauthorized - not a member of this organization')
     }
 
@@ -103,7 +113,10 @@ serve(async (req) => {
             deviceFilter: 'all',
           },
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -152,19 +165,22 @@ serve(async (req) => {
           success: true,
           data,
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     console.error('Auto-sync config error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

@@ -5,9 +5,11 @@ This folder contains validation tests for the 22 GitHub issue bug fixes.
 ## Test Files
 
 ### `superadmin-validation.spec.ts`
+
 Comprehensive validation tests that verify all bug fixes are working correctly with the superadmin account.
 
 **Tests included:**
+
 - Bug #22: Remember Me Checkbox
 - Bugs #7, #12: Dashboard Alerts & Locations
 - Bug #11: Profile Save
@@ -19,20 +21,24 @@ Comprehensive validation tests that verify all bug fixes are working correctly w
 - Full User Journey Test
 
 **Usage:**
+
 ```bash
 npx playwright test tests/bug-validation/superadmin-validation.spec.ts --project=chromium
 ```
 
 **Credentials:**
+
 - Email: `superadmin@netneural.ai`
 - Password: `SuperSecure123!`
 
 ---
 
 ### `capture-screenshots.spec.ts`
+
 Automated screenshot capture for documentation of all bug fixes.
 
 **Captures:**
+
 - Login page (Remember Me checkbox)
 - Dashboard (Alerts and Locations)
 - Settings - Profile tab
@@ -41,6 +47,7 @@ Automated screenshot capture for documentation of all bug fixes.
 - Organization pages
 
 **Usage:**
+
 ```bash
 npx playwright test tests/bug-validation/capture-screenshots.spec.ts --project=chromium --headed
 ```
@@ -52,16 +59,19 @@ npx playwright test tests/bug-validation/capture-screenshots.spec.ts --project=c
 ## Prerequisites
 
 1. **Supabase Local Running:**
+
    ```bash
    npx supabase start
    ```
 
 2. **Edge Functions Serving:**
+
    ```bash
    npx supabase functions serve
    ```
 
 3. **Next.js Dev Server:**
+
    ```bash
    npm run dev
    ```
@@ -89,5 +99,5 @@ npx playwright test tests/bug-validation/capture-screenshots.spec.ts --project=c
 
 ---
 
-*Created: October 26, 2025*  
-*Purpose: Validate bug fixes for GitHub issues #1-22*
+_Created: October 26, 2025_  
+_Purpose: Validate bug fixes for GitHub issues #1-22_

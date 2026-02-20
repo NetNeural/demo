@@ -5,15 +5,38 @@
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
 
 export interface MembersAPI {
-  list: (organizationId: string) => Promise<EdgeFunctionResponse<{ members: unknown[] }>>
-  add: (organizationId: string, data: { email?: string; userId?: string; role: string }) => Promise<EdgeFunctionResponse<unknown>>
-  updateRole: (organizationId: string, memberId: string, role: string) => Promise<EdgeFunctionResponse<unknown>>
-  remove: (organizationId: string, memberId: string) => Promise<EdgeFunctionResponse<unknown>>
-  resetPassword: (userId: string, password: string) => Promise<EdgeFunctionResponse<unknown>>
-  emailPassword: (userId: string, password: string) => Promise<EdgeFunctionResponse<unknown>>
+  list: (
+    organizationId: string
+  ) => Promise<EdgeFunctionResponse<{ members: unknown[] }>>
+  add: (
+    organizationId: string,
+    data: { email?: string; userId?: string; role: string }
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  updateRole: (
+    organizationId: string,
+    memberId: string,
+    role: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  remove: (
+    organizationId: string,
+    memberId: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  resetPassword: (
+    userId: string,
+    password: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  emailPassword: (
+    userId: string,
+    password: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
 }
 
-export function createMembersAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): MembersAPI {
+export function createMembersAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): MembersAPI {
   return {
     /**
      * List members for an organization
@@ -22,7 +45,7 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
       call<{ members: unknown[] }>('members', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Add a member to an organization
      */
@@ -32,7 +55,7 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
         params: { organization_id: organizationId },
         body: data,
       }),
-    
+
     /**
      * Update member role
      */
@@ -42,7 +65,7 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
         params: { organization_id: organizationId },
         body: { memberId, role },
       }),
-    
+
     /**
      * Remove member from organization
      */
@@ -52,7 +75,7 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
         params: { organization_id: organizationId },
         body: { memberId },
       }),
-    
+
     /**
      * Reset user password
      */
@@ -61,7 +84,7 @@ export function createMembersAPI(call: <T>(functionName: string, options?: EdgeF
         method: 'POST',
         body: { userId, password },
       }),
-    
+
     /**
      * Email password to user (without resetting)
      */

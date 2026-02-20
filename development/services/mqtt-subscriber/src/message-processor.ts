@@ -4,9 +4,14 @@
  * Parses MQTT messages and stores them in Supabase
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Logger } from 'pino';
-import { MqttIntegration, ProcessedMessage, TelemetryRecord, ActivityLogEntry } from './types';
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Logger } from 'pino'
+import {
+  MqttIntegration,
+  ProcessedMessage,
+  TelemetryRecord,
+  ActivityLogEntry,
+} from './types'
 
 export class MessageProcessor {
   constructor(
@@ -19,28 +24,35 @@ export class MessageProcessor {
     topic: string,
     messageStr: string
   ): Promise<ProcessedMessage | null> {
-    const startTime = Date.now();
-    
+    const startTime = Date.now()
+
     try {
       // Parse the message
-      const parsed = this.parseMessage(integration, topic, messageStr);
-      
+      const parsed = this.parseMessage(integration, topic, messageStr)
+
       if (!parsed) {
-        this.logger.warn({ topic, integration: integration.name }, 'Failed to parse message');
-        return null;
+        this.logger.warn(
+          { topic, integration: integration.name },
+          'Failed to parse message'
+        )
+        return null
       }
 
       // Check if device exists, create if needed
-      await this.ensureDeviceExists(parsed.deviceId, integration.organizationId, integration.id);
+      await this.ensureDeviceExists(
+        parsed.deviceId,
+        integration.organizationId,
+        integration.id
+      )
 
       // Store telemetry data if present
       if (parsed.telemetry && Object.keys(parsed.telemetry).length > 0) {
-        await this.storeTelemetry(parsed, integration);
+        await this.storeTelemetry(parsed, integration)
       }
 
       // Update device status if present
       if (parsed.status) {
-        await this.updateDeviceStatus(parsed.deviceId, parsed.status);
+        await this.updateDeviceStatus(parsed.deviceId, parsed.status)
       }
 
       // Log activity
@@ -58,12 +70,15 @@ export class MessageProcessor {
           messageSize: messageStr.length,
           telemetryKeys: parsed.telemetry ? Object.keys(parsed.telemetry) : [],
         },
-      });
+      })
 
-      return parsed;
+      return parsed
     } catch (error) {
-      this.logger.error({ error, topic, integration: integration.name }, 'Message processing error');
-      
+      this.logger.error(
+        { error, topic, integration: integration.name },
+        'Message processing error'
+      )
+
       // Log failed activity
       await this.logActivity({
         organization_id: integration.organizationId,
@@ -75,9 +90,9 @@ export class MessageProcessor {
         status: 'failed',
         response_time_ms: Date.now() - startTime,
         error_message: error instanceof Error ? error.message : 'Unknown error',
-      });
+      })
 
-      return null;
+      return null
     }
   }
 
@@ -88,82 +103,112 @@ export class MessageProcessor {
   ): ProcessedMessage | null {
     try {
       // Try to parse as JSON
-      const payload = JSON.parse(messageStr);
-      
+      const payload = JSON.parse(messageStr)
+
       // Extract device ID from topic or payload
-      const deviceId = this.extractDeviceId(topic, payload, integration);
-      
+      const deviceId = this.extractDeviceId(topic, payload, integration)
+
       if (!deviceId) {
-        this.logger.warn({ topic, payload }, 'Could not extract device ID');
-        return null;
+        this.logger.warn({ topic, payload }, 'Could not extract device ID')
+        return null
       }
 
       // Parse based on configured parser
-      const parser = integration.settings.payloadParser || integration.settings.payload_parser || 'standard';
-      
+      const parser =
+        integration.settings.payloadParser ||
+        integration.settings.payload_parser ||
+        'standard'
+
       switch (parser) {
         case 'vmark':
-          return this.parseVMarkMessage(deviceId, payload);
+          return this.parseVMarkMessage(deviceId, payload)
         case 'custom':
-          return this.parseCustomMessage(deviceId, payload, integration.settings.customParserConfig || integration.settings.custom_parser_config);
+          return this.parseCustomMessage(
+            deviceId,
+            payload,
+            integration.settings.customParserConfig ||
+              integration.settings.custom_parser_config
+          )
         default:
-          return this.parseStandardMessage(deviceId, payload);
+          return this.parseStandardMessage(deviceId, payload)
       }
     } catch (error) {
       // Not JSON, try plain text
-      const deviceId = this.extractDeviceId(topic, {}, integration);
-      if (!deviceId) return null;
-      
+      const deviceId = this.extractDeviceId(topic, {}, integration)
+      if (!deviceId) return null
+
       return {
         deviceId,
         metadata: { raw_message: messageStr },
         timestamp: new Date().toISOString(),
-      };
+      }
     }
   }
 
-  private extractDeviceId(topic: string, payload: any, integration: MqttIntegration): string | null {
+  private extractDeviceId(
+    topic: string,
+    payload: any,
+    integration: MqttIntegration
+  ): string | null {
     // Try to extract from payload first
     if (payload.deviceId || payload.device_id || payload.id) {
-      return payload.deviceId || payload.device_id || payload.id;
+      return payload.deviceId || payload.device_id || payload.id
     }
 
     // Extract from topic pattern: devices/{deviceId}/...
-    const topicMatch = topic.match(/devices\/([^/]+)/);
+    const topicMatch = topic.match(/devices\/([^/]+)/)
     if (topicMatch) {
-      return topicMatch[1];
+      return topicMatch[1]
     }
 
     // Try another common pattern: {prefix}/{deviceId}/...
-    const prefix = integration.settings.topicPrefix || integration.settings.topic_prefix || 'netneural';
-    const prefixMatch = topic.match(new RegExp(`${prefix}/([^/]+)`));
+    const prefix =
+      integration.settings.topicPrefix ||
+      integration.settings.topic_prefix ||
+      'netneural'
+    const prefixMatch = topic.match(new RegExp(`${prefix}/([^/]+)`))
     if (prefixMatch) {
-      return prefixMatch[1];
+      return prefixMatch[1]
     }
 
-    return null;
+    return null
   }
 
-  private parseStandardMessage(deviceId: string, payload: any): ProcessedMessage {
-    const telemetry: Record<string, any> = {};
-    
+  private parseStandardMessage(
+    deviceId: string,
+    payload: any
+  ): ProcessedMessage {
+    const telemetry: Record<string, any> = {}
+
     // Extract known telemetry fields
     const telemetryFields = [
-      'temperature', 'humidity', 'pressure', 'battery', 'voltage',
-      'current', 'power', 'rssi', 'snr', 'battery_level', 'signal_strength'
-    ];
+      'temperature',
+      'humidity',
+      'pressure',
+      'battery',
+      'voltage',
+      'current',
+      'power',
+      'rssi',
+      'snr',
+      'battery_level',
+      'signal_strength',
+    ]
 
     for (const field of telemetryFields) {
       if (payload[field] !== undefined) {
-        telemetry[field] = payload[field];
+        telemetry[field] = payload[field]
       }
     }
 
     // If no specific fields found, use all numeric values
     if (Object.keys(telemetry).length === 0) {
       for (const [key, value] of Object.entries(payload)) {
-        if (typeof value === 'number' && !['timestamp', 'ts', 'time'].includes(key.toLowerCase())) {
-          telemetry[key] = value;
+        if (
+          typeof value === 'number' &&
+          !['timestamp', 'ts', 'time'].includes(key.toLowerCase())
+        ) {
+          telemetry[key] = value
         }
       }
     }
@@ -174,15 +219,15 @@ export class MessageProcessor {
       status: payload.status,
       timestamp: payload.timestamp || payload.ts || new Date().toISOString(),
       metadata: payload,
-    };
+    }
   }
 
   private parseVMarkMessage(deviceId: string, payload: any): ProcessedMessage {
     // VMark-specific parsing
-    const telemetry: Record<string, any> = {};
-    
+    const telemetry: Record<string, any> = {}
+
     if (payload.data) {
-      Object.assign(telemetry, payload.data);
+      Object.assign(telemetry, payload.data)
     }
 
     return {
@@ -191,33 +236,37 @@ export class MessageProcessor {
       status: payload.online ? 'online' : undefined,
       timestamp: payload.timestamp || new Date().toISOString(),
       metadata: payload,
-    };
+    }
   }
 
-  private parseCustomMessage(deviceId: string, payload: any, config: any): ProcessedMessage {
-    const telemetry: Record<string, any> = {};
-    
+  private parseCustomMessage(
+    deviceId: string,
+    payload: any,
+    config: any
+  ): ProcessedMessage {
+    const telemetry: Record<string, any> = {}
+
     if (config?.telemetry_path) {
-      const telemetryData = this.getNestedValue(payload, config.telemetry_path);
+      const telemetryData = this.getNestedValue(payload, config.telemetry_path)
       if (telemetryData && typeof telemetryData === 'object') {
-        Object.assign(telemetry, telemetryData);
+        Object.assign(telemetry, telemetryData)
       }
     }
 
     const timestamp = config?.timestamp_path
       ? this.getNestedValue(payload, config.timestamp_path)
-      : new Date().toISOString();
+      : new Date().toISOString()
 
     return {
       deviceId,
       telemetry: Object.keys(telemetry).length > 0 ? telemetry : undefined,
       timestamp,
       metadata: payload,
-    };
+    }
   }
 
   private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+    return path.split('.').reduce((current, key) => current?.[key], obj)
   }
 
   private async ensureDeviceExists(
@@ -229,7 +278,7 @@ export class MessageProcessor {
       .from('devices')
       .select('id')
       .eq('id', deviceId)
-      .single();
+      .single()
 
     if (!existing) {
       // Create device
@@ -244,9 +293,12 @@ export class MessageProcessor {
           auto_discovered: true,
           discovered_at: new Date().toISOString(),
         },
-      });
-      
-      this.logger.info({ deviceId, organizationId }, 'Auto-discovered and created device');
+      })
+
+      this.logger.info(
+        { deviceId, organizationId },
+        'Auto-discovered and created device'
+      )
     }
   }
 
@@ -254,10 +306,10 @@ export class MessageProcessor {
     parsed: ProcessedMessage,
     integration: MqttIntegration
   ): Promise<void> {
-    if (!parsed.telemetry) return;
+    if (!parsed.telemetry) return
 
-    const records: TelemetryRecord[] = [];
-    const timestamp = parsed.timestamp || new Date().toISOString();
+    const records: TelemetryRecord[] = []
+    const timestamp = parsed.timestamp || new Date().toISOString()
 
     for (const [metricName, value] of Object.entries(parsed.telemetry)) {
       if (typeof value === 'number') {
@@ -269,38 +321,44 @@ export class MessageProcessor {
           metric_value: value,
           timestamp,
           metadata: parsed.metadata,
-        });
+        })
       }
     }
 
     if (records.length > 0) {
       const { error } = await this.supabase
         .from('device_telemetry_history')
-        .insert(records);
+        .insert(records)
 
       if (error) {
-        this.logger.error({ error, deviceId: parsed.deviceId }, 'Failed to store telemetry');
+        this.logger.error(
+          { error, deviceId: parsed.deviceId },
+          'Failed to store telemetry'
+        )
       }
     }
   }
 
-  private async updateDeviceStatus(deviceId: string, status: string): Promise<void> {
+  private async updateDeviceStatus(
+    deviceId: string,
+    status: string
+  ): Promise<void> {
     await this.supabase
       .from('devices')
       .update({
         status,
         last_seen: new Date().toISOString(),
       })
-      .eq('id', deviceId);
+      .eq('id', deviceId)
   }
 
   private async logActivity(entry: ActivityLogEntry): Promise<void> {
     const { error } = await this.supabase
       .from('integration_activity_log')
-      .insert(entry);
+      .insert(entry)
 
     if (error) {
-      this.logger.error({ error }, 'Failed to log activity');
+      this.logger.error({ error }, 'Failed to log activity')
     }
   }
 }

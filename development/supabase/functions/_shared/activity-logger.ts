@@ -107,7 +107,7 @@ export async function logActivityComplete(
       error_code: update.errorCode,
       completed_at: new Date().toISOString(),
     }
-    
+
     // Add device count fields if provided
     if (update.devicesProcessed !== undefined) {
       updateData.devices_processed = update.devicesProcessed
@@ -118,7 +118,7 @@ export async function logActivityComplete(
     if (update.devicesFailed !== undefined) {
       updateData.devices_failed = update.devicesFailed
     }
-    
+
     const { error } = await supabase
       .from('integration_activity_log')
       .update(updateData)
@@ -147,32 +147,34 @@ export async function logActivity(
       activityType: params.activityType,
       status: params.status,
     })
-    
-    const { data, error } = await supabase.from('integration_activity_log').insert({
-      organization_id: params.organizationId,
-      integration_id: params.integrationId,
-      direction: params.direction,
-      activity_type: params.activityType,
-      method: params.method,
-      endpoint: params.endpoint,
-      request_headers: params.requestHeaders || {},
-      request_body: params.requestBody,
-      status: params.status,
-      response_status: params.responseStatus,
-      response_body: params.responseBody,
-      response_time_ms: params.responseTimeMs,
-      error_message: params.errorMessage,
-      error_code: params.errorCode,
-      user_id: params.userId,
-      ip_address: params.ipAddress,
-      user_agent: params.userAgent,
-      metadata: params.metadata || {},
-      devices_processed: params.devicesProcessed,
-      devices_succeeded: params.devicesSucceeded,
-      devices_failed: params.devicesFailed,
-      completed_at: new Date().toISOString(),
-    })
-    
+
+    const { data, error } = await supabase
+      .from('integration_activity_log')
+      .insert({
+        organization_id: params.organizationId,
+        integration_id: params.integrationId,
+        direction: params.direction,
+        activity_type: params.activityType,
+        method: params.method,
+        endpoint: params.endpoint,
+        request_headers: params.requestHeaders || {},
+        request_body: params.requestBody,
+        status: params.status,
+        response_status: params.responseStatus,
+        response_body: params.responseBody,
+        response_time_ms: params.responseTimeMs,
+        error_message: params.errorMessage,
+        error_code: params.errorCode,
+        user_id: params.userId,
+        ip_address: params.ipAddress,
+        user_agent: params.userAgent,
+        metadata: params.metadata || {},
+        devices_processed: params.devicesProcessed,
+        devices_succeeded: params.devicesSucceeded,
+        devices_failed: params.devicesFailed,
+        completed_at: new Date().toISOString(),
+      })
+
     if (error) {
       console.error('[Activity Logger] Database insertion failed:', error)
       console.error('[Activity Logger] Error details:', {
@@ -185,7 +187,10 @@ export async function logActivity(
       console.log('[Activity Logger] Activity logged successfully:', data)
     }
   } catch (error) {
-    console.error('[Activity Logger] Exception logging complete activity:', error)
+    console.error(
+      '[Activity Logger] Exception logging complete activity:',
+      error
+    )
   }
 }
 

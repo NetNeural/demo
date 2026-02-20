@@ -1,12 +1,15 @@
 # GitHub CLI Deployment Setup
 
 ## Problem
+
 The default GitHub Codespaces token (`ghu_*`) doesn't have permission to trigger workflow dispatches, resulting in:
+
 ```
 HTTP 403: Resource not accessible by integration
 ```
 
 ## Solution
+
 Create and use a Personal Access Token (PAT) with proper permissions.
 
 ### Step 1: Create a Personal Access Token
@@ -84,15 +87,18 @@ If you prefer not to set up token authentication, you can always deploy manually
 ## Troubleshooting
 
 ### Token still doesn't work
+
 - Verify repository access includes `NetNeural/MonoRepo-Staging`
 - Verify Actions permissions is set to "Read and write"
 - Try logging out and back in: `gh auth logout && gh auth login`
 
 ### Lost token
+
 - Generate a new one (old token is revoked when lost)
 - Follow Step 1-2 again
 
 ### Want to use different account
+
 ```bash
 gh auth switch
 ```

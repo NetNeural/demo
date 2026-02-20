@@ -1,6 +1,7 @@
 # Apply Missing Migrations to Staging
 
 ## Problem
+
 AI Analytics page fails with 400 error because `device_telemetry_history` table doesn't exist in staging.
 
 ## Critical Missing Migrations
@@ -8,6 +9,7 @@ AI Analytics page fails with 400 error because `device_telemetry_history` table 
 Based on the error, these migrations are definitely missing from staging:
 
 ### Telemetry System (Priority: CRITICAL)
+
 - `20250109000002_mqtt_history_tables.sql` - Creates telemetry tables
 - `20250109000003_telemetry_all_integrations.sql` - Creates `device_telemetry_history` table
 - `20260215000002_fix_telemetry_rls.sql` - RLS policies for telemetry
@@ -15,11 +17,13 @@ Based on the error, these migrations are definitely missing from staging:
 - `20260215000006_ultra_simple_telemetry_rls.sql` - Final RLS fix
 
 ### Device Types (Priority: HIGH - just created)
+
 - `20260219000001_device_types.sql` - Creates device_types table
 - `20260219000002_devices_device_type_fk.sql` - Links devices to device types
 - `20260220000002_auto_create_device_types.sql` - Auto-creates 42 device types
 
 ### Recent Features (Priority: MEDIUM)
+
 - `20260216000010_ai_insights_cache.sql` - AI insights caching
 - `20260218000003_feedback_table.sql` - User feedback system
 - `20260218100000_access_requests.sql` - Access request system
@@ -45,18 +49,19 @@ Based on the error, these migrations are definitely missing from staging:
    - Check for errors
 
 4. **Start with Critical Migrations (in order):**
+
    ```bash
    # 1. MQTT/Telemetry foundation
    20250109000002_mqtt_history_tables.sql
-   
+
    # 2. Device telemetry (FIXES AI ANALYTICS!)
    20250109000003_telemetry_all_integrations.sql
-   
+
    # 3. Telemetry RLS (security)
    20260215000002_fix_telemetry_rls.sql
    20260215000005_simplify_telemetry_rls.sql
    20260215000006_ultra_simple_telemetry_rls.sql
-   
+
    # 4. Device types (FIXES ADD DEVICE!)
    20260219000001_device_types.sql
    20260219000002_devices_device_type_fk.sql
@@ -81,11 +86,12 @@ node scripts/backfill-device-types-all-orgs.js
 ### Option 3: Automated GitHub Workflow (FUTURE)
 
 Create `.github/workflows/apply-staging-migrations.yml`:
+
 ```yaml
 name: Apply Migrations to Staging
 on:
-  workflow_dispatch:  # Manual trigger only
-  
+  workflow_dispatch: # Manual trigger only
+
 jobs:
   migrate:
     runs-on: ubuntu-latest
@@ -108,9 +114,9 @@ After applying migrations, verify:
 ```bash
 # Check tables exist
 # In Supabase Dashboard > SQL Editor:
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
   AND table_name IN (
     'device_telemetry_history',
     'device_types'
@@ -129,6 +135,7 @@ WHERE table_schema = 'public'
 ## Rollback (if needed)
 
 Migrations can be reverted via SQL Editor:
+
 ```sql
 DROP TABLE IF EXISTS device_telemetry_history CASCADE;
 DROP TABLE IF EXISTS device_types CASCADE;
@@ -137,6 +144,7 @@ DROP TABLE IF EXISTS device_types CASCADE;
 ## Next Steps
 
 Once critical migrations are applied:
+
 1. Test AI Analytics page (should load cleanly)
 2. Test Add Device flow (should show device types)
 3. Apply remaining migrations at your convenience

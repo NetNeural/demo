@@ -6,8 +6,10 @@ module.exports = {
   setContext: jest.fn(),
   setTag: jest.fn(),
   addBreadcrumb: jest.fn(),
-  withScope: jest.fn((callback) => callback({ 
-    setTag: jest.fn(), 
-    setContext: jest.fn() 
-  })),
-};
+  withScope: jest.fn((callback) =>
+    callback({
+      setTag: jest.fn(),
+      setContext: jest.fn(),
+    })
+  ),
+}

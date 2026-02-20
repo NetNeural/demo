@@ -9,7 +9,12 @@
     "dev": "ts-node src/index.ts",
     "watch": "nodemon --exec ts-node src/index.ts"
   },
-  "keywords": ["mqtt", "iot", "subscriber", "supabase"],
+  "keywords": [
+    "mqtt",
+    "iot",
+    "subscriber",
+    "supabase"
+  ],
   "author": "NetNeural",
   "license": "MIT",
   "dependencies": {

@@ -19,14 +19,16 @@ interface UseKeyboardShortcutsOptions {
    * Enable/disable shortcuts (default: true)
    */
   enabled?: boolean
-  
+
   /**
    * Additional custom shortcuts
    */
   shortcuts?: KeyboardShortcut[]
 }
 
-export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) {
+export function useKeyboardShortcuts(
+  options: UseKeyboardShortcutsOptions = {}
+) {
   const { enabled = true, shortcuts = [] } = options
   const router = useRouter()
 
@@ -44,7 +46,10 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
   const clearSearch = useCallback(() => {
     // Clear any focused input
     const activeElement = document.activeElement
-    if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+    if (
+      activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement
+    ) {
       activeElement.value = ''
       activeElement.blur()
       // Trigger input event to update React state
@@ -70,14 +75,14 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs (except for Escape)
-      const isInputFocused = 
+      const isInputFocused =
         document.activeElement instanceof HTMLInputElement ||
         document.activeElement instanceof HTMLTextAreaElement ||
         document.activeElement instanceof HTMLSelectElement
 
       // Check custom shortcuts first
       for (const shortcut of shortcuts) {
-        const modifierPressed = 
+        const modifierPressed =
           !shortcut.modifier ||
           (shortcut.modifier === 'ctrl' && event.ctrlKey) ||
           (shortcut.modifier === 'alt' && event.altKey) ||
@@ -138,7 +143,16 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [enabled, shortcuts, focusSearch, clearSearch, showHelp, triggerExport, refreshPage, router])
+  }, [
+    enabled,
+    shortcuts,
+    focusSearch,
+    clearSearch,
+    showHelp,
+    triggerExport,
+    refreshPage,
+    router,
+  ])
 
   return {
     focusSearch,

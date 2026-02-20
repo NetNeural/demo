@@ -1,6 +1,6 @@
 /**
  * Tests for src/lib/format-date.ts
- * 
+ *
  * Testing date/time formatting utilities with various preferences
  */
 
@@ -38,7 +38,7 @@ describe('formatDateTime', () => {
     const result1 = formatDateTime(testDate, { dateFormat: 'MM/DD/YYYY' })
     const result2 = formatDateTime(testDate, { dateFormat: 'DD/MM/YYYY' })
     const result3 = formatDateTime(testDate, { dateFormat: 'YYYY-MM-DD' })
-    
+
     expect(result1).toBeTruthy()
     expect(result2).toBeTruthy()
     expect(result3).toBeTruthy()
@@ -63,7 +63,7 @@ describe('formatDateTime', () => {
     const result1 = formatDateTime(testDate, { language: 'en' })
     const result2 = formatDateTime(testDate, { language: 'es' })
     const result3 = formatDateTime(testDate, { language: 'fr' })
-    
+
     expect(result1).toBeTruthy()
     expect(result2).toBeTruthy()
     expect(result3).toBeTruthy()
@@ -102,7 +102,7 @@ describe('formatDateOnly', () => {
   test('handles different languages', () => {
     const result1 = formatDateOnly(testDate, { language: 'en' })
     const result2 = formatDateOnly(testDate, { language: 'de' })
-    
+
     expect(result1).toBeTruthy()
     expect(result2).toBeTruthy()
   })

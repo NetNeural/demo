@@ -1,37 +1,43 @@
 # Production Deployment Guide - NetNeural IoT Platform
 
 ## Overview
+
 Your static export migration is complete! The application is now ready for production deployment to GitHub Pages with Supabase Edge Functions. Here's what was accomplished and what you need to do next.
 
 ## ✅ Completed Migration
 
 ### 1. GitHub Actions Workflow
+
 - **File**: `.github/workflows/deploy.yml`
 - **Status**: Updated all paths from `development_new/v2` to `development`
 - **Configuration**: Sets `BUILD_MODE=static` for proper static export
 
 ### 2. Next.js Static Export Configuration
+
 - **File**: `next.config.js`
 - **Status**: Configured for conditional static export
 - **Settings**: `basePath: '/MonoRepo'` for GitHub Pages
 - **Build Mode**: Responds to `BUILD_MODE=static` environment variable
 
 ### 3. API Migration to Supabase Edge Functions
+
 - **Created 4 Edge Functions**:
   - `dashboard-stats` - Dashboard statistics and metrics
-  - `devices` - Device management operations  
+  - `devices` - Device management operations
   - `integration-test` - Integration testing endpoint
   - `alerts` - Alert management and notifications
 - **Service Layer**: `src/lib/supabase-api.ts` handles all function calls
 - **Features**: Proper CORS, authentication, error handling with fallbacks
 
 ### 4. Client-Side Architecture
+
 - **Dashboard Layout**: Converted from server to client component
 - **Authentication**: Moved from cookies() to client-side auth state
 - **Organizations Page**: Recreated with full Golioth integration
 - **Static Build**: ✅ All pages now build successfully as static
 
 ### 5. Removed Incompatible Features
+
 - **Deleted**: All Next.js API routes (`src/app/api/`)
 - **Deleted**: Server-side auth routes (`src/app/auth/`)
 - **Converted**: Server components to client components where needed
@@ -41,6 +47,7 @@ Your static export migration is complete! The application is now ready for produ
 ### Step 1: Set Up Supabase Production Project
 
 1. **Create Supabase Project**:
+
    ```bash
    # Go to https://supabase.com/dashboard
    # Create new project: "netneural-iot-platform"
@@ -48,6 +55,7 @@ Your static export migration is complete! The application is now ready for produ
    ```
 
 2. **Deploy Edge Functions**:
+
    ```bash
    cd development
    npx supabase functions deploy --project-ref YOUR_PROJECT_REF
@@ -88,6 +96,7 @@ SUPABASE_PROJECT_REF=your_actual_project_ref
 ### Step 4: Deploy to GitHub Pages
 
 1. **Push to main branch**:
+
    ```bash
    git add .
    git commit -m "Complete static export migration with Supabase Edge Functions"
@@ -106,18 +115,21 @@ SUPABASE_PROJECT_REF=your_actual_project_ref
 ## 🔧 Architecture Overview
 
 ### Static Export Benefits
+
 - **Performance**: Pre-rendered pages for instant loading
 - **Scalability**: CDN-friendly static files
 - **Cost**: No server costs, just CDN and Supabase
 - **Security**: No server-side attack surface
 
 ### Supabase Edge Functions
+
 - **Global**: Deploy to multiple regions automatically
 - **Fast**: Low latency with Deno runtime
 - **Secure**: Built-in authentication and row-level security
 - **Scalable**: Auto-scaling based on demand
 
 ### Client-Side Features Maintained
+
 - **Authentication**: Full user auth with redirects
 - **Organizations**: Complete CRUD with integrations
 - **Real-time**: WebSocket support for live updates
@@ -126,6 +138,7 @@ SUPABASE_PROJECT_REF=your_actual_project_ref
 ## 🛠 Development Workflow
 
 ### Local Development
+
 ```bash
 # Start Supabase locally
 npx supabase start
@@ -138,6 +151,7 @@ npx supabase functions serve
 ```
 
 ### Testing Static Build
+
 ```bash
 # Test static export build
 BUILD_MODE=static npm run build
@@ -147,6 +161,7 @@ npx serve out
 ```
 
 ### Deploying Function Updates
+
 ```bash
 # Deploy specific function
 npx supabase functions deploy dashboard-stats --project-ref YOUR_REF
@@ -187,6 +202,7 @@ npx supabase functions deploy --project-ref YOUR_REF
 ## 📞 Support
 
 Your migration is complete and ready for production! The system now uses:
+
 - ✅ Static export for GitHub Pages
 - ✅ Supabase Edge Functions for backend
 - ✅ Client-side authentication

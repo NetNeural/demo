@@ -1,8 +1,8 @@
 /**
  * React Query Hooks - Centralized Export
- * 
+ *
  * Import all query hooks from this file for consistency.
- * 
+ *
  * @example
  * ```tsx
  * import {

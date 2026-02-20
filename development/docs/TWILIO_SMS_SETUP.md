@@ -17,9 +17,11 @@ SMS notifications are already integrated into the alert notification system. Whe
 The platform supports two configuration methods:
 
 ### Option 1: Global Configuration (Environment Variables)
+
 Set Twilio credentials as environment variables - applies to all organizations by default.
 
 ### Option 2: Per-Organization Configuration (Recommended for multi-tenant)
+
 Store Twilio credentials in organization settings - allows different organizations to use different Twilio accounts.
 
 ---
@@ -134,6 +136,7 @@ WHERE id = 'your-org-id';
 #### 3. Trigger SMS from Alert
 
 The system automatically sends SMS when:
+
 - An alert is created with a linked threshold
 - The threshold has `sms` in `notification_channels`
 - Phone numbers are configured in `notify_phone_numbers`
@@ -146,7 +149,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -156,7 +159,7 @@ const response = await fetch(
       recipient_phone_numbers: ['+1234567890'],
     }),
   }
-);
+)
 ```
 
 ---
@@ -174,6 +177,7 @@ View: https://demo-stage.netneural.ai/dashboard/alerts/
 ```
 
 For test alerts:
+
 ```
 🧪 TEST ALERT
 Test notification
@@ -219,11 +223,13 @@ curl -X POST "${SUPABASE_URL}/functions/v1/send-alert-notifications" \
 ### SMS Not Sending
 
 1. **Check Twilio credentials**:
+
    ```bash
    supabase secrets list | grep TWILIO
    ```
 
 2. **Check Edge Function logs**:
+
    ```bash
    supabase functions logs send-alert-notifications --follow
    ```
@@ -234,18 +240,18 @@ curl -X POST "${SUPABASE_URL}/functions/v1/send-alert-notifications" \
 
 4. **Check organization settings**:
    ```sql
-   SELECT settings->'notification_settings' 
-   FROM organizations 
+   SELECT settings->'notification_settings'
+   FROM organizations
    WHERE id = 'your-org-id';
    ```
 
 ### Common Errors
 
-| Error | Solution |
-|-------|----------|
-| `Twilio not configured` | Set environment variables or org settings |
-| `Invalid phone number` | Use E.164 format: +[country][number] |
-| `Authentication failed` | Verify account SID and auth token |
+| Error                       | Solution                                              |
+| --------------------------- | ----------------------------------------------------- |
+| `Twilio not configured`     | Set environment variables or org settings             |
+| `Invalid phone number`      | Use E.164 format: +[country][number]                  |
+| `Authentication failed`     | Verify account SID and auth token                     |
 | `Unverified number (trial)` | Verify recipient in Twilio Console or upgrade account |
 
 ---
@@ -271,6 +277,7 @@ If neither is configured, SMS sending will fail gracefully with an error message
 ## Cost Considerations
 
 ### Twilio Pricing (as of 2024-2025)
+
 - **SMS (US/Canada)**: ~$0.0075 - $0.0079 per message
 - **SMS (International)**: Varies by country ($0.02 - $0.15 per message)
 - **Phone number rental**: ~$1.15/month
@@ -298,6 +305,7 @@ If neither is configured, SMS sending will fail gracefully with an error message
 ## Database Schema Reference
 
 ### Organizations Table
+
 ```sql
 -- notification_settings structure
 {
@@ -311,6 +319,7 @@ If neither is configured, SMS sending will fail gracefully with an error message
 ```
 
 ### Sensor Thresholds Table
+
 ```sql
 -- Threshold with SMS configuration
 {
@@ -335,6 +344,7 @@ If neither is configured, SMS sending will fail gracefully with an error message
 ## Support
 
 For issues specific to:
+
 - **Twilio**: Contact Twilio Support or check [Status Page](https://status.twilio.com/)
 - **Platform integration**: Check Edge Function logs or create a GitHub issue
 - **Configuration**: Review this guide and check environment variables

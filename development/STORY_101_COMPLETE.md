@@ -16,6 +16,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
 ## What Was Done
 
 ### 1. **Provider Implementation** ✅
+
 - **File**: `src/lib/integrations/netneural-hub-integration-provider.ts` (650+ lines)
 - **Capabilities**:
   - ✅ Multi-protocol support (CoAP, MQTT, HTTPS)
@@ -31,6 +32,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
 ### 2. **Protocol Support** ✅
 
 #### CoAP (Constrained Application Protocol)
+
 - RFC 7252 compliant
 - DTLS support (coaps://)
 - PSK and certificate authentication
@@ -39,6 +41,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
 - Resource discovery via /.well-known/core
 
 #### MQTT (Message Queuing Telemetry Transport)
+
 - MQTT 3.1.1 and 5.0 support
 - TLS encryption (mqtts://)
 - QoS levels 0, 1, 2
@@ -47,6 +50,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
 - Topic-based routing
 
 #### HTTPS (HTTP over TLS)
+
 - RESTful API endpoints
 - Webhook notifications
 - Server-Sent Events (SSE) support
@@ -55,6 +59,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
 - Delivery receipts and timeouts
 
 ### 3. **Device Routing Logic** ✅
+
 - **Per-Device-Type Configuration**:
   - Preferred protocol list (e.g., ['coap', 'mqtt', 'https'])
   - Fallback timeout (default: 5000ms)
@@ -67,6 +72,7 @@ NetNeural Hub integration provider has been implemented as a comprehensive multi
   - Respects device capabilities
 
 ### 4. **Auto-Discovery** ✅
+
 - **CoAP Discovery**:
   - Multicast to 224.0.1.187:5683
   - /.well-known/core resource discovery
@@ -104,7 +110,9 @@ interface NetNeuralHubConfig {
     mqtt?: {
       enabled: boolean
       endpoint: string // mqtts://mqtt.netneural.io:8883
-      auth: { /* ... */ }
+      auth: {
+        /* ... */
+      }
       options?: {
         default_qos?: 0 | 1 | 2
         command_qos?: 0 | 1 | 2
@@ -117,7 +125,9 @@ interface NetNeuralHubConfig {
     https?: {
       enabled: boolean
       endpoint: string // https://api.netneural.io
-      auth: { /* ... */ }
+      auth: {
+        /* ... */
+      }
       options?: {
         webhook_url?: string
         polling_interval_ms?: number
@@ -147,26 +157,31 @@ interface NetNeuralHubConfig {
 ### 6. **Key Methods** ✅
 
 #### Device Management
+
 - `listDevices(options?)` - List all discovered devices
 - `getDevice(deviceId)` - Get device details
 - `updateDevice(deviceId, updates)` - Update device metadata
 - `getDeviceStatus(deviceId)` - Get current device state
 
 #### Connection & Testing
+
 - `testConnection()` - Test all enabled protocols
 - `connect()` - Establish connections to all protocols
 - `disconnect()` - Gracefully disconnect all protocols
 
 #### Telemetry
+
 - `queryTelemetry(query)` - Query telemetry across protocols
 - `getLatestTelemetry(deviceId)` - Get most recent data
 
 #### Protocol Operations
+
 - `sendCommand(deviceId, command)` - Send command via best protocol
 - `subscribeToDevice(deviceId)` - Subscribe to device updates
 - `unsubscribeFromDevice(deviceId)` - Unsubscribe from updates
 
 ### 7. **Error Handling** ✅
+
 - Connection failures per protocol (graceful degradation)
 - Timeout handling with automatic fallback
 - Invalid configuration detection
@@ -174,6 +189,7 @@ interface NetNeuralHubConfig {
 - Comprehensive error messages with remediation hints
 
 ### 8. **Activity Logging** ✅
+
 - All operations logged via `FrontendActivityLogger`
 - Protocol-specific success/failure tracking
 - Performance metrics (connection time, response time)
@@ -184,43 +200,52 @@ interface NetNeuralHubConfig {
 ## Architecture Decision Records (ADRs)
 
 ### ADR-NETNEURAL-001: Multi-Protocol Architecture
+
 **Decision**: Implement NetNeural Hub as a unified provider wrapping multiple protocol clients rather than separate providers.
 
 **Rationale**:
+
 - Reduces code duplication
 - Enables intelligent routing across protocols
 - Provides seamless fallback when one protocol fails
 - Easier to maintain protocol-agnostic device abstractions
 
 **Trade-offs**:
+
 - More complex provider implementation
 - Higher memory footprint (multiple clients loaded)
 - Requires careful connection lifecycle management
 
 ### ADR-NETNEURAL-002: Auto-Discovery Over Manual Registration
+
 **Decision**: Prioritize automatic device discovery over manual registration workflows.
 
 **Rationale**:
+
 - Reduces setup friction for end users
 - Aligns with IoT device behavior (announce on network join)
 - Enables zero-touch provisioning
 - Better user experience for plug-and-play devices
 
 **Trade-offs**:
+
 - Requires discovery protocols to be configured correctly
 - May discover unwanted devices on shared networks
 - Needs periodic cleanup of stale devices
 
 ### ADR-NETNEURAL-003: In-Memory Device Cache
+
 **Decision**: Cache discovered devices in memory with database sync rather than querying protocols on every request.
 
 **Rationale**:
+
 - Reduces protocol overhead (especially for CoAP/MQTT)
 - Faster response times for device lists
 - Enables offline operation with cached data
 - Reduces external API/broker load
 
 **Trade-offs**:
+
 - Memory scaling for large device fleets (1000+ devices)
 - Cache invalidation complexity
 - Potential stale data if devices change state
@@ -230,6 +255,7 @@ interface NetNeuralHubConfig {
 ## Testing
 
 ### Manual Test Script
+
 - **File**: `scripts/test-netneural-hub.js` (350+ lines)
 - **Tests**:
   1. Configuration validation
@@ -244,6 +270,7 @@ interface NetNeuralHubConfig {
   10. Auto-discovery validation
 
 ### Test Coverage
+
 ```bash
 npm test -- netneural-hub
 ```
@@ -253,22 +280,26 @@ npm test -- netneural-hub
 ## Integration Points
 
 ### 1. **UI Configuration** ✅
+
 - **Component**: `NetNeuralHubConfigDialog.tsx` (894 lines)
 - **Location**: `/dashboard/organizations/` → Integrations tab
 - **Dialogs**: Three protocol tabs (CoAP, MQTT, HTTPS) + Routing + Global Settings
 
 ### 2. **Edge Function Support** ✅
+
 - **Function**: `supabase/functions/integrations/index.ts`
 - **Type**: `netneural_hub` (line 798)
 - **Operations**: Create, Read, Update, Delete, Test
 
 ### 3. **Database Schema** ✅
+
 - **Table**: `device_integrations`
 - **Type**: `integration_type = 'netneural_hub'`
 - **Config Storage**: JSONB in `settings` column
 - **Fields**: name, status, settings, api_key_encrypted, created_at, updated_at
 
 ### 4. **Provider Registration** ✅
+
 - **File**: `src/lib/integrations/index.ts`
 - **Export**: `NetNeuralHubIntegrationProvider`
 - **Factory**: Included in `createIntegrationProvider()` switch statement
@@ -292,38 +323,38 @@ const provider = new NetNeuralHubIntegrationProvider({
         coap: {
           enabled: true,
           endpoint: 'coaps://hub.netneural.io:5684',
-          auth: { method: 'psk', credentials: { psk: 'secret123' } }
+          auth: { method: 'psk', credentials: { psk: 'secret123' } },
         },
         mqtt: {
           enabled: true,
           endpoint: 'mqtts://mqtt.netneural.io:8883',
-          auth: { method: 'token', credentials: { token: 'bearer-xxx' } }
+          auth: { method: 'token', credentials: { token: 'bearer-xxx' } },
         },
         https: {
           enabled: true,
           endpoint: 'https://api.netneural.io',
-          auth: { method: 'token', credentials: { token: 'bearer-xxx' } }
-        }
+          auth: { method: 'token', credentials: { token: 'bearer-xxx' } },
+        },
       },
       device_routing: {
         'temperature-sensor': {
           preferred_protocols: ['coap', 'mqtt'],
           fallback_timeout_ms: 3000,
-          capabilities: ['temperature', 'battery']
+          capabilities: ['temperature', 'battery'],
         },
         'smart-valve': {
           preferred_protocols: ['mqtt', 'https'],
           fallback_timeout_ms: 5000,
-          capabilities: ['valve_position', 'flow_rate']
-        }
+          capabilities: ['valve_position', 'flow_rate'],
+        },
       },
       global_settings: {
         max_retry_attempts: 3,
         device_discovery_enabled: true,
-        auto_capability_detection: true
-      }
-    }
-  }
+        auto_capability_detection: true,
+      },
+    },
+  },
 })
 
 // Test connection
@@ -343,7 +374,7 @@ const telemetry = await provider.queryTelemetry({
   deviceId: 'sensor-001',
   startTime: new Date(Date.now() - 3600000), // Last hour
   endTime: new Date(),
-  limit: 100
+  limit: 100,
 })
 console.log('Telemetry points:', telemetry.length)
 ```
@@ -353,6 +384,7 @@ console.log('Telemetry points:', telemetry.length)
 ## Documentation
 
 ### User-Facing Documentation
+
 - **Integration Guide**: IntegrationsTab.tsx (lines 995-1050)
 - **Quick Start**: 6-step setup guide
 - **Pros**: 6 bullet points
@@ -360,6 +392,7 @@ console.log('Telemetry points:', telemetry.length)
 - **Comparison Table**: Includes complexity (Low), cost ($$), setup time (15min)
 
 ### Developer Documentation
+
 - **Architecture**: `docs/NETNEURAL_HUB_ARCHITECTURE.md` (450+ lines)
 - **Protocol Specs**: CoAP RFC 7252, MQTT 3.1.1/5.0, HTTPS REST
 - **ADRs**: 3 architecture decision records
@@ -370,16 +403,19 @@ console.log('Telemetry points:', telemetry.length)
 ## Performance Metrics
 
 ### Connection Times (Typical)
+
 - CoAP: 50-200ms (UDP, fast handshake)
 - MQTT: 100-300ms (TCP + TLS handshake)
 - HTTPS: 150-500ms (HTTP/2 or HTTP/1.1)
 
 ### Device Discovery Times
+
 - CoAP Multicast: 1-5 seconds (scan window)
 - MQTT Announce: Real-time (subscribe-based)
 - HTTPS Polling: 1-60 seconds (configurable)
 
 ### Scalability
+
 - **Devices**: Tested with 500 devices (in-memory cache)
 - **Protocols**: All 3 protocols can run concurrently
 - **Telemetry**: 1000+ data points/minute across all protocols
@@ -413,12 +449,14 @@ console.log('Telemetry points:', telemetry.length)
 ## Next Steps
 
 ### Immediate (Production-Ready)
+
 - ✅ Provider implementation complete
 - ✅ TypeScript compilation verified
 - ✅ Integration with existing system
 - ✅ Documentation complete
 
 ### Future Enhancements (Post-MVP)
+
 - [ ] Install `coap` npm package for CoAP support
 - [ ] Migrate protocol operations to Edge Functions
 - [ ] Add Redis caching for device data
@@ -435,11 +473,13 @@ console.log('Telemetry points:', telemetry.length)
 ## Support Dashboard Integration
 
 ### Documentation
+
 - **File**: `docs/NETNEURAL_HUB_ARCHITECTURE.md`
 - **Available At**: `/dashboard/support/` → Documentation tab
 - **Sections**: Overview, Protocols, Routing, Discovery, Configuration
 
 ### Test Script
+
 - **File**: `scripts/test-netneural-hub.js`
 - **Available At**: `/dashboard/support/` → Manual Tests tab
 - **Usage**: `node scripts/test-netneural-hub.js`
@@ -473,6 +513,7 @@ console.log('Telemetry points:', telemetry.length)
 ## Epic #95 Progress Update
 
 **Stories Completed**: 5/12
+
 - ✅ Story #96: API Key Encryption (90% - pgsodium blocker)
 - ✅ Story #97: MQTT Broker (100%)
 - ✅ Story #98: Azure IoT Hub (100%)

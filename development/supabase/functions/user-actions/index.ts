@@ -5,13 +5,25 @@ import { getUserContext, createAuthenticatedClient } from '../_shared/auth.ts'
 
 interface AcknowledgeAlertRequest {
   alert_id: string
-  acknowledgement_type?: 'acknowledged' | 'dismissed' | 'resolved' | 'false_positive'
+  acknowledgement_type?:
+    | 'acknowledged'
+    | 'dismissed'
+    | 'resolved'
+    | 'false_positive'
   notes?: string
 }
 
 interface RecordActionRequest {
   action_type: string
-  action_category: 'device_management' | 'integration_management' | 'alert_management' | 'sync_operation' | 'configuration' | 'authentication' | 'analytics_view' | 'other'
+  action_category:
+    | 'device_management'
+    | 'integration_management'
+    | 'alert_management'
+    | 'sync_operation'
+    | 'configuration'
+    | 'authentication'
+    | 'analytics_view'
+    | 'other'
   description?: string
   device_id?: string
   integration_id?: string
@@ -31,7 +43,7 @@ serve(async (req) => {
   try {
     // Get authenticated user context
     const userContext = await getUserContext(req)
-    
+
     // Create authenticated Supabase client
     const supabaseClient = createAuthenticatedClient(req)
 
@@ -40,7 +52,11 @@ serve(async (req) => {
 
     // Route based on action
     if (action === 'acknowledge_alert') {
-      return await handleAcknowledgeAlert(req, supabaseClient, userContext.userId)
+      return await handleAcknowledgeAlert(
+        req,
+        supabaseClient,
+        userContext.userId
+      )
     } else if (action === 'record_action') {
       return await handleRecordAction(req, supabaseClient, userContext.userId)
     } else if (action === 'get_alert_acknowledgements') {
@@ -64,7 +80,11 @@ serve(async (req) => {
   }
 })
 
-async function handleAcknowledgeAlert(req: Request, supabase: SupabaseClient, userId: string) {
+async function handleAcknowledgeAlert(
+  req: Request,
+  supabase: SupabaseClient,
+  userId: string
+) {
   const body: AcknowledgeAlertRequest = await req.json()
 
   if (!body.alert_id) {
@@ -97,7 +117,11 @@ async function handleAcknowledgeAlert(req: Request, supabase: SupabaseClient, us
   )
 }
 
-async function handleRecordAction(req: Request, supabase: SupabaseClient, userId: string) {
+async function handleRecordAction(
+  req: Request,
+  supabase: SupabaseClient,
+  userId: string
+) {
   const body: RecordActionRequest = await req.json()
 
   if (!body.action_type || !body.action_category) {
@@ -148,14 +172,18 @@ async function handleRecordAction(req: Request, supabase: SupabaseClient, userId
   )
 }
 
-async function handleGetAlertAcknowledgements(req: Request, supabase: SupabaseClient) {
+async function handleGetAlertAcknowledgements(
+  req: Request,
+  supabase: SupabaseClient
+) {
   const url = new URL(req.url)
   const alertId = url.searchParams.get('alert_id')
   const organizationId = url.searchParams.get('organization_id')
 
   let query = supabase
     .from('alert_acknowledgements')
-    .select(`
+    .select(
+      `
       *,
       user:user_id (
         id,
@@ -166,7 +194,8 @@ async function handleGetAlertAcknowledgements(req: Request, supabase: SupabaseCl
         title,
         severity
       )
-    `)
+    `
+    )
     .order('acknowledged_at', { ascending: false })
 
   if (alertId) {
@@ -199,13 +228,15 @@ async function handleGetUserActions(req: Request, supabase: SupabaseClient) {
 
   let query = supabase
     .from('user_actions')
-    .select(`
+    .select(
+      `
       *,
       user:user_id (
         id,
         email
       )
-    `)
+    `
+    )
     .order('created_at', { ascending: false })
     .limit(limit)
 

@@ -1,6 +1,6 @@
 /**
  * API Error Handler Utility
- * 
+ *
  * Provides consistent error handling for API calls throughout the application.
  * Gracefully handles authentication errors (401/403) without throwing exceptions.
  */
@@ -10,49 +10,49 @@ interface ApiErrorOptions {
    * Whether to throw errors for non-auth issues (4xx, 5xx)
    * Default: true
    */
-  throwOnError?: boolean;
-  
+  throwOnError?: boolean
+
   /**
    * Whether to log errors to console
    * Default: true
    */
-  logErrors?: boolean;
-  
+  logErrors?: boolean
+
   /**
    * Custom error message prefix
    */
-  errorPrefix?: string;
-  
+  errorPrefix?: string
+
   /**
    * Whether to silently handle auth errors (401/403)
    * Default: true
    */
-  silentAuthErrors?: boolean;
+  silentAuthErrors?: boolean
 }
 
 interface ApiErrorResult {
-  isAuthError: boolean;
-  isError: boolean;
-  statusCode: number;
-  statusText: string;
-  shouldRetry: boolean;
+  isAuthError: boolean
+  isError: boolean
+  statusCode: number
+  statusText: string
+  shouldRetry: boolean
 }
 
 /**
  * Handles API response errors with smart auth error detection
- * 
+ *
  * @param response - The fetch Response object
  * @param options - Configuration options for error handling
  * @returns ApiErrorResult with error details
  * @throws Error if response is not ok and throwOnError is true (excluding auth errors)
- * 
+ *
  * @example
  * ```ts
  * const response = await fetch('/api/data');
  * const errorResult = handleApiError(response, {
  *   errorPrefix: 'Failed to fetch data'
  * });
- * 
+ *
  * if (errorResult.isAuthError) {
  *   // User not authenticated, handle gracefully
  *   return null;
@@ -68,7 +68,7 @@ export function handleApiError(
     logErrors = true,
     errorPrefix = 'API request failed',
     silentAuthErrors = true,
-  } = options;
+  } = options
 
   const result: ApiErrorResult = {
     isAuthError: response.status === 401 || response.status === 403,
@@ -76,11 +76,11 @@ export function handleApiError(
     statusCode: response.status,
     statusText: response.statusText,
     shouldRetry: response.status >= 500 && response.status < 600,
-  };
+  }
 
   // If response is ok, return early
   if (response.ok) {
-    return result;
+    return result
   }
 
   // Handle authentication errors silently
@@ -89,9 +89,9 @@ export function handleApiError(
       console.log(
         `[Auth] ${errorPrefix}: ${response.status} ${response.statusText}`,
         '- User may not be authenticated or lacks permissions'
-      );
+      )
     }
-    return result;
+    return result
   }
 
   // Log all other errors
@@ -99,40 +99,40 @@ export function handleApiError(
     console.error(
       `[API Error] ${errorPrefix}:`,
       `${response.status} ${response.statusText}`
-    );
+    )
   }
 
   // Throw error for non-auth issues if configured
   if (throwOnError && !result.isAuthError) {
-    throw new Error(`${errorPrefix}: ${response.statusText}`);
+    throw new Error(`${errorPrefix}: ${response.statusText}`)
   }
 
-  return result;
+  return result
 }
 
 /**
  * Checks if a response has authentication errors
- * 
+ *
  * @param response - The fetch Response object
  * @returns true if response is 401 or 403
  */
 export function isAuthError(response: Response): boolean {
-  return response.status === 401 || response.status === 403;
+  return response.status === 401 || response.status === 403
 }
 
 /**
  * Checks if a response has server errors (5xx)
- * 
+ *
  * @param response - The fetch Response object
  * @returns true if response status is between 500-599
  */
 export function isServerError(response: Response): boolean {
-  return response.status >= 500 && response.status < 600;
+  return response.status >= 500 && response.status < 600
 }
 
 /**
  * Checks if a response has client errors (4xx) excluding auth errors
- * 
+ *
  * @param response - The fetch Response object
  * @returns true if response status is between 400-499 (excluding 401, 403)
  */
@@ -142,17 +142,17 @@ export function isClientError(response: Response): boolean {
     response.status < 500 &&
     response.status !== 401 &&
     response.status !== 403
-  );
+  )
 }
 
 /**
  * Wrapper for fetch calls that automatically handles errors
- * 
+ *
  * @param url - The URL to fetch
  * @param options - Standard fetch options
  * @param errorOptions - Error handling configuration
  * @returns Response object or null if auth error occurred
- * 
+ *
  * @example
  * ```ts
  * const data = await safeFetch('/api/data', {
@@ -161,7 +161,7 @@ export function isClientError(response: Response): boolean {
  * }, {
  *   errorPrefix: 'Failed to load data'
  * });
- * 
+ *
  * if (!data) {
  *   // Auth error occurred
  *   return;
@@ -174,17 +174,17 @@ export async function safeFetch(
   errorOptions?: ApiErrorOptions
 ): Promise<Response | null> {
   try {
-    const response = await fetch(url, options);
-    const errorResult = handleApiError(response, errorOptions);
-    
+    const response = await fetch(url, options)
+    const errorResult = handleApiError(response, errorOptions)
+
     // Return null for auth errors instead of response
     if (errorResult.isAuthError) {
-      return null;
+      return null
     }
-    
-    return response;
+
+    return response
   } catch (error) {
-    console.error('[safeFetch] Network or fetch error:', error);
-    throw error;
+    console.error('[safeFetch] Network or fetch error:', error)
+    throw error
   }
 }

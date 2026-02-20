@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 
@@ -12,11 +12,17 @@ interface PageHeaderProps {
   className?: string
 }
 
-export function PageHeader({ title, description, action, icon, className }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  action,
+  icon,
+  className,
+}: PageHeaderProps) {
   const { currentOrganization } = useOrganization()
 
   return (
-    <div className={cn("", className)}>
+    <div className={cn('', className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <OrganizationLogo

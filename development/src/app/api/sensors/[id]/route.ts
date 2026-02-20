@@ -16,7 +16,13 @@ export async function GET(
 
     if (!organizationId) {
       return NextResponse.json(
-        { success: false, error: { code: 'MISSING_ORG', message: 'Organization ID is required' } },
+        {
+          success: false,
+          error: {
+            code: 'MISSING_ORG',
+            message: 'Organization ID is required',
+          },
+        },
         { status: 400 }
       )
     }
@@ -33,7 +39,10 @@ export async function GET(
 
     if (deviceError || !device) {
       return NextResponse.json(
-        { success: false, error: { code: 'DEVICE_NOT_FOUND', message: 'Device not found' } },
+        {
+          success: false,
+          error: { code: 'DEVICE_NOT_FOUND', message: 'Device not found' },
+        },
         { status: 404 }
       )
     }
@@ -46,7 +55,9 @@ export async function GET(
       '90d': 2160,
     }
     const hours = timeRangeHours[timeRange] || 48
-    const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+    const startTime = new Date(
+      Date.now() - hours * 60 * 60 * 1000
+    ).toISOString()
 
     // Fetch latest reading
     const { data: latestReading } = await supabase
@@ -76,10 +87,12 @@ export async function GET(
       const avg = sum / values.length
       const min = Math.min(...values)
       const max = Math.max(...values)
-      
+
       // Calculate standard deviation
       const squareDiffs = values.map((val: number) => Math.pow(val - avg, 2))
-      const avgSquareDiff = squareDiffs.reduce((acc: number, val: number) => acc + val, 0) / values.length
+      const avgSquareDiff =
+        squareDiffs.reduce((acc: number, val: number) => acc + val, 0) /
+        values.length
       const stddev = Math.sqrt(avgSquareDiff)
 
       statistics = {
@@ -123,7 +136,10 @@ export async function GET(
       .limit(100)
 
     const uniqueSensors = [
-      ...new Set(availableSensors?.map((s: { sensor_type: string }) => s.sensor_type) || []),
+      ...new Set(
+        availableSensors?.map((s: { sensor_type: string }) => s.sensor_type) ||
+          []
+      ),
     ]
 
     // Build response
@@ -148,7 +164,8 @@ export async function GET(
       statistics,
       threshold: threshold || null,
       recent_activity: recentActivity || [],
-      available_sensors: uniqueSensors.length > 0 ? uniqueSensors : ['temperature'],
+      available_sensors:
+        uniqueSensors.length > 0 ? uniqueSensors : ['temperature'],
     }
 
     return NextResponse.json({
@@ -162,7 +179,10 @@ export async function GET(
         success: false,
         error: {
           code: 'INTERNAL_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch sensor data',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to fetch sensor data',
         },
       },
       { status: 500 }

@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 
 // Route segment config - disable for static export
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
 
 /**
  * Proxy for Supabase API requests in Codespaces
@@ -56,7 +56,8 @@ export async function OPTIONS(
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': request.headers.get('access-control-request-headers') || '*',
+      'Access-Control-Allow-Headers':
+        request.headers.get('access-control-request-headers') || '*',
       'Access-Control-Max-Age': '86400',
     },
   })
@@ -76,13 +77,16 @@ async function proxyRequest(
     // Forward headers (filter out host-specific ones)
     const headers = new Headers()
     request.headers.forEach((value, key) => {
-      if (!['host', 'connection', 'origin', 'referer'].includes(key.toLowerCase())) {
+      if (
+        !['host', 'connection', 'origin', 'referer'].includes(key.toLowerCase())
+      ) {
         headers.set(key, value)
       }
     })
 
     // Get request body if present
-    const body = method !== 'GET' && method !== 'HEAD' ? await request.text() : undefined
+    const body =
+      method !== 'GET' && method !== 'HEAD' ? await request.text() : undefined
 
     // Make request to local Supabase
     const response = await fetch(targetUrl, {
@@ -97,7 +101,10 @@ async function proxyRequest(
     // Forward response with CORS headers
     const responseHeaders = new Headers(response.headers)
     responseHeaders.set('Access-Control-Allow-Origin', '*')
-    responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    responseHeaders.set(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+    )
     responseHeaders.set('Access-Control-Allow-Headers', '*')
     // Remove encoding headers to prevent double-encoding
     responseHeaders.delete('content-encoding')
@@ -111,7 +118,10 @@ async function proxyRequest(
   } catch (error) {
     console.error('Supabase proxy error:', error)
     return NextResponse.json(
-      { error: 'Proxy request failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Proxy request failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

@@ -1,4 +1,5 @@
 # Production Validation Plan
+
 **Date:** November 14, 2025  
 **Version:** v3.2.0  
 **Issue:** Golioth sync works locally but inconsistent in production
@@ -14,6 +15,7 @@ Systematically verify production environment behaves identically to local develo
 ## 🔍 Known Issues
 
 ### Primary Issue: Golioth Integration Inconsistency
+
 - ✅ **Local:** Can sync/import Golioth devices successfully
 - ❌ **Production:** Same operations fail or behave inconsistently
 - 🤔 **Root Cause:** Unknown (need to investigate)
@@ -25,6 +27,7 @@ Systematically verify production environment behaves identically to local develo
 ### Phase 1: Environment Verification
 
 #### 1.1 Check Environment Variables
+
 ```bash
 # Local (working)
 cd development
@@ -35,10 +38,12 @@ gh secret list --repo NetNeural/MonoRepo | grep GOLIOTH
 ```
 
 **Expected:**
+
 - ✅ GOLIOTH_API_KEY present in both
 - ✅ Keys match (same value)
 
 **Test Commands:**
+
 ```bash
 # Verify local key works
 cd development
@@ -51,6 +56,7 @@ gh run view --log | grep "GOLIOTH_API_KEY"
 ---
 
 #### 1.2 Check Supabase Connection
+
 ```bash
 # Local Supabase
 curl http://127.0.0.1:54321/health
@@ -60,6 +66,7 @@ curl https://bldojxpockljyivldxwf.supabase.co/rest/v1/
 ```
 
 **Expected:**
+
 - ✅ Both return 200 OK
 - ✅ Production uses correct project ID
 
@@ -70,6 +77,7 @@ curl https://bldojxpockljyivldxwf.supabase.co/rest/v1/
 #### 2.1 Test Golioth API Directly
 
 **Local Test:**
+
 ```bash
 cd development
 node -e "
@@ -85,6 +93,7 @@ fetch('https://api.golioth.io/v1/projects/nn-cellular-alerts/devices', {
 ```
 
 **Production Test (via Edge Function):**
+
 ```bash
 # Test the Edge Function endpoint
 curl -X POST https://bldojxpockljyivldxwf.supabase.co/functions/v1/sync-golioth-devices \
@@ -94,6 +103,7 @@ curl -X POST https://bldojxpockljyivldxwf.supabase.co/functions/v1/sync-golioth-
 ```
 
 **Expected:**
+
 - ✅ Both return same device count
 - ✅ Same device IDs in response
 
@@ -102,12 +112,14 @@ curl -X POST https://bldojxpockljyivldxwf.supabase.co/functions/v1/sync-golioth-
 #### 2.2 Test Through UI
 
 **Local:**
+
 1. Open http://localhost:3000/dashboard/integrations
 2. Click "Sync Golioth Devices"
 3. Check console for API calls
 4. Verify devices appear in database
 
 **Production:**
+
 1. Open https://demo.netneural.ai/dashboard/integrations
 2. Click "Sync Golioth Devices"
 3. Open browser DevTools → Network tab
@@ -115,6 +127,7 @@ curl -X POST https://bldojxpockljyivldxwf.supabase.co/functions/v1/sync-golioth-
 5. Look at response payloads
 
 **Compare:**
+
 - Request headers (API key present?)
 - Response status codes
 - Response bodies
@@ -125,25 +138,30 @@ curl -X POST https://bldojxpockljyivldxwf.supabase.co/functions/v1/sync-golioth-
 ### Phase 3: Edge Function Validation
 
 #### 3.1 Check Edge Function Deployment
+
 ```bash
 cd development
 supabase functions list
 ```
 
 **Expected:**
+
 - ✅ All functions deployed
 - ✅ Recent deployment timestamp
 
 #### 3.2 Check Edge Function Secrets
+
 ```bash
 supabase secrets list
 ```
 
 **Expected:**
+
 - ✅ GOLIOTH_API_KEY present
 - ✅ Matches GitHub secret value
 
 **If missing:**
+
 ```bash
 gh secret list --repo NetNeural/MonoRepo | grep GOLIOTH_API_KEY
 # Copy the value, then:
@@ -153,6 +171,7 @@ supabase secrets set GOLIOTH_API_KEY=<value>
 ---
 
 #### 3.3 Test Edge Function Directly
+
 ```bash
 # Invoke function with test payload
 supabase functions invoke sync-golioth-devices \
@@ -161,6 +180,7 @@ supabase functions invoke sync-golioth-devices \
 ```
 
 **Expected:**
+
 - ✅ Returns device list
 - ✅ No authentication errors
 - ✅ Same response as local
@@ -170,6 +190,7 @@ supabase functions invoke sync-golioth-devices \
 ### Phase 4: Network & CORS Validation
 
 #### 4.1 Check CORS Configuration
+
 ```bash
 # Test from browser console (production site)
 fetch('https://api.golioth.io/v1/projects/nn-cellular-alerts/devices', {
@@ -180,12 +201,14 @@ fetch('https://api.golioth.io/v1/projects/nn-cellular-alerts/devices', {
 ```
 
 **Expected:**
+
 - ❌ Should fail with 403 (wrong key) NOT CORS error
 - ✅ If CORS error → Golioth API blocking browser requests
 
 ---
 
 #### 4.2 Check Edge Function Logs
+
 ```bash
 # View recent Edge Function logs
 supabase functions logs sync-golioth-devices \
@@ -194,6 +217,7 @@ supabase functions logs sync-golioth-devices \
 ```
 
 **Look for:**
+
 - Authentication errors
 - Timeout errors
 - Rate limiting errors
@@ -204,6 +228,7 @@ supabase functions logs sync-golioth-devices \
 ### Phase 5: Database State Verification
 
 #### 5.1 Check Local Database
+
 ```bash
 # Connect to local Supabase
 psql postgresql://postgres:postgres@localhost:54322/postgres
@@ -212,14 +237,15 @@ psql postgresql://postgres:postgres@localhost:54322/postgres
 SELECT COUNT(*) FROM devices WHERE source = 'golioth';
 
 # Check recent imports
-SELECT id, name, created_at, metadata->>'golioth_id' 
-FROM devices 
-WHERE source = 'golioth' 
-ORDER BY created_at DESC 
+SELECT id, name, created_at, metadata->>'golioth_id'
+FROM devices
+WHERE source = 'golioth'
+ORDER BY created_at DESC
 LIMIT 10;
 ```
 
 #### 5.2 Check Production Database
+
 ```bash
 # Via Supabase Dashboard or:
 psql postgresql://postgres:[PASSWORD]@db.bldojxpockljyivldxwf.supabase.co:5432/postgres
@@ -228,6 +254,7 @@ psql postgresql://postgres:[PASSWORD]@db.bldojxpockljyivldxwf.supabase.co:5432/p
 ```
 
 **Compare:**
+
 - Device counts
 - Last sync timestamps
 - Error logs in `integration_logs` table
@@ -239,21 +266,24 @@ psql postgresql://postgres:[PASSWORD]@db.bldojxpockljyivldxwf.supabase.co:5432/p
 ### If Production API Key Invalid:
 
 1. **Verify Secret in GitHub:**
+
    ```bash
    gh secret list --repo NetNeural/MonoRepo
    ```
 
 2. **Verify Secret in Supabase:**
+
    ```bash
    supabase secrets list --project-ref bldojxpockljyivldxwf
    ```
 
 3. **Re-set if missing:**
+
    ```bash
    # Get from Golioth Console: https://console.golioth.io/settings/api-keys
    gh secret set GOLIOTH_API_KEY --repo NetNeural/MonoRepo
    supabase secrets set GOLIOTH_API_KEY=<value> --project-ref bldojxpockljyivldxwf
-   
+
    # Redeploy Edge Functions
    supabase functions deploy sync-golioth-devices --project-ref bldojxpockljyivldxwf
    ```
@@ -270,8 +300,8 @@ psql postgresql://postgres:[PASSWORD]@db.bldojxpockljyivldxwf.supabase.co:5432/p
 2. **Add Rate Limiting Logic:**
    ```typescript
    // In Edge Function
-   const RATE_LIMIT_DELAY = 1000; // 1 second between requests
-   await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
+   const RATE_LIMIT_DELAY = 1000 // 1 second between requests
+   await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY))
    ```
 
 ---
@@ -281,21 +311,22 @@ psql postgresql://postgres:[PASSWORD]@db.bldojxpockljyivldxwf.supabase.co:5432/p
 **Solution:** Always call Golioth API from Edge Functions, never from browser
 
 **Fix client code:**
+
 ```typescript
 // ❌ BAD: Direct API call from browser
 const response = await fetch('https://api.golioth.io/...', {
-  headers: {'x-api-key': apiKey}
-});
+  headers: { 'x-api-key': apiKey },
+})
 
 // ✅ GOOD: Call via Edge Function
 const response = await fetch('/functions/v1/sync-golioth-devices', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${supabaseAnonKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${supabaseAnonKey}`,
+    'Content-Type': 'application/json',
   },
-  body: JSON.stringify({action: 'sync'})
-});
+  body: JSON.stringify({ action: 'sync' }),
+})
 ```
 
 ---
@@ -303,6 +334,7 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
 ### If Environment Variable Not Found:
 
 1. **Check build logs:**
+
    ```bash
    gh run view --log | grep GOLIOTH
    ```
@@ -313,8 +345,8 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
    export async function GET() {
      return Response.json({
        hasGoliothKey: !!process.env.GOLIOTH_API_KEY,
-       keyLength: process.env.GOLIOTH_API_KEY?.length || 0
-     });
+       keyLength: process.env.GOLIOTH_API_KEY?.length || 0,
+     })
    }
    ```
 
@@ -323,6 +355,7 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
 ## 📊 Expected Results
 
 ### Successful Validation:
+
 - ✅ Same device count in local and production
 - ✅ Same API responses
 - ✅ No 401/403 errors
@@ -331,14 +364,14 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
 
 ### Common Failure Patterns:
 
-| Symptom | Likely Cause | Fix |
-|---------|--------------|-----|
-| 401 Unauthorized | Wrong API key | Re-set GOLIOTH_API_KEY secret |
-| 403 Forbidden | API key lacks permissions | Generate new key with correct permissions |
-| Timeout | Edge Function cold start | Add retry logic |
-| CORS error | Calling API from browser | Move to Edge Function |
-| Empty response | Wrong project ID | Verify GOLIOTH_PROJECT_ID=nn-cellular-alerts |
-| Works locally, fails prod | Env var not set in prod | Check GitHub Secrets + Supabase Secrets |
+| Symptom                   | Likely Cause              | Fix                                          |
+| ------------------------- | ------------------------- | -------------------------------------------- |
+| 401 Unauthorized          | Wrong API key             | Re-set GOLIOTH_API_KEY secret                |
+| 403 Forbidden             | API key lacks permissions | Generate new key with correct permissions    |
+| Timeout                   | Edge Function cold start  | Add retry logic                              |
+| CORS error                | Calling API from browser  | Move to Edge Function                        |
+| Empty response            | Wrong project ID          | Verify GOLIOTH_PROJECT_ID=nn-cellular-alerts |
+| Works locally, fails prod | Env var not set in prod   | Check GitHub Secrets + Supabase Secrets      |
 
 ---
 
@@ -357,23 +390,26 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
 ## 📝 Test Results Log
 
 ### Test Run 1: [DATE]
+
 **Tester:** [NAME]  
 **Environment:** Local vs Production
 
-| Phase | Test | Local | Production | Status | Notes |
-|-------|------|-------|------------|--------|-------|
-| 1.1 | GOLIOTH_API_KEY present | ✅ | ⏳ | | |
-| 1.2 | Supabase connection | ✅ | ⏳ | | |
-| 2.1 | Direct API test | ✅ | ⏳ | | |
-| 2.2 | UI sync test | ✅ | ⏳ | | |
-| 3.1 | Edge Function deployed | ✅ | ⏳ | | |
-| 3.2 | Edge Function secrets | ✅ | ⏳ | | |
-| 3.3 | Edge Function invoke | ✅ | ⏳ | | |
+| Phase | Test                    | Local | Production | Status | Notes |
+| ----- | ----------------------- | ----- | ---------- | ------ | ----- |
+| 1.1   | GOLIOTH_API_KEY present | ✅    | ⏳         |        |       |
+| 1.2   | Supabase connection     | ✅    | ⏳         |        |       |
+| 2.1   | Direct API test         | ✅    | ⏳         |        |       |
+| 2.2   | UI sync test            | ✅    | ⏳         |        |       |
+| 3.1   | Edge Function deployed  | ✅    | ⏳         |        |       |
+| 3.2   | Edge Function secrets   | ✅    | ⏳         |        |       |
+| 3.3   | Edge Function invoke    | ✅    | ⏳         |        |       |
 
 **Findings:**
+
 - [Document specific errors/differences here]
 
 **Action Items:**
+
 - [ ] [Specific fix needed]
 
 ---
@@ -383,14 +419,15 @@ const response = await fetch('/functions/v1/sync-golioth-devices', {
 Once production is validated:
 
 1. **Add Automated Tests:**
+
    ```typescript
    // __tests__/integration/golioth-sync.test.ts
    describe('Golioth Sync Integration', () => {
      it('should sync devices from Golioth', async () => {
-       const result = await syncGoliothDevices();
-       expect(result.deviceCount).toBeGreaterThan(0);
-     });
-   });
+       const result = await syncGoliothDevices()
+       expect(result.deviceCount).toBeGreaterThan(0)
+     })
+   })
    ```
 
 2. **Add Monitoring:**
@@ -403,10 +440,10 @@ Once production is validated:
    async function syncWithRetry(maxRetries = 3) {
      for (let i = 0; i < maxRetries; i++) {
        try {
-         return await syncGoliothDevices();
+         return await syncGoliothDevices()
        } catch (err) {
-         if (i === maxRetries - 1) throw err;
-         await sleep(1000 * Math.pow(2, i)); // Exponential backoff
+         if (i === maxRetries - 1) throw err
+         await sleep(1000 * Math.pow(2, i)) // Exponential backoff
        }
      }
    }

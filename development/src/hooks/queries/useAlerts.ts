@@ -1,6 +1,6 @@
 /**
  * React Query Hooks for Alerts
- * 
+ *
  * Implements caching strategy per Story 3.3:
  * - Alerts: 30 seconds cache
  * - Automatic cache invalidation on acknowledgments
@@ -21,10 +21,10 @@ export type AlertSeverity = Database['public']['Enums']['alert_severity']
 
 /**
  * Hook: Fetch all alerts with caching
- * 
+ *
  * Cache: 30 seconds per Story 3.3 requirements
  * Background refetch for real-time updates
- * 
+ *
  * @example
  * ```tsx
  * const { data: alerts, isLoading } = useAlertsQuery()
@@ -40,14 +40,14 @@ export function useAlertsQuery(filters?: {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: filters?.deviceId 
+    queryKey: filters?.deviceId
       ? queryKeys.alertsByDevice(filters.deviceId)
       : filters?.organizationId
-      ? queryKeys.alertsByOrg(filters.organizationId)
-      : filters?.unresolvedOnly
-      ? queryKeys.unacknowledgedAlerts
-      : queryKeys.alerts,
-    
+        ? queryKeys.alertsByOrg(filters.organizationId)
+        : filters?.unresolvedOnly
+          ? queryKeys.unacknowledgedAlerts
+          : queryKeys.alerts,
+
     queryFn: async (): Promise<Alert[]> => {
       let query = supabase
         .from('alerts')
@@ -58,15 +58,15 @@ export function useAlertsQuery(filters?: {
       if (filters?.deviceId) {
         query = query.eq('device_id', filters.deviceId)
       }
-      
+
       if (filters?.unresolvedOnly) {
         query = query.eq('is_resolved', false)
       }
-      
+
       if (filters?.category) {
         query = query.eq('category', filters.category)
       }
-      
+
       if (filters?.severity) {
         query = query.eq('severity', filters.severity)
       }
@@ -79,7 +79,7 @@ export function useAlertsQuery(filters?: {
 
       return data || []
     },
-    
+
     staleTime: CACHE_TIME.ALERTS, // 30 seconds
     refetchOnWindowFocus: true, // Refetch on tab focus for real-time feel
   })
@@ -87,7 +87,7 @@ export function useAlertsQuery(filters?: {
 
 /**
  * Hook: Fetch single alert
- * 
+ *
  * @example
  * ```tsx
  * const { data: alert } = useAlertQuery('alert-123')
@@ -118,13 +118,13 @@ export function useAlertQuery(alertId: string) {
 
 /**
  * Hook: Acknowledge alert mutation
- * 
+ *
  * Automatically invalidates alert queries on success
- * 
+ *
  * @example
  * ```tsx
  * const acknowledgeAlert = useAcknowledgeAlertMutation()
- * 
+ *
  * acknowledgeAlert.mutate('alert-123', {
  *   onSuccess: () => toast.success('Alert acknowledged'),
  * })
@@ -137,7 +137,9 @@ export function useAcknowledgeAlertMutation() {
   return useMutation({
     mutationFn: async (alertId: string) => {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('Not authenticated')
       }
@@ -164,13 +166,17 @@ export function useAcknowledgeAlertMutation() {
     onSuccess: (data) => {
       // Invalidate all alert queries
       queryClient.invalidateQueries({ queryKey: queryKeys.alerts })
-      queryClient.invalidateQueries({ queryKey: queryKeys.unacknowledgedAlerts })
-      
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.unacknowledgedAlerts,
+      })
+
       // Only invalidate device alerts if device_id exists
       if (data.device_id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.alertsByDevice(data.device_id) })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.alertsByDevice(data.device_id),
+        })
       }
-      
+
       // Update the specific alert in cache
       queryClient.setQueryData(queryKeys.alert(data.id), data)
     },
@@ -179,7 +185,7 @@ export function useAcknowledgeAlertMutation() {
 
 /**
  * Hook: Bulk acknowledge alerts mutation
- * 
+ *
  * @example
  * ```tsx
  * const bulkAcknowledge = useBulkAcknowledgeAlertsMutation()
@@ -193,7 +199,9 @@ export function useBulkAcknowledgeAlertsMutation() {
   return useMutation({
     mutationFn: async (alertIds: string[]) => {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('Not authenticated')
       }
@@ -219,14 +227,16 @@ export function useBulkAcknowledgeAlertsMutation() {
     onSuccess: () => {
       // Invalidate all alert queries (simpler than individual invalidation)
       queryClient.invalidateQueries({ queryKey: queryKeys.alerts })
-      queryClient.invalidateQueries({ queryKey: queryKeys.unacknowledgedAlerts })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.unacknowledgedAlerts,
+      })
     },
   })
 }
 
 /**
  * Hook: Dismiss alert mutation
- * 
+ *
  * @example
  * ```tsx
  * const dismissAlert = useDismissAlertMutation()
@@ -239,10 +249,7 @@ export function useDismissAlertMutation() {
 
   return useMutation({
     mutationFn: async (alertId: string) => {
-      const { error } = await supabase
-        .from('alerts')
-        .delete()
-        .eq('id', alertId)
+      const { error } = await supabase.from('alerts').delete().eq('id', alertId)
 
       if (error) {
         throw new Error(error.message || 'Failed to dismiss alert')
@@ -261,12 +268,12 @@ export function useDismissAlertMutation() {
 
 /**
  * Migration Guide:
- * 
+ *
  * BEFORE (direct Supabase queries):
  * ```tsx
  * const [alerts, setAlerts] = useState([])
  * const [loading, setLoading] = useState(true)
- * 
+ *
  * useEffect(() => {
  *   async function fetchAlerts() {
  *     const { data } = await supabase.from('alerts').select('*')
@@ -276,12 +283,12 @@ export function useDismissAlertMutation() {
  *   fetchAlerts()
  * }, [])
  * ```
- * 
+ *
  * AFTER (useAlertsQuery):
  * ```tsx
  * const { data: alerts, isLoading } = useAlertsQuery()
  * ```
- * 
+ *
  * Benefits:
  * - Automatic caching (30 seconds)
  * - No duplicate requests

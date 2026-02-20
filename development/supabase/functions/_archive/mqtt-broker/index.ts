@@ -8,7 +8,11 @@
 // Date: 2025-10-27
 // ============================================================================
 
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 interface MqttConfig {
@@ -40,36 +44,49 @@ interface PublishOperation {
 
 interface MqttClient {
   connect: () => Promise<void>
-  publish: (topic: string, message: string, options: { qos: number; retain: boolean }) => Promise<void>
-  subscribe: (topics: string[], callback: (topic: string, message: string) => void) => Promise<void>
+  publish: (
+    topic: string,
+    message: string,
+    options: { qos: number; retain: boolean }
+  ) => Promise<void>
+  subscribe: (
+    topics: string[],
+    callback: (topic: string, message: string) => void
+  ) => Promise<void>
   disconnect: () => Promise<void>
 }
 
 // Simple MQTT client implementation using fetch for HTTP-based MQTT bridges
 async function createMqttClient(config: MqttConfig): Promise<MqttClient> {
   const { broker_url, port, protocol, username, password, client_id } = config
-  
+
   // Construct the connection URL
   const auth = username && password ? `${username}:${password}@` : ''
   const baseUrl = `${protocol}://${auth}${broker_url}:${port}`
-  
+
   return {
     async connect() {
       // For HTTP-based MQTT, connection is established per-request
       // This is a placeholder - real implementation would use WebSocket or native MQTT
       console.log(`Connecting to MQTT broker: ${baseUrl}`)
     },
-    
-    async publish(topic: string, message: string, options: { qos: number; retain: boolean }) {
+
+    async publish(
+      topic: string,
+      message: string,
+      options: { qos: number; retain: boolean }
+    ) {
       // Publish message via HTTP bridge
       // Note: This is simplified - production would use proper MQTT client library
       const response = await fetch(`${baseUrl}/publish`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(username && password ? {
-            'Authorization': `Basic ${btoa(`${username}:${password}`)}`
-          } : {}),
+          ...(username && password
+            ? {
+                Authorization: `Basic ${btoa(`${username}:${password}`)}`,
+              }
+            : {}),
         },
         body: JSON.stringify({
           client_id: client_id || `netneural-${Date.now()}`,
@@ -79,40 +96,49 @@ async function createMqttClient(config: MqttConfig): Promise<MqttClient> {
           retain: options.retain,
         }),
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`MQTT publish failed (${response.status}): ${errorText}`)
+        throw new Error(
+          `MQTT publish failed (${response.status}): ${errorText}`
+        )
       }
     },
-    
-    async subscribe(topics: string[], callback: (topic: string, message: string) => void) {
+
+    async subscribe(
+      topics: string[],
+      callback: (topic: string, message: string) => void
+    ) {
       // Subscribe to topics via HTTP bridge
       // Note: This is simplified - production would use WebSocket for real-time subscriptions
       const response = await fetch(`${baseUrl}/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(username && password ? {
-            'Authorization': `Basic ${btoa(`${username}:${password}`)}`
-          } : {}),
+          ...(username && password
+            ? {
+                Authorization: `Basic ${btoa(`${username}:${password}`)}`,
+              }
+            : {}),
         },
         body: JSON.stringify({
           client_id: client_id || `netneural-${Date.now()}`,
           topics,
         }),
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`MQTT subscribe failed (${response.status}): ${errorText}`)
+        throw new Error(
+          `MQTT subscribe failed (${response.status}): ${errorText}`
+        )
       }
-      
+
       // In a real implementation, this would establish a persistent connection
       // and invoke the callback for each received message
       console.log(`Subscribed to topics: ${topics.join(', ')}`)
     },
-    
+
     async disconnect() {
       // Disconnect from MQTT broker
       console.log('Disconnecting from MQTT broker')
@@ -133,27 +159,28 @@ async function publishMessages(
     messages_failed: 0,
     errors: [] as string[],
   }
-  
+
   const client = await createMqttClient(config)
-  
+
   try {
     await client.connect()
-    
+
     for (const msg of messages) {
       results.messages_processed++
-      
+
       try {
-        const payload = typeof msg.payload === 'object' 
-          ? JSON.stringify(msg.payload) 
-          : msg.payload
-        
+        const payload =
+          typeof msg.payload === 'object'
+            ? JSON.stringify(msg.payload)
+            : msg.payload
+
         await client.publish(msg.topic, payload, {
           qos: msg.qos || 0,
           retain: msg.retain || false,
         })
-        
+
         results.messages_succeeded++
-        
+
         // Log to activity log
         await supabase.from('integration_activity_log').insert({
           organization_id: organizationId,
@@ -169,7 +196,7 @@ async function publishMessages(
             payload_length: payload.length,
           },
         })
-        
+
         // Log message to notification_log
         await supabase.from('notification_log').insert({
           organization_id: organizationId,
@@ -186,9 +213,10 @@ async function publishMessages(
         })
       } catch (error) {
         results.messages_failed++
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error'
         results.errors.push(`${msg.topic}: ${errorMsg}`)
-        
+
         // Log to activity log
         await supabase.from('integration_activity_log').insert({
           organization_id: organizationId,
@@ -202,7 +230,7 @@ async function publishMessages(
             error: errorMsg,
           },
         })
-        
+
         // Log error
         await supabase.from('notification_log').insert({
           organization_id: organizationId,
@@ -220,7 +248,7 @@ async function publishMessages(
   } finally {
     await client.disconnect()
   }
-  
+
   return results
 }
 
@@ -238,16 +266,16 @@ async function subscribeToTopics(
     topics_failed: 0,
     errors: [] as string[],
   }
-  
+
   const client = await createMqttClient(config)
-  
+
   try {
     await client.connect()
-    
+
     await client.subscribe(topics, async (topic: string, message: string) => {
       // Handle incoming message
       console.log(`Received message on ${topic}:`, message)
-      
+
       try {
         // Parse message
         let parsedMessage
@@ -256,7 +284,7 @@ async function subscribeToTopics(
         } catch {
           parsedMessage = { raw: message }
         }
-        
+
         // Store message in database
         await supabase.from('mqtt_messages').insert({
           organization_id: organizationId,
@@ -265,7 +293,7 @@ async function subscribeToTopics(
           payload: parsedMessage,
           received_at: new Date().toISOString(),
         })
-        
+
         // If callback URL provided, forward message
         if (callbackUrl) {
           await fetch(callbackUrl, {
@@ -278,7 +306,7 @@ async function subscribeToTopics(
             }),
           })
         }
-        
+
         // Log receipt to activity log
         await supabase.from('integration_activity_log').insert({
           organization_id: organizationId,
@@ -293,7 +321,7 @@ async function subscribeToTopics(
             payload_preview: message.substring(0, 100),
           },
         })
-        
+
         // Log receipt
         await supabase.from('notification_log').insert({
           organization_id: organizationId,
@@ -310,9 +338,9 @@ async function subscribeToTopics(
         console.error('Error handling MQTT message:', error)
       }
     })
-    
+
     results.topics_succeeded = topics.length
-    
+
     // Log to activity log
     await supabase.from('integration_activity_log').insert({
       organization_id: organizationId,
@@ -326,7 +354,7 @@ async function subscribeToTopics(
         topics_count: topics.length,
       },
     })
-    
+
     // Log subscription
     await supabase.from('notification_log').insert({
       organization_id: organizationId,
@@ -341,9 +369,11 @@ async function subscribeToTopics(
     })
   } catch (error) {
     results.topics_failed = topics.length
-    results.errors.push(error instanceof Error ? error.message : 'Unknown error')
+    results.errors.push(
+      error instanceof Error ? error.message : 'Unknown error'
+    )
   }
-  
+
   return results
 }
 
@@ -354,20 +384,24 @@ async function testConnection(
   integrationId: string
 ) {
   const client = await createMqttClient(config)
-  
+
   try {
     await client.connect()
-    
+
     // Publish test message
     const testTopic = `netneural/test/${Date.now()}`
-    await client.publish(testTopic, JSON.stringify({
-      test: true,
-      timestamp: new Date().toISOString(),
-      message: 'NetNeural MQTT integration test',
-    }), { qos: 0, retain: false })
-    
+    await client.publish(
+      testTopic,
+      JSON.stringify({
+        test: true,
+        timestamp: new Date().toISOString(),
+        message: 'NetNeural MQTT integration test',
+      }),
+      { qos: 0, retain: false }
+    )
+
     await client.disconnect()
-    
+
     // Log test
     await supabase.from('notification_log').insert({
       organization_id: organizationId,
@@ -379,7 +413,7 @@ async function testConnection(
         test_topic: testTopic,
       },
     })
-    
+
     return {
       success: true,
       message: 'MQTT connection test successful',
@@ -397,78 +431,115 @@ async function testConnection(
         error: error instanceof Error ? error.message : 'Unknown error',
       },
     })
-    
+
     throw error
   }
 }
 
-export default createEdgeFunction(async ({ req }) => {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
-    throw new DatabaseError('Missing authorization header', 401)
+export default createEdgeFunction(
+  async ({ req }) => {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new DatabaseError('Missing authorization header', 401)
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new DatabaseError('Unauthorized', 401)
+    }
+
+    const payload: PublishOperation = await req.json()
+    const {
+      organization_id,
+      integration_id,
+      operation,
+      messages,
+      topics,
+      callback_url,
+    } = payload
+
+    if (!organization_id || !integration_id || !operation) {
+      throw new Error('Missing required fields')
+    }
+
+    // Get MQTT integration config
+    const { data: integration, error: intError } = await supabase
+      .from('device_integrations')
+      .select('*')
+      .eq('id', integration_id)
+      .eq('integration_type', 'mqtt')
+      .single()
+
+    if (intError || !integration) {
+      throw new DatabaseError('MQTT integration not found', 404)
+    }
+
+    const mqttConfig: MqttConfig = JSON.parse(
+      integration.api_key_encrypted || '{}'
+    )
+
+    let results
+    const startTime = Date.now()
+
+    switch (operation) {
+      case 'publish':
+        if (!messages || messages.length === 0) {
+          throw new Error('No messages provided')
+        }
+        results = await publishMessages(
+          mqttConfig,
+          messages,
+          supabase,
+          organization_id,
+          integration_id
+        )
+        break
+
+      case 'subscribe':
+        if (!topics || topics.length === 0) {
+          throw new Error('No topics provided')
+        }
+        results = await subscribeToTopics(
+          mqttConfig,
+          topics,
+          callback_url,
+          supabase,
+          organization_id,
+          integration_id
+        )
+        break
+
+      case 'test':
+        results = await testConnection(
+          mqttConfig,
+          supabase,
+          organization_id,
+          integration_id
+        )
+        break
+
+      default:
+        throw new Error('Invalid operation')
+    }
+
+    const duration = Date.now() - startTime
+
+    return createSuccessResponse({
+      success: true,
+      results,
+      duration_ms: duration,
+    })
+  },
+  {
+    allowedMethods: ['POST'],
   }
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } }
-  )
-
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new DatabaseError('Unauthorized', 401)
-  }
-
-  const payload: PublishOperation = await req.json()
-  const { organization_id, integration_id, operation, messages, topics, callback_url } = payload
-
-  if (!organization_id || !integration_id || !operation) {
-    throw new Error('Missing required fields')
-  }
-
-  // Get MQTT integration config
-  const { data: integration, error: intError } = await supabase
-    .from('device_integrations')
-    .select('*')
-    .eq('id', integration_id)
-    .eq('integration_type', 'mqtt')
-    .single()
-
-  if (intError || !integration) {
-    throw new DatabaseError('MQTT integration not found', 404)
-  }
-
-  const mqttConfig: MqttConfig = JSON.parse(integration.api_key_encrypted || '{}')
-
-  let results
-  const startTime = Date.now()
-
-  switch (operation) {
-    case 'publish':
-      if (!messages || messages.length === 0) {
-        throw new Error('No messages provided')
-      }
-      results = await publishMessages(mqttConfig, messages, supabase, organization_id, integration_id)
-      break
-    
-    case 'subscribe':
-      if (!topics || topics.length === 0) {
-        throw new Error('No topics provided')
-      }
-      results = await subscribeToTopics(mqttConfig, topics, callback_url, supabase, organization_id, integration_id)
-      break
-    
-    case 'test':
-      results = await testConnection(mqttConfig, supabase, organization_id, integration_id)
-      break
-    
-    default:
-      throw new Error('Invalid operation')
-  }
-
-  const duration = Date.now() - startTime
-
-  return createSuccessResponse({ success: true, results, duration_ms: duration })
-}, {
-  allowedMethods: ['POST']
-})
+)

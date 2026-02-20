@@ -1,6 +1,6 @@
 /**
  * Comprehensive Tests for Data Validation and Formatting Utilities
- * 
+ *
  * Tests for validation functions, formatters, and data transformations
  */
 
@@ -26,7 +26,8 @@ describe('Email Validation', () => {
 
 describe('UUID Validation', () => {
   const isValidUUID = (uuid: string): boolean => {
-    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    const regex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return regex.test(uuid)
   }
 
@@ -100,7 +101,11 @@ describe('Percentage Formatting', () => {
 })
 
 describe('String Truncation', () => {
-  const truncate = (str: string, maxLength: number, suffix: string = '...'): string => {
+  const truncate = (
+    str: string,
+    maxLength: number,
+    suffix: string = '...'
+  ): string => {
     if (str.length <= maxLength) return str
     return str.substring(0, maxLength - suffix.length) + suffix
   }
@@ -119,14 +124,14 @@ describe('Array Deduplication', () => {
   test('removes duplicate primitives', () => {
     const arr = [1, 2, 2, 3, 3, 3, 4]
     const unique = [...new Set(arr)]
-    
+
     expect(unique).toEqual([1, 2, 3, 4])
   })
 
   test('removes duplicate strings', () => {
     const arr = ['a', 'b', 'a', 'c', 'b']
     const unique = [...new Set(arr)]
-    
+
     expect(unique).toEqual(['a', 'b', 'c'])
   })
 
@@ -136,10 +141,10 @@ describe('Array Deduplication', () => {
       { id: 2, name: 'B' },
       { id: 1, name: 'C' },
     ]
-    const unique = arr.filter((item, index, self) =>
-      index === self.findIndex(t => t.id === item.id)
+    const unique = arr.filter(
+      (item, index, self) => index === self.findIndex((t) => t.id === item.id)
     )
-    
+
     expect(unique).toHaveLength(2)
     expect(unique[0].name).toBe('A')
     expect(unique[1].name).toBe('B')
@@ -150,9 +155,9 @@ describe('Deep Clone Objects', () => {
   test('creates independent copy of object', () => {
     const original = { a: 1, b: { c: 2 } }
     const clone = JSON.parse(JSON.stringify(original))
-    
+
     clone.b.c = 3
-    
+
     expect(original.b.c).toBe(2)
     expect(clone.b.c).toBe(3)
   })
@@ -160,9 +165,9 @@ describe('Deep Clone Objects', () => {
   test('clones arrays', () => {
     const original = [1, 2, [3, 4]]
     const clone = JSON.parse(JSON.stringify(original))
-    
+
     clone[2][0] = 99
-    
+
     expect(original[2][0]).toBe(3)
     expect(clone[2][0]).toBe(99)
   })
@@ -173,7 +178,7 @@ describe('Merge Objects', () => {
     const obj1 = { a: 1, b: 2 }
     const obj2 = { b: 3, c: 4 }
     const merged = { ...obj1, ...obj2 }
-    
+
     expect(merged).toEqual({ a: 1, b: 3, c: 4 })
   })
 
@@ -181,7 +186,7 @@ describe('Merge Objects', () => {
     const deepMerge = (target: any, source: any): any => {
       const output = { ...target }
       if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
+        Object.keys(source).forEach((key) => {
           if (isObject(source[key])) {
             if (!(key in target)) {
               output[key] = source[key]
@@ -203,7 +208,7 @@ describe('Merge Objects', () => {
     const obj1 = { a: { x: 1, y: 2 }, b: 3 }
     const obj2 = { a: { y: 3, z: 4 }, c: 5 }
     const merged = deepMerge(obj1, obj2)
-    
+
     expect(merged).toEqual({ a: { x: 1, y: 3, z: 4 }, b: 3, c: 5 })
   })
 })
@@ -212,21 +217,21 @@ describe('Sort Arrays', () => {
   test('sorts numbers ascending', () => {
     const arr = [3, 1, 4, 1, 5, 9, 2, 6]
     const sorted = [...arr].sort((a, b) => a - b)
-    
+
     expect(sorted).toEqual([1, 1, 2, 3, 4, 5, 6, 9])
   })
 
   test('sorts numbers descending', () => {
     const arr = [3, 1, 4, 1, 5, 9, 2, 6]
     const sorted = [...arr].sort((a, b) => b - a)
-    
+
     expect(sorted).toEqual([9, 6, 5, 4, 3, 2, 1, 1])
   })
 
   test('sorts strings alphabetically', () => {
     const arr = ['banana', 'apple', 'cherry', 'date']
     const sorted = [...arr].sort()
-    
+
     expect(sorted).toEqual(['apple', 'banana', 'cherry', 'date'])
   })
 
@@ -237,7 +242,7 @@ describe('Sort Arrays', () => {
       { name: 'Charlie', age: 35 },
     ]
     const sorted = [...arr].sort((a, b) => a.age - b.age)
-    
+
     expect(sorted[0].name).toBe('Alice')
     expect(sorted[2].name).toBe('Charlie')
   })
@@ -245,10 +250,13 @@ describe('Sort Arrays', () => {
 
 describe('Pagination', () => {
   test('calculates total pages', () => {
-    const getTotalPages = (totalItems: number, itemsPerPage: number): number => {
+    const getTotalPages = (
+      totalItems: number,
+      itemsPerPage: number
+    ): number => {
       return Math.ceil(totalItems / itemsPerPage)
     }
-    
+
     expect(getTotalPages(100, 10)).toBe(10)
     expect(getTotalPages(95, 10)).toBe(10)
     expect(getTotalPages(101, 10)).toBe(11)
@@ -260,7 +268,7 @@ describe('Pagination', () => {
     const pageSize = 10
     const start = (page - 1) * pageSize
     const pageData = data.slice(start, start + pageSize)
-    
+
     expect(pageData).toHaveLength(10)
     expect(pageData[0]).toBe(21)
     expect(pageData[9]).toBe(30)
@@ -272,7 +280,7 @@ describe('Pagination', () => {
     const pageSize = 10
     const start = (page - 1) * pageSize
     const pageData = data.slice(start, start + pageSize)
-    
+
     expect(pageData).toHaveLength(5)
     expect(pageData[0]).toBe(91)
     expect(pageData[4]).toBe(95)
@@ -287,27 +295,27 @@ describe('Search and Filter', () => {
   ]
 
   test('filters by exact match', () => {
-    const filtered = data.filter(item => item.category === 'fruit')
-    
+    const filtered = data.filter((item) => item.category === 'fruit')
+
     expect(filtered).toHaveLength(2)
   })
 
   test('searches by partial string', () => {
     const query = 'an'
-    const results = data.filter(item =>
+    const results = data.filter((item) =>
       item.name.toLowerCase().includes(query.toLowerCase())
     )
-    
+
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe('Banana')
   })
 
   test('case-insensitive search', () => {
     const query = 'APPLE'
-    const results = data.filter(item =>
+    const results = data.filter((item) =>
       item.name.toLowerCase().includes(query.toLowerCase())
     )
-    
+
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe('Apple')
   })
@@ -319,21 +327,21 @@ describe('Debounce Function', () => {
   test('delays function execution', () => {
     const func = jest.fn()
     const debounced = debounce(func, 300)
-    
+
     debounced()
     debounced()
     debounced()
-    
+
     expect(func).not.toHaveBeenCalled()
-    
+
     jest.advanceTimersByTime(300)
-    
+
     expect(func).toHaveBeenCalledTimes(1)
   })
 
   function debounce(func: Function, wait: number) {
     let timeout: NodeJS.Timeout
-    return function(...args: any[]) {
+    return function (...args: any[]) {
       clearTimeout(timeout)
       timeout = setTimeout(() => func(...args), wait)
     }

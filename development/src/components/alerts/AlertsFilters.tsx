@@ -29,14 +29,15 @@ export function AlertsFilters({
   onSeverityChange,
   categoryFilter,
   onCategoryChange,
-  onClearFilters
+  onClearFilters,
 }: AlertsFiltersProps) {
-  const hasActiveFilters = searchTerm || severityFilter !== 'all' || categoryFilter !== 'all'
+  const hasActiveFilters =
+    searchTerm || severityFilter !== 'all' || categoryFilter !== 'all'
 
   return (
-    <div className="flex items-end gap-4 flex-wrap">
+    <div className="flex flex-wrap items-end gap-4">
       {/* Search */}
-      <div className="flex-1 min-w-[200px]">
+      <div className="min-w-[200px] flex-1">
         <Label htmlFor="alert-search">Search</Label>
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -94,7 +95,7 @@ export function AlertsFilters({
           onClick={onClearFilters}
           className="mb-0"
         >
-          <X className="h-4 w-4 mr-1" />
+          <X className="mr-1 h-4 w-4" />
           Clear
         </Button>
       )}

@@ -9,12 +9,14 @@ describe('Integration Dialog Components', () => {
   })
 
   test('GoliothConfigDialog module loads', async () => {
-    const module2 = await import('@/components/integrations/GoliothConfigDialog')
+    const module2 =
+      await import('@/components/integrations/GoliothConfigDialog')
     expect(module2.GoliothConfigDialog).toBeDefined()
   })
 
   test('WebhookConfigDialog module loads', async () => {
-    const module3 = await import('@/components/integrations/WebhookConfigDialog')
+    const module3 =
+      await import('@/components/integrations/WebhookConfigDialog')
     expect(module3.WebhookConfigDialog).toBeDefined()
   })
 
@@ -34,12 +36,14 @@ describe('Integration Dialog Components', () => {
   })
 
   test('AzureIotConfigDialog module loads', async () => {
-    const module7 = await import('@/components/integrations/AzureIotConfigDialog')
+    const module7 =
+      await import('@/components/integrations/AzureIotConfigDialog')
     expect(module7.AzureIotConfigDialog).toBeDefined()
   })
 
   test('GoogleIotConfigDialog module loads', async () => {
-    const module8 = await import('@/components/integrations/GoogleIotConfigDialog')
+    const module8 =
+      await import('@/components/integrations/GoogleIotConfigDialog')
     expect(module8.GoogleIotConfigDialog).toBeDefined()
   })
 
@@ -49,7 +53,8 @@ describe('Integration Dialog Components', () => {
   })
 
   test('ConflictResolutionDialog module loads', async () => {
-    const module10 = await import('@/components/integrations/ConflictResolutionDialog')
+    const module10 =
+      await import('@/components/integrations/ConflictResolutionDialog')
     expect(module10.ConflictResolutionDialog).toBeDefined()
   })
 

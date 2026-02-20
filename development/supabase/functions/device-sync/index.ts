@@ -23,15 +23,27 @@
 // ============================================================================
 // deno-lint-ignore-file no-explicit-any
 
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import { NetNeuralHubClient } from '../_shared/netneural-hub-client.ts'
-import { detectConflict, logConflict } from '../_shared/base-integration-client.ts'
-import type { BaseIntegrationClient, SyncResult, TestResult, Device } from '../_shared/base-integration-client.ts'
+import {
+  detectConflict,
+  logConflict,
+} from '../_shared/base-integration-client.ts'
+import type {
+  BaseIntegrationClient,
+  SyncResult,
+  TestResult,
+  Device,
+} from '../_shared/base-integration-client.ts'
 
 interface SyncRequest {
   integrationId: string
@@ -40,105 +52,135 @@ interface SyncRequest {
   deviceIds?: string[]
 }
 
-export default createEdgeFunction(async ({ req }) => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+export default createEdgeFunction(
+  async ({ req }) => {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('[device-sync] Missing environment variables')
-    throw new DatabaseError('Server configuration error', 500)
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[device-sync] Missing environment variables')
+      throw new DatabaseError('Server configuration error', 500)
+    }
+
+    const { integrationId, organizationId, operation, deviceIds }: SyncRequest =
+      await req.json()
+
+    if (!integrationId || !organizationId) {
+      throw new Error('Missing required fields: integrationId, organizationId')
+    }
+
+    if (!['test', 'import', 'export', 'bidirectional'].includes(operation)) {
+      throw new Error(
+        'Invalid operation. Must be: test, import, export, or bidirectional'
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Fetch integration from database
+    const { data: integration, error: integrationError } = await supabase
+      .from('device_integrations')
+      .select('*')
+      .eq('id', integrationId)
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (integrationError || !integration) {
+      console.error('[device-sync] Integration not found:', integrationError)
+      throw new DatabaseError('Integration not found', 404)
+    }
+
+    // Determine settings source (schema uses 'settings', older code used 'config')
+    // Prefer integration.settings if present; fall back to integration.config
+    const rawSettings =
+      (integration as any).settings || (integration as any).config || {}
+
+    console.log('[device-sync] Integration record snapshot (sanitized):', {
+      id: integration.id,
+      type: integration.integration_type,
+      hasEncryptedKey: !!integration.api_key_encrypted,
+      encryptedKeyLength: integration.api_key_encrypted?.length || 0,
+      project_id: integration.project_id,
+      settingsKeys: Object.keys(rawSettings),
+      settingsContainsApiKey: !!rawSettings.apiKey,
+      settingsContainsProjectId: !!rawSettings.projectId,
+    })
+
+    // Create the appropriate client based on integration type (pass merged settings)
+    const client = createIntegrationClient(
+      { ...integration, config: rawSettings },
+      supabase,
+      organizationId,
+      integrationId
+    )
+
+    if (!client) {
+      throw new Error(
+        `Unsupported integration type: ${integration.integration_type}`
+      )
+    }
+
+    // Execute the requested operation
+    let result: TestResult | SyncResult
+
+    switch (operation) {
+      case 'test':
+        console.log(
+          `[device-sync] Testing ${integration.integration_type} connection...`
+        )
+        result = await client.test()
+        break
+
+      case 'import':
+        console.log(
+          `[device-sync] Importing from ${integration.integration_type}...`
+        )
+        result = await client.import()
+        break
+
+      case 'export':
+        console.log(
+          `[device-sync] Exporting to ${integration.integration_type}...`
+        )
+        // Fetch devices from NetNeural to export
+        const devicesToExport = await getDevicesForExport(
+          supabase,
+          organizationId,
+          deviceIds
+        )
+        result = await client.export(devicesToExport)
+        break
+
+      case 'bidirectional':
+        console.log(
+          `[device-sync] Bidirectional sync with ${integration.integration_type}...`
+        )
+        // Fetch devices from NetNeural for bidirectional sync
+        const devicesForSync = await getDevicesForExport(
+          supabase,
+          organizationId,
+          deviceIds
+        )
+        result = await client.bidirectionalSync(devicesForSync)
+        break
+    }
+
+    console.log(`[device-sync] ${operation} completed:`, result)
+
+    // Format response based on operation type
+    if (operation === 'test') {
+      const testResult = result as TestResult
+      return createSuccessResponse(testResult)
+    } else {
+      const syncResult = result as SyncResult
+      return createSuccessResponse({ success: true, ...syncResult })
+    }
+  },
+  {
+    requireAuth: false, // Using service role key, no user auth needed
+    allowedMethods: ['POST'],
   }
-
-  const { integrationId, organizationId, operation, deviceIds }: SyncRequest = await req.json()
-
-  if (!integrationId || !organizationId) {
-    throw new Error('Missing required fields: integrationId, organizationId')
-  }
-
-  if (!['test', 'import', 'export', 'bidirectional'].includes(operation)) {
-    throw new Error('Invalid operation. Must be: test, import, export, or bidirectional')
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey)
-  
-  // Fetch integration from database
-  const { data: integration, error: integrationError } = await supabase
-    .from('device_integrations')
-    .select('*')
-    .eq('id', integrationId)
-    .eq('organization_id', organizationId)
-    .single()
-
-  if (integrationError || !integration) {
-    console.error('[device-sync] Integration not found:', integrationError)
-    throw new DatabaseError('Integration not found', 404)
-  }
-
-  // Determine settings source (schema uses 'settings', older code used 'config')
-  // Prefer integration.settings if present; fall back to integration.config
-  const rawSettings = (integration as any).settings || (integration as any).config || {}
-
-  console.log('[device-sync] Integration record snapshot (sanitized):', {
-    id: integration.id,
-    type: integration.integration_type,
-    hasEncryptedKey: !!integration.api_key_encrypted,
-    encryptedKeyLength: integration.api_key_encrypted?.length || 0,
-    project_id: integration.project_id,
-    settingsKeys: Object.keys(rawSettings),
-    settingsContainsApiKey: !!rawSettings.apiKey,
-    settingsContainsProjectId: !!rawSettings.projectId,
-  })
-
-  // Create the appropriate client based on integration type (pass merged settings)
-  const client = createIntegrationClient({ ...integration, config: rawSettings }, supabase, organizationId, integrationId)
-  
-  if (!client) {
-    throw new Error(`Unsupported integration type: ${integration.integration_type}`)
-  }
-
-  // Execute the requested operation
-  let result: TestResult | SyncResult
-
-  switch (operation) {
-    case 'test':
-      console.log(`[device-sync] Testing ${integration.integration_type} connection...`)
-      result = await client.test()
-      break
-
-    case 'import':
-      console.log(`[device-sync] Importing from ${integration.integration_type}...`)
-      result = await client.import()
-      break
-
-    case 'export':
-      console.log(`[device-sync] Exporting to ${integration.integration_type}...`)
-      // Fetch devices from NetNeural to export
-      const devicesToExport = await getDevicesForExport(supabase, organizationId, deviceIds)
-      result = await client.export(devicesToExport)
-      break
-
-    case 'bidirectional':
-      console.log(`[device-sync] Bidirectional sync with ${integration.integration_type}...`)
-      // Fetch devices from NetNeural for bidirectional sync
-      const devicesForSync = await getDevicesForExport(supabase, organizationId, deviceIds)
-      result = await client.bidirectionalSync(devicesForSync)
-      break
-  }
-
-  console.log(`[device-sync] ${operation} completed:`, result)
-  
-  // Format response based on operation type
-  if (operation === 'test') {
-    const testResult = result as TestResult
-    return createSuccessResponse(testResult)
-  } else {
-    const syncResult = result as SyncResult
-    return createSuccessResponse({ success: true, ...syncResult })
-  }
-}, {
-  requireAuth: false, // Using service role key, no user auth needed
-  allowedMethods: ['POST']
-})
+)
 
 /**
  * Perform conflict-aware device sync
@@ -154,19 +196,24 @@ async function syncWithConflictDetection(
   devicesForSync?: Device[]
 ): Promise<SyncResult> {
   // Get conflict resolution strategy from settings
-  const settings = (integration as any).settings || (integration as any).config || {}
+  const settings =
+    (integration as any).settings || (integration as any).config || {}
   const conflictStrategy = settings.conflictResolution || 'remote_wins'
-  
-  console.log('[device-sync] Conflict detection enabled, strategy:', conflictStrategy)
-  
+
+  console.log(
+    '[device-sync] Conflict detection enabled, strategy:',
+    conflictStrategy
+  )
+
   // Execute the sync operation
-  const result = operation === 'import' 
-    ? await client.import() 
-    : await client.bidirectionalSync(devicesForSync || [])
-  
+  const result =
+    operation === 'import'
+      ? await client.import()
+      : await client.bidirectionalSync(devicesForSync || [])
+
   // Note: Conflict detection is now handled internally by the Golioth client
   // We keep this function for future enhancement and other integrations
-  
+
   return result
 }
 
@@ -182,16 +229,28 @@ function createIntegrationClient(
   integrationId: string
 ): BaseIntegrationClient | null {
   const settings = integration.config || {}
-  
+
   switch (integration.integration_type) {
     case 'golioth':
       console.log('[device-sync] Creating Golioth client with:', {
         hasApiKey: !!(integration.api_key_encrypted || settings.apiKey),
-        apiKeySource: integration.api_key_encrypted ? 'integration.api_key_encrypted' : (settings.apiKey ? 'settings.apiKey' : 'missing'),
-        apiKeyLength: (integration.api_key_encrypted || settings.apiKey)?.length || 0,
+        apiKeySource: integration.api_key_encrypted
+          ? 'integration.api_key_encrypted'
+          : settings.apiKey
+            ? 'settings.apiKey'
+            : 'missing',
+        apiKeyLength:
+          (integration.api_key_encrypted || settings.apiKey)?.length || 0,
         projectId: integration.project_id || settings.projectId,
-        projectIdSource: integration.project_id ? 'integration.project_id' : (settings.projectId ? 'settings.projectId' : 'missing'),
-        baseUrl: integration.base_url || settings.baseUrl || 'https://api.golioth.io/v1'
+        projectIdSource: integration.project_id
+          ? 'integration.project_id'
+          : settings.projectId
+            ? 'settings.projectId'
+            : 'missing',
+        baseUrl:
+          integration.base_url ||
+          settings.baseUrl ||
+          'https://api.golioth.io/v1',
       })
       return new GoliothClient({
         type: 'golioth',
@@ -212,7 +271,8 @@ function createIntegrationClient(
         settings: {
           region: settings.region,
           accessKeyId: settings.accessKeyId || settings.access_key_id,
-          secretAccessKey: settings.secretAccessKey || settings.secret_access_key,
+          secretAccessKey:
+            settings.secretAccessKey || settings.secret_access_key,
           endpoint: settings.endpoint,
         },
         organizationId,
@@ -225,7 +285,8 @@ function createIntegrationClient(
       return new AzureIotClient({
         type: 'azure-iot',
         settings: {
-          connectionString: settings.connectionString || settings.connection_string,
+          connectionString:
+            settings.connectionString || settings.connection_string,
           hubName: settings.hubName || settings.hub_name,
         },
         organizationId,
@@ -254,9 +315,11 @@ function createIntegrationClient(
 
     case 'netneural_hub':
       console.log('[device-sync] Creating NetNeural Hub client with:', {
-        protocolsEnabled: Object.keys(settings.protocols || {}).filter(p => settings.protocols?.[p]?.enabled),
+        protocolsEnabled: Object.keys(settings.protocols || {}).filter(
+          (p) => settings.protocols?.[p]?.enabled
+        ),
         deviceTypesSupported: Object.keys(settings.device_routing || {}),
-        globalSettings: settings.global_settings
+        globalSettings: settings.global_settings,
       })
       return new NetNeuralHubClient({
         type: 'netneural_hub' as any,
@@ -266,8 +329,8 @@ function createIntegrationClient(
           global_settings: settings.global_settings || {
             max_retry_attempts: 3,
             device_discovery_enabled: true,
-            auto_capability_detection: true
-          }
+            auto_capability_detection: true,
+          },
         },
         organizationId,
         integrationId,
@@ -275,7 +338,9 @@ function createIntegrationClient(
       })
 
     default:
-      console.error(`[device-sync] Unsupported integration type: ${integration.integration_type}`)
+      console.error(
+        `[device-sync] Unsupported integration type: ${integration.integration_type}`
+      )
       return null
   }
 }

@@ -1,9 +1,9 @@
 /**
  * Bulk Device Type Assignment Dialog
- * 
+ *
  * Allows admins to reassign device types to multiple devices at once.
  * Shows a summary of affected devices and optional confirmation.
- * 
+ *
  * @see Issue #119
  */
 'use client'
@@ -48,7 +48,10 @@ export function BulkAssignDeviceTypeDialog({
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<DeviceType | null>(null)
   const [assigning, setAssigning] = useState(false)
-  const [result, setResult] = useState<{ success: number; failed: number } | null>(null)
+  const [result, setResult] = useState<{
+    success: number
+    failed: number
+  } | null>(null)
 
   const count = deviceIds.length
 
@@ -80,17 +83,22 @@ export function BulkAssignDeviceTypeDialog({
       }
 
       setResult({ success: count, failed: 0 })
-      toast.success(`Assigned device type to ${count} device${count !== 1 ? 's' : ''}`)
+      toast.success(
+        `Assigned device type to ${count} device${count !== 1 ? 's' : ''}`
+      )
 
       // Invalidate device queries
       queryClient.invalidateQueries({ queryKey: queryKeys.devices })
       if (currentOrganization?.id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.devicesByOrg(currentOrganization.id) })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.devicesByOrg(currentOrganization.id),
+        })
       }
 
       onSuccess?.()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to assign device types'
+      const message =
+        err instanceof Error ? err.message : 'Failed to assign device types'
       toast.error(message)
       setResult({ success: 0, failed: count })
     } finally {
@@ -109,7 +117,10 @@ export function BulkAssignDeviceTypeDialog({
 
   const displayNames = useMemo(() => {
     if (deviceNames.length <= 5) return deviceNames
-    return [...deviceNames.slice(0, 5), `... and ${deviceNames.length - 5} more`]
+    return [
+      ...deviceNames.slice(0, 5),
+      `... and ${deviceNames.length - 5} more`,
+    ]
   }, [deviceNames])
 
   return (
@@ -118,8 +129,9 @@ export function BulkAssignDeviceTypeDialog({
         <DialogHeader>
           <DialogTitle>Assign Device Type</DialogTitle>
           <DialogDescription>
-            Assign a device type to <strong>{count}</strong> selected device{count !== 1 ? 's' : ''}.
-            Inherited configuration will apply immediately.
+            Assign a device type to <strong>{count}</strong> selected device
+            {count !== 1 ? 's' : ''}. Inherited configuration will apply
+            immediately.
           </DialogDescription>
         </DialogHeader>
 
@@ -151,14 +163,17 @@ export function BulkAssignDeviceTypeDialog({
 
           {/* Selected type preview */}
           {selectedType && (
-            <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
+            <div className="space-y-1 rounded-md bg-muted/50 p-3 text-sm">
               <p className="font-medium">{selectedType.name}</p>
               <p className="text-muted-foreground">
-                Normal: {selectedType.lower_normal}–{selectedType.upper_normal} {selectedType.unit}
+                Normal: {selectedType.lower_normal}–{selectedType.upper_normal}{' '}
+                {selectedType.unit}
               </p>
-              {(selectedType.lower_alert != null || selectedType.upper_alert != null) && (
+              {(selectedType.lower_alert != null ||
+                selectedType.upper_alert != null) && (
                 <p className="text-muted-foreground">
-                  Alert: {selectedType.lower_alert ?? '—'} / {selectedType.upper_alert ?? '—'} {selectedType.unit}
+                  Alert: {selectedType.lower_alert ?? '—'} /{' '}
+                  {selectedType.upper_alert ?? '—'} {selectedType.unit}
                 </p>
               )}
             </div>
@@ -166,9 +181,13 @@ export function BulkAssignDeviceTypeDialog({
 
           {/* Result display */}
           {result && (
-            <div className={`flex items-center gap-2 p-3 rounded-md text-sm ${
-              result.failed > 0 ? 'bg-destructive/10 text-destructive' : 'bg-green-500/10 text-green-700'
-            }`}>
+            <div
+              className={`flex items-center gap-2 rounded-md p-3 text-sm ${
+                result.failed > 0
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-green-500/10 text-green-700'
+              }`}
+            >
               {result.failed > 0 ? (
                 <AlertCircle className="h-4 w-4" />
               ) : (
@@ -182,13 +201,19 @@ export function BulkAssignDeviceTypeDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)} disabled={assigning}>
+          <Button
+            variant="outline"
+            onClick={() => handleClose(false)}
+            disabled={assigning}
+          >
             {result ? 'Close' : 'Cancel'}
           </Button>
           {!result && (
             <Button onClick={handleAssign} disabled={assigning}>
-              {assigning && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {assigning ? 'Assigning...' : `Assign to ${count} Device${count !== 1 ? 's' : ''}`}
+              {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {assigning
+                ? 'Assigning...'
+                : `Assign to ${count} Device${count !== 1 ? 's' : ''}`}
             </Button>
           )}
         </DialogFooter>

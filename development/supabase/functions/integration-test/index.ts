@@ -1,35 +1,49 @@
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
-import { logActivityStart, logActivityComplete, getIpAddress } from '../_shared/activity-logger.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
+import {
+  logActivityStart,
+  logActivityComplete,
+  getIpAddress,
+} from '../_shared/activity-logger.ts'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
 import type { BaseIntegrationClient } from '../_shared/base-integration-client.ts'
 
-export default createEdgeFunction(async ({ req, supabase }) => {
-  // Read integrationId from body (preferred) or URL path (fallback)
-  const body = await req.json().catch(() => ({}))
-  const url = new URL(req.url)
-  const pathSegment = url.pathname.split('/').pop()
-  const integrationId = body.integrationId || body.integration_id || (pathSegment !== 'integration-test' ? pathSegment : undefined)
+export default createEdgeFunction(
+  async ({ req, supabase }) => {
+    // Read integrationId from body (preferred) or URL path (fallback)
+    const body = await req.json().catch(() => ({}))
+    const url = new URL(req.url)
+    const pathSegment = url.pathname.split('/').pop()
+    const integrationId =
+      body.integrationId ||
+      body.integration_id ||
+      (pathSegment !== 'integration-test' ? pathSegment : undefined)
 
-  // Use the authenticated supabase client provided by createEdgeFunction
-  // (replaces deprecated supabaseClient.auth.setAuth() from v1)
-  const supabaseClient = supabase!
+    // Use the authenticated supabase client provided by createEdgeFunction
+    // (replaces deprecated supabaseClient.auth.setAuth() from v1)
+    const supabaseClient = supabase!
 
-  if (req.method === 'POST') {
-    const startTime = Date.now()
+    if (req.method === 'POST') {
+      const startTime = Date.now()
 
       if (!integrationId) {
         throw new DatabaseError('Integration ID is required', 400)
       }
-    
+
       const { data: integration, error } = await supabaseClient
         .from('device_integrations')
-        .select(`
+        .select(
+          `
           *,
           organization:organizations(id, name, slug)
-        `)
+        `
+        )
         .eq('id', integrationId)
         .single()
 
@@ -56,12 +70,12 @@ export default createEdgeFunction(async ({ req, supabase }) => {
       let testResult
       try {
         const client = createIntegrationClient(
-          integration, 
-          supabaseClient, 
-          integration.organization_id, 
+          integration,
+          supabaseClient,
+          integration.organization_id,
           integration.id
         )
-        
+
         if (client) {
           // Each client handles its own test logic with proper isolation
           testResult = await client.test()
@@ -69,14 +83,16 @@ export default createEdgeFunction(async ({ req, supabase }) => {
           testResult = {
             success: false,
             message: `Integration type ${integration.integration_type} is not supported for testing`,
-            details: {}
+            details: {},
           }
         }
       } catch (error) {
         testResult = {
           success: false,
           message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          details: { error: error instanceof Error ? error.message : String(error) }
+          details: {
+            error: error instanceof Error ? error.message : String(error),
+          },
         }
       }
 
@@ -96,9 +112,11 @@ export default createEdgeFunction(async ({ req, supabase }) => {
     }
 
     throw new Error('Method not allowed')
-}, {
-  allowedMethods: ['POST']
-})
+  },
+  {
+    allowedMethods: ['POST'],
+  }
+)
 
 /**
  * Create the appropriate integration client based on the integration type
@@ -115,7 +133,7 @@ function createIntegrationClient(
 ): BaseIntegrationClient | null {
   // Try config first (legacy), then settings (current standard)
   const settings = integration.config || integration.settings || {}
-  
+
   try {
     switch (integration.integration_type) {
       case 'golioth':
@@ -137,8 +155,14 @@ function createIntegrationClient(
           type: 'aws-iot',
           settings: {
             region: integration.region || settings.region,
-            accessKeyId: integration.access_key_id || settings.accessKeyId || settings.access_key_id,
-            secretAccessKey: integration.secret_access_key || settings.secretAccessKey || settings.secret_access_key,
+            accessKeyId:
+              integration.access_key_id ||
+              settings.accessKeyId ||
+              settings.access_key_id,
+            secretAccessKey:
+              integration.secret_access_key ||
+              settings.secretAccessKey ||
+              settings.secret_access_key,
             endpoint: integration.endpoint || settings.endpoint,
           },
           organizationId,
@@ -151,8 +175,12 @@ function createIntegrationClient(
         return new AzureIotClient({
           type: 'azure-iot',
           settings: {
-            connectionString: integration.connection_string || settings.connectionString || settings.connection_string,
-            hubName: integration.hub_name || settings.hubName || settings.hub_name,
+            connectionString:
+              integration.connection_string ||
+              settings.connectionString ||
+              settings.connection_string,
+            hubName:
+              integration.hub_name || settings.hubName || settings.hub_name,
           },
           organizationId,
           integrationId,
@@ -165,13 +193,20 @@ function createIntegrationClient(
         return new MqttClient({
           type: 'mqtt',
           settings: {
-            brokerUrl: integration.broker_url || settings.brokerUrl || settings.broker_url,
+            brokerUrl:
+              integration.broker_url ||
+              settings.brokerUrl ||
+              settings.broker_url,
             port: integration.port || settings.port,
-            clientId: integration.client_id || settings.clientId || settings.client_id,
+            clientId:
+              integration.client_id || settings.clientId || settings.client_id,
             username: integration.username || settings.username,
             password: integration.password || settings.password,
             useTls: integration.use_tls || settings.useTls || settings.use_tls,
-            topicPrefix: integration.topic_prefix || settings.topicPrefix || settings.topic_prefix,
+            topicPrefix:
+              integration.topic_prefix ||
+              settings.topicPrefix ||
+              settings.topic_prefix,
           },
           organizationId,
           integrationId,
@@ -179,12 +214,16 @@ function createIntegrationClient(
         })
 
       default:
-        console.error(`[integration-test] Unsupported integration type: ${integration.integration_type}`)
+        console.error(
+          `[integration-test] Unsupported integration type: ${integration.integration_type}`
+        )
         return null
     }
   } catch (error) {
-    console.error(`[integration-test] Error creating client for ${integration.integration_type}:`, error)
+    console.error(
+      `[integration-test] Error creating client for ${integration.integration_type}:`,
+      error
+    )
     return null
   }
 }
-

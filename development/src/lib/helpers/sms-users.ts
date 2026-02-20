@@ -1,22 +1,22 @@
 /**
  * Helper functions for managing SMS-enabled users
  * Used by alerts and notification systems to get users who have opted in to SMS
- * 
+ *
  * NOTE: TypeScript errors will show until the database migration is applied
  * and types are regenerated. Run:
  *   npx supabase db reset --local
  *   npx supabase gen types typescript --local > src/types/supabase.ts
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client'
 
 export interface SMSEnabledUser {
-  id: string;
-  full_name: string | null;
-  email: string;
-  phone_number: string;
-  phone_number_secondary?: string | null;
-  role: string | null;
+  id: string
+  full_name: string | null
+  email: string
+  phone_number: string
+  phone_number_secondary?: string | null
+  role: string | null
 }
 
 /**
@@ -24,8 +24,10 @@ export interface SMSEnabledUser {
  * @param organizationId - The organization ID
  * @returns Array of users with phone numbers and SMS enabled
  */
-export async function getSMSEnabledUsers(organizationId: string): Promise<SMSEnabledUser[]> {
-  const supabase = createClient();
+export async function getSMSEnabledUsers(
+  organizationId: string
+): Promise<SMSEnabledUser[]> {
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('users')
@@ -33,15 +35,15 @@ export async function getSMSEnabledUsers(organizationId: string): Promise<SMSEna
     .eq('organization_id', organizationId)
     .eq('is_active', true)
     .or('phone_sms_enabled.eq.true,phone_secondary_sms_enabled.eq.true')
-    .not('phone_number', 'is', null);
+    .not('phone_number', 'is', null)
 
   if (error) {
-    console.error('Error fetching SMS-enabled users:', error);
-    return [];
+    console.error('Error fetching SMS-enabled users:', error)
+    return []
   }
 
   // Type assertion needed until migration is applied and types regenerated
-  return data as unknown as SMSEnabledUser[];
+  return data as unknown as SMSEnabledUser[]
 }
 
 /**
@@ -50,33 +52,37 @@ export async function getSMSEnabledUsers(organizationId: string): Promise<SMSEna
  * @param organizationId - The organization ID
  * @returns Array of phone numbers in E.164 format
  */
-export async function getSMSPhoneNumbers(organizationId: string): Promise<string[]> {
-  const supabase = createClient();
+export async function getSMSPhoneNumbers(
+  organizationId: string
+): Promise<string[]> {
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('users')
-    .select('phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled')
+    .select(
+      'phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled'
+    )
     .eq('organization_id', organizationId)
-    .eq('is_active', true);
+    .eq('is_active', true)
 
   if (error) {
-    console.error('Error fetching phone numbers:', error);
-    return [];
+    console.error('Error fetching phone numbers:', error)
+    return []
   }
 
-  const phoneNumbers: string[] = [];
+  const phoneNumbers: string[] = []
 
   // Type assertion needed until migration is applied
   data?.forEach((user: any) => {
     if (user.phone_sms_enabled && user.phone_number) {
-      phoneNumbers.push(user.phone_number);
+      phoneNumbers.push(user.phone_number)
     }
     if (user.phone_secondary_sms_enabled && user.phone_number_secondary) {
-      phoneNumbers.push(user.phone_number_secondary);
+      phoneNumbers.push(user.phone_number_secondary)
     }
-  });
+  })
 
-  return phoneNumbers;
+  return phoneNumbers
 }
 
 /**
@@ -85,28 +91,32 @@ export async function getSMSPhoneNumbers(organizationId: string): Promise<string
  * @returns Object with primary and secondary phone numbers if SMS enabled
  */
 export async function getUserSMSPhoneNumbers(userId: string): Promise<{
-  primary: string | null;
-  secondary: string | null;
+  primary: string | null
+  secondary: string | null
 }> {
-  const supabase = createClient();
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('users')
-    .select('phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled')
+    .select(
+      'phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled'
+    )
     .eq('id', userId)
-    .single();
+    .single()
 
   if (error || !data) {
-    return { primary: null, secondary: null };
+    return { primary: null, secondary: null }
   }
 
   // Type assertion needed until migration is applied
-  const userData = data as any;
+  const userData = data as any
 
   return {
     primary: userData.phone_sms_enabled ? userData.phone_number : null,
-    secondary: userData.phone_secondary_sms_enabled ? userData.phone_number_secondary : null,
-  };
+    secondary: userData.phone_secondary_sms_enabled
+      ? userData.phone_number_secondary
+      : null,
+  }
 }
 
 /**
@@ -115,32 +125,35 @@ export async function getUserSMSPhoneNumbers(userId: string): Promise<{
  * @param defaultCountryCode - Default country code if not provided (default: +1 for US)
  * @returns Phone number in E.164 format or null if invalid
  */
-export function formatPhoneE164(phone: string, defaultCountryCode = '+1'): string | null {
+export function formatPhoneE164(
+  phone: string,
+  defaultCountryCode = '+1'
+): string | null {
   // Remove all non-digit characters except +
-  const cleaned = phone.replace(/[^\d+]/g, '');
+  const cleaned = phone.replace(/[^\d+]/g, '')
 
   // If already has +, assume it's in correct format
   if (cleaned.startsWith('+')) {
-    return cleaned;
+    return cleaned
   }
 
   // If starts with 1 and is 11 digits (US/Canada), add +
   if (cleaned.startsWith('1') && cleaned.length === 11) {
-    return '+' + cleaned;
+    return '+' + cleaned
   }
 
   // If 10 digits, assume US/Canada and add country code
   if (cleaned.length === 10) {
-    return defaultCountryCode + cleaned;
+    return defaultCountryCode + cleaned
   }
 
   // If 11+ digits without +, add + to beginning
   if (cleaned.length >= 11) {
-    return '+' + cleaned;
+    return '+' + cleaned
   }
 
   // Invalid format
-  return null;
+  return null
 }
 
 /**
@@ -150,8 +163,8 @@ export function formatPhoneE164(phone: string, defaultCountryCode = '+1'): strin
  */
 export function isValidPhoneNumber(phone: string): boolean {
   // Remove spaces, dashes, parentheses
-  const cleaned = phone.replace(/[\s\-\(\)]/g, '');
-  
+  const cleaned = phone.replace(/[\s\-\(\)]/g, '')
+
   // Check if matches E.164 format: +[1-9][0-9]{1,14}
-  return /^\+?[1-9]\d{1,14}$/.test(cleaned);
+  return /^\+?[1-9]\d{1,14}$/.test(cleaned)
 }

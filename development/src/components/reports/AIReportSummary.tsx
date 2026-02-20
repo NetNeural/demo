@@ -1,11 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Brain, TrendingUp, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react'
+import {
+  Brain,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Sparkles,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface AIReportSummaryProps {
@@ -29,7 +41,11 @@ interface AISummary {
   cached?: boolean
 }
 
-export function AIReportSummary({ reportType, reportData, organizationId }: AIReportSummaryProps) {
+export function AIReportSummary({
+  reportType,
+  reportData,
+  organizationId,
+}: AIReportSummaryProps) {
   const [summary, setSummary] = useState<AISummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,7 +66,7 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.data.session?.access_token}`,
+              Authorization: `Bearer ${session.data.session?.access_token}`,
             },
             body: JSON.stringify({
               reportType,
@@ -89,28 +105,41 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
     switch (reportType) {
       case 'alert-history':
         if (reportData.totalRecords > 0) {
-          findings.push(`Total of ${reportData.totalRecords} alerts in selected period`)
+          findings.push(
+            `Total of ${reportData.totalRecords} alerts in selected period`
+          )
         }
         if (reportData.criticalCount && reportData.criticalCount > 0) {
-          findings.push(`${reportData.criticalCount} critical alerts require attention`)
+          findings.push(
+            `${reportData.criticalCount} critical alerts require attention`
+          )
           if (reportData.criticalCount > 10) {
             redFlags.push('High volume of critical alerts detected')
-            recommendations.push('Review alert thresholds to reduce false positives')
+            recommendations.push(
+              'Review alert thresholds to reduce false positives'
+            )
           }
         }
-        trendAnalysis = 'Alert patterns show normal operational activity. Monitor critical alerts closely.'
+        trendAnalysis =
+          'Alert patterns show normal operational activity. Monitor critical alerts closely.'
         break
 
       case 'telemetry-trends':
-        findings.push(`Telemetry data collected for ${reportData.totalRecords} data points`)
-        recommendations.push('Regular monitoring helps identify anomalies early')
-        trendAnalysis = 'Sensor readings within expected ranges for the reporting period.'
+        findings.push(
+          `Telemetry data collected for ${reportData.totalRecords} data points`
+        )
+        recommendations.push(
+          'Regular monitoring helps identify anomalies early'
+        )
+        trendAnalysis =
+          'Sensor readings within expected ranges for the reporting period.'
         break
 
       case 'audit-log':
         findings.push(`${reportData.totalRecords} user actions logged`)
         recommendations.push('Review suspicious activity patterns monthly')
-        trendAnalysis = 'User activity patterns consistent with normal operations.'
+        trendAnalysis =
+          'User activity patterns consistent with normal operations.'
         break
     }
 
@@ -134,7 +163,7 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
       <Card className="border-purple-200 dark:border-purple-900">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500 animate-pulse" />
+            <Brain className="h-5 w-5 animate-pulse text-purple-500" />
             <CardTitle className="text-base">AI-Powered Insights</CardTitle>
           </div>
           <CardDescription>Generating intelligent summary...</CardDescription>
@@ -157,11 +186,11 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
   }
 
   return (
-    <Card className="border-purple-200 dark:border-purple-900 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-950/20">
+    <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-transparent dark:border-purple-900 dark:from-purple-950/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500" />
+            <Brain className="h-5 w-5 text-purple-500" />
             <CardTitle className="text-base">AI-Powered Insights</CardTitle>
             {summary.cached && (
               <Badge variant="outline" className="text-xs">
@@ -180,21 +209,23 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Trend Analysis */}
-        <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-900/50 border">
+        <div className="rounded-lg border bg-white/50 p-3 dark:bg-gray-900/50">
           <div className="flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">{summary.trendAnalysis}</p>
+            <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-500" />
+            <p className="text-sm text-muted-foreground">
+              {summary.trendAnalysis}
+            </p>
           </div>
         </div>
 
         {/* Key Findings */}
         {summary.keyFindings.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            <h4 className="mb-2 flex items-center gap-1.5 text-sm font-medium">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
               Key Findings
             </h4>
-            <ul className="space-y-1.5 ml-5">
+            <ul className="ml-5 space-y-1.5">
               {summary.keyFindings.map((finding, idx) => (
                 <li key={idx} className="text-sm text-muted-foreground">
                   • {finding}
@@ -207,13 +238,16 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
         {/* Red Flags */}
         {summary.redFlags.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
+            <h4 className="mb-2 flex items-center gap-1.5 text-sm font-medium">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
               Red Flags
             </h4>
-            <ul className="space-y-1.5 ml-5">
+            <ul className="ml-5 space-y-1.5">
               {summary.redFlags.map((flag, idx) => (
-                <li key={idx} className="text-sm text-red-600 dark:text-red-400">
+                <li
+                  key={idx}
+                  className="text-sm text-red-600 dark:text-red-400"
+                >
                   • {flag}
                 </li>
               ))}
@@ -224,11 +258,11 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
         {/* Recommendations */}
         {summary.recommendations.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-blue-500" />
+            <h4 className="mb-2 flex items-center gap-1.5 text-sm font-medium">
+              <TrendingUp className="h-4 w-4 text-blue-500" />
               Recommendations
             </h4>
-            <ul className="space-y-1.5 ml-5">
+            <ul className="ml-5 space-y-1.5">
               {summary.recommendations.map((rec, idx) => (
                 <li key={idx} className="text-sm text-muted-foreground">
                   • {rec}
@@ -238,8 +272,9 @@ export function AIReportSummary({ reportType, reportData, organizationId }: AIRe
           </div>
         )}
 
-        <p className="text-[10px] text-muted-foreground text-center pt-2 border-t">
-          AI insights are suggestions only. Always verify critical findings with your data.
+        <p className="border-t pt-2 text-center text-[10px] text-muted-foreground">
+          AI insights are suggestions only. Always verify critical findings with
+          your data.
         </p>
       </CardContent>
     </Card>

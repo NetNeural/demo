@@ -6,11 +6,11 @@
 // ===========================================================================
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { 
-  getUserContext, 
-  createAuthenticatedClient, 
+import {
+  getUserContext,
+  createAuthenticatedClient,
   corsHeaders,
-  type UserContext 
+  type UserContext,
 } from './auth.ts'
 import { IntegrationError } from './base-integration-client.ts'
 
@@ -33,7 +33,7 @@ export interface RequestContext {
 /**
  * Higher-order function for edge functions
  * Handles: CORS, auth, method validation, error handling
- * 
+ *
  * @example
  * ```typescript
  * export default createEdgeFunction(async ({ req, userContext, supabase, url }) => {
@@ -69,18 +69,16 @@ export function createEdgeFunction(
 
       // Method validation
       if (!allowedMethods.includes(method)) {
-        return createErrorResponse(
-          `Method ${method} not allowed`,
-          405,
-          { allowedMethods }
-        )
+        return createErrorResponse(`Method ${method} not allowed`, 405, {
+          allowedMethods,
+        })
       }
 
-      const ctx: RequestContext = { 
-        req, 
-        method, 
+      const ctx: RequestContext = {
+        req,
+        method,
         url,
-        headers: req.headers 
+        headers: req.headers,
       }
 
       // Authentication
@@ -93,14 +91,19 @@ export function createEdgeFunction(
             return createErrorResponse('Super admin access required', 403)
           }
         } catch (authError) {
-          console.error('Authentication error:', authError);
+          console.error('Authentication error:', authError)
           // Return 401 with detailed error message for debugging
           return createErrorResponse(
-            authError instanceof Error ? authError.message : 'Authentication failed',
+            authError instanceof Error
+              ? authError.message
+              : 'Authentication failed',
             401,
-            { 
-              error: authError instanceof Error ? authError.message : String(authError),
-              hint: 'Check JWT configuration in Supabase dashboard'
+            {
+              error:
+                authError instanceof Error
+                  ? authError.message
+                  : String(authError),
+              hint: 'Check JWT configuration in Supabase dashboard',
             }
           )
         }
@@ -112,7 +115,9 @@ export function createEdgeFunction(
       // Log activity with metrics
       const duration = Date.now() - startTime
       if (logActivity && ctx.userContext) {
-        console.log(`[${method}] ${url.pathname} - ${ctx.userContext.email} - ${duration}ms`)
+        console.log(
+          `[${method}] ${url.pathname} - ${ctx.userContext.email} - ${duration}ms`
+        )
       } else {
         console.log(`[${method}] ${url.pathname} - ${duration}ms`)
       }
@@ -121,16 +126,18 @@ export function createEdgeFunction(
       const headersWithMetrics = new Headers(response.headers)
       headersWithMetrics.set('X-Response-Time', `${duration}ms`)
       headersWithMetrics.set('X-Request-ID', crypto.randomUUID())
-      
+
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
         headers: headersWithMetrics,
       })
-
     } catch (error) {
       const duration = Date.now() - startTime
-      console.error(`[Error] ${req.method} ${new URL(req.url).pathname} - ${duration}ms`, error)
+      console.error(
+        `[Error] ${req.method} ${new URL(req.url).pathname} - ${duration}ms`,
+        error
+      )
       return handleEdgeFunctionError(error)
     }
   })
@@ -161,17 +168,26 @@ export function handleEdgeFunctionError(error: unknown): Response {
   // Handle standard errors
   if (error instanceof Error) {
     // Authentication errors
-    if (error.message.includes('Unauthorized') || error.message.includes('expired token')) {
+    if (
+      error.message.includes('Unauthorized') ||
+      error.message.includes('expired token')
+    ) {
       return createErrorResponse(error.message, 401, { error: 'Unauthorized' })
     }
 
     // Validation errors
-    if (error.message.includes('required') || error.message.includes('Invalid')) {
+    if (
+      error.message.includes('required') ||
+      error.message.includes('Invalid')
+    ) {
       return createErrorResponse(error.message, 400, { error: 'Bad Request' })
     }
 
     // Permission errors
-    if (error.message.includes('permission') || error.message.includes('Forbidden')) {
+    if (
+      error.message.includes('permission') ||
+      error.message.includes('Forbidden')
+    ) {
       return createErrorResponse(error.message, 403, { error: 'Forbidden' })
     }
 
@@ -181,11 +197,15 @@ export function handleEdgeFunctionError(error: unknown): Response {
     }
 
     // Generic error
-    return createErrorResponse(error.message, 500, { error: 'Internal server error' })
+    return createErrorResponse(error.message, 500, {
+      error: 'Internal server error',
+    })
   }
 
   // Unknown error
-  return createErrorResponse('Internal server error', 500, { error: 'Internal server error' })
+  return createErrorResponse('Internal server error', 500, {
+    error: 'Internal server error',
+  })
 }
 
 /**
@@ -193,13 +213,20 @@ export function handleEdgeFunctionError(error: unknown): Response {
  */
 function getErrorType(status: number): string {
   switch (status) {
-    case 400: return 'Bad Request'
-    case 401: return 'Unauthorized'
-    case 403: return 'Forbidden'
-    case 404: return 'Not Found'
-    case 405: return 'Method Not Allowed'
-    case 500: return 'Internal Server Error'
-    default: return 'Error'
+    case 400:
+      return 'Bad Request'
+    case 401:
+      return 'Unauthorized'
+    case 403:
+      return 'Forbidden'
+    case 404:
+      return 'Not Found'
+    case 405:
+      return 'Method Not Allowed'
+    case 500:
+      return 'Internal Server Error'
+    default:
+      return 'Error'
   }
 }
 
@@ -209,7 +236,7 @@ function getErrorType(status: number): string {
  */
 export function createSuccessResponse<T>(
   data: T,
-  options: { 
+  options: {
     status?: number
     message?: string
     meta?: Record<string, unknown>
@@ -242,16 +269,17 @@ export function createErrorResponse(
   details?: Record<string, unknown>
 ): Response {
   const errorType = details?.error || getErrorType(status)
-  
+
   return new Response(
     JSON.stringify({
       error: errorType,
       message,
-      ...(details && Object.keys(details).length > 1 && { 
-        details: Object.fromEntries(
-          Object.entries(details).filter(([key]) => key !== 'error')
-        )
-      }),
+      ...(details &&
+        Object.keys(details).length > 1 && {
+          details: Object.fromEntries(
+            Object.entries(details).filter(([key]) => key !== 'error')
+          ),
+        }),
     }),
     {
       status,
@@ -265,8 +293,12 @@ export function createErrorResponse(
  */
 export class DatabaseError extends Error {
   public status: number
-  
-  constructor(message: string, status: number = 500, public details?: unknown) {
+
+  constructor(
+    message: string,
+    status: number = 500,
+    public details?: unknown
+  ) {
     super(message)
     this.name = 'DatabaseError'
     this.status = status

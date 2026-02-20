@@ -3,7 +3,7 @@
 // ============================================================================
 // Supports both hosted WebSocket broker and external customer brokers
 // Version: 2.0.0
-// 
+//
 // Environment Variables:
 // - MQTT_BROKER_URL: WebSocket URL for hosted broker (default: public test broker)
 //   Production: wss://mqtt.yourcompany.com:8084/mqtt
@@ -17,7 +17,8 @@ import mqtt from 'npm:mqtt@5.3.4'
 // Get MQTT broker URL from environment
 // For hosted mode: Returns HTTP ingestion endpoint (no broker needed)
 // For external mode: Customer provides their own MQTT broker URL
-const MQTT_BROKER_URL = Deno.env.get('SUPABASE_URL') + '/functions/v1/mqtt-ingest'
+const MQTT_BROKER_URL =
+  Deno.env.get('SUPABASE_URL') + '/functions/v1/mqtt-ingest'
 
 console.log(`[MQTT Hybrid] Hosted endpoint: ${MQTT_BROKER_URL}`)
 
@@ -28,7 +29,7 @@ interface MqttIntegration {
   settings: {
     // For hosted broker
     use_hosted?: boolean
-    
+
     // For external broker
     broker_url?: string
     port?: number
@@ -62,9 +63,13 @@ interface SubscribeRequest {
 // Connect to MQTT broker (hosted or external)
 async function connectMqttClient(
   integration: MqttIntegration,
-  credentials?: { username: string; password: string; client_id: string; broker_url: string }
+  credentials?: {
+    username: string
+    password: string
+    client_id: string
+    broker_url: string
+  }
 ): Promise<any> {
-  
   if (integration.integration_type === 'mqtt_hosted' && credentials) {
     // Connect to hosted WebSocket broker
     const client = mqtt.connect(credentials.broker_url, {
@@ -81,12 +86,12 @@ async function connectMqttClient(
         console.log('Connected to hosted MQTT broker')
         resolve(client)
       })
-      
+
       client.on('error', (err) => {
         console.error('MQTT connection error:', err)
         reject(err)
       })
-      
+
       setTimeout(() => reject(new Error('Connection timeout')), 31000)
     })
   } else {
@@ -113,12 +118,12 @@ async function connectMqttClient(
         console.log('Connected to external MQTT broker')
         resolve(client)
       })
-      
+
       client.on('error', (err) => {
         console.error('MQTT connection error:', err)
         reject(err)
       })
-      
+
       setTimeout(() => reject(new Error('Connection timeout')), 31000)
     })
   }
@@ -150,9 +155,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('MQTT function error:', error)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
-        type: error.name 
+        type: error.name,
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
@@ -176,7 +181,7 @@ async function handlePublish(req: Request, supabase: any) {
   }
 
   let credentials = null
-  
+
   // Get credentials if using hosted broker
   if (integration.integration_type === 'mqtt_hosted') {
     const { data: creds } = await supabase
@@ -184,19 +189,23 @@ async function handlePublish(req: Request, supabase: any) {
       .select('username, client_id, broker_url')
       .eq('integration_id', integration_id)
       .single()
-    
+
     if (!creds) {
-      throw new Error('Hosted broker credentials not found. Please generate credentials first.')
+      throw new Error(
+        'Hosted broker credentials not found. Please generate credentials first.'
+      )
     }
-    
+
     // Get password from integration settings (stored during credential generation)
     const settings = integration.settings || {}
     const password = settings.password || ''
-    
+
     if (!password) {
-      throw new Error('Hosted broker password not found in settings. Please regenerate credentials.')
+      throw new Error(
+        'Hosted broker password not found in settings. Please regenerate credentials.'
+      )
     }
-    
+
     credentials = { ...creds, password }
   }
 
@@ -212,9 +221,10 @@ async function handlePublish(req: Request, supabase: any) {
   try {
     for (const msg of messages) {
       try {
-        const payload = typeof msg.payload === 'object' 
-          ? JSON.stringify(msg.payload) 
-          : msg.payload
+        const payload =
+          typeof msg.payload === 'object'
+            ? JSON.stringify(msg.payload)
+            : msg.payload
 
         await new Promise((resolve, reject) => {
           client.publish(
@@ -238,12 +248,15 @@ async function handlePublish(req: Request, supabase: any) {
           direction: 'outgoing',
           status: 'success',
           message: `Published to ${msg.topic}`,
-          metadata: { topic: msg.topic, integration_type: integration.integration_type },
+          metadata: {
+            topic: msg.topic,
+            integration_type: integration.integration_type,
+          },
         })
       } catch (err) {
         results.failed++
         results.errors.push(`${msg.topic}: ${err.message}`)
-        
+
         await supabase.from('integration_activity_log').insert({
           integration_id,
           organization_id,
@@ -276,15 +289,13 @@ async function handleSubscribe(req: Request, supabase: any) {
   const { integration_id, organization_id, topics, callback_url } = body
 
   // Store subscription in database
-  const { error } = await supabase
-    .from('mqtt_subscriptions')
-    .upsert({
-      integration_id,
-      organization_id,
-      topics,
-      callback_url,
-      active: true,
-    })
+  const { error } = await supabase.from('mqtt_subscriptions').upsert({
+    integration_id,
+    organization_id,
+    topics,
+    callback_url,
+    active: true,
+  })
 
   if (error) throw error
 
@@ -338,7 +349,7 @@ async function handleTest(req: Request, supabase: any) {
 
   // Test connection
   const client = await connectMqttClient(integration, credentials)
-  
+
   // Test publish
   await new Promise((resolve, reject) => {
     client.publish(
@@ -392,11 +403,10 @@ async function handleCredentials(req: Request, supabase: any) {
     )
   } else if (action === 'generate') {
     // Generate new credentials with environment-configured broker URL
-    const { data, error } = await supabase
-      .rpc('generate_mqtt_credentials', {
-        p_organization_id: organization_id,
-        p_integration_id: integration_id,
-      })
+    const { data, error } = await supabase.rpc('generate_mqtt_credentials', {
+      p_organization_id: organization_id,
+      p_integration_id: integration_id,
+    })
 
     if (error) throw error
 
@@ -409,7 +419,8 @@ async function handleCredentials(req: Request, supabase: any) {
         success: true,
         data: {
           credentials,
-          warning: 'Save these credentials securely. Password cannot be retrieved again.',
+          warning:
+            'Save these credentials securely. Password cannot be retrieved again.',
         },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -1,6 +1,6 @@
 /**
  * React Query Configuration
- * 
+ *
  * Centralized configuration for TanStack Query (React Query) v5
  * Implements caching strategy per Story 3.3 requirements:
  * - Static data: 5 minutes (organizations, users)
@@ -17,7 +17,7 @@ import { useState } from 'react'
 
 /**
  * Default Query Client Configuration
- * 
+ *
  * Optimized for IoT platform with:
  * - Aggressive caching for static data
  * - Automatic background refetching
@@ -42,7 +42,7 @@ function makeQueryClient() {
 
         // Refetch on window focus for critical data
         refetchOnWindowFocus: true,
-        
+
         // Refetch on reconnect
         refetchOnReconnect: true,
 
@@ -77,7 +77,7 @@ function getQueryClient() {
 
 /**
  * Query Keys for Consistent Caching
- * 
+ *
  * Organized by entity type with optional filters
  * Used for cache invalidation and prefetching
  */
@@ -85,7 +85,8 @@ export const queryKeys = {
   // Organizations (static data - 5 min cache)
   organizations: ['organizations'] as const,
   organization: (id: string) => ['organizations', id] as const,
-  organizationMembers: (orgId: string) => ['organizations', orgId, 'members'] as const,
+  organizationMembers: (orgId: string) =>
+    ['organizations', orgId, 'members'] as const,
 
   // Users (static data - 5 min cache)
   users: ['users'] as const,
@@ -100,9 +101,10 @@ export const queryKeys = {
 
   // Telemetry (1 minute cache)
   telemetry: (deviceId: string) => ['telemetry', deviceId] as const,
-  telemetryRange: (deviceId: string, start: string, end: string) => 
+  telemetryRange: (deviceId: string, start: string, end: string) =>
     ['telemetry', deviceId, start, end] as const,
-  latestTelemetry: (deviceId: string) => ['telemetry', deviceId, 'latest'] as const,
+  latestTelemetry: (deviceId: string) =>
+    ['telemetry', deviceId, 'latest'] as const,
 
   // Alerts (30 second cache)
   alerts: ['alerts'] as const,
@@ -123,17 +125,17 @@ export const queryKeys = {
   aiInsights: (deviceId: string) => ['ai-insights', deviceId] as const,
 
   // User Actions / Audit Log (1 minute cache)
-  userActions: (filters?: Record<string, unknown>) => 
+  userActions: (filters?: Record<string, unknown>) =>
     ['user-actions', filters] as const,
-  
+
   // Analytics (1 minute cache)
-  analytics: (type: string, filters?: Record<string, unknown>) => 
+  analytics: (type: string, filters?: Record<string, unknown>) =>
     ['analytics', type, filters] as const,
 } as const
 
 /**
  * Cache Time Constants (in milliseconds)
- * 
+ *
  * Per Story 3.3 acceptance criteria:
  * - STATIC_DATA: 5 minutes
  * - DEVICE_STATUS: 30 seconds
@@ -141,16 +143,16 @@ export const queryKeys = {
  * - AI_INSIGHTS: 15 minutes
  */
 export const CACHE_TIME = {
-  STATIC_DATA: 5 * 60 * 1000,      // 5 minutes (organizations, users)
-  DEVICE_STATUS: 30 * 1000,        // 30 seconds
-  TELEMETRY: 60 * 1000,            // 1 minute
-  AI_INSIGHTS: 15 * 60 * 1000,     // 15 minutes
-  ALERTS: 30 * 1000,               // 30 seconds
+  STATIC_DATA: 5 * 60 * 1000, // 5 minutes (organizations, users)
+  DEVICE_STATUS: 30 * 1000, // 30 seconds
+  TELEMETRY: 60 * 1000, // 1 minute
+  AI_INSIGHTS: 15 * 60 * 1000, // 15 minutes
+  ALERTS: 30 * 1000, // 30 seconds
 } as const
 
 /**
  * QueryProvider Component
- * 
+ *
  * Wraps the application with React Query context
  * Includes DevTools in development for debugging
  */
@@ -171,12 +173,12 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 
 /**
  * Usage Examples:
- * 
+ *
  * @example Basic Query
  * ```tsx
  * import { useQuery } from '@tanstack/react-query'
  * import { queryKeys, CACHE_TIME } from '@/lib/query-client'
- * 
+ *
  * function DevicesList() {
  *   const { data, isLoading } = useQuery({
  *     queryKey: queryKeys.devices,
@@ -188,14 +190,14 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
  *   })
  * }
  * ```
- * 
+ *
  * @example Mutation with Cache Invalidation
  * ```tsx
  * import { useMutation, useQueryClient } from '@tanstack/react-query'
- * 
+ *
  * function UpdateDevice() {
  *   const queryClient = useQueryClient()
- *   
+ *
  *   const mutation = useMutation({
  *     mutationFn: async (device) => {
  *       const { data } = await supabase
@@ -212,21 +214,21 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
  *   })
  * }
  * ```
- * 
+ *
  * @example Prefetching for Performance
  * ```tsx
  * import { useQueryClient } from '@tanstack/react-query'
- * 
+ *
  * function DeviceRow({ deviceId }) {
  *   const queryClient = useQueryClient()
- *   
+ *
  *   const prefetchDevice = () => {
  *     queryClient.prefetchQuery({
  *       queryKey: queryKeys.device(deviceId),
  *       queryFn: () => fetchDevice(deviceId),
  *     })
  *   }
- *   
+ *
  *   return <div onMouseEnter={prefetchDevice}>...</div>
  * }
  * ```

@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 /**
  * Map dashboard routes to human-readable page names.
@@ -30,7 +30,7 @@ const ROUTE_TITLES: [string, string][] = [
   ['/dashboard/support', 'Support'],
   ['/dashboard/users', 'Users'],
   ['/dashboard', 'Dashboard'],
-];
+]
 
 /**
  * Sets `document.title` to include the current page name and active organization.
@@ -41,17 +41,18 @@ const ROUTE_TITLES: [string, string][] = [
  * Call once in the dashboard layout so every child page benefits automatically.
  */
 export function usePageTitle() {
-  const pathname = usePathname();
-  const { currentOrganization } = useOrganization();
+  const pathname = usePathname()
+  const { currentOrganization } = useOrganization()
 
   useEffect(() => {
     const pageName =
-      ROUTE_TITLES.find(([route]) => pathname.startsWith(route))?.[1] ?? 'Dashboard';
+      ROUTE_TITLES.find(([route]) => pathname.startsWith(route))?.[1] ??
+      'Dashboard'
 
-    const orgName = currentOrganization?.name;
+    const orgName = currentOrganization?.name
 
     document.title = orgName
       ? `${pageName} | ${orgName} — NetNeural`
-      : `${pageName} — NetNeural`;
-  }, [pathname, currentOrganization]);
+      : `${pageName} — NetNeural`
+  }, [pathname, currentOrganization])
 }

@@ -16,9 +16,7 @@ import {
   createErrorResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-} from '../_shared/auth.ts'
+import { createServiceClient } from '../_shared/auth.ts'
 
 interface FeedbackRequest {
   organizationId: string
@@ -38,15 +36,29 @@ export default createEdgeFunction(
 
     const user = userContext!
     const body: FeedbackRequest = await req.json()
-    const { organizationId, type, title, description, severity, browserInfo, pageUrl } = body
+    const {
+      organizationId,
+      type,
+      title,
+      description,
+      severity,
+      browserInfo,
+      pageUrl,
+    } = body
 
     // Validate required fields
-    if (!organizationId) throw new DatabaseError('organizationId is required', 400)
+    if (!organizationId)
+      throw new DatabaseError('organizationId is required', 400)
     if (!type || !['bug_report', 'feature_request'].includes(type)) {
-      throw new DatabaseError('type must be "bug_report" or "feature_request"', 400)
+      throw new DatabaseError(
+        'type must be "bug_report" or "feature_request"',
+        400
+      )
     }
-    if (!title || title.trim().length === 0) throw new DatabaseError('title is required', 400)
-    if (!description || description.trim().length === 0) throw new DatabaseError('description is required', 400)
+    if (!title || title.trim().length === 0)
+      throw new DatabaseError('title is required', 400)
+    if (!description || description.trim().length === 0)
+      throw new DatabaseError('description is required', 400)
 
     const serviceClient = createServiceClient()
 
@@ -72,9 +84,8 @@ export default createEdgeFunction(
     const orgLabel = org?.slug || org?.name || 'unknown-org'
 
     // Build GitHub issue
-    const issueTitle = type === 'bug_report'
-      ? `[Bug] ${title}`
-      : `[Feature Request] ${title}`
+    const issueTitle =
+      type === 'bug_report' ? `[Bug] ${title}` : `[Feature Request] ${title}`
 
     const severityLine = severity ? `**Severity:** ${severity}\n` : ''
     const issueBody = `## User Feedback
@@ -125,8 +136,8 @@ ${description}
           {
             method: 'POST',
             headers: {
-              'Authorization': `token ${githubToken}`,
-              'Accept': 'application/vnd.github.v3+json',
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github.v3+json',
               'Content-Type': 'application/json',
               'User-Agent': 'NetNeural-Feedback-Bot',
             },
@@ -152,7 +163,9 @@ ${description}
         // Non-fatal: still save feedback locally
       }
     } else {
-      console.warn('GITHUB_TOKEN not configured — skipping GitHub issue creation')
+      console.warn(
+        'GITHUB_TOKEN not configured — skipping GitHub issue creation'
+      )
     }
 
     // Store feedback in database
@@ -176,7 +189,10 @@ ${description}
 
     if (insertError) {
       console.error('Feedback insert failed:', insertError)
-      throw new DatabaseError(`Failed to save feedback: ${insertError.message}`, 500)
+      throw new DatabaseError(
+        `Failed to save feedback: ${insertError.message}`,
+        500
+      )
     }
 
     return createSuccessResponse({

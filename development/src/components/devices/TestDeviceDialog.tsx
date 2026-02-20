@@ -1,17 +1,30 @@
 /**
  * Test Device Creation Dialog
- * 
+ *
  * Allows users to create fake/test devices for development and testing.
  * Supports selecting from existing device types to inherit configuration.
  */
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FlaskConical } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -25,12 +38,16 @@ interface TestDeviceDialogProps {
   onSuccess?: () => void
 }
 
-export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDialogProps) {
+export function TestDeviceDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: TestDeviceDialogProps) {
   const { currentOrganization } = useOrganization()
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingTypes, setLoadingTypes] = useState(false)
-  
+
   // Form state
   const [name, setName] = useState('')
   const [deviceTypeId, setDeviceTypeId] = useState<string>('')
@@ -82,10 +99,10 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
     setLoading(true)
     try {
       const supabase = createClient()
-      
+
       // Get the selected device type
-      const selectedType = deviceTypes.find(t => t.id === deviceTypeId)
-      
+      const selectedType = deviceTypes.find((t) => t.id === deviceTypeId)
+
       // Create the test device
       const { data, error } = await supabase
         .from('devices')
@@ -107,12 +124,12 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
       if (error) throw error
 
       toast.success(`Test device "${name}" created successfully`)
-      
+
       // Reset form
       setName('')
       setDeviceTypeId('')
       setLocation('Test Environment')
-      
+
       onOpenChange(false)
       onSuccess?.()
     } catch (error) {
@@ -132,7 +149,7 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
             <DialogTitle>Create Test Device</DialogTitle>
           </div>
           <DialogDescription>
-            Create a fake device for testing alerts, graphs, and AI features. 
+            Create a fake device for testing alerts, graphs, and AI features.
             Test devices can be controlled via interactive controls.
           </DialogDescription>
         </DialogHeader>
@@ -159,15 +176,22 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
                 Loading device types...
               </div>
             ) : deviceTypes.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+              <div className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
                 No device types configured. Create device types first in the{' '}
-                <a href="/dashboard/device-types" className="text-blue-500 hover:underline">
+                <a
+                  href="/dashboard/device-types"
+                  className="text-blue-500 hover:underline"
+                >
                   Device Types
                 </a>{' '}
                 page.
               </div>
             ) : (
-              <Select value={deviceTypeId} onValueChange={setDeviceTypeId} disabled={loading}>
+              <Select
+                value={deviceTypeId}
+                onValueChange={setDeviceTypeId}
+                disabled={loading}
+              >
                 <SelectTrigger id="device-type">
                   <SelectValue placeholder="Select a device type" />
                 </SelectTrigger>
@@ -177,12 +201,17 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
                       <div className="flex items-center gap-2">
                         <span>{type.name}</span>
                         {type.device_class && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          <Badge
+                            variant="outline"
+                            className="px-1 py-0 text-[10px]"
+                          >
                             {type.device_class}
                           </Badge>
                         )}
                         {type.unit && (
-                          <span className="text-xs text-muted-foreground">({type.unit})</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({type.unit})
+                          </span>
                         )}
                       </div>
                     </SelectItem>
@@ -205,13 +234,14 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
           </div>
 
           {/* Info */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
+          <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
             <div className="flex gap-2">
-              <FlaskConical className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-muted-foreground space-y-1">
+              <FlaskConical className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+              <div className="space-y-1 text-sm text-muted-foreground">
                 <p>
-                  <strong className="text-foreground">Test devices</strong> will have a special badge 
-                  and interactive controls for adjusting sensor values, triggering alerts, and creating scenarios.
+                  <strong className="text-foreground">Test devices</strong> will
+                  have a special badge and interactive controls for adjusting
+                  sensor values, triggering alerts, and creating scenarios.
                 </p>
               </div>
             </div>
@@ -219,11 +249,15 @@ export function TestDeviceDialog({ open, onOpenChange, onSuccess }: TestDeviceDi
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
           <Button onClick={handleCreate} disabled={loading || !deviceTypeId}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Test Device
           </Button>
         </DialogFooter>

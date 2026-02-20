@@ -33,7 +33,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor, FlaskConical, Table2, Grid3x3 } from 'lucide-react'
+import {
+  Loader2,
+  ArrowUpDown,
+  Thermometer,
+  Droplets,
+  Activity,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Monitor,
+  FlaskConical,
+  Table2,
+  Grid3x3,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
@@ -103,7 +117,7 @@ const SENSOR_LABELS: Record<number, string> = {
   7: 'Motion',
 }
 
-// Unit labels based on the units field 
+// Unit labels based on the units field
 const UNIT_LABELS: Record<number, string> = {
   1: '°C',
   2: '°F',
@@ -120,7 +134,7 @@ const UNIT_LABELS: Record<number, string> = {
 function isGatewayDevice(deviceType: string, deviceName: string): boolean {
   const type = deviceType.toLowerCase()
   const name = deviceName.toLowerCase()
-  
+
   return (
     type.includes('gateway') ||
     type.includes('cellular') ||
@@ -135,26 +149,31 @@ function isGatewayDevice(deviceType: string, deviceName: string): boolean {
 
 function getSensorIcon(sensorType?: number, sensorName?: string) {
   const name = sensorName?.toLowerCase() || ''
-  if (sensorType === 1 || name.includes('tmp') || name.includes('temp')) return Thermometer
-  if (sensorType === 2 || name.includes('hum') || name.includes('sht')) return Droplets
+  if (sensorType === 1 || name.includes('tmp') || name.includes('temp'))
+    return Thermometer
+  if (sensorType === 2 || name.includes('hum') || name.includes('sht'))
+    return Droplets
   return Activity
 }
 
-function formatSensorValue(telemetry: TelemetryReading['telemetry'], useFahrenheit: boolean = false): string {
+function formatSensorValue(
+  telemetry: TelemetryReading['telemetry'],
+  useFahrenheit: boolean = false
+): string {
   if (telemetry.value == null) return 'N/A'
   let value = Number(telemetry.value)
   let unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
-  
+
   // Convert temperature if needed
   const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'
   if (isTemperature && useFahrenheit && unit === '°C') {
-    value = (value * 9/5) + 32
+    value = (value * 9) / 5 + 32
     unit = '°F'
   } else if (isTemperature && !useFahrenheit && unit === '°F') {
-    value = (value - 32) * 5/9
+    value = ((value - 32) * 5) / 9
     unit = '°C'
   }
-  
+
   return `${value.toFixed(1)}${unit}`
 }
 
@@ -177,7 +196,7 @@ export function DevicesList() {
     }
     return true
   })
-  
+
   // Filter and Sort states
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
@@ -185,60 +204,64 @@ export function DevicesList() {
   const [sortBy, setSortBy] = useState<string>('status') // Changed from 'name' to 'status' for Issue #103
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [latestTelemetry, setLatestTelemetry] = useState<DeviceTelemetry>({})
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(50)
-  
+
   // Refresh states
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  
+
   // Test device states
   const [testDeviceDialogOpen, setTestDeviceDialogOpen] = useState(false)
-  
+
   // View mode state
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
-  const fetchDevices = useCallback(async (isManualRefresh = false) => {
-    if (!currentOrganization) {
-      setDevices([])
-      setLoading(false)
-      return
-    }
-
-    try {
-      if (isManualRefresh) {
-        setIsRefreshing(true)
-      } else {
-        setLoading(true)
-      }
-      setError(null)
-      
-      // Use edge function client SDK
-      const response = await edgeFunctions.devices.list(currentOrganization.id)
-      
-      if (!response.success) {
-        setError(response.error?.message || 'Failed to fetch devices')
+  const fetchDevices = useCallback(
+    async (isManualRefresh = false) => {
+      if (!currentOrganization) {
         setDevices([])
         setLoading(false)
-        setIsRefreshing(false)
         return
       }
-      
-      setDevices((response.data?.devices as Device[]) || [])
-      
-    } catch (err) {
-      console.error('Error fetching devices:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices')
-      // Show empty state on error instead of mock data
-      setDevices([])
-    } finally {
-      setLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [currentOrganization])
+
+      try {
+        if (isManualRefresh) {
+          setIsRefreshing(true)
+        } else {
+          setLoading(true)
+        }
+        setError(null)
+
+        // Use edge function client SDK
+        const response = await edgeFunctions.devices.list(
+          currentOrganization.id
+        )
+
+        if (!response.success) {
+          setError(response.error?.message || 'Failed to fetch devices')
+          setDevices([])
+          setLoading(false)
+          setIsRefreshing(false)
+          return
+        }
+
+        setDevices((response.data?.devices as Device[]) || [])
+      } catch (err) {
+        console.error('Error fetching devices:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch devices')
+        // Show empty state on error instead of mock data
+        setDevices([])
+      } finally {
+        setLoading(false)
+        setIsRefreshing(false)
+      }
+    },
+    [currentOrganization]
+  )
 
   const fetchLocations = useCallback(async () => {
     if (!currentOrganization) {
@@ -247,8 +270,13 @@ export function DevicesList() {
     }
 
     try {
-      console.log('[DevicesList] Fetching locations for org:', currentOrganization.id)
-      const response = await edgeFunctions.locations.list(currentOrganization.id)
+      console.log(
+        '[DevicesList] Fetching locations for org:',
+        currentOrganization.id
+      )
+      const response = await edgeFunctions.locations.list(
+        currentOrganization.id
+      )
       console.log('[DevicesList] Locations response:', response)
       if (response.success) {
         // The locations endpoint returns data directly as an array, not wrapped in {locations: [...]}
@@ -256,7 +284,10 @@ export function DevicesList() {
         console.log('[DevicesList] Locations data:', locationsData)
         setLocations(locationsData as Location[])
       } else {
-        console.error('[DevicesList] Failed to fetch locations:', response.error)
+        console.error(
+          '[DevicesList] Failed to fetch locations:',
+          response.error
+        )
       }
     } catch (err) {
       console.error('[DevicesList] Error fetching locations:', err)
@@ -264,60 +295,70 @@ export function DevicesList() {
   }, [currentOrganization])
 
   // Fetch latest telemetry reading for each device (including multiple sensor types)
-  const fetchLatestTelemetry = useCallback(async (deviceIds: string[]) => {
-    if (!currentOrganization || deviceIds.length === 0) return
+  const fetchLatestTelemetry = useCallback(
+    async (deviceIds: string[]) => {
+      if (!currentOrganization || deviceIds.length === 0) return
 
-    try {
-      const supabase = createClient()
-      
-      // Fetch recent telemetry for each device to capture multiple sensor types
-      // Multi-sensor devices report different sensor types (temp, humidity, etc.)
-      const { data, error: telError } = await supabase
-        .from('device_telemetry_history')
-        .select('device_id, telemetry, device_timestamp, received_at')
-        .eq('organization_id', currentOrganization.id)
-        .in('device_id', deviceIds)
-        .order('received_at', { ascending: false })
-        .limit(deviceIds.length * 10) // Get multiple readings to capture different sensor types
+      try {
+        const supabase = createClient()
 
-      if (telError) {
-        console.error('[DevicesList] Error fetching telemetry:', telError)
-        return
-      }
+        // Fetch recent telemetry for each device to capture multiple sensor types
+        // Multi-sensor devices report different sensor types (temp, humidity, etc.)
+        const { data, error: telError } = await supabase
+          .from('device_telemetry_history')
+          .select('device_id, telemetry, device_timestamp, received_at')
+          .eq('organization_id', currentOrganization.id)
+          .in('device_id', deviceIds)
+          .order('received_at', { ascending: false })
+          .limit(deviceIds.length * 10) // Get multiple readings to capture different sensor types
 
-      if (data && data.length > 0) {
-        // Group by device_id and keep latest reading for each unique sensor type
-        const grouped: DeviceTelemetry = {}
-        for (const row of data) {
-          const reading = row as TelemetryReading
-          if (!grouped[row.device_id]) {
-            grouped[row.device_id] = []
-          }
-          
-          // Check if we already have this sensor type for this device
-          const sensorKey = reading.telemetry.type != null 
-            ? `type_${reading.telemetry.type}` 
-            : reading.telemetry.sensor || 'unknown'
-          
-          const hasSensorType = grouped[row.device_id]!.some(r => {
-            const existingKey = r.telemetry.type != null 
-              ? `type_${r.telemetry.type}` 
-              : r.telemetry.sensor || 'unknown'
-            return existingKey === sensorKey
-          })
-          
-          if (!hasSensorType) {
-            grouped[row.device_id]!.push(reading)
-          }
+        if (telError) {
+          console.error('[DevicesList] Error fetching telemetry:', telError)
+          return
         }
-        setLatestTelemetry(grouped)
-        const totalReadings = Object.values(grouped).reduce((sum, readings) => sum + readings.length, 0)
-        console.log(`[DevicesList] Loaded ${totalReadings} sensor readings across ${Object.keys(grouped).length} devices`)
+
+        if (data && data.length > 0) {
+          // Group by device_id and keep latest reading for each unique sensor type
+          const grouped: DeviceTelemetry = {}
+          for (const row of data) {
+            const reading = row as TelemetryReading
+            if (!grouped[row.device_id]) {
+              grouped[row.device_id] = []
+            }
+
+            // Check if we already have this sensor type for this device
+            const sensorKey =
+              reading.telemetry.type != null
+                ? `type_${reading.telemetry.type}`
+                : reading.telemetry.sensor || 'unknown'
+
+            const hasSensorType = grouped[row.device_id]!.some((r) => {
+              const existingKey =
+                r.telemetry.type != null
+                  ? `type_${r.telemetry.type}`
+                  : r.telemetry.sensor || 'unknown'
+              return existingKey === sensorKey
+            })
+
+            if (!hasSensorType) {
+              grouped[row.device_id]!.push(reading)
+            }
+          }
+          setLatestTelemetry(grouped)
+          const totalReadings = Object.values(grouped).reduce(
+            (sum, readings) => sum + readings.length,
+            0
+          )
+          console.log(
+            `[DevicesList] Loaded ${totalReadings} sensor readings across ${Object.keys(grouped).length} devices`
+          )
+        }
+      } catch (err) {
+        console.error('[DevicesList] Error fetching telemetry:', err)
       }
-    } catch (err) {
-      console.error('[DevicesList] Error fetching telemetry:', err)
-    }
-  }, [currentOrganization])
+    },
+    [currentOrganization]
+  )
 
   // Handle manual refresh
   const handleRefresh = useCallback(async () => {
@@ -354,20 +395,24 @@ export function DevicesList() {
   // Fetch telemetry once devices are loaded
   useEffect(() => {
     if (devices.length > 0) {
-      const deviceIds = devices.map(d => d.id)
+      const deviceIds = devices.map((d) => d.id)
       fetchLatestTelemetry(deviceIds)
     }
   }, [devices, fetchLatestTelemetry])
 
   // Compute unique device types for filter
   const deviceTypes = useMemo(() => {
-    const types = new Set(devices.map(d => d.device_type || d.type || 'unknown'))
+    const types = new Set(
+      devices.map((d) => d.device_type || d.type || 'unknown')
+    )
     return Array.from(types).sort()
   }, [devices])
 
   // Device type images from organization settings (case-insensitive lookup map)
   const deviceTypeImages = useMemo<Record<string, string>>(() => {
-    const settings = currentOrganization?.settings as Record<string, unknown> | undefined
+    const settings = currentOrganization?.settings as
+      | Record<string, unknown>
+      | undefined
     const raw = (settings?.device_type_images as Record<string, string>) || {}
     // Build a lowercase-keyed map so lookups are case-insensitive
     const map: Record<string, string> = {}
@@ -383,20 +428,22 @@ export function DevicesList() {
 
     // Apply status filter
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(d => d.status === filterStatus)
+      filtered = filtered.filter((d) => d.status === filterStatus)
     }
 
     // Apply type filter
     if (filterType !== 'all') {
-      filtered = filtered.filter(d => (d.device_type || d.type) === filterType)
+      filtered = filtered.filter(
+        (d) => (d.device_type || d.type) === filterType
+      )
     }
 
     // Apply location filter
     if (filterLocation !== 'all') {
       if (filterLocation === 'none') {
-        filtered = filtered.filter(d => !d.location_id)
+        filtered = filtered.filter((d) => !d.location_id)
       } else {
-        filtered = filtered.filter(d => d.location_id === filterLocation)
+        filtered = filtered.filter((d) => d.location_id === filterLocation)
       }
     }
 
@@ -421,7 +468,7 @@ export function DevicesList() {
             warning: 2,
             error: 3,
             offline: 4,
-            maintenance: 5
+            maintenance: 5,
           }
           aVal = statusPriority[a.status] || 999
           bVal = statusPriority[b.status] || 999
@@ -449,13 +496,13 @@ export function DevicesList() {
 
     return filtered
   }, [devices, filterStatus, filterType, filterLocation, sortBy, sortOrder])
-  
+
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedDevices.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedDevices = filteredAndSortedDevices.slice(startIndex, endIndex)
-  
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
@@ -481,8 +528,8 @@ export function DevicesList() {
         {
           method: 'DELETE',
           body: {
-            organization_id: currentOrganization?.id
-          }
+            organization_id: currentOrganization?.id,
+          },
         }
       )
 
@@ -496,7 +543,9 @@ export function DevicesList() {
       fetchDevices()
     } catch (err) {
       console.error('Error deleting device:', err)
-      toast.error(err instanceof Error ? err.message : 'Failed to delete device')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete device'
+      )
     } finally {
       setDeleting(false)
     }
@@ -504,11 +553,16 @@ export function DevicesList() {
 
   const getStatusIcon = (status: Device['status']) => {
     switch (status) {
-      case 'online': return '🟢'
-      case 'warning': return '🟡'
-      case 'error': return '🔴'
-      case 'offline': return '⚫'
-      default: return '❓'
+      case 'online':
+        return '🟢'
+      case 'warning':
+        return '🟡'
+      case 'error':
+        return '🔴'
+      case 'offline':
+        return '⚫'
+      default:
+        return '❓'
     }
   }
 
@@ -519,14 +573,14 @@ export function DevicesList() {
           {[1, 2, 3].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-3">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
+                <div className="h-4 w-3/4 rounded bg-muted"></div>
+                <div className="h-3 w-1/2 rounded bg-muted"></div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="h-3 bg-muted rounded"></div>
-                  <div className="h-3 bg-muted rounded"></div>
-                  <div className="h-3 bg-muted rounded"></div>
+                  <div className="h-3 rounded bg-muted"></div>
+                  <div className="h-3 rounded bg-muted"></div>
+                  <div className="h-3 rounded bg-muted"></div>
                 </div>
               </CardContent>
             </Card>
@@ -547,7 +601,7 @@ export function DevicesList() {
           </CardContent>
         </Card>
       )}
-      
+
       {/* Filter and Sort Controls */}
       <Card>
         <CardContent className="pt-6">
@@ -579,8 +633,10 @@ export function DevicesList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {deviceTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  {deviceTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -596,7 +652,7 @@ export function DevicesList() {
                 <SelectContent>
                   <SelectItem value="all">All Locations</SelectItem>
                   <SelectItem value="none">No Location</SelectItem>
-                  {locations.map(loc => (
+                  {locations.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       {loc.name} {loc.city ? `(${loc.city})` : ''}
                     </SelectItem>
@@ -630,7 +686,9 @@ export function DevicesList() {
                 id="sort-order"
                 variant="outline"
                 className="w-full justify-between"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                onClick={() =>
+                  setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                }
               >
                 {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -639,20 +697,22 @@ export function DevicesList() {
           </div>
 
           {/* Pagination Controls and Actions */}
-          <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredAndSortedDevices.length)} of {filteredAndSortedDevices.length} devices
+                Showing {startIndex + 1}-
+                {Math.min(endIndex, filteredAndSortedDevices.length)} of{' '}
+                {filteredAndSortedDevices.length} devices
                 {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
               </span>
             </div>
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex flex-wrap items-center gap-4">
               <Button
                 variant="default"
                 size="sm"
                 onClick={() => setTestDeviceDialogOpen(true)}
               >
-                <FlaskConical className="h-4 w-4 mr-2" />
+                <FlaskConical className="mr-2 h-4 w-4" />
                 Create Test Device
               </Button>
               <Button
@@ -661,7 +721,9 @@ export function DevicesList() {
                 onClick={handleRefresh}
                 disabled={isRefreshing || loading}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </Button>
               <Button
@@ -682,7 +744,7 @@ export function DevicesList() {
                       'Firmware Version',
                       'Location',
                       'Integration',
-                      'External ID'
+                      'External ID',
                     ],
                     data: filteredAndSortedDevices,
                     transformRow: (device: Device) => [
@@ -691,27 +753,37 @@ export function DevicesList() {
                       device.model || '',
                       device.serial_number || '',
                       device.status,
-                      device.lastSeen ? format(new Date(device.lastSeen), 'yyyy-MM-dd HH:mm:ss') : '',
+                      device.lastSeen
+                        ? format(
+                            new Date(device.lastSeen),
+                            'yyyy-MM-dd HH:mm:ss'
+                          )
+                        : '',
                       device.batteryLevel ? `${device.batteryLevel}%` : '',
-                      device.signal_strength ? `${device.signal_strength} dBm` : '',
+                      device.signal_strength
+                        ? `${device.signal_strength} dBm`
+                        : '',
                       device.firmware_version || '',
-                      locations.find(l => l.id === device.location_id)?.name || '',
+                      locations.find((l) => l.id === device.location_id)
+                        ?.name || '',
                       device.integrationName || '',
-                      device.externalDeviceId || ''
-                    ]
+                      device.externalDeviceId || '',
+                    ],
                   })
                 }}
                 disabled={isExporting || filteredAndSortedDevices.length === 0}
               >
                 {isExporting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="mr-2 h-4 w-4" />
                 )}
-                {isExporting ? `Exporting... ${progress.progress}%` : 'Export CSV'}
+                {isExporting
+                  ? `Exporting... ${progress.progress}%`
+                  : 'Export CSV'}
               </Button>
             </div>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
                   <Switch
@@ -719,7 +791,10 @@ export function DevicesList() {
                     checked={autoRefresh}
                     onCheckedChange={setAutoRefresh}
                   />
-                  <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
+                  <Label
+                    htmlFor="auto-refresh"
+                    className="cursor-pointer text-sm"
+                  >
                     Auto-refresh (30s)
                   </Label>
                 </div>
@@ -746,7 +821,7 @@ export function DevicesList() {
                   Clear Filters
                 </Button>
               </div>
-              
+
               {/* View Mode Toggle */}
               <div className="flex items-center space-x-2">
                 <Button
@@ -754,7 +829,7 @@ export function DevicesList() {
                   size="sm"
                   onClick={() => setViewMode('cards')}
                 >
-                  <Grid3x3 className="h-4 w-4 mr-1" />
+                  <Grid3x3 className="mr-1 h-4 w-4" />
                   Cards
                 </Button>
                 <Button
@@ -762,7 +837,7 @@ export function DevicesList() {
                   size="sm"
                   onClick={() => setViewMode('table')}
                 >
-                  <Table2 className="h-4 w-4 mr-1" />
+                  <Table2 className="mr-1 h-4 w-4" />
                   Table
                 </Button>
               </div>
@@ -770,7 +845,7 @@ export function DevicesList() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Pagination Navigation */}
       {totalPages > 1 && (
         <Card>
@@ -779,23 +854,23 @@ export function DevicesList() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
+                <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
               <div className="flex items-center gap-2">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
+                  let pageNum
                   if (totalPages <= 5) {
-                    pageNum = i + 1;
+                    pageNum = i + 1
                   } else if (currentPage <= 3) {
-                    pageNum = i + 1;
+                    pageNum = i + 1
                   } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
+                    pageNum = totalPages - 4 + i
                   } else {
-                    pageNum = currentPage - 2 + i;
+                    pageNum = currentPage - 2 + i
                   }
                   return (
                     <Button
@@ -806,192 +881,235 @@ export function DevicesList() {
                     >
                       {pageNum}
                     </Button>
-                  );
+                  )
                 })}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Next
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
-      
+
       {/* Devices Display - Cards or Table */}
       {viewMode === 'cards' ? (
         <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           {paginatedDevices.map((device) => (
-            <Card key={device.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{device.name}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getStatusIcon(device.status)}</span>
-                  {device.is_test_device && (
-                    <Badge className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/30 gap-1">
-                      <FlaskConical className="h-3 w-3" />
-                      Active Test Sensor
+            <Card key={device.id} className="transition-shadow hover:shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{device.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">
+                      {getStatusIcon(device.status)}
+                    </span>
+                    {device.is_test_device && (
+                      <Badge className="gap-1 border border-purple-500/30 bg-purple-500/10 text-xs text-purple-700 dark:text-purple-400">
+                        <FlaskConical className="h-3 w-3" />
+                        Active Test Sensor
+                      </Badge>
+                    )}
+                    {device.isExternallyManaged && (
+                      <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-xs text-blue-700 dark:text-blue-400">
+                        {device.integrationName || 'External'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {(() => {
+                    const typeName = device.device_type || device.type || ''
+                    const imgUrl = deviceTypeImages[typeName.toLowerCase()]
+                    if (imgUrl) {
+                      return (
+                        <img
+                          src={imgUrl}
+                          alt={typeName}
+                          className="inline-block h-5 w-5 rounded-sm object-contain"
+                        />
+                      )
+                    }
+                    return (
+                      <Monitor className="h-4 w-4 text-muted-foreground/60" />
+                    )
+                  })()}
+                  {device.type}
+                  {device.device_type_id && (
+                    <Badge
+                      variant="outline"
+                      className="h-4 border-green-500/30 bg-green-500/10 px-1 py-0 text-[10px] text-green-700 dark:text-green-400"
+                    >
+                      Configured
                     </Badge>
                   )}
-                  {device.isExternallyManaged && (
-                    <span className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-1 rounded-full border border-blue-500/20">
-                      {device.integrationName || 'External'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                {(() => {
-                  const typeName = device.device_type || device.type || ''
-                  const imgUrl = deviceTypeImages[typeName.toLowerCase()]
-                  if (imgUrl) {
-                    return (
-                      <img
-                        src={imgUrl}
-                        alt={typeName}
-                        className="w-5 h-5 object-contain rounded-sm inline-block"
-                      />
-                    )
-                  }
-                  return <Monitor className="w-4 h-4 text-muted-foreground/60" />
-                })()}
-                {device.type}
-                {device.device_type_id && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
-                    Configured
-                  </Badge>
-                )}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Location:</span>
-                  <span className="text-foreground">{device.location}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Last Seen:</span>
-                  <span className="text-foreground">{device.lastSeen}</span>
-                </div>
-                {device.batteryLevel != null && (
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Battery:</span>
-                    <span className="text-foreground">{device.batteryLevel}%</span>
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="text-foreground">{device.location}</span>
                   </div>
-                )}
-                {device.signal_strength != null && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Signal:</span>
-                    <span className="text-foreground">{device.signal_strength} dBm</span>
+                    <span className="text-muted-foreground">Last Seen:</span>
+                    <span className="text-foreground">{device.lastSeen}</span>
                   </div>
-                )}
-                {device.firmware_version && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Firmware:</span>
-                    <span className="text-foreground">{device.firmware_version}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Management:</span>
-                  <span className={device.isExternallyManaged ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}>
-                    {device.isExternallyManaged ? 'External' : 'Local'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className={`font-medium ${
-                    device.status === 'online' ? 'text-green-600 dark:text-green-400' :
-                    device.status === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
-                    device.status === 'error' ? 'text-red-600 dark:text-red-400' :
-                    'text-muted-foreground'
-                  }`}>
-                    {device.status.toUpperCase()}
-                  </span>
-                </div>
-                {/* Latest Telemetry Readings (All Sensor Types) */}
-                {(() => {
-                  const readings = latestTelemetry[device.id]
-                  if (!readings || readings.length === 0) return null
-                  
-                  // Find the most recent timestamp across all sensor readings
-                  const mostRecentTimestamp = readings.reduce((latest, r) => {
-                    const timestamp = r.device_timestamp || r.received_at
-                    return !latest || new Date(timestamp) > new Date(latest) ? timestamp : latest
-                  }, '')
-                  const timeAgo = fmt.timeAgo(mostRecentTimestamp)
-                  
-                  return (
-                    <div className="mt-2 pt-2 border-t border-border/50 space-y-1.5">
-                      {readings.map((tel, idx) => {
-                        const SensorIcon = getSensorIcon(tel.telemetry.type as number | undefined, tel.telemetry.sensor as string | undefined)
-                        const sensorLabel = tel.telemetry.type != null 
-                          ? SENSOR_LABELS[tel.telemetry.type as number] || tel.telemetry.sensor 
-                          : tel.telemetry.sensor || 'Sensor'
-                        
-                        return (
-                          <div key={idx} className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-sm">
-                              <SensorIcon className="h-4 w-4 text-blue-500" />
-                              <span className="text-muted-foreground">{sensorLabel}:</span>
-                            </div>
-                            <span className="text-sm font-semibold text-foreground">
-                              {formatSensorValue(tel.telemetry, useFahrenheit)}
-                            </span>
-                          </div>
-                        )
-                      })}
-                      {timeAgo && (
-                        <div className="text-xs text-muted-foreground text-right pt-0.5">
-                          Last updated {timeAgo}
-                        </div>
-                      )}
+                  {device.batteryLevel != null && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Battery:</span>
+                      <span className="text-foreground">
+                        {device.batteryLevel}%
+                      </span>
                     </div>
-                  )
-                })()}
-              </div>
-              
-              {/* Test Device Controls - Only shown for test devices */}
-              {device.is_test_device && (
-                <div className="mt-3">
-                  <TestDeviceControls
-                    deviceId={device.id}
-                    deviceTypeId={device.device_type_id || null}
-                    currentStatus={device.status}
-                    onDataSent={() => fetchDevices(true)}
-                  />
+                  )}
+                  {device.signal_strength != null && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Signal:</span>
+                      <span className="text-foreground">
+                        {device.signal_strength} dBm
+                      </span>
+                    </div>
+                  )}
+                  {device.firmware_version && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Firmware:</span>
+                      <span className="text-foreground">
+                        {device.firmware_version}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Management:</span>
+                    <span
+                      className={
+                        device.isExternallyManaged
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {device.isExternallyManaged ? 'External' : 'Local'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span
+                      className={`font-medium ${
+                        device.status === 'online'
+                          ? 'text-green-600 dark:text-green-400'
+                          : device.status === 'warning'
+                            ? 'text-yellow-600 dark:text-yellow-400'
+                            : device.status === 'error'
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-muted-foreground'
+                      }`}
+                    >
+                      {device.status.toUpperCase()}
+                    </span>
+                  </div>
+                  {/* Latest Telemetry Readings (All Sensor Types) */}
+                  {(() => {
+                    const readings = latestTelemetry[device.id]
+                    if (!readings || readings.length === 0) return null
+
+                    // Find the most recent timestamp across all sensor readings
+                    const mostRecentTimestamp = readings.reduce((latest, r) => {
+                      const timestamp = r.device_timestamp || r.received_at
+                      return !latest || new Date(timestamp) > new Date(latest)
+                        ? timestamp
+                        : latest
+                    }, '')
+                    const timeAgo = fmt.timeAgo(mostRecentTimestamp)
+
+                    return (
+                      <div className="mt-2 space-y-1.5 border-t border-border/50 pt-2">
+                        {readings.map((tel, idx) => {
+                          const SensorIcon = getSensorIcon(
+                            tel.telemetry.type as number | undefined,
+                            tel.telemetry.sensor as string | undefined
+                          )
+                          const sensorLabel =
+                            tel.telemetry.type != null
+                              ? SENSOR_LABELS[tel.telemetry.type as number] ||
+                                tel.telemetry.sensor
+                              : tel.telemetry.sensor || 'Sensor'
+
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <SensorIcon className="h-4 w-4 text-blue-500" />
+                                <span className="text-muted-foreground">
+                                  {sensorLabel}:
+                                </span>
+                              </div>
+                              <span className="text-sm font-semibold text-foreground">
+                                {formatSensorValue(
+                                  tel.telemetry,
+                                  useFahrenheit
+                                )}
+                              </span>
+                            </div>
+                          )
+                        })}
+                        {timeAgo && (
+                          <div className="pt-0.5 text-right text-xs text-muted-foreground">
+                            Last updated {timeAgo}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
-              )}
-              
-              <div className="flex space-x-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => openDeviceDetailsPage(device.id)}
-                >
-                  Details
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
-                >
-                  {isGatewayDevice(device.device_type, device.name) 
-                    ? 'Gateway Data' 
-                    : 'Sensor Data'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+                {/* Test Device Controls - Only shown for test devices */}
+                {device.is_test_device && (
+                  <div className="mt-3">
+                    <TestDeviceControls
+                      deviceId={device.id}
+                      deviceTypeId={device.device_type_id || null}
+                      currentStatus={device.status}
+                      onDataSent={() => fetchDevices(true)}
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4 flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openDeviceDetailsPage(device.id)}
+                  >
+                    Details
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() =>
+                      router.push(`/dashboard/device-details?id=${device.id}`)
+                    }
+                  >
+                    {isGatewayDevice(device.device_type, device.name)
+                      ? 'Gateway Data'
+                      : 'Sensor Data'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card>
           <CardContent className="p-0">
@@ -1015,7 +1133,7 @@ export function DevicesList() {
                       <div className="flex items-center gap-2">
                         <span>{device.name}</span>
                         {device.is_test_device && (
-                          <Badge className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/30">
+                          <Badge className="border border-purple-500/30 bg-purple-500/10 text-xs text-purple-700 dark:text-purple-400">
                             Test
                           </Badge>
                         )}
@@ -1024,31 +1142,42 @@ export function DevicesList() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {(() => {
-                          const typeName = device.device_type || device.type || ''
-                          const imgUrl = deviceTypeImages[typeName.toLowerCase()]
+                          const typeName =
+                            device.device_type || device.type || ''
+                          const imgUrl =
+                            deviceTypeImages[typeName.toLowerCase()]
                           if (imgUrl) {
                             return (
                               <img
                                 src={imgUrl}
                                 alt={typeName}
-                                className="w-5 h-5 object-contain rounded-sm"
+                                className="h-5 w-5 rounded-sm object-contain"
                               />
                             )
                           }
-                          return <Monitor className="w-4 h-4 text-muted-foreground/60" />
+                          return (
+                            <Monitor className="h-4 w-4 text-muted-foreground/60" />
+                          )
                         })()}
                         <span className="text-sm">{device.type}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{getStatusIcon(device.status)}</span>
-                        <span className={`text-sm font-medium ${
-                          device.status === 'online' ? 'text-green-600 dark:text-green-400' :
-                          device.status === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
-                          device.status === 'error' ? 'text-red-600 dark:text-red-400' :
-                          'text-muted-foreground'
-                        }`}>
+                        <span className="text-xl">
+                          {getStatusIcon(device.status)}
+                        </span>
+                        <span
+                          className={`text-sm font-medium ${
+                            device.status === 'online'
+                              ? 'text-green-600 dark:text-green-400'
+                              : device.status === 'warning'
+                                ? 'text-yellow-600 dark:text-yellow-400'
+                                : device.status === 'error'
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : 'text-muted-foreground'
+                          }`}
+                        >
                           {device.status.toUpperCase()}
                         </span>
                       </div>
@@ -1056,24 +1185,32 @@ export function DevicesList() {
                     <TableCell className="text-sm">{device.location}</TableCell>
                     <TableCell className="text-sm">{device.lastSeen}</TableCell>
                     <TableCell className="text-sm">
-                      {device.batteryLevel != null ? `${device.batteryLevel}%` : '—'}
+                      {device.batteryLevel != null
+                        ? `${device.batteryLevel}%`
+                        : '—'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {device.signal_strength != null ? `${device.signal_strength} dBm` : '—'}
+                      {device.signal_strength != null
+                        ? `${device.signal_strength} dBm`
+                        : '—'}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => openDeviceDetailsPage(device.id)}
                         >
                           Details
                         </Button>
-                        <Button 
-                          variant="default" 
+                        <Button
+                          variant="default"
                           size="sm"
-                          onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/device-details?id=${device.id}`
+                            )
+                          }
                         >
                           Data
                         </Button>
@@ -1086,11 +1223,11 @@ export function DevicesList() {
           </CardContent>
         </Card>
       )}
-      
+
       {devices.length === 0 && !loading && (
         <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No devices found</p>
+          <CardContent className="py-12 text-center">
+            <p className="mb-4 text-muted-foreground">No devices found</p>
             <Button onClick={() => fetchDevices()}>Retry</Button>
           </CardContent>
         </Card>
@@ -1102,14 +1239,15 @@ export function DevicesList() {
         onOpenChange={setTestDeviceDialogOpen}
         onSuccess={() => fetchDevices(true)}
       />
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Device</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &ldquo;{deletingDevice?.name}&rdquo;? This action cannot be undone.
+              Are you sure you want to delete &ldquo;{deletingDevice?.name}
+              &rdquo;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1125,7 +1263,7 @@ export function DevicesList() {
               onClick={confirmDeleteDevice}
               disabled={deleting}
             >
-              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Device
             </Button>
           </DialogFooter>

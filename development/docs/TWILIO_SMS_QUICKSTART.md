@@ -18,6 +18,7 @@ cd /workspaces/MonoRepo/development
 ```
 
 This will:
+
 - ✅ Add credentials to `.env.local`
 - ✅ Set GitHub Secrets
 - ✅ Configure Supabase Edge Functions
@@ -38,6 +39,7 @@ supabase functions deploy send-alert-notifications
 ## Step 5: Configure Alerts
 
 ### Option A: Via Dashboard (Coming Soon)
+
 Navigate to Sensor Thresholds and add phone numbers
 
 ### Option B: Via SQL
@@ -45,7 +47,7 @@ Navigate to Sensor Thresholds and add phone numbers
 ```sql
 -- Example: Update a threshold to send SMS
 UPDATE sensor_thresholds
-SET 
+SET
   notification_channels = ARRAY['email', 'sms'],
   notify_phone_numbers = ARRAY['+1234567890']
 WHERE name = 'Critical Temperature Alert';
@@ -55,14 +57,12 @@ WHERE name = 'Critical Temperature Alert';
 
 ```typescript
 // Create threshold with SMS
-const { data } = await supabase
-  .from('sensor_thresholds')
-  .insert({
-    name: 'Temperature Alert',
-    notification_channels: ['email', 'sms'],
-    notify_phone_numbers: ['+1234567890'],
-    // ... other fields
-  });
+const { data } = await supabase.from('sensor_thresholds').insert({
+  name: 'Temperature Alert',
+  notification_channels: ['email', 'sms'],
+  notify_phone_numbers: ['+1234567890'],
+  // ... other fields
+})
 ```
 
 ## Troubleshooting
@@ -70,11 +70,13 @@ const { data } = await supabase
 ### SMS not sending?
 
 1. **Check credentials**:
+
    ```bash
    supabase secrets list | grep TWILIO
    ```
 
 2. **Check function logs**:
+
    ```bash
    supabase functions logs send-alert-notifications --follow
    ```
@@ -85,18 +87,19 @@ const { data } = await supabase
 
 ### Common Issues
 
-| Issue | Fix |
-|-------|-----|
-| "Twilio not configured" | Run setup script |
-| "Invalid phone number" | Use format: `+[country][number]` |
-| "Authentication failed" | Double-check account SID and auth token |
-| "Unverified number" (trial) | Verify in Twilio Console or upgrade |
+| Issue                       | Fix                                     |
+| --------------------------- | --------------------------------------- |
+| "Twilio not configured"     | Run setup script                        |
+| "Invalid phone number"      | Use format: `+[country][number]`        |
+| "Authentication failed"     | Double-check account SID and auth token |
+| "Unverified number" (trial) | Verify in Twilio Console or upgrade     |
 
 ---
 
 ## Full Documentation
 
 See [TWILIO_SMS_SETUP.md](./TWILIO_SMS_SETUP.md) for:
+
 - Detailed configuration options
 - Per-organization setup
 - Security best practices

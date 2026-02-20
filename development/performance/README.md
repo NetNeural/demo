@@ -24,11 +24,13 @@ performance/
 1. **Install k6**
 
 macOS:
+
 ```bash
 brew install k6
 ```
 
 Linux (Debian/Ubuntu):
+
 ```bash
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
 echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
@@ -50,11 +52,13 @@ Login to the app and get your JWT token from browser DevTools (Application > Loc
 ### Run Tests
 
 **Dashboard Load Test:**
+
 ```bash
 k6 run performance/load-tests/dashboard.js
 ```
 
 **Device List Load Test:**
+
 ```bash
 export AUTH_TOKEN="your-jwt-token"
 export SUPABASE_ANON_KEY="your-anon-key"
@@ -62,11 +66,13 @@ k6 run performance/load-tests/devices.js
 ```
 
 **Alert List Load Test:**
+
 ```bash
 k6 run performance/load-tests/alerts.js
 ```
 
 **API Stress Test (100 concurrent users):**
+
 ```bash
 k6 run performance/load-tests/api-stress.js
 ```
@@ -109,13 +115,13 @@ npm run supabase db execute -- --file=performance/db-profiling/add_indexes.sql
 
 ## Performance Targets
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| Dashboard Load Time | < 3s | 🔍 Testing |
-| Device List Render (200 devices) | < 2s | 🔍 Testing |
-| Alert List Render (100 alerts) | < 2s | 🔍 Testing |
+| Metric                              | Target  | Status     |
+| ----------------------------------- | ------- | ---------- |
+| Dashboard Load Time                 | < 3s    | 🔍 Testing |
+| Device List Render (200 devices)    | < 2s    | 🔍 Testing |
+| Alert List Render (100 alerts)      | < 2s    | 🔍 Testing |
 | API Response Time (95th percentile) | < 500ms | 🔍 Testing |
-| Concurrent Users | 50+ | 🔍 Testing |
+| Concurrent Users                    | 50+     | 🔍 Testing |
 
 ## Next Steps
 

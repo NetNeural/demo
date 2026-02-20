@@ -25,17 +25,18 @@ serve(async (req) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Client-ID, X-Username',
+          'Access-Control-Allow-Headers':
+            'Authorization, Content-Type, X-Client-ID, X-Username',
         },
       })
     }
 
     if (req.method !== 'POST') {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Method not allowed',
           service: 'MQTT Message Queue Ingestion',
-          usage: 'POST messages with topic and payload'
+          usage: 'POST messages with topic and payload',
         }),
         { status: 405, headers: { 'Content-Type': 'application/json' } }
       )
@@ -48,7 +49,10 @@ serve(async (req) => {
 
     if (!authHeader || !clientId || !username) {
       return new Response(
-        JSON.stringify({ error: 'Missing authentication headers: Authorization, X-Client-ID, X-Username required' }),
+        JSON.stringify({
+          error:
+            'Missing authentication headers: Authorization, X-Client-ID, X-Username required',
+        }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     }
@@ -64,16 +68,18 @@ serve(async (req) => {
     // Verify credentials
     const { data: creds, error: credsError } = await supabase
       .from('mqtt_credentials')
-      .select('*, device_integrations!inner(organization_id, integration_type, id)')
+      .select(
+        '*, device_integrations!inner(organization_id, integration_type, id)'
+      )
       .eq('username', username)
       .eq('client_id', clientId)
       .single()
 
     if (credsError || !creds) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid credentials' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     // Parse request body
@@ -81,19 +87,19 @@ serve(async (req) => {
     const { topic, payload, qos = 0, retain = false } = body
 
     if (!topic) {
-      return new Response(
-        JSON.stringify({ error: 'Topic is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Topic is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     // Verify topic matches allowed prefix
     if (!topic.startsWith(creds.topic_prefix)) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `Topic must start with ${creds.topic_prefix}`,
           allowed_prefix: creds.topic_prefix,
-          your_topic: topic
+          your_topic: topic,
         }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       )
@@ -103,7 +109,7 @@ serve(async (req) => {
       username,
       client_id: clientId,
       topic,
-      organization_id: creds.device_integrations.organization_id
+      organization_id: creds.device_integrations.organization_id,
     })
 
     // Enqueue message to PGMQ
@@ -118,7 +124,7 @@ serve(async (req) => {
         retain,
         client_id: clientId,
         username: username,
-      }
+      },
     })
 
     if (queueError) {
@@ -144,14 +150,14 @@ serve(async (req) => {
       direction: 'incoming',
       status: 'success',
       message: `Message queued on topic: ${topic}`,
-      metadata: { 
-        topic, 
+      metadata: {
+        topic,
         payload_size: JSON.stringify(payload).length,
         qos,
         retain,
         client_id: clientId,
         username,
-        queue: 'mqtt_messages'
+        queue: 'mqtt_messages',
       },
     })
 
@@ -163,27 +169,26 @@ serve(async (req) => {
         qos,
         timestamp: new Date().toISOString(),
       }),
-      { 
+      {
         status: 202, // Accepted (async processing)
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
-        } 
+        },
       }
     )
-
   } catch (error) {
     console.error('[MQTT PGMQ] Error:', error)
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Internal server error' 
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
       }),
-      { 
-        status: 500, 
-        headers: { 
+      {
+        status: 500,
+        headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
-        } 
+        },
       }
     )
   }

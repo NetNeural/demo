@@ -1,12 +1,15 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 export function SentryInit() {
   useEffect(() => {
-    console.log('[Sentry] Initializing client...');
-    console.log('[Sentry] DSN:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌');
+    console.log('[Sentry] Initializing client...')
+    console.log(
+      '[Sentry] DSN:',
+      process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌'
+    )
 
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -24,28 +27,34 @@ export function SentryInit() {
       debug: process.env.NODE_ENV === 'development', // Disable in prod to suppress Transport disabled noise
       environment: process.env.NODE_ENV || 'development',
       release: process.env.NEXT_PUBLIC_APP_VERSION,
-      
+
       // Disable stack trace parsing in development to avoid symbolication errors
-      stackParser: process.env.NODE_ENV === 'development' ? undefined : Sentry.defaultStackParser,
+      stackParser:
+        process.env.NODE_ENV === 'development'
+          ? undefined
+          : Sentry.defaultStackParser,
 
       beforeBreadcrumb(breadcrumb) {
-        if (breadcrumb.category === 'console' && process.env.NODE_ENV === 'production') {
-          return null;
+        if (
+          breadcrumb.category === 'console' &&
+          process.env.NODE_ENV === 'production'
+        ) {
+          return null
         }
 
         if (breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') {
           if (breadcrumb.data?.['Authorization']) {
-            breadcrumb.data['Authorization'] = '[Filtered]';
+            breadcrumb.data['Authorization'] = '[Filtered]'
           }
         }
 
         if (breadcrumb.message && typeof breadcrumb.message === 'string') {
           breadcrumb.message = breadcrumb.message
             .replace(/access_token=[^&]*/g, 'access_token=[Filtered]')
-            .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]');
+            .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]')
         }
 
-        return breadcrumb;
+        return breadcrumb
       },
 
       beforeSend(event) {
@@ -53,17 +62,17 @@ export function SentryInit() {
         if (event.exception && process.env.NODE_ENV === 'production') {
           Sentry.showReportDialog({
             eventId: event.event_id,
-            title: 'It looks like we\'re having issues',
+            title: "It looks like we're having issues",
             subtitle: 'Our team has been notified.',
-            subtitle2: 'If you\'d like to help, tell us what happened below.',
+            subtitle2: "If you'd like to help, tell us what happened below.",
             labelName: 'Name',
             labelEmail: 'Email',
             labelComments: 'What happened?',
             labelClose: 'Close',
             labelSubmit: 'Submit',
-          });
+          })
         }
-        return event;
+        return event
       },
 
       ignoreErrors: [
@@ -75,13 +84,16 @@ export function SentryInit() {
         'Failed to fetch',
         'ChunkLoadError',
       ],
-    });
+    })
 
-    console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌');
+    console.log(
+      '[Sentry] Client initialized!',
+      Sentry.getClient() ? '✅' : '❌'
+    )
 
     // Global error handler for unhandled errors
     const handleGlobalError = (event: ErrorEvent) => {
-      console.error('[Global Error]', event.error);
+      console.error('[Global Error]', event.error)
       Sentry.captureException(event.error, {
         extra: {
           message: event.message,
@@ -92,12 +104,12 @@ export function SentryInit() {
         tags: {
           error_type: 'global_error',
         },
-      });
-    };
+      })
+    }
 
     // Global promise rejection handler
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('[Unhandled Rejection]', event.reason);
+      console.error('[Unhandled Rejection]', event.reason)
       Sentry.captureException(event.reason, {
         extra: {
           promise: 'unhandled_rejection',
@@ -105,19 +117,19 @@ export function SentryInit() {
         tags: {
           error_type: 'unhandled_promise',
         },
-      });
-    };
+      })
+    }
 
     // Add global error listeners
-    window.addEventListener('error', handleGlobalError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleGlobalError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
 
     // Cleanup
     return () => {
-      window.removeEventListener('error', handleGlobalError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
+      window.removeEventListener('error', handleGlobalError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
 
-  return null;
+  return null
 }

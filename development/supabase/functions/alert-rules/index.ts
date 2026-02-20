@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface AlertRule {
@@ -76,10 +77,13 @@ serve(async (req) => {
       const enabled = url.searchParams.get('enabled')
 
       if (!organizationId) {
-        return new Response(JSON.stringify({ error: 'organization_id is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({ error: 'organization_id is required' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
       }
 
       let query = supabaseClient
@@ -139,7 +143,9 @@ serve(async (req) => {
       // Validation
       if (!body.organization_id || !body.name || !body.rule_type) {
         return new Response(
-          JSON.stringify({ error: 'organization_id, name, and rule_type are required' }),
+          JSON.stringify({
+            error: 'organization_id, name, and rule_type are required',
+          }),
           {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -148,17 +154,26 @@ serve(async (req) => {
       }
 
       if (!body.actions || body.actions.length === 0) {
-        return new Response(JSON.stringify({ error: 'At least one action is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({ error: 'At least one action is required' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
       }
 
       // Validate rule_type specific fields
       if (body.rule_type === 'telemetry') {
-        if (!body.condition.metric || !body.condition.operator || body.condition.value === undefined) {
+        if (
+          !body.condition.metric ||
+          !body.condition.operator ||
+          body.condition.value === undefined
+        ) {
           return new Response(
-            JSON.stringify({ error: 'Telemetry rules require metric, operator, and value' }),
+            JSON.stringify({
+              error: 'Telemetry rules require metric, operator, and value',
+            }),
             {
               status: 400,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -236,7 +251,10 @@ serve(async (req) => {
 
     // DELETE /alert-rules/:id - Delete rule
     if (req.method === 'DELETE' && ruleId) {
-      const { error } = await supabaseClient.from('alert_rules').delete().eq('id', ruleId)
+      const { error } = await supabaseClient
+        .from('alert_rules')
+        .delete()
+        .eq('id', ruleId)
 
       if (error) {
         console.error('[alert-rules] Delete error:', error)
@@ -276,7 +294,11 @@ serve(async (req) => {
     }
 
     // POST /alert-rules/:id/duplicate - Duplicate rule
-    if (req.method === 'POST' && ruleId && url.pathname.includes('/duplicate')) {
+    if (
+      req.method === 'POST' &&
+      ruleId &&
+      url.pathname.includes('/duplicate')
+    ) {
       const { data: original, error: fetchError } = await supabaseClient
         .from('alert_rules')
         .select('*')
@@ -324,7 +346,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('[alert-rules] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

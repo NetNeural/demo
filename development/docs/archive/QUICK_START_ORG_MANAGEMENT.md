@@ -16,6 +16,7 @@ The server will start at `http://localhost:3000`
 Navigate to: `http://localhost:3000/auth/login`
 
 **Credentials:**
+
 - Email: `superadmin@netneural.ai`
 - Password: `SuperSecure123!`
 
@@ -44,18 +45,16 @@ For now, you can test editing by adding the edit button yourself:
 **Add this to `src/app/dashboard/organizations/components/OverviewTab.tsx`:**
 
 ```tsx
-import { EditOrganizationDialog } from '@/components/organizations/EditOrganizationDialog';
+import { EditOrganizationDialog } from '@/components/organizations/EditOrganizationDialog'
 
 // In the component, add somewhere visible:
-<EditOrganizationDialog
+;<EditOrganizationDialog
   organization={organization}
   onSuccess={() => {
     // Refresh data
-    window.location.reload();
+    window.location.reload()
   }}
-  trigger={
-    <Button>Edit Organization</Button>
-  }
+  trigger={<Button>Edit Organization</Button>}
 />
 ```
 
@@ -84,6 +83,7 @@ import { EditOrganizationDialog } from '@/components/organizations/EditOrganizat
 ## 📋 What to Check
 
 ### ✅ Create Organization
+
 - [ ] Form opens when clicking "Create Organization"
 - [ ] Slug auto-generates from name
 - [ ] Validation works (try submitting empty form)
@@ -92,18 +92,21 @@ import { EditOrganizationDialog } from '@/components/organizations/EditOrganizat
 - [ ] App switches to new org automatically
 
 ### ✅ Real Data Loading
+
 - [ ] Organizations load from Supabase (not mock data)
 - [ ] Loading spinner shows while fetching
 - [ ] Stats update when switching organizations
 - [ ] No console errors about mock data
 
 ### ✅ Permissions
+
 - [ ] Super admin sees "Create Organization" button
 - [ ] Regular users don't see "Create Organization" button
 - [ ] Super admin can see all organizations
 - [ ] Regular users see only their organization
 
 ### ✅ Error Handling
+
 - [ ] Try creating org with duplicate slug → should show error
 - [ ] Try creating org without internet → should show error
 - [ ] Error messages are user-friendly
@@ -115,12 +118,14 @@ import { EditOrganizationDialog } from '@/components/organizations/EditOrganizat
 ### "Create Organization" Button Not Showing
 
 **Check 1:** Are you logged in as super admin?
+
 ```
 Email: superadmin@netneural.ai
 Password: SuperSecure123!
 ```
 
 **Check 2:** Open browser console (F12) and look for debug logs:
+
 ```
 🔍 OrganizationSwitcher Debug: {
   isSuperAdminFromUser: true,  // Should be true
@@ -130,6 +135,7 @@ Password: SuperSecure123!
 ```
 
 **Check 3:** If debug shows false values:
+
 1. Log out completely
 2. Clear browser cache (Ctrl+Shift+Delete)
 3. Close all browser tabs
@@ -140,6 +146,7 @@ Password: SuperSecure123!
 **Cause:** Supabase local instance not running
 
 **Fix:**
+
 ```bash
 # Start Supabase
 npm run supabase:start
@@ -154,6 +161,7 @@ npm run supabase:start
 **Cause:** Session expired or not logged in
 
 **Fix:**
+
 1. Log out
 2. Log back in
 3. Try again
@@ -163,6 +171,7 @@ npm run supabase:start
 **Cause:** Database not seeded
 
 **Fix:**
+
 ```bash
 # Reset and seed database
 npm run supabase:reset

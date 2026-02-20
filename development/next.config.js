@@ -123,7 +123,7 @@ const nextConfig = {
       config.resolve.alias = {
         ...config.resolve.alias,
         '@/app/api': false,
-      };
+      }
     }
 
     // Ignore leaflet - it's loaded from CDN, not bundled
@@ -133,7 +133,7 @@ const nextConfig = {
         ...config.resolve.fallback,
         leaflet: false,
       }
-      
+
       // Also add to externals to completely exclude from bundling
       config.externals = {
         ...config.externals,
@@ -151,15 +151,15 @@ const nextConfig = {
   },
 
   // Performance optimizations
-  poweredByHeader: false,  // Remove X-Powered-By header
-  compress: true,  // Enable gzip compression
-  
+  poweredByHeader: false, // Remove X-Powered-By header
+  compress: true, // Enable gzip compression
+
   // Optimize production builds
-  productionBrowserSourceMaps: false,  // Disable source maps in prod for smaller bundles
-  
+  productionBrowserSourceMaps: false, // Disable source maps in prod for smaller bundles
+
   // Static generation optimization
-  reactStrictMode: true,  // Helps identify potential problems
-  swcMinify: true,  // Use SWC for faster minification
+  reactStrictMode: true, // Helps identify potential problems
+  swcMinify: true, // Use SWC for faster minification
 }
 
 // Bundle analyzer
@@ -182,6 +182,6 @@ const sentryWebpackPluginOptions = {
 
 // Export with conditional Sentry (disabled for static export to avoid Html import error)
 // Static export doesn't support custom error pages with <Html> from next/document
-module.exports = isStaticExport 
+module.exports = isStaticExport
   ? withBundleAnalyzer(nextConfig)
   : withSentryConfig(withBundleAnalyzer(nextConfig), sentryWebpackPluginOptions)

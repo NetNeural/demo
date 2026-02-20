@@ -1,9 +1,12 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/nextjs'
 
 // Ensure this runs on the client side only
 if (typeof window !== 'undefined') {
-  console.log('[Sentry] Initializing client from lib/sentry-client-init...');
-  console.log('[Sentry] DSN:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌');
+  console.log('[Sentry] Initializing client from lib/sentry-client-init...')
+  console.log(
+    '[Sentry] DSN:',
+    process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌'
+  )
 
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -34,23 +37,26 @@ if (typeof window !== 'undefined') {
 
     // Customize breadcrumbs
     beforeBreadcrumb(breadcrumb) {
-      if (breadcrumb.category === 'console' && process.env.NODE_ENV === 'production') {
-        return null;
+      if (
+        breadcrumb.category === 'console' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        return null
       }
 
       if (breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') {
         if (breadcrumb.data?.['Authorization']) {
-          breadcrumb.data['Authorization'] = '[Filtered]';
+          breadcrumb.data['Authorization'] = '[Filtered]'
         }
       }
 
       if (breadcrumb.message && typeof breadcrumb.message === 'string') {
         breadcrumb.message = breadcrumb.message
           .replace(/access_token=[^&]*/g, 'access_token=[Filtered]')
-          .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]');
+          .replace(/refresh_token=[^&]*/g, 'refresh_token=[Filtered]')
       }
 
-      return breadcrumb;
+      return breadcrumb
     },
 
     // Ignore certain errors
@@ -63,7 +69,7 @@ if (typeof window !== 'undefined') {
       'Failed to fetch',
       'ChunkLoadError',
     ],
-  });
+  })
 
-  console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌');
+  console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌')
 }

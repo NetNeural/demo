@@ -1,6 +1,6 @@
 /**
  * UNIT TESTS: Issue #107 - Rule Builder Page
- * 
+ *
  * Tests for:
  * - Rule creation wizard
  * - Telemetry-based rules (temp > 35°C)
@@ -52,7 +52,6 @@ interface AlertRule {
 }
 
 describe('Issue #107: Rule Builder Page', () => {
-  
   describe('Rule Type Selection', () => {
     test('should support telemetry rule type', () => {
       const ruleType: RuleType = 'telemetry'
@@ -77,16 +76,16 @@ describe('Issue #107: Rule Builder Page', () => {
           metric: 'temperature',
           operator: '>',
           threshold: 35,
-          unit: 'celsius'
+          unit: 'celsius',
         },
         device_scope: {
-          type: 'all'
+          type: 'all',
         },
         actions: [
-          { type: 'email', config: { recipients: ['admin@example.com'] } }
+          { type: 'email', config: { recipients: ['admin@example.com'] } },
         ],
         cooldown_minutes: 60,
-        enabled: true
+        enabled: true,
       }
 
       expect(rule.rule_type).toBe('telemetry')
@@ -98,7 +97,7 @@ describe('Issue #107: Rule Builder Page', () => {
         metric: 'battery_level',
         operator: '<',
         threshold: 10,
-        unit: 'percent'
+        unit: 'percent',
       }
 
       expect(condition.metric).toBe('battery_level')
@@ -108,12 +107,12 @@ describe('Issue #107: Rule Builder Page', () => {
 
     test('should support all comparison operators', () => {
       const operators: MetricOperator[] = ['>', '<', '>=', '<=', '==', '!=']
-      
-      operators.forEach(op => {
+
+      operators.forEach((op) => {
         const condition: TelemetryCondition = {
           metric: 'temperature',
           operator: op,
-          threshold: 25
+          threshold: 25,
         }
         expect(['>', '<', '>=', '<=', '==', '!=']).toContain(condition.operator)
       })
@@ -125,7 +124,7 @@ describe('Issue #107: Rule Builder Page', () => {
         operator: '>',
         threshold: 30,
         duration_minutes: 15, // Alert if temp > 30 for 15 minutes
-        unit: 'celsius'
+        unit: 'celsius',
       }
 
       expect(condition.duration_minutes).toBe(15)
@@ -141,16 +140,16 @@ describe('Issue #107: Rule Builder Page', () => {
         description: 'Alert when device has not reported for 6 hours',
         rule_type: 'offline',
         condition: {
-          offline_minutes: 360 // 6 hours
+          offline_minutes: 360, // 6 hours
         },
         device_scope: {
-          type: 'all'
+          type: 'all',
         },
         actions: [
-          { type: 'email', config: { recipients: ['ops@example.com'] } }
+          { type: 'email', config: { recipients: ['ops@example.com'] } },
         ],
         cooldown_minutes: 60,
-        enabled: true
+        enabled: true,
       }
 
       expect(rule.rule_type).toBe('offline')
@@ -160,7 +159,7 @@ describe('Issue #107: Rule Builder Page', () => {
     test('should support grace period for new devices', () => {
       const condition: OfflineCondition = {
         offline_minutes: 60,
-        grace_period_minutes: 120 // Don't alert for first 2 hours
+        grace_period_minutes: 120, // Don't alert for first 2 hours
       }
 
       expect(condition.grace_period_minutes).toBe(120)
@@ -179,7 +178,7 @@ describe('Issue #107: Rule Builder Page', () => {
   describe('Device Scope Selection', () => {
     test('should scope to all devices', () => {
       const scope: DeviceScope = {
-        type: 'all'
+        type: 'all',
       }
       expect(scope.type).toBe('all')
     })
@@ -187,7 +186,7 @@ describe('Issue #107: Rule Builder Page', () => {
     test('should scope to specific groups', () => {
       const scope: DeviceScope = {
         type: 'groups',
-        group_ids: ['group-1', 'group-2']
+        group_ids: ['group-1', 'group-2'],
       }
       expect(scope.group_ids).toHaveLength(2)
     })
@@ -195,7 +194,7 @@ describe('Issue #107: Rule Builder Page', () => {
     test('should scope to specific tags', () => {
       const scope: DeviceScope = {
         type: 'tags',
-        tags: ['critical', 'production']
+        tags: ['critical', 'production'],
       }
       expect(scope.tags).toContain('critical')
     })
@@ -203,7 +202,7 @@ describe('Issue #107: Rule Builder Page', () => {
     test('should scope to specific devices', () => {
       const scope: DeviceScope = {
         type: 'specific',
-        ids: ['device-1', 'device-2', 'device-3']
+        ids: ['device-1', 'device-2', 'device-3'],
       }
       expect(scope.ids).toHaveLength(3)
     })
@@ -214,12 +213,12 @@ describe('Issue #107: Rule Builder Page', () => {
       const rule: TelemetryCondition = {
         metric: 'temperature',
         operator: '>',
-        threshold: 35
+        threshold: 35,
       }
 
       const currentValue = 40
       const result = eval(`${currentValue} ${rule.operator} ${rule.threshold}`)
-      
+
       expect(result).toBe(true) // Should trigger alert
     })
 
@@ -227,18 +226,18 @@ describe('Issue #107: Rule Builder Page', () => {
       const rule: TelemetryCondition = {
         metric: 'temperature',
         operator: '>',
-        threshold: 35
+        threshold: 35,
       }
 
       const currentValue = 30
       const result = eval(`${currentValue} ${rule.operator} ${rule.threshold}`)
-      
+
       expect(result).toBe(false) // Should not trigger
     })
 
     test('should evaluate offline rule - device is offline', () => {
       const rule: OfflineCondition = {
-        offline_minutes: 60
+        offline_minutes: 60,
       }
 
       const lastSeen = new Date('2025-12-16T10:00:00Z')
@@ -250,7 +249,7 @@ describe('Issue #107: Rule Builder Page', () => {
 
     test('should evaluate offline rule - device is online', () => {
       const rule: OfflineCondition = {
-        offline_minutes: 60
+        offline_minutes: 60,
       }
 
       const lastSeen = new Date('2025-12-16T11:50:00Z')
@@ -263,12 +262,13 @@ describe('Issue #107: Rule Builder Page', () => {
     test('should respect cooldown period', () => {
       const rule = {
         cooldown_minutes: 60,
-        last_triggered_at: new Date('2025-12-16T11:30:00Z').toISOString()
+        last_triggered_at: new Date('2025-12-16T11:30:00Z').toISOString(),
       }
 
       const now = new Date('2025-12-16T12:00:00Z')
       const lastTriggered = new Date(rule.last_triggered_at)
-      const minutesSinceLastTrigger = (now.getTime() - lastTriggered.getTime()) / 60000
+      const minutesSinceLastTrigger =
+        (now.getTime() - lastTriggered.getTime()) / 60000
 
       const canTrigger = minutesSinceLastTrigger >= rule.cooldown_minutes
       expect(canTrigger).toBe(false) // Only 30 minutes, cooldown is 60
@@ -280,7 +280,7 @@ describe('Issue #107: Rule Builder Page', () => {
       const rule: TelemetryCondition = {
         metric: 'temperature',
         operator: '>',
-        threshold: 35
+        threshold: 35,
       }
 
       const devices = [
@@ -289,17 +289,17 @@ describe('Issue #107: Rule Builder Page', () => {
         { id: '3', temperature: 38 },
       ]
 
-      const affected = devices.filter(d => 
+      const affected = devices.filter((d) =>
         eval(`${d.temperature} ${rule.operator} ${rule.threshold}`)
       )
 
       expect(affected).toHaveLength(2)
-      expect(affected.map(d => d.id)).toEqual(['1', '3'])
+      expect(affected.map((d) => d.id)).toEqual(['1', '3'])
     })
 
     test('should calculate affected devices for offline rule', () => {
       const rule: OfflineCondition = {
-        offline_minutes: 60
+        offline_minutes: 60,
       }
 
       const now = new Date('2025-12-16T12:00:00Z')
@@ -309,19 +309,19 @@ describe('Issue #107: Rule Builder Page', () => {
         { id: '3', last_seen: new Date('2025-12-16T09:00:00Z') }, // 180 min offline
       ]
 
-      const affected = devices.filter(d => {
+      const affected = devices.filter((d) => {
         const minutesOffline = (now.getTime() - d.last_seen.getTime()) / 60000
         return minutesOffline > rule.offline_minutes
       })
 
       expect(affected).toHaveLength(2)
-      expect(affected.map(d => d.id)).toEqual(['1', '3'])
+      expect(affected.map((d) => d.id)).toEqual(['1', '3'])
     })
 
     test('should show preview count in rule builder', () => {
       const affectedCount = 15
       const previewMessage = `This rule would currently trigger for ${affectedCount} devices`
-      
+
       expect(previewMessage).toContain('15 devices')
     })
   })
@@ -333,8 +333,8 @@ describe('Issue #107: Rule Builder Page', () => {
         config: {
           recipients: ['admin@example.com', 'ops@example.com'],
           subject: 'Alert: High Temperature',
-          template: 'alert-template'
-        }
+          template: 'alert-template',
+        },
       }
 
       expect(action.type).toBe('email')
@@ -346,8 +346,8 @@ describe('Issue #107: Rule Builder Page', () => {
         type: 'sms',
         config: {
           phone_numbers: ['+1234567890'],
-          message: 'Alert: Device offline'
-        }
+          message: 'Alert: Device offline',
+        },
       }
 
       expect(action.type).toBe('sms')
@@ -360,9 +360,9 @@ describe('Issue #107: Rule Builder Page', () => {
           url: 'https://api.example.com/alerts',
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer token'
-          }
-        }
+            Authorization: 'Bearer token',
+          },
+        },
       }
 
       expect(action.config.url).toBeTruthy()
@@ -373,7 +373,7 @@ describe('Issue #107: Rule Builder Page', () => {
       const actions = [
         { type: 'email', config: {} },
         { type: 'sms', config: {} },
-        { type: 'webhook', config: {} }
+        { type: 'webhook', config: {} },
       ]
 
       expect(actions).toHaveLength(3)
@@ -387,13 +387,13 @@ describe('Issue #107: Rule Builder Page', () => {
         rule_type: 'telemetry',
         condition: { metric: 'temperature', operator: '>', threshold: 35 },
         device_scope: { type: 'all' },
-        actions: [{ type: 'email', config: {} }]
+        actions: [{ type: 'email', config: {} }],
       }
 
-      const isValid = 
-        !!rule.name && 
-        !!rule.rule_type && 
-        !!rule.condition && 
+      const isValid =
+        !!rule.name &&
+        !!rule.rule_type &&
+        !!rule.condition &&
         !!rule.device_scope &&
         rule.actions.length > 0
 
@@ -406,7 +406,7 @@ describe('Issue #107: Rule Builder Page', () => {
         rule_type: 'telemetry',
         condition: { metric: 'temperature', operator: '>', threshold: 35 },
         device_scope: { type: 'all' },
-        actions: []
+        actions: [],
       }
 
       const isValid = rule.actions.length > 0
@@ -417,7 +417,7 @@ describe('Issue #107: Rule Builder Page', () => {
       const condition: TelemetryCondition = {
         metric: 'temperature',
         operator: '>',
-        threshold: 35
+        threshold: 35,
       }
 
       expect(condition.threshold).toBeGreaterThan(-273.15) // Absolute zero
@@ -426,7 +426,7 @@ describe('Issue #107: Rule Builder Page', () => {
 
     test('should validate offline minutes range', () => {
       const condition: OfflineCondition = {
-        offline_minutes: 360
+        offline_minutes: 360,
       }
 
       expect(condition.offline_minutes).toBeGreaterThanOrEqual(5) // Min 5 minutes
@@ -446,7 +446,7 @@ describe('Issue #107: Rule Builder Page', () => {
           device_scope: { type: 'all' },
           actions: [],
           cooldown_minutes: 60,
-          enabled: true
+          enabled: true,
         },
         {
           id: 'rule-2',
@@ -457,12 +457,12 @@ describe('Issue #107: Rule Builder Page', () => {
           device_scope: { type: 'all' },
           actions: [],
           cooldown_minutes: 60,
-          enabled: false
-        }
+          enabled: false,
+        },
       ]
 
       expect(rules).toHaveLength(2)
-      expect(rules.filter(r => r.enabled)).toHaveLength(1)
+      expect(rules.filter((r) => r.enabled)).toHaveLength(1)
     })
 
     test('should filter rules by type', () => {
@@ -472,14 +472,14 @@ describe('Issue #107: Rule Builder Page', () => {
         { id: '3', rule_type: 'telemetry' } as AlertRule,
       ]
 
-      const telemetryRules = rules.filter(r => r.rule_type === 'telemetry')
+      const telemetryRules = rules.filter((r) => r.rule_type === 'telemetry')
       expect(telemetryRules).toHaveLength(2)
     })
 
     test('should toggle rule enabled status', () => {
       const rule = { id: 'rule-1', enabled: true }
       rule.enabled = !rule.enabled
-      
+
       expect(rule.enabled).toBe(false)
     })
 
@@ -488,13 +488,13 @@ describe('Issue #107: Rule Builder Page', () => {
         id: 'rule-1',
         name: 'Original Rule',
         rule_type: 'telemetry',
-        condition: { metric: 'temperature', operator: '>', threshold: 35 }
+        condition: { metric: 'temperature', operator: '>', threshold: 35 },
       }
 
       const duplicate = {
         ...original,
         id: 'rule-2',
-        name: `${original.name} (Copy)`
+        name: `${original.name} (Copy)`,
       }
 
       expect(duplicate.id).not.toBe(original.id)
@@ -519,7 +519,7 @@ describe('Issue #107: Rule Builder Page', () => {
         'last_triggered_at',
         'created_by',
         'created_at',
-        'updated_at'
+        'updated_at',
       ]
 
       expect(tableColumns).toContain('condition')
@@ -532,7 +532,7 @@ describe('Issue #107: Rule Builder Page', () => {
         metric: 'temperature',
         operator: '>',
         threshold: 35,
-        unit: 'celsius'
+        unit: 'celsius',
       }
 
       const jsonb = JSON.stringify(condition)

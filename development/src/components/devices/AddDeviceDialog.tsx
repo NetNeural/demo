@@ -1,16 +1,29 @@
 /**
  * Add Device Dialog
- * 
+ *
  * Allows users to register new IoT devices to their organization.
  */
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, Plus } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
@@ -23,12 +36,16 @@ interface AddDeviceDialogProps {
   onSuccess?: () => void
 }
 
-export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDialogProps) {
+export function AddDeviceDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: AddDeviceDialogProps) {
   const { currentOrganization } = useOrganization()
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingTypes, setLoadingTypes] = useState(false)
-  
+
   // Form state
   const [name, setName] = useState('')
   const [deviceTypeId, setDeviceTypeId] = useState<string>('')
@@ -83,10 +100,10 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
     setLoading(true)
     try {
       const supabase = createClient()
-      
+
       // Get the selected device type
-      const selectedType = deviceTypes.find(t => t.id === deviceTypeId)
-      
+      const selectedType = deviceTypes.find((t) => t.id === deviceTypeId)
+
       // Create the device
       const deviceData = {
         name: name.trim(),
@@ -97,7 +114,9 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
         is_test_device: false,
         ...(model.trim() && { model: model.trim() }),
         ...(serialNumber.trim() && { serial_number: serialNumber.trim() }),
-        ...(firmwareVersion.trim() && { firmware_version: firmwareVersion.trim() }),
+        ...(firmwareVersion.trim() && {
+          firmware_version: firmwareVersion.trim(),
+        }),
         ...(location.trim() && { location: location.trim() }),
       }
 
@@ -110,7 +129,7 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
       if (error) throw error
 
       toast.success(`Device "${name}" added successfully`)
-      
+
       // Reset form
       setName('')
       setDeviceTypeId('')
@@ -118,7 +137,7 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
       setSerialNumber('')
       setFirmwareVersion('')
       setLocation('')
-      
+
       onOpenChange(false)
       onSuccess?.()
     } catch (error) {
@@ -138,11 +157,12 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
             <DialogTitle>Add New Device</DialogTitle>
           </div>
           <DialogDescription>
-            Register a new IoT device to your organization. Required fields are marked with *.
+            Register a new IoT device to your organization. Required fields are
+            marked with *.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto py-4">
           {/* Device Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Device Name *</Label>
@@ -164,7 +184,11 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
                 Loading device types...
               </div>
             ) : (
-              <Select value={deviceTypeId} onValueChange={setDeviceTypeId} disabled={loading}>
+              <Select
+                value={deviceTypeId}
+                onValueChange={setDeviceTypeId}
+                disabled={loading}
+              >
                 <SelectTrigger id="device-type">
                   <SelectValue placeholder="Select device type" />
                 </SelectTrigger>
@@ -248,12 +272,12 @@ export function AddDeviceDialog({ open, onOpenChange, onSuccess }: AddDeviceDial
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Adding...
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Device
               </>
             )}

@@ -2,19 +2,19 @@
 /**
  * Seed 42 industry-standard IoT device types
  * Based on ASHRAE 55, WHO Air Quality Guidelines, NIST/ANSI standards
- * 
+ *
  * Usage: SUPABASE_SERVICE_ROLE_KEY=xxx node seed-42-device-types.js
  */
 
-const https = require('https');
+const https = require('https')
 
-const SUPABASE_URL = 'https://atgbmxicqikmapfqouco.supabase.co';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ORG_ID = '00000000-0000-0000-0000-000000000001'; // NetNeural main org
+const SUPABASE_URL = 'https://atgbmxicqikmapfqouco.supabase.co'
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const ORG_ID = '00000000-0000-0000-0000-000000000001' // NetNeural main org
 
 if (!SERVICE_ROLE_KEY) {
-  console.error('❌ SUPABASE_SERVICE_ROLE_KEY environment variable is required');
-  process.exit(1);
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY environment variable is required')
+  process.exit(1)
 }
 
 // All 42 device types from seed-device-types.sql
@@ -31,7 +31,7 @@ const deviceTypes = [
     upper_normal: 26.0,
     lower_alert: 10.0,
     upper_alert: 35.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Indoor Temperature (°F)',
@@ -42,7 +42,7 @@ const deviceTypes = [
     upper_normal: 79.0,
     lower_alert: 50.0,
     upper_alert: 95.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Cold Storage Temperature',
@@ -53,7 +53,7 @@ const deviceTypes = [
     upper_normal: 4.0,
     lower_alert: -5.0,
     upper_alert: 10.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Freezer Temperature',
@@ -64,7 +64,7 @@ const deviceTypes = [
     upper_normal: -15.0,
     lower_alert: -35.0,
     upper_alert: -10.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Server Room Temperature',
@@ -75,7 +75,7 @@ const deviceTypes = [
     upper_normal: 27.0,
     lower_alert: 15.0,
     upper_alert: 32.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Industrial Process Temperature',
@@ -86,9 +86,9 @@ const deviceTypes = [
     upper_normal: 80.0,
     lower_alert: 0.0,
     upper_alert: 120.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Humidity Sensors (4)
   // ═══════════════════════════════════════════════════════════════════
@@ -101,7 +101,7 @@ const deviceTypes = [
     upper_normal: 60.0,
     lower_alert: 20.0,
     upper_alert: 80.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Data Center Humidity',
@@ -112,7 +112,7 @@ const deviceTypes = [
     upper_normal: 55.0,
     lower_alert: 20.0,
     upper_alert: 80.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Museum Climate Control',
@@ -123,7 +123,7 @@ const deviceTypes = [
     upper_normal: 55.0,
     lower_alert: 30.0,
     upper_alert: 70.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Greenhouse Humidity',
@@ -134,9 +134,9 @@ const deviceTypes = [
     upper_normal: 80.0,
     lower_alert: 40.0,
     upper_alert: 95.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Air Quality Sensors (4)
   // ═══════════════════════════════════════════════════════════════════
@@ -149,7 +149,7 @@ const deviceTypes = [
     upper_normal: 1000.0,
     lower_alert: 300.0,
     upper_alert: 2000.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'VOC (Volatile Organic Compounds)',
@@ -160,7 +160,7 @@ const deviceTypes = [
     upper_normal: 500.0,
     lower_alert: null,
     upper_alert: 1000.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'PM2.5 Particulate Matter',
@@ -171,7 +171,7 @@ const deviceTypes = [
     upper_normal: 25.0,
     lower_alert: null,
     upper_alert: 75.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'PM10 Particulate Matter',
@@ -182,9 +182,9 @@ const deviceTypes = [
     upper_normal: 50.0,
     lower_alert: null,
     upper_alert: 150.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Light Sensors (3)
   // ═══════════════════════════════════════════════════════════════════
@@ -197,7 +197,7 @@ const deviceTypes = [
     upper_normal: 750.0,
     lower_alert: 100.0,
     upper_alert: 1500.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'Outdoor Light Level',
@@ -208,7 +208,7 @@ const deviceTypes = [
     upper_normal: 100000.0,
     lower_alert: null,
     upper_alert: null,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'Warehouse Illuminance',
@@ -219,9 +219,9 @@ const deviceTypes = [
     upper_normal: 300.0,
     lower_alert: 50.0,
     upper_alert: 750.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Pressure Sensors (3)
   // ═══════════════════════════════════════════════════════════════════
@@ -234,7 +234,7 @@ const deviceTypes = [
     upper_normal: 1040.0,
     lower_alert: 950.0,
     upper_alert: 1070.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Clean Room Pressure Differential',
@@ -245,7 +245,7 @@ const deviceTypes = [
     upper_normal: 20.0,
     lower_alert: 0.0,
     upper_alert: 50.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'HVAC Duct Pressure',
@@ -256,9 +256,9 @@ const deviceTypes = [
     upper_normal: 500.0,
     lower_alert: 0.0,
     upper_alert: 1000.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Power & Battery Sensors (6)
   // ═══════════════════════════════════════════════════════════════════
@@ -271,7 +271,7 @@ const deviceTypes = [
     upper_normal: 100.0,
     lower_alert: 10.0,
     upper_alert: null,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'AC Voltage (120V)',
@@ -282,7 +282,7 @@ const deviceTypes = [
     upper_normal: 126.0,
     lower_alert: 108.0,
     upper_alert: 132.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'AC Voltage (230V)',
@@ -293,7 +293,7 @@ const deviceTypes = [
     upper_normal: 240.0,
     lower_alert: 207.0,
     upper_alert: 253.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'DC Power Supply (12V)',
@@ -304,7 +304,7 @@ const deviceTypes = [
     upper_normal: 12.5,
     lower_alert: 10.0,
     upper_alert: 14.0,
-    precision_digits: 2
+    precision_digits: 2,
   },
   {
     name: 'Current Draw',
@@ -315,7 +315,7 @@ const deviceTypes = [
     upper_normal: 10.0,
     lower_alert: null,
     upper_alert: 15.0,
-    precision_digits: 2
+    precision_digits: 2,
   },
   {
     name: 'Power Consumption',
@@ -326,9 +326,9 @@ const deviceTypes = [
     upper_normal: 1000.0,
     lower_alert: null,
     upper_alert: 2000.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Motion & Occupancy (2)
   // ═══════════════════════════════════════════════════════════════════
@@ -341,7 +341,7 @@ const deviceTypes = [
     upper_normal: 50.0,
     lower_alert: null,
     upper_alert: 100.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'Motion Events (Hourly)',
@@ -352,9 +352,9 @@ const deviceTypes = [
     upper_normal: 100.0,
     lower_alert: null,
     upper_alert: 500.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Water & Liquid Sensors (3)
   // ═══════════════════════════════════════════════════════════════════
@@ -364,10 +364,10 @@ const deviceTypes = [
     device_class: 'leak_detection',
     unit: 'status',
     lower_normal: 0.0,
-    upper_normal: 0.1,  // Small range to satisfy constraint (effectively binary)
+    upper_normal: 0.1, // Small range to satisfy constraint (effectively binary)
     lower_alert: null,
     upper_alert: 1.0,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'Water Flow Rate',
@@ -378,7 +378,7 @@ const deviceTypes = [
     upper_normal: 100.0,
     lower_alert: null,
     upper_alert: 200.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Tank Level',
@@ -389,9 +389,9 @@ const deviceTypes = [
     upper_normal: 100.0,
     lower_alert: 10.0,
     upper_alert: null,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Connectivity & Signal (2)
   // ═══════════════════════════════════════════════════════════════════
@@ -404,7 +404,7 @@ const deviceTypes = [
     upper_normal: -30.0,
     lower_alert: -100.0,
     upper_alert: null,
-    precision_digits: 0
+    precision_digits: 0,
   },
   {
     name: 'Link Quality',
@@ -415,9 +415,9 @@ const deviceTypes = [
     upper_normal: 100.0,
     lower_alert: 30.0,
     upper_alert: null,
-    precision_digits: 0
+    precision_digits: 0,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Environmental & Weather (4)
   // ═══════════════════════════════════════════════════════════════════
@@ -430,7 +430,7 @@ const deviceTypes = [
     upper_normal: 5.0,
     lower_alert: null,
     upper_alert: 20.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Rainfall Rate',
@@ -441,7 +441,7 @@ const deviceTypes = [
     upper_normal: 10.0,
     lower_alert: null,
     upper_alert: 50.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Soil Moisture',
@@ -452,7 +452,7 @@ const deviceTypes = [
     upper_normal: 60.0,
     lower_alert: 10.0,
     upper_alert: 80.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'UV Index',
@@ -463,9 +463,9 @@ const deviceTypes = [
     upper_normal: 11.0,
     lower_alert: null,
     upper_alert: null,
-    precision_digits: 1
+    precision_digits: 1,
   },
-  
+
   // ═══════════════════════════════════════════════════════════════════
   // Industrial & Specialized (5)
   // ═══════════════════════════════════════════════════════════════════
@@ -478,7 +478,7 @@ const deviceTypes = [
     upper_normal: 4.5,
     lower_alert: null,
     upper_alert: 18.0,
-    precision_digits: 2
+    precision_digits: 2,
   },
   {
     name: 'Sound Pressure Level',
@@ -489,7 +489,7 @@ const deviceTypes = [
     upper_normal: 70.0,
     lower_alert: null,
     upper_alert: 90.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Distance Measurement',
@@ -500,7 +500,7 @@ const deviceTypes = [
     upper_normal: 400.0,
     lower_alert: null,
     upper_alert: null,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Weight/Load',
@@ -511,7 +511,7 @@ const deviceTypes = [
     upper_normal: 1000.0,
     lower_alert: null,
     upper_alert: 1500.0,
-    precision_digits: 1
+    precision_digits: 1,
   },
   {
     name: 'Gas Concentration (Generic)',
@@ -522,103 +522,111 @@ const deviceTypes = [
     upper_normal: 50.0,
     lower_alert: null,
     upper_alert: 1000.0,
-    precision_digits: 0
-  }
-];
+    precision_digits: 0,
+  },
+]
 
 // Helper function to make HTTPS requests
 function makeRequest(method, path, data = null) {
   return new Promise((resolve, reject) => {
-    const url = new URL(path, SUPABASE_URL);
+    const url = new URL(path, SUPABASE_URL)
     const options = {
       hostname: url.hostname,
       port: 443,
       path: url.pathname + url.search,
       method: method,
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      }
-    };
+        Prefer: 'return=representation',
+      },
+    }
 
     const req = https.request(options, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
+      let body = ''
+      res.on('data', (chunk) => (body += chunk))
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve({ statusCode: res.statusCode, body: body ? JSON.parse(body) : null });
+          resolve({
+            statusCode: res.statusCode,
+            body: body ? JSON.parse(body) : null,
+          })
         } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+          reject(new Error(`HTTP ${res.statusCode}: ${body}`))
         }
-      });
-    });
+      })
+    })
 
-    req.on('error', reject);
-    
+    req.on('error', reject)
+
     if (data) {
-      req.write(JSON.stringify(data));
+      req.write(JSON.stringify(data))
     }
-    
-    req.end();
-  });
+
+    req.end()
+  })
 }
 
 async function seedDeviceTypes() {
   try {
-    console.log('🌱 Seeding 42 industry-standard IoT device types...\n');
-    
+    console.log('🌱 Seeding 42 industry-standard IoT device types...\n')
+
     // Step 1: Delete existing device types for this org
-    console.log('📝 Step 1: Clearing existing device types...');
+    console.log('📝 Step 1: Clearing existing device types...')
     await makeRequest(
       'DELETE',
       `/rest/v1/device_types?organization_id=eq.${ORG_ID}`
-    );
-    console.log('✅ Existing device types cleared\n');
-    
+    )
+    console.log('✅ Existing device types cleared\n')
+
     // Step 2: Insert all 42 device types
-    console.log('📝 Step 2: Inserting 42 device types...');
-    const deviceTypesWithOrg = deviceTypes.map(dt => ({
+    console.log('📝 Step 2: Inserting 42 device types...')
+    const deviceTypesWithOrg = deviceTypes.map((dt) => ({
       organization_id: ORG_ID,
-      ...dt
-    }));
-    
+      ...dt,
+    }))
+
     const result = await makeRequest(
       'POST',
       '/rest/v1/device_types',
       deviceTypesWithOrg
-    );
-    
-    console.log('✅ Successfully inserted 42 device types!\n');
-    
+    )
+
+    console.log('✅ Successfully inserted 42 device types!\n')
+
     // Step 3: Verify
-    console.log('📝 Step 3: Verifying...');
+    console.log('📝 Step 3: Verifying...')
     const verification = await makeRequest(
       'GET',
       `/rest/v1/device_types?organization_id=eq.${ORG_ID}&select=id,name,device_class,unit`
-    );
-    
-    console.log(`✅ Verified: ${verification.body.length} device types in database\n`);
-    
+    )
+
+    console.log(
+      `✅ Verified: ${verification.body.length} device types in database\n`
+    )
+
     // Group by device class for summary
     const byClass = verification.body.reduce((acc, dt) => {
-      acc[dt.device_class] = (acc[dt.device_class] || 0) + 1;
-      return acc;
-    }, {});
-    
-    console.log('📊 Device Types by Class:');
-    Object.entries(byClass).sort((a, b) => b[1] - a[1]).forEach(([cls, count]) => {
-      console.log(`   ${cls.padEnd(20)} ${count}`);
-    });
-    
-    console.log('\n✅ Seeding complete! All 42 industry-standard device types are ready.\n');
-    
+      acc[dt.device_class] = (acc[dt.device_class] || 0) + 1
+      return acc
+    }, {})
+
+    console.log('📊 Device Types by Class:')
+    Object.entries(byClass)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([cls, count]) => {
+        console.log(`   ${cls.padEnd(20)} ${count}`)
+      })
+
+    console.log(
+      '\n✅ Seeding complete! All 42 industry-standard device types are ready.\n'
+    )
   } catch (error) {
-    console.error('❌ Error seeding device types:', error.message);
-    process.exit(1);
+    console.error('❌ Error seeding device types:', error.message)
+    process.exit(1)
   }
 }
 
 // Run the seed
-seedDeviceTypes();
+seedDeviceTypes()

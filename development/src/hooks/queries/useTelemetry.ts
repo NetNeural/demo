@@ -1,11 +1,11 @@
 /**
  * React Query Hooks for Telemetry Data
- * 
+ *
  * Implements caching strategy per Story 3.3:
  * - Telemetry data: 1 minute cache
  * - Efficient time-range queries
  * - Automatic pagination support
- * 
+ *
  * Note: The device_telemetry_history table stores sensor readings in a
  * `telemetry` JSON column. Individual fields like sensor_type, value, unit
  * are extracted from this JSON at query time.
@@ -17,7 +17,8 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 
 /** Raw database row from device_telemetry_history */
-export type TelemetryRow = Database['public']['Tables']['device_telemetry_history']['Row']
+export type TelemetryRow =
+  Database['public']['Tables']['device_telemetry_history']['Row']
 
 /** Parsed telemetry payload extracted from the JSON blob */
 export interface TelemetryParsed {
@@ -34,7 +35,11 @@ export interface TelemetryData extends TelemetryRow {
 
 /** Helper: safely parse the telemetry JSON blob */
 function parseTelemetryBlob(row: TelemetryRow): TelemetryParsed {
-  if (row.telemetry && typeof row.telemetry === 'object' && !Array.isArray(row.telemetry)) {
+  if (
+    row.telemetry &&
+    typeof row.telemetry === 'object' &&
+    !Array.isArray(row.telemetry)
+  ) {
     return row.telemetry as TelemetryParsed
   }
   return {}
@@ -42,30 +47,33 @@ function parseTelemetryBlob(row: TelemetryRow): TelemetryParsed {
 
 /** Helper: enrich rows with parsed telemetry */
 function enrichRows(rows: TelemetryRow[]): TelemetryData[] {
-  return rows.map(row => ({ ...row, parsed: parseTelemetryBlob(row) }))
+  return rows.map((row) => ({ ...row, parsed: parseTelemetryBlob(row) }))
 }
 
 /**
  * Hook: Fetch latest telemetry for a device
- * 
+ *
  * Cache: 1 minute per Story 3.3 requirements
- * 
+ *
  * @example
  * ```tsx
  * const { data: telemetry, isLoading } = useLatestTelemetryQuery('device-123')
  * ```
  */
-export function useLatestTelemetryQuery(deviceId: string, options?: {
-  limit?: number
-  sensorType?: string
-}) {
+export function useLatestTelemetryQuery(
+  deviceId: string,
+  options?: {
+    limit?: number
+    sensorType?: string
+  }
+) {
   const supabase = createClient()
 
   return useQuery({
     queryKey: options?.sensorType
       ? [...queryKeys.latestTelemetry(deviceId), options.sensorType]
       : queryKeys.latestTelemetry(deviceId),
-    
+
     queryFn: async (): Promise<TelemetryData[]> => {
       const query = supabase
         .from('device_telemetry_history')
@@ -84,12 +92,14 @@ export function useLatestTelemetryQuery(deviceId: string, options?: {
 
       // Client-side filter by sensor_type from telemetry JSON
       if (options?.sensorType) {
-        return enriched.filter(d => d.parsed?.sensor_type === options.sensorType)
+        return enriched.filter(
+          (d) => d.parsed?.sensor_type === options.sensorType
+        )
       }
 
       return enriched
     },
-    
+
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
     enabled: !!deviceId,
   })
@@ -97,9 +107,9 @@ export function useLatestTelemetryQuery(deviceId: string, options?: {
 
 /**
  * Hook: Fetch telemetry for a time range
- * 
+ *
  * Useful for charts and historical analysis
- * 
+ *
  * @example
  * ```tsx
  * const { data } = useTelemetryRangeQuery({
@@ -120,8 +130,12 @@ export function useTelemetryRangeQuery(params: {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: queryKeys.telemetryRange(params.deviceId, params.start, params.end),
-    
+    queryKey: queryKeys.telemetryRange(
+      params.deviceId,
+      params.start,
+      params.end
+    ),
+
     queryFn: async (): Promise<TelemetryData[]> => {
       let query = supabase
         .from('device_telemetry_history')
@@ -145,12 +159,14 @@ export function useTelemetryRangeQuery(params: {
 
       // Client-side filter by sensor_type if specified
       if (params.sensorType) {
-        return enriched.filter(d => d.parsed?.sensor_type === params.sensorType)
+        return enriched.filter(
+          (d) => d.parsed?.sensor_type === params.sensorType
+        )
       }
 
       return enriched
     },
-    
+
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
     enabled: !!params.deviceId && !!params.start && !!params.end,
   })
@@ -158,9 +174,9 @@ export function useTelemetryRangeQuery(params: {
 
 /**
  * Hook: Fetch aggregated telemetry statistics
- * 
+ *
  * Useful for dashboard cards showing avg/min/max
- * 
+ *
  * @example
  * ```tsx
  * const { data: stats } = useTelemetryStatsQuery({
@@ -178,8 +194,13 @@ export function useTelemetryStatsQuery(params: {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: ['telemetry-stats', params.deviceId, params.sensorType, params.hours || 24],
-    
+    queryKey: [
+      'telemetry-stats',
+      params.deviceId,
+      params.sensorType,
+      params.hours || 24,
+    ],
+
     queryFn: async () => {
       const hoursAgo = new Date()
       hoursAgo.setHours(hoursAgo.getHours() - (params.hours || 24))
@@ -207,13 +228,17 @@ export function useTelemetryStatsQuery(params: {
 
       // Parse telemetry JSON and extract numeric values for the sensor type
       const values = enrichRows(data)
-        .filter(d => d.parsed?.sensor_type === params.sensorType && typeof d.parsed?.value === 'number')
-        .map(d => d.parsed!.value as number)
+        .filter(
+          (d) =>
+            d.parsed?.sensor_type === params.sensorType &&
+            typeof d.parsed?.value === 'number'
+        )
+        .map((d) => d.parsed!.value as number)
 
       if (values.length === 0) {
         return { count: 0, min: null, max: null, avg: null, latest: null }
       }
-      
+
       return {
         count: values.length,
         min: Math.min(...values),
@@ -222,7 +247,7 @@ export function useTelemetryStatsQuery(params: {
         latest: values[values.length - 1],
       }
     },
-    
+
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
     enabled: !!params.deviceId && !!params.sensorType,
   })
@@ -230,24 +255,27 @@ export function useTelemetryStatsQuery(params: {
 
 /**
  * Hook: Fetch telemetry grouped by sensor type
- * 
+ *
  * Returns all sensor types for a device in one query
- * 
+ *
  * @example
  * ```tsx
  * const { data } = useGroupedTelemetryQuery('device-123', { hours: 1 })
  * // Returns: { temperature: [...], humidity: [...], pressure: [...] }
  * ```
  */
-export function useGroupedTelemetryQuery(deviceId: string, options?: {
-  hours?: number
-  limit?: number
-}) {
+export function useGroupedTelemetryQuery(
+  deviceId: string,
+  options?: {
+    hours?: number
+    limit?: number
+  }
+) {
   const supabase = createClient()
 
   return useQuery({
     queryKey: ['telemetry-grouped', deviceId, options?.hours || 1],
-    
+
     queryFn: async () => {
       const hoursAgo = new Date()
       hoursAgo.setHours(hoursAgo.getHours() - (options?.hours || 1))
@@ -266,18 +294,21 @@ export function useGroupedTelemetryQuery(deviceId: string, options?: {
 
       // Group by sensor_type extracted from telemetry JSON
       const enriched = enrichRows(data || [])
-      const grouped = enriched.reduce((acc, item) => {
-        const sensorType = item.parsed?.sensor_type || 'unknown'
-        if (!acc[sensorType]) {
-          acc[sensorType] = []
-        }
-        acc[sensorType]!.push(item)
-        return acc
-      }, {} as Record<string, TelemetryData[]>)
+      const grouped = enriched.reduce(
+        (acc, item) => {
+          const sensorType = item.parsed?.sensor_type || 'unknown'
+          if (!acc[sensorType]) {
+            acc[sensorType] = []
+          }
+          acc[sensorType]!.push(item)
+          return acc
+        },
+        {} as Record<string, TelemetryData[]>
+      )
 
       return grouped
     },
-    
+
     staleTime: CACHE_TIME.TELEMETRY, // 1 minute
     enabled: !!deviceId,
   })
@@ -285,12 +316,12 @@ export function useGroupedTelemetryQuery(deviceId: string, options?: {
 
 /**
  * Migration Guide:
- * 
+ *
  * BEFORE (manual data fetching):
  * ```tsx
  * const [telemetry, setTelemetry] = useState([])
  * const [loading, setLoading] = useState(true)
- * 
+ *
  * useEffect(() => {
  *   const interval = setInterval(async () => {
  *     const { data } = await supabase
@@ -298,21 +329,21 @@ export function useGroupedTelemetryQuery(deviceId: string, options?: {
  *       .select('*')
  *       .eq('device_id', deviceId)
  *       .limit(100)
- *     
+ *
  *     setTelemetry(data || [])
  *     setLoading(false)
  *   }, 60000) // Manual 1-minute polling
- *   
+ *
  *   return () => clearInterval(interval)
  * }, [deviceId])
  * ```
- * 
+ *
  * AFTER (useLatestTelemetryQuery):
  * ```tsx
  * const { data: telemetry, isLoading } = useLatestTelemetryQuery(deviceId)
  * // Automatic 1-minute caching + background refetching
  * ```
- * 
+ *
  * Benefits:
  * - Automatic 1-minute caching
  * - Request deduplication (multiple components share same query)

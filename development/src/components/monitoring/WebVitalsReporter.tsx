@@ -1,6 +1,6 @@
 /**
  * Web Vitals Reporter Component
- * 
+ *
  * Client-side component that initializes Web Vitals monitoring
  * for Core Web Vitals (LCP, FID, CLS) and additional metrics.
  */

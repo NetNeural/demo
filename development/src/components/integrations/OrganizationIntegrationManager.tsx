@@ -1,105 +1,133 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
-import { Plus, Trash2, CheckCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { edgeFunctions } from "@/lib/edge-functions/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, CheckCircle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 
 interface OrganizationIntegration {
-  id: string;
-  organization_id: string;
-  integration_type: string;
-  name: string;
-  api_key_encrypted?: string | null;
-  project_id?: string | null;
-  base_url?: string | null;
-  settings: any;
-  status: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  id: string
+  organization_id: string
+  integration_type: string
+  name: string
+  api_key_encrypted?: string | null
+  project_id?: string | null
+  base_url?: string | null
+  settings: any
+  status: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 interface LocalDevice {
-  id: string;
-  name: string;
-  device_type: string;
-  status: string;
-  isExternallyManaged: boolean;
-  externalDeviceId?: string | null;
-  integrationName?: string | null;
-  integration_id?: string | null;
+  id: string
+  name: string
+  device_type: string
+  status: string
+  isExternallyManaged: boolean
+  externalDeviceId?: string | null
+  integrationName?: string | null
+  integration_id?: string | null
 }
 
 interface OrganizationIntegrationManagerProps {
-  organizationId: string;
+  organizationId: string
 }
 
-export function OrganizationIntegrationManager({ organizationId }: OrganizationIntegrationManagerProps) {
-  const [integrations, setIntegrations] = useState<OrganizationIntegration[]>([]);
-  const [devices, setDevices] = useState<LocalDevice[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
-  const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
-  const [externalDeviceId, setExternalDeviceId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ open: boolean; integrationId: string | null }>({ 
-    open: false, 
-    integrationId: null 
-  });
-  
+export function OrganizationIntegrationManager({
+  organizationId,
+}: OrganizationIntegrationManagerProps) {
+  const [integrations, setIntegrations] = useState<OrganizationIntegration[]>(
+    []
+  )
+  const [devices, setDevices] = useState<LocalDevice[]>([])
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
+  const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
+    null
+  )
+  const [externalDeviceId, setExternalDeviceId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean
+    integrationId: string | null
+  }>({
+    open: false,
+    integrationId: null,
+  })
+
   // New integration form
-  const [showNewIntegrationForm, setShowNewIntegrationForm] = useState(false);
+  const [showNewIntegrationForm, setShowNewIntegrationForm] = useState(false)
   const [newIntegration, setNewIntegration] = useState({
     name: '',
     integration_type: 'golioth',
     api_key: '',
     project_id: '',
-    base_url: 'https://api.golioth.io'
-  });
+    base_url: 'https://api.golioth.io',
+  })
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      
+      setLoading(true)
+
       // Load integrations for the organization using edge function
-      const response = await edgeFunctions.integrations.list(organizationId);
+      const response = await edgeFunctions.integrations.list(organizationId)
       if (!response.success) {
-        throw new Error(response.error?.message || 'Failed to load integrations');
+        throw new Error(
+          response.error?.message || 'Failed to load integrations'
+        )
       }
-      const responseData = response.data as any;
-      setIntegrations((responseData?.integrations as OrganizationIntegration[]) || []);
-      
+      const responseData = response.data as any
+      setIntegrations(
+        (responseData?.integrations as OrganizationIntegration[]) || []
+      )
+
       // Load devices
-      const devicesResponse = await fetch('/api/devices');
+      const devicesResponse = await fetch('/api/devices')
       if (devicesResponse.ok) {
-        const data = await devicesResponse.json();
-        setDevices(data.devices || []);
+        const data = await devicesResponse.json()
+        setDevices(data.devices || [])
       }
     } catch (error) {
-      console.error('Error loading data:', error);
-      setMessage({ type: 'error', text: 'Failed to load data' });
+      console.error('Error loading data:', error)
+      setMessage({ type: 'error', text: 'Failed to load data' })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadData();
+    loadData()
     // loadData depends on organizationId, but we don't want to reload on every change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId]);
+  }, [organizationId])
 
   const createIntegration = async () => {
     try {
-      setLoading(true);
-      
+      setLoading(true)
+
       const response = await edgeFunctions.integrations.create({
         organizationId: organizationId,
         integrationType: newIntegration.integration_type,
@@ -108,94 +136,99 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
           api_key: newIntegration.api_key,
           project_id: newIntegration.project_id,
           base_url: newIntegration.base_url,
-        }
-      });
+        },
+      })
 
       if (!response.success) {
-        throw new Error(response.error?.message || 'Failed to create integration');
+        throw new Error(
+          response.error?.message || 'Failed to create integration'
+        )
       }
 
       // Reload integrations to get the new one
-      await loadData();
-      
+      await loadData()
+
       setNewIntegration({
         name: '',
         integration_type: 'golioth',
         api_key: '',
         project_id: '',
-        base_url: 'https://api.golioth.io'
-      });
-      setShowNewIntegrationForm(false);
-      setMessage({ type: 'success', text: 'Integration created successfully' });
+        base_url: 'https://api.golioth.io',
+      })
+      setShowNewIntegrationForm(false)
+      setMessage({ type: 'success', text: 'Integration created successfully' })
     } catch (error) {
-      console.error('Error creating integration:', error);
-      setMessage({ type: 'error', text: 'Failed to create integration' });
+      console.error('Error creating integration:', error)
+      setMessage({ type: 'error', text: 'Failed to create integration' })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const testIntegration = async (integrationId: string) => {
     try {
-      setLoading(true);
-      
+      setLoading(true)
+
       // Call device-sync with operation='test' using SDK
       const response = await edgeFunctions.integrations.sync({
         integrationId,
         organizationId,
         operation: 'test',
-        deviceIds: []
-      });
+        deviceIds: [],
+      })
 
       if (!response.success) {
-        throw new Error(response.error?.message || 'Test failed');
+        throw new Error(response.error?.message || 'Test failed')
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: 'Test completed successfully'
-      });
+      setMessage({
+        type: 'success',
+        text: 'Test completed successfully',
+      })
     } catch (error) {
-      console.error('Error testing integration:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to test integration' 
-      });
+      console.error('Error testing integration:', error)
+      setMessage({
+        type: 'error',
+        text:
+          error instanceof Error ? error.message : 'Failed to test integration',
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const deleteIntegration = async (integrationId: string) => {
     try {
-      setLoading(true);
-      const response = await edgeFunctions.integrations.delete(integrationId);
-      
+      setLoading(true)
+      const response = await edgeFunctions.integrations.delete(integrationId)
+
       if (!response.success) {
-        throw new Error(response.error?.message || 'Failed to delete integration');
+        throw new Error(
+          response.error?.message || 'Failed to delete integration'
+        )
       }
-      
-      setIntegrations(integrations.filter(i => i.id !== integrationId));
-      setMessage({ type: 'success', text: 'Integration deleted successfully' });
-      setDeleteConfirmation({ open: false, integrationId: null });
+
+      setIntegrations(integrations.filter((i) => i.id !== integrationId))
+      setMessage({ type: 'success', text: 'Integration deleted successfully' })
+      setDeleteConfirmation({ open: false, integrationId: null })
     } catch (error) {
-      console.error('Error deleting integration:', error);
-      setMessage({ type: 'error', text: 'Failed to delete integration' });
-      setDeleteConfirmation({ open: false, integrationId: null });
+      console.error('Error deleting integration:', error)
+      setMessage({ type: 'error', text: 'Failed to delete integration' })
+      setDeleteConfirmation({ open: false, integrationId: null })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const mapDeviceToIntegration = async () => {
     if (!selectedDevice || !selectedIntegration || !externalDeviceId) {
-      setMessage({ type: 'error', text: 'Please fill in all fields' });
-      return;
+      setMessage({ type: 'error', text: 'Please fill in all fields' })
+      return
     }
 
     try {
-      setLoading(true);
-      
+      setLoading(true)
+
       // Update device with integration mapping
       const response = await fetch(`/api/devices/${selectedDevice}`, {
         method: 'PATCH',
@@ -206,29 +239,33 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
           integration_id: selectedIntegration,
           external_device_id: externalDeviceId,
         }),
-      });
+      })
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Device mapped successfully' });
-        setSelectedDevice(null);
-        setSelectedIntegration(null);
-        setExternalDeviceId('');
-        await loadData();
+        setMessage({ type: 'success', text: 'Device mapped successfully' })
+        setSelectedDevice(null)
+        setSelectedIntegration(null)
+        setExternalDeviceId('')
+        await loadData()
       } else {
-        throw new Error('Failed to map device');
+        throw new Error('Failed to map device')
       }
     } catch (error) {
-      console.error('Error mapping device:', error);
-      setMessage({ type: 'error', text: 'Failed to map device' });
+      console.error('Error mapping device:', error)
+      setMessage({ type: 'error', text: 'Failed to map device' })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
       {message && (
-        <Alert className={message.type === 'error' ? 'border-red-500' : 'border-green-500'}>
+        <Alert
+          className={
+            message.type === 'error' ? 'border-red-500' : 'border-green-500'
+          }
+        >
           <AlertDescription>{message.text}</AlertDescription>
         </Alert>
       )}
@@ -240,10 +277,10 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
         </TabsList>
 
         <TabsContent value="integrations" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">External Integrations</h3>
             <Button onClick={() => setShowNewIntegrationForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Integration
             </Button>
           </div>
@@ -263,7 +300,12 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                     <Input
                       id="integration-name"
                       value={newIntegration.name}
-                      onChange={(e) => setNewIntegration({...newIntegration, name: e.target.value})}
+                      onChange={(e) =>
+                        setNewIntegration({
+                          ...newIntegration,
+                          name: e.target.value,
+                        })
+                      }
                       placeholder="e.g., Production Golioth"
                     />
                   </div>
@@ -277,7 +319,7 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="api-key">API Key</Label>
@@ -285,7 +327,12 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                       id="api-key"
                       type="password"
                       value={newIntegration.api_key}
-                      onChange={(e) => setNewIntegration({...newIntegration, api_key: e.target.value})}
+                      onChange={(e) =>
+                        setNewIntegration({
+                          ...newIntegration,
+                          api_key: e.target.value,
+                        })
+                      }
                       placeholder="Enter Golioth API key"
                     />
                   </div>
@@ -294,7 +341,12 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                     <Input
                       id="project-id"
                       value={newIntegration.project_id}
-                      onChange={(e) => setNewIntegration({...newIntegration, project_id: e.target.value})}
+                      onChange={(e) =>
+                        setNewIntegration({
+                          ...newIntegration,
+                          project_id: e.target.value,
+                        })
+                      }
                       placeholder="Enter Golioth project ID"
                     />
                   </div>
@@ -305,7 +357,12 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                   <Input
                     id="base-url"
                     value={newIntegration.base_url}
-                    onChange={(e) => setNewIntegration({...newIntegration, base_url: e.target.value})}
+                    onChange={(e) =>
+                      setNewIntegration({
+                        ...newIntegration,
+                        base_url: e.target.value,
+                      })
+                    }
                     placeholder="https://api.golioth.io"
                   />
                 </div>
@@ -314,7 +371,10 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                   <Button onClick={createIntegration} disabled={loading}>
                     Create Integration
                   </Button>
-                  <Button variant="outline" onClick={() => setShowNewIntegrationForm(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewIntegrationForm(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -326,14 +386,22 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
             {integrations.map((integration) => (
               <Card key={integration.id}>
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <h4 className="font-semibold">{integration.name}</h4>
-                        <Badge variant={integration.status === 'active' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            integration.status === 'active'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
                           {integration.status}
                         </Badge>
-                        <Badge variant="outline">{integration.integration_type}</Badge>
+                        <Badge variant="outline">
+                          {integration.integration_type}
+                        </Badge>
                       </div>
                       <p className="text-sm text-gray-600">
                         Project: {integration.project_id || 'Not configured'}
@@ -342,24 +410,29 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                         Base URL: {integration.base_url || 'Default'}
                       </p>
                     </div>
-                    
+
                     <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => testIntegration(integration.id)}
                         disabled={loading}
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <CheckCircle className="mr-1 h-4 w-4" />
                         Test
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => setDeleteConfirmation({ open: true, integrationId: integration.id })}
+                        onClick={() =>
+                          setDeleteConfirmation({
+                            open: true,
+                            integrationId: integration.id,
+                          })
+                        }
                         disabled={loading}
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <Trash2 className="mr-1 h-4 w-4" />
                         Delete
                       </Button>
                     </div>
@@ -386,36 +459,42 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                     id="device-select"
                     value={selectedDevice || ''}
                     onChange={(e) => setSelectedDevice(e.target.value || null)}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full rounded-md border p-2"
                     aria-label="Select local device"
                   >
                     <option value="">Select a device...</option>
-                    {devices.filter(d => !d.isExternallyManaged).map((device) => (
-                      <option key={device.id} value={device.id}>
-                        {device.name} ({device.device_type})
-                      </option>
-                    ))}
+                    {devices
+                      .filter((d) => !d.isExternallyManaged)
+                      .map((device) => (
+                        <option key={device.id} value={device.id}>
+                          {device.name} ({device.device_type})
+                        </option>
+                      ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="integration-select">Integration</Label>
                   <select
                     id="integration-select"
                     value={selectedIntegration || ''}
-                    onChange={(e) => setSelectedIntegration(e.target.value || null)}
-                    className="w-full p-2 border rounded-md"
+                    onChange={(e) =>
+                      setSelectedIntegration(e.target.value || null)
+                    }
+                    className="w-full rounded-md border p-2"
                     aria-label="Select integration"
                   >
                     <option value="">Select an integration...</option>
-                    {integrations.filter(i => i.status === 'active').map((integration) => (
-                      <option key={integration.id} value={integration.id}>
-                        {integration.name}
-                      </option>
-                    ))}
+                    {integrations
+                      .filter((i) => i.status === 'active')
+                      .map((integration) => (
+                        <option key={integration.id} value={integration.id}>
+                          {integration.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="external-device-id">External Device ID</Label>
                   <Input
@@ -426,7 +505,7 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
                   />
                 </div>
               </div>
-              
+
               <Button onClick={mapDeviceToIntegration} disabled={loading}>
                 Map Device
               </Button>
@@ -443,19 +522,28 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {devices.filter(d => d.isExternallyManaged).map((device) => (
-                  <div key={device.id} className="flex justify-between items-center p-3 border rounded">
-                    <div>
-                      <div className="font-medium">{device.name}</div>
-                      <div className="text-sm text-gray-600">
-                        {device.integrationName} → {device.externalDeviceId}
+                {devices
+                  .filter((d) => d.isExternallyManaged)
+                  .map((device) => (
+                    <div
+                      key={device.id}
+                      className="flex items-center justify-between rounded border p-3"
+                    >
+                      <div>
+                        <div className="font-medium">{device.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {device.integrationName} → {device.externalDeviceId}
+                        </div>
                       </div>
+                      <Badge
+                        variant={
+                          device.status === 'online' ? 'default' : 'secondary'
+                        }
+                      >
+                        {device.status}
+                      </Badge>
                     </div>
-                    <Badge variant={device.status === 'online' ? 'default' : 'secondary'}>
-                      {device.status}
-                    </Badge>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -463,24 +551,35 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
       </Tabs>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ open, integrationId: null })}>
+      <Dialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) =>
+          setDeleteConfirmation({ open, integrationId: null })
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Integration?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this integration? This will remove all device mappings. This action cannot be undone.
+              Are you sure you want to delete this integration? This will remove
+              all device mappings. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
+          <div className="mt-4 flex justify-end gap-3">
             <Button
               variant="outline"
-              onClick={() => setDeleteConfirmation({ open: false, integrationId: null })}
+              onClick={() =>
+                setDeleteConfirmation({ open: false, integrationId: null })
+              }
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteConfirmation.integrationId && deleteIntegration(deleteConfirmation.integrationId)}
+              onClick={() =>
+                deleteConfirmation.integrationId &&
+                deleteIntegration(deleteConfirmation.integrationId)
+              }
             >
               Delete
             </Button>
@@ -488,5 +587,5 @@ export function OrganizationIntegrationManager({ organizationId }: OrganizationI
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

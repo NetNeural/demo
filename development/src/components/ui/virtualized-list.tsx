@@ -1,9 +1,9 @@
 /**
  * VirtualizedList Component
- * 
+ *
  * High-performance list component using react-window v2 for rendering
  * only visible items. Use this for lists with 50+ items.
- * 
+ *
  * @example
  * ```tsx
  * <VirtualizedList
@@ -47,7 +47,13 @@ export function VirtualizedList<T>({
   // For small lists, skip virtualization overhead
   if (items.length < 30) {
     return (
-      <div className={className} style={{ height: typeof height === 'number' ? `${height}px` : height, overflow: 'auto' }}>
+      <div
+        className={className}
+        style={{
+          height: typeof height === 'number' ? `${height}px` : height,
+          overflow: 'auto',
+        }}
+      >
         {items.map((item, index) => (
           <div key={index}>{renderItem(item, index)}</div>
         ))}
@@ -58,14 +64,17 @@ export function VirtualizedList<T>({
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   type NoExtraProps = Record<string, never>
 
-  const Row = ({ index, style }: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> }): ReactElement | null => {
+  const Row = ({
+    index,
+    style,
+  }: {
+    index: number
+    style: CSSProperties
+    ariaAttributes: Record<string, unknown>
+  }): ReactElement | null => {
     const item = items[index]
     if (!item) return null
-    return (
-      <div style={style}>
-        {renderItem(item, index)}
-      </div>
-    )
+    return <div style={style}>{renderItem(item, index)}</div>
   }
 
   const numericHeight = typeof height === 'number' ? height : 600
@@ -79,9 +88,13 @@ export function VirtualizedList<T>({
         rowProps={{}}
         defaultHeight={numericHeight}
         overscanCount={overscanCount}
-        onRowsRendered={onItemsRendered ? (visible) => {
-          onItemsRendered(visible.startIndex, visible.stopIndex)
-        } : undefined}
+        onRowsRendered={
+          onItemsRendered
+            ? (visible) => {
+                onItemsRendered(visible.startIndex, visible.stopIndex)
+              }
+            : undefined
+        }
       />
     </div>
   )

@@ -29,6 +29,7 @@ e2e/
 ```
 
 Additional tests in `tests/playwright/` include:
+
 - Production validation tests
 - Bug hunting and validation tests
 - Golioth integration tests
@@ -58,6 +59,7 @@ npm run test:e2e:ui
 ```
 
 This opens Playwright's interactive UI where you can:
+
 - Run tests step-by-step
 - See live browser actions
 - Debug failures visually
@@ -241,7 +243,7 @@ import { test, expect, Page } from '@playwright/test'
 // Test user credentials
 const TEST_USER = {
   email: 'test@netneural.ai',
-  password: 'TestPassword123!'
+  password: 'TestPassword123!',
 }
 
 /**
@@ -250,7 +252,7 @@ const TEST_USER = {
 async function setupPage(page: Page) {
   await page.goto('/auth/login')
   await page.waitForLoadState('networkidle')
-  
+
   // Perform login
   await page.locator('input[type="email"]').fill(TEST_USER.email)
   await page.locator('input[type="password"]').fill(TEST_USER.password)
@@ -259,16 +261,14 @@ async function setupPage(page: Page) {
 }
 
 test.describe('Feature Name', () => {
-  
   test.beforeEach(async ({ page }) => {
     await setupPage(page)
   })
-  
+
   test('should do something', async ({ page }) => {
     // Your test here
     await expect(page.locator('text=Expected Text')).toBeVisible()
   })
-  
 })
 ```
 
@@ -299,9 +299,9 @@ await page.waitForLoadState('networkidle')
 Combine multiple selector strategies:
 
 ```typescript
-const button = page.locator('[data-testid="submit"]').or(
-  page.locator('button:has-text("Submit")')
-)
+const button = page
+  .locator('[data-testid="submit"]')
+  .or(page.locator('button:has-text("Submit")'))
 ```
 
 #### 4. Handle Optional Elements
@@ -402,6 +402,7 @@ module.exports = defineConfig({
 ### Environment Variables
 
 E2E tests use the following environment:
+
 - **Base URL**: `http://localhost:3000` (local dev server)
 - **Supabase**: Local Supabase Docker instance
 - **Test Users**: Seeded in local database
@@ -440,9 +441,7 @@ npm run dev  # Restart manually
 
 ### Tests Hang or Timeout
 
-**Solution**:1. Check local Supabase is running: `npm run supabase:status`
-2. Verify dev server is running: `curl http://localhost:3000`
-3. Increase global timeout in `playwright.config.js`
+**Solution**:1. Check local Supabase is running: `npm run supabase:status` 2. Verify dev server is running: `curl http://localhost:3000` 3. Increase global timeout in `playwright.config.js`
 
 ### Screenshot/Video Not Captured
 
@@ -468,6 +467,7 @@ E2E tests run automatically on pull requests via `.github/workflows/test.yml`:
 ```
 
 Tests run against:
+
 - Local Supabase Docker instance
 - Seeded test data
 - Headless Chrome

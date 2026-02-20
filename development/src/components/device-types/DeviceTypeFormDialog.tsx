@@ -1,11 +1,11 @@
 /**
  * Device Type Form Dialog
- * 
+ *
  * Full create/edit form with validation for device type configuration.
  * Supports normal ranges, alert thresholds, measurement metadata.
- * 
+ *
  * Includes automatic unit conversion for measurement values when unit changes.
- * 
+ *
  * @see Issue #118
  * @see Issue #167 - Unit conversion
  */
@@ -48,10 +48,7 @@ import {
   type DeviceTypeFormValues,
   type DeviceTypePayload,
 } from '@/types/device-types'
-import {
-  convertMeasurementValues,
-  canConvertUnit,
-} from '@/lib/unit-conversion'
+import { convertMeasurementValues, canConvertUnit } from '@/lib/unit-conversion'
 
 interface DeviceTypeFormDialogProps {
   open: boolean
@@ -79,7 +76,9 @@ export function DeviceTypeFormDialog({
   const createMutation = useCreateDeviceTypeMutation()
   const updateMutation = useUpdateDeviceTypeMutation()
 
-  const [form, setForm] = useState<DeviceTypeFormValues>(DEFAULT_DEVICE_TYPE_FORM)
+  const [form, setForm] = useState<DeviceTypeFormValues>(
+    DEFAULT_DEVICE_TYPE_FORM
+  )
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [previousUnit, setPreviousUnit] = useState<string>('')
   const [showConversionMessage, setShowConversionMessage] = useState(false)
@@ -97,8 +96,14 @@ export function DeviceTypeFormDialog({
         unit: editingType.unit || '',
         lower_normal: String(editingType.lower_normal),
         upper_normal: String(editingType.upper_normal),
-        lower_alert: editingType.lower_alert != null ? String(editingType.lower_alert) : '',
-        upper_alert: editingType.upper_alert != null ? String(editingType.upper_alert) : '',
+        lower_alert:
+          editingType.lower_alert != null
+            ? String(editingType.lower_alert)
+            : '',
+        upper_alert:
+          editingType.upper_alert != null
+            ? String(editingType.upper_alert)
+            : '',
         precision_digits: String(editingType.precision_digits),
         icon: editingType.icon || '',
       })
@@ -117,7 +122,12 @@ export function DeviceTypeFormDialog({
     // 1. It's not a new device type (has previous unit set)
     // 2. Unit actually changed
     // 3. Conversion is available and has valid values
-    if (!previousUnit || form.unit === previousUnit || !form.lower_normal || !form.upper_normal) {
+    if (
+      !previousUnit ||
+      form.unit === previousUnit ||
+      !form.lower_normal ||
+      !form.upper_normal
+    ) {
       return undefined
     }
 
@@ -139,7 +149,7 @@ export function DeviceTypeFormDialog({
         form.unit
       )
 
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         lower_normal: converted.lowerNormal,
         upper_normal: converted.upperNormal,
@@ -157,23 +167,33 @@ export function DeviceTypeFormDialog({
 
     setPreviousUnit(form.unit)
     return cleanup
-  }, [form.unit, form.lower_normal, form.upper_normal, form.lower_alert, form.upper_alert, previousUnit])
+  }, [
+    form.unit,
+    form.lower_normal,
+    form.upper_normal,
+    form.lower_alert,
+    form.upper_alert,
+    previousUnit,
+  ])
 
   // Suggested units based on selected device class
   const suggestedUnits = useMemo(() => {
     if (!form.device_class) return COMMON_UNITS
-    const cls = DEVICE_CLASSES.find(c => c.value === form.device_class)
+    const cls = DEVICE_CLASSES.find((c) => c.value === form.device_class)
     return cls?.suggestedUnits?.length ? cls.suggestedUnits : COMMON_UNITS
   }, [form.device_class])
 
-  const updateField = useCallback(<K extends keyof DeviceTypeFormValues>(
-    field: K,
-    value: DeviceTypeFormValues[K]
-  ) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-    // Clear field error on change
-    setErrors(prev => ({ ...prev, [field]: undefined, general: undefined }))
-  }, [])
+  const updateField = useCallback(
+    <K extends keyof DeviceTypeFormValues>(
+      field: K,
+      value: DeviceTypeFormValues[K]
+    ) => {
+      setForm((prev) => ({ ...prev, [field]: value }))
+      // Clear field error on change
+      setErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }))
+    },
+    []
+  )
 
   function validate(): boolean {
     const errs: ValidationErrors = {}
@@ -196,7 +216,11 @@ export function DeviceTypeFormDialog({
     if (form.upper_normal === '' || isNaN(upperNormal)) {
       errs.upper_normal = 'Upper normal value is required'
     }
-    if (!errs.lower_normal && !errs.upper_normal && lowerNormal >= upperNormal) {
+    if (
+      !errs.lower_normal &&
+      !errs.upper_normal &&
+      lowerNormal >= upperNormal
+    ) {
       errs.upper_normal = 'Must be greater than lower normal'
     }
 
@@ -262,7 +286,8 @@ export function DeviceTypeFormDialog({
       }
       onOpenChange(false)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save device type'
+      const message =
+        err instanceof Error ? err.message : 'Failed to save device type'
       if (message.includes('unique') || message.includes('duplicate')) {
         setErrors({ name: 'A device type with this name already exists' })
       } else {
@@ -273,7 +298,7 @@ export function DeviceTypeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
@@ -287,16 +312,17 @@ export function DeviceTypeFormDialog({
           </DialogHeader>
 
           {errors.general && (
-            <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {errors.general}
             </div>
           )}
 
           {showConversionMessage && (
-            <div className="flex items-center gap-2 p-3 text-sm text-emerald-700 bg-emerald-50 rounded-md border border-emerald-200">
+            <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
               <Info className="h-4 w-4 flex-shrink-0" />
-              Normal Operating Range and Alert Thresholds have been automatically converted to the new unit.
+              Normal Operating Range and Alert Thresholds have been
+              automatically converted to the new unit.
             </div>
           )}
 
@@ -310,7 +336,7 @@ export function DeviceTypeFormDialog({
                 id="dt-name"
                 placeholder="e.g., Indoor Temperature Sensor"
                 value={form.name}
-                onChange={e => updateField('name', e.target.value)}
+                onChange={(e) => updateField('name', e.target.value)}
                 className={errors.name ? 'border-destructive' : ''}
                 autoFocus
               />
@@ -325,7 +351,7 @@ export function DeviceTypeFormDialog({
                 id="dt-desc"
                 placeholder="Optional description of this device type..."
                 value={form.description}
-                onChange={e => updateField('description', e.target.value)}
+                onChange={(e) => updateField('description', e.target.value)}
                 rows={2}
               />
             </div>
@@ -338,13 +364,13 @@ export function DeviceTypeFormDialog({
                 <Label htmlFor="dt-class">Device Class</Label>
                 <Select
                   value={form.device_class}
-                  onValueChange={val => updateField('device_class', val)}
+                  onValueChange={(val) => updateField('device_class', val)}
                 >
                   <SelectTrigger id="dt-class">
                     <SelectValue placeholder="Select category..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEVICE_CLASSES.map(cls => (
+                    {DEVICE_CLASSES.map((cls) => (
                       <SelectItem key={cls.value} value={cls.value}>
                         {cls.label}
                       </SelectItem>
@@ -360,12 +386,12 @@ export function DeviceTypeFormDialog({
                     id="dt-unit"
                     placeholder="e.g., °C"
                     value={form.unit}
-                    onChange={e => updateField('unit', e.target.value)}
+                    onChange={(e) => updateField('unit', e.target.value)}
                     className="flex-1"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {suggestedUnits.map(u => (
+                  {suggestedUnits.map((u) => (
                     <Badge
                       key={u}
                       variant={form.unit === u ? 'default' : 'outline'}
@@ -388,11 +414,17 @@ export function DeviceTypeFormDialog({
                   min={0}
                   max={6}
                   value={form.precision_digits}
-                  onChange={e => updateField('precision_digits', e.target.value)}
-                  className={errors.precision_digits ? 'border-destructive' : ''}
+                  onChange={(e) =>
+                    updateField('precision_digits', e.target.value)
+                  }
+                  className={
+                    errors.precision_digits ? 'border-destructive' : ''
+                  }
                 />
                 {errors.precision_digits && (
-                  <p className="text-sm text-destructive">{errors.precision_digits}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.precision_digits}
+                  </p>
                 )}
               </div>
 
@@ -402,9 +434,11 @@ export function DeviceTypeFormDialog({
                   id="dt-icon"
                   placeholder="e.g., thermometer"
                   value={form.icon}
-                  onChange={e => updateField('icon', e.target.value)}
+                  onChange={(e) => updateField('icon', e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">Lucide icon name (optional)</p>
+                <p className="text-xs text-muted-foreground">
+                  Lucide icon name (optional)
+                </p>
               </div>
             </div>
 
@@ -412,14 +446,20 @@ export function DeviceTypeFormDialog({
 
             {/* ── Normal Operating Range ── */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h4 className="font-semibold text-sm">Normal Operating Range</h4>
-                <span className="text-destructive text-xs">* required</span>
+              <div className="mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold">
+                  Normal Operating Range
+                </h4>
+                <span className="text-xs text-destructive">* required</span>
               </div>
-              <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <Info className="h-3.5 w-3.5 flex-shrink-0" />
                 Values within this range are considered healthy/normal.
-                {form.unit && <span>Values in <strong>{form.unit}</strong>.</span>}
+                {form.unit && (
+                  <span>
+                    Values in <strong>{form.unit}</strong>.
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -430,11 +470,15 @@ export function DeviceTypeFormDialog({
                     step="any"
                     placeholder="e.g., 18"
                     value={form.lower_normal}
-                    onChange={e => updateField('lower_normal', e.target.value)}
+                    onChange={(e) =>
+                      updateField('lower_normal', e.target.value)
+                    }
                     className={errors.lower_normal ? 'border-destructive' : ''}
                   />
                   {errors.lower_normal && (
-                    <p className="text-sm text-destructive">{errors.lower_normal}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.lower_normal}
+                    </p>
                   )}
                 </div>
                 <div className="grid gap-2">
@@ -445,11 +489,15 @@ export function DeviceTypeFormDialog({
                     step="any"
                     placeholder="e.g., 26"
                     value={form.upper_normal}
-                    onChange={e => updateField('upper_normal', e.target.value)}
+                    onChange={(e) =>
+                      updateField('upper_normal', e.target.value)
+                    }
                     className={errors.upper_normal ? 'border-destructive' : ''}
                   />
                   {errors.upper_normal && (
-                    <p className="text-sm text-destructive">{errors.upper_normal}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.upper_normal}
+                    </p>
                   )}
                 </div>
               </div>
@@ -459,46 +507,61 @@ export function DeviceTypeFormDialog({
 
             {/* ── Alert Thresholds ── */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h4 className="font-semibold text-sm">Alert Thresholds</h4>
-                <Badge variant="outline" className="text-xs">Optional</Badge>
+              <div className="mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Alert Thresholds</h4>
+                <Badge variant="outline" className="text-xs">
+                  Optional
+                </Badge>
               </div>
-              <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                Critical thresholds trigger alerts when readings exceed these values.
+                Critical thresholds trigger alerts when readings exceed these
+                values.
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="dt-lower-alert">Lower Alert (Critical Low)</Label>
+                  <Label htmlFor="dt-lower-alert">
+                    Lower Alert (Critical Low)
+                  </Label>
                   <Input
                     id="dt-lower-alert"
                     type="number"
                     step="any"
                     placeholder="e.g., 10"
                     value={form.lower_alert}
-                    onChange={e => updateField('lower_alert', e.target.value)}
+                    onChange={(e) => updateField('lower_alert', e.target.value)}
                     className={errors.lower_alert ? 'border-destructive' : ''}
                   />
                   {errors.lower_alert && (
-                    <p className="text-sm text-destructive">{errors.lower_alert}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.lower_alert}
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Must be ≤ lower normal</p>
+                  <p className="text-xs text-muted-foreground">
+                    Must be ≤ lower normal
+                  </p>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="dt-upper-alert">Upper Alert (Critical High)</Label>
+                  <Label htmlFor="dt-upper-alert">
+                    Upper Alert (Critical High)
+                  </Label>
                   <Input
                     id="dt-upper-alert"
                     type="number"
                     step="any"
                     placeholder="e.g., 35"
                     value={form.upper_alert}
-                    onChange={e => updateField('upper_alert', e.target.value)}
+                    onChange={(e) => updateField('upper_alert', e.target.value)}
                     className={errors.upper_alert ? 'border-destructive' : ''}
                   />
                   {errors.upper_alert && (
-                    <p className="text-sm text-destructive">{errors.upper_alert}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.upper_alert}
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Must be ≥ upper normal</p>
+                  <p className="text-xs text-muted-foreground">
+                    Must be ≥ upper normal
+                  </p>
                 </div>
               </div>
             </div>
@@ -515,8 +578,12 @@ export function DeviceTypeFormDialog({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending
-                ? (isEditing ? 'Saving...' : 'Creating...')
-                : (isEditing ? 'Save Changes' : 'Create Device Type')}
+                ? isEditing
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEditing
+                  ? 'Save Changes'
+                  : 'Create Device Type'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,29 +1,35 @@
 # User Phone Numbers & SMS Notifications - Implementation Summary
 
 ## Overview
+
 Added comprehensive phone number management to user profiles with SMS opt-in preferences. Users can now add primary and secondary phone numbers and control which numbers receive SMS notifications.
 
 ## Changes Made
 
 ### 1. Database Migration
+
 **File:** `supabase/migrations/20260220100000_add_user_phone_numbers.sql`
 
 Added columns to `users` table:
+
 - `phone_number` (VARCHAR(20)) - Primary phone number
-- `phone_number_secondary` (VARCHAR(20)) - Secondary/backup phone number  
+- `phone_number_secondary` (VARCHAR(20)) - Secondary/backup phone number
 - `phone_sms_enabled` (BOOLEAN) - SMS opt-in for primary number
 - `phone_secondary_sms_enabled` (BOOLEAN) - SMS opt-in for secondary number
 
 Features:
+
 - Phone number format validation (E.164 preferred)
 - Automatic SMS disable when phone number removed
 - Indexes for efficient querying
 - Comments explaining usage
 
 ### 2. Profile Settings UI
+
 **File:** `src/app/dashboard/settings/components/ProfileTab.tsx`
 
 Added new "Contact Information" section:
+
 - Primary phone number input with SMS opt-in checkbox
 - Secondary phone number input (optional) with SMS opt-in checkbox
 - Remove button for secondary number
@@ -32,9 +38,11 @@ Added new "Contact Information" section:
 - Visual indicator (info box) explaining SMS preferences
 
 ### 3. SMS Helper Functions
+
 **File:** `src/lib/helpers/sms-users.ts`
 
 Utility functions for SMS notification system:
+
 - `getSMSEnabledUsers()` - Get users who opted in to SMS
 - `getSMSPhoneNumbers()` - Get all SMS-enabled phone numbers
 - `getUserSMSPhoneNumbers()` - Get specific user's SMS numbers
@@ -44,17 +52,20 @@ Utility functions for SMS notification system:
 ## Manual Steps Required
 
 ### Step 1: Apply Migration to Local Database
+
 ```bash
 cd /workspaces/MonoRepo/development
 npx supabase db reset --local
 ```
 
 ### Step 2: Regenerate TypeScript Types
+
 ```bash
 npx supabase gen types typescript --local > src/types/supabase.ts
 ```
 
 ### Step 3: Apply Migration to Staging Database
+
 ```bash
 # Connect to staging
 npx supabase db push --db-url "postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
@@ -67,6 +78,7 @@ npx supabase db push --db-url "postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws
 ```
 
 ### Step 4: Test the Implementation
+
 1. Navigate to https://demo-stage.netneural.ai/dashboard/settings/
 2. Go to Profile tab
 3. Verify "Contact Information" section appears
@@ -79,6 +91,7 @@ npx supabase db push --db-url "postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws
 10. Remove secondary number - verify it clears
 
 ### Step 5: Integration with Alerts System
+
 The alerts system (sensor thresholds) already supports `notify_phone_numbers`. Now you can:
 
 1. **Option A: Manual Entry (Current)**
@@ -92,18 +105,18 @@ The alerts system (sensor thresholds) already supports `notify_phone_numbers`. N
    - Example code:
 
 ```typescript
-import { getSMSEnabledUsers } from '@/lib/helpers/sms-users';
+import { getSMSEnabledUsers } from '@/lib/helpers/sms-users'
 
 // In your component
-const [smsUsers, setSmsUsers] = useState<SMSEnabledUser[]>([]);
+const [smsUsers, setSmsUsers] = useState<SMSEnabledUser[]>([])
 
 useEffect(() => {
   async function loadSMSUsers() {
-    const users = await getSMSEnabledUsers(device.organization_id);
-    setSmsUsers(users);
+    const users = await getSMSEnabledUsers(device.organization_id)
+    setSmsUsers(users)
   }
-  loadSMSUsers();
-}, [device.organization_id]);
+  loadSMSUsers()
+}, [device.organization_id])
 
 // Then add a multi-select UI component to pick from smsUsers
 ```
@@ -157,17 +170,20 @@ graph TD
 ## Future Enhancements
 
 ### Short Term
+
 1. Add phone number to user profile display (read-only view)
 2. Update alerts UI to show SMS-enabled team members
 3. Add SMS delivery status tracking
 
 ### Medium Term
+
 1. SMS notification history in user's notification log
 2. Bulk SMS opt-in/opt-out for admins
 3. SMS rate limiting per user (prevent spam)
 4. SMS templates for different alert types
 
 ### Long Term
+
 1. Two-factor authentication via SMS
 2. SMS reply handling (acknowledge alerts via SMS)
 3. International SMS support with country-specific formatting
@@ -215,6 +231,7 @@ DROP FUNCTION IF EXISTS validate_phone_format();
 ## Support Documentation Needed
 
 Update user documentation:
+
 1. How to add phone numbers
 2. How to enable SMS notifications
 3. What notifications will be sent via SMS
@@ -237,7 +254,7 @@ Update user documentation:
    - Recommendation: Yes, 50 SMS per user per day maximum
 
 2. **Twilio Integration**: Is Twilio already configured?
-   - Check: organization.settings.notification_settings.twilio_*
+   - Check: organization.settings.notification*settings.twilio*\*
 
 3. **International Numbers**: Support international formats?
    - Recommendation: Yes, E.164 format supports all countries

@@ -28,7 +28,7 @@ export function createEdgeFunction(
   const {
     requireAuth = true,
     allowedMethods = ['GET', 'POST', 'PUT', 'DELETE'],
-    corsEnabled = true
+    corsEnabled = true,
   } = options
 
   return async (req: Request): Promise<Response> => {
@@ -41,16 +41,18 @@ export function createEdgeFunction(
     if (!allowedMethods.includes(req.method)) {
       return new Response(
         JSON.stringify({ error: `Method ${req.method} not allowed` }),
-        { 
-          status: 405, 
-          headers: corsEnabled ? { ...corsHeaders, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+        {
+          status: 405,
+          headers: corsEnabled
+            ? { ...corsHeaders, 'Content-Type': 'application/json' }
+            : { 'Content-Type': 'application/json' },
         }
       )
     }
 
     try {
       const url = new URL(req.url)
-      
+
       // Create Supabase client
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -68,20 +70,27 @@ export function createEdgeFunction(
         if (!authHeader) {
           return new Response(
             JSON.stringify({ error: 'Missing authorization header' }),
-            { 
-              status: 401, 
-              headers: corsEnabled ? { ...corsHeaders, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+            {
+              status: 401,
+              headers: corsEnabled
+                ? { ...corsHeaders, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' },
             }
           )
         }
 
-        const { data: { user }, error } = await supabase.auth.getUser()
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser()
         if (error || !user) {
           return new Response(
             JSON.stringify({ error: 'Invalid or expired token' }),
-            { 
-              status: 401, 
-              headers: corsEnabled ? { ...corsHeaders, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+            {
+              status: 401,
+              headers: corsEnabled
+                ? { ...corsHeaders, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' },
             }
           )
         }
@@ -97,27 +106,28 @@ export function createEdgeFunction(
         Object.entries(corsHeaders).forEach(([key, value]) => {
           headers.set(key, value)
         })
-        
+
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
-          headers
+          headers,
         })
       }
 
       return response
-
     } catch (error) {
       console.error('Edge Function Error:', error)
-      
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Internal server error',
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
-        { 
-          status: 500, 
-          headers: corsEnabled ? { ...corsHeaders, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+        {
+          status: 500,
+          headers: corsEnabled
+            ? { ...corsHeaders, 'Content-Type': 'application/json' }
+            : { 'Content-Type': 'application/json' },
         }
       )
     }
@@ -128,28 +138,29 @@ export function createEdgeFunction(
  * Creates a success response with standardized format
  */
 export function createSuccessResponse(data: any, status = 200): Response {
-  return new Response(
-    JSON.stringify({ success: true, data }),
-    { 
-      status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    }
-  )
+  return new Response(JSON.stringify({ success: true, data }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 }
 
 /**
  * Creates an error response with standardized format
  */
-export function createErrorResponse(message: string, status = 400, details?: any): Response {
+export function createErrorResponse(
+  message: string,
+  status = 400,
+  details?: any
+): Response {
   return new Response(
-    JSON.stringify({ 
-      success: false, 
+    JSON.stringify({
+      success: false,
       error: message,
-      ...(details && { details })
+      ...(details && { details }),
     }),
-    { 
+    {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     }
   )
 }
@@ -177,7 +188,9 @@ export async function getJsonBody(request: Request): Promise<any> {
     }
     return JSON.parse(text)
   } catch (error) {
-    throw new Error(`Invalid JSON in request body: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(
+      `Invalid JSON in request body: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -185,7 +198,10 @@ export async function getJsonBody(request: Request): Promise<any> {
  * Extracts user ID from authenticated request
  */
 export async function getUserId(supabase: any): Promise<string> {
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
   if (error || !user) {
     throw new Error('User not authenticated')
   }
@@ -195,6 +211,13 @@ export async function getUserId(supabase: any): Promise<string> {
 /**
  * Logs function invocation with context
  */
-export function logFunctionCall(functionName: string, method: string, url: string, userId?: string) {
-  console.log(`[${functionName}] ${method} ${url}${userId ? ` (User: ${userId})` : ''}`)
+export function logFunctionCall(
+  functionName: string,
+  method: string,
+  url: string,
+  userId?: string
+) {
+  console.log(
+    `[${functionName}] ${method} ${url}${userId ? ` (User: ${userId})` : ''}`
+  )
 }

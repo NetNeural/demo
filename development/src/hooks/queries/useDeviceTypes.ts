@@ -1,10 +1,10 @@
 /**
  * React Query hooks for Device Types CRUD
- * 
+ *
  * Note: The `device_types` table is not yet in the auto-generated Supabase
  * types (migration pending). We use an untyped client reference until
  * `supabase gen types` is re-run after applying the migration.
- * 
+ *
  * @see Issue #118 — Device Type Configuration & Threshold Management
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -146,15 +146,8 @@ export function useDeleteDeviceTypeMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      id,
-    }: {
-      id: string
-      organizationId: string
-    }) => {
-      const { error } = await deviceTypesTable()
-        .delete()
-        .eq('id', id)
+    mutationFn: async ({ id }: { id: string; organizationId: string }) => {
+      const { error } = await deviceTypesTable().delete().eq('id', id)
 
       if (error) throw new Error((error as { message: string }).message)
     },

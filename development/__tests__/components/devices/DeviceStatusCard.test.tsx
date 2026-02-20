@@ -1,6 +1,6 @@
 /**
  * Unit Tests for DeviceStatusCard Component (Devices)
- * 
+ *
  * Tests coverage:
  * - Loading state
  * - Error handling
@@ -22,7 +22,9 @@ import { useDeviceStatus } from '@/hooks/useDeviceStatus'
 // Mock useDeviceStatus hook
 jest.mock('@/hooks/useDeviceStatus')
 
-const mockUseDeviceStatus = useDeviceStatus as jest.MockedFunction<typeof useDeviceStatus>
+const mockUseDeviceStatus = useDeviceStatus as jest.MockedFunction<
+  typeof useDeviceStatus
+>
 
 describe('DeviceStatusCard Component (Devices)', () => {
   const mockStatus = {
@@ -71,7 +73,10 @@ describe('DeviceStatusCard Component (Devices)', () => {
 
       render(<DeviceStatusCard deviceId="device-1" />)
 
-      expect(screen.getByTestId('loading-skeleton') || document.querySelector('.animate-pulse')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('loading-skeleton') ||
+          document.querySelector('.animate-pulse')
+      ).toBeInTheDocument()
     })
 
     it('shows loading animation elements', () => {
@@ -99,8 +104,12 @@ describe('DeviceStatusCard Component (Devices)', () => {
 
       render(<DeviceStatusCard deviceId="device-1" />)
 
-      expect(screen.getByText(/error loading device status/i)).toBeInTheDocument()
-      expect(screen.getByText(/failed to fetch device status/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/error loading device status/i)
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/failed to fetch device status/i)
+      ).toBeInTheDocument()
     })
 
     it('displays retry button on error', () => {
@@ -232,7 +241,9 @@ describe('DeviceStatusCard Component (Devices)', () => {
       mockUseDeviceStatus.mockReturnValue({
         status: {
           ...mockStatus,
-          lastSeen: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+          lastSeen: new Date(
+            Date.now() - 3 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 3 days ago
         },
         isLoading: false,
         error: null,
@@ -442,7 +453,9 @@ describe('DeviceStatusCard Component (Devices)', () => {
 
       render(<DeviceStatusCard deviceId="device-1" />)
 
-      expect(screen.getByText(/no device status available/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/no device status available/i)
+      ).toBeInTheDocument()
     })
   })
 

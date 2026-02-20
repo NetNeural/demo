@@ -1,7 +1,9 @@
 # Fix: "Failed to fetch user profile" Error
 
 ## Problem
+
 When logging in, you see:
+
 ```
 Failed to fetch user profile: {}
 ```
@@ -13,6 +15,7 @@ This was happening because the SQL query was trying to join the `organizations` 
 Updated `src/lib/auth.ts` to handle NULL organization properly:
 
 ### Before (Broken)
+
 ```typescript
 .select(`
   role,
@@ -22,6 +25,7 @@ Updated `src/lib/auth.ts` to handle NULL organization properly:
 ```
 
 ### After (Fixed)
+
 ```typescript
 .select(`
   role,
@@ -34,34 +38,39 @@ Updated `src/lib/auth.ts` to handle NULL organization properly:
 ## Testing
 
 ### 1. Start Services
+
 ```bash
 # Terminal 1
 npm run supabase:functions:serve
 
-# Terminal 2  
+# Terminal 2
 npm run dev
 ```
 
 ### 2. Test Super Admin Login
+
 ```
 URL: http://localhost:3000/auth/login
 Email: superadmin@netneural.ai
 Password: SuperSecure123!
 ```
 
-**Expected Result**: 
+**Expected Result**:
+
 - ✅ Login successful
 - ✅ No "Failed to fetch user profile" error
 - ✅ See "🛡️ Super Admin" badge in sidebar
 - ✅ See all 20 devices
 
 ### 3. Test Regular User Login
+
 ```
 Email: admin@netneural.ai
 Password: password123
 ```
 
 **Expected Result**:
+
 - ✅ Login successful
 - ✅ See organization name "NetNeural Demo"
 - ✅ See 20 devices
@@ -69,7 +78,9 @@ Password: password123
 ## Verification Checklist
 
 ### ✅ Database Check
+
 Open Supabase Studio: http://localhost:54323
+
 - Navigate to: Table Editor → users
 - Find super admin user:
   - Email: `superadmin@netneural.ai`
@@ -77,6 +88,7 @@ Open Supabase Studio: http://localhost:54323
   - organization_id: **NULL** (should be empty)
 
 ### ✅ Auth Check
+
 - Supabase Studio → Authentication → Users
 - Should see 4 users:
   - superadmin@netneural.ai
@@ -85,7 +97,9 @@ Open Supabase Studio: http://localhost:54323
   - viewer@netneural.ai
 
 ### ✅ Console Check
+
 Open browser console (F12) after login:
+
 - Should NOT see "Failed to fetch user profile"
 - Should NOT see any errors
 
@@ -97,8 +111,8 @@ const isSuperAdmin = profile.role === 'super_admin'
 
 let org: { id: string; name: string } | null = null
 if (profile.organizations) {
-  org = Array.isArray(profile.organizations) 
-    ? profile.organizations[0] 
+  org = Array.isArray(profile.organizations)
+    ? profile.organizations[0]
     : profile.organizations
 }
 
@@ -107,10 +121,10 @@ if (isSuperAdmin) {
   return {
     id: user.id,
     email: user.email || '',
-    organizationId: null,      // ✅ NULL is OK
+    organizationId: null, // ✅ NULL is OK
     organizationName: null,
     role: profile.role,
-    isSuperAdmin: true
+    isSuperAdmin: true,
   }
 }
 
@@ -126,18 +140,21 @@ if (!org) {
 ### Issue: Still seeing "Failed to fetch user profile"
 
 **Solution 1**: Clear browser cache
+
 ```bash
 # Chrome/Edge: Ctrl+Shift+Delete
 # Or hard refresh: Ctrl+Shift+R
 ```
 
 **Solution 2**: Sign out and sign in again
+
 ```typescript
 // In dashboard, click "Sign out"
 // Then login again
 ```
 
 **Solution 3**: Check database
+
 ```bash
 # Make sure super admin user exists in users table
 npm run supabase:studio
@@ -148,6 +165,7 @@ npm run supabase:studio
 ### Issue: User exists but organization_id is not NULL
 
 **Solution**: The user was created before we added the super admin. Reset:
+
 ```bash
 npm run supabase:reset
 npm run setup:users
@@ -161,7 +179,7 @@ The updated `UserProfile` interface now properly handles NULL:
 export interface UserProfile {
   id: string
   email: string
-  organizationId: string | null  // ✅ Can be NULL
+  organizationId: string | null // ✅ Can be NULL
   organizationName: string | null // ✅ Can be NULL
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean

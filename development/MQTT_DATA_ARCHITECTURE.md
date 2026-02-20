@@ -48,10 +48,11 @@ MQTT Message Arrives
 ### **1. integration_activity_log (EXTENDED)**
 
 **NEW MQTT Activity Types Added:**
+
 ```sql
 activity_type IN (
   ...existing types...,
-  
+
   -- MQTT-specific
   'mqtt_message_received',      -- Every message logged here
   'mqtt_device_discovered',     -- New device found via MQTT
@@ -66,6 +67,7 @@ activity_type IN (
 ```
 
 **Example Activity Log Entry (MQTT Message):**
+
 ```json
 {
   "id": "uuid",
@@ -88,6 +90,7 @@ activity_type IN (
 ```
 
 **Example Activity Log Entry (Status Change):**
+
 ```json
 {
   "activity_type": "mqtt_device_offline",
@@ -117,33 +120,34 @@ CREATE TABLE device_telemetry_history (
   id UUID PRIMARY KEY,
   device_id UUID NOT NULL,
   organization_id UUID NOT NULL,
-  
+
   -- Raw telemetry JSON
   telemetry JSONB NOT NULL,  -- { temperature: 22.5, humidity: 65 }
-  
+
   -- Link to activity log for context
   activity_log_id UUID REFERENCES integration_activity_log(id),
-  
+
   -- Timestamps
   received_at TIMESTAMPTZ DEFAULT NOW(),
   device_timestamp TIMESTAMPTZ  -- From device if available
 );
 
 -- Optimized for time-series queries
-CREATE INDEX idx_telemetry_device_time 
+CREATE INDEX idx_telemetry_device_time
   ON device_telemetry_history(device_id, received_at DESC);
 
 -- Fast recent data queries (last 7 days)
-CREATE INDEX idx_telemetry_recent 
+CREATE INDEX idx_telemetry_recent
   ON device_telemetry_history(device_id, received_at DESC)
   WHERE received_at > NOW() - INTERVAL '7 days';
 
 -- Search by telemetry field
-CREATE INDEX idx_telemetry_data_gin 
+CREATE INDEX idx_telemetry_data_gin
   ON device_telemetry_history USING GIN (telemetry);
 ```
 
 **Example Telemetry Entry:**
+
 ```json
 {
   "id": "uuid",
@@ -157,7 +161,7 @@ CREATE INDEX idx_telemetry_data_gin
     "BatteryIdle": 3637,
     "BatteryTx": 3177
   },
-  "activity_log_id": "activity-log-uuid",  // Link for context
+  "activity_log_id": "activity-log-uuid", // Link for context
   "received_at": "2025-11-09T12:34:56Z",
   "device_timestamp": "2025-04-23T07:35:22.214Z"
 }
@@ -188,8 +192,8 @@ const activityLog = await supabase
       topic: 'devices/sensor-01/telemetry',
       parser_type: 'vmark',
       has_telemetry: true,
-      telemetry_fields: ['temperature', 'humidity']
-    }
+      telemetry_fields: ['temperature', 'humidity'],
+    },
   })
   .select()
   .single()
@@ -200,22 +204,20 @@ if (parsed.telemetry) {
     p_device_id: device.id,
     p_organization_id: org.id,
     p_telemetry: parsed.telemetry,
-    p_activity_log_id: activityLog.id  // LINK!
+    p_activity_log_id: activityLog.id, // LINK!
   })
 }
 
 // 5. Check for status changes (log to activity_log)
 if (statusChanged) {
-  await supabase
-    .from('integration_activity_log')
-    .insert({
-      activity_type: 'mqtt_device_offline',
-      metadata: {
-        previous_status: 'online',
-        new_status: 'offline',
-        status_reason: 'lwt_message'
-      }
-    })
+  await supabase.from('integration_activity_log').insert({
+    activity_type: 'mqtt_device_offline',
+    metadata: {
+      previous_status: 'online',
+      new_status: 'offline',
+      status_reason: 'lwt_message',
+    },
+  })
 }
 
 // 6. Check alert rules
@@ -227,6 +229,7 @@ await checkTelemetryAlerts(device.id, parsed.telemetry)
 ## 📈 Query Patterns
 
 ### **Get Recent MQTT Events (from activity_log):**
+
 ```sql
 SELECT *
 FROM integration_activity_log
@@ -237,8 +240,9 @@ ORDER BY created_at DESC;
 ```
 
 ### **Get Device Status History (from activity_log):**
+
 ```sql
-SELECT 
+SELECT
   created_at,
   activity_type,
   metadata->>'previous_status' as previous,
@@ -251,8 +255,9 @@ ORDER BY created_at DESC;
 ```
 
 ### **Get Temperature Time-Series (from telemetry table):**
+
 ```sql
-SELECT 
+SELECT
   received_at,
   (telemetry->>'temperature')::numeric as temperature
 FROM device_telemetry_history
@@ -262,8 +267,9 @@ ORDER BY received_at ASC;
 ```
 
 ### **Get Full Context (join both tables):**
+
 ```sql
-SELECT 
+SELECT
   a.created_at,
   a.activity_type,
   a.metadata,
@@ -280,26 +286,31 @@ ORDER BY a.created_at DESC;
 ## 🎯 Benefits of This Approach
 
 ### **1. No Duplication**
+
 - ✅ Reuses existing `integration_activity_log` infrastructure
 - ✅ Consistent with other integrations (AWS IoT, Azure IoT, etc.)
 - ✅ Same RLS policies, same UI components
 
 ### **2. Optimized Performance**
+
 - ✅ `activity_log` for event tracking (indexed by type, status, date)
 - ✅ `telemetry_history` for time-series analytics (optimized for range queries)
 - ✅ Partial index on recent data (most common query)
 
 ### **3. Storage Efficiency**
+
 - ✅ Telemetry table stores ONLY raw JSON (no redundant metadata)
 - ✅ Activity log stores summary + context
 - ✅ Easy to implement retention policies per table
 
 ### **4. Alert Integration**
+
 - ✅ Alert rules check telemetry thresholds
 - ✅ Status changes (offline) trigger alerts
 - ✅ All logged to activity_log for audit trail
 
 ### **5. UI Integration**
+
 - ✅ Existing `IntegrationActivityLog` component shows MQTT events
 - ✅ Filter by `activity_type LIKE 'mqtt_%'`
 - ✅ Telemetry charts query separate table
@@ -309,6 +320,7 @@ ORDER BY a.created_at DESC;
 ## 📊 UI Display
 
 ### **Activity Log Tab (Existing Component):**
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │ Integration Activity Log                               │
@@ -328,6 +340,7 @@ ORDER BY a.created_at DESC;
 ```
 
 ### **Telemetry Chart (New Component):**
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │ Temperature History - temp-sensor-01                   │
@@ -349,12 +362,14 @@ ORDER BY a.created_at DESC;
 ## 🚀 Deployment Steps
 
 1. **Run Migration:**
+
    ```bash
    supabase migration up
    # Creates extended activity_log + telemetry_history table
    ```
 
 2. **Deploy MQTT Listener:**
+
    ```bash
    supabase functions deploy mqtt-listener
    # Long-running service that processes messages

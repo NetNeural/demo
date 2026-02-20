@@ -1,6 +1,6 @@
 /**
  * Test Suite for Issue #23: Login Redirect to Dashboard
- * 
+ *
  * Tests the authentication flow and redirect behavior after successful login
  */
 
@@ -21,17 +21,17 @@ jest.mock('@/lib/supabase/client', () => ({
 
 describe('Issue #23: Login Redirect Flow', () => {
   let mockRouter: {
-    push: jest.Mock;
-    replace: jest.Mock;
-    refresh: jest.Mock;
-  };
+    push: jest.Mock
+    replace: jest.Mock
+    refresh: jest.Mock
+  }
   let mockSupabase: {
     auth: {
-      signInWithPassword: jest.Mock;
-      getSession: jest.Mock;
-      setSession: jest.Mock;
-    };
-  };
+      signInWithPassword: jest.Mock
+      getSession: jest.Mock
+      setSession: jest.Mock
+    }
+  }
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -89,9 +89,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.click(submitButton)
 
     // Wait for redirect
-    await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-    }, { timeout: 3000 })
+    await waitFor(
+      () => {
+        expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
+      },
+      { timeout: 3000 }
+    )
 
     // Verify session was checked
     expect(mockSupabase.auth.getSession).toHaveBeenCalled()
@@ -169,9 +172,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     render(<LoginPage />)
 
     // Should NOT redirect if no session
-    await waitFor(() => {
-      expect(mockRouter.replace).not.toHaveBeenCalled()
-    }, { timeout: 1000 })
+    await waitFor(
+      () => {
+        expect(mockRouter.replace).not.toHaveBeenCalled()
+      },
+      { timeout: 1000 }
+    )
 
     // Form should be visible
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()

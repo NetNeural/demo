@@ -1,12 +1,18 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 interface SettingsSectionProps {
-  icon?: React.ReactNode;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-  className?: string;
+  icon?: React.ReactNode
+  title: string
+  description?: string
+  children: React.ReactNode
+  actions?: React.ReactNode
+  className?: string
 }
 
 export function SettingsSection({
@@ -15,7 +21,7 @@ export function SettingsSection({
   description,
   children,
   actions,
-  className
+  className,
 }: SettingsSectionProps) {
   return (
     <Card className={className}>
@@ -32,14 +38,10 @@ export function SettingsSection({
               </CardDescription>
             )}
           </div>
-          {actions && (
-            <div className="flex items-center gap-2">
-              {actions}
-            </div>
-          )}
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
-  );
+  )
 }

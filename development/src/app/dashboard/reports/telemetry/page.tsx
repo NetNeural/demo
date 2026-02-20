@@ -14,12 +14,13 @@ export default function TelemetryTrendsPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
-          <div className="text-center space-y-3">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
             <p className="text-muted-foreground">No organization selected</p>
             <p className="text-sm text-muted-foreground">
-              Please select an organization from the sidebar to view telemetry trends
+              Please select an organization from the sidebar to view telemetry
+              trends
             </p>
           </div>
         </div>
@@ -27,8 +28,8 @@ export default function TelemetryTrendsPage() {
     )
   }
 
-return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+  return (
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <Suspense fallback={<LoadingSpinner />}>
         <TelemetryTrendsReport />
       </Suspense>

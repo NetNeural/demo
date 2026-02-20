@@ -20,15 +20,18 @@ interface SensorTrendCardProps {
   telemetryReadings: TelemetryReading[]
 }
 
-export function SensorTrendCard({ device, telemetryReadings }: SensorTrendCardProps) {
+export function SensorTrendCard({
+  device,
+  telemetryReadings,
+}: SensorTrendCardProps) {
   const { fmt } = useDateFormatter()
 
   const chartData = useMemo(() => {
     return telemetryReadings
       .slice(0, 100)
-      .map(r => ({
+      .map((r) => ({
         time: fmt.dateTime(r.device_timestamp || r.received_at),
-        value: r.telemetry.value || 0
+        value: r.telemetry.value || 0,
       }))
       .reverse()
   }, [telemetryReadings, fmt])
@@ -39,17 +42,17 @@ export function SensorTrendCard({ device, telemetryReadings }: SensorTrendCardPr
         <CardTitle>📊 48-Hour Trend</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="mb-4 text-sm text-muted-foreground">
           Showing last {chartData.length} readings
         </p>
-        <div className="h-64 flex items-end justify-between gap-1">
+        <div className="flex h-64 items-end justify-between gap-1">
           {chartData.slice(-48).map((point, idx) => {
-            const maxValue = Math.max(...chartData.map(d => d.value))
+            const maxValue = Math.max(...chartData.map((d) => d.value))
             const height = (point.value / maxValue) * 100
             return (
               <div
                 key={idx}
-                className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
+                className="flex-1 cursor-pointer rounded-t bg-blue-500 transition-colors hover:bg-blue-600"
                 style={{ height: `${height}%`, minHeight: '2px' }}
                 title={`${point.time}: ${point.value.toFixed(1)}`}
               />

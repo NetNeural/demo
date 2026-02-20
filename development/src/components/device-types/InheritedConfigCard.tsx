@@ -1,15 +1,21 @@
 /**
  * Inherited Device Type Config Card
- * 
+ *
  * Displays the inherited configuration from a device's assigned device type.
  * Shows normal range, alert thresholds, unit, class, and precision.
  * Read-only — values come from the device type, not the device itself.
- * 
+ *
  * @see Issue #119
  */
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Info, ArrowRight, Gauge, AlertTriangle } from 'lucide-react'
@@ -21,29 +27,39 @@ interface InheritedConfigCardProps {
   deviceTypeId: string | null | undefined
 }
 
-function fmt(value: number | null | undefined, precision: number | null): string {
+function fmt(
+  value: number | null | undefined,
+  precision: number | null
+): string {
   if (value == null) return '—'
   return value.toFixed(precision ?? 2)
 }
 
 function getClassLabel(deviceClass: string | null): string {
   if (!deviceClass) return ''
-  return DEVICE_CLASSES.find(c => c.value === deviceClass)?.label ?? deviceClass
+  return (
+    DEVICE_CLASSES.find((c) => c.value === deviceClass)?.label ?? deviceClass
+  )
 }
 
-export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) {
-  const { data: deviceType, isLoading } = useDeviceTypeQuery(deviceTypeId ?? undefined)
+export function InheritedConfigCard({
+  deviceTypeId,
+}: InheritedConfigCardProps) {
+  const { data: deviceType, isLoading } = useDeviceTypeQuery(
+    deviceTypeId ?? undefined
+  )
 
   if (!deviceTypeId) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Gauge className="h-4 w-4" />
             Device Type Configuration
           </CardTitle>
           <CardDescription>
-            No device type assigned. Assign a device type to inherit monitoring configuration.
+            No device type assigned. Assign a device type to inherit monitoring
+            configuration.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -54,7 +70,7 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Gauge className="h-4 w-4" />
             Device Type Configuration
           </CardTitle>
@@ -71,7 +87,7 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Gauge className="h-4 w-4" />
               Inherited from: {deviceType.name}
             </CardTitle>
@@ -81,7 +97,7 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
           </div>
           <Link
             href="/dashboard/device-types"
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             Edit Type <ArrowRight className="h-3 w-3" />
           </Link>
@@ -91,10 +107,14 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
         {/* Metadata row */}
         <div className="flex flex-wrap gap-2">
           {deviceType.device_class && (
-            <Badge variant="secondary">{getClassLabel(deviceType.device_class)}</Badge>
+            <Badge variant="secondary">
+              {getClassLabel(deviceType.device_class)}
+            </Badge>
           )}
           {deviceType.unit && (
-            <Badge variant="outline" className="font-mono">{deviceType.unit}</Badge>
+            <Badge variant="outline" className="font-mono">
+              {deviceType.unit}
+            </Badge>
           )}
           <Badge variant="outline" className="text-xs">
             {p} decimal{p !== 1 ? 's' : ''}
@@ -106,10 +126,10 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
         {/* Normal Range */}
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500" />
+            <div className="h-3 w-3 rounded-full border border-green-500 bg-green-500/30" />
             Normal Operating Range
           </div>
-          <div className="flex items-center gap-2 text-sm pl-5">
+          <div className="flex items-center gap-2 pl-5 text-sm">
             <span className="font-mono">{fmt(deviceType.lower_normal, p)}</span>
             <span className="text-muted-foreground">to</span>
             <span className="font-mono">{fmt(deviceType.upper_normal, p)}</span>
@@ -129,24 +149,39 @@ export function InheritedConfigCard({ deviceTypeId }: InheritedConfigCardProps) 
             <div className="grid grid-cols-2 gap-4 pl-5 text-sm">
               <div>
                 <span className="text-muted-foreground">Critical Low: </span>
-                <span className="font-mono">{fmt(deviceType.lower_alert, p)}</span>
-                {deviceType.unit && <span className="text-muted-foreground"> {deviceType.unit}</span>}
+                <span className="font-mono">
+                  {fmt(deviceType.lower_alert, p)}
+                </span>
+                {deviceType.unit && (
+                  <span className="text-muted-foreground">
+                    {' '}
+                    {deviceType.unit}
+                  </span>
+                )}
               </div>
               <div>
                 <span className="text-muted-foreground">Critical High: </span>
-                <span className="font-mono">{fmt(deviceType.upper_alert, p)}</span>
-                {deviceType.unit && <span className="text-muted-foreground"> {deviceType.unit}</span>}
+                <span className="font-mono">
+                  {fmt(deviceType.upper_alert, p)}
+                </span>
+                {deviceType.unit && (
+                  <span className="text-muted-foreground">
+                    {' '}
+                    {deviceType.unit}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {/* Inheritance note */}
-        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-          <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <span>
-            These values are inherited from the device type and apply to all devices of this type.
-            Changes to the device type automatically propagate to all assigned devices.
+            These values are inherited from the device type and apply to all
+            devices of this type. Changes to the device type automatically
+            propagate to all assigned devices.
           </span>
         </div>
       </CardContent>

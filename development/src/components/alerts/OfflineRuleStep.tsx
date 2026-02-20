@@ -27,7 +27,9 @@ export function OfflineRuleStep({ state, updateState }: OfflineRuleStepProps) {
           type="number"
           min="1"
           value={state.condition.offline_minutes || 15}
-          onChange={(e) => updateCondition('offline_minutes', parseInt(e.target.value))}
+          onChange={(e) =>
+            updateCondition('offline_minutes', parseInt(e.target.value))
+          }
         />
         <p className="text-sm text-muted-foreground">
           Trigger alert if device hasn&apos;t been seen for this many minutes
@@ -41,18 +43,22 @@ export function OfflineRuleStep({ state, updateState }: OfflineRuleStepProps) {
           type="number"
           min="0"
           value={state.condition.grace_period_hours || 0}
-          onChange={(e) => updateCondition('grace_period_hours', parseInt(e.target.value))}
+          onChange={(e) =>
+            updateCondition('grace_period_hours', parseInt(e.target.value))
+          }
         />
         <p className="text-sm text-muted-foreground">
-          Skip newly added devices within this time window (useful for onboarding)
+          Skip newly added devices within this time window (useful for
+          onboarding)
         </p>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h4 className="font-medium mb-2">How it Works:</h4>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
+        <h4 className="mb-2 font-medium">How it Works:</h4>
         <p className="text-sm text-muted-foreground">
           Devices that haven&apos;t reported for{' '}
-          <strong>{state.condition.offline_minutes || 15} minutes</strong> will trigger this rule
+          <strong>{state.condition.offline_minutes || 15} minutes</strong> will
+          trigger this rule
           {state.condition.grace_period_hours > 0 && (
             <>
               , except devices added within the last{' '}

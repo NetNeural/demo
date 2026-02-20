@@ -1,6 +1,6 @@
 /**
  * Test Device Interactive Controls
- * 
+ *
  * Provides UI controls for manipulating test device sensor values in real-time.
  * Allows raising/lowering values, changing device status, and triggering alerts.
  */
@@ -11,10 +11,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Loader2, ChevronDown, ChevronUp, Zap, Activity, AlertTriangle } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Zap,
+  Activity,
+  AlertTriangle,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { DeviceType } from '@/types/device-types'
@@ -26,22 +43,24 @@ interface TestDeviceControlsProps {
   onDataSent?: () => void
 }
 
-export function TestDeviceControls({ 
-  deviceId, 
-  deviceTypeId, 
+export function TestDeviceControls({
+  deviceId,
+  deviceTypeId,
   currentStatus,
-  onDataSent 
+  onDataSent,
 }: TestDeviceControlsProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deviceType, setDeviceType] = useState<DeviceType | null>(null)
   const [organizationId, setOrganizationId] = useState<string>('')
-  
+
   // Control values
   const [sensorValue, setSensorValue] = useState(50)
   const [batteryLevel, setBatteryLevel] = useState(100)
   const [signalStrength, setSignalStrength] = useState(-50)
-  const [status, setStatus] = useState<'online' | 'offline' | 'error' | 'warning'>(currentStatus as 'online' | 'offline' | 'error' | 'warning' || 'online')
+  const [status, setStatus] = useState<
+    'online' | 'offline' | 'error' | 'warning'
+  >((currentStatus as 'online' | 'offline' | 'error' | 'warning') || 'online')
 
   // Load device and device type configuration
   useEffect(() => {
@@ -50,7 +69,7 @@ export function TestDeviceControls({
     const loadData = async () => {
       try {
         const supabase = createClient()
-        
+
         // Load device to get organization_id
         const { data: deviceData, error: deviceError } = await supabase
           .from('devices')
@@ -71,7 +90,7 @@ export function TestDeviceControls({
 
           if (error) throw error
           setDeviceType(data)
-          
+
           // Set initial sensor value to middle of normal range
           if (data) {
             const midPoint = (data.lower_normal + data.upper_normal) / 2
@@ -90,7 +109,7 @@ export function TestDeviceControls({
     setLoading(true)
     try {
       const supabase = createClient()
-      
+
       // Insert telemetry data
       const { error: telemetryError } = await supabase
         .from('device_telemetry_history')
@@ -123,20 +142,20 @@ export function TestDeviceControls({
       if (deviceError) throw deviceError
 
       // Check if value is outside normal range
-      const isAlert = deviceType && (
-        sensorValue < deviceType.lower_normal || 
-        sensorValue > deviceType.upper_normal
-      )
+      const isAlert =
+        deviceType &&
+        (sensorValue < deviceType.lower_normal ||
+          sensorValue > deviceType.upper_normal)
 
       toast.success(
-        isAlert 
-          ? `⚠️ Data sent - Value outside normal range!` 
+        isAlert
+          ? `⚠️ Data sent - Value outside normal range!`
           : `✅ Test data sent successfully`,
         {
-          description: `${deviceType?.name || 'Sensor'}: ${sensorValue.toFixed(deviceType?.precision_digits ?? 2)}${deviceType?.unit || ''}`
+          description: `${deviceType?.name || 'Sensor'}: ${sensorValue.toFixed(deviceType?.precision_digits ?? 2)}${deviceType?.unit || ''}`,
         }
       )
-      
+
       onDataSent?.()
     } catch (error) {
       console.error('Failed to send test data:', error)
@@ -156,12 +175,13 @@ export function TestDeviceControls({
         break
       case 'warning':
         // Just outside normal range
-        setSensorValue(deviceType.upper_normal + (deviceType.upper_normal * 0.1))
+        setSensorValue(deviceType.upper_normal + deviceType.upper_normal * 0.1)
         setStatus('warning')
         break
       case 'error':
         // At or beyond alert threshold
-        const errorValue = deviceType.upper_alert ?? deviceType.upper_normal * 1.5
+        const errorValue =
+          deviceType.upper_alert ?? deviceType.upper_normal * 1.5
         setSensorValue(errorValue)
         setStatus('error')
         break
@@ -172,20 +192,29 @@ export function TestDeviceControls({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-blue-500/30 bg-blue-500/5">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-blue-500/10 transition-colors pb-3">
+          <CardHeader className="cursor-pointer pb-3 transition-colors hover:bg-blue-500/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-blue-500" />
-                <CardTitle className="text-sm font-medium">Test Controls</CardTitle>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">
+                <CardTitle className="text-sm font-medium">
+                  Test Controls
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="border-blue-500/30 bg-blue-500/10 px-1.5 py-0 text-[10px] text-blue-600"
+                >
                   Interactive
                 </Badge>
               </div>
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </div>
           </CardHeader>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
             {deviceType ? (
@@ -194,25 +223,25 @@ export function TestDeviceControls({
                 <div className="space-y-2">
                   <Label className="text-xs">Quick Scenarios</Label>
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="flex-1 text-xs"
                       onClick={() => handleQuickPreset('normal')}
                     >
                       ✅ Normal
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="flex-1 text-xs text-yellow-600 hover:text-yellow-600"
                       onClick={() => handleQuickPreset('warning')}
                     >
                       ⚠️ Warning
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="flex-1 text-xs text-red-600 hover:text-red-600"
                       onClick={() => handleQuickPreset('error')}
                     >
@@ -226,32 +255,49 @@ export function TestDeviceControls({
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">
                       {deviceType.name} Value
-                      {deviceType.unit && <span className="text-muted-foreground ml-1">({deviceType.unit})</span>}
+                      {deviceType.unit && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({deviceType.unit})
+                        </span>
+                      )}
                     </Label>
                     <Badge variant="outline" className="font-mono text-xs">
                       {sensorValue.toFixed(deviceType.precision_digits ?? 2)}
                     </Badge>
                   </div>
-                  
+
                   <Slider
                     value={[sensorValue]}
-                    onValueChange={([value]) => value !== undefined && setSensorValue(value)}
-                    min={deviceType.lower_alert ?? deviceType.lower_normal * 0.5}
-                    max={deviceType.upper_alert ?? deviceType.upper_normal * 1.5}
-                    step={(deviceType.upper_normal - deviceType.lower_normal) / 100}
+                    onValueChange={([value]) =>
+                      value !== undefined && setSensorValue(value)
+                    }
+                    min={
+                      deviceType.lower_alert ?? deviceType.lower_normal * 0.5
+                    }
+                    max={
+                      deviceType.upper_alert ?? deviceType.upper_normal * 1.5
+                    }
+                    step={
+                      (deviceType.upper_normal - deviceType.lower_normal) / 100
+                    }
                     className="w-full"
                   />
-                  
+
                   {/* Range indicators */}
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     {deviceType.lower_alert && (
-                      <span className="text-red-500">Min: {deviceType.lower_alert}</span>
+                      <span className="text-red-500">
+                        Min: {deviceType.lower_alert}
+                      </span>
                     )}
                     <span className="text-green-500">
-                      Normal: {deviceType.lower_normal} - {deviceType.upper_normal}
+                      Normal: {deviceType.lower_normal} -{' '}
+                      {deviceType.upper_normal}
                     </span>
                     {deviceType.upper_alert && (
-                      <span className="text-red-500">Max: {deviceType.upper_alert}</span>
+                      <span className="text-red-500">
+                        Max: {deviceType.upper_alert}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -259,7 +305,14 @@ export function TestDeviceControls({
                 {/* Device Status */}
                 <div className="space-y-2">
                   <Label className="text-xs">Device Status</Label>
-                  <Select value={status} onValueChange={(val) => setStatus(val as 'online' | 'offline' | 'error' | 'warning')}>
+                  <Select
+                    value={status}
+                    onValueChange={(val) =>
+                      setStatus(
+                        val as 'online' | 'offline' | 'error' | 'warning'
+                      )
+                    }
+                  >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -282,7 +335,9 @@ export function TestDeviceControls({
                   </div>
                   <Slider
                     value={[batteryLevel]}
-                    onValueChange={([value]) => value !== undefined && setBatteryLevel(value)}
+                    onValueChange={([value]) =>
+                      value !== undefined && setBatteryLevel(value)
+                    }
                     min={0}
                     max={100}
                     step={5}
@@ -300,7 +355,9 @@ export function TestDeviceControls({
                   </div>
                   <Slider
                     value={[signalStrength]}
-                    onValueChange={([value]) => value !== undefined && setSignalStrength(value)}
+                    onValueChange={([value]) =>
+                      value !== undefined && setSignalStrength(value)
+                    }
                     min={-120}
                     max={-30}
                     step={5}
@@ -313,41 +370,41 @@ export function TestDeviceControls({
                 </div>
 
                 {/* Send Button */}
-                <Button 
-                  onClick={handleSendData} 
+                <Button
+                  onClick={handleSendData}
                   disabled={loading}
                   className="w-full"
                   size="sm"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Zap className="h-4 w-4 mr-2" />
+                      <Zap className="mr-2 h-4 w-4" />
                       Send Test Data
                     </>
                   )}
                 </Button>
 
                 {/* Alert Warning */}
-                {deviceType && (
-                  sensorValue < deviceType.lower_normal || 
-                  sensorValue > deviceType.upper_normal
-                ) && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-md p-2 flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      This value is outside the normal range and will trigger an alert state.
-                    </p>
-                  </div>
-                )}
+                {deviceType &&
+                  (sensorValue < deviceType.lower_normal ||
+                    sensorValue > deviceType.upper_normal) && (
+                    <div className="flex items-start gap-2 rounded-md border border-yellow-500/20 bg-yellow-500/10 p-2">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
+                      <p className="text-xs text-muted-foreground">
+                        This value is outside the normal range and will trigger
+                        an alert state.
+                      </p>
+                    </div>
+                  )}
               </>
             ) : (
-              <div className="text-sm text-muted-foreground text-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                <Loader2 className="mx-auto mb-2 h-4 w-4 animate-spin" />
                 Loading device configuration...
               </div>
             )}

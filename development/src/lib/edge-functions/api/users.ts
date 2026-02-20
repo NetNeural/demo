@@ -15,7 +15,12 @@ export interface UsersAPI {
   }) => Promise<EdgeFunctionResponse<unknown>>
 }
 
-export function createUsersAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): UsersAPI {
+export function createUsersAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): UsersAPI {
   return {
     /**
      * Create a new user
