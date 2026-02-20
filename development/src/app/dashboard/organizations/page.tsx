@@ -42,6 +42,7 @@ export default function OrganizationsPage() {
   }, [searchParams]);
   const { 
     currentOrganization,
+    isLoading,
     isOwner,
     isAdmin,
     isReseller,
@@ -51,6 +52,21 @@ export default function OrganizationsPage() {
   const { user } = useUser();
   const isSuperAdmin = user?.isSuperAdmin || false;
 
+  // Show loading state while fetching organizations
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center space-y-4">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading organizations...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no org message only after loading completes
   if (!currentOrganization) {
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
