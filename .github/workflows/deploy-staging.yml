@@ -149,11 +149,11 @@ jobs:
         env:
           NODE_ENV: production
           BUILD_MODE: static
-          # Supabase configuration (managed via GitHub Secrets)
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || 'https://atgbmxicqikmapfqouco.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-          GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY }}
-          GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID }}
+          # Supabase configuration (fallback to production if staging secrets not set)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://atgbmxicqikmapfqouco.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          GOLIOTH_API_KEY: ${{ secrets.STAGING_GOLIOTH_API_KEY || secrets.GOLIOTH_API_KEY }}
+          GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID || 'nn-cellular-alerts-staging' }}
           NEXT_PUBLIC_APP_URL: "https://demo-stage.netneural.ai"
           NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform [STAGING]"
           NEXT_PUBLIC_APP_VERSION: "1.0.0-staging"
