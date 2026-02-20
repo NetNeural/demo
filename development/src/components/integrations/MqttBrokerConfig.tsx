@@ -306,10 +306,42 @@ export function MqttBrokerConfig({
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
                 <span>On-premise or cloud</span>
               </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                <span>Persistent MQTT subscriptions available</span>
+              </li>
             </ul>
           </CardContent>
         </Card>
       </div>
+
+      {/* MQTT Subscriber Service Info - Only for External Brokers */}
+      {brokerType === 'external' && (
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+          <Server className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-900 dark:text-blue-100">
+            Optional: Persistent MQTT Subscriber Service
+          </AlertTitle>
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            For advanced use cases requiring persistent MQTT subscriptions (e.g., devices publishing to broker topics), we offer a Docker-based subscriber service.
+            <div className="mt-2 space-y-1 text-sm">
+              <div>✓ Multi-broker support</div>
+              <div>✓ Auto-reconnection & structured logging</div>
+              <div>✓ Real-time telemetry storage</div>
+            </div>
+            <div className="mt-3">
+              <a 
+                href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                View Setup Documentation →
+              </a>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Configuration Card */}
       <Card>

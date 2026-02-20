@@ -599,10 +599,36 @@ export function MqttConfigDialog({
                     <CheckCircle className="h-3 w-3 text-blue-600" />
                     <span>Full configuration control</span>
                   </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-blue-600" />
+                    <span>Persistent subscriptions available</span>
+                  </li>
                 </ul>
               </CardContent>
             </Card>
           </div>
+
+          {config.broker_type === 'external' && (
+            <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+              <Server className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-sm text-blue-900 dark:text-blue-100">
+                💡 Persistent MQTT Subscriber Available
+              </AlertTitle>
+              <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
+                For persistent topic subscriptions, deploy our Docker-based MQTT subscriber service.
+                <span className="mt-1 block">
+                  <a 
+                    href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                  >
+                    Setup Guide →
+                  </a>
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {config.broker_type === 'hosted' && savedIntegrationId && (
             <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
