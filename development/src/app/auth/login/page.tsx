@@ -339,7 +339,7 @@ function LoginForm() {
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: colors.primary }}>
             {orgName}
           </h1>
-          <p className="text-gray-400 mt-1 text-sm">
+          <p className="text-3xl font-bold tracking-tight text-gray-300 mt-1">
             {branding ? 'Sentinel' : 'Sentinel by NetNeural'}
           </p>
         </div>
