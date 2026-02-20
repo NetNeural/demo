@@ -405,6 +405,9 @@ export default createEdgeFunction(
           description,
           subscriptionTier,
           parentOrganizationId,
+          ownerEmail,
+          ownerFullName,
+          sendWelcomeEmail,
         } = body
         console.log('Request body:', {
           name,
@@ -412,6 +415,9 @@ export default createEdgeFunction(
           description,
           subscriptionTier,
           parentOrganizationId,
+          ownerEmail,
+          hasOwnerFullName: !!ownerFullName,
+          sendWelcomeEmail,
         })
 
         // Validate required fields
@@ -563,10 +569,104 @@ export default createEdgeFunction(
 
         console.log('Organization created:', newOrg)
 
-        // Add the creator as the owner of the new organization - use admin client
-        console.log('Adding creator as owner:', {
-          org_id: newOrg?.id,
-          user_id: userContext?.userId,
+        // Create and add owner account if email provided
+        let ownerUserId = userContext.userId // Default to creator
+        let temporaryPassword: string | null = null
+
+        if (ownerEmail && ownerFullName) {
+          console.log('Creating owner account:', { ownerEmail, ownerFullName })
+
+          // Generate temporary password (16 characters, alphanumeric + symbols)
+          temporaryPassword = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+            .map((byte) => {
+              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+              return chars[byte % chars.length]
+            })
+            .join('')
+
+          // Check if user already exists
+          const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers()
+          const authUser = existingAuthUser.users.find(u => u.email === ownerEmail)
+
+          if (authUser) {
+            // User exists in auth - check if they exist in our users table
+            const { data: existingUser } = await supabaseAdmin
+              .from('users')
+              .select('id')
+              .eq('email', ownerEmail)
+              .maybeSingle()
+
+            if (existingUser) {
+              ownerUserId = existingUser.id
+              console.log('User already exists, using existing account:', ownerUserId)
+            } else {
+              // Auth user exists but not in our table - create user record
+              ownerUserId = authUser.id
+              const { error: userInsertError } = await supabaseAdmin
+                .from('users')
+                .insert({
+                  id: authUser.id,
+                  email: ownerEmail,
+                  full_name: ownerFullName,
+                  role: 'user',
+                  // @ts-expect-error - id exists
+                  organization_id: newOrg.id,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+
+              if (userInsertError) {
+                console.error('Failed to create user record:', userInsertError)
+                throw new DatabaseError(`Failed to create user record: ${userInsertError.message}`)
+              }
+            }
+          } else {
+            // Create new auth user
+            const { data: newAuthUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+              email: ownerEmail,
+              password: temporaryPassword,
+              email_confirm: true,
+              user_metadata: {
+                full_name: ownerFullName,
+              },
+            })
+
+            if (authError || !newAuthUser.user) {
+              console.error('Failed to create auth user:', authError)
+              throw new DatabaseError(`Failed to create owner account: ${authError?.message || 'Unknown error'}`)
+            }
+
+            ownerUserId = newAuthUser.user.id
+            console.log('Created auth user:', ownerUserId)
+
+            // Create user record in our database
+            const { error: userInsertError } = await supabaseAdmin
+              .from('users')
+              .insert({
+                id: ownerUserId,
+                email: ownerEmail,
+                full_name: ownerFullName,
+                role: 'user',
+                // @ts-expect-error - id exists
+                organization_id: newOrg.id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+
+            if (userInsertError) {
+              console.error('Failed to create user record:', userInsertError)
+              throw new DatabaseError(`Failed to create user record: ${userInsertError.message}`)
+            }
+
+            console.log('Created user record in database')
+          }
+        }
+
+        // Add the owner to the organization - use admin client
+        console.log('Adding owner to organization:', {
+          // @ts-expect-error - id exists
+          org_id: newOrg.id,
+          user_id: ownerUserId,
         })
         // @ts-expect-error - Properties exist
         const { error: memberError } = await supabaseAdmin
@@ -574,20 +674,74 @@ export default createEdgeFunction(
           .insert({
             // @ts-expect-error - id exists
             organization_id: newOrg.id,
-            user_id: userContext.userId,
+            user_id: ownerUserId,
             role: 'owner',
             joined_at: new Date().toISOString(),
           })
 
         if (memberError) {
-          console.error('Failed to add creator as owner:', memberError)
+          console.error('Failed to add owner to organization:', memberError)
           // Note: Organization was created but membership failed
           // This is not critical - user can be added manually by super admin
           console.warn(
-            `Organization ${newOrg.id} created but creator membership failed: ${memberError.message}`
+            `Organization ${newOrg.id} created but owner membership failed: ${memberError.message}`
           )
         } else {
-          console.log('Creator added as owner successfully')
+          console.log('Owner added to organization successfully')
+        }
+
+        // Send welcome email with credentials if requested
+        if (sendWelcomeEmail && ownerEmail && temporaryPassword) {
+          console.log('Sending welcome email to:', ownerEmail)
+          
+          const resendApiKey = Deno.env.get('RESEND_API_KEY')
+          if (resendApiKey) {
+            try {
+              const emailResponse = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'NetNeural Platform <noreply@netneural.ai>',
+                  to: [ownerEmail],
+                  subject: `Welcome to NetNeural - Your Account for ${name}`,
+                  html: `
+                    <h2>Welcome to NetNeural IoT Platform</h2>
+                    <p>Hello ${ownerFullName},</p>
+                    <p>Your organization <strong>${name}</strong> has been created successfully!</p>
+                    <h3>Your Login Credentials:</h3>
+                    <ul>
+                      <li><strong>Email:</strong> ${ownerEmail}</li>
+                      <li><strong>Temporary Password:</strong> <code>${temporaryPassword}</code></li>
+                    </ul>
+                    <p><strong>Important:</strong> Please change your password after your first login.</p>
+                    <p>
+                      <a href="${Deno.env.get('SITE_URL') || 'https://demo-stage.netneural.ai'}/auth/login" 
+                         style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Login Now
+                      </a>
+                    </p>
+                    <p>If you have any questions, please contact our support team.</p>
+                    <p>Best regards,<br>NetNeural Team</p>
+                  `,
+                }),
+              })
+
+              if (!emailResponse.ok) {
+                const errorText = await emailResponse.text()
+                console.error('Failed to send welcome email:', errorText)
+              } else {
+                console.log('Welcome email sent successfully')
+              }
+            } catch (emailError) {
+              console.error('Error sending welcome email:', emailError)
+              // Don't fail the request if email fails
+            }
+          } else {
+            console.warn('RESEND_API_KEY not configured, skipping welcome email')
+          }
         }
 
         // @ts-expect-error - Properties exist in newOrg

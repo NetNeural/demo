@@ -77,6 +77,11 @@ export function CreateOrganizationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Owner account fields
+  const [ownerEmail, setOwnerEmail] = useState('')
+  const [ownerFullName, setOwnerFullName] = useState('')
+  const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true)
+
   // Reseller agreement state (only for setting reseller tier)
   const [showAgreement, setShowAgreement] = useState(false)
   const [agreementAccepted, setAgreementAccepted] = useState(false)
@@ -123,6 +128,18 @@ export function CreateOrganizationDialog({
       setError('Slug can only contain lowercase letters, numbers, and hyphens')
       return
     }
+    // Validate owner fields if provided
+    if (ownerEmail || ownerFullName) {
+      if (!ownerEmail || !ownerFullName) {
+        setError('Both owner email and full name are required if creating an owner account')
+        return
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(ownerEmail)) {
+        setError('Invalid email format for owner account')
+        return
+      }
+    }
     // Require agreement acceptance for reseller tier
     if (
       (subscriptionTier === 'reseller' || subscriptionTier === 'enterprise') &&
@@ -142,6 +159,11 @@ export function CreateOrganizationDialog({
         description: description.trim() || undefined,
         subscriptionTier: isChildOrg ? 'starter' : subscriptionTier,
         parentOrganizationId: parentOrganizationId || undefined,
+        ...(ownerEmail && ownerFullName ? {
+          ownerEmail: ownerEmail.trim(),
+          ownerFullName: ownerFullName.trim(),
+          sendWelcomeEmail,
+        } : {}),
       })
 
       if (!response.success) {
@@ -280,6 +302,60 @@ export function CreateOrganizationDialog({
               placeholder="Brief description of this organization"
               disabled={isSubmitting}
             />
+          </div>
+
+          {/* Owner Account Section */}
+          <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Owner Account</span>
+              <Badge variant="outline" className="text-xs">Optional</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Create a new owner account for this organization. If left blank, you will be the owner.
+            </p>
+
+            {/* Owner Email */}
+            <div className="space-y-2">
+              <Label htmlFor="owner-email">Owner Email</Label>
+              <Input
+                id="owner-email"
+                type="email"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                placeholder="owner@example.com"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Owner Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="owner-name">Owner Full Name</Label>
+              <Input
+                id="owner-name"
+                value={ownerFullName}
+                onChange={(e) => setOwnerFullName(e.target.value)}
+                placeholder="John Doe"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Send Welcome Email Checkbox */}
+            {ownerEmail && ownerFullName && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="send-email"
+                  checked={sendWelcomeEmail}
+                  onCheckedChange={(checked) => setSendWelcomeEmail(checked as boolean)}
+                  disabled={isSubmitting}
+                />
+                <Label
+                  htmlFor="send-email"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Send welcome email with temporary password
+                </Label>
+              </div>
+            )}
           </div>
 
           {/* Subscription Tier (not shown for child orgs — they inherit starter) */}
