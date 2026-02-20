@@ -12,9 +12,9 @@ SELECT
     settings->>'payload_parser' as parser_type,
     settings->>'topics' as topics,
     settings->>'broker_url' as broker_url,
+    settings,
     created_at,
-    last_test_at,
-    last_test_status
+    updated_at
 FROM device_integrations
 WHERE id = 'a6d0e905-0532-4178-9ed0-2aae24a896f6';
 
@@ -40,18 +40,21 @@ SELECT
     integration_id,
     metadata
 FROM devices
-WHERE id = '2400390030314701'
-   OR id LIKE '%2400390030314701%';
+WHERE name LIKE '%2400390030314701%'
+   OR metadata::text LIKE '%2400390030314701%'
+   OR id::text LIKE '%2400390030314701%';
 
--- 4. Check telemetry history for this device
+-- 4. Check telemetry history for this device (search by device name pattern)
 SELECT 
-    timestamp,
-    metric_name,
-    metric_value,
-    metadata
-FROM device_telemetry_history
-WHERE device_id = '2400390030314701'
-ORDER BY timestamp DESC
+    d.id as device_id,
+    d.name as device_name,
+    t.*
+FROM device_telemetry_history t
+JOIN devices d ON d.id = t.device_id
+WHERE d.name LIKE '%2400390030314701%'
+   OR d.metadata::text LIKE '%2400390030314701%'
+   OR d.id::text LIKE '%2400390030314701%'
+ORDER BY t.created_at DESC
 LIMIT 10;
 
 -- 5. Count total logs for this integration (all time)
