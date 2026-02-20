@@ -113,7 +113,8 @@ function createIntegrationClient(
   organizationId: string,
   integrationId: string
 ): BaseIntegrationClient | null {
-  const settings = integration.config || {}
+  // Try config first (legacy), then settings (current standard)
+  const settings = integration.config || integration.settings || {}
   
   try {
     switch (integration.integration_type) {
