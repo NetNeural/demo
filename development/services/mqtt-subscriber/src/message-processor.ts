@@ -253,7 +253,7 @@ export class MessageProcessor {
     }
 
     return {
-      deviceId,
+      deviceId: payload.device || deviceId,
       telemetry: Object.keys(telemetry).length > 0 ? telemetry : undefined,
       status: payload.online ? 'online' : undefined,
       timestamp,
