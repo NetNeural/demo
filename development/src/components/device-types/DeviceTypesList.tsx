@@ -63,9 +63,9 @@ import { DeviceTypeFormDialog } from './DeviceTypeFormDialog'
 import { DEVICE_CLASSES, type DeviceType } from '@/types/device-types'
 
 /** Format a number to the configured precision */
-function fmt(value: number | null, precision: number): string {
+function fmt(value: number | null, precision: number | null): string {
   if (value == null) return '—'
-  return value.toFixed(precision)
+  return value.toFixed(precision ?? 2)
 }
 
 /** Get device class label */

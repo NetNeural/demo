@@ -72,10 +72,6 @@ const config = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   
-  // Test environment options
-  testEnvironmentOptions: {
-    customExportConditions: [''],
-  },
   
   // Coverage thresholds
   coverageThreshold: {

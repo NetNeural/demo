@@ -41,17 +41,17 @@ export interface DeviceType {
   name: string
   lower_normal: number
   upper_normal: number
-  unit: string
+  unit: string | null
   description: string | null
   device_class: string | null
   lower_alert: number | null
   upper_alert: number | null
-  precision_digits: number
+  precision_digits: number | null
   icon: string | null
   created_by: string | null
   updated_by: string | null
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
 }
 
 /** Payload for creating/updating a device type */

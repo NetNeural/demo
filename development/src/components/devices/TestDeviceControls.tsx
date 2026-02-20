@@ -35,41 +35,56 @@ export function TestDeviceControls({
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deviceType, setDeviceType] = useState<DeviceType | null>(null)
+  const [organizationId, setOrganizationId] = useState<string>('')
   
   // Control values
   const [sensorValue, setSensorValue] = useState(50)
   const [batteryLevel, setBatteryLevel] = useState(100)
   const [signalStrength, setSignalStrength] = useState(-50)
-  const [status, setStatus] = useState(currentStatus || 'online')
+  const [status, setStatus] = useState<'online' | 'offline' | 'error' | 'warning'>(currentStatus as 'online' | 'offline' | 'error' | 'warning' || 'online')
 
-  // Load device type configuration
+  // Load device and device type configuration
   useEffect(() => {
-    if (!deviceTypeId || !isOpen) return
+    if (!isOpen) return
 
-    const loadDeviceType = async () => {
+    const loadData = async () => {
       try {
         const supabase = createClient()
-        const { data, error } = await supabase
-          .from('device_types')
-          .select('*')
-          .eq('id', deviceTypeId)
+        
+        // Load device to get organization_id
+        const { data: deviceData, error: deviceError } = await supabase
+          .from('devices')
+          .select('organization_id')
+          .eq('id', deviceId)
           .single()
 
-        if (error) throw error
-        setDeviceType(data)
-        
-        // Set initial sensor value to middle of normal range
-        if (data) {
-          const midPoint = (data.lower_normal + data.upper_normal) / 2
-          setSensorValue(midPoint)
+        if (deviceError) throw deviceError
+        if (deviceData) setOrganizationId(deviceData.organization_id)
+
+        // Load device type if provided
+        if (deviceTypeId) {
+          const { data, error } = await supabase
+            .from('device_types')
+            .select('*')
+            .eq('id', deviceTypeId)
+            .single()
+
+          if (error) throw error
+          setDeviceType(data)
+          
+          // Set initial sensor value to middle of normal range
+          if (data) {
+            const midPoint = (data.lower_normal + data.upper_normal) / 2
+            setSensorValue(midPoint)
+          }
         }
       } catch (error) {
-        console.error('Failed to load device type:', error)
+        console.error('Failed to load device data:', error)
       }
     }
 
-    loadDeviceType()
-  }, [deviceTypeId, isOpen])
+    loadData()
+  }, [deviceTypeId, deviceId, isOpen])
 
   const handleSendData = async () => {
     setLoading(true)
@@ -81,6 +96,7 @@ export function TestDeviceControls({
         .from('device_telemetry_history')
         .insert({
           device_id: deviceId,
+          organization_id: organizationId,
           telemetry: {
             value: sensorValue,
             unit: deviceType?.unit || '',
@@ -117,7 +133,7 @@ export function TestDeviceControls({
           ? `⚠️ Data sent - Value outside normal range!` 
           : `✅ Test data sent successfully`,
         {
-          description: `${deviceType?.name || 'Sensor'}: ${sensorValue.toFixed(deviceType?.precision_digits || 2)}${deviceType?.unit || ''}`
+          description: `${deviceType?.name || 'Sensor'}: ${sensorValue.toFixed(deviceType?.precision_digits ?? 2)}${deviceType?.unit || ''}`
         }
       )
       
@@ -145,7 +161,7 @@ export function TestDeviceControls({
         break
       case 'error':
         // At or beyond alert threshold
-        const errorValue = deviceType.upper_alert || deviceType.upper_normal * 1.5
+        const errorValue = deviceType.upper_alert ?? deviceType.upper_normal * 1.5
         setSensorValue(errorValue)
         setStatus('error')
         break
@@ -213,15 +229,15 @@ export function TestDeviceControls({
                       {deviceType.unit && <span className="text-muted-foreground ml-1">({deviceType.unit})</span>}
                     </Label>
                     <Badge variant="outline" className="font-mono text-xs">
-                      {sensorValue.toFixed(deviceType.precision_digits)}
+                      {sensorValue.toFixed(deviceType.precision_digits ?? 2)}
                     </Badge>
                   </div>
                   
                   <Slider
                     value={[sensorValue]}
-                    onValueChange={([value]) => setSensorValue(value)}
-                    min={deviceType.lower_alert || deviceType.lower_normal * 0.5}
-                    max={deviceType.upper_alert || deviceType.upper_normal * 1.5}
+                    onValueChange={([value]) => value !== undefined && setSensorValue(value)}
+                    min={deviceType.lower_alert ?? deviceType.lower_normal * 0.5}
+                    max={deviceType.upper_alert ?? deviceType.upper_normal * 1.5}
                     step={(deviceType.upper_normal - deviceType.lower_normal) / 100}
                     className="w-full"
                   />
@@ -243,7 +259,7 @@ export function TestDeviceControls({
                 {/* Device Status */}
                 <div className="space-y-2">
                   <Label className="text-xs">Device Status</Label>
-                  <Select value={status} onValueChange={setStatus}>
+                  <Select value={status} onValueChange={(val) => setStatus(val as 'online' | 'offline' | 'error' | 'warning')}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -252,7 +268,6 @@ export function TestDeviceControls({
                       <SelectItem value="offline">⚫ Offline</SelectItem>
                       <SelectItem value="warning">🟡 Warning</SelectItem>
                       <SelectItem value="error">🔴 Error</SelectItem>
-                      <SelectItem value="maintenance">🔧 Maintenance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -267,7 +282,7 @@ export function TestDeviceControls({
                   </div>
                   <Slider
                     value={[batteryLevel]}
-                    onValueChange={([value]) => setBatteryLevel(value)}
+                    onValueChange={([value]) => value !== undefined && setBatteryLevel(value)}
                     min={0}
                     max={100}
                     step={5}
@@ -285,7 +300,7 @@ export function TestDeviceControls({
                   </div>
                   <Slider
                     value={[signalStrength]}
-                    onValueChange={([value]) => setSignalStrength(value)}
+                    onValueChange={([value]) => value !== undefined && setSignalStrength(value)}
                     min={-120}
                     max={-30}
                     step={5}

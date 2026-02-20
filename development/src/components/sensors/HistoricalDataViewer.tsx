@@ -464,7 +464,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                           minute: '2-digit'
                         })
                       }}
-                      formatter={(value: number | string, name: string) => {
+                      formatter={(value: number | string | undefined, name: string | undefined) => {
+                        if (value === undefined || name === undefined) return ['N/A', name || 'Unknown']
                         const unit = name === 'Temperature' 
                           ? (useFahrenheit ? '°F' : '°C')
                           : UNIT_LABELS[historicalData.find(d => SENSOR_LABELS[d.telemetry?.type || 0] === name)?.telemetry?.units || 0] || ''

@@ -21,9 +21,9 @@ interface InheritedConfigCardProps {
   deviceTypeId: string | null | undefined
 }
 
-function fmt(value: number | null | undefined, precision: number): string {
+function fmt(value: number | null | undefined, precision: number | null): string {
   if (value == null) return '—'
-  return value.toFixed(precision)
+  return value.toFixed(precision ?? 2)
 }
 
 function getClassLabel(deviceClass: string | null): string {

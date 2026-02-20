@@ -195,7 +195,8 @@ export function TelemetryLineChart({
         />
         <Tooltip
           labelFormatter={(label) => `Time: ${label}`}
-          formatter={(value: number, name: string) => {
+          formatter={(value: number | undefined, name: string | undefined) => {
+            if (value === undefined || name === undefined) return ['N/A', name || 'Unknown']
             const label = isMultiDevice ? getDeviceLabel(name) : (metricLabel || metric)
             return [`${value}${unit}`, label]
           }}

@@ -33,7 +33,14 @@ async function compareData() {
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEYcd /workspaces/MonoRepo/developmen+18554679214
+    t
+
+# 1. Deploy the edge function
+npx supabase functions deploy send-alert-notifications
+
+# 2. Test SMS sending
+./scripts/test-twilio-sms.sh
   );
   
   const { data: dbDevice, error } = await supabase
