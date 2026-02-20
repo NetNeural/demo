@@ -151,8 +151,9 @@ export class MessageProcessor {
     integration: MqttIntegration
   ): string | null {
     // Try to extract from payload first
-    if (payload.deviceId || payload.device_id || payload.id) {
-      return payload.deviceId || payload.device_id || payload.id
+    // Check common field names: device, deviceId, device_id, id
+    if (payload.device || payload.deviceId || payload.device_id || payload.id) {
+      return payload.device || payload.deviceId || payload.device_id || payload.id
     }
 
     // Extract from topic pattern: devices/{deviceId}/...
@@ -224,17 +225,38 @@ export class MessageProcessor {
 
   private parseVMarkMessage(deviceId: string, payload: any): ProcessedMessage {
     // VMark-specific parsing
+    // Expected format: { "device": "xxx", "handle": "properties_report", "paras": {...}, "time": "..." }
     const telemetry: Record<string, any> = {}
 
-    if (payload.data) {
+    // Extract telemetry from 'paras' field (VMark protocol)
+    if (payload.paras && typeof payload.paras === 'object') {
+      Object.assign(telemetry, payload.paras)
+    }
+    // Fallback to 'data' field for compatibility
+    else if (payload.data && typeof payload.data === 'object') {
       Object.assign(telemetry, payload.data)
+    }
+
+    // Parse VMark timestamp format: "2025-04-23_07:35:22.214"
+    let timestamp = new Date().toISOString()
+    if (payload.time) {
+      try {
+        // Convert VMark format to ISO: "2025-04-23_07:35:22.214" -> "2025-04-23T07:35:22.214Z"
+        const isoTime = payload.time.replace('_', 'T') + 'Z'
+        timestamp = new Date(isoTime).toISOString()
+      } catch {
+        // If parsing fails, use current time
+        timestamp = new Date().toISOString()
+      }
+    } else if (payload.timestamp) {
+      timestamp = payload.timestamp
     }
 
     return {
       deviceId,
       telemetry: Object.keys(telemetry).length > 0 ? telemetry : undefined,
       status: payload.online ? 'online' : undefined,
-      timestamp: payload.timestamp || new Date().toISOString(),
+      timestamp,
       metadata: payload,
     }
   }
