@@ -66,8 +66,29 @@ export default function DeviceViewPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [device, setDevice] = useState<Device | null>(null)
-  const [activeTab, setActiveTab] = useState('details')
+  
+  // Initialize activeTab from URL parameter or default
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || 'details';
+  });
+  
   const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
   const { currentOrganization } = useOrganization()
   const { fmt } = useDateFormatter()
 
@@ -312,7 +333,7 @@ export default function DeviceViewPage() {
       />
 
       {/* Tabs for different sections */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="edit">Edit</TabsTrigger>

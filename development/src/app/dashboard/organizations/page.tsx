@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
@@ -30,16 +30,30 @@ import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 
 export default function OrganizationsPage() {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+  
+  // Initialize activeTab from URL parameter or default to 'overview'
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || 'overview';
+  });
+  
   const [showCreateOrgDialog, setShowCreateOrgDialog] = useState(false);
 
-  // Set active tab from URL parameter
+  // Update activeTab when URL parameter changes (e.g., browser back/forward)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam) {
+    if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
   const { 
     currentOrganization,
     isLoading,
@@ -119,7 +133,7 @@ export default function OrganizationsPage() {
         )}
       </div>
 
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4" />

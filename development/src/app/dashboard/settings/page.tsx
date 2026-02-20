@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Settings, Shield, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
@@ -12,9 +13,35 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useUser } from '@/contexts/UserContext';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('profile');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Initialize activeTab from URL parameter or default
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return searchParams.get('tab') || 'profile';
+    }
+    return 'profile';
+  });
+  
   const { currentOrganization } = useOrganization();
   const { user } = useUser();
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const fullName = user?.fullName;
   const orgName = currentOrganization?.name;
@@ -27,7 +54,7 @@ export default function SettingsPage() {
         description="Manage your profile, preferences, and security settings"
       />
 
-      <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="w-4 h-4" />

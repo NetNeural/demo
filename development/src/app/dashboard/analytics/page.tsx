@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalyticsData } from './hooks/useAnalyticsData';
@@ -17,8 +18,35 @@ import {
 import type { TimeRange } from './types/analytics.types';
 
 export default function AnalyticsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const { data, loading, exportToCSV, currentOrganization } = useAnalyticsData(timeRange);
+  
+  // Initialize activeTab from URL parameter or default
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return searchParams.get('tab') || 'devices';
+    }
+    return 'devices';
+  });
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   if (!currentOrganization) {
     return (
@@ -104,7 +132,7 @@ export default function AnalyticsPage() {
 
       <TelemetryChartsSection organizationId={currentOrganization.id} timeRange={timeRange} />
 
-      <Tabs defaultValue="devices" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="devices">Device Performance</TabsTrigger>
           <TabsTrigger value="alerts">Alert Analytics</TabsTrigger>

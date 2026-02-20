@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Users, Wrench, Activity, Settings2, FlaskConical, BookOpen, Shield } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -33,7 +33,31 @@ export default function SupportPage() {
   const { user, loading: userLoading } = useUser()
   const { currentOrganization } = useOrganization()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('customer-assistance')
+  const searchParams = useSearchParams()
+  
+  // Initialize activeTab from URL parameter or default
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return searchParams.get('tab') || 'customer-assistance';
+    }
+    return 'customer-assistance';
+  })
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     if (!userLoading && !canAccessSupport(user)) {
@@ -79,7 +103,7 @@ export default function SupportPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="customer-assistance" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="w-full justify-start flex-wrap">
           {visibleTabs.map(({ id, label, icon: Icon, superAdminOnly }) => (
             <TabsTrigger key={id} value={id} className="flex items-center gap-2">
