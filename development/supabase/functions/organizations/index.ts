@@ -598,7 +598,24 @@ export default createEdgeFunction(
 
             if (existingUser) {
               ownerUserId = existingUser.id
-              console.log('User already exists, using existing account:', ownerUserId)
+              console.log('User already exists, updating organization:', ownerUserId)
+              
+              // Update user's organization to the new org
+              const { error: updateError } = await supabaseAdmin
+                .from('users')
+                .update({
+                  // @ts-expect-error - id exists
+                  organization_id: newOrg.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingUser.id)
+              
+              if (updateError) {
+                console.error('Failed to update user organization:', updateError)
+                throw new DatabaseError(`Failed to update user organization: ${updateError.message}`)
+              }
+              
+              console.log('Updated user organization successfully')
             } else {
               // Auth user exists but not in our table - create user record
               ownerUserId = authUser.id
