@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -39,6 +34,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          denial_reason: string | null
+          denied_at: string | null
+          denied_by: string | null
+          expires_at: string | null
+          granted_membership_id: string | null
+          id: string
+          reason: string
+          requested_duration: string
+          requester_id: string
+          requester_org_id: string
+          status: string
+          target_org_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
+          expires_at?: string | null
+          granted_membership_id?: string | null
+          id?: string
+          reason: string
+          requested_duration?: string
+          requester_id: string
+          requester_org_id: string
+          status?: string
+          target_org_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
+          expires_at?: string | null
+          granted_membership_id?: string | null
+          id?: string
+          reason?: string
+          requested_duration?: string
+          requester_id?: string
+          requester_org_id?: string
+          status?: string
+          target_org_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_requester_org_id_fkey"
+            columns: ["requester_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_insights_cache: {
         Row: {
           created_at: string | null
@@ -83,6 +150,47 @@ export type Database = {
           },
           {
             foreignKeyName: "ai_insights_cache_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_report_summaries_cache: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          generated_at: string
+          id: string
+          organization_id: string
+          report_type: string
+          summary: Json
+          token_usage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          generated_at?: string
+          id?: string
+          organization_id: string
+          report_type: string
+          summary: Json
+          token_usage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          organization_id?: string
+          report_type?: string
+          summary?: Json
+          token_usage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_report_summaries_cache_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1038,6 +1146,7 @@ export type Database = {
           hardware_ids: string[] | null
           id: string
           integration_id: string | null
+          is_test_device: boolean
           last_seen: string | null
           last_seen_offline: string | null
           last_seen_online: string | null
@@ -1065,6 +1174,7 @@ export type Database = {
           hardware_ids?: string[] | null
           id?: string
           integration_id?: string | null
+          is_test_device?: boolean
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
@@ -1092,6 +1202,7 @@ export type Database = {
           hardware_ids?: string[] | null
           id?: string
           integration_id?: string | null
+          is_test_device?: boolean
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
@@ -2241,8 +2352,10 @@ export type Database = {
       organization_members: {
         Row: {
           created_at: string | null
+          expires_at: string | null
           id: string
           invited_by: string | null
+          is_temporary: boolean | null
           joined_at: string | null
           organization_id: string
           permissions: Json | null
@@ -2252,8 +2365,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
+          is_temporary?: boolean | null
           joined_at?: string | null
           organization_id: string
           permissions?: Json | null
@@ -2263,8 +2378,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
+          is_temporary?: boolean | null
           joined_at?: string | null
           organization_id?: string
           permissions?: Json | null
@@ -2355,27 +2472,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      pg_cron_secrets: {
-        Row: {
-          created_at: string | null
-          name: string
-          secret: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          name: string
-          secret: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          name?: string
-          secret?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       reseller_agreement_applications: {
         Row: {
@@ -2622,6 +2718,7 @@ export type Database = {
           notification_cooldown_minutes: number | null
           notify_emails: string[] | null
           notify_on_breach: boolean | null
+          notify_phone_numbers: string[] | null
           notify_user_ids: string[] | null
           sensor_type: string
           temperature_unit: string | null
@@ -2645,6 +2742,7 @@ export type Database = {
           notification_cooldown_minutes?: number | null
           notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_phone_numbers?: string[] | null
           notify_user_ids?: string[] | null
           sensor_type: string
           temperature_unit?: string | null
@@ -2668,6 +2766,7 @@ export type Database = {
           notification_cooldown_minutes?: number | null
           notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_phone_numbers?: string[] | null
           notify_user_ids?: string[] | null
           sensor_type?: string
           temperature_unit?: string | null
@@ -2985,6 +3084,10 @@ export type Database = {
           last_login: string | null
           organization_id: string | null
           password_change_required: boolean | null
+          phone_number: string | null
+          phone_number_secondary: string | null
+          phone_secondary_sms_enabled: boolean | null
+          phone_sms_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
@@ -2998,6 +3101,10 @@ export type Database = {
           last_login?: string | null
           organization_id?: string | null
           password_change_required?: boolean | null
+          phone_number?: string | null
+          phone_number_secondary?: string | null
+          phone_secondary_sms_enabled?: boolean | null
+          phone_sms_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
@@ -3011,6 +3118,10 @@ export type Database = {
           last_login?: string | null
           organization_id?: string | null
           password_change_required?: boolean | null
+          phone_number?: string | null
+          phone_number_secondary?: string | null
+          phone_secondary_sms_enabled?: boolean | null
+          phone_sms_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
@@ -3225,6 +3336,8 @@ export type Database = {
         }
         Returns: string
       }
+      cleanup_expired_access: { Args: never; Returns: undefined }
+      cleanup_expired_ai_cache: { Args: never; Returns: undefined }
       cleanup_expired_ai_insights_cache: { Args: never; Returns: undefined }
       cleanup_mqtt_queue: { Args: never; Returns: number }
       cleanup_old_integration_logs: { Args: never; Returns: number }
@@ -3248,8 +3361,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      decrypt_api_key: {
+        Args: { encrypted_key: string; p_key_id?: string }
+        Returns: string
+      }
       decrypt_device_credential: {
         Args: { credential_id: string }
+        Returns: string
+      }
+      encrypt_api_key: {
+        Args: { p_key_id?: string; plaintext_key: string }
         Returns: string
       }
       enqueue_mqtt_message: {
@@ -3282,11 +3403,28 @@ export type Database = {
         Args: { integration_id: string; integration_type: string }
         Returns: string
       }
+      get_all_descendant_organizations: {
+        Args: { parent_org_id: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          depth: number
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          parent_organization_id: string
+          settings: Json
+          slug: string
+          subscription_tier: string
+          updated_at: string
+        }[]
+      }
       get_current_supabase_url: { Args: never; Returns: string }
       get_mqtt_queue_stats: {
         Args: { p_organization_id?: string }
         Returns: {
-          avg_processing_time: unknown
+          avg_processing_time: string
           completed_count: number
           failed_count: number
           pending_count: number
@@ -3371,6 +3509,14 @@ export type Database = {
         }
         Returns: string
       }
+      migrate_api_keys_to_encryption: {
+        Args: never
+        Returns: {
+          error_message: string
+          failed_count: number
+          migrated_count: number
+        }[]
+      }
       process_mqtt_queue_message: {
         Args: { p_message_id: string }
         Returns: boolean
@@ -3414,6 +3560,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      seed_organization_device_types: {
+        Args: { org_id: string }
+        Returns: undefined
       }
       update_mqtt_connection_stats: {
         Args: { p_username: string }
@@ -3583,3 +3733,4 @@ export const Constants = {
     },
   },
 } as const
+

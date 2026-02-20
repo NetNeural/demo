@@ -314,7 +314,7 @@ export function ProfileTab() {
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>SMS Notifications:</strong> When enabled, you'll receive critical alerts and system notifications via SMS. 
+              <strong>SMS Notifications:</strong> When enabled, you&apos;ll receive critical alerts and system notifications via SMS. 
               Standard message and data rates may apply. Your phone numbers are used solely for notifications and are never shared.
             </p>
           </div>

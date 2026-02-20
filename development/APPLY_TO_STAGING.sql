@@ -1,7 +1,7 @@
--- Auto-create default device types for new organizations
--- This ensures every organization has the 42 standard IoT device types
+-- Run this in Supabase Dashboard SQL Editor to apply the auto_create_device_types migration
+-- https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql/new
 
---Create function to seed device types for an organization
+-- Create function to seed device types for an organization
 CREATE OR REPLACE FUNCTION seed_organization_device_types(org_id UUID)
 RETURNS void
 LANGUAGE plpgsql
@@ -57,7 +57,7 @@ BEGIN
     
     -- Water/Liquid (3)
     (org_id, 'Water Flow Rate', 'Plumbing/irrigation flow monitoring', 'flow', 'L/min', 0.5, 20.0, 0.0, 50.0, 1),
-    (org_id, 'Water Leak Detection', 'Binary leak alarm', 'other', 'boolean', 0.0, 0.0, 0.0, 1.0, 0),
+    (org_id, 'Water Leak Detection', 'Binary leak alarm', 'other', 'boolean', 0.0, 1.0, 0.0, 1.0, 0),
     (org_id, 'Liquid Level', 'Tank/reservoir level monitoring', 'level', '%', 10.0, 90.0, 0.0, 100.0, 1),
     
     -- Sound (1)
@@ -75,7 +75,7 @@ BEGIN
     (org_id, 'Wind Speed', 'Weather station anemometer', 'speed', 'm/s', 0.0, 20.0, 0.0, 50.0, 1),
     
     -- Safety (2)
-    (org_id, 'Smoke Detection', 'Fire safety alarm (UL 217/268)', 'other', 'boolean', 0.0, 0.0, 0.0, 1.0, 0),
+    (org_id, 'Smoke Detection', 'Fire safety alarm (UL 217/268)', 'other', 'boolean', 0.0, 1.0, 0.0, 1.0, 0),
     (org_id, 'Natural Gas (Methane)', 'Combustible gas safety (LEL%)', 'air_quality', '% LEL', 0.0, 10.0, 0.0, 25.0, 1);
   
   RAISE NOTICE '✅ Created 42 standard device types for organization %', org_id;
@@ -89,7 +89,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Call the seed function for the new organization
   PERFORM seed_organization_device_types(NEW.id);
   RETURN NEW;
 END;
@@ -102,6 +101,8 @@ CREATE TRIGGER auto_seed_device_types_on_org_creation
   FOR EACH ROW
   EXECUTE FUNCTION trigger_seed_organization_device_types();
 
-COMMENT ON FUNCTION seed_organization_device_types IS 'Seeds 42 standard IoT device types for an organization';
-COMMENT ON FUNCTION trigger_seed_organization_device_types IS 'Trigger function that auto-creates device types for new organizations';
-COMMENT ON TRIGGER auto_seed_device_types_on_org_creation ON organizations IS 'Automatically creates 42 standard device types when a new organization is created';
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION seed_organization_device_types(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION seed_organization_device_types(UUID) TO authenticated;
+
+-- After running this, run the backfill script to populate existing organizations

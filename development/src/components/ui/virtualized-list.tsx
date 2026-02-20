@@ -56,7 +56,7 @@ export function VirtualizedList<T>({
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  type NoExtraProps = {}
+  type NoExtraProps = Record<string, never>
 
   const Row = ({ index, style }: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> }): ReactElement | null => {
     const item = items[index]
