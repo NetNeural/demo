@@ -111,15 +111,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <p className="text-sm font-medium text-gray-900">
                 {user.email}
               </p>
-              {user.isSuperAdmin ? (
-                <p className="text-xs font-semibold text-red-600">
-                  🛡️ Super Admin
-                </p>
-              ) : (
-                <p className="text-xs text-gray-500">
-                  {user.organizationName}
-                </p>
-              )}
+              <p className="text-xs text-gray-500">
+                {user.organizationName}
+              </p>
             </div>
             <button 
               onClick={async () => {
@@ -135,16 +129,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
         <main className="main-content">
-          {/* Top bar with Quick Actions and Super Admin badge */}
+          {/* Top bar with Quick Actions */}
           <div className="flex justify-between items-center sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
               <QuickActionsDropdown />
-              {user.isSuperAdmin && (
-                <span className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
-                  🛡️ Super Admin — Cross-Org Access
-                </span>
-              )}
             </div>
           </div>
           {children}
