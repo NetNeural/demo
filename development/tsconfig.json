@@ -54,6 +54,8 @@
     "out",
     "supabase/functions",
     "supabase/functions/**/*",
+    "services",
+    "services/**/*",
     "scripts",
     "scripts/**/*",
     "__tests__",

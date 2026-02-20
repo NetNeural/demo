@@ -34,6 +34,9 @@ next-env.d.ts
 # Supabase functions (different TypeScript config)
 supabase/functions/
 
+# Services (standalone Node.js services)
+services/
+
 # Environment files
 .env*
 
