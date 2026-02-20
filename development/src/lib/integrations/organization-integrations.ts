@@ -196,7 +196,6 @@ export class OrganizationIntegrationService {
    */
   private async encryptApiKey(apiKey: string): Promise<string> {
     try {
-      // @ts-expect-error - RPC function exists but not in generated types yet
       const { data, error } = await this.supabase.rpc('encrypt_api_key', {
         plaintext_key: apiKey,
         p_key_id: 'default'

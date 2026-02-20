@@ -38,7 +38,7 @@ const nextConfig = {
   },
 
   // External packages for server components
-  serverExternalPackages: ['@supabase/supabase-js'],
+  serverExternalPackages: ['@supabase/supabase-js', 'mqtt'],
 
   // Experimental features for Next.js 15
   experimental: {
