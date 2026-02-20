@@ -288,45 +288,17 @@ export default function TroubleshootingTab({ organizationId }: Props) {
         return
       }
 
-      // Call edge function to test the integration
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        const durationMs = Date.now() - start
-        setTestResults((prev) => ({
-          ...prev,
-          [integrationType]: {
-            success: false,
-            message: 'No active session',
-            durationMs,
-          },
-        }))
-        return
-      }
-
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/integrations/test?id=${integration.id}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-
-      const result = await response.json()
+      // Call edge function to test the integration using the SDK
+      const result = await edgeFunctions.integrations.test(integration.id)
       const durationMs = Date.now() - start
 
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         setTestResults((prev) => ({
           ...prev,
           [integrationType]: {
             success: false,
-            message: result.error?.message || result.message || 'Test failed',
+            message:
+              result.error?.message || result.message || 'Test failed',
             durationMs,
           },
         }))
