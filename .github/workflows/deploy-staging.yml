@@ -8,14 +8,16 @@
 #   - Data: Test/synthetic data only
 #
 # This staging environment is completely isolated from production.
+#
+# ⚠️ Note: Tests run in parallel but DO NOT block deployment
+# This allows fast iteration while still tracking test health
 
 name: Deploy Staging to GitHub Pages
 
 on:
-  workflow_run:
-    workflows: ["Run Tests"]
-    types: [completed]
+  push:
     branches: [main]
+    paths: ['development/**']
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -35,8 +37,7 @@ concurrency:
 
 jobs:
   deploy-staging:
-    # Only deploy if tests passed or manual trigger
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    # Deploy on every push to main (tests do not block)
     runs-on: ubuntu-latest
     environment:
       name: staging
