@@ -4,7 +4,10 @@
  * Full create/edit form with validation for device type configuration.
  * Supports normal ranges, alert thresholds, measurement metadata.
  * 
+ * Includes automatic unit conversion for measurement values when unit changes.
+ * 
  * @see Issue #118
+ * @see Issue #167 - Unit conversion
  */
 'use client'
 
@@ -45,6 +48,10 @@ import {
   type DeviceTypeFormValues,
   type DeviceTypePayload,
 } from '@/types/device-types'
+import {
+  convertMeasurementValues,
+  canConvertUnit,
+} from '@/lib/unit-conversion'
 
 interface DeviceTypeFormDialogProps {
   open: boolean
@@ -74,6 +81,8 @@ export function DeviceTypeFormDialog({
 
   const [form, setForm] = useState<DeviceTypeFormValues>(DEFAULT_DEVICE_TYPE_FORM)
   const [errors, setErrors] = useState<ValidationErrors>({})
+  const [previousUnit, setPreviousUnit] = useState<string>('')
+  const [showConversionMessage, setShowConversionMessage] = useState(false)
 
   const isEditing = !!editingType
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -93,11 +102,62 @@ export function DeviceTypeFormDialog({
         precision_digits: String(editingType.precision_digits),
         icon: editingType.icon || '',
       })
+      setPreviousUnit(editingType.unit || '')
     } else {
       setForm(DEFAULT_DEVICE_TYPE_FORM)
+      setPreviousUnit('')
     }
     setErrors({})
+    setShowConversionMessage(false)
   }, [editingType, open])
+
+  // Handle unit changes - convert measurement values
+  useEffect(() => {
+    // Only convert if:
+    // 1. It's not a new device type (has previous unit set)
+    // 2. Unit actually changed
+    // 3. Conversion is available and has valid values
+    if (!previousUnit || form.unit === previousUnit || !form.lower_normal || !form.upper_normal) {
+      return undefined
+    }
+
+    if (!canConvertUnit(previousUnit, form.unit)) {
+      // Conversion not available, just update previous unit
+      setPreviousUnit(form.unit)
+      return undefined
+    }
+
+    let cleanup: (() => void) | undefined
+
+    try {
+      const converted = convertMeasurementValues(
+        form.lower_normal,
+        form.upper_normal,
+        form.lower_alert,
+        form.upper_alert,
+        previousUnit,
+        form.unit
+      )
+
+      setForm(prev => ({
+        ...prev,
+        lower_normal: converted.lowerNormal,
+        upper_normal: converted.upperNormal,
+        lower_alert: converted.lowerAlert,
+        upper_alert: converted.upperAlert,
+      }))
+
+      setShowConversionMessage(true)
+      // Hide message after 3 seconds
+      const timer = setTimeout(() => setShowConversionMessage(false), 3000)
+      cleanup = () => clearTimeout(timer)
+    } catch {
+      // Conversion failed, silent failure
+    }
+
+    setPreviousUnit(form.unit)
+    return cleanup
+  }, [form.unit, form.lower_normal, form.upper_normal, form.lower_alert, form.upper_alert, previousUnit])
 
   // Suggested units based on selected device class
   const suggestedUnits = useMemo(() => {
@@ -230,6 +290,13 @@ export function DeviceTypeFormDialog({
             <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {errors.general}
+            </div>
+          )}
+
+          {showConversionMessage && (
+            <div className="flex items-center gap-2 p-3 text-sm text-emerald-700 bg-emerald-50 rounded-md border border-emerald-200">
+              <Info className="h-4 w-4 flex-shrink-0" />
+              Normal Operating Range and Alert Thresholds have been automatically converted to the new unit.
             </div>
           )}
 
