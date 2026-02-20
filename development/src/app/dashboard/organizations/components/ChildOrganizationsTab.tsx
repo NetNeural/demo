@@ -32,6 +32,8 @@ interface ChildOrg {
   description?: string;
   subscriptionTier: string;
   isActive: boolean;
+  parentOrganizationId?: string;
+  depth?: number;
   userCount: number;
   deviceCount: number;
   alertCount: number;
@@ -73,30 +75,20 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
     try {
       setIsLoading(true);
 
-      if (isMainOrg && isSuperAdmin) {
-        // Main (root) org: list ALL organizations
-        const response = await edgeFunctions.organizations.list();
-        if (response.success && response.data) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const allOrgs = ((response.data as any).organizations || []) as ChildOrg[];
-          // Exclude the current (main) org from the customer list
-          setChildOrgs(allOrgs.filter((o) => o.id !== organizationId));
-        }
-      } else {
-        // Child / reseller org: list only children
-        const response = await edgeFunctions.organizations.listChildren(organizationId);
-        if (response.success && response.data) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const orgs = (response.data as any).organizations || [];
-          setChildOrgs(orgs);
-        }
+      // Always use listChildren to get descendants (including sub-organizations)
+      // This uses the recursive function to get the entire hierarchy
+      const response = await edgeFunctions.organizations.listChildren(organizationId);
+      if (response.success && response.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const orgs = (response.data as any).organizations || [];
+        setChildOrgs(orgs);
       }
     } catch (err) {
       console.error('Failed to fetch child organizations:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId, isMainOrg, isSuperAdmin]);
+  }, [organizationId]);
 
   const fetchAgreement = useCallback(async () => {
     // Main org doesn't have a reseller agreement
@@ -337,15 +329,32 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
           {viewMode === 'cards' ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {childOrgs.map((org) => (
-              <Card key={org.id} className="hover:border-primary/50 transition-colors">
+              <Card 
+                key={org.id} 
+                className="hover:border-primary/50 transition-colors"
+                style={{ 
+                  marginLeft: org.depth && org.depth > 1 ? `${(org.depth - 1) * 16}px` : '0',
+                  borderLeft: org.depth && org.depth > 1 ? '3px solid #06b6d4' : undefined
+                }}
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-base flex items-center gap-2">
+                        {org.depth && org.depth > 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            {'└─'.repeat(org.depth - 1)}
+                          </span>
+                        )}
                         <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                           {org.name.charAt(0).toUpperCase()}
                         </div>
                         {org.name}
+                        {org.depth && org.depth > 1 && (
+                          <Badge variant="outline" className="text-xs">
+                            L{org.depth}
+                          </Badge>
+                        )}
                       </CardTitle>
                       <CardDescription className="text-xs">
                         {org.slug}
@@ -397,6 +406,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                   <thead>
                     <tr className="border-b bg-muted/50">
                       <th className="text-left font-medium p-3">Organization</th>
+                      <th className="text-left font-medium p-3">Level</th>
                       <th className="text-left font-medium p-3">Tier</th>
                       <th className="text-center font-medium p-3">Status</th>
                       <th className="text-center font-medium p-3">Devices</th>
@@ -408,9 +418,18 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                   </thead>
                   <tbody>
                     {childOrgs.map((org) => (
-                      <tr key={org.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <tr 
+                        key={org.id} 
+                        className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                        style={{
+                          backgroundColor: org.depth && org.depth > 1 ? `rgba(6, 182, 212, ${0.02 * (org.depth - 1)})` : undefined
+                        }}
+                      >
                         <td className="p-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" style={{ paddingLeft: org.depth && org.depth > 1 ? `${(org.depth - 1) * 20}px` : '0' }}>
+                            {org.depth && org.depth > 1 && (
+                              <span className="text-muted-foreground text-xs">└─</span>
+                            )}
                             <div className="w-7 h-7 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                               {org.name.charAt(0).toUpperCase()}
                             </div>
@@ -419,6 +438,15 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                               <p className="text-xs text-muted-foreground">{org.slug}</p>
                             </div>
                           </div>
+                        </td>
+                        <td className="p-3">
+                          {org.depth && org.depth > 1 ? (
+                            <Badge variant="outline" className="text-xs">
+                              L{org.depth}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Direct</span>
+                          )}
                         </td>
                         <td className="p-3">{getTierBadge(org.subscriptionTier || 'starter')}</td>
                         <td className="p-3 text-center">

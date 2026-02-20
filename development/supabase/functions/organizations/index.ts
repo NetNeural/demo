@@ -169,7 +169,65 @@ export default createEdgeFunction(
             throw new DatabaseError('You must be an owner or admin of the parent organization to view child orgs', 403)
           }
         }
-        query = query.eq('parent_organization_id', parentOrgFilter)
+        
+        // Use recursive function to get all descendants (children, grandchildren, etc.)
+        const { data: descendants, error: descendantsError } = await supabaseAdmin
+          .rpc('get_all_descendant_organizations', { parent_org_id: parentOrgFilter })
+        
+        if (descendantsError) {
+          console.error('Error fetching descendant organizations:', descendantsError)
+          throw new DatabaseError(`Failed to fetch descendant organizations: ${descendantsError.message}`)
+        }
+        
+        // Get counts for each descendant organization
+        // deno-lint-ignore no-explicit-any
+        const enrichedDescendants = await Promise.all(
+          (descendants || []).map(async (org: any) => {
+            // Get user count
+            const { count: userCount } = await supabaseAdmin
+              .from('organization_members')
+              .select('id', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
+            
+            // Get device count
+            const { count: deviceCount } = await supabaseAdmin
+              .from('devices')
+              .select('id', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
+            
+            // Get unresolved alert count
+            const { count: alertCount } = await supabaseAdmin
+              .from('alerts')
+              .select('id', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
+              .eq('is_resolved', false)
+
+            return {
+              id: org.id,
+              name: org.name,
+              slug: org.slug,
+              description: org.description,
+              subscriptionTier: org.subscription_tier,
+              isActive: org.is_active,
+              settings: org.settings || {},
+              parentOrganizationId: org.parent_organization_id || null,
+              createdBy: org.created_by || null,
+              createdAt: org.created_at,
+              updatedAt: org.updated_at,
+              depth: org.depth || 1,
+              userCount: userCount || 0,
+              deviceCount: deviceCount || 0,
+              alertCount: alertCount || 0,
+            }
+          })
+        )
+        
+        return createSuccessResponse({ 
+          organizations: enrichedDescendants,
+          count: enrichedDescendants.length,
+          userRole: userContext.role,
+          isSuperAdmin: userContext.isSuperAdmin
+        })
       }
       
       // If not super admin, get all orgs the user is a member of
