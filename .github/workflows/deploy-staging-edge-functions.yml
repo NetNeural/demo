@@ -22,6 +22,7 @@ on:
           - thresholds
           - sensor-threshold-evaluator
           - send-alert-email
+          - send-alert-notifications
           - ai-insights
           - transfer-device
           - feedback-submit
@@ -63,6 +64,7 @@ jobs:
             npx supabase functions deploy thresholds --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy sensor-threshold-evaluator --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy send-alert-email --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy send-alert-notifications --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy ai-insights --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy transfer-device --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy feedback-submit --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
