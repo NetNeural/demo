@@ -123,7 +123,7 @@ export default function OrganizationsPage() {
             </TabsTrigger>
           )}
           
-          {(isSuperAdmin || (isReseller && (isOwner || isAdmin))) && (
+          {(isSuperAdmin || isOwner || isAdmin) && (
             <TabsTrigger value="customers" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
               <span>Customer Orgs</span>
@@ -160,7 +160,7 @@ export default function OrganizationsPage() {
           </TabsContent>
         )}
 
-        {(isSuperAdmin || (isReseller && (isOwner || isAdmin))) && (
+        {(isSuperAdmin || isOwner || isAdmin) && (
           <TabsContent value="customers">
             <ChildOrganizationsTab organizationId={currentOrganization.id} />
           </TabsContent>

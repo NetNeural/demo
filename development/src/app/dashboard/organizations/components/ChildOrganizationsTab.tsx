@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   Plus,
@@ -59,8 +60,9 @@ interface ChildOrganizationsTabProps {
 
 export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabProps) {
   const { fmt } = useDateFormatter();
-  const { currentOrganization, refreshOrganizations } = useOrganization();
+  const { currentOrganization, refreshOrganizations, switchOrganization } = useOrganization();
   const { user } = useUser();
+  const router = useRouter();
   const [childOrgs, setChildOrgs] = useState<ChildOrg[]>([]);
   const [agreement, setAgreement] = useState<ResellerAgreement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +70,7 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
   const isSuperAdmin = user?.isSuperAdmin || false;
+  const canManageOrgs = isSuperAdmin; // Only super admins can switch to and manage other organizations
 
   const isMainOrg = !currentOrganization?.parent_organization_id;
 
@@ -126,6 +129,13 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
     await fetchChildOrgs();
     await refreshOrganizations();
   }, [fetchChildOrgs, refreshOrganizations]);
+
+  const handleManageOrg = useCallback((orgId: string) => {
+    if (canManageOrgs) {
+      switchOrganization(orgId);
+      router.push('/dashboard');
+    }
+  }, [canManageOrgs, switchOrganization, router]);
 
   const getTierBadge = (tier: string) => {
     const colors: Record<string, string> = {
@@ -392,10 +402,18 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-2 border-t text-xs text-muted-foreground">
                     <span>Created {fmt.dateOnly(org.createdAt)}</span>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs" title="Switch to this org to manage it">
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Manage
-                    </Button>
+                    {canManageOrgs && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-xs" 
+                        onClick={() => handleManageOrg(org.id)}
+                        title="Switch to this org to manage it"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Manage
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -463,10 +481,18 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
                         <td className="p-3 text-center font-medium">{org.alertCount || 0}</td>
                         <td className="p-3 text-muted-foreground">{fmt.dateOnly(org.createdAt)}</td>
                         <td className="p-3 text-right">
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" title="Switch to this org to manage it">
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            Manage
-                          </Button>
+                          {canManageOrgs && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 text-xs" 
+                              onClick={() => handleManageOrg(org.id)}
+                              title="Switch to this org to manage it"
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Manage
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
