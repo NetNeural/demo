@@ -78,7 +78,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
         <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="nav-header">
-            <h1 className="nav-brand">{currentOrganization?.name || 'NetNeural'} IoT Platform</h1>
+            <h1 className="nav-brand">
+              {currentOrganization?.name === 'NetNeural' || !currentOrganization 
+                ? 'Sentinel by NetNeural' 
+                : `Sentinel for ${currentOrganization.name}`}
+            </h1>
           </div>
           
           {/* Organization Switcher */}

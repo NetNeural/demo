@@ -90,7 +90,9 @@ export default function DashboardShell({
               size="lg"
             />
             <h1 className="text-xl font-bold text-gray-900">
-              {currentOrganization?.name || 'NetNeural'} IoT Platform
+              {currentOrganization?.name === 'NetNeural' || !currentOrganization 
+                ? 'Sentinel by NetNeural' 
+                : `Sentinel for ${currentOrganization.name}`}
             </h1>
           </div>
         </div>
@@ -163,7 +165,9 @@ export default function DashboardShell({
                 size="md"
               />
               <h1 className="text-xl font-semibold text-gray-900">
-                {currentOrganization?.name || 'NetNeural'} IoT Platform
+                {currentOrganization?.name === 'NetNeural' || !currentOrganization 
+                  ? 'Sentinel by NetNeural' 
+                  : `Sentinel for ${currentOrganization.name}`}
               </h1>
             </div>
             <div className="flex items-center gap-2">

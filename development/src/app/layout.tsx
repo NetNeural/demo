@@ -9,7 +9,7 @@ import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'NetNeural IoT Platform',
+  title: 'Sentinel by NetNeural',
   description: 'Enterprise IoT Device Management and Monitoring Platform',
   keywords: ['IoT', 'device management', 'monitoring', 'sensors', 'Golioth'],
   authors: [{ name: 'NetNeural Team' }],

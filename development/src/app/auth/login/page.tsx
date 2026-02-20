@@ -340,7 +340,7 @@ function LoginForm() {
             {orgName}
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            {branding ? 'IoT Management Platform' : 'Enterprise IoT Management Platform'}
+            {branding ? 'Sentinel' : 'Sentinel by NetNeural'}
           </p>
         </div>
 
