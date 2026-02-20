@@ -14,7 +14,7 @@ import {
   Plus
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageHeader } from '@/components/ui/page-header';
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -54,10 +54,10 @@ export default function OrganizationsPage() {
   if (!currentOrganization) {
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        <PageHeader
-          title="Organization Management"
-          description="Select an organization from the sidebar to manage"
-        />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Organization Management</h2>
+          <p className="text-muted-foreground">Select an organization from the sidebar to manage</p>
+        </div>
         <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg">
           <div className="text-center space-y-4">
             <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -73,26 +73,35 @@ export default function OrganizationsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      <PageHeader
-        title={`${currentOrganization.name} Organization Management`}
-        description={`Configure ${currentOrganization.name} - members, devices, integrations, and settings. Switch organizations using the sidebar.`}
-        action={
-          (isSuperAdmin || canCreateChildOrgs) ? (
-            <div className="flex items-center gap-2">
-              {isReseller && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Crown className="w-3 h-3" />
-                  Reseller
-                </Badge>
-              )}
-              <Button size="sm" onClick={() => setShowCreateOrgDialog(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                {canCreateChildOrgs ? 'Create Customer Org' : 'Create Organization'}
-              </Button>
-            </div>
-          ) : undefined
-        }
-      />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{currentOrganization.name} Organization Management</h2>
+            <p className="text-muted-foreground">
+              Configure {currentOrganization.name} - members, devices, integrations, and settings. Switch organizations using the sidebar.
+            </p>
+          </div>
+        </div>
+        {(isSuperAdmin || canCreateChildOrgs) && (
+          <div className="flex items-center gap-2">
+            {isReseller && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Crown className="w-3 h-3" />
+                Reseller
+              </Badge>
+            )}
+            <Button size="sm" onClick={() => setShowCreateOrgDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              {canCreateChildOrgs ? 'Create Customer Org' : 'Create Organization'}
+            </Button>
+          </div>
+        )}
+      </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="w-full justify-start">

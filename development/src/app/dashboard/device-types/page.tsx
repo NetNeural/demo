@@ -12,7 +12,7 @@ import { useState } from 'react'
 import { Suspense } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { PageHeader } from '@/components/ui/page-header'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Button } from '@/components/ui/button'
 import { DeviceTypesList } from '@/components/device-types/DeviceTypesList'
 import { DeviceTypeFormDialog } from '@/components/device-types/DeviceTypeFormDialog'
@@ -47,16 +47,28 @@ export default function DeviceTypesPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      <PageHeader
-        title="Device Types"
-        description="Manage device type configurations, normal operating ranges, and alert thresholds"
-        action={
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Device Type
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {currentOrganization?.name ? `${currentOrganization.name} Device Types` : 'Device Types'}
+            </h2>
+            <p className="text-muted-foreground">
+              Manage device type configurations, normal operating ranges, and alert thresholds
+            </p>
+          </div>
+        </div>
+        
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Device Type
+        </Button>
+      </div>
 
       <Suspense fallback={<LoadingSpinner />}>
         <DeviceTypesList />

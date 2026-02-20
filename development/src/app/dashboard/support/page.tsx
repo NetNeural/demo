@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users, Wrench, Activity, Settings2, FlaskConical, BookOpen, Shield } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PageHeader } from '@/components/ui/page-header'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -65,10 +65,19 @@ export default function SupportPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      <PageHeader
-        title={orgName ? `${orgName} Support & Administration` : 'Support & Administration'}
-        description={`Diagnostics, customer tools, and troubleshooting for ${orgName}`}
-      />
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || orgName || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{orgName ? `${orgName} Support & Administration` : 'Support & Administration'}</h2>
+          <p className="text-muted-foreground">
+            Diagnostics, customer tools, and troubleshooting for {orgName}
+          </p>
+        </div>
+      </div>
 
       <Tabs defaultValue="customer-assistance" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="w-full justify-start flex-wrap">
