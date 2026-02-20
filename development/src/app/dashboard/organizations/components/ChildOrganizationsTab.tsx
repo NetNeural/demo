@@ -78,20 +78,31 @@ export function ChildOrganizationsTab({ organizationId }: ChildOrganizationsTabP
     try {
       setIsLoading(true);
 
+      console.log('[ChildOrgs] Fetching child orgs for:', organizationId);
+      
       // Always use listChildren to get descendants (including sub-organizations)
       // This uses the recursive function to get the entire hierarchy
       const response = await edgeFunctions.organizations.listChildren(organizationId);
+      
+      console.log('[ChildOrgs] API response:', response);
+      
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const orgs = (response.data as any).organizations || [];
         
+        console.log('[ChildOrgs] Found organizations:', orgs.length, orgs);
+        
         // Filter out the parent organization from the list (shouldn't be a child of itself)
         const filtered = orgs.filter((org: ChildOrg) => org.id !== organizationId);
         
+        console.log('[ChildOrgs] After filtering:', filtered.length, filtered);
+        
         setChildOrgs(filtered);
+      } else {
+        console.error('[ChildOrgs] API error:', response.error);
       }
     } catch (err) {
-      console.error('Failed to fetch child organizations:', err);
+      console.error('[ChildOrgs] Failed to fetch child organizations:', err);
     } finally {
       setIsLoading(false);
     }
