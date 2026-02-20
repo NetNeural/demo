@@ -325,6 +325,16 @@ export function DevicesList() {
     return () => clearInterval(intervalId)
   }, [autoRefresh, handleRefresh])
 
+  // Listen for device-added events from AddDeviceDialog
+  useEffect(() => {
+    const handleDeviceAdded = () => {
+      handleRefresh()
+    }
+
+    window.addEventListener('device-added', handleDeviceAdded)
+    return () => window.removeEventListener('device-added', handleDeviceAdded)
+  }, [handleRefresh])
+
   useEffect(() => {
     fetchDevices()
     fetchLocations()
