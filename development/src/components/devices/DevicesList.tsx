@@ -710,60 +710,63 @@ export function DevicesList() {
                 )}
                 {isExporting ? `Exporting... ${progress.progress}%` : 'Export CSV'}
               </Button>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="auto-refresh"
-                  checked={autoRefresh}
-                  onCheckedChange={setAutoRefresh}
-                />
-                <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
-                  Auto-refresh (30s)
-                </Label>
-              </div>
-              <TemperatureToggle
-                useFahrenheit={useFahrenheit}
-                onToggle={(value) => {
-                  setUseFahrenheit(value)
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('temperatureUnit', value ? 'F' : 'C')
-                  }
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setFilterStatus('all')
-                  setFilterType('all')
-                  setFilterLocation('all')
-                  setSortBy('name')
-                  setSortOrder('asc')
-                }}
-              >
-                Clear Filters
-              </Button>
             </div>
-          </div>
-          
-          {/* View Mode Toggle */}
-          <div className="mt-4 flex items-center justify-end space-x-2">
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-            >
-              <Grid3x3 className="h-4 w-4 mr-1" />
-              Cards
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <Table2 className="h-4 w-4 mr-1" />
-              Table
-            </Button>
-          </div>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="auto-refresh"
+                    checked={autoRefresh}
+                    onCheckedChange={setAutoRefresh}
+                  />
+                  <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
+                    Auto-refresh (30s)
+                  </Label>
+                </div>
+                <TemperatureToggle
+                  useFahrenheit={useFahrenheit}
+                  onToggle={(value) => {
+                    setUseFahrenheit(value)
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('temperatureUnit', value ? 'F' : 'C')
+                    }
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterStatus('all')
+                    setFilterType('all')
+                    setFilterLocation('all')
+                    setSortBy('name')
+                    setSortOrder('asc')
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+              
+              {/* View Mode Toggle */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                >
+                  <Grid3x3 className="h-4 w-4 mr-1" />
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                >
+                  <Table2 className="h-4 w-4 mr-1" />
+                  Table
+                </Button>
+              </div>
+            </div>
         </CardContent>
       </Card>
       

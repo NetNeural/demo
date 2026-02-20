@@ -325,29 +325,9 @@ export function DeviceTypesList() {
 
   return (
     <>
-      {/* View Mode Toggle + Sort/Filter Controls */}
+      {/* Sort/Filter Controls + View Mode Toggle */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between gap-4">
-          {/* View Mode Toggle */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-            >
-              <Grid3x3 className="h-4 w-4 mr-1" />
-              Cards
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <Table2 className="h-4 w-4 mr-1" />
-              Table
-            </Button>
-          </div>
-
           {/* Sort Controls */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Sort by:</span>
@@ -404,6 +384,26 @@ export function DeviceTypesList() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <Table2 className="h-4 w-4 mr-1" />
+              Table
+            </Button>
           </div>
         </div>
 
