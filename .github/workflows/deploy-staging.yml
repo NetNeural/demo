@@ -63,44 +63,16 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install --legacy-peer-deps --ignore-scripts
 
-      # ⚠️ Supabase deployment steps - TEMPORARILY DISABLED
-      # Missing required GitHub Secrets: STAGING_SUPABASE_PROJECT_ID, STAGING_SUPABASE_ACCESS_TOKEN
-      # To enable automated migrations:
-      #   1. Generate Supabase Access Token: https://supabase.com/dashboard/account/tokens
-      #   2. Add secrets: gh secret set STAGING_SUPABASE_PROJECT_ID -b "atgbmxicqikmapfqouco"
-      #   3. Add secrets: gh secret set STAGING_SUPABASE_ACCESS_TOKEN -b "sbp_..."
-      #   4. Uncomment steps below
-      #
-      # Until then, apply migrations manually via SQL Editor:
-      #   https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql
-      #   See: /development/MANUAL_APPLY_TEST_INTEGRATIONS.sql
-      
-      # - name: 🏗️ Setup Supabase CLI
-      #   uses: supabase/setup-cli@v1
-      #   with:
-      #     version: latest
-      #
-      # - name: 🔗 Link to Staging Supabase
-      #   run: npx supabase link --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
-      #   env:
-      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-      #
-      # - name: 📤 Push database migrations
-      #   run: npx supabase db push
-      #   env:
-      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-      #
-      # - name: 🚀 Deploy edge functions
-      #   run: npx supabase functions deploy --no-verify-jwt
-      #   env:
-      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-      #   continue-on-error: true  # Don't fail deployment if edge functions have issues
-      #
-      # - name: 📝 Generate TypeScript types
-      #   run: npx supabase gen types typescript --linked > src/lib/database.types.ts
-      #   env:
-      #     SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
-      #   continue-on-error: true  # Types are already committed, this is optional
+      - name: 🏗️ Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🚀 Deploy edge functions
+        run: npx supabase functions deploy --project-ref atgbmxicqikmapfqouco --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true  # Don't fail deployment if edge functions have issues
 
       # Type check skipped - types are generated and committed manually
       # - name: 🔍 Type check
