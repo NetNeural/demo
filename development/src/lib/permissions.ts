@@ -188,6 +188,28 @@ export function hasMinimumRole(
 }
 
 // Support Page Access
-export function canAccessSupport(user: UserProfile | null): boolean {
-  return hasMinimumRole(user, 'org_admin')
+// Admins and owners can access support for their organization
+// Super admins can access support for any organization
+export function canAccessSupport(
+  user: UserProfile | null,
+  organizationRole?: string | null
+): boolean {
+  if (!user) return false
+
+  // Super admins always have access
+  if (user.isSuperAdmin || user.role === 'super_admin') {
+    return true
+  }
+
+  // Check global role (org_admin or org_owner)
+  if (hasMinimumRole(user, 'org_admin')) {
+    return true
+  }
+
+  // Check organization-specific role (admin or owner)
+  if (organizationRole) {
+    return ['admin', 'owner'].includes(organizationRole)
+  }
+
+  return false
 }

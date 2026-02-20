@@ -69,7 +69,7 @@ const tabs = [
 
 export default function SupportPage() {
   const { user, loading: userLoading } = useUser()
-  const { currentOrganization } = useOrganization()
+  const { currentOrganization, userRole } = useOrganization()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -98,11 +98,11 @@ export default function SupportPage() {
   }
 
   useEffect(() => {
-    if (!userLoading && !canAccessSupport(user)) {
-      toast.error('You do not have permission to access the Support page')
+    if (!userLoading && !canAccessSupport(user, userRole)) {
+      toast.error('You do not have permission to access the Support page. Admin or Owner role required.')
       router.replace('/dashboard')
     }
-  }, [user, userLoading, router])
+  }, [user, userRole, userLoading, router])
 
   if (userLoading) {
     return (
@@ -115,7 +115,7 @@ export default function SupportPage() {
     )
   }
 
-  if (!canAccessSupport(user)) {
+  if (!canAccessSupport(user, userRole)) {
     return null
   }
 

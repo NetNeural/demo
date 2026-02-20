@@ -121,7 +121,7 @@ const STATUS_OPTIONS = [
 const ITEMS_PER_PAGE = 100
 
 export function AuditLogReport() {
-  const { currentOrganization } = useOrganization()
+  const { currentOrganization, userRole } = useOrganization()
   const { user: currentUser } = useUser()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -153,13 +153,17 @@ export function AuditLogReport() {
   // Expanded row for viewing changes
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
-  // Check if user is admin
+  // Check if user is admin - check both global and organization roles
   const isAdmin = useMemo(() => {
     if (!currentUser) return false
-    return (
-      currentUser.role === 'super_admin' || currentUser.role === 'org_owner'
-    )
-  }, [currentUser])
+    // Super admin always has access
+    if (currentUser.role === 'super_admin') return true
+    // Check global org owner/admin roles
+    if (currentUser.role === 'org_owner' || currentUser.role === 'org_admin') return true
+    // Check organization-specific admin/owner roles
+    if (userRole && ['admin', 'owner'].includes(userRole)) return true
+    return false
+  }, [currentUser, userRole])
 
   // Fetch users for filter dropdown
   const fetchUsers = useCallback(async () => {
@@ -504,7 +508,7 @@ export function AuditLogReport() {
             </div>
             <CardDescription>
               Only administrators can view audit logs. This feature is
-              restricted to super admins and organization owners.
+              restricted to super admins, organization owners, and organization admins.
             </CardDescription>
           </CardHeader>
         </Card>

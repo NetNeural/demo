@@ -34,7 +34,7 @@ import { canAccessSupport } from '@/lib/permissions'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
-  const { currentOrganization } = useOrganization()
+  const { currentOrganization, userRole } = useOrganization()
   const supabase = createClient()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -77,7 +77,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: Building2,
     },
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
-    ...(canAccessSupport(user)
+    ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]
       : []),
     { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
