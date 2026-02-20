@@ -41,6 +41,15 @@ export default function DashboardShell({
   const { currentOrganization } = useOrganization()
 
   const isSuperAdmin = profile?.role === 'super_admin'
+  
+  // Debug logging
+  console.log('🔍 DashboardShell Debug:', {
+    hasUser: !!user,
+    hasProfile: !!profile,
+    profileRole: profile?.role,
+    isSuperAdmin,
+    userEmail: user?.email
+  })
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -149,7 +158,7 @@ export default function DashboardShell({
       <main className="ml-0 lg:ml-[280px] min-h-screen bg-gray-50 transition-[margin-left] duration-300 ease-in-out w-full">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <Button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               variant="ghost"
@@ -158,7 +167,7 @@ export default function DashboardShell({
             >
               ☰
             </Button>
-            <div className="hidden lg:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3 flex-1">
               <OrganizationLogo
                 settings={currentOrganization?.settings}
                 name={currentOrganization?.name || 'NetNeural'}
@@ -170,14 +179,12 @@ export default function DashboardShell({
                   : `Sentinel for ${currentOrganization.name}`}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <Badge variant="destructive" className="flex items-center gap-1">
-                  <Shield className="w-3 h-3" />
-                  Super Admin — Cross-Org Access
-                </Badge>
-              )}
-            </div>
+            {isSuperAdmin && (
+              <Badge variant="destructive" className="flex items-center gap-1 flex-shrink-0">
+                <Shield className="w-3 h-3" />
+                <span className="hidden sm:inline">Super Admin</span>
+              </Badge>
+            )}
           </div>
         </header>
 
