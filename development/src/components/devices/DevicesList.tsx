@@ -4,6 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -25,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor, FlaskConical } from 'lucide-react'
+import { Loader2, ArrowUpDown, Thermometer, Droplets, Activity, RefreshCw, ChevronLeft, ChevronRight, Download, Monitor, FlaskConical, Table2, Grid3x3 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase/client'
@@ -189,6 +197,9 @@ export function DevicesList() {
   
   // Test device states
   const [testDeviceDialogOpen, setTestDeviceDialogOpen] = useState(false)
+  
+  // View mode state
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const fetchDevices = useCallback(async (isManualRefresh = false) => {
     if (!currentOrganization) {
@@ -733,6 +744,26 @@ export function DevicesList() {
               </Button>
             </div>
           </div>
+          
+          {/* View Mode Toggle */}
+          <div className="mt-4 flex items-center justify-end space-x-2">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <Table2 className="h-4 w-4 mr-1" />
+              Table
+            </Button>
+          </div>
         </CardContent>
       </Card>
       
@@ -788,9 +819,11 @@ export function DevicesList() {
         </Card>
       )}
       
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {paginatedDevices.map((device) => (
-          <Card key={device.id} className="hover:shadow-md transition-shadow">
+      {/* Devices Display - Cards or Table */}
+      {viewMode === 'cards' ? (
+        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+          {paginatedDevices.map((device) => (
+            <Card key={device.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{device.name}</CardTitle>
@@ -955,6 +988,100 @@ export function DevicesList() {
           </Card>
         ))}
       </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Device</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Last Seen</TableHead>
+                  <TableHead>Battery</TableHead>
+                  <TableHead>Signal</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedDevices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{device.name}</span>
+                        {device.is_test_device && (
+                          <Badge className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/30">
+                            Test
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const typeName = device.device_type || device.type || ''
+                          const imgUrl = deviceTypeImages[typeName.toLowerCase()]
+                          if (imgUrl) {
+                            return (
+                              <img
+                                src={imgUrl}
+                                alt={typeName}
+                                className="w-5 h-5 object-contain rounded-sm"
+                              />
+                            )
+                          }
+                          return <Monitor className="w-4 h-4 text-muted-foreground/60" />
+                        })()}
+                        <span className="text-sm">{device.type}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{getStatusIcon(device.status)}</span>
+                        <span className={`text-sm font-medium ${
+                          device.status === 'online' ? 'text-green-600 dark:text-green-400' :
+                          device.status === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                          device.status === 'error' ? 'text-red-600 dark:text-red-400' :
+                          'text-muted-foreground'
+                        }`}>
+                          {device.status.toUpperCase()}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{device.location}</TableCell>
+                    <TableCell className="text-sm">{device.lastSeen}</TableCell>
+                    <TableCell className="text-sm">
+                      {device.batteryLevel != null ? `${device.batteryLevel}%` : '—'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {device.signal_strength != null ? `${device.signal_strength} dBm` : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openDeviceDetailsPage(device.id)}
+                        >
+                          Details
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/device-details?id=${device.id}`)}
+                        >
+                          Data
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
       
       {devices.length === 0 && !loading && (
         <Card>
