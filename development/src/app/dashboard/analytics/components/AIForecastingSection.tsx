@@ -123,14 +123,24 @@ export function AIForecastingSection({ organizationId, timeRange }: AIForecastin
           .eq('organization_id', organizationId),
       ]);
 
-      if (telResult.data) setTelemetryData(telResult.data as TelemetryRow[]);
+      // Handle telemetry table not existing (400 error) gracefully
+      if (telResult.error) {
+        console.warn('[AI Forecasting] Telemetry query failed:', telResult.error.message, telResult.error.code);
+        // Continue with empty data rather than breaking the page
+        setTelemetryData([]);
+      } else if (telResult.data) {
+        setTelemetryData(telResult.data as TelemetryRow[]);
+      }
+
       if (devResult.data) {
         const names: Record<string, string> = {};
         for (const d of devResult.data) names[d.id] = d.name;
         setDeviceNames(names);
       }
     } catch (err) {
-      console.error('[AI Forecasting] Error:', err);
+      console.error('[AI Forecasting] Unexpected error:', err);
+      // Set empty data to prevent further errors
+      setTelemetryData([]);
     } finally {
       setLoading(false);
     }
