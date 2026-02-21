@@ -235,7 +235,14 @@ export function SensorOverviewCard({
                 }
               }}
             />
-            <Badge variant={statusBadge.variant} className={statusBadge.variant === 'default' ? 'text-white' : ''}>
+            <Badge 
+              variant={statusBadge.variant} 
+              className={
+                device.status === 'online' 
+                  ? 'bg-slate-900 text-white hover:bg-slate-800' 
+                  : ''
+              }
+            >
               {statusBadge.icon} {statusBadge.label}
             </Badge>
           </div>
