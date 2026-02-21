@@ -13,7 +13,7 @@ export interface SMSEnabledUser {
   id: string
   full_name: string | null
   email: string
-  phone_number: string
+  phone_number: string | null
   phone_number_secondary?: string | null
   role: string | null
 }
