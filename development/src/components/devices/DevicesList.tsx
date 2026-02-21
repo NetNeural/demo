@@ -911,7 +911,13 @@ export function DevicesList() {
                   ? 'bg-[#D5F7D8]'
                   : device.status === 'offline'
                     ? 'bg-[#D6D6D6]'
-                    : ''
+                    : device.status === 'warning'
+                      ? 'bg-[#F29DAC]'
+                      : device.status === 'error'
+                        ? 'bg-[#FFE8D1]'
+                        : device.status === 'maintenance'
+                          ? 'bg-[#FFF9BB]'
+                          : ''
               }`}
             >
               <CardHeader className="pb-3">
