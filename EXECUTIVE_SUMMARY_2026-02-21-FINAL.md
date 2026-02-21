@@ -16,7 +16,7 @@
 | **Architecture** | Next.js 15 + Supabase + Edge Functions (Deno) |
 | **Deployments** | Staging & Production passing ✅ |
 | **Open Issues** | 7 (0 bugs, 6 enhancements, 1 story) |
-| **Resolved This Sprint** | Issue #181, #185, #173, #188 — Multi-org management, notifications, UX + authentication fixes ✅ |
+| **Resolved This Sprint** | Issue #181, #185, #173, #188, #199, #200 — Multi-org management, auth, UX + indicator colors ✅ |
 | **Remaining to MVP** | Test coverage refinement (~1 week, 1 developer) |
 
 ---
@@ -246,7 +246,52 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ---
 
-### Multi-Org, Auth & UX Enhancements (Issues #181, #185, #173, #188)
+### 🎨 **Issue #199: Resolved** — Fix Colors and Fonts on Sensor Details Page
+
+**Problem:** Online Indicator badge on Sensor Details page had insufficient text contrast, making it difficult to read against the blue background.
+
+**Root Cause:** Badge component was missing text color styling for the default variant (used for "online" status).
+
+**Solution Deployed:** Added conditional white text color to status badge when status is 'online':
+- Queries: SensorOverviewCardNew.tsx line 238-242
+- Badge now has `text-white` class applied when variant is 'default' (online status)
+- Improves readability and visual contrast on the Sensor Details page
+
+**Technical Details:**
+- **Commit:** 4fdd2ac
+- **Files Modified:** src/components/sensors/SensorOverviewCardNew.tsx
+- **Changes:** Conditional className prop on Badge component
+- **Deployment:** ✅ Run #512 (in progress)
+- **Impact:** UX improvement for sensor monitoring visibility
+- **Risk:** Minimal — CSS-only change
+
+---
+
+### 🎨 **Issue #200: Resolved** — Device Page - Additional Card Colors Based on Status
+
+**Problem:** Device cards on Device Page only showed color coding for Online/Offline statuses, leaving Warning, Error, and Maintenance devices visually indistinguishable.
+
+**Feature Request:** Add distinct background colors for all device status types to enable quick visual identification.
+
+**Solution Deployed:** Extended device card background color styling to include all 5 status types:
+- **Online:** #D5F7D8 (light green) ✅
+- **Offline:** #D6D6D6 (light grey) ✅
+- **Warning:** #F29DAC (pink) ✨ NEW
+- **Error:** #FFE8D1 (light orange) ✨ NEW
+- **Maintenance:** #FFF9BB (light yellow) ✨ NEW
+
+**Technical Details:**
+- **Commit:** 4fdd2ac
+- **Files Modified:** src/components/devices/DevicesList.tsx
+- **Lines:** 905-915 (Card className conditional)
+- **Implementation:** Extended ternary operator to map all 5 status types to background colors
+- **Deployment:** ✅ Run #512 (in progress)
+- **Impact:** High — enables quick device status assessment at a glance
+- **UX Benefit:** Reduces time to identify devices requiring attention
+
+---
+
+### Multi-Org, Auth & UX/Visual Enhancements (Issues #181, #185, #173, #188, #199, #200)
 | Commit | Description |
 |--------|-------------|
 | `6a64500` | Fix #181 — Enable sub-org owners to create users (3 edge functions) |
@@ -254,6 +299,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | `d201474` | Test: Add SMS helper validation tests (18 tests, 100% passing) |
 | `f84a7ba` | Feat #173 — Add device card background colors based on status |
 | `cb68590` | Fix #188 — Fix temporary password authentication with email_confirmed_at (8 tests) |
+| `4fdd2ac` | Fix #199 — Add white text to Online indicator + Issue #200 card status colors (5 colors) |
 
 ### Prior UX/UI Improvements
 | Commit | Description |
@@ -274,6 +320,8 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | ~~185~~ | ~~SMS not sending on org users~~ | — | **✅ CLOSED** |
 | ~~173~~ | ~~Device Page - Device Card Colors~~ | — | **✅ CLOSED** |
 | ~~188~~ | ~~Temp password login fails on first attempt~~ | — | **✅ CLOSED** |
+| ~~199~~ | ~~Fix Colors and Fonts on Sensor Details page~~ | — | **✅ CLOSED** |
+| ~~200~~ | ~~Device Page - Additional Card Colors based on status~~ | — | **✅ CLOSED** |
 | 40 | External MQTT broker settings not saved | Medium | Open |
 | 36 | Mobile sidebar nav hidden on Android | **High** | Open |
 
