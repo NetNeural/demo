@@ -183,7 +183,28 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ---
 
-## 5. Recent Changes (February 21, 2026)
+### 🔧 **Deployment Issue Resolution** — February 21, 2026
+
+**Problem:** Deployments #505, #506, #507, and #508 all failed during build process with TypeScript errors related to SMS notification helpers.
+
+**Root Cause:** Non-existent RPC function call `'get_organization_members'` in SMS helpers was not defined in Supabase database or types.
+
+**Solution Deployed:** 
+- Removed RPC-based queries and implemented direct Supabase table queries
+- Created multi-query approach: primary org members + organization_members table lookups
+- Updated type definitions to match actual database return types
+- Added proper type assertions
+
+**Technical Details:**
+- **Failed Runs:** #505, #506, #507, #508 (all with TypeScript build errors)
+- **Commits:** ed1adb3, 4c7c0fe, 74430cf
+- **Files Modified:** src/lib/helpers/sms-users.ts
+- **Deployment Status:** ✅ Fixed and deployed (Runs #509 and #510 both successful)
+- **Staging URL:** https://demo-stage.netneural.ai (live and responding)
+- **Features Deployed:** SMS notifications for org members, multi-org permission checks, device card colors
+- **Risk:** Low — refactored to use proven query patterns
+
+---
 
 ### Multi-Org & UX Enhancements (Issues #181, #185, #173)
 | Commit | Description |

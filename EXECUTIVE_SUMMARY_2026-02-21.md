@@ -15,8 +15,8 @@
 | **Production Environment** | Live — [demo-stage.netneural.ai](https://demo-stage.netneural.ai) |
 | **Architecture** | Next.js 15 + Supabase + Edge Functions (Deno) |
 | **Deployments** | Staging & Production passing ✅ |
-| **Open Issues** | 9 (1 bug, 7 enhancements, 1 story) |
-| **Resolved This Sprint** | Issue #181 — Sub-org owner user creation ✅ |
+| **Open Issues** | 8 (0 bugs, 7 enhancements, 1 story) |
+| **Resolved This Sprint** | Issue #181, #185 — Multi-org user management ✅ |
 | **Remaining to MVP** | Test coverage refinement (~1 week, 1 developer) |
 
 ---
@@ -56,6 +56,47 @@
 - **Deployment:** ✅ To staging (February 21, 2026)
 - **Testing:** Permission checks validated against organization_members table lookup
 - **Risk:** Low — permission tightening (not relaxation), backward compatible
+
+---
+
+### 🎯 **Issue #185: Resolved** — SMS Notifications for Organization Members
+
+**Problem:** Organization members couldn't receive SMS alerts because the SMS notification system only checked the user's primary `organization_id`, ignoring users who joined secondary organizations via the `organization_members` table.
+
+**Root Cause:** Helper functions `getSMSEnabledUsers()` and `getSMSPhoneNumbers()` only queried `users.organization_id`, preventing SMS delivery to multi-org members.
+
+**Solution Deployed:** Updated SMS notification system to support multi-org setups:
+
+1. **getSMSEnabledUsers()** — Now queries:
+   - Users with org as primary organization_id
+   - Users in organization_members table for the org
+   - Falls back to direct join query if RPC unavailable
+
+2. **getSMSPhoneNumbers()** — Updated to:
+   - Try optimized RPC call first
+   - Fall back to organization_members join query
+   - Return all SMS-enabled phone numbers for org members
+
+**Features (New):**
+- ✅ SMS recipients now include all organization members
+- ✅ Test alerts show correct SMS recipient count
+- ✅ Multi-org members receive SMS from parent/secondary orgs
+- ✅ Phone number deduplication and validation
+
+**Business Impact:**
+- Completes multi-org notification system
+- Enables SMS alerts for all customer users
+- Supports reseller/delegated org scenarios
+
+**Technical Details:**
+- **Commits:** 8342490 (fix), d201474 (tests)
+- **Files Modified:** src/lib/helpers/sms-users.ts
+- **Tests:** 18 unit tests (100% passing)
+  - formatPhoneE164() validation
+  - Phone number deduplication
+  - Multi-org scenario handling
+- **Deployment:** ✅ To staging (February 21, 2026)
+- **Risk:** Low — additive fix, backward compatible
 
 ---
 

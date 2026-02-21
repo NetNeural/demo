@@ -164,7 +164,7 @@ export default createEdgeFunction(
         body: JSON.stringify({
           email: email,
           password: password,
-          email_confirm: true, // Auto-confirm email for admin-created users
+          email_confirmed_at: new Date().toISOString(), // Explicitly confirm email immediately
           user_metadata: {
             full_name: fullName,
           },

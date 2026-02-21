@@ -172,12 +172,15 @@ export default createEdgeFunction(async ({ req }) => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json()
       console.error('❌ Resend API error:', errorData)
+      console.error('Email send failed with status:', emailResponse.status)
+      console.error('Email error response:', errorData)
 
-      // Return the error details instead of throwing
+      // Return meaningful error instead of throwing
+      const errorMessage = errorData.message || `Failed to send email (${emailResponse.status})`
       return createSuccessResponse({
         success: false,
-        message: 'Failed to send email',
-        error: `Resend API error: ${errorData.message || 'Unknown error'}`,
+        message: 'Failed to send password email',
+        error: errorMessage,
         details: errorData,
       })
     }
@@ -196,7 +199,7 @@ export default createEdgeFunction(async ({ req }) => {
     // Return error details instead of throwing
     return createSuccessResponse({
       success: false,
-      message: 'Failed to send email',
+      message: 'Failed to send password email - an unexpected error occurred',
       error: error instanceof Error ? error.message : 'Unknown error',
     })
   }

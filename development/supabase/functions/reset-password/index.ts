@@ -218,8 +218,13 @@ export default createEdgeFunction(
 
         if (!emailResponse.ok) {
           const error = await emailResponse.json()
-          console.error('Failed to send email:', error)
-          // Don't throw - password still reset successfully
+          console.error('Failed to send password reset email:', error)
+          console.log('📧 Email service returned error:', {
+            status: emailResponse.status,
+            message: error.message,
+            details: error,
+          })
+          // Don't throw - password still reset successfully in auth
         } else {
           console.log('✅ Password reset email sent successfully')
         }
