@@ -211,6 +211,29 @@ export default createEdgeFunction(
       try {
         console.log('📧 Sending welcome email with temporary password...')
 
+        // Fetch organization subscription tier if available
+        let subscriptionTier = 'Starter'
+        let deviceLimit = '50'
+        
+        if (targetOrganizationId) {
+          const { data: orgData } = await supabaseAdmin
+            .from('organizations')
+            .select('subscription_tier')
+            .eq('id', targetOrganizationId)
+            .single()
+          
+          if (orgData?.subscription_tier) {
+            subscriptionTier = orgData.subscription_tier.charAt(0).toUpperCase() + orgData.subscription_tier.slice(1)
+            const tierLimits: Record<string, string> = {
+              'free': '5',
+              'starter': '50',
+              'professional': '500',
+              'enterprise': 'Unlimited'
+            }
+            deviceLimit = tierLimits[orgData.subscription_tier] || '50'
+          }
+        }
+
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -231,7 +254,10 @@ export default createEdgeFunction(
                   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
                   .header { background: #1a1a1a; color: white; padding: 20px; text-align: center; }
                   .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin: 20px 0; }
-                  .password-box { background: white; border: 2px solid #e0e0e0; padding: 15px; margin: 20px 0; font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px; }
+                  .password-box { background: white; border: 2px solid #e0e0e0; padding: 15px; margin: 20px 0; font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px; word-break: break-all; user-select: all; }
+                  .copy-hint { font-size: 12px; color: #666; margin-top: 8px; font-style: italic; }
+                  .account-info { background: #e8f4f8; border-left: 4px solid #0066cc; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                  .account-info strong { color: #0066cc; }
                   .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
                   .cta-button { display: inline-block; background: #1a1a1a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
                   .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
@@ -252,6 +278,12 @@ export default createEdgeFunction(
                     <p><strong>Temporary Password:</strong></p>
                     <div class="password-box">
                       ${password}
+                    </div>
+                    <div class="copy-hint">💡 Tip: Click and drag or triple-click to select, then use Ctrl+C (or Cmd+C on Mac) to copy</div>
+                    
+                    <div class="account-info">
+                      <p><strong>Your Account Tier:</strong> ${subscriptionTier}</p>
+                      <p><strong>Device Limit:</strong> Up to ${deviceLimit} devices</p>
                     </div>
                     
                     <div class="warning">

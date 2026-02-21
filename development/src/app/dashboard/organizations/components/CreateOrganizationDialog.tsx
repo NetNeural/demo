@@ -128,17 +128,15 @@ export function CreateOrganizationDialog({
       setError('Slug can only contain lowercase letters, numbers, and hyphens')
       return
     }
-    // Validate owner fields if provided
-    if (ownerEmail || ownerFullName) {
-      if (!ownerEmail || !ownerFullName) {
-        setError('Both owner email and full name are required if creating an owner account')
-        return
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(ownerEmail)) {
-        setError('Invalid email format for owner account')
-        return
-      }
+    // Validate owner fields - now mandatory
+    if (!ownerEmail || !ownerFullName) {
+      setError('Owner email and full name are required')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(ownerEmail)) {
+      setError('Invalid email format for owner account')
+      return
     }
     // Require agreement acceptance for reseller tier
     if (
@@ -307,16 +305,15 @@ export function CreateOrganizationDialog({
           {/* Owner Account Section */}
           <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Owner Account</span>
-              <Badge variant="outline" className="text-xs">Optional</Badge>
+              <span className="text-sm font-semibold">Owner Account *</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Create a new owner account for this organization. If left blank, you will be the owner.
+              Create a new owner account for this organization. An owner account is required to manage the organization.
             </p>
 
             {/* Owner Email */}
             <div className="space-y-2">
-              <Label htmlFor="owner-email">Owner Email</Label>
+              <Label htmlFor="owner-email">Owner Email *</Label>
               <Input
                 id="owner-email"
                 type="email"
@@ -329,7 +326,7 @@ export function CreateOrganizationDialog({
 
             {/* Owner Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="owner-name">Owner Full Name</Label>
+              <Label htmlFor="owner-name">Owner Full Name *</Label>
               <Input
                 id="owner-name"
                 value={ownerFullName}
