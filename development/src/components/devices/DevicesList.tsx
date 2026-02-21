@@ -904,7 +904,16 @@ export function DevicesList() {
       {viewMode === 'cards' ? (
         <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           {paginatedDevices.map((device) => (
-            <Card key={device.id} className="transition-shadow hover:shadow-md">
+            <Card
+              key={device.id}
+              className={`transition-shadow hover:shadow-md ${
+                device.status === 'online'
+                  ? 'bg-[#D5F7D8]'
+                  : device.status === 'offline'
+                    ? 'bg-[#D6D6D6]'
+                    : ''
+              }`}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{device.name}</CardTitle>
