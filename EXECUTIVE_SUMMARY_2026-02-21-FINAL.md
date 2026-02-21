@@ -16,7 +16,7 @@
 | **Architecture** | Next.js 15 + Supabase + Edge Functions (Deno) |
 | **Deployments** | Staging & Production passing ✅ |
 | **Open Issues** | 7 (0 bugs, 6 enhancements, 1 story) |
-| **Resolved This Sprint** | Issue #181, #185, #173 — Multi-org user management + UX enhancements ✅ |
+| **Resolved This Sprint** | Issue #181, #185, #173, #188 — Multi-org management, notifications, UX + authentication fixes ✅ |
 | **Remaining to MVP** | Test coverage refinement (~1 week, 1 developer) |
 
 ---
@@ -128,6 +128,46 @@
 
 ---
 
+### 🎯 **Issue #188: Resolved** — Temporary Password Authentication (Authentication Security)
+
+**Problem:** User amrendra2k1@gmail.com experienced critical authentication failure on first login with temporary password, receiving "invalid email or password. please try again". Subsequent password resend attempts failed with "An unexpected error occurred. Please try again" when attempted on Android device.
+
+**Root Cause:** Supabase Auth user creation was using `email_confirm: true` parameter, which doesn't guarantee immediate email confirmation in Supabase. Users were created but not fully activated in the Auth system, preventing password-based login despite correct credentials being issued and emails sent.
+
+**Solution Deployed:** Three-pronged authentication fix:
+1. **create-user function:** Replaced `email_confirm: true` with `email_confirmed_at: ISO_TIMESTAMP` — explicitly confirms email at user creation time
+2. **reset-password function:** Added detailed email service error logging with status codes for improved debugging
+3. **email-password function:** Enhanced error messages to provide specific, actionable feedback instead of generic errors
+4. **Testing:** Added comprehensive test suite with 8 test cases covering mobile scenarios
+
+**Features (New):**
+- ✅ Users can log in with temporary passwords immediately after account creation (no confirmation email delay)
+- ✅ Android and mobile clients work consistently with temp passwords
+- ✅ Password resend functionality works reliably with clear error messages
+- ✅ Admin password reset flow includes proper error diagnostics
+
+**Business Impact:**
+- Fixes critical onboarding blocker for new users across all clients
+- Enables onboarding without email confirmation step
+- Reduces support tickets from authentication failures
+- Supports reseller/MSP scenarios with delegated user creation
+
+**Technical Details:**
+- **Commit:** cb68590 (fix(auth): Fix temporary password authentication issues - Issue #188)
+- **Files Modified:** 3 Edge Functions (create-user, reset-password, email-password)
+- **Tests Added:** __tests__/edge-functions/create-user-password-auth.test.ts (8 test cases)
+  - Email confirmation flow validation
+  - Mobile authentication consistency
+  - Error handling and recovery paths
+  - Password change requirement enforcement
+  - Email service failure graceful degradation
+- **Deployment:** ✅ To staging (February 21, 2026 - Run #511)
+- **Status:** ✅ Resolved and deployed
+- **Risk:** Low — backward compatible, improves auth reliability
+- **User Impact:** Critical — fixes authentication for all new users
+
+---
+
 ## 4. What Was Delivered (August 2025 → February 2026)
 
 ### Architecture Modernization
@@ -206,13 +246,14 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ---
 
-### Multi-Org & UX Enhancements (Issues #181, #185, #173)
+### Multi-Org, Auth & UX Enhancements (Issues #181, #185, #173, #188)
 | Commit | Description |
 |--------|-------------|
 | `6a64500` | Fix #181 — Enable sub-org owners to create users (3 edge functions) |
 | `8342490` | Fix #185 — Support SMS notifications for org members |
 | `d201474` | Test: Add SMS helper validation tests (18 tests, 100% passing) |
 | `f84a7ba` | Feat #173 — Add device card background colors based on status |
+| `cb68590` | Fix #188 — Fix temporary password authentication with email_confirmed_at (8 tests) |
 
 ### Prior UX/UI Improvements
 | Commit | Description |
@@ -232,6 +273,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | ~~181~~ | ~~Owners in sub orgs cannot create users~~ | — | **✅ CLOSED** |
 | ~~185~~ | ~~SMS not sending on org users~~ | — | **✅ CLOSED** |
 | ~~173~~ | ~~Device Page - Device Card Colors~~ | — | **✅ CLOSED** |
+| ~~188~~ | ~~Temp password login fails on first attempt~~ | — | **✅ CLOSED** |
 | 40 | External MQTT broker settings not saved | Medium | Open |
 | 36 | Mobile sidebar nav hidden on Android | **High** | Open |
 
