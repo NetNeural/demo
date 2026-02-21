@@ -2,10 +2,9 @@
  * Helper functions for managing SMS-enabled users
  * Used by alerts and notification systems to get users who have opted in to SMS
  *
- * NOTE: TypeScript errors will show until the database migration is applied
- * and types are regenerated. Run:
- *   npx supabase db reset --local
- *   npx supabase gen types typescript --local > src/types/supabase.ts
+ * Supports multi-org scenarios:
+ * - Gets SMS-enabled users from primary organization (organization_id)
+ * - Gets SMS-enabled users from secondary orgs via organization_members table
  */
 
 import { createClient } from '@/lib/supabase/client'
@@ -30,54 +29,57 @@ export async function getSMSEnabledUsers(
 ): Promise<SMSEnabledUser[]> {
   const supabase = createClient()
 
-  // Use RPC to get all organization members (including secondary org members)
-  // This includes users where organization_id = organizationId AND users in organization_members table
-  const { data, error } = await supabase
-    .rpc('get_organization_members', { org_id: organizationId })
+  // Get users who are primary members of the organization
+  const { data: primaryMembers, error: primaryError } = await supabase
+    .from('users')
     .select('id, full_name, email, phone_number, phone_number_secondary, role')
+    .eq('organization_id', organizationId)
     .eq('is_active', true)
     .or('phone_sms_enabled.eq.true,phone_secondary_sms_enabled.eq.true')
     .not('phone_number', 'is', null)
 
-  // Fall back to direct query if RPC doesn't exist
-  if (error?.message?.includes('rpc') || error?.message?.includes('not found')) {
-    console.warn(
-      'RPC get_organization_members not found, falling back to direct query'
-    )
-    const { data: directData, error: directError } = await supabase
-      .from('users')
-      .select(`
-        id, 
-        full_name, 
-        email, 
-        phone_number, 
-        phone_number_secondary, 
-        role,
-        organization_members!inner(*)
-      `)
-      .eq('is_active', true)
-      .or('phone_sms_enabled.eq.true,phone_secondary_sms_enabled.eq.true')
-      .not('phone_number', 'is', null)
-      .or(
-        `organization_id.eq.${organizationId},organization_members.organization_id.eq.${organizationId}`
-      )
-
-    if (directError) {
-      console.error('Error fetching SMS-enabled users (fallback):', directError)
-      return []
-    }
-
-    // Type assertion needed until migration is applied and types regenerated
-    return directData as unknown as SMSEnabledUser[]
-  }
-
-  if (error) {
-    console.error('Error fetching SMS-enabled users:', error)
+  if (primaryError) {
+    console.error('Error fetching primary organization members:', primaryError)
     return []
   }
 
-  // Type assertion needed until migration is applied and types regenerated
-  return data as unknown as SMSEnabledUser[]
+  // Get users who are secondary members via organization_members table
+  const { data: orgMembers, error: membersError } = await supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', organizationId)
+
+  if (membersError) {
+    console.error('Error fetching organization members relationships:', membersError)
+    return primaryMembers || []
+  }
+
+  if (!orgMembers || orgMembers.length === 0) {
+    return primaryMembers || []
+  }
+
+  // Get secondary members' details
+  const userIds = orgMembers.map((m) => m.user_id)
+  const { data: secondaryMembers, error: secondaryError } = await supabase
+    .from('users')
+    .select('id, full_name, email, phone_number, phone_number_secondary, role')
+    .in('id', userIds)
+    .eq('is_active', true)
+    .or('phone_sms_enabled.eq.true,phone_secondary_sms_enabled.eq.true')
+    .not('phone_number', 'is', null)
+
+  if (secondaryError) {
+    console.error('Error fetching secondary organization members:', secondaryError)
+    return primaryMembers || []
+  }
+
+  // Combine and deduplicate by user ID
+  const allMembers = [...(primaryMembers || []), ...(secondaryMembers || [])]
+  const uniqueMembers = Array.from(
+    new Map(allMembers.map((m) => [m.id, m])).values()
+  )
+
+  return uniqueMembers
 }
 
 /**
@@ -92,37 +94,28 @@ export async function getSMSPhoneNumbers(
 ): Promise<string[]> {
   const supabase = createClient()
 
-  // Try RPC first for best performance
-  const { data, error } = await supabase
-    .rpc('get_organization_members', { org_id: organizationId })
+  // Get phone numbers for primary organization members
+  const { data: primaryUsers, error: primaryError } = await supabase
+    .from('users')
     .select(
       'phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled'
     )
+    .eq('organization_id', organizationId)
     .eq('is_active', true)
 
-  // Fall back to direct query with organization_members join
-  if (error?.message?.includes('rpc') || error?.message?.includes('not found')) {
-    console.warn(
-      'RPC get_organization_members not found, falling back to direct query'
-    )
-    
-    // Get org members first
-    const { data: members, error: membersError } = await supabase
-      .from('organization_members')
-      .select('user_id')
-      .eq('organization_id', organizationId)
+  if (primaryError) {
+    console.error('Error fetching primary members phone numbers:', primaryError)
+  }
 
-    if (membersError || !members) {
-      console.error('Error fetching organization members:', membersError)
-      return []
-    }
+  // Get phone numbers for secondary organization members
+  const { data: members, error: membersError } = await supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', organizationId)
 
+  let secondaryUsers: any[] = []
+  if (!membersError && members && members.length > 0) {
     const userIds = members.map((m) => m.user_id)
-    if (userIds.length === 0) {
-      return []
-    }
-
-    // Get phone numbers for these users
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select(
@@ -131,32 +124,20 @@ export async function getSMSPhoneNumbers(
       .eq('is_active', true)
       .in('id', userIds)
 
-    if (userError || !userData) {
-      console.error('Error fetching user phone numbers:', userError)
-      return []
+    if (!userError && userData) {
+      secondaryUsers = userData
+    } else if (userError) {
+      console.error('Error fetching secondary members phone numbers:', userError)
     }
-
-    const phoneNumbers: string[] = []
-    userData.forEach((user: any) => {
-      if (user.phone_sms_enabled && user.phone_number) {
-        phoneNumbers.push(user.phone_number)
-      }
-      if (user.phone_secondary_sms_enabled && user.phone_number_secondary) {
-        phoneNumbers.push(user.phone_number_secondary)
-      }
-    })
-    return phoneNumbers
+  } else if (membersError) {
+    console.error('Error fetching organization members:', membersError)
   }
 
-  if (error) {
-    console.error('Error fetching phone numbers:', error)
-    return []
-  }
-
+  // Combine phone numbers from both primary and secondary members
   const phoneNumbers: string[] = []
+  const users = [...(primaryUsers || []), ...secondaryUsers]
 
-  // Type assertion needed until migration is applied
-  data?.forEach((user: any) => {
+  users.forEach((user: any) => {
     if (user.phone_sms_enabled && user.phone_number) {
       phoneNumbers.push(user.phone_number)
     }
