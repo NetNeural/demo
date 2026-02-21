@@ -51,11 +51,11 @@ export async function getSMSEnabledUsers(
 
   if (membersError) {
     console.error('Error fetching organization members relationships:', membersError)
-    return primaryMembers || []
+    return (primaryMembers || []) as SMSEnabledUser[]
   }
 
   if (!orgMembers || orgMembers.length === 0) {
-    return primaryMembers || []
+    return (primaryMembers || []) as SMSEnabledUser[]
   }
 
   // Get secondary members' details
@@ -70,7 +70,7 @@ export async function getSMSEnabledUsers(
 
   if (secondaryError) {
     console.error('Error fetching secondary organization members:', secondaryError)
-    return primaryMembers || []
+    return (primaryMembers || []) as SMSEnabledUser[]
   }
 
   // Combine and deduplicate by user ID
@@ -79,7 +79,7 @@ export async function getSMSEnabledUsers(
     new Map(allMembers.map((m) => [m.id, m])).values()
   )
 
-  return uniqueMembers
+  return uniqueMembers as SMSEnabledUser[]
 }
 
 /**
