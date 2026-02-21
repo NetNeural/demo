@@ -16,7 +16,7 @@
 | **Architecture** | Next.js 15 + Supabase + Edge Functions (Deno) |
 | **Deployments** | Staging & Production passing ✅ |
 | **Open Issues** | 7 (0 bugs, 6 enhancements, 1 story) |
-| **Resolved This Sprint** | Issue #181, #185, #173, #188, #199, #200 — Multi-org management, auth, UX + indicator colors ✅ |
+| **Resolved This Sprint** | Issue #181, #185, #173, #188, #199, #200, #191, #192 — Multi-org management, auth, UX + colors ✅ |
 | **Remaining to MVP** | Test coverage refinement (~1 week, 1 developer) |
 
 ---
@@ -291,7 +291,83 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ---
 
-### Multi-Org, Auth & UX/Visual Enhancements (Issues #181, #185, #173, #188, #199, #200)
+### 🎭 **Issue #191: Resolved** — Make Owner Field Mandatory on Organization Creation
+
+**Problem:** Organization creation form labeled owner email and name fields as "Optional", allowing admins to create organizations without designating an owner account. This could lead to organizations without proper ownership chains and access control issues.
+
+**Root Cause:** Form validation logic treated owner account creation as optional, with conditional checks that only validated if fields were partially filled.
+
+**Solution Deployed:** Made owner account fields mandatory in CreateOrganizationDialog:
+- **Removed:** Optional badge from Owner Account section
+- **Added:** Required field markers (*) to field labels
+- **Enhanced:** Email format validation regex pattern: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+- **Validation Logic:** Both `ownerEmail` and `ownerFullName` now required
+- **UX:** Clear error messages when fields missing: "Owner email and full name are required"
+
+**Business Impact:**
+- ✅ Ensures every organization has proper ownership designation
+- ✅ Strengthens access control and audit trails
+- ✅ Prevents accidental creation of unmanaged organizations
+
+**Technical Details:**
+- **Commit:** b7a015a
+- **Files Modified:** src/app/dashboard/organizations/components/CreateOrganizationDialog.tsx
+- **Lines:** 127-137 (validation), 310-330 (UI labels)
+- **Deployment:** ✅ Run #513 (completed)
+- **Risk:** Low — enhances form requirements, backward compatible
+- **User Impact:** Prevents form submission without owner details, prompts for required information
+
+---
+
+### 📧 **Issue #192: Resolved** — Welcome Email Enhancements (Account Tier & Copy-Friendly Password)
+
+**Problem:** Welcome emails for new accounts lacked contextual information about subscription tier and device limits, and the temporary password was difficult to copy from the email due to CSS limitations.
+
+**Feature Request:** Add subscription tier information to welcome emails and improve password copy functionality.
+
+**Solution Deployed:** Enhanced welcome email template with account tier information and improved password display:
+
+1. **Subscription Tier Information (New):**
+   - Dynamically fetch organization subscription tier
+   - Display tier name and device limit in blue-highlighted box
+   - Auto-map tier data to device limits:
+     - Free → 5 devices
+     - Starter → 50 devices
+     - Professional → 500 devices
+     - Enterprise → Unlimited
+   - Defaults to "Starter" if organization tier not available
+
+2. **Copy-Friendly Password Display (New):**
+   - Enhanced password box with `user-select: all` CSS property
+   - Added visual copy instructions: "💡 Tip: Click and drag or triple-click to select, then use Ctrl+C (or Cmd+C on Mac) to copy"
+   - Improved typography with monospace font and clear spacing
+   - New CSS classes: `.account-info`, `.copy-hint` for better styling
+
+3. **Email Template Updates:**
+   - Fetch organization data from database (edge function optimization)
+   - Display tier/device info in separate account info section
+   - Improved visual hierarchy and user guidance
+
+**User Benefits:**
+- ✅ New users understand their account tier and capabilities immediately
+- ✅ Device limit prevents accidental overage attempts
+- ✅ Password copying is intuitive and mobile-friendly
+- ✅ Improved email readability with structured information boxes
+
+**Technical Details:**
+- **Commit:** b7a015a
+- **Files Modified:** supabase/functions/create-user/index.ts
+- **Lines:** 214-232 (tier fetching), 250-286 (email template with new CSS)
+- **Edge Function:** Queries organizations table for subscription_tier field
+- **Email HTML:** New `.account-info` box with tier/device limit display
+- **Email HTML:** Enhanced `.password-box` with user-select-all and `.copy-hint` instructions
+- **Deployment:** ✅ Run #513 (completed)
+- **Risk:** Low — additive features, graceful fallback to defaults
+- **UX Benefit:** Reduces support questions about account limitations and password copying
+
+---
+
+### Multi-Org, Auth & UX/Visual Enhancements (Issues #181, #185, #173, #188, #199, #200, #191, #192)
 | Commit | Description |
 |--------|-------------|
 | `6a64500` | Fix #181 — Enable sub-org owners to create users (3 edge functions) |
@@ -300,6 +376,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | `f84a7ba` | Feat #173 — Add device card background colors based on status |
 | `cb68590` | Fix #188 — Fix temporary password authentication with email_confirmed_at (8 tests) |
 | `4fdd2ac` | Fix #199 — Add white text to Online indicator + Issue #200 card status colors (5 colors) |
+| `b7a015a` | Fix #191 & #192 — Make owner mandatory + enhance welcome email with tier info + copy UX |
 
 ### Prior UX/UI Improvements
 | Commit | Description |
@@ -322,6 +399,8 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | ~~188~~ | ~~Temp password login fails on first attempt~~ | — | **✅ CLOSED** |
 | ~~199~~ | ~~Fix Colors and Fonts on Sensor Details page~~ | — | **✅ CLOSED** |
 | ~~200~~ | ~~Device Page - Additional Card Colors based on status~~ | — | **✅ CLOSED** |
+| ~~191~~ | ~~Owner field says 'optional' on org creation~~ | — | **✅ CLOSED** |
+| ~~192~~ | ~~Welcome email missing account tier info~~ | — | **✅ CLOSED** |
 | 40 | External MQTT broker settings not saved | Medium | Open |
 | 36 | Mobile sidebar nav hidden on Android | **High** | Open |
 
