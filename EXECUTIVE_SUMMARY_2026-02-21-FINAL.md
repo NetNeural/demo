@@ -15,8 +15,8 @@
 | **Production Environment** | Live — [demo-stage.netneural.ai](https://demo-stage.netneural.ai) |
 | **Architecture** | Next.js 15 + Supabase + Edge Functions (Deno) |
 | **Deployments** | Staging & Production passing ✅ |
-| **Open Issues** | 8 (0 bugs, 7 enhancements, 1 story) |
-| **Resolved This Sprint** | Issue #181, #185 — Multi-org user management ✅ |
+| **Open Issues** | 7 (0 bugs, 6 enhancements, 1 story) |
+| **Resolved This Sprint** | Issue #181, #185, #173 — Multi-org user management + UX enhancements ✅ |
 | **Remaining to MVP** | Test coverage refinement (~1 week, 1 developer) |
 
 ---
@@ -100,6 +100,34 @@
 
 ---
 
+### 🎯 **Issue #173: Resolved** — Device Card Color Coding
+
+**Problem:** Device Page lacked visual differentiation between ONLINE and OFFLINE devices, making it harder to quickly assess device status.
+
+**Feature Request:** Add background colors to device cards based on status while keeping existing status bubble indicators.
+
+**Solution Deployed:** Implemented conditional styling for device cards:
+- **ONLINE devices**: Light green background (#D5F7D8)
+- **OFFLINE devices**: Light grey background (#D6D6D6)
+- Status bubbles remain visible for additional context
+
+**UI/UX Impact:**
+- ✅ Improved visual hierarchy on device cards
+- ✅ Faster status assessment at a glance
+- ✅ Maintains existing status indicator bubbles
+- ✅ Works in both card and table view modes
+- ✅ Responsive across all device sizes
+
+**Technical Details:**
+- **Commits:** f84a7ba
+- **Files Modified:** src/components/devices/DevicesList.tsx
+- **Styling:** Tailwind CSS with hex color values
+- **Deployment:** ✅ To staging (February 21, 2026)
+- **Risk:** Minimal — CSS-only change, no business logic affected
+- **User Impact:** High — improved UX for primary device management view
+
+---
+
 ## 4. What Was Delivered (August 2025 → February 2026)
 
 ### Architecture Modernization
@@ -157,12 +185,13 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ## 5. Recent Changes (February 21, 2026)
 
-### Multi-Org User Management (Issues #181 & #185)
+### Multi-Org & UX Enhancements (Issues #181, #185, #173)
 | Commit | Description |
 |--------|-------------|
 | `6a64500` | Fix #181 — Enable sub-org owners to create users (3 edge functions) |
 | `8342490` | Fix #185 — Support SMS notifications for org members |
 | `d201474` | Test: Add SMS helper validation tests (18 tests, 100% passing) |
+| `f84a7ba` | Feat #173 — Add device card background colors based on status |
 
 ### Prior UX/UI Improvements
 | Commit | Description |
@@ -181,6 +210,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 |---|-------|----------|--------|
 | ~~181~~ | ~~Owners in sub orgs cannot create users~~ | — | **✅ CLOSED** |
 | ~~185~~ | ~~SMS not sending on org users~~ | — | **✅ CLOSED** |
+| ~~173~~ | ~~Device Page - Device Card Colors~~ | — | **✅ CLOSED** |
 | 40 | External MQTT broker settings not saved | Medium | Open |
 | 36 | Mobile sidebar nav hidden on Android | **High** | Open |
 
@@ -290,10 +320,11 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ✅ **Multi-Org User Management Complete** — Sub-org owners can now create/manage users (#181 resolved)  
 ✅ **Multi-Org SMS Notifications Complete** — All org members receive SMS alerts (#185 resolved)  
+✅ **Device Card UX Enhancement** — Color-coded device status for improved visibility (#173 resolved)  
 ✅ **Comprehensive Test Coverage** — 18 new SMS validation tests (100% passing)  
 ✅ **Permission Model Hardened** — Organization-specific roles now properly enforced  
 ✅ **Deployment Stability** — 100% success rate on staging/production pipelines  
-✅ **Zero Open Bugs** — All reported bugs resolved (2 closed this week)
+✅ **Zero Open Bugs** — All reported bugs resolved (3 closed this week)
 
 ---
 
