@@ -5,10 +5,10 @@ name: Run Tests
 on:
   pull_request:
     branches: [ main, staging ]
-    paths: [ 'development/**' ]
+    paths: [ 'development/**', '.github/workflows/**' ]
   push:
     branches: [ main ]
-    paths: [ 'development/**' ]
+    paths: [ 'development/**', '.github/workflows/**' ]
   workflow_dispatch:
 
 # Permissions for the GITHUB_TOKEN
