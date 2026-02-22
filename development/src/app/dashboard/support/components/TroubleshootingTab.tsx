@@ -712,7 +712,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                   try {
                     toast.info('Creating restart request...')
                     
-                    const result = await edgeFunctions.invoke('request-service-restart', {
+                    const result = await edgeFunctions.call('request-service-restart', {
+                      method: 'POST',
                       body: { service: 'mqtt-subscriber' }
                     })
 
