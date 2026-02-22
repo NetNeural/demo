@@ -95,11 +95,29 @@ interface TelemetryData {
 function normalizeTelemetryRecords(records: TelemetryData[]): TelemetryData[] {
   const result: TelemetryData[] = []
   for (const row of records) {
-    if (!row.telemetry || row.telemetry.type != null || row.telemetry.value != null) {
+    if (!row.telemetry) {
       result.push(row)
       continue
     }
-    // JSONB flat format — expand each numeric key into its own row
+    // Already in Golioth typed format: { type: <number>, value: <number>, units: ... }
+    // Only treat as typed if BOTH type AND value are numeric — avoids false positives
+    // when VMark paras contain string fields named 'type' or numeric fields named 'value'
+    if (
+      typeof row.telemetry.type === 'number' &&
+      typeof row.telemetry.value === 'number'
+    ) {
+      result.push(row)
+      continue
+    }
+    // Already normalized (sensor string + value number from a previous pass)
+    if (
+      typeof row.telemetry.sensor === 'string' &&
+      typeof row.telemetry.value === 'number'
+    ) {
+      result.push(row)
+      continue
+    }
+    // Flat JSONB format — expand each numeric key into its own row
     const entries = Object.entries(row.telemetry).filter(
       ([, v]) => typeof v === 'number'
     )

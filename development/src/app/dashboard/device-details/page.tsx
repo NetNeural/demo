@@ -99,7 +99,9 @@ const FLAT_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
 /**
  * Expand flat JSONB telemetry records (e.g. { temperature: 22.7, BatteryIdle: 3593 })
  * into individual per-sensor rows ({ sensor: 'Temperature', value: 22.7, unit: '°C' }).
- * Records already in typed format ({ type, value }) are passed through unchanged.
+ * Records already in Golioth typed format ({ type: <number>, value: <number> }) are
+ * passed through unchanged. Only bypasses expansion when BOTH type AND value are numeric
+ * to avoid false-positives from VMark payloads that may have string 'type' fields.
  */
 function normalizeTelemetryReadings(
   readings: TelemetryReading[]
@@ -107,13 +109,17 @@ function normalizeTelemetryReadings(
   const result: TelemetryReading[] = []
   for (const row of readings) {
     const t = row.telemetry
-    // Already typed/normalized format — pass through
-    if (
-      !t ||
-      t.type != null ||
-      t.value != null ||
-      t.sensor != null
-    ) {
+    if (!t) {
+      result.push(row)
+      continue
+    }
+    // Golioth typed format: numeric type + numeric value — pass through
+    if (typeof t.type === 'number' && typeof t.value === 'number') {
+      result.push(row)
+      continue
+    }
+    // Already normalized (sensor string + value number) — pass through
+    if (typeof t.sensor === 'string' && typeof t.value === 'number') {
       result.push(row)
       continue
     }
