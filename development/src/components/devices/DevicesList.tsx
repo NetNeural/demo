@@ -358,7 +358,6 @@ export function DevicesList() {
         const { data, error: telError } = await supabase
           .from('device_telemetry_history')
           .select('device_id, telemetry, device_timestamp, received_at')
-          .eq('organization_id', currentOrganization.id)
           .in('device_id', deviceIds)
           .order('received_at', { ascending: false })
           .limit(deviceIds.length * 10) // Get multiple readings to capture different sensor types

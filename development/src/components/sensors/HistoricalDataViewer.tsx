@@ -181,7 +181,6 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
           .from('device_telemetry_history')
           .select('*')
           .eq('device_id', device.id)
-          .eq('organization_id', currentOrganization.id)
           .gte('received_at', startTime)
           .order('received_at', { ascending: false })
           .limit(500)
