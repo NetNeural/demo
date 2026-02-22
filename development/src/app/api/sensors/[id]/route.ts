@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Required for Next.js static export - API routes are only used in dynamic mode
+export function generateStaticParams() {
+  return []
+}
+
 // GET /api/sensors/[id]
 // Fetch sensor details and telemetry data for a specific device
 export async function GET(

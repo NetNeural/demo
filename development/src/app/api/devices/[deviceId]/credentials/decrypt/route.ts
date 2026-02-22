@@ -8,6 +8,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Required for Next.js static export - API routes are only used in dynamic mode
+export function generateStaticParams() {
+  return []
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deviceId: string }> }

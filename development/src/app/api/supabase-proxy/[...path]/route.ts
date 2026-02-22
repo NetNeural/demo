@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 
+// Required for Next.js static export - this proxy is only used in dynamic mode
+export function generateStaticParams() {
+  return []
+}
+
 /**
  * Proxy for Supabase API requests in Codespaces
  * Solves CORS issues when browser tries to reach forwarded port 54321
