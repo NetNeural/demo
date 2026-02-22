@@ -10,8 +10,9 @@ import { render, waitFor } from '@testing-library/react'
 const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' }
 const mockOrg = { id: '1', name: 'Test Org' }
 
-jest.mock('@/lib/auth/user-context', () => ({
+jest.mock('@/contexts/UserContext', () => ({
   useUser: () => ({ user: mockUser, loading: false }),
+  UserProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
 jest.mock('@/contexts/OrganizationContext', () => ({

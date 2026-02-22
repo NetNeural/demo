@@ -4,8 +4,7 @@
  * Tests for DevicesHeader, DevicesList, TransferDeviceDialog, DeviceIntegrationManager
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent, waitFor, userEvent } from '../utils/test-utils'
 import { DevicesHeader } from '@/components/devices/DevicesHeader'
 import { DevicesList } from '@/components/devices/DevicesList'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
@@ -14,6 +13,10 @@ import { DeviceIntegrationManager } from '@/components/devices/DeviceIntegration
 // Mock dependencies
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
@@ -25,6 +28,12 @@ jest.mock('@/lib/supabase/client', () => ({
         eq: jest.fn(() => Promise.resolve({ data: null, error: null })),
       })),
     })),
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }),
+      unsubscribe: jest.fn(),
+    })),
+    removeChannel: jest.fn().mockResolvedValue(null),
   })),
 }))
 

@@ -97,6 +97,12 @@ jest.mock('@/lib/supabase/client', () => ({
       builder.upsert = jest.fn().mockResolvedValue({ data: null, error: null })
       return builder
     }),
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }),
+      unsubscribe: jest.fn(),
+    })),
+    removeChannel: jest.fn().mockResolvedValue(null),
   })),
 }))
 
