@@ -38,21 +38,21 @@ export class MessageProcessor {
         return null
       }
 
-      // Check if device exists, create if needed
-      await this.ensureDeviceExists(
+      // Check if device exists, create if needed - get back the UUID
+      const deviceUuid = await this.ensureDeviceExists(
         parsed.deviceId,
         integration.organizationId,
         integration.id
       )
 
-      // Store telemetry data if present
-      if (parsed.telemetry && Object.keys(parsed.telemetry).length > 0) {
-        await this.storeTelemetry(parsed, integration)
+      // Store telemetry data if present (requires UUID)
+      if (deviceUuid && parsed.telemetry && Object.keys(parsed.telemetry).length > 0) {
+        await this.storeTelemetry(parsed, integration, deviceUuid)
       }
 
-      // Update device status if present
-      if (parsed.status) {
-        await this.updateDeviceStatus(parsed.deviceId, parsed.status)
+      // Update device status if present (use UUID)
+      if (deviceUuid && parsed.status) {
+        await this.updateDeviceStatus(deviceUuid, parsed.status)
       }
 
       // Log activity
@@ -318,69 +318,78 @@ export class MessageProcessor {
     deviceId: string,
     organizationId: string,
     integrationId: string
-  ): Promise<void> {
+  ): Promise<string | null> {
+    // Look up device by hardware_ids array first
     const { data: existing } = await this.supabase
       .from('devices')
       .select('id')
-      .eq('id', deviceId)
+      .contains('hardware_ids', [deviceId])
+      .eq('organization_id', organizationId)
       .single()
 
-    if (!existing) {
-      // Create device
-      await this.supabase.from('devices').insert({
-        id: deviceId,
+    if (existing) {
+      return existing.id
+    }
+
+    // Create device with hardware_ids
+    const { data: created, error } = await this.supabase
+      .from('devices')
+      .insert({
         name: `MQTT Device ${deviceId}`,
         organization_id: organizationId,
-        device_type: 'mqtt_device',
+        hardware_ids: [deviceId],
         status: 'online',
-        integration_id: integrationId,
         metadata: {
           auto_discovered: true,
           discovered_at: new Date().toISOString(),
+          integration_id: integrationId,
         },
       })
+      .select('id')
+      .single()
 
-      this.logger.info(
-        { deviceId, organizationId },
-        'Auto-discovered and created device'
-      )
+    if (error || !created) {
+      this.logger.error({ error, deviceId }, 'Failed to auto-create device')
+      return null
     }
+
+    this.logger.info(
+      { deviceId, organizationId, uuid: created.id },
+      'Auto-discovered and created device'
+    )
+    return created.id
   }
 
   private async storeTelemetry(
     parsed: ProcessedMessage,
-    integration: MqttIntegration
+    integration: MqttIntegration,
+    deviceUuid: string
   ): Promise<void> {
     if (!parsed.telemetry) return
 
-    const records: TelemetryRecord[] = []
     const timestamp = parsed.timestamp || new Date().toISOString()
 
-    for (const [metricName, value] of Object.entries(parsed.telemetry)) {
-      if (typeof value === 'number') {
-        records.push({
-          device_id: parsed.deviceId,
-          organization_id: integration.organizationId,
-          integration_id: integration.id,
-          metric_name: metricName,
-          metric_value: value,
-          timestamp,
-          metadata: parsed.metadata,
-        })
-      }
-    }
+    // Store as a single JSONB record (matches device_telemetry_history schema)
+    const { error } = await this.supabase
+      .from('device_telemetry_history')
+      .insert({
+        device_id: deviceUuid,
+        organization_id: integration.organizationId,
+        telemetry: parsed.telemetry,
+        device_timestamp: timestamp,
+        received_at: new Date().toISOString(),
+      })
 
-    if (records.length > 0) {
-      const { error } = await this.supabase
-        .from('device_telemetry_history')
-        .insert(records)
-
-      if (error) {
-        this.logger.error(
-          { error, deviceId: parsed.deviceId },
-          'Failed to store telemetry'
-        )
-      }
+    if (error) {
+      this.logger.error(
+        { error, deviceId: parsed.deviceId, deviceUuid },
+        'Failed to store telemetry'
+      )
+    } else {
+      this.logger.info(
+        { deviceUuid, keys: Object.keys(parsed.telemetry) },
+        'Telemetry stored successfully'
+      )
     }
   }
 
