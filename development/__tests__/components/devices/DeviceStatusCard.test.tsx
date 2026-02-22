@@ -14,8 +14,7 @@
  * - Show/hide details
  */
 
-import { render, screen, waitFor } from '@/__tests__/utils/test-utils'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, userEvent } from '../../utils/test-utils'
 import { DeviceStatusCard } from '@/components/devices/DeviceStatusCard'
 import { useDeviceStatus } from '@/hooks/useDeviceStatus'
 

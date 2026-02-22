@@ -17,8 +17,7 @@
  * - Error handling
  */
 
-import { render, screen, waitFor } from '@/__tests__/utils/test-utils'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, userEvent } from '../../utils/test-utils'
 import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
 import { createMockDevice } from '@/__tests__/mocks/factories'
 import { edgeFunctions } from '@/lib/edge-functions/client'
