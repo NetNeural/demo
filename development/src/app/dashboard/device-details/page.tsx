@@ -161,7 +161,6 @@ export default function SensorDetailsPage() {
         .from('device_telemetry_history')
         .select('device_id, telemetry, device_timestamp, received_at')
         .eq('device_id', deviceId)
-        .eq('organization_id', currentOrganization.id)
         .gte('received_at', fortyEightHoursAgo)
         .order('received_at', { ascending: false })
         .limit(500)
