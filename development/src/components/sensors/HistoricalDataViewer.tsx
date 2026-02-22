@@ -17,6 +17,7 @@ import { Download, Calendar } from 'lucide-react'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { usePreferences } from '@/contexts/PreferencesContext'
 import type { Device } from '@/types/sensor-details'
 import {
   ComposedChart,
@@ -144,6 +145,7 @@ function normalizeTelemetryRecords(records: TelemetryData[]): TelemetryData[] {
 
 export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
   const { currentOrganization } = useOrganization()
+  const { preferences } = usePreferences()
   const [selectedRange, setSelectedRange] = useState<TimeRange>('24H')
   const [selectedSensor, setSelectedSensor] = useState<string>('all')
   const [loading, setLoading] = useState(false)
@@ -256,6 +258,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: preferences.timeFormat === '12h',
+      timeZone: preferences.timezone,
     })
   }
 
@@ -570,6 +574,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                           return date.toLocaleTimeString('en-US', {
                             hour: '2-digit',
                             minute: '2-digit',
+                            hour12: preferences.timeFormat === '12h',
+                            timeZone: preferences.timezone,
                           })
                         }
                         // For longer ranges, show date + time
@@ -577,6 +583,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
+                          hour12: preferences.timeFormat === '12h',
+                          timeZone: preferences.timezone,
                         })
                       }}
                       tick={{ fontSize: 12 }}
@@ -599,6 +607,8 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
+                            hour12: preferences.timeFormat === '12h',
+                            timeZone: preferences.timezone,
                           }
                         )
                       }}
