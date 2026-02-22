@@ -99,7 +99,9 @@ export default function SupportPage() {
 
   useEffect(() => {
     if (!userLoading && !canAccessSupport(user, userRole)) {
-      toast.error('You do not have permission to access the Support page. Admin or Owner role required.')
+      toast.error(
+        'You do not have permission to access the Support page. Admin or Owner role required.'
+      )
       router.replace('/dashboard')
     }
   }, [user, userRole, userLoading, router])

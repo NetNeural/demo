@@ -176,7 +176,8 @@ export default createEdgeFunction(async ({ req }) => {
       console.error('Email error response:', errorData)
 
       // Return meaningful error instead of throwing
-      const errorMessage = errorData.message || `Failed to send email (${emailResponse.status})`
+      const errorMessage =
+        errorData.message || `Failed to send email (${emailResponse.status})`
       return createSuccessResponse({
         success: false,
         message: 'Failed to send password email',

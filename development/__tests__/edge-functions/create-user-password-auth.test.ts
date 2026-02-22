@@ -1,6 +1,6 @@
 /**
  * Test Suite: Create User and Temporary Password Authentication (Issue #188)
- * 
+ *
  * Verifies that:
  * 1. New users can be created with temporary passwords
  * 2. Email is properly confirmed in auth system
@@ -165,7 +165,8 @@ describe('Create User and Password Authentication - Issue #188', () => {
         email: 'noemail@example.com',
         emailSentSuccessfully: false, // Email failed to send
       },
-      message: 'User created but email delivery failed - provide password manually',
+      message:
+        'User created but email delivery failed - provide password manually',
     }
 
     expect(userCreationResult.success).toBe(true)

@@ -555,7 +555,6 @@ describe('Integrations API - Full Stack Tests', () => {
 
     test('validates status values', async () => {
       if (!createdIntegrationId) return
-
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         status: 400,
         ok: false,

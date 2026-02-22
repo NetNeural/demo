@@ -297,8 +297,7 @@ export default function TroubleshootingTab({ organizationId }: Props) {
           ...prev,
           [integrationType]: {
             success: false,
-            message:
-              result.error?.message || result.message || 'Test failed',
+            message: result.error?.message || result.message || 'Test failed',
             durationMs,
           },
         }))

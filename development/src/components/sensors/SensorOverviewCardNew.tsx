@@ -235,11 +235,11 @@ export function SensorOverviewCard({
                 }
               }}
             />
-            <Badge 
-              variant={statusBadge.variant} 
+            <Badge
+              variant={statusBadge.variant}
               className={
-                device.status === 'online' 
-                  ? 'bg-slate-900 text-white hover:bg-slate-800' 
+                device.status === 'online'
+                  ? 'bg-slate-900 text-white hover:bg-slate-800'
                   : ''
               }
             >

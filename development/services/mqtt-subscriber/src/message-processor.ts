@@ -46,7 +46,11 @@ export class MessageProcessor {
       )
 
       // Store telemetry data if present (requires UUID)
-      if (deviceUuid && parsed.telemetry && Object.keys(parsed.telemetry).length > 0) {
+      if (
+        deviceUuid &&
+        parsed.telemetry &&
+        Object.keys(parsed.telemetry).length > 0
+      ) {
         await this.storeTelemetry(parsed, integration, deviceUuid)
       }
 
@@ -70,7 +74,10 @@ export class MessageProcessor {
           messageSize: messageStr.length,
           telemetryKeys: parsed.telemetry ? Object.keys(parsed.telemetry) : [],
           rawPayload: messageStr.substring(0, 500), // First 500 chars for debugging
-          parser: integration.settings.payloadParser || integration.settings.payload_parser || 'standard',
+          parser:
+            integration.settings.payloadParser ||
+            integration.settings.payload_parser ||
+            'standard',
         },
       })
 
@@ -160,7 +167,9 @@ export class MessageProcessor {
     // Try to extract from payload first
     // Check common field names: device, deviceId, device_id, id
     if (payload.device || payload.deviceId || payload.device_id || payload.id) {
-      return payload.device || payload.deviceId || payload.device_id || payload.id
+      return (
+        payload.device || payload.deviceId || payload.device_id || payload.id
+      )
     }
 
     // Extract from topic pattern: devices/{deviceId}/...
@@ -236,12 +245,12 @@ export class MessageProcessor {
     const telemetry: Record<string, any> = {}
 
     this.logger.info(
-      { 
-        deviceId, 
-        hasParas: !!payload.paras, 
+      {
+        deviceId,
+        hasParas: !!payload.paras,
         hasData: !!payload.data,
         payloadKeys: Object.keys(payload),
-        parasKeys: payload.paras ? Object.keys(payload.paras) : []
+        parasKeys: payload.paras ? Object.keys(payload.paras) : [],
       },
       'Parsing V-Mark message'
     )

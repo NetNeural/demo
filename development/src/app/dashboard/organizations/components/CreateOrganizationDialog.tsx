@@ -157,11 +157,13 @@ export function CreateOrganizationDialog({
         description: description.trim() || undefined,
         subscriptionTier: isChildOrg ? 'starter' : subscriptionTier,
         parentOrganizationId: parentOrganizationId || undefined,
-        ...(ownerEmail && ownerFullName ? {
-          ownerEmail: ownerEmail.trim(),
-          ownerFullName: ownerFullName.trim(),
-          sendWelcomeEmail,
-        } : {}),
+        ...(ownerEmail && ownerFullName
+          ? {
+              ownerEmail: ownerEmail.trim(),
+              ownerFullName: ownerFullName.trim(),
+              sendWelcomeEmail,
+            }
+          : {}),
       })
 
       if (!response.success) {
@@ -303,12 +305,13 @@ export function CreateOrganizationDialog({
           </div>
 
           {/* Owner Account Section */}
-          <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Owner Account *</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Create a new owner account for this organization. An owner account is required to manage the organization.
+              Create a new owner account for this organization. An owner account
+              is required to manage the organization.
             </p>
 
             {/* Owner Email */}
@@ -342,12 +345,14 @@ export function CreateOrganizationDialog({
                 <Checkbox
                   id="send-email"
                   checked={sendWelcomeEmail}
-                  onCheckedChange={(checked) => setSendWelcomeEmail(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setSendWelcomeEmail(checked as boolean)
+                  }
                   disabled={isSubmitting}
                 />
                 <Label
                   htmlFor="send-email"
-                  className="text-sm font-normal cursor-pointer"
+                  className="cursor-pointer text-sm font-normal"
                 >
                   Send welcome email with temporary password
                 </Label>

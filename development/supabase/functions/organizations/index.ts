@@ -577,16 +577,22 @@ export default createEdgeFunction(
           console.log('Creating owner account:', { ownerEmail, ownerFullName })
 
           // Generate temporary password (16 characters, alphanumeric + symbols)
-          temporaryPassword = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+          temporaryPassword = Array.from(
+            crypto.getRandomValues(new Uint8Array(16))
+          )
             .map((byte) => {
-              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+              const chars =
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
               return chars[byte % chars.length]
             })
             .join('')
 
           // Check if user already exists
-          const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers()
-          const authUser = existingAuthUser.users.find(u => u.email === ownerEmail)
+          const { data: existingAuthUser } =
+            await supabaseAdmin.auth.admin.listUsers()
+          const authUser = existingAuthUser.users.find(
+            (u) => u.email === ownerEmail
+          )
 
           if (authUser) {
             // User exists in auth - check if they exist in our users table
@@ -598,8 +604,11 @@ export default createEdgeFunction(
 
             if (existingUser) {
               ownerUserId = existingUser.id
-              console.log('User already exists, updating organization:', ownerUserId)
-              
+              console.log(
+                'User already exists, updating organization:',
+                ownerUserId
+              )
+
               // Update user's organization to the new org
               const { error: updateError } = await supabaseAdmin
                 .from('users')
@@ -609,12 +618,17 @@ export default createEdgeFunction(
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', existingUser.id)
-              
+
               if (updateError) {
-                console.error('Failed to update user organization:', updateError)
-                throw new DatabaseError(`Failed to update user organization: ${updateError.message}`)
+                console.error(
+                  'Failed to update user organization:',
+                  updateError
+                )
+                throw new DatabaseError(
+                  `Failed to update user organization: ${updateError.message}`
+                )
               }
-              
+
               console.log('Updated user organization successfully')
             } else {
               // Auth user exists but not in our table - create user record
@@ -634,23 +648,28 @@ export default createEdgeFunction(
 
               if (userInsertError) {
                 console.error('Failed to create user record:', userInsertError)
-                throw new DatabaseError(`Failed to create user record: ${userInsertError.message}`)
+                throw new DatabaseError(
+                  `Failed to create user record: ${userInsertError.message}`
+                )
               }
             }
           } else {
             // Create new auth user
-            const { data: newAuthUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-              email: ownerEmail,
-              password: temporaryPassword,
-              email_confirm: true,
-              user_metadata: {
-                full_name: ownerFullName,
-              },
-            })
+            const { data: newAuthUser, error: authError } =
+              await supabaseAdmin.auth.admin.createUser({
+                email: ownerEmail,
+                password: temporaryPassword,
+                email_confirm: true,
+                user_metadata: {
+                  full_name: ownerFullName,
+                },
+              })
 
             if (authError || !newAuthUser.user) {
               console.error('Failed to create auth user:', authError)
-              throw new DatabaseError(`Failed to create owner account: ${authError?.message || 'Unknown error'}`)
+              throw new DatabaseError(
+                `Failed to create owner account: ${authError?.message || 'Unknown error'}`
+              )
             }
 
             ownerUserId = newAuthUser.user.id
@@ -672,7 +691,9 @@ export default createEdgeFunction(
 
             if (userInsertError) {
               console.error('Failed to create user record:', userInsertError)
-              throw new DatabaseError(`Failed to create user record: ${userInsertError.message}`)
+              throw new DatabaseError(
+                `Failed to create user record: ${userInsertError.message}`
+              )
             }
 
             console.log('Created user record in database')
@@ -710,21 +731,23 @@ export default createEdgeFunction(
         // Send welcome email with credentials if requested
         if (sendWelcomeEmail && ownerEmail && temporaryPassword) {
           console.log('Sending welcome email to:', ownerEmail)
-          
+
           const resendApiKey = Deno.env.get('RESEND_API_KEY')
           if (resendApiKey) {
             try {
-              const emailResponse = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${resendApiKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  from: 'NetNeural Platform <noreply@netneural.ai>',
-                  to: [ownerEmail],
-                  subject: `Welcome to NetNeural - Your Account for ${name}`,
-                  html: `
+              const emailResponse = await fetch(
+                'https://api.resend.com/emails',
+                {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    from: 'NetNeural Platform <noreply@netneural.ai>',
+                    to: [ownerEmail],
+                    subject: `Welcome to NetNeural - Your Account for ${name}`,
+                    html: `
                     <h2>Welcome to NetNeural IoT Platform</h2>
                     <p>Hello ${ownerFullName},</p>
                     <p>Your organization <strong>${name}</strong> has been created successfully!</p>
@@ -743,8 +766,9 @@ export default createEdgeFunction(
                     <p>If you have any questions, please contact our support team.</p>
                     <p>Best regards,<br>NetNeural Team</p>
                   `,
-                }),
-              })
+                  }),
+                }
+              )
 
               if (!emailResponse.ok) {
                 const errorText = await emailResponse.text()
@@ -757,7 +781,9 @@ export default createEdgeFunction(
               // Don't fail the request if email fails
             }
           } else {
-            console.warn('RESEND_API_KEY not configured, skipping welcome email')
+            console.warn(
+              'RESEND_API_KEY not configured, skipping welcome email'
+            )
           }
         }
 

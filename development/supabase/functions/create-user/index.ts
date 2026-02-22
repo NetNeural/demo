@@ -214,21 +214,23 @@ export default createEdgeFunction(
         // Fetch organization subscription tier if available
         let subscriptionTier = 'Starter'
         let deviceLimit = '50'
-        
+
         if (targetOrganizationId) {
           const { data: orgData } = await supabaseAdmin
             .from('organizations')
             .select('subscription_tier')
             .eq('id', targetOrganizationId)
             .single()
-          
+
           if (orgData?.subscription_tier) {
-            subscriptionTier = orgData.subscription_tier.charAt(0).toUpperCase() + orgData.subscription_tier.slice(1)
+            subscriptionTier =
+              orgData.subscription_tier.charAt(0).toUpperCase() +
+              orgData.subscription_tier.slice(1)
             const tierLimits: Record<string, string> = {
-              'free': '5',
-              'starter': '50',
-              'professional': '500',
-              'enterprise': 'Unlimited'
+              free: '5',
+              starter: '50',
+              professional: '500',
+              enterprise: 'Unlimited',
             }
             deviceLimit = tierLimits[orgData.subscription_tier] || '50'
           }

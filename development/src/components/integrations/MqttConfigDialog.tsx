@@ -615,11 +615,12 @@ export function MqttConfigDialog({
                 💡 Persistent MQTT Subscriber Available
               </AlertTitle>
               <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
-                For persistent topic subscriptions, deploy our Docker-based MQTT subscriber service.
+                For persistent topic subscriptions, deploy our Docker-based MQTT
+                subscriber service.
                 <span className="mt-1 block">
-                  <a 
-                    href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber" 
-                    target="_blank" 
+                  <a
+                    href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
                   >

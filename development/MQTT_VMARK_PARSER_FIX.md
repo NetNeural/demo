@@ -1,12 +1,15 @@
 # MQTT Integration Log Display Issue - Resolution
 
 ## Problem
+
 Dashboard at `https://demo-stage.netneural.ai/dashboard/integrations/view/?id=a6d0e905-0532-4178-9ed0-2aae24a896f6` shows no logs under "Protocol Detected" section, despite device `2400390030314701` being connected and sending VMark protocol payloads.
 
 ## Root Cause Identified
+
 The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subscriber/src/message-processor.ts` was incorrectly implemented:
 
 ### Expected VMark Payload Format:
+
 ```json
 {
   "device": "2400390030314701",
@@ -29,6 +32,7 @@ The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subs
 ## Fixes Applied
 
 ### 1. Fixed `parseVMarkMessage()` method (lines 225-263)
+
 - ✅ Changed from `payload.data` to `payload.paras` for telemetry extraction
 - ✅ Added fallback to `payload.data` for backward compatibility
 - ✅ Changed from `payload.timestamp` to `payload.time` for timestamp
@@ -36,6 +40,7 @@ The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subs
 - ✅ Added try-catch for timestamp parsing with fallback to current time
 
 ### 2. Fixed `extractDeviceId()` method (lines 147-177)
+
 - ✅ Added `payload.device` to device ID extraction checks
 - ✅ Now checks: `device` → `deviceId` → `device_id` → `id` (in priority order)
 
@@ -44,33 +49,36 @@ The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subs
 ### For Staging/Production Environment:
 
 1. **Restart MQTT Subscriber Service** (required to apply fixes):
+
    ```bash
    # If using Docker:
    cd /workspaces/MonoRepo/development/services/mqtt-subscriber
    docker-compose restart
-   
+
    # If using PM2:
    pm2 restart mqtt-subscriber
-   
+
    # If using systemd:
    sudo systemctl restart mqtt-subscriber
    ```
 
 2. **Verify Service is Running**:
+
    ```bash
    # Docker:
    docker-compose ps
    docker-compose logs -f mqtt-subscriber
-   
+
    # PM2:
    pm2 status
    pm2 logs mqtt-subscriber
-   
+
    # Check for connection logs:
    # Should see: "Connected to MQTT broker" and "Subscribed to topics"
    ```
 
 3. **Send Test Message** from your MQTT device or client:
+
    ```bash
    # Example using mosquitto_pub:
    mosquitto_pub -h <broker> -p <port> \
@@ -79,6 +87,7 @@ The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subs
    ```
 
 4. **Run Diagnostic Query** to verify logs are being created:
+
    ```bash
    # Run the diagnostic SQL in Supabase SQL Editor:
    cat /workspaces/MonoRepo/development/diagnose-mqtt-integration.sql
@@ -89,6 +98,7 @@ The VMark payload parser in `/workspaces/MonoRepo/development/services/mqtt-subs
 ### Diagnostic Checklist:
 
 Run the diagnostic SQL file to check:
+
 - ✅ Integration configuration (parser type should be 'vmark')
 - ✅ Recent activity logs (should see 'mqtt_message_received' entries)
 - ✅ Device exists and has recent `last_seen` timestamp
@@ -121,6 +131,7 @@ Once the MQTT subscriber service is restarted:
 ## Additional Notes
 
 ### Parser Configuration
+
 Ensure the integration has `payload_parser` set to `'vmark'` in the settings:
 
 ```sql

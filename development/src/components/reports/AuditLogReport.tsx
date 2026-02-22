@@ -159,7 +159,8 @@ export function AuditLogReport() {
     // Super admin always has access
     if (currentUser.role === 'super_admin') return true
     // Check global org owner/admin roles
-    if (currentUser.role === 'org_owner' || currentUser.role === 'org_admin') return true
+    if (currentUser.role === 'org_owner' || currentUser.role === 'org_admin')
+      return true
     // Check organization-specific admin/owner roles
     if (userRole && ['admin', 'owner'].includes(userRole)) return true
     return false
@@ -508,7 +509,8 @@ export function AuditLogReport() {
             </div>
             <CardDescription>
               Only administrators can view audit logs. This feature is
-              restricted to super admins, organization owners, and organization admins.
+              restricted to super admins, organization owners, and organization
+              admins.
             </CardDescription>
           </CardHeader>
         </Card>

@@ -258,6 +258,7 @@ cp .env.example .env
 ```
 
 **Use cases**:
+
 - Persistent MQTT topic subscriptions
 - Inbound device messages via MQTT protocol
 - Multi-broker monitoring

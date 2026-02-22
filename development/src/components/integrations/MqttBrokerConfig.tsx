@@ -323,16 +323,18 @@ export function MqttBrokerConfig({
             Optional: Persistent MQTT Subscriber Service
           </AlertTitle>
           <AlertDescription className="text-blue-800 dark:text-blue-200">
-            For advanced use cases requiring persistent MQTT subscriptions (e.g., devices publishing to broker topics), we offer a Docker-based subscriber service.
+            For advanced use cases requiring persistent MQTT subscriptions
+            (e.g., devices publishing to broker topics), we offer a Docker-based
+            subscriber service.
             <div className="mt-2 space-y-1 text-sm">
               <div>✓ Multi-broker support</div>
               <div>✓ Auto-reconnection & structured logging</div>
               <div>✓ Real-time telemetry storage</div>
             </div>
             <div className="mt-3">
-              <a 
-                href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber" 
-                target="_blank" 
+              <a
+                href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
               >

@@ -50,7 +50,10 @@ export async function getSMSEnabledUsers(
     .eq('organization_id', organizationId)
 
   if (membersError) {
-    console.error('Error fetching organization members relationships:', membersError)
+    console.error(
+      'Error fetching organization members relationships:',
+      membersError
+    )
     return (primaryMembers || []) as SMSEnabledUser[]
   }
 
@@ -69,7 +72,10 @@ export async function getSMSEnabledUsers(
     .not('phone_number', 'is', null)
 
   if (secondaryError) {
-    console.error('Error fetching secondary organization members:', secondaryError)
+    console.error(
+      'Error fetching secondary organization members:',
+      secondaryError
+    )
     return (primaryMembers || []) as SMSEnabledUser[]
   }
 
@@ -127,7 +133,10 @@ export async function getSMSPhoneNumbers(
     if (!userError && userData) {
       secondaryUsers = userData
     } else if (userError) {
-      console.error('Error fetching secondary members phone numbers:', userError)
+      console.error(
+        'Error fetching secondary members phone numbers:',
+        userError
+      )
     }
   } else if (membersError) {
     console.error('Error fetching organization members:', membersError)

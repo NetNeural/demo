@@ -88,7 +88,7 @@ describe('SMS User Helpers', () => {
   describe('SMS Notification Recipients - Issue #185', () => {
     /**
      * Issue #185: SMS not sending on org users
-     * 
+     *
      * This test validates that the SMS helper functions properly handle
      * users in multi-org setups by checking the organization_members table
      */
@@ -98,7 +98,7 @@ describe('SMS User Helpers', () => {
       const formatted = phones
         .map((p) => formatPhoneE164(p))
         .filter((p) => p !== null)
-      
+
       expect(formatted).toHaveLength(3)
       expect(formatted).toContain('+15551234567')
       expect(formatted).toContain('+15559876543')
@@ -106,8 +106,12 @@ describe('SMS User Helpers', () => {
 
     it('should deduplicate phone numbers after formatting', () => {
       const phones = ['5551234567', '555-123-4567', '+15551234567']
-      const formatted = [...new Set(phones.map((p) => formatPhoneE164(p)).filter((p) => p !== null))]
-      
+      const formatted = [
+        ...new Set(
+          phones.map((p) => formatPhoneE164(p)).filter((p) => p !== null)
+        ),
+      ]
+
       expect(formatted).toHaveLength(1)
       expect(formatted[0]).toBe('+15551234567')
     })
@@ -117,7 +121,7 @@ describe('SMS User Helpers', () => {
       const formatted = phones
         .map((p) => formatPhoneE164(p))
         .filter((p) => p !== null)
-      
+
       expect(formatted).toHaveLength(2)
       expect(formatted).toContain('+15551234567')
       expect(formatted).toContain('+15559876543')
