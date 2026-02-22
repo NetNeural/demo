@@ -84,6 +84,21 @@ const config = {
     },
   },
 
+  // Reporters - output JUnit XML for CI (dorny/test-reporter) + default console
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        outputDirectory: './coverage',
+        outputName: 'junit.xml',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+        ancestorSeparator: ' › ',
+      },
+    ],
+  ],
+
   // Verbose output
   verbose: true,
 
