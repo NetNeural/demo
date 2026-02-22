@@ -131,6 +131,9 @@ export default function TroubleshootingTab({ organizationId }: Props) {
   const [logsPage, setLogsPage] = useState(0)
   const LOGS_PAGE_SIZE = 25
 
+  // System services state
+  const [restartingMqtt, setRestartingMqtt] = useState(false)
+
   // Define all 8 integration types for testing
   const INTEGRATION_TYPES = [
     { id: 'golioth', label: '🌐 Golioth', name: 'Golioth Integration' },
@@ -663,6 +666,131 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                 </div>
               )
             })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── System Services ─────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            System Services
+          </CardTitle>
+          <CardDescription>
+            Restart backend services and processes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex-1">
+                <h4 className="font-medium flex items-center gap-2">
+                  MQTT Subscriber Service
+                  <Badge variant="secondary" className="text-xs">Database-Triggered</Badge>
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Creates a restart request that the service monitors and executes (30-60s delay)
+                </p>
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer hover:text-foreground">How it works</summary>
+                  <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
+                    <p>1. Button creates database restart request</p>
+                    <p>2. MQTT service polls database every 30s</p>
+                    <p>3. Service pulls latest code and restarts itself</p>
+                    <p className="mt-2 text-amber-600 dark:text-amber-400">
+                      ⚠️ Requires restart-monitor.js running on server
+                    </p>
+                  </div>
+                </details>
+              </div>
+              <Button
+                variant="outline"
+                disabled={restartingMqtt}
+                onClick={async () => {
+                  setRestartingMqtt(true)
+                  try {
+                    toast.info('Creating restart request...')
+                    
+                    const result = await edgeFunctions.invoke('request-service-restart', {
+                      body: { service: 'mqtt-subscriber' }
+                    })
+
+                    if (result.error) {
+                      console.error('❌ Restart request failed:', result.error)
+                      toast.error(`Failed to create restart request: ${result.error.message || 'Unknown error'}`)
+                      return
+                    }
+
+                    if (result.data?.success) {
+                      console.log('✅ Restart request created:', result.data)
+                      toast.success('Restart request created - service will restart in 30-60 seconds')
+                      // Refresh activity logs
+                      fetchActivityLogs()
+                    } else {
+                      console.error('❌ Restart request unsuccessful:', result.data)
+                      toast.error(result.data?.message || 'Failed to create restart request')
+                    }
+                  } catch (error) {
+                    console.error('❌ Restart request error:', error)
+                    toast.error(`Error: ${error.message || 'Failed to create restart request'}`)
+                  } finally {
+                    setRestartingMqtt(false)
+                  }
+                }}
+              >
+                {restartingMqtt ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {restartingMqtt ? 'Requesting...' : 'Request Restart'}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex-1">
+                <h4 className="font-medium">Redeploy Edge Functions</h4>
+                <p className="text-sm text-muted-foreground">
+                  Redeploys all Supabase Edge Functions to pick up latest code changes
+                </p>
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer hover:text-foreground">Show deployment commands</summary>
+                  <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
+cd /workspaces/MonoRepo/development
+npx supabase functions deploy --no-verify-jwt</pre>
+                </details>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.open('https://github.com/NetNeural/MonoRepo-Staging/actions/workflows/deploy-staging.yml', '_blank')
+                  toast.info('Opening GitHub Actions - use "Run workflow" button')
+                }}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Deploy via GitHub
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <h4 className="font-medium">Clear Database Connections</h4>
+                <p className="text-sm text-muted-foreground">
+                  Terminates idle database connections (useful if connection pool is exhausted)
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  toast.info('Database connection reset coming soon...')
+                  // TODO: Call Supabase API or run SQL to terminate connections
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Clear Connections
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

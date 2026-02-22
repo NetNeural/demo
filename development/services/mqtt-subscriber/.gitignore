@@ -5,3 +5,6 @@ dist/
 .env.local
 .DS_Store
 logs/
+
+# Webhook secrets
+.restart-token.secret

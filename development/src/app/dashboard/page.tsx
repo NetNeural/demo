@@ -30,6 +30,7 @@ import {
   ArrowDownRight,
   Settings,
 } from 'lucide-react'
+import { QuickActionsDropdown } from '@/components/ui/QuickActionsDropdown'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -87,20 +88,24 @@ export default function DashboardPage() {
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       {/* Page Header */}
       <div className="space-y-1">
-        <div className="flex items-center gap-3">
-          <OrganizationLogo
-            settings={currentOrganization.settings}
-            name={currentOrganization.name}
-            size="xl"
-          />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {currentOrganization.name}
-            </h1>
-            <p className="text-muted-foreground">
-              Real-time overview of your IoT infrastructure
-            </p>
+        <div className="flex items-center gap-3 justify-between">
+          <div className="flex items-center gap-3">
+            <OrganizationLogo
+              settings={currentOrganization.settings}
+              name={currentOrganization.name}
+              size="xl"
+            />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {currentOrganization.name}
+              </h1>
+              <p className="text-muted-foreground">
+                Real-time overview of your IoT infrastructure
+              </p>
+            </div>
           </div>
+          {/* Quick Actions Dropdown */}
+          <QuickActionsDropdown />
         </div>
       </div>
 

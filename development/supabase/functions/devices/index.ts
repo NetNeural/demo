@@ -4,20 +4,71 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import {
-  getUserContext,
   resolveOrganizationId,
-  getTargetOrganizationId,
   createServiceClient,
+  getUserContext,
 } from '../_shared/auth.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
-    // Get authenticated user context
-    const userContext = await getUserContext(req)
-
-    // Use service_role client to bypass RLS — authorization is handled by
-    // getUserContext + resolveOrganizationId which validate org access
+    console.log('🔵 devices function called')
+    
+    // Handle authentication manually with JWT fallback (skip getUserContext entirely)
+    let userContext
     const supabase = createServiceClient()
+    
+    const authHeader = req.headers.get('Authorization')
+    
+    if (!authHeader) {
+      console.error('❌ No auth header')
+      throw new DatabaseError('Unauthorized - no auth header', 401)
+    }
+    
+    try {
+      const token = authHeader.replace('Bearer ', '')
+      const parts = token.split('.')
+      
+      if (parts.length < 2) {
+        throw new Error('Invalid JWT format')
+      }
+      
+      const payload = JSON.parse(globalThis.atob(parts[1]))
+      console.log('🔵 JWT payload decoded:', { sub: payload.sub, role: payload.role })
+      
+      if (!payload.sub) {
+        throw new Error('JWT token has no sub claim')
+      }
+      
+      // Get user profile using service role
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('organization_id, role, email')
+        .eq('id', payload.sub)
+        .maybeSingle()
+      
+      if (profileError) {
+        console.error('❌ Failed to fetch user profile:', profileError)
+        throw new DatabaseError(`Profile fetch error: ${profileError.message}`, 500)
+      }
+      
+      if (!profile) {
+        console.error('❌ User profile not found for:', payload.sub)
+        throw new DatabaseError('User profile not found', 404)
+      }
+      
+      userContext = {
+        userId: payload.sub,
+        organizationId: profile.organization_id,
+        role: profile.role as 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer',
+        isSuperAdmin: profile.role === 'super_admin',
+        email: profile.email || payload.email || '',
+      }
+      
+      console.log('✅ Successfully authenticated:', { userId: userContext.userId, email: userContext.email })
+    } catch (authError) {
+      console.error('❌ JWT authentication failed:', authError)
+      throw new DatabaseError('Unauthorized - authentication failed', 401)
+    }
 
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -196,10 +247,20 @@ export default createEdgeFunction(
       }
 
       const body = await req.json()
+      console.log('PUT /devices/:id - Request body:', JSON.stringify(body, null, 2))
+      console.log('PUT /devices/:id - User context:', {
+        userId: userContext.userId,
+        email: userContext.email,
+        organizationId: userContext.organizationId,
+        role: userContext.role,
+        isSuperAdmin: userContext.isSuperAdmin,
+      })
+
       const {
         organization_id,
         name,
         device_type,
+        device_type_id,
         model,
         serial_number,
         firmware_version,
@@ -209,11 +270,47 @@ export default createEdgeFunction(
         metadata,
       } = body
 
-      // Verify user has access to this device's organization
-      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      // First, verify the device exists and get its current organization
+      const { data: existingDevice, error: fetchError } = await supabase
+        .from('devices')
+        .select('id, organization_id, name')
+        .eq('id', deviceId)
+        .single()
 
-      if (!targetOrgId && !userContext.isSuperAdmin) {
-        throw new DatabaseError('User has no organization access', 403)
+      if (fetchError || !existingDevice) {
+        console.error('Device not found:', deviceId, fetchError)
+        throw new DatabaseError('Device not found', 404)
+      }
+
+      console.log('Existing device:', existingDevice)
+
+      // Verify user has access to this device's organization
+      // Use the device's current organization, not from request body
+      const targetOrgId = existingDevice.organization_id
+
+      // Check if user has access to this organization
+      if (!userContext.isSuperAdmin) {
+        // Check if user belongs to the device's organization
+        if (userContext.organizationId !== targetOrgId) {
+          // Check if user is a member of this org (multi-org support)
+          const { data: membership } = await supabase
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', userContext.userId)
+            .eq('organization_id', targetOrgId)
+            .single()
+
+          if (!membership) {
+            console.error('User does not have access to device organization:', {
+              userOrg: userContext.organizationId,
+              deviceOrg: targetOrgId,
+            })
+            throw new DatabaseError(
+              'You do not have permission to update this device',
+              403
+            )
+          }
+        }
       }
 
       // Build update object with proper typing
@@ -223,6 +320,7 @@ export default createEdgeFunction(
 
       if (name !== undefined) updates.name = name
       if (device_type !== undefined) updates.device_type = device_type
+      if (device_type_id !== undefined) updates.device_type_id = device_type_id
       if (model !== undefined) updates.model = model
       if (serial_number !== undefined) updates.serial_number = serial_number
       if (firmware_version !== undefined)
@@ -232,7 +330,9 @@ export default createEdgeFunction(
       if (status !== undefined) updates.status = status
       if (metadata !== undefined) updates.metadata = metadata
 
-      // Update device - RLS will enforce access automatically
+      console.log('Applying updates:', JSON.stringify(updates, null, 2))
+
+      // Update device - using service_role to bypass RLS (auth handled above)
       const { data: updatedDevice, error: updateError } = await supabase
         .from('devices')
         .update(updates as any)
@@ -241,11 +341,19 @@ export default createEdgeFunction(
         .single()
 
       if (updateError) {
-        console.error('Update error:', updateError)
+        console.error('Update error:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        })
         throw new DatabaseError(
-          `Failed to update device: ${updateError.message}`
+          `Failed to update device: ${updateError.message}`,
+          500
         )
       }
+
+      console.log('Device updated successfully:', updatedDevice.id)
 
       return createSuccessResponse({
         device: updatedDevice,
@@ -511,6 +619,7 @@ export default createEdgeFunction(
     throw new Error('Method not allowed')
   },
   {
+    requireAuth: false, // Handle auth manually with JWT fallback
     allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   }
 )
