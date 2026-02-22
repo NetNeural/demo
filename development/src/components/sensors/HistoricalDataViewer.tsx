@@ -60,6 +60,22 @@ const UNIT_LABELS: Record<number, string> = {
   7: 'lux',
 }
 
+// Config for JSONB flat telemetry format (from MQTT subscriber)
+const JSONB_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
+  temperature: { label: 'Temperature', unit: '°C' },
+  humidity: { label: 'Humidity', unit: '%' },
+  pressure: { label: 'Pressure', unit: 'hPa' },
+  co2: { label: 'CO₂', unit: 'ppm' },
+  battery: { label: 'Battery', unit: '%' },
+  RSSI: { label: 'RSSI', unit: 'dBm' },
+  SNR: { label: 'SNR', unit: 'dB' },
+  BatteryIdle: { label: 'Battery (Idle)', unit: 'mV' },
+  BatteryTx: { label: 'Battery (TX)', unit: 'mV' },
+  voltage: { label: 'Voltage', unit: 'V' },
+  current: { label: 'Current', unit: 'A' },
+  power: { label: 'Power', unit: 'W' },
+}
+
 interface TelemetryData {
   device_id: string
   telemetry: {
@@ -67,10 +83,43 @@ interface TelemetryData {
     units?: number
     value?: number
     sensor?: string
+    unit?: string
     [key: string]: unknown
   } | null
   device_timestamp: string | null
   received_at: string
+}
+
+// Normalize flat JSONB telemetry (e.g. { temperature: 22.7, RSSI: -51 })
+// into individual sensor rows (e.g. { sensor: 'Temperature', value: 22.7, unit: '°C' })
+function normalizeTelemetryRecords(records: TelemetryData[]): TelemetryData[] {
+  const result: TelemetryData[] = []
+  for (const row of records) {
+    if (!row.telemetry || row.telemetry.type != null || row.telemetry.value != null) {
+      result.push(row)
+      continue
+    }
+    // JSONB flat format — expand each numeric key into its own row
+    const entries = Object.entries(row.telemetry).filter(
+      ([, v]) => typeof v === 'number'
+    )
+    if (entries.length === 0) {
+      result.push(row)
+      continue
+    }
+    for (const [key, val] of entries) {
+      const config = JSONB_SENSOR_CONFIG[key]
+      result.push({
+        ...row,
+        telemetry: {
+          sensor: config?.label || key,
+          value: val as number,
+          unit: config?.unit || '',
+        },
+      })
+    }
+  }
+  return result
 }
 
 export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
@@ -117,7 +166,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
 
         if (error) throw error
 
-        // Cast the data to our expected type
+        // Cast the data to our expected type, then normalize JSONB format
         const typedData = (data || []).map((row) => ({
           device_id: row.device_id,
           telemetry: row.telemetry as TelemetryData['telemetry'],
@@ -125,7 +174,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
           received_at: row.received_at,
         }))
 
-        setHistoricalData(typedData)
+        setHistoricalData(normalizeTelemetryRecords(typedData))
       } catch (err) {
         console.error('[HistoricalDataViewer] Error:', err)
         setHistoricalData([])
@@ -161,7 +210,10 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     if (!telemetry || telemetry.value == null) return 'N/A'
 
     let value = Number(telemetry.value)
-    let unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
+    let unit =
+      telemetry.units != null
+        ? UNIT_LABELS[telemetry.units] || ''
+        : (telemetry.unit || '')
 
     // Convert temperature if needed
     const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'
@@ -207,7 +259,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
       const unit =
         row.telemetry?.units != null
           ? UNIT_LABELS[row.telemetry.units] || ''
-          : ''
+          : (row.telemetry?.unit || '')
       return [row.received_at, sensorLabel, value, unit]
     })
 
@@ -237,11 +289,15 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     sortedData.forEach((row) => {
       const timestamp = new Date(row.received_at).getTime()
       const sensorType = row.telemetry?.type
-      const sensorLabel = SENSOR_LABELS[sensorType || 0] || 'Unknown'
+      const sensorLabel =
+        sensorType != null
+          ? SENSOR_LABELS[sensorType] || `Sensor ${sensorType}`
+          : (row.telemetry?.sensor || 'Unknown')
       let value = row.telemetry?.value || 0
 
       // Apply temperature conversion if needed
-      if (sensorType === 1 && useFahrenheit) {
+      const isTemp = sensorType === 1 || row.telemetry?.sensor === 'Temperature'
+      if (isTemp && useFahrenheit) {
         value = (value * 9) / 5 + 32
       }
 
@@ -264,7 +320,10 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     const types = new Set<string>()
     historicalData.forEach((row) => {
       const sensorType = row.telemetry?.type
-      const label = SENSOR_LABELS[sensorType || 0]
+      const label =
+        sensorType != null
+          ? SENSOR_LABELS[sensorType]
+          : row.telemetry?.sensor
       if (label) types.add(label)
     })
     return Array.from(types)
@@ -276,7 +335,10 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
 
     return historicalData.filter((row) => {
       const sensorType = row.telemetry?.type
-      const label = SENSOR_LABELS[sensorType || 0]
+      const label =
+        sensorType != null
+          ? SENSOR_LABELS[sensorType]
+          : row.telemetry?.sensor
       return label === selectedSensor
     })
   }, [historicalData, selectedSensor])
@@ -296,6 +358,14 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     VOC: '#8b5cf6',
     Light: '#eab308',
     Motion: '#06b6d4',
+    RSSI: '#06b6d4',
+    SNR: '#8b5cf6',
+    'Battery (Idle)': '#22c55e',
+    'Battery (TX)': '#16a34a',
+    Battery: '#22c55e',
+    Voltage: '#a855f7',
+    Current: '#f97316',
+    Power: '#ec4899',
   }
 
   return (
