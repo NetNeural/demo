@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { IntegrationProviderFactory } from '@/lib/integrations/integration-provider-factory'
 
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deviceId: string }> }

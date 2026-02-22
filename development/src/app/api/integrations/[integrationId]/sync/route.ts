@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { IntegrationSyncOrchestrator } from '@/lib/sync/integration-sync-orchestrator'
 
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ integrationId: string }> }
