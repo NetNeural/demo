@@ -50,6 +50,7 @@ export const DEVICE_CLASSES = [
     label: 'Distance',
     suggestedUnits: ['m', 'cm', 'mm', 'km', 'ft', 'in'],
   },
+  { value: 'gateway', label: 'Gateway / Hub', suggestedUnits: ['dBm', 'dB', '%'] },
   { value: 'other', label: 'Other', suggestedUnits: [] },
 ] as const
 

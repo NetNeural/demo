@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { AlertCircle, Info } from 'lucide-react'
+import { AlertCircle, Info, Network } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import {
@@ -310,6 +310,37 @@ export function DeviceTypeFormDialog({
                 : 'Define a new device type with normal ranges and alert thresholds.'}
             </DialogDescription>
           </DialogHeader>
+
+          {/* ── Quick Templates ── */}
+          {!isEditing && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Quick Templates</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  setForm({
+                    name: 'Gateway',
+                    description: 'IoT gateway that relays data from child sensors and reports connectivity metrics.',
+                    device_class: 'gateway',
+                    unit: 'dBm',
+                    lower_normal: '-85',
+                    upper_normal: '-65',
+                    lower_alert: '-95',
+                    upper_alert: '-55',
+                    precision_digits: '0',
+                    icon: 'network',
+                  })
+                  setErrors({})
+                }}
+              >
+                <Network className="h-4 w-4" />
+                Gateway
+              </Button>
+            </div>
+          )}
 
           {errors.general && (
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">

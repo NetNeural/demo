@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import type { Device } from '@/types/sensor-details'
 import { TemperatureToggle } from '@/components/ui/temperature-toggle'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { formatDeviceType } from '@/lib/format-device-type'
 
 interface TelemetryReading {
   telemetry: {
@@ -268,7 +269,7 @@ export function SensorOverviewCard({
         {/* Device Name & Type */}
         <div>
           <h3 className="text-2xl font-bold">{device.name}</h3>
-          <p className="text-muted-foreground">{device.device_type}</p>
+          <p className="text-muted-foreground">{formatDeviceType(device.device_type)}</p>
           {device.serial_number && (
             <p className="mt-1 text-xs text-muted-foreground">
               S/N: {device.serial_number}
