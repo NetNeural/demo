@@ -69,6 +69,8 @@ export class MessageProcessor {
           deviceId: parsed.deviceId,
           messageSize: messageStr.length,
           telemetryKeys: parsed.telemetry ? Object.keys(parsed.telemetry) : [],
+          rawPayload: messageStr.substring(0, 500), // First 500 chars for debugging
+          parser: integration.settings.payloadParser || integration.settings.payload_parser || 'standard',
         },
       })
 
@@ -118,6 +120,11 @@ export class MessageProcessor {
         integration.settings.payloadParser ||
         integration.settings.payload_parser ||
         'standard'
+
+      this.logger.info(
+        { parser, deviceId, payloadKeys: Object.keys(payload) },
+        'Parsing message with selected parser'
+      )
 
       switch (parser) {
         case 'vmark':
@@ -228,6 +235,17 @@ export class MessageProcessor {
     // Expected format: { "device": "xxx", "handle": "properties_report", "paras": {...}, "time": "..." }
     const telemetry: Record<string, any> = {}
 
+    this.logger.info(
+      { 
+        deviceId, 
+        hasParas: !!payload.paras, 
+        hasData: !!payload.data,
+        payloadKeys: Object.keys(payload),
+        parasKeys: payload.paras ? Object.keys(payload.paras) : []
+      },
+      'Parsing V-Mark message'
+    )
+
     // Extract telemetry from 'paras' field (VMark protocol)
     if (payload.paras && typeof payload.paras === 'object') {
       Object.assign(telemetry, payload.paras)
@@ -236,6 +254,11 @@ export class MessageProcessor {
     else if (payload.data && typeof payload.data === 'object') {
       Object.assign(telemetry, payload.data)
     }
+
+    this.logger.info(
+      { telemetryKeys: Object.keys(telemetry), telemetry },
+      'Extracted V-Mark telemetry'
+    )
 
     // Parse VMark timestamp format: "2025-04-23_07:35:22.214"
     let timestamp = new Date().toISOString()
