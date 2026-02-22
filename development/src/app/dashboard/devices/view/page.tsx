@@ -10,6 +10,7 @@ import {
   Activity,
   Calendar,
   Info,
+  Network,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ import {
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
+import { Switch } from '@/components/ui/switch'
 import { DeviceTypeSelector } from '@/components/device-types/DeviceTypeSelector'
 import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
@@ -121,6 +123,7 @@ export default function DeviceViewPage() {
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [firmwareVersion, setFirmwareVersion] = useState('')
+  const [isGateway, setIsGateway] = useState(false)
   const [locationId, setLocationId] = useState('')
   const [departmentId, setDepartmentId] = useState('')
   const [status, setStatus] = useState<
@@ -201,6 +204,7 @@ export default function DeviceViewPage() {
       setFirmwareVersion(mappedDevice.firmware_version || '')
       setLocationId(mappedDevice.location_id || '')
       setDepartmentId(mappedDevice.department_id || '')
+      setIsGateway(mappedDevice.metadata?.is_gateway === true)
       setStatus(mappedDevice.status || 'offline')
     } catch (error) {
       console.error('Error loading device:', error)
@@ -251,14 +255,18 @@ export default function DeviceViewPage() {
       setSaving(true)
       const response = await edgeFunctions.devices.update(deviceId, {
         name: name.trim(),
-        device_type: deviceType.trim(),
-        device_type_id: deviceTypeId,
+        device_type: isGateway ? 'gateway' : deviceType.trim(),
+        device_type_id: isGateway ? null : deviceTypeId,
         model: model.trim() || undefined,
         serial_number: serialNumber.trim() || undefined,
         firmware_version: firmwareVersion.trim() || undefined,
         location_id: locationId || undefined,
         department_id: departmentId || undefined,
         status,
+        metadata: {
+          ...(device?.metadata || {}),
+          is_gateway: isGateway,
+        },
       })
 
       if (!response.success) {
@@ -695,6 +703,27 @@ export default function DeviceViewPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter device name"
+                  />
+                </div>
+
+                {/* Gateway Toggle */}
+                <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <Network className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <Label htmlFor="edit-is-gateway" className="cursor-pointer font-medium">
+                        Gateway Device
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Hub that relays data from child sensors
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="edit-is-gateway"
+                    checked={isGateway}
+                    onCheckedChange={setIsGateway}
+                    disabled={saving || deleting}
                   />
                 </div>
 

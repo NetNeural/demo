@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Network } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -48,6 +49,7 @@ export function AddDeviceDialog({
 
   // Form state
   const [name, setName] = useState('')
+  const [isGateway, setIsGateway] = useState(false)
   const [deviceTypeId, setDeviceTypeId] = useState<string>('')
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
@@ -87,7 +89,7 @@ export function AddDeviceDialog({
       return
     }
 
-    if (!deviceTypeId) {
+    if (!isGateway && !deviceTypeId) {
       toast.error('Please select a device type')
       return
     }
@@ -108,10 +110,11 @@ export function AddDeviceDialog({
       const deviceData = {
         name: name.trim(),
         organization_id: currentOrganization.id,
-        device_type: selectedType?.name || 'Unknown',
-        device_type_id: deviceTypeId,
+        device_type: isGateway ? 'gateway' : (selectedType?.name || 'Unknown'),
+        device_type_id: isGateway ? null : (deviceTypeId || null),
         status: 'offline' as const, // New devices start as offline until they connect
         is_test_device: false,
+        ...(isGateway && { metadata: { is_gateway: true } }),
         ...(model.trim() && { model: model.trim() }),
         ...(serialNumber.trim() && { serial_number: serialNumber.trim() }),
         ...(firmwareVersion.trim() && {
@@ -132,6 +135,7 @@ export function AddDeviceDialog({
 
       // Reset form
       setName('')
+      setIsGateway(false)
       setDeviceTypeId('')
       setModel('')
       setSerialNumber('')
@@ -175,7 +179,29 @@ export function AddDeviceDialog({
             />
           </div>
 
+          {/* Gateway Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="is-gateway" className="cursor-pointer font-medium">
+                  Gateway Device
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Hub that relays data from child sensors
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="is-gateway"
+              checked={isGateway}
+              onCheckedChange={setIsGateway}
+              disabled={loading}
+            />
+          </div>
+
           {/* Device Type */}
+          {!isGateway && (
           <div className="space-y-2">
             <Label htmlFor="device-type">Device Type *</Label>
             {loadingTypes ? (
@@ -208,6 +234,7 @@ export function AddDeviceDialog({
               </Select>
             )}
           </div>
+          )}
 
           {/* Model (Optional) */}
           <div className="space-y-2">
@@ -268,7 +295,7 @@ export function AddDeviceDialog({
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={loading || !name.trim() || !deviceTypeId}
+            disabled={loading || !name.trim() || (!isGateway && !deviceTypeId)}
           >
             {loading ? (
               <>
