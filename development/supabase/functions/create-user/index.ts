@@ -20,7 +20,22 @@ export default createEdgeFunction(
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
     // Only admins, owners, and super admins can create users
-    if (!['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
+    // Check global role first, then fall back to organization_members for sub-org owners
+    const hasGlobalPermission = ['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)
+
+    let hasOrgPermission = false
+    if (!hasGlobalPermission && userContext.organizationId) {
+      const { data: orgMembership } = await supabaseAdmin
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', userContext.userId)
+        .eq('organization_id', userContext.organizationId)
+        .in('role', ['owner', 'admin'])
+        .single()
+      hasOrgPermission = !!orgMembership
+    }
+
+    if (!hasGlobalPermission && !hasOrgPermission) {
       throw new DatabaseError('Insufficient permissions to create users', 403)
     }
 
