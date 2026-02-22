@@ -19,7 +19,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FlaskConical, Thermometer, Droplets, Wind, BatteryMedium } from 'lucide-react'
+import {
+  Loader2,
+  FlaskConical,
+  Thermometer,
+  Droplets,
+  Wind,
+  BatteryMedium,
+} from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -53,19 +60,17 @@ export function TestDeviceDialog({
     setLoading(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('devices')
-        .insert({
-          name: name.trim(),
-          organization_id: currentOrganization.id,
-          device_type: 'NetNeural Modular Test Sensor',
-          location: location.trim() || 'Test Environment',
-          is_test_device: true,
-          status: 'online',
-          battery_level: 85,
-          signal_strength: -55,
-          firmware_version: 'MODULAR-2.0.0',
-        })
+      const { error } = await supabase.from('devices').insert({
+        name: name.trim(),
+        organization_id: currentOrganization.id,
+        device_type: 'NetNeural Modular Test Sensor',
+        location: location.trim() || 'Test Environment',
+        is_test_device: true,
+        status: 'online',
+        battery_level: 85,
+        signal_strength: -55,
+        firmware_version: 'MODULAR-2.0.0',
+      })
 
       if (error) throw error
 
@@ -91,8 +96,8 @@ export function TestDeviceDialog({
             <DialogTitle>Create Test Device</DialogTitle>
           </div>
           <DialogDescription>
-            Creates a <strong>NetNeural Modular Test Sensor</strong> with 4 built-in
-            channels you can control independently or all at once.
+            Creates a <strong>NetNeural Modular Test Sensor</strong> with 4
+            built-in channels you can control independently or all at once.
           </DialogDescription>
         </DialogHeader>
 
@@ -140,16 +145,21 @@ export function TestDeviceDialog({
             <div className="flex gap-2">
               <FlaskConical className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
               <p className="text-sm text-muted-foreground">
-                After creation, use the <strong className="text-foreground">Test Controls</strong> panel
-                on the device card to adjust values, trigger alerts, and send data
-                for individual sensors or all at once.
+                After creation, use the{' '}
+                <strong className="text-foreground">Test Controls</strong> panel
+                on the device card to adjust values, trigger alerts, and send
+                data for individual sensors or all at once.
               </p>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
           <Button onClick={handleCreate} disabled={loading}>

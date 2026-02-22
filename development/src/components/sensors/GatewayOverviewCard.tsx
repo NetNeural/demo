@@ -146,7 +146,9 @@ export function GatewayOverviewCard({
         {/* Device Identity */}
         <div>
           <h3 className="text-2xl font-bold">{device.name}</h3>
-          <p className="text-muted-foreground">{formatDeviceType(device.device_type)}</p>
+          <p className="text-muted-foreground">
+            {formatDeviceType(device.device_type)}
+          </p>
           {device.serial_number && (
             <p className="mt-1 text-xs text-muted-foreground">
               S/N: {device.serial_number}

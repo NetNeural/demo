@@ -711,7 +711,10 @@ export default function DeviceViewPage() {
                   <div className="flex items-center gap-2">
                     <Network className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <Label htmlFor="edit-is-gateway" className="cursor-pointer font-medium">
+                      <Label
+                        htmlFor="edit-is-gateway"
+                        className="cursor-pointer font-medium"
+                      >
                         Gateway Device
                       </Label>
                       <p className="text-xs text-muted-foreground">

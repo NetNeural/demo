@@ -110,8 +110,8 @@ export function AddDeviceDialog({
       const deviceData = {
         name: name.trim(),
         organization_id: currentOrganization.id,
-        device_type: isGateway ? 'gateway' : (selectedType?.name || 'Unknown'),
-        device_type_id: isGateway ? null : (deviceTypeId || null),
+        device_type: isGateway ? 'gateway' : selectedType?.name || 'Unknown',
+        device_type_id: isGateway ? null : deviceTypeId || null,
         status: 'offline' as const, // New devices start as offline until they connect
         is_test_device: false,
         ...(isGateway && { metadata: { is_gateway: true } }),
@@ -184,7 +184,10 @@ export function AddDeviceDialog({
             <div className="flex items-center gap-2">
               <Network className="h-4 w-4 text-muted-foreground" />
               <div>
-                <Label htmlFor="is-gateway" className="cursor-pointer font-medium">
+                <Label
+                  htmlFor="is-gateway"
+                  className="cursor-pointer font-medium"
+                >
                   Gateway Device
                 </Label>
                 <p className="text-xs text-muted-foreground">
@@ -202,38 +205,38 @@ export function AddDeviceDialog({
 
           {/* Device Type */}
           {!isGateway && (
-          <div className="space-y-2">
-            <Label htmlFor="device-type">Device Type *</Label>
-            {loadingTypes ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading device types...
-              </div>
-            ) : (
-              <Select
-                value={deviceTypeId}
-                onValueChange={setDeviceTypeId}
-                disabled={loading}
-              >
-                <SelectTrigger id="device-type">
-                  <SelectValue placeholder="Select device type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {deviceTypes.length === 0 ? (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      No device types found. Create one first.
-                    </div>
-                  ) : (
-                    deviceTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="device-type">Device Type *</Label>
+              {loadingTypes ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading device types...
+                </div>
+              ) : (
+                <Select
+                  value={deviceTypeId}
+                  onValueChange={setDeviceTypeId}
+                  disabled={loading}
+                >
+                  <SelectTrigger id="device-type">
+                    <SelectValue placeholder="Select device type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deviceTypes.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No device types found. Create one first.
+                      </div>
+                    ) : (
+                      deviceTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           )}
 
           {/* Model (Optional) */}

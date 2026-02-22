@@ -314,7 +314,9 @@ export function DeviceTypeFormDialog({
           {/* ── Quick Templates ── */}
           {!isEditing && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Quick Templates</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Quick Templates
+              </p>
               <Button
                 type="button"
                 variant="outline"
@@ -323,7 +325,8 @@ export function DeviceTypeFormDialog({
                 onClick={() => {
                   setForm({
                     name: 'Gateway',
-                    description: 'IoT gateway that relays data from child sensors and reports connectivity metrics.',
+                    description:
+                      'IoT gateway that relays data from child sensors and reports connectivity metrics.',
                     device_class: 'gateway',
                     unit: 'dBm',
                     lower_normal: '-85',
@@ -347,7 +350,8 @@ export function DeviceTypeFormDialog({
                 onClick={() => {
                   setForm({
                     name: 'V-Mark MQTT Temperature Sensor',
-                    description: 'V-Mark LoRa/MQTT temperature sensor. Reports temperature (°C), RSSI, SNR, BatteryIdle (mV), BatteryTx (mV) via flat JSONB payload.',
+                    description:
+                      'V-Mark LoRa/MQTT temperature sensor. Reports temperature (°C), RSSI, SNR, BatteryIdle (mV), BatteryTx (mV) via flat JSONB payload.',
                     device_class: 'temperature',
                     unit: '°C',
                     lower_normal: '15',

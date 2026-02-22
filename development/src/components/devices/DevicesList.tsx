@@ -152,16 +152,16 @@ function isGatewayDevice(deviceType: string, deviceName: string): boolean {
 // Config for flat JSONB telemetry (MQTT / modular test sensor)
 const JSONB_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
   temperature: { label: 'Temperature', unit: '°C' },
-  humidity:    { label: 'Humidity',    unit: '%'  },
-  pressure:    { label: 'Pressure',    unit: 'hPa'},
-  co2:         { label: 'CO₂',         unit: 'ppm'},
-  battery:     { label: 'Battery',     unit: '%'  },
-  RSSI:        { label: 'RSSI',        unit: 'dBm'},
-  SNR:         { label: 'SNR',         unit: 'dB' },
+  humidity: { label: 'Humidity', unit: '%' },
+  pressure: { label: 'Pressure', unit: 'hPa' },
+  co2: { label: 'CO₂', unit: 'ppm' },
+  battery: { label: 'Battery', unit: '%' },
+  RSSI: { label: 'RSSI', unit: 'dBm' },
+  SNR: { label: 'SNR', unit: 'dB' },
   BatteryIdle: { label: 'Battery (Idle)', unit: 'mV' },
-  BatteryTx:   { label: 'Battery (TX)',   unit: 'mV' },
-  GwRssi:      { label: 'GW RSSI',     unit: 'dBm'},
-  GwSnr:       { label: 'GW SNR',      unit: 'dB' },
+  BatteryTx: { label: 'Battery (TX)', unit: 'mV' },
+  GwRssi: { label: 'GW RSSI', unit: 'dBm' },
+  GwSnr: { label: 'GW SNR', unit: 'dB' },
 }
 
 /**
@@ -193,14 +193,23 @@ function expandFlatTelemetryRow(row: TelemetryReading): TelemetryReading[] {
 
 function getSensorIcon(sensorType?: number, sensorName?: string) {
   const name = sensorName?.toLowerCase() || ''
-  if (sensorType === 1 || name.includes('tmp') || name.includes('temp') || name === 'temperature')
+  if (
+    sensorType === 1 ||
+    name.includes('tmp') ||
+    name.includes('temp') ||
+    name === 'temperature'
+  )
     return Thermometer
-  if (sensorType === 2 || name.includes('hum') || name.includes('sht') || name === 'humidity')
+  if (
+    sensorType === 2 ||
+    name.includes('hum') ||
+    name.includes('sht') ||
+    name === 'humidity'
+  )
     return Droplets
   if (name.includes('co2') || name.includes('co₂') || name.includes('carbon'))
     return Wind
-  if (name.includes('battery') || name.includes('batt'))
-    return BatteryMedium
+  if (name.includes('battery') || name.includes('batt')) return BatteryMedium
   return Activity
 }
 
@@ -211,9 +220,10 @@ function formatSensorValue(
   if (telemetry.value == null) return 'N/A'
   let value = Number(telemetry.value)
   // unit comes from numeric units field (Golioth) or string unit field (flat JSONB normalized)
-  let unit = telemetry.units != null
-    ? UNIT_LABELS[telemetry.units] || ''
-    : ((telemetry as { unit?: string }).unit || '')
+  let unit =
+    telemetry.units != null
+      ? UNIT_LABELS[telemetry.units] || ''
+      : (telemetry as { unit?: string }).unit || ''
 
   // Convert temperature if needed
   const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'

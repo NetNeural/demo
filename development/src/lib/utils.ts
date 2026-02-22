@@ -5,7 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
+export function formatCurrency(
+  amount: number,
+  currency: string = 'USD'
+): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
@@ -37,7 +40,7 @@ export function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
   return words
     .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
+    .map((w) => w.charAt(0).toUpperCase())
     .join('')
 }
 

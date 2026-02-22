@@ -255,13 +255,24 @@ class MqttSubscriberService {
 
         // Publish ACK if the protocol requires it (e.g. V-Mark properties_report)
         if (processed.ackTopic && processed.ackPayload) {
-          mqttClient.publish(processed.ackTopic, processed.ackPayload, { qos: 0 }, (err) => {
-            if (err) {
-              logger.error({ err, ackTopic: processed.ackTopic }, 'Failed to publish ACK')
-            } else {
-              logger.info({ ackTopic: processed.ackTopic }, '✅ ACK published to device')
+          mqttClient.publish(
+            processed.ackTopic,
+            processed.ackPayload,
+            { qos: 0 },
+            (err) => {
+              if (err) {
+                logger.error(
+                  { err, ackTopic: processed.ackTopic },
+                  'Failed to publish ACK'
+                )
+              } else {
+                logger.info(
+                  { ackTopic: processed.ackTopic },
+                  '✅ ACK published to device'
+                )
+              }
             }
-          })
+          )
         }
       }
     } catch (error) {

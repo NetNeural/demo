@@ -12,7 +12,9 @@ const mockOrg = { id: '1', name: 'Test Org' }
 
 jest.mock('@/contexts/UserContext', () => ({
   useUser: () => ({ user: mockUser, loading: false }),
-  UserProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  UserProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 jest.mock('@/contexts/OrganizationContext', () => ({

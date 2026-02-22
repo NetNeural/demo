@@ -50,28 +50,56 @@ interface TestDeviceControlsProps {
 // ─── Sensor definitions ───────────────────────────────────────────────────────
 const SENSORS = {
   temperature: {
-    label: 'Temperature', unit: '°C',
-    min: -10, max: 60, normalMin: 18, normalMax: 26,
-    step: 0.5, decimals: 1, initial: 22,
-    Icon: Thermometer, color: 'text-red-500',
+    label: 'Temperature',
+    unit: '°C',
+    min: -10,
+    max: 60,
+    normalMin: 18,
+    normalMax: 26,
+    step: 0.5,
+    decimals: 1,
+    initial: 22,
+    Icon: Thermometer,
+    color: 'text-red-500',
   },
   humidity: {
-    label: 'Humidity', unit: '%',
-    min: 0, max: 100, normalMin: 30, normalMax: 60,
-    step: 1, decimals: 0, initial: 45,
-    Icon: Droplets, color: 'text-blue-500',
+    label: 'Humidity',
+    unit: '%',
+    min: 0,
+    max: 100,
+    normalMin: 30,
+    normalMax: 60,
+    step: 1,
+    decimals: 0,
+    initial: 45,
+    Icon: Droplets,
+    color: 'text-blue-500',
   },
   co2: {
-    label: 'CO₂', unit: 'ppm',
-    min: 300, max: 3000, normalMin: 400, normalMax: 1000,
-    step: 50, decimals: 0, initial: 600,
-    Icon: Wind, color: 'text-green-500',
+    label: 'CO₂',
+    unit: 'ppm',
+    min: 300,
+    max: 3000,
+    normalMin: 400,
+    normalMax: 1000,
+    step: 50,
+    decimals: 0,
+    initial: 600,
+    Icon: Wind,
+    color: 'text-green-500',
   },
   battery: {
-    label: 'Battery', unit: '%',
-    min: 0, max: 100, normalMin: 20, normalMax: 100,
-    step: 5, decimals: 0, initial: 85,
-    Icon: BatteryMedium, color: 'text-yellow-500',
+    label: 'Battery',
+    unit: '%',
+    min: 0,
+    max: 100,
+    normalMin: 20,
+    normalMax: 100,
+    step: 5,
+    decimals: 0,
+    initial: 85,
+    Icon: BatteryMedium,
+    color: 'text-yellow-500',
   },
 } as const
 
@@ -95,9 +123,9 @@ export function TestDeviceControls({
   const [organizationId, setOrganizationId] = useState<string>('')
   const [values, setValues] = useState<Record<SensorKey, number>>(initialValues)
   const [sendTarget, setSendTarget] = useState<SendTarget>('all')
-  const [status, setStatus] = useState<'online' | 'offline' | 'error' | 'warning'>(
-    (currentStatus as 'online' | 'offline' | 'error' | 'warning') || 'online'
-  )
+  const [status, setStatus] = useState<
+    'online' | 'offline' | 'error' | 'warning'
+  >((currentStatus as 'online' | 'offline' | 'error' | 'warning') || 'online')
   const [batteryDevice, setBatteryDevice] = useState(85)
   const [signalStrength, setSignalStrength] = useState(-55)
 
@@ -154,7 +182,9 @@ export function TestDeviceControls({
       // Build flat JSONB payload — matches MQTT flat format, normalizer will expand it
       const payload: Record<string, number> =
         sendTarget === 'all'
-          ? (Object.fromEntries(SENSOR_KEYS.map((k) => [k, values[k]])) as Record<string, number>)
+          ? (Object.fromEntries(
+              SENSOR_KEYS.map((k) => [k, values[k]])
+            ) as Record<string, number>)
           : { [sendTarget]: values[sendTarget as SensorKey] }
 
       const { error: telError } = await supabase
@@ -183,11 +213,18 @@ export function TestDeviceControls({
         anyOutOfRange &&
         (sendTarget === 'all' || isOutOfRange(sendTarget as SensorKey))
       const label =
-        sendTarget === 'all' ? 'All sensors' : SENSORS[sendTarget as SensorKey].label
+        sendTarget === 'all'
+          ? 'All sensors'
+          : SENSORS[sendTarget as SensorKey].label
 
-      toast.success(alerting ? `⚠️ Data sent — value(s) outside normal range` : `✅ Test data sent`, {
-        description: `${label}: ${JSON.stringify(payload)}`,
-      })
+      toast.success(
+        alerting
+          ? `⚠️ Data sent — value(s) outside normal range`
+          : `✅ Test data sent`,
+        {
+          description: `${label}: ${JSON.stringify(payload)}`,
+        }
+      )
       onDataSent?.()
     } catch (err) {
       console.error('Failed to send test data:', err)
@@ -208,12 +245,21 @@ export function TestDeviceControls({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-blue-500" />
-                <CardTitle className="text-sm font-medium">Test Controls</CardTitle>
-                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 px-1.5 py-0 text-[10px] text-blue-600">
+                <CardTitle className="text-sm font-medium">
+                  Test Controls
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="border-blue-500/30 bg-blue-500/10 px-1.5 py-0 text-[10px] text-blue-600"
+                >
                   Modular
                 </Badge>
               </div>
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </div>
           </CardHeader>
         </CollapsibleTrigger>
@@ -224,13 +270,28 @@ export function TestDeviceControls({
             <div className="space-y-2">
               <Label className="text-xs">Quick Scenarios</Label>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => handlePreset('normal')}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-xs"
+                  onClick={() => handlePreset('normal')}
+                >
                   ✅ Normal
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1 text-xs text-yellow-600 hover:text-yellow-600" onClick={() => handlePreset('warm')}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-xs text-yellow-600 hover:text-yellow-600"
+                  onClick={() => handlePreset('warm')}
+                >
                   🌡️ Warm
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1 text-xs text-red-600 hover:text-red-600" onClick={() => handlePreset('alarm')}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-xs text-red-600 hover:text-red-600"
+                  onClick={() => handlePreset('alarm')}
+                >
                   🚨 Alarm
                 </Button>
               </div>
@@ -239,7 +300,10 @@ export function TestDeviceControls({
             {/* Send Target */}
             <div className="space-y-2">
               <Label className="text-xs">Send Target</Label>
-              <Select value={sendTarget} onValueChange={(v) => setSendTarget(v as SendTarget)}>
+              <Select
+                value={sendTarget}
+                onValueChange={(v) => setSendTarget(v as SendTarget)}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -282,9 +346,17 @@ export function TestDeviceControls({
                     step={s.step}
                   />
                   <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>{s.min}{s.unit}</span>
-                    <span className="text-green-600">Normal: {s.normalMin}–{s.normalMax}</span>
-                    <span>{s.max}{s.unit}</span>
+                    <span>
+                      {s.min}
+                      {s.unit}
+                    </span>
+                    <span className="text-green-600">
+                      Normal: {s.normalMin}–{s.normalMax}
+                    </span>
+                    <span>
+                      {s.max}
+                      {s.unit}
+                    </span>
                   </div>
                 </div>
               )
@@ -293,8 +365,13 @@ export function TestDeviceControls({
             {/* Device Status */}
             <div className="space-y-2">
               <Label className="text-xs">Device Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <Select
+                value={status}
+                onValueChange={(v) => setStatus(v as typeof status)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="online">🟢 Online</SelectItem>
                   <SelectItem value="offline">⚫ Offline</SelectItem>
@@ -309,16 +386,36 @@ export function TestDeviceControls({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Device Battery</Label>
-                  <Badge variant="outline" className="font-mono text-xs">{batteryDevice}%</Badge>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {batteryDevice}%
+                  </Badge>
                 </div>
-                <Slider value={[batteryDevice]} onValueChange={([v]) => v !== undefined && setBatteryDevice(v)} min={0} max={100} step={5} />
+                <Slider
+                  value={[batteryDevice]}
+                  onValueChange={([v]) =>
+                    v !== undefined && setBatteryDevice(v)
+                  }
+                  min={0}
+                  max={100}
+                  step={5}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Signal (dBm)</Label>
-                  <Badge variant="outline" className="font-mono text-xs">{signalStrength}</Badge>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {signalStrength}
+                  </Badge>
                 </div>
-                <Slider value={[signalStrength]} onValueChange={([v]) => v !== undefined && setSignalStrength(v)} min={-120} max={-30} step={5} />
+                <Slider
+                  value={[signalStrength]}
+                  onValueChange={([v]) =>
+                    v !== undefined && setSignalStrength(v)
+                  }
+                  min={-120}
+                  max={-30}
+                  step={5}
+                />
               </div>
             </div>
 
@@ -327,18 +424,31 @@ export function TestDeviceControls({
               <div className="flex items-start gap-2 rounded-md border border-yellow-500/20 bg-yellow-500/10 p-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
                 <p className="text-xs text-muted-foreground">
-                  One or more values are outside the normal range and will trigger an alert.
+                  One or more values are outside the normal range and will
+                  trigger an alert.
                 </p>
               </div>
             )}
 
             {/* Send Button */}
-            <Button onClick={handleSendData} disabled={loading} className="w-full" size="sm">
+            <Button
+              onClick={handleSendData}
+              disabled={loading}
+              className="w-full"
+              size="sm"
+            >
               {loading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
               ) : (
-                <><Zap className="mr-2 h-4 w-4" />
-                  Send {sendTarget === 'all' ? 'All Sensors' : SENSORS[sendTarget as SensorKey].label}
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Send{' '}
+                  {sendTarget === 'all'
+                    ? 'All Sensors'
+                    : SENSORS[sendTarget as SensorKey].label}
                 </>
               )}
             </Button>
@@ -348,4 +458,3 @@ export function TestDeviceControls({
     </Collapsible>
   )
 }
-

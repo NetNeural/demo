@@ -1,6 +1,7 @@
 # MQTT Restart Functionality - Deployment Guide
 
 ## Overview
+
 Added functional MQTT subscriber restart capability accessible from the Support → Troubleshooting page using a webhook-based approach (no SSH required).
 
 ## Architecture
@@ -10,6 +11,7 @@ Frontend UI → Edge Function → HTTP Webhook → Server executes restart
 ```
 
 **Why webhook instead of SSH?**
+
 - No SSH key management in Supabase
 - Simpler security model (single token)
 - Server-side control of restart logic
@@ -18,11 +20,13 @@ Frontend UI → Edge Function → HTTP Webhook → Server executes restart
 ## Changes Made
 
 ### 1. Webhook Server on demo-stage
+
 **File:** `services/mqtt-subscriber/restart-webhook.js`
 
 **Purpose:** Lightweight HTTP server that accepts authenticated restart requests
 
 **Features:**
+
 - Runs on port 9999 (configurable)
 - Token-based authentication
 - Executes `git pull && docker-compose restart`
@@ -30,26 +34,31 @@ Frontend UI → Edge Function → HTTP Webhook → Server executes restart
 - Systemd service for auto-restart
 
 ### 2. Edge Function: `restart-mqtt-service`
+
 **File:** `supabase/functions/restart-mqtt-service/index.ts`
 
 **Purpose:** Frontend-facing API that calls the webhook
 
 **Features:**
+
 - Webhook-based service restart with timeout (30s)
 - Token authentication forwarding
 - Comprehensive error handling and logging
 - CORS support for frontend calls
 
 **Environment Variables Required:**
+
 ```bash
 MQTT_WEBHOOK_URL=http://demo-stage.netneural.ai:9999/restart  # Optional, defaults to this
 MQTT_RESTART_TOKEN=<generate-random-token>  # REQUIRED
 ```
 
 ### 2. Updated UI Component
+
 **File:** `src/app/dashboard/support/components/TroubleshootingTab.tsx`
 
 **Changes:**
+
 - Added `restartingMqtt` state for loading indicator
 - Implemented Edge Function call with proper error handling
 - Added loading state with spinner during restart
@@ -61,6 +70,7 @@ MQTT_RESTART_TOKEN=<generate-random-token>  # REQUIRED
 ### Step 1: Deploy Webhook Server on demo-stage
 
 **On the demo-stage server:**
+
 ```bash
 # 1. Copy webhook files to server
 cd /opt/mqtt-subscriber
@@ -88,6 +98,7 @@ sudo ufw allow 9999/tcp
 ```
 
 ### Step 2: Configure Supabase Secrets
+
 ```bash
 # Use the token generated in Step 1
 npx supabase secrets set MQTT_RESTART_TOKEN="your-generated-token-here"
@@ -97,6 +108,7 @@ npx supabase secrets set MQTT_WEBHOOK_URL="http://demo-stage.netneural.ai:9999/r
 ```
 
 ### Step 3: Deploy Edge Function
+
 ```bash
 cd /workspaces/MonoRepo/development
 npx supabase functions deploy restart-mqtt-service --no-verify-jwt
@@ -105,6 +117,7 @@ npx supabase functions deploy restart-mqtt-service --no-verify-jwt
 **Note:** The `--no-verify-jwt` flag is required because we use manual JWT validation in the function.
 
 ### Step 3: Deploy Frontend to Staging
+
 ```bash
 # Option A: Trigger GitHub Actions workflow
 gh workflow run deploy-staging.yml -f force_deploy=true
@@ -119,6 +132,7 @@ gh run list --workflow=deploy-staging.yml --limit 3
 ```
 
 ### Step 4: Verify Deployment
+
 1. Navigate to: https://demo-stage.netneural.ai/dashboard/support/?tab=troubleshooting
 2. Scroll to "System Services" section
 3. Click "Restart Service" button
@@ -130,6 +144,7 @@ gh run list --workflow=deploy-staging.yml --limit 3
 ## Testing
 
 ### Test Webhook Directly (from demo-stage server)
+
 ```bash
 # Health check
 curl http://localhost:9999/health
@@ -140,12 +155,14 @@ curl -X POST http://localhost:9999/restart \
 ```
 
 ### Test from External Network
+
 ```bash
 # Should work if port 9999 is open
 curl http://demo-stage.netneural.ai:9999/health
 ```
 
 ### Test Edge Function
+
 ```bash
 curl -X POST \
   https://atgbmxicqikmapfqouco.supabase.co/functions/v1/restart-mqtt-service \
@@ -155,6 +172,7 @@ curl -X POST \
 ```
 
 ### Expected Response (Success)
+
 ```json
 {
   "success": true,
@@ -169,6 +187,7 @@ curl -X POST \
 ```
 
 ### Expected Response (Webhook Not Configured)
+
 ```json
 {
   "success": false,
@@ -180,19 +199,24 @@ curl -X POST \
 ## Troubleshooting
 
 ### Issue: "Webhook credentials not configured"
+
 **Solution:** Set the `MQTT_RESTART_TOKEN` secret in Supabase:
+
 ```bash
 npx supabase secrets set MQTT_RESTART_TOKEN="your-token"
 npx supabase functions deploy restart-mqtt-service --no-verify-jwt
 ```
 
 ### Issue: "Failed to connect to restart webhook"
+
 **Possible causes:**
+
 - Webhook service not running on server
 - Port 9999 blocked by firewall
 - Network connectivity issues
 
-**Solution:** 
+**Solution:**
+
 ```bash
 # On demo-stage server
 sudo systemctl status restart-webhook
@@ -208,12 +232,14 @@ curl http://localhost:9999/health
 ```
 
 ### Issue: "Unauthorized" (401 response)
+
 **Possible causes:**
-- TokWebhook Token Security:**
-   - Generate strong random token (32+ bytes)
-   - Store as Supabase secret (encrypted at rest)
-   - Never commit token to git
-   - Rotate periodically
+
+- TokWebhook Token Security:\*\*
+  - Generate strong random token (32+ bytes)
+  - Store as Supabase secret (encrypted at rest)
+  - Never commit token to git
+  - Rotate periodically
 
 2. **Network Security:**
    - Webhook runs on port 9999 (consider firewall rules)
@@ -229,7 +255,8 @@ curl http://localhost:9999/health
    - Consider adding rate limiting to prevent abuse
    - Track restart attempts in activity logs
    - Monitor systemd logs for suspicious activity
-```
+
+````
 
 ### Issue: Timeout after 30 seconds
 **Possible causes:**
@@ -298,15 +325,17 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now restart-webhook
 sudo ufw allow 9999/tcp
 curl http://localhost:9999/health
-```
+````
 
 **From development environment:**
+
 ```bash
 cd /workspaces/MonoRepo/development
 npx supabase secrets set MQTT_RESTART_TOKEN="paste-token-here"
 npx supabase functions deploy restart-mqtt-service --no-verify-jwt
 gh workflow run deploy-staging.yml -f force_deploy=true
 ```
+
 - [ ] Tested restart functionality
 - [ ] Verified MQTT service picks up latest code after restart
 

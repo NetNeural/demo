@@ -685,16 +685,21 @@ export default function TroubleshootingTab({ organizationId }: Props) {
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="flex-1">
-                <h4 className="font-medium flex items-center gap-2">
+                <h4 className="flex items-center gap-2 font-medium">
                   MQTT Subscriber Service
-                  <Badge variant="secondary" className="text-xs">Database-Triggered</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Database-Triggered
+                  </Badge>
                 </h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Creates a restart request that the service monitors and executes (30-60s delay)
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Creates a restart request that the service monitors and
+                  executes (30-60s delay)
                 </p>
                 <details className="mt-2 text-xs text-muted-foreground">
-                  <summary className="cursor-pointer hover:text-foreground">How it works</summary>
-                  <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
+                  <summary className="cursor-pointer hover:text-foreground">
+                    How it works
+                  </summary>
+                  <div className="mt-2 space-y-1 rounded bg-muted p-2 text-xs">
                     <p>1. Button creates database restart request</p>
                     <p>2. MQTT service polls database every 30s</p>
                     <p>3. Service pulls latest code and restarts itself</p>
@@ -711,31 +716,49 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                   setRestartingMqtt(true)
                   try {
                     toast.info('Creating restart request...')
-                    
-                    const result = await edgeFunctions.call('request-service-restart', {
-                      method: 'POST',
-                      body: { service: 'mqtt-subscriber' }
-                    })
+
+                    const result = await edgeFunctions.call(
+                      'request-service-restart',
+                      {
+                        method: 'POST',
+                        body: { service: 'mqtt-subscriber' },
+                      }
+                    )
 
                     if (result.error) {
                       console.error('❌ Restart request failed:', result.error)
-                      toast.error(`Failed to create restart request: ${result.error.message || 'Unknown error'}`)
+                      toast.error(
+                        `Failed to create restart request: ${result.error.message || 'Unknown error'}`
+                      )
                       return
                     }
 
-                    const responseData = result.data as { success?: boolean; message?: string } | null
+                    const responseData = result.data as {
+                      success?: boolean
+                      message?: string
+                    } | null
                     if (responseData?.success) {
                       console.log('✅ Restart request created:', responseData)
-                      toast.success('Restart request created - service will restart in 30-60 seconds')
+                      toast.success(
+                        'Restart request created - service will restart in 30-60 seconds'
+                      )
                       // Refresh activity logs
                       fetchActivityLogs()
                     } else {
-                      console.error('❌ Restart request unsuccessful:', responseData)
-                      toast.error(responseData?.message || 'Failed to create restart request')
+                      console.error(
+                        '❌ Restart request unsuccessful:',
+                        responseData
+                      )
+                      toast.error(
+                        responseData?.message ||
+                          'Failed to create restart request'
+                      )
                     }
                   } catch (error) {
                     console.error('❌ Restart request error:', error)
-                    toast.error(`Error: ${error instanceof Error ? error.message : 'Failed to create restart request'}`)
+                    toast.error(
+                      `Error: ${error instanceof Error ? error.message : 'Failed to create restart request'}`
+                    )
                   } finally {
                     setRestartingMqtt(false)
                   }
@@ -754,20 +777,29 @@ export default function TroubleshootingTab({ organizationId }: Props) {
               <div className="flex-1">
                 <h4 className="font-medium">Redeploy Edge Functions</h4>
                 <p className="text-sm text-muted-foreground">
-                  Redeploys all Supabase Edge Functions to pick up latest code changes
+                  Redeploys all Supabase Edge Functions to pick up latest code
+                  changes
                 </p>
                 <details className="mt-2 text-xs text-muted-foreground">
-                  <summary className="cursor-pointer hover:text-foreground">Show deployment commands</summary>
-                  <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
-cd /workspaces/MonoRepo/development
-npx supabase functions deploy --no-verify-jwt</pre>
+                  <summary className="cursor-pointer hover:text-foreground">
+                    Show deployment commands
+                  </summary>
+                  <pre className="mt-2 overflow-x-auto rounded bg-muted p-2 text-xs">
+                    cd /workspaces/MonoRepo/development npx supabase functions
+                    deploy --no-verify-jwt
+                  </pre>
                 </details>
               </div>
               <Button
                 variant="outline"
                 onClick={() => {
-                  window.open('https://github.com/NetNeural/MonoRepo-Staging/actions/workflows/deploy-staging.yml', '_blank')
-                  toast.info('Opening GitHub Actions - use "Run workflow" button')
+                  window.open(
+                    'https://github.com/NetNeural/MonoRepo-Staging/actions/workflows/deploy-staging.yml',
+                    '_blank'
+                  )
+                  toast.info(
+                    'Opening GitHub Actions - use "Run workflow" button'
+                  )
                 }}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
@@ -779,7 +811,8 @@ npx supabase functions deploy --no-verify-jwt</pre>
               <div>
                 <h4 className="font-medium">Clear Database Connections</h4>
                 <p className="text-sm text-muted-foreground">
-                  Terminates idle database connections (useful if connection pool is exhausted)
+                  Terminates idle database connections (useful if connection
+                  pool is exhausted)
                 </p>
               </div>
               <Button

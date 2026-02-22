@@ -88,7 +88,7 @@ export default function DashboardPage() {
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       {/* Page Header */}
       <div className="space-y-1">
-        <div className="flex items-center gap-3 justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <OrganizationLogo
               settings={currentOrganization.settings}

@@ -239,7 +239,11 @@ export class MessageProcessor {
     }
   }
 
-  private parseVMarkMessage(deviceId: string, payload: any, incomingTopic: string = ''): ProcessedMessage {
+  private parseVMarkMessage(
+    deviceId: string,
+    payload: any,
+    incomingTopic: string = ''
+  ): ProcessedMessage {
     // VMark-specific parsing
     // Expected format: { "device": "xxx", "handle": "properties_report", "paras": {...}, "time": "..." }
     const telemetry: Record<string, any> = {}

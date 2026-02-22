@@ -12,6 +12,7 @@ User UI → Edge Function → Database Table → Service Monitor → Self-Restar
 ```
 
 **Flow:**
+
 1. User clicks "Request Restart" button in UI
 2. Edge Function creates row in `service_restart_requests` table
 3. Service monitor (running in MQTT container) polls table every 30s
@@ -22,6 +23,7 @@ User UI → Edge Function → Database Table → Service Monitor → Self-Restar
 ## Setup on demo-stage Server
 
 ### Prerequisites
+
 - MQTT subscriber container running
 - Supabase service role key available
 - Git repository accessible from server
@@ -29,6 +31,7 @@ User UI → Edge Function → Database Table → Service Monitor → Self-Restar
 ### Installation
 
 **1. Copy monitor script to server:**
+
 ```bash
 # If you have ANY access to the server (console, file upload, etc.)
 # Copy these files to /opt/mqtt-subscriber/:
@@ -37,12 +40,14 @@ User UI → Edge Function → Database Table → Service Monitor → Self-Restar
 ```
 
 **2. Install dependencies:**
+
 ```bash
 cd /opt/mqtt-subscriber
 npm install @supabase/supabase-js
 ```
 
 **3. Add to docker-compose.yml:**
+
 ```yaml
 services:
   mqtt-subscriber:
@@ -50,20 +55,22 @@ services:
     environment:
       - SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - RESTART_POLL_INTERVAL=30  # seconds
+      - RESTART_POLL_INTERVAL=30 # seconds
       - SERVICE_DIR=/opt/mqtt-subscriber
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Allow container to restart itself
+      - /var/run/docker.sock:/var/run/docker.sock # Allow container to restart itself
     command: sh -c "node restart-monitor.js & npm start"
 ```
 
 **4. Set environment variables:**
+
 ```bash
 # Add to .env file on server
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 **5. Restart to apply changes:**
+
 ```bash
 docker-compose restart mqtt-subscriber
 ```
@@ -78,6 +85,7 @@ npx supabase db push
 ```
 
 The migration creates:
+
 - `service_restart_requests` table
 - `request_service_restart()` function
 - Appropriate RLS policies
@@ -98,20 +106,23 @@ gh workflow run deploy-staging.yml -f force_deploy=true
 ## Usage
 
 ### From UI
+
 1. Go to Support → Troubleshooting
 2. Click "Request Restart" in System Services section
 3. Wait 30-60 seconds for service to restart
 
 ### Programmatically
+
 ```typescript
 const { data, error } = await supabase.rpc('request_service_restart', {
-  p_service_name: 'mqtt-subscriber'
+  p_service_name: 'mqtt-subscriber',
 })
 ```
 
 ## Monitoring
 
 ### Check restart requests:
+
 ```sql
 SELECT * FROM service_restart_requests
 ORDER BY requested_at DESC
@@ -119,6 +130,7 @@ LIMIT 10;
 ```
 
 ### Check monitor logs (on server):
+
 ```bash
 docker-compose logs -f mqtt-subscriber | grep "Restart Monitor"
 ```
@@ -126,35 +138,42 @@ docker-compose logs -f mqtt-subscriber | grep "Restart Monitor"
 ## Troubleshooting
 
 ### Issue: "A restart request is already pending"
+
 **Cause:** Request created within last 5 minutes
 
 **Solution:** Wait 5 minutes or clear old request:
+
 ```sql
 UPDATE service_restart_requests
 SET status = 'completed'
-WHERE status = 'pending' 
+WHERE status = 'pending'
   AND service_name = 'mqtt-subscriber';
 ```
 
 ### Issue: Requests stay in "pending" status
+
 **Cause:** Restart monitor not running
 
 **Solution:** Check if monitor is running:
+
 ```bash
 # On server
 docker-compose exec mqtt-subscriber ps aux | grep restart-monitor
 ```
 
 If not running:
+
 ```bash
 docker-compose restart mqtt-subscriber
 docker-compose logs mqtt-subscriber | grep "Restart Monitor"
 ```
 
 ### Issue: Monitor can't restart Docker container
+
 **Cause:** Docker socket not mounted
 
 **Solution:** Add to docker-compose.yml:
+
 ```yaml
 volumes:
   - /var/run/docker.sock:/var/run/docker.sock
@@ -173,13 +192,13 @@ volumes:
 ✅ **No open ports** - Service polls outbound only  
 ✅ **Audit trail** - All restarts logged in database  
 ✅ **User tracking** - Know who requested each restart  
-✅ **Self-healing** - Service restarts itself automatically  
+✅ **Self-healing** - Service restarts itself automatically
 
 ## Disadvantages
 
 ⚠️ **Delayed execution** - 30-60 second delay (polling interval)  
 ⚠️ **Requires monitor** - restart-monitor.js must be running  
-⚠️ **Docker socket access** - Container needs privileged access  
+⚠️ **Docker socket access** - Container needs privileged access
 
 ## Alternative: Manual Restart
 

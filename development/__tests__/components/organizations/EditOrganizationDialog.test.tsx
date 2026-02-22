@@ -50,7 +50,9 @@ describe('EditOrganizationDialog - Issue #49 Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Re-configure createClient after clearAllMocks
-    const { createClient } = jest.requireMock('@/lib/supabase/client') as { createClient: jest.Mock }
+    const { createClient } = jest.requireMock('@/lib/supabase/client') as {
+      createClient: jest.Mock
+    }
     createClient.mockReturnValue({ auth: { getSession: mockGetSession } })
     mockGetSession.mockResolvedValue({
       data: { session: mockSession },

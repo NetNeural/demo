@@ -25,6 +25,7 @@ If you access the server via web console or other means:
 ### Step 1: Connect to demo-stage server
 
 Use whatever method you have:
+
 - SSH: `ssh user@demo-stage.netneural.ai`
 - Cloud provider web console (AWS, DigitalOcean, etc.)
 - Management interface
@@ -66,6 +67,7 @@ cat .env
 ```
 
 Should contain:
+
 ```env
 SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -97,6 +99,7 @@ docker-compose ps
 ```
 
 Should show:
+
 - `netneural-mqtt-subscriber` - Running
 - `netneural-restart-monitor` - Running
 
@@ -143,8 +146,8 @@ You should see:
 Check the database:
 
 ```sql
-SELECT * FROM service_restart_requests 
-ORDER BY requested_at DESC 
+SELECT * FROM service_restart_requests
+ORDER BY requested_at DESC
 LIMIT 5;
 ```
 

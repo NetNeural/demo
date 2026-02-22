@@ -4,7 +4,13 @@
  * Tests for DevicesHeader, DevicesList, TransferDeviceDialog, DeviceIntegrationManager
  */
 
-import { render, screen, fireEvent, waitFor, userEvent } from '../utils/test-utils'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  userEvent,
+} from '../utils/test-utils'
 import { DevicesHeader } from '@/components/devices/DevicesHeader'
 import { DevicesList } from '@/components/devices/DevicesList'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
@@ -14,8 +20,12 @@ import { DeviceIntegrationManager } from '@/components/devices/DeviceIntegration
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getUser: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest
+        .fn()
+        .mockResolvedValue({ data: { session: null }, error: null }),
     },
     from: jest.fn(() => ({
       select: jest.fn(() => ({
