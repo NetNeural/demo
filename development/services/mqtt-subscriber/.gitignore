@@ -6,5 +6,12 @@ dist/
 .DS_Store
 logs/
 
+# npm pack artifacts
+*.tgz
+netneural-mqtt-subscriber@*
+
+# OS/runtime artifacts
+node
+
 # Webhook secrets
 .restart-token.secret
