@@ -52,7 +52,7 @@ export async function POST(
     // Run sync using orchestrator
     const orchestrator = new IntegrationSyncOrchestrator()
     const result = await orchestrator.syncIntegration(
-      integrationWithOrg.organization.id,
+      integrationWithOrg.organization?.id ?? integration.organization_id,
       integrationId,
       { fullSync, dryRun }
     )

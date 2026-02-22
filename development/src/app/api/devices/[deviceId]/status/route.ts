@@ -30,7 +30,7 @@ export async function GET(
       .select(
         `
         *,
-        integration:organization_integrations(*)
+        integration:device_integrations(*)
       `
       )
       .eq('id', deviceId)
@@ -41,7 +41,8 @@ export async function GET(
     }
 
     // 2. Create provider (works for ANY integration type)
-    const typedIntegration = device.integration as OrganizationIntegration
+    const typedIntegration =
+      device.integration as unknown as OrganizationIntegration
     const provider = IntegrationProviderFactory.create(typedIntegration)
 
     // 3. Fetch real-time status from provider

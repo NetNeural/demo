@@ -43,7 +43,7 @@ export async function POST(
       .select(
         `
         *,
-        integration:organization_integrations(*)
+        integration:device_integrations(*)
       `
       )
       .eq('id', deviceId)
@@ -69,7 +69,7 @@ export async function POST(
 
     // Create provider
     const provider = IntegrationProviderFactory.create(
-      device.integration as OrganizationIntegration
+      device.integration as unknown as OrganizationIntegration
     )
 
     // Check if provider supports firmware management
@@ -89,13 +89,13 @@ export async function POST(
         const firmwareProvider = provider as typeof provider &
           FirmwareDeploymentProvider
         deploymentResult = await firmwareProvider.deployFirmware(
-          device.external_device_id,
+          device.external_device_id ?? '',
           {
             artifactId,
             version: artifact.version,
             packageName: artifact.package_name,
             componentType: componentType || artifact.component_type,
-            checksum: artifact.checksum_sha256,
+            checksum: artifact.checksum_sha256 ?? '',
           }
         )
       } else {
