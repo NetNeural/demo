@@ -341,6 +341,19 @@ export class MessageProcessor {
       return existing.id
     }
 
+    // Also check serial_number field (devices created via UI use this field)
+    const { data: bySerial } = await this.supabase
+      .from('devices')
+      .select('id')
+      .eq('serial_number', deviceId)
+      .eq('organization_id', organizationId)
+      .limit(1)
+      .maybeSingle()
+
+    if (bySerial) {
+      return bySerial.id
+    }
+
     // Create device with hardware_ids
     const { data: created, error } = await this.supabase
       .from('devices')
