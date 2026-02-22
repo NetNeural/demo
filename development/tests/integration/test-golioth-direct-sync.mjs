@@ -5,7 +5,6 @@ const SUPABASE_ANON_KEY =
 const ORG_ID = '00000000-0000-0000-0000-000000000001'
 
 console.log('🧪 Direct API: Golioth Sync\n')
-
 ;(async () => {
   try {
     // Login
@@ -91,7 +90,9 @@ console.log('🧪 Direct API: Golioth Sync\n')
           console.log(JSON.stringify(syncResult, null, 2))
 
           if (syncResult.devices_succeeded) {
-            console.log(`\n✅ Imported ${syncResult.devices_succeeded} devices!`)
+            console.log(
+              `\n✅ Imported ${syncResult.devices_succeeded} devices!`
+            )
           }
         } else {
           console.log('❌ No Golioth integration found')
