@@ -8,6 +8,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { IntegrationProviderFactory } from '@/lib/integrations/integration-provider-factory'
+import { OrganizationIntegration } from '@/lib/integrations/organization-integrations'
+
+interface FirmwareDeploymentProvider {
+  deployFirmware: (
+    deviceId: string,
+    opts: {
+      artifactId: string
+      version: string
+      packageName: string
+      componentType: string
+      checksum: string
+    }
+  ) => Promise<{ deploymentId: string; status: string; message?: string }>
+}
 
 // Required for Next.js static export - API routes are only used in dynamic mode
 export function generateStaticParams() {
@@ -55,7 +69,7 @@ export async function POST(
 
     // Create provider
     const provider = IntegrationProviderFactory.create(
-      device.integration as any
+      device.integration as OrganizationIntegration
     )
 
     // Check if provider supports firmware management
@@ -71,8 +85,10 @@ export async function POST(
     let deploymentResult
     try {
       // Check if provider has deployFirmware method
-      if (typeof (provider as any).deployFirmware === 'function') {
-        deploymentResult = await (provider as any).deployFirmware(
+      if ('deployFirmware' in provider) {
+        const firmwareProvider = provider as typeof provider &
+          FirmwareDeploymentProvider
+        deploymentResult = await firmwareProvider.deployFirmware(
           device.external_device_id,
           {
             artifactId,

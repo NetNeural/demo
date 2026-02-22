@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { IntegrationProviderFactory } from '@/lib/integrations/integration-provider-factory'
+import { OrganizationIntegration } from '@/lib/integrations/organization-integrations'
+import { DeviceStatus } from '@/lib/integrations/base-integration-provider'
 
 // Required for Next.js static export - API routes are only used in dynamic mode
 export function generateStaticParams() {
@@ -39,9 +41,8 @@ export async function GET(
     }
 
     // 2. Create provider (works for ANY integration type)
-    const provider = IntegrationProviderFactory.create(
-      device.integration as any
-    )
+    const typedIntegration = device.integration as OrganizationIntegration
+    const provider = IntegrationProviderFactory.create(typedIntegration)
 
     // 3. Fetch real-time status from provider
     const externalId = device.external_device_id || ''
@@ -59,12 +60,14 @@ export async function GET(
         serialNumber: device.serial_number,
       },
       status: providerStatus?.connectionState || device.status || 'unknown',
-      statusReason: (providerStatus as any)?.statusReason || null,
+      statusReason:
+        (providerStatus as DeviceStatus & { statusReason?: string | null })
+          ?.statusReason ?? null,
       connection: {
         isConnected: providerStatus?.connectionState === 'online',
         lastSeenOnline: device.last_seen_online || providerStatus?.lastActivity,
         lastSeenOffline: device.last_seen_offline,
-        uptime: (connectionInfo as any)?.uptime,
+        uptime: connectionInfo?.uptime,
       },
       firmware: {
         version: device.firmware_version || providerStatus?.firmware?.version,
@@ -73,8 +76,8 @@ export async function GET(
       },
       telemetry: providerStatus?.telemetry || {},
       integration: {
-        type: (device.integration as any)?.integration_type,
-        name: (device.integration as any)?.name,
+        type: typedIntegration.integration_type,
+        name: typedIntegration.name,
         capabilities: provider.getCapabilities(),
       },
       lastSyncedAt: device.updated_at,

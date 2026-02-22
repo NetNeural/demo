@@ -44,7 +44,7 @@ export async function POST(
       .eq('id', integration.organization_id)
       .single()
 
-    const integrationWithOrg: any = {
+    const integrationWithOrg = {
       ...integration,
       organization: org,
     }
