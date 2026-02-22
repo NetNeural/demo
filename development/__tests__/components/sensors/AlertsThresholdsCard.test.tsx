@@ -19,7 +19,7 @@
 
 import { render, screen, waitFor, userEvent } from '../../utils/test-utils'
 import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
-import { createMockDevice } from '@/__tests__/mocks/factories'
+import { createMockDevice } from '../../mocks/factories'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 

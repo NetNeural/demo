@@ -20,14 +20,13 @@ jest.mock('@/hooks/use-toast', () => ({
 
 // Mock Supabase client
 const mockGetSession = jest.fn()
-const mockCreateClient = jest.fn(() => ({
-  auth: {
-    getSession: mockGetSession,
-  },
-}))
 
 jest.mock('@/lib/supabase/client', () => ({
-  createClient: () => mockCreateClient(),
+  createClient: jest.fn(() => ({
+    auth: {
+      getSession: jest.fn(),
+    },
+  })),
 }))
 
 // Mock fetch globally
@@ -50,6 +49,9 @@ describe('EditOrganizationDialog - Issue #49 Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Re-configure createClient after clearAllMocks
+    const { createClient } = jest.requireMock('@/lib/supabase/client') as { createClient: jest.Mock }
+    createClient.mockReturnValue({ auth: { getSession: mockGetSession } })
     mockGetSession.mockResolvedValue({
       data: { session: mockSession },
       error: null,
