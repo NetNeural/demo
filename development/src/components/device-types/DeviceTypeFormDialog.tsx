@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { AlertCircle, Info, Network } from 'lucide-react'
+import { AlertCircle, Info, Network, Thermometer } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import {
@@ -338,6 +338,30 @@ export function DeviceTypeFormDialog({
               >
                 <Network className="h-4 w-4" />
                 Gateway
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  setForm({
+                    name: 'V-Mark MQTT Temperature Sensor',
+                    description: 'V-Mark LoRa/MQTT temperature sensor. Reports temperature (°C), RSSI, SNR, BatteryIdle (mV), BatteryTx (mV) via flat JSONB payload.',
+                    device_class: 'temperature',
+                    unit: '°C',
+                    lower_normal: '15',
+                    upper_normal: '30',
+                    lower_alert: '5',
+                    upper_alert: '40',
+                    precision_digits: '1',
+                    icon: 'thermometer',
+                  })
+                  setErrors({})
+                }}
+              >
+                <Thermometer className="h-4 w-4" />
+                V-Mark MQTT
               </Button>
             </div>
           )}

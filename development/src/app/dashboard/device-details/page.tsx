@@ -91,6 +91,8 @@ const FLAT_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
   SNR: { label: 'SNR', unit: 'dB' },
   BatteryIdle: { label: 'Battery (Idle)', unit: 'mV' },
   BatteryTx: { label: 'Battery (TX)', unit: 'mV' },
+  GwRssi: { label: 'GW RSSI', unit: 'dBm' },
+  GwSnr: { label: 'GW SNR', unit: 'dB' },
   voltage: { label: 'Voltage', unit: 'V' },
   current: { label: 'Current', unit: 'A' },
   power: { label: 'Power', unit: 'W' },
