@@ -205,7 +205,10 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build Next.js application
-        run: npm run build
+        run: |
+          # Remove API routes - incompatible with static export (output: 'export')
+          rm -rf src/app/api
+          npm run build
         env:
           NODE_ENV: production
           
