@@ -334,7 +334,8 @@ export class MessageProcessor {
       .select('id')
       .contains('hardware_ids', [deviceId])
       .eq('organization_id', organizationId)
-      .single()
+      .limit(1)
+      .maybeSingle()
 
     if (existing) {
       return existing.id
@@ -359,6 +360,19 @@ export class MessageProcessor {
       .single()
 
     if (error || !created) {
+      // Race condition: another process may have inserted simultaneously — re-query
+      const { data: raceWinner } = await this.supabase
+        .from('devices')
+        .select('id')
+        .contains('hardware_ids', [deviceId])
+        .eq('organization_id', organizationId)
+        .limit(1)
+        .maybeSingle()
+
+      if (raceWinner) {
+        return raceWinner.id
+      }
+
       this.logger.error({ error, deviceId }, 'Failed to auto-create device')
       return null
     }
