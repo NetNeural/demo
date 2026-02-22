@@ -273,7 +273,7 @@ export default createEdgeFunction(
       // First, verify the device exists and get its current organization
       const { data: existingDevice, error: fetchError } = await supabase
         .from('devices')
-        .select('id, organization_id, name')
+        .select('id, organization_id, name, serial_number')
         .eq('id', deviceId)
         .single()
 
@@ -322,7 +322,22 @@ export default createEdgeFunction(
       if (device_type !== undefined) updates.device_type = device_type
       if (device_type_id !== undefined) updates.device_type_id = device_type_id
       if (model !== undefined) updates.model = model
-      if (serial_number !== undefined) updates.serial_number = serial_number
+      
+      // Handle serial_number carefully - empty string should be null
+      if (serial_number !== undefined) {
+        const normalizedSerialNumber = serial_number?.trim() || null
+        const normalizedExisting = existingDevice.serial_number?.trim() || null
+        
+        if (normalizedSerialNumber !== normalizedExisting) {
+          console.log('🔵 Serial number change detected:', {
+            from: normalizedExisting,
+            to: normalizedSerialNumber,
+          })
+          updates.serial_number = normalizedSerialNumber
+        } else {
+          console.log('🔵 Serial number unchanged, skipping update:', normalizedSerialNumber)
+        }
+      }
       if (firmware_version !== undefined)
         updates.firmware_version = firmware_version
       if (location_id !== undefined) updates.location_id = location_id
@@ -428,8 +443,13 @@ export default createEdgeFunction(
         throw new Error('Device ID is required for deletion')
       }
 
-      const body = await req.json()
-      const { organization_id } = body
+      let organization_id: string | undefined
+      try {
+        const body = await req.json()
+        organization_id = body?.organization_id
+      } catch {
+        // No body provided — ok for DELETE
+      }
 
       // Verify user has access to this device's organization
       const targetOrgId = getTargetOrganizationId(userContext, organization_id)
