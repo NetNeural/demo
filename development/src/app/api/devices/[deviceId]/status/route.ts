@@ -9,9 +9,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { IntegrationProviderFactory } from '@/lib/integrations/integration-provider-factory'
 
-// Route segment config - disable for static export
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
 
 export async function GET(
   request: NextRequest,

@@ -8,9 +8,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ConflictDetector } from '@/lib/sync/conflict-detector'
 
-// Route segment config - disable for static export
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
 
 export async function POST(
   request: NextRequest,

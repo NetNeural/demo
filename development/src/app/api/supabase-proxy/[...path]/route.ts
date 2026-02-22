@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 
-// Route segment config - disable for static export
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
 
 /**
  * Proxy for Supabase API requests in Codespaces
