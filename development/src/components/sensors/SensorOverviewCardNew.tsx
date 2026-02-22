@@ -14,6 +14,7 @@ interface TelemetryReading {
     units?: number
     value?: number
     sensor?: string
+    unit?: string        // normalized string unit (e.g. '°C')
     [key: string]: unknown
   }
   device_timestamp: string | null
@@ -148,9 +149,12 @@ export function SensorOverviewCard({
       const unit =
         reading.telemetry.units != null
           ? UNIT_LABELS[reading.telemetry.units as number] || ''
-          : ''
+          : (reading.telemetry.unit || '')
       const isTemperature =
-        reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
+        reading.telemetry.type === 1 ||
+        unit === '°C' ||
+        unit === '°F' ||
+        reading.telemetry.sensor === 'Temperature'
 
       if (!stats[sensorKey]) {
         stats[sensorKey] = {
@@ -204,19 +208,31 @@ export function SensorOverviewCard({
     const value = reading.telemetry.value
     const sensorType = reading.telemetry.type
     const units = reading.telemetry.units
+    // normalized string unit (from MQTT subscriber flat JSONB)
+    const unitStr = reading.telemetry.unit || ''
 
     if (typeof value !== 'number') return value
 
-    // Temperature conversion
-    if (sensorType === 1) {
-      // Celsius to Fahrenheit
-      const displayValue = useFahrenheit ? (value * 9) / 5 + 32 : value
-      const unit = useFahrenheit ? '°F' : '°C'
-      return `${displayValue.toFixed(2)} ${unit}`
+    // Temperature conversion — handle both typed (type=1) and normalized (unit='°C') formats
+    const isTemperature =
+      sensorType === 1 ||
+      unitStr === '°C' ||
+      unitStr === '°F' ||
+      reading.telemetry.sensor === 'Temperature'
+    if (isTemperature) {
+      const rawUnit = unitStr || '°C'
+      const displayValue =
+        useFahrenheit && (rawUnit === '°C')
+          ? (value * 9) / 5 + 32
+          : !useFahrenheit && rawUnit === '°F'
+            ? ((value - 32) * 5) / 9
+            : value
+      const displayUnit = useFahrenheit ? '°F' : '°C'
+      return `${displayValue.toFixed(2)} ${displayUnit}`
     }
 
-    // Other sensors
-    const unit = units != null ? UNIT_LABELS[units] || '' : ''
+    // Other sensors — prefer string unit, fall back to numeric lookup
+    const unit = units != null ? UNIT_LABELS[units] || '' : unitStr
     return `${value.toFixed(2)} ${unit}`
   }
 
@@ -281,7 +297,7 @@ export function SensorOverviewCard({
               let unit =
                 reading.telemetry.units != null
                   ? UNIT_LABELS[reading.telemetry.units as number]
-                  : ''
+                  : (reading.telemetry.unit || '')
               let value =
                 reading.telemetry.value != null
                   ? Number(reading.telemetry.value)
@@ -289,7 +305,10 @@ export function SensorOverviewCard({
 
               // Convert temperature if needed
               const isTemperature =
-                reading.telemetry.type === 1 || unit === '°C' || unit === '°F'
+                reading.telemetry.type === 1 ||
+                unit === '°C' ||
+                unit === '°F' ||
+                reading.telemetry.sensor === 'Temperature'
               if (value !== null && isTemperature) {
                 if (useFahrenheit && unit === '°C') {
                   value = (value * 9) / 5 + 32
@@ -453,7 +472,7 @@ export function SensorOverviewCard({
             const sensorType = firstReading.telemetry.type
             const sensorLabel = sensorType
               ? SENSOR_LABELS[sensorType]
-              : 'Reading'
+              : (firstReading.telemetry.sensor || 'Reading')
             const Icon = getSensorIcon(sensorType)
 
             return (

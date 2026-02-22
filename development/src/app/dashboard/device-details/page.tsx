@@ -80,6 +80,64 @@ interface TelemetryReading {
   received_at: string
 }
 
+// Config for flat JSONB telemetry fields from MQTT subscriber
+const FLAT_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
+  temperature: { label: 'Temperature', unit: '°C' },
+  humidity: { label: 'Humidity', unit: '%' },
+  pressure: { label: 'Pressure', unit: 'hPa' },
+  co2: { label: 'CO₂', unit: 'ppm' },
+  battery: { label: 'Battery', unit: '%' },
+  RSSI: { label: 'RSSI', unit: 'dBm' },
+  SNR: { label: 'SNR', unit: 'dB' },
+  BatteryIdle: { label: 'Battery (Idle)', unit: 'mV' },
+  BatteryTx: { label: 'Battery (TX)', unit: 'mV' },
+  voltage: { label: 'Voltage', unit: 'V' },
+  current: { label: 'Current', unit: 'A' },
+  power: { label: 'Power', unit: 'W' },
+}
+
+/**
+ * Expand flat JSONB telemetry records (e.g. { temperature: 22.7, BatteryIdle: 3593 })
+ * into individual per-sensor rows ({ sensor: 'Temperature', value: 22.7, unit: '°C' }).
+ * Records already in typed format ({ type, value }) are passed through unchanged.
+ */
+function normalizeTelemetryReadings(
+  readings: TelemetryReading[]
+): TelemetryReading[] {
+  const result: TelemetryReading[] = []
+  for (const row of readings) {
+    const t = row.telemetry
+    // Already typed/normalized format — pass through
+    if (
+      !t ||
+      t.type != null ||
+      t.value != null ||
+      t.sensor != null
+    ) {
+      result.push(row)
+      continue
+    }
+    // Flat JSONB — expand each numeric field into its own row
+    const entries = Object.entries(t).filter(([, v]) => typeof v === 'number')
+    if (entries.length === 0) {
+      result.push(row)
+      continue
+    }
+    for (const [key, val] of entries) {
+      const config = FLAT_SENSOR_CONFIG[key]
+      result.push({
+        ...row,
+        telemetry: {
+          sensor: config?.label ?? key,
+          value: val as number,
+          unit: config?.unit ?? '',
+        },
+      })
+    }
+  }
+  return result
+}
+
 export default function SensorDetailsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -166,7 +224,9 @@ export default function SensorDetailsPage() {
         .limit(500)
 
       if (telemetryError) throw telemetryError
-      setTelemetryReadings((telemetryData as TelemetryReading[]) || [])
+      setTelemetryReadings(
+        normalizeTelemetryReadings((telemetryData as TelemetryReading[]) || [])
+      )
 
       // Fetch temperature unit preference from any threshold
       const { data: thresholds } = await supabase
