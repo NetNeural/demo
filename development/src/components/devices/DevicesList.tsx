@@ -40,6 +40,8 @@ import {
   Droplets,
   Activity,
   RefreshCw,
+  Wind,
+  BatteryMedium,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -147,12 +149,58 @@ function isGatewayDevice(deviceType: string, deviceName: string): boolean {
   )
 }
 
+// Config for flat JSONB telemetry (MQTT / modular test sensor)
+const JSONB_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
+  temperature: { label: 'Temperature', unit: '°C' },
+  humidity:    { label: 'Humidity',    unit: '%'  },
+  pressure:    { label: 'Pressure',    unit: 'hPa'},
+  co2:         { label: 'CO₂',         unit: 'ppm'},
+  battery:     { label: 'Battery',     unit: '%'  },
+  RSSI:        { label: 'RSSI',        unit: 'dBm'},
+  SNR:         { label: 'SNR',         unit: 'dB' },
+  BatteryIdle: { label: 'Battery (Idle)', unit: 'mV' },
+  BatteryTx:   { label: 'Battery (TX)',   unit: 'mV' },
+  GwRssi:      { label: 'GW RSSI',     unit: 'dBm'},
+  GwSnr:       { label: 'GW SNR',      unit: 'dB' },
+}
+
+/**
+ * Expand a flat JSONB telemetry row into per-sensor virtual rows.
+ * Golioth rows (type/value/sensor all present) are returned as-is.
+ */
+function expandFlatTelemetryRow(row: TelemetryReading): TelemetryReading[] {
+  const t = row.telemetry
+  if (!t) return [row]
+  // Already Golioth typed format
+  if (typeof t.type === 'number' && typeof t.value === 'number') return [row]
+  // Already normalised (sensor string + value number)
+  if (typeof t.sensor === 'string' && typeof t.value === 'number') return [row]
+  // Flat JSONB — expand numeric keys
+  const entries = Object.entries(t).filter(([, v]) => typeof v === 'number')
+  if (entries.length === 0) return [row]
+  return entries.map(([key, val]) => {
+    const cfg = JSONB_SENSOR_CONFIG[key]
+    return {
+      ...row,
+      telemetry: {
+        sensor: cfg?.label || key,
+        value: val as number,
+        unit: cfg?.unit || '',
+      },
+    }
+  })
+}
+
 function getSensorIcon(sensorType?: number, sensorName?: string) {
   const name = sensorName?.toLowerCase() || ''
-  if (sensorType === 1 || name.includes('tmp') || name.includes('temp'))
+  if (sensorType === 1 || name.includes('tmp') || name.includes('temp') || name === 'temperature')
     return Thermometer
-  if (sensorType === 2 || name.includes('hum') || name.includes('sht'))
+  if (sensorType === 2 || name.includes('hum') || name.includes('sht') || name === 'humidity')
     return Droplets
+  if (name.includes('co2') || name.includes('co₂') || name.includes('carbon'))
+    return Wind
+  if (name.includes('battery') || name.includes('batt'))
+    return BatteryMedium
   return Activity
 }
 
@@ -162,7 +210,10 @@ function formatSensorValue(
 ): string {
   if (telemetry.value == null) return 'N/A'
   let value = Number(telemetry.value)
-  let unit = telemetry.units != null ? UNIT_LABELS[telemetry.units] || '' : ''
+  // unit comes from numeric units field (Golioth) or string unit field (flat JSONB normalized)
+  let unit = telemetry.units != null
+    ? UNIT_LABELS[telemetry.units] || ''
+    : ((telemetry as { unit?: string }).unit || '')
 
   // Convert temperature if needed
   const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'
@@ -318,30 +369,34 @@ export function DevicesList() {
         }
 
         if (data && data.length > 0) {
-          // Group by device_id and keep latest reading for each unique sensor type
+          // Group by device_id and keep latest reading for each unique sensor type.
+          // Flat JSONB rows (V-Mark MQTT, Modular Test Sensor) are first expanded into
+          // one virtual row per numeric key so every sensor channel is captured.
           const grouped: DeviceTelemetry = {}
           for (const row of data) {
-            const reading = row as TelemetryReading
-            if (!grouped[row.device_id]) {
-              grouped[row.device_id] = []
-            }
+            const expanded = expandFlatTelemetryRow(row as TelemetryReading)
+            for (const reading of expanded) {
+              if (!grouped[row.device_id]) {
+                grouped[row.device_id] = []
+              }
 
-            // Check if we already have this sensor type for this device
-            const sensorKey =
-              reading.telemetry.type != null
-                ? `type_${reading.telemetry.type}`
-                : reading.telemetry.sensor || 'unknown'
+              // Check if we already have this sensor type for this device
+              const sensorKey =
+                reading.telemetry.type != null
+                  ? `type_${reading.telemetry.type}`
+                  : reading.telemetry.sensor || 'unknown'
 
-            const hasSensorType = grouped[row.device_id]!.some((r) => {
-              const existingKey =
-                r.telemetry.type != null
-                  ? `type_${r.telemetry.type}`
-                  : r.telemetry.sensor || 'unknown'
-              return existingKey === sensorKey
-            })
+              const hasSensorType = grouped[row.device_id]!.some((r) => {
+                const existingKey =
+                  r.telemetry.type != null
+                    ? `type_${r.telemetry.type}`
+                    : r.telemetry.sensor || 'unknown'
+                return existingKey === sensorKey
+              })
 
-            if (!hasSensorType) {
-              grouped[row.device_id]!.push(reading)
+              if (!hasSensorType) {
+                grouped[row.device_id]!.push(reading)
+              }
             }
           }
           setLatestTelemetry(grouped)
