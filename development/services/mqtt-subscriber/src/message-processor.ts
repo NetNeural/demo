@@ -347,6 +347,7 @@ export class MessageProcessor {
         name: `MQTT Device ${deviceId}`,
         organization_id: organizationId,
         hardware_ids: [deviceId],
+        device_type: 'iot-sensor',
         status: 'online',
         metadata: {
           auto_discovered: true,
