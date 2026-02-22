@@ -192,7 +192,21 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
           received_at: row.received_at,
         }))
 
-        setHistoricalData(normalizeTelemetryRecords(typedData))
+        // DEBUG: log raw structure so we can see what's actually stored
+        if (typedData.length > 0) {
+          const sample = typedData[0]
+          console.log('[HistoricalDataViewer] RAW sample telemetry:', JSON.stringify(sample.telemetry))
+          console.log('[HistoricalDataViewer] telemetry keys:', Object.keys(sample.telemetry || {}))
+          console.log('[HistoricalDataViewer] typeof type:', typeof (sample.telemetry as any)?.type)
+          console.log('[HistoricalDataViewer] typeof value:', typeof (sample.telemetry as any)?.value)
+          console.log('[HistoricalDataViewer] total rows fetched:', typedData.length)
+        } else {
+          console.log('[HistoricalDataViewer] No data returned. org_id:', currentOrganization.id, 'device_id:', device.id)
+        }
+
+        const normalized = normalizeTelemetryRecords(typedData)
+        console.log('[HistoricalDataViewer] rows after normalization:', normalized.length, 'first normalized:', JSON.stringify(normalized[0]?.telemetry))
+        setHistoricalData(normalized)
       } catch (err) {
         console.error('[HistoricalDataViewer] Error:', err)
         setHistoricalData([])
