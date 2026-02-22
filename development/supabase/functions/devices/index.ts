@@ -70,6 +70,12 @@ export default createEdgeFunction(
       throw new DatabaseError('Unauthorized - authentication failed', 401)
     }
 
+    // Helper: return requested org if super_admin, otherwise user's own org
+    const getTargetOrganizationId = (ctx: typeof userContext, requestedOrgId?: string): string | null => {
+      if (ctx.isSuperAdmin && requestedOrgId) return requestedOrgId
+      return ctx.organizationId || null
+    }
+
     if (req.method === 'GET') {
       const url = new URL(req.url)
       const pathParts = url.pathname.split('/')
