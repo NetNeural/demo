@@ -723,18 +723,19 @@ export default function TroubleshootingTab({ organizationId }: Props) {
                       return
                     }
 
-                    if (result.data?.success) {
-                      console.log('✅ Restart request created:', result.data)
+                    const responseData = result.data as { success?: boolean; message?: string } | null
+                    if (responseData?.success) {
+                      console.log('✅ Restart request created:', responseData)
                       toast.success('Restart request created - service will restart in 30-60 seconds')
                       // Refresh activity logs
                       fetchActivityLogs()
                     } else {
-                      console.error('❌ Restart request unsuccessful:', result.data)
-                      toast.error(result.data?.message || 'Failed to create restart request')
+                      console.error('❌ Restart request unsuccessful:', responseData)
+                      toast.error(responseData?.message || 'Failed to create restart request')
                     }
                   } catch (error) {
                     console.error('❌ Restart request error:', error)
-                    toast.error(`Error: ${error.message || 'Failed to create restart request'}`)
+                    toast.error(`Error: ${error instanceof Error ? error.message : 'Failed to create restart request'}`)
                   } finally {
                     setRestartingMqtt(false)
                   }
