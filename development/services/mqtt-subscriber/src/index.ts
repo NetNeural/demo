@@ -165,7 +165,7 @@ class MqttSubscriberService {
       // Handle incoming messages
       client.on('message', async (topic, message) => {
         try {
-          await this.handleMessage(integration, topic, message)
+          await this.handleMessage(integration, topic, message, client)
         } catch (error) {
           logger.error(
             { error, topic, integrationId: id },
@@ -221,7 +221,8 @@ class MqttSubscriberService {
   private async handleMessage(
     integration: MqttIntegration,
     topic: string,
-    message: Buffer
+    message: Buffer,
+    mqttClient: MqttClient
   ): Promise<void> {
     const messageStr = message.toString()
 
@@ -251,6 +252,17 @@ class MqttSubscriberService {
           },
           'Message processed successfully'
         )
+
+        // Publish ACK if the protocol requires it (e.g. V-Mark properties_report)
+        if (processed.ackTopic && processed.ackPayload) {
+          mqttClient.publish(processed.ackTopic, processed.ackPayload, { qos: 0 }, (err) => {
+            if (err) {
+              logger.error({ err, ackTopic: processed.ackTopic }, 'Failed to publish ACK')
+            } else {
+              logger.info({ ackTopic: processed.ackTopic }, '✅ ACK published to device')
+            }
+          })
+        }
       }
     } catch (error) {
       logger.error(

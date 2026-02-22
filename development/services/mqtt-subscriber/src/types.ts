@@ -39,6 +39,10 @@ export interface ProcessedMessage {
   status?: 'online' | 'offline' | 'unknown'
   timestamp?: string
   metadata?: Record<string, any>
+  /** Topic the subscriber should publish an ACK to (V-Mark protocol) */
+  ackTopic?: string
+  /** Payload to publish as the ACK */
+  ackPayload?: string
 }
 
 export interface TelemetryRecord {

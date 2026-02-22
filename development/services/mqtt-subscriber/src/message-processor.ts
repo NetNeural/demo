@@ -135,7 +135,7 @@ export class MessageProcessor {
 
       switch (parser) {
         case 'vmark':
-          return this.parseVMarkMessage(deviceId, payload)
+          return this.parseVMarkMessage(deviceId, payload, topic)
         case 'custom':
           return this.parseCustomMessage(
             deviceId,
@@ -239,7 +239,7 @@ export class MessageProcessor {
     }
   }
 
-  private parseVMarkMessage(deviceId: string, payload: any): ProcessedMessage {
+  private parseVMarkMessage(deviceId: string, payload: any, incomingTopic: string = ''): ProcessedMessage {
     // VMark-specific parsing
     // Expected format: { "device": "xxx", "handle": "properties_report", "paras": {...}, "time": "..." }
     const telemetry: Record<string, any> = {}
@@ -284,12 +284,28 @@ export class MessageProcessor {
       timestamp = payload.timestamp
     }
 
+    // V-Mark expects an ACK reply when it sends a properties_report.
+    // Without the ACK the device eventually stops transmitting.
+    // Reply topic convention: <incomingTopic>_reply
+    let ackTopic: string | undefined
+    let ackPayload: string | undefined
+    if (payload.handle === 'properties_report' && incomingTopic) {
+      ackTopic = incomingTopic + '_reply'
+      ackPayload = JSON.stringify({ result: 0 })
+      this.logger.info(
+        { ackTopic, deviceId: payload.device || deviceId },
+        'V-Mark properties_report received — will ACK'
+      )
+    }
+
     return {
       deviceId: payload.device || deviceId,
       telemetry: Object.keys(telemetry).length > 0 ? telemetry : undefined,
       status: payload.online ? 'online' : undefined,
       timestamp,
       metadata: payload,
+      ackTopic,
+      ackPayload,
     }
   }
 
