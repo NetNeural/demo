@@ -49,27 +49,54 @@ async function executeRestart(requestId) {
       })
       .eq('id', requestId);
 
-    // Pull latest code
-    console.log('📥 Pulling latest code...');
-    const { stdout: pullOutput, stderr: pullError } = await execAsync(
-      'git pull',
-      { cwd: SERVICE_DIR, timeout: 30000 }
-    );
-    
-    if (pullError && !pullOutput.includes('Already up to date')) {
-      throw new Error(`Git pull failed: ${pullError}`);
+    // Pull latest code (only if this is a git repo)
+    let pullOutput = 'skipped (not a git repo)';
+    try {
+      const { stdout, stderr } = await execAsync(
+        'git pull',
+        { cwd: SERVICE_DIR, timeout: 30000 }
+      );
+      pullOutput = stdout.trim() || stderr.trim();
+      if (stderr && !stdout.includes('Already up to date') && !stdout.includes('Updating')) {
+        console.warn('⚠️  git pull stderr:', stderr.trim());
+      }
+    } catch (gitErr) {
+      console.warn('⚠️  git pull skipped:', gitErr.message);
     }
     
     console.log('✅ Code updated:', pullOutput.trim());
 
-    // Restart the service
-    console.log('🔄 Restarting Docker container...');
-    const { stdout: restartOutput } = await execAsync(
-      'docker-compose restart mqtt-subscriber',
-      { cwd: SERVICE_DIR, timeout: 60000 }
-    );
+    // Rebuild TypeScript if tsc is available
+    try {
+      console.log('🔨 Rebuilding TypeScript...');
+      const { stdout: tscOutput } = await execAsync(
+        'npx tsc',
+        { cwd: SERVICE_DIR, timeout: 60000 }
+      );
+      console.log('✅ TypeScript built:', tscOutput.trim() || 'ok');
+    } catch (tscErr) {
+      console.warn('⚠️  tsc failed (continuing anyway):', tscErr.message);
+    }
+
+    // Restart via PM2 (preferred) or docker-compose fallback
+    console.log('🔄 Restarting service...');
+    let restartOutput = '';
+    try {
+      const { stdout } = await execAsync(
+        'pm2 restart mqtt-subscriber',
+        { cwd: SERVICE_DIR, timeout: 60000 }
+      );
+      restartOutput = stdout.trim();
+    } catch {
+      // Fallback to docker-compose
+      const { stdout } = await execAsync(
+        'docker-compose restart mqtt-subscriber',
+        { cwd: SERVICE_DIR, timeout: 60000 }
+      );
+      restartOutput = stdout.trim();
+    }
     
-    console.log('✅ Container restarted:', restartOutput.trim());
+    console.log('✅ Service restarted:', restartOutput);
 
     // Update status to completed
     await supabase
@@ -86,10 +113,6 @@ async function executeRestart(requestId) {
       .eq('id', requestId);
 
     console.log(`✅ Restart completed successfully for request ${requestId}`);
-    console.log('⚠️  Note: This monitor process will also restart. Goodbye!');
-    
-    // Exit gracefully - Docker compose will restart us
-    process.exit(0);
 
   } catch (error) {
     console.error(`❌ Restart failed for request ${requestId}:`, error.message);
