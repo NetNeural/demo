@@ -19,6 +19,34 @@ services:
         max-size: '10m'
         max-file: '3'
 
+  restart-monitor:
+    image: node:20-alpine
+    container_name: netneural-restart-monitor
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - SERVICE_DIR=/opt/mqtt-subscriber
+      - RESTART_POLL_INTERVAL=30
+    volumes:
+      - ./restart-monitor.js:/app/restart-monitor.js:ro
+      - ./package.json:/app/package.json:ro
+      - ./node_modules:/app/node_modules:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/mqtt-subscriber:/opt/mqtt-subscriber
+    command: node restart-monitor.js
+    networks:
+      - netneural
+    depends_on:
+      - mqtt-subscriber
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
 networks:
   netneural:
     driver: bridge
