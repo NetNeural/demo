@@ -874,16 +874,21 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             <LogIn className="h-5 w-5" />
             Login Page Appearance
           </CardTitle>
-          <CardDescription>
-            Customize how the login page looks for your organization. Users access it via{' '}
+          <CardDescription className="space-y-1">
+            <span>
+              Customize how the login page looks for your organization. Share this link with your users so they see your branded login:
+            </span>
             <a
               href={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org=${currentOrganization?.slug || 'your-slug'}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block rounded bg-muted px-1 py-0.5 text-xs font-mono text-blue-600 hover:underline dark:text-blue-400"
+              className="block rounded bg-muted px-2 py-1 text-xs font-mono text-blue-600 hover:underline dark:text-blue-400 break-all"
             >
               {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
             </a>
+            <span className="block text-xs text-muted-foreground">
+              Without <code className="rounded bg-muted px-0.5">?org=</code>, the login page defaults to NetNeural branding. Each organization gets its own branded page by changing the slug.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
