@@ -17,6 +17,7 @@ import { AlertsThresholdsCard } from '@/components/sensors/AlertsThresholdsCard'
 import { StatisticalSummaryCard } from '@/components/sensors/StatisticalSummaryCard'
 import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
 import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
+import { TestDeviceControls } from '@/components/devices/TestDeviceControls'
 import type { Device } from '@/types/sensor-details'
 
 /**
@@ -65,6 +66,32 @@ function isGatewayDevice(device: Device): boolean {
       device.metadata.isGateway === true ||
       (typeof device.metadata.device_category === 'string' &&
         device.metadata.device_category.toLowerCase().includes('gateway'))
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function isTestDevice(device: Device): boolean {
+  if (device.is_test_device === true) return true
+
+  const type = (device.device_type || '').toLowerCase()
+  const name = (device.name || '').toLowerCase()
+
+  if (type.includes('test') || type.includes('modular test sensor')) {
+    return true
+  }
+
+  if (name.includes('test sensor') || name.includes('modular test sensor')) {
+    return true
+  }
+
+  if (device.metadata) {
+    if (
+      device.metadata.is_test_device === true ||
+      device.metadata.isTestDevice === true
     ) {
       return true
     }
@@ -173,6 +200,7 @@ export default function SensorDetailsPage() {
     () => (device ? isGatewayDevice(device) : false),
     [device]
   )
+  const testDevice = useMemo(() => (device ? isTestDevice(device) : false), [device])
 
   const fetchDeviceData = useCallback(async () => {
     if (!currentOrganization || !deviceId) return
@@ -199,6 +227,10 @@ export default function SensorDetailsPage() {
         name: deviceData.name as string,
         device_type: (deviceData.device_type as string) || 'unknown',
         device_type_id: (deviceData.device_type_id as string) || null,
+        is_test_device:
+          deviceData.is_test_device === true ||
+          ((deviceData.metadata as Record<string, unknown> | undefined)
+            ?.is_test_device === true),
         model: (deviceData.model as string) || undefined,
         serial_number: (deviceData.serial_number as string) || undefined,
         status: (deviceData.status as Device['status']) || 'offline',
@@ -330,6 +362,16 @@ export default function SensorDetailsPage() {
 
         {/* 2. Historical Data Viewer - Only for sensors with telemetry data */}
         {!isGateway && <HistoricalDataViewer device={device} />}
+
+        {/* Test Device Controls - shown on device details for modular test sensors */}
+        {testDevice && (
+          <TestDeviceControls
+            deviceId={device.id}
+            deviceTypeId={device.device_type_id || null}
+            currentStatus={device.status}
+            onDataSent={fetchDeviceData}
+          />
+        )}
 
         {/* 3. Inherited Device Type Configuration - Only when type assigned */}
         {device.device_type_id && (
