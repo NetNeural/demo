@@ -71,6 +71,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   // Login page appearance state
   const [loginBgUrl, setLoginBgUrl] = useState('')
   const [loginBgColor, setLoginBgColor] = useState('#030712')
+  const [loginBgFit, setLoginBgFit] = useState<'cover' | 'contain' | 'fill' | 'center'>('cover')
   const [loginHeadline, setLoginHeadline] = useState('')
   const [loginSubtitle, setLoginSubtitle] = useState('')
   const [loginCardOpacity, setLoginCardOpacity] = useState(70)
@@ -96,6 +97,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       // Login page settings
       setLoginBgUrl(settings.login_page?.background_url || '')
       setLoginBgColor(settings.login_page?.background_color || '#030712')
+      setLoginBgFit(settings.login_page?.background_fit || 'cover')
       setLoginHeadline(settings.login_page?.headline || '')
       setLoginSubtitle(settings.login_page?.subtitle || '')
       setLoginCardOpacity(settings.login_page?.card_opacity ?? 70)
@@ -174,6 +176,77 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             },
             'image/webp',
             0.85
+          )
+        }
+
+        img.onerror = () => reject(new Error('Failed to load image'))
+      }
+
+      reader.onerror = () => reject(new Error('Failed to read file'))
+    })
+  }
+
+  /**
+   * Compress and resize background image before upload
+   * Backgrounds need higher resolution than logos:
+   * - Max dimensions: 1920px (full HD width)
+   * - WebP format for optimal compression
+   * - Quality: 80% (good balance for large images)
+   * - Target size: <500KB after compression
+   */
+  const compressBgImage = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+
+      reader.onload = (e) => {
+        const img = new Image()
+        img.src = e.target?.result as string
+
+        img.onload = () => {
+          const MAX_SIZE = 1920
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = (height * MAX_SIZE) / width
+              width = MAX_SIZE
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = (width * MAX_SIZE) / height
+              height = MAX_SIZE
+            }
+          }
+
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'))
+            return
+          }
+
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
+          ctx.drawImage(img, 0, 0, width, height)
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                console.log(
+                  `Background compressed: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB (${width}x${height})`
+                )
+                resolve(blob)
+              } else {
+                reject(new Error('Failed to compress background image'))
+              }
+            },
+            'image/webp',
+            0.8
           )
         }
 
@@ -307,8 +380,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const supabase = createClient()
 
       toast.info('Compressing background image...')
-      // Reuse compressImage but with larger dimensions for backgrounds
-      const compressedBlob = await compressImage(file)
+      // Compress with larger max size for backgrounds (1920px)
+      const compressedBlob = await compressBgImage(file)
 
       const fileExt = 'webp'
       const fileName = `${currentOrganization.id}/login-bg-${Date.now()}.${fileExt}`
@@ -365,6 +438,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         login_page: {
           background_url: loginBgUrl || undefined,
           background_color: loginBgColor,
+          background_fit: loginBgFit,
           headline: loginHeadline || undefined,
           subtitle: loginSubtitle || undefined,
           card_opacity: loginCardOpacity,
@@ -846,7 +920,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {isUploadingBg ? 'Uploading...' : 'Upload Background'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Recommended: 1920x1080 or larger. PNG, JPG, or WebP. Will be displayed behind the login card.
+                  Recommended: 1920×1080 or larger. PNG, JPG, or WebP (max 10 MB).
+                  Auto-compressed to WebP — final size typically 200–500 KB.
                 </p>
                 {loginBgUrl && (
                   <Button
@@ -861,6 +936,30 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Background Fit */}
+          <div className="space-y-2">
+            <Label htmlFor="login-bg-fit">Background Fit</Label>
+            <Select
+              value={loginBgFit}
+              onValueChange={(value: 'cover' | 'contain' | 'fill' | 'center') =>
+                setLoginBgFit(value)
+              }
+            >
+              <SelectTrigger id="login-bg-fit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cover">Cover — fill window, may crop edges</SelectItem>
+                <SelectItem value="contain">Contain — fit inside, may show bars</SelectItem>
+                <SelectItem value="fill">Fill — stretch to fit exactly</SelectItem>
+                <SelectItem value="center">Center — original size, centered</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Controls how the background image fills the browser window.
+            </p>
           </div>
 
           {/* Background Color */}
@@ -970,7 +1069,12 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 <img
                   src={loginBgUrl}
                   alt="Background preview"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className={`absolute inset-0 h-full w-full ${
+                    loginBgFit === 'cover' ? 'object-cover' :
+                    loginBgFit === 'contain' ? 'object-contain' :
+                    loginBgFit === 'fill' ? 'object-fill' :
+                    'object-none'
+                  }`}
                 />
               )}
               <div className="absolute inset-0 flex items-center justify-center">

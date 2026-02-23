@@ -78,6 +78,7 @@ Deno.serve(async (req: Request) => {
       loginPage: {
         backgroundUrl: loginPage.background_url || null,
         backgroundColor: loginPage.background_color || null,
+        backgroundFit: loginPage.background_fit || 'cover',
         headline: loginPage.headline || null,
         subtitle: loginPage.subtitle || null,
         cardOpacity: loginPage.card_opacity ?? null,

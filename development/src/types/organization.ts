@@ -15,6 +15,7 @@ export interface OrganizationSettings {
   login_page?: {
     background_url?: string
     background_color?: string
+    background_fit?: 'cover' | 'contain' | 'fill' | 'center'
     headline?: string
     subtitle?: string
     card_opacity?: number

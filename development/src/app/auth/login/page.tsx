@@ -37,6 +37,7 @@ interface OrgBranding {
   loginPage?: {
     backgroundUrl?: string | null
     backgroundColor?: string | null
+    backgroundFit?: 'cover' | 'contain' | 'fill' | 'center' | null
     headline?: string | null
     subtitle?: string | null
     cardOpacity?: number | null
@@ -148,6 +149,7 @@ function LoginForm() {
   const loginPage = branding?.loginPage
   const bgUrl = loginPage?.backgroundUrl || null
   const bgColor = loginPage?.backgroundColor || '#030712'
+  const bgFit = loginPage?.backgroundFit || 'cover'
   const headline = loginPage?.headline || null
   const subtitle = loginPage?.subtitle || null
   const cardOpacity = loginPage?.cardOpacity ?? 70
@@ -360,7 +362,12 @@ function LoginForm() {
           <img
             src={bgUrl}
             alt=""
-            className="h-full w-full object-cover"
+            className={`h-full w-full ${
+              bgFit === 'cover' ? 'object-cover' :
+              bgFit === 'contain' ? 'object-contain' :
+              bgFit === 'fill' ? 'object-fill' :
+              'object-none'
+            }`}
           />
           <div className="absolute inset-0 bg-black/40" />
         </div>
