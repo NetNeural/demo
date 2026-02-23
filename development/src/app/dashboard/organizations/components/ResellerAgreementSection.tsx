@@ -14,8 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
-import type { OrganizationSettings } from '@/types/organization'
+// NetNeural logo used in reseller agreement dialog (always NetNeural branding)
 import {
   Dialog,
   DialogContent,
@@ -93,7 +92,7 @@ interface ResellerAgreementSectionProps {
 export function ResellerAgreementSection({
   organizationId,
 }: ResellerAgreementSectionProps) {
-  const { currentOrganization, isOwner } = useOrganization()
+  const { currentOrganization, isOwner, userOrganizations } = useOrganization()
   const { user } = useUser()
   const { fmt } = useDateFormatter()
   const [agreement, setAgreement] = useState<ResellerAgreement | null>(null)
@@ -120,6 +119,10 @@ export function ResellerAgreementSection({
     preferredBilling: 'per_org',
     additionalNotes: '',
   })
+
+  // Get NetNeural root org logo (branding) — auto-updates if logo changes
+  const rootOrg = userOrganizations.find(o => !o.parent_organization_id)
+  const netNeuralLogoUrl = rootOrg?.settings?.branding?.logo_url || '/icon.svg'
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -475,8 +478,7 @@ export function ResellerAgreementSection({
         <ApplicationDialog
           open={showApplyDialog}
           onOpenChange={setShowApplyDialog}
-          organizationSettings={currentOrganization?.settings}
-          organizationName={currentOrganization?.name}
+          netNeuralLogoUrl={netNeuralLogoUrl}
           form={form}
           setForm={setForm}
           onSubmit={handleSubmit}
@@ -567,8 +569,7 @@ export function ResellerAgreementSection({
       <ApplicationDialog
         open={showApplyDialog}
         onOpenChange={setShowApplyDialog}
-        organizationSettings={currentOrganization?.settings}
-        organizationName={currentOrganization?.name}
+        netNeuralLogoUrl={netNeuralLogoUrl}
         form={form}
         setForm={setForm}
         onSubmit={handleSubmit}
@@ -585,8 +586,7 @@ export function ResellerAgreementSection({
 interface ApplicationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  organizationSettings?: OrganizationSettings
-  organizationName?: string
+  netNeuralLogoUrl: string
   form: {
     applicantName: string
     applicantEmail: string
@@ -610,8 +610,7 @@ interface ApplicationDialogProps {
 function ApplicationDialog({
   open,
   onOpenChange,
-  organizationSettings,
-  organizationName,
+  netNeuralLogoUrl,
   form,
   setForm,
   onSubmit,
@@ -626,7 +625,7 @@ function ApplicationDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <OrganizationLogo settings={organizationSettings} name={organizationName} size="md" />
+            <img src={netNeuralLogoUrl} alt="NetNeural" className="h-6 w-6 object-contain" />
             Reseller Agreement Application
           </DialogTitle>
           <DialogDescription>
