@@ -1061,38 +1061,54 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           {/* Preview */}
           <div className="space-y-2">
             <Label>Preview</Label>
-            <div
-              className="relative h-48 overflow-hidden rounded-lg border"
-              style={{ backgroundColor: loginBgColor }}
-            >
-              {loginBgUrl && (
-                <img
-                  src={loginBgUrl}
-                  alt="Background preview"
-                  className={`absolute inset-0 h-full w-full ${
-                    loginBgFit === 'cover' ? 'object-cover' :
-                    loginBgFit === 'contain' ? 'object-contain' :
-                    loginBgFit === 'fill' ? 'object-fill' :
-                    'object-none'
-                  }`}
-                />
-              )}
-              <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex justify-center rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+              {/* Scaled-down browser-window thumbnail */}
+              <div className="w-[320px] overflow-hidden rounded-md shadow-lg">
+                {/* Fake browser chrome */}
+                <div className="flex items-center gap-1.5 bg-gray-700 px-2 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                  <span className="ml-2 flex-1 rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400 truncate">
+                    /auth/login?org={currentOrganization?.slug || 'your-slug'}
+                  </span>
+                </div>
+                {/* Page viewport (16:9 aspect ratio) */}
                 <div
-                  className="rounded-xl border border-white/10 p-6 text-center backdrop-blur-xl"
-                  style={{
-                    background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
-                  }}
+                  className="relative overflow-hidden"
+                  style={{ backgroundColor: loginBgColor, aspectRatio: '16 / 9' }}
                 >
-                  <p className="text-sm font-bold text-white">
-                    {loginHeadline || currentOrganization?.name || 'Organization'}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {loginSubtitle || 'Sentinel'}
-                  </p>
-                  <div className="mt-2 h-2 w-24 rounded bg-gray-600" />
-                  <div className="mt-1 h-2 w-24 rounded bg-gray-600" />
-                  <div className="mt-2 h-4 w-24 rounded bg-blue-600" />
+                  {loginBgUrl && (
+                    <img
+                      src={loginBgUrl}
+                      alt="Background preview"
+                      className={`absolute inset-0 h-full w-full ${
+                        loginBgFit === 'cover' ? 'object-cover' :
+                        loginBgFit === 'contain' ? 'object-contain' :
+                        loginBgFit === 'fill' ? 'object-fill' :
+                        'object-none'
+                      }`}
+                    />
+                  )}
+                  {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      className="rounded-lg border border-white/10 px-4 py-3 text-center backdrop-blur-xl"
+                      style={{
+                        background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
+                      }}
+                    >
+                      <p className="text-[10px] font-bold text-white">
+                        {loginHeadline || currentOrganization?.name || 'Organization'}
+                      </p>
+                      <p className="text-[8px] text-gray-400">
+                        {loginSubtitle || 'Sentinel'}
+                      </p>
+                      <div className="mt-1 h-1 w-16 rounded bg-gray-600 mx-auto" />
+                      <div className="mt-0.5 h-1 w-16 rounded bg-gray-600 mx-auto" />
+                      <div className="mt-1 h-2 w-16 rounded bg-blue-600 mx-auto" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
