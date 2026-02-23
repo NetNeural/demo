@@ -125,7 +125,16 @@ export default function SupportPage() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
-  const visibleTabs = tabs.filter((tab) => !tab.superAdminOnly || isSuperAdmin)
+  // NetNeural org admins/owners also get access to platform tabs (troubleshooting, system-health, tests)
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+  const isNetNeuralOrg = currentOrganization?.id === NETNEURAL_ORG_ID
+  const canAccessPlatformTabs =
+    isSuperAdmin ||
+    (isNetNeuralOrg && ['admin', 'owner'].includes(userRole ?? ''))
+
+  const visibleTabs = tabs.filter(
+    (tab) => !tab.superAdminOnly || canAccessPlatformTabs
+  )
 
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
@@ -178,13 +187,13 @@ export default function SupportPage() {
           <DocumentationTab />
         </TabsContent>
 
-        {isSuperAdmin && (
+        {canAccessPlatformTabs && (
           <TabsContent value="troubleshooting">
             <TroubleshootingTab organizationId={orgId} />
           </TabsContent>
         )}
 
-        {isSuperAdmin && (
+        {canAccessPlatformTabs && (
           <TabsContent value="system-health">
             <SystemHealthTab
               organizationId={orgId}
@@ -193,7 +202,7 @@ export default function SupportPage() {
           </TabsContent>
         )}
 
-        {isSuperAdmin && (
+        {canAccessPlatformTabs && (
           <TabsContent value="tests">
             <TestsTab organizationId={orgId} />
           </TabsContent>
