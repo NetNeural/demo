@@ -265,15 +265,22 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     const start = Date.now()
 
     try {
+      // Resolve MQTT variants: the DB may store mqtt, mqtt_hosted, or mqtt_external
+      const mqttTypes = ['mqtt', 'mqtt_hosted', 'mqtt_external']
+      const isMqtt = integrationType === 'mqtt'
+
       // Find active integration of this type
-      const { data: integration, error: listError } = await supabase
+      const baseQuery = supabase
         .from('device_integrations')
         .select('id, name, integration_type, status')
         .eq('organization_id', organizationId)
-        .eq('integration_type', integrationType)
         .eq('status', 'active')
         .limit(1)
-        .maybeSingle()
+      const { data: integration, error: listError } = await (
+        isMqtt
+          ? baseQuery.in('integration_type', mqttTypes)
+          : baseQuery.eq('integration_type', integrationType)
+      ).maybeSingle()
 
       if (listError || !integration) {
         const durationMs = Date.now() - start
