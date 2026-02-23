@@ -112,8 +112,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    // Fill in login form
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -150,7 +150,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -212,8 +213,8 @@ describe('Issue #23: Login Redirect Flow', () => {
       { timeout: 1000 }
     )
 
-    // Form should be visible
-    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+    // Form should be visible after branding loads
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
   })
 
   /**
@@ -239,7 +240,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -317,7 +319,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -354,8 +357,9 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     screen.getByLabelText(/remember me/i) // Verify it exists
-    const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
