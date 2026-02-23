@@ -318,15 +318,17 @@ export function TestDeviceControls({
       }
 
       // Update device status/battery to reflect latest generated point
-      const lastRow = rows[rows.length - 1]
-      await supabase
-        .from('devices')
-        .update({
-          status: 'online',
-          battery_level: lastRow.telemetry.battery,
-          last_seen: lastRow.received_at,
-        })
-        .eq('id', deviceId)
+      if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1]
+        await supabase
+          .from('devices')
+          .update({
+            status: 'online',
+            battery_level: lastRow.telemetry.battery,
+            last_seen: lastRow.received_at,
+          })
+          .eq('id', deviceId)
+      }
 
       toast.success(`✅ Generated ${rows.length} data points`, {
         description: `${histSpanHours}h history · every ${histIntervalMins} min`,
