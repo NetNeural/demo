@@ -177,18 +177,49 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
           Date.now() - hoursAgo * 60 * 60 * 1000
         ).toISOString()
 
-        const { data, error } = await supabase
-          .from('device_telemetry_history')
-          .select('*')
-          .eq('device_id', device.id)
-          .gte('received_at', startTime)
-          .order('received_at', { ascending: false })
-          .limit(500)
+        const isTestDev =
+          device.is_test_device === true ||
+          (device.metadata &&
+            (device.metadata.is_test_device === true ||
+              device.metadata.isTestDevice === true)) ||
+          (device.device_type || '').toLowerCase().includes('test') ||
+          (device.name || '').toLowerCase().includes('test')
 
-        if (error) throw error
+        const [primaryResult, testResult] = await Promise.all([
+          supabase
+            .from('device_telemetry_history')
+            .select('*')
+            .eq('device_id', device.id)
+            .gte('received_at', startTime)
+            .order('received_at', { ascending: false })
+            .limit(500),
+          isTestDev
+            ? (supabase as any)
+                .from('test_device_telemetry_history')
+                .select('device_id, telemetry, device_timestamp, received_at')
+                .eq('device_id', device.id)
+                .gte('received_at', startTime)
+                .order('received_at', { ascending: false })
+                .limit(500)
+            : Promise.resolve({ data: [], error: null }),
+        ])
+
+        if (primaryResult.error) throw primaryResult.error
+        if (testResult.error) throw testResult.error
 
         // Cast the data to our expected type, then normalize JSONB format
-        const typedData = (data || []).map((row) => ({
+        const combined = [
+          ...(primaryResult.data || []),
+          ...((testResult.data as typeof primaryResult.data) || []),
+        ]
+          .sort(
+            (a, b) =>
+              new Date(b.received_at).getTime() -
+              new Date(a.received_at).getTime()
+          )
+          .slice(0, 500)
+
+        const typedData = combined.map((row) => ({
           device_id: row.device_id,
           telemetry: row.telemetry as TelemetryData['telemetry'],
           device_timestamp: row.device_timestamp,
