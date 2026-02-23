@@ -114,6 +114,10 @@ export default createEdgeFunction(
         },
         body: JSON.stringify({
           password: password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: targetUser.full_name,
+          },
         }),
       }
     )
