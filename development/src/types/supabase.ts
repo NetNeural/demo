@@ -1150,6 +1150,7 @@ export type Database = {
           last_seen: string | null
           last_seen_offline: string | null
           last_seen_online: string | null
+          location: string | null
           location_id: string | null
           metadata: Json | null
           model: string | null
@@ -1178,6 +1179,7 @@ export type Database = {
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
+          location?: string | null
           location_id?: string | null
           metadata?: Json | null
           model?: string | null
@@ -1206,6 +1208,7 @@ export type Database = {
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
+          location?: string | null
           location_id?: string | null
           metadata?: Json | null
           model?: string | null
