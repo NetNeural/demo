@@ -440,11 +440,11 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           accent_color: accentColor,
         },
         login_page: {
-          background_url: loginBgUrl || undefined,
+          background_url: loginBgUrl || null,
           background_color: loginBgColor,
           background_fit: loginBgFit,
-          headline: loginHeadline || undefined,
-          subtitle: loginSubtitle || undefined,
+          headline: loginHeadline || null,
+          subtitle: loginSubtitle || null,
           card_opacity: loginCardOpacity,
           show_logo: loginShowLogo,
           enhance_bg: loginEnhanceBg,
@@ -944,7 +944,18 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLoginBgUrl('')}
+                    onClick={async () => {
+                      // Delete file from storage
+                      try {
+                        const supabase = createClient()
+                        const oldPath = loginBgUrl.split('/').slice(-2).join('/')
+                        await supabase.storage.from('organization-assets').remove([oldPath])
+                      } catch (e) {
+                        console.warn('Could not delete old background file:', e)
+                      }
+                      setLoginBgUrl('')
+                      toast.info('Background removed. Click "Save All Changes" to apply.')
+                    }}
                     className="text-red-600 hover:text-red-700"
                   >
                     Remove Background
