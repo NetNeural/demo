@@ -17,7 +17,11 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Only admins, owners, and super admins can email passwords
   // Check global role first, then fall back to organization_members for sub-org owners
-  const hasGlobalPermission = ['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)
+  const hasGlobalPermission = [
+    'super_admin',
+    'org_owner',
+    'org_admin',
+  ].includes(userContext.role)
 
   let hasOrgPermission = false
   if (!hasGlobalPermission && userContext.organizationId) {

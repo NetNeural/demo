@@ -15,7 +15,7 @@ interface TelemetryReading {
     units?: number
     value?: number
     sensor?: string
-    unit?: string        // normalized string unit (e.g. '°C')
+    unit?: string // normalized string unit (e.g. '°C')
     [key: string]: unknown
   }
   device_timestamp: string | null
@@ -150,7 +150,7 @@ export function SensorOverviewCard({
       const unit =
         reading.telemetry.units != null
           ? UNIT_LABELS[reading.telemetry.units as number] || ''
-          : (reading.telemetry.unit || '')
+          : reading.telemetry.unit || ''
       const isTemperature =
         reading.telemetry.type === 1 ||
         unit === '°C' ||
@@ -223,7 +223,7 @@ export function SensorOverviewCard({
     if (isTemperature) {
       const rawUnit = unitStr || '°C'
       const displayValue =
-        useFahrenheit && (rawUnit === '°C')
+        useFahrenheit && rawUnit === '°C'
           ? (value * 9) / 5 + 32
           : !useFahrenheit && rawUnit === '°F'
             ? ((value - 32) * 5) / 9
@@ -269,7 +269,9 @@ export function SensorOverviewCard({
         {/* Device Name & Type */}
         <div>
           <h3 className="text-2xl font-bold">{device.name}</h3>
-          <p className="text-muted-foreground">{formatDeviceType(device.device_type)}</p>
+          <p className="text-muted-foreground">
+            {formatDeviceType(device.device_type)}
+          </p>
           {device.serial_number && (
             <p className="mt-1 text-xs text-muted-foreground">
               S/N: {device.serial_number}
@@ -298,7 +300,7 @@ export function SensorOverviewCard({
               let unit =
                 reading.telemetry.units != null
                   ? UNIT_LABELS[reading.telemetry.units as number]
-                  : (reading.telemetry.unit || '')
+                  : reading.telemetry.unit || ''
               let value =
                 reading.telemetry.value != null
                   ? Number(reading.telemetry.value)
@@ -473,7 +475,7 @@ export function SensorOverviewCard({
             const sensorType = firstReading.telemetry.type
             const sensorLabel = sensorType
               ? SENSOR_LABELS[sensorType]
-              : (firstReading.telemetry.sensor || 'Reading')
+              : firstReading.telemetry.sensor || 'Reading'
             const Icon = getSensorIcon(sensorType)
 
             return (

@@ -10,15 +10,18 @@ serve(async (req) => {
   try {
     const { service = 'mqtt-subscriber' } = await req.json()
 
-    console.log('🔵 Database-based restart request:', { service, timestamp: new Date().toISOString() })
+    console.log('🔵 Database-based restart request:', {
+      service,
+      timestamp: new Date().toISOString(),
+    })
 
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Create Supabase client
@@ -28,7 +31,7 @@ serve(async (req) => {
 
     // Call the database function to create restart request
     const { data, error } = await supabase.rpc('request_service_restart', {
-      p_service_name: service
+      p_service_name: service,
     })
 
     if (error) {
@@ -37,9 +40,12 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: error.message,
-          message: 'Failed to create restart request'
+          message: 'Failed to create restart request',
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -53,21 +59,26 @@ serve(async (req) => {
           request_id: data,
           service,
           method: 'database-poll',
-          estimated_time: '30-60 seconds'
-        }
+          estimated_time: '30-60 seconds',
+        },
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
-
   } catch (error) {
     console.error('❌ Error in request-service-restart:', error)
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message || 'Internal server error',
-        message: 'Failed to process restart request'
+        message: 'Failed to process restart request',
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
   }
 })

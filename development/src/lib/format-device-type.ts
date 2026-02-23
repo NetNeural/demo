@@ -31,7 +31,5 @@ export function formatDeviceType(rawType: string | null | undefined): string {
   const byRaw = DEVICE_TYPE_LABELS[rawType.trim()]
   if (byRaw) return byRaw
   // Generic fallback: replace separators and title-case
-  return rawType
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+  return rawType.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }

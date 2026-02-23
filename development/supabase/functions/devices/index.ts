@@ -12,66 +12,83 @@ import {
 export default createEdgeFunction(
   async ({ req }) => {
     console.log('🔵 devices function called')
-    
+
     // Handle authentication manually with JWT fallback (skip getUserContext entirely)
     let userContext
     const supabase = createServiceClient()
-    
+
     const authHeader = req.headers.get('Authorization')
-    
+
     if (!authHeader) {
       console.error('❌ No auth header')
       throw new DatabaseError('Unauthorized - no auth header', 401)
     }
-    
+
     try {
       const token = authHeader.replace('Bearer ', '')
       const parts = token.split('.')
-      
+
       if (parts.length < 2) {
         throw new Error('Invalid JWT format')
       }
-      
+
       const payload = JSON.parse(globalThis.atob(parts[1]))
-      console.log('🔵 JWT payload decoded:', { sub: payload.sub, role: payload.role })
-      
+      console.log('🔵 JWT payload decoded:', {
+        sub: payload.sub,
+        role: payload.role,
+      })
+
       if (!payload.sub) {
         throw new Error('JWT token has no sub claim')
       }
-      
+
       // Get user profile using service role
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('organization_id, role, email')
         .eq('id', payload.sub)
         .maybeSingle()
-      
+
       if (profileError) {
         console.error('❌ Failed to fetch user profile:', profileError)
-        throw new DatabaseError(`Profile fetch error: ${profileError.message}`, 500)
+        throw new DatabaseError(
+          `Profile fetch error: ${profileError.message}`,
+          500
+        )
       }
-      
+
       if (!profile) {
         console.error('❌ User profile not found for:', payload.sub)
         throw new DatabaseError('User profile not found', 404)
       }
-      
+
       userContext = {
         userId: payload.sub,
         organizationId: profile.organization_id,
-        role: profile.role as 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer',
+        role: profile.role as
+          | 'super_admin'
+          | 'org_owner'
+          | 'org_admin'
+          | 'user'
+          | 'viewer',
         isSuperAdmin: profile.role === 'super_admin',
         email: profile.email || payload.email || '',
       }
-      
-      console.log('✅ Successfully authenticated:', { userId: userContext.userId, email: userContext.email })
+
+      console.log('✅ Successfully authenticated:', {
+        userId: userContext.userId,
+        email: userContext.email,
+      })
     } catch (authError) {
       console.error('❌ JWT authentication failed:', authError)
       throw new DatabaseError('Unauthorized - authentication failed', 401)
     }
 
     // Helper: return requested org if super_admin, otherwise user's own org
-    const getTargetOrganizationId = (ctx: typeof userContext, requestedOrgId?: string): string | null => {
+    const getTargetOrganizationId = (
+      ctx: typeof userContext,
+      requestedOrgId?: string
+    ): string | null => {
       if (ctx.isSuperAdmin && requestedOrgId) return requestedOrgId
       return ctx.organizationId || null
     }
@@ -253,7 +270,10 @@ export default createEdgeFunction(
       }
 
       const body = await req.json()
-      console.log('PUT /devices/:id - Request body:', JSON.stringify(body, null, 2))
+      console.log(
+        'PUT /devices/:id - Request body:',
+        JSON.stringify(body, null, 2)
+      )
       console.log('PUT /devices/:id - User context:', {
         userId: userContext.userId,
         email: userContext.email,
@@ -328,12 +348,12 @@ export default createEdgeFunction(
       if (device_type !== undefined) updates.device_type = device_type
       if (device_type_id !== undefined) updates.device_type_id = device_type_id
       if (model !== undefined) updates.model = model
-      
+
       // Handle serial_number carefully - empty string should be null
       if (serial_number !== undefined) {
         const normalizedSerialNumber = serial_number?.trim() || null
         const normalizedExisting = existingDevice.serial_number?.trim() || null
-        
+
         if (normalizedSerialNumber !== normalizedExisting) {
           console.log('🔵 Serial number change detected:', {
             from: normalizedExisting,
@@ -341,7 +361,10 @@ export default createEdgeFunction(
           })
           updates.serial_number = normalizedSerialNumber
         } else {
-          console.log('🔵 Serial number unchanged, skipping update:', normalizedSerialNumber)
+          console.log(
+            '🔵 Serial number unchanged, skipping update:',
+            normalizedSerialNumber
+          )
         }
       }
       if (firmware_version !== undefined)

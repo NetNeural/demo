@@ -235,7 +235,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     let unit =
       telemetry.units != null
         ? UNIT_LABELS[telemetry.units] || ''
-        : (telemetry.unit || '')
+        : telemetry.unit || ''
 
     // Convert temperature if needed
     const isTemperature = telemetry.type === 1 || unit === '°C' || unit === '°F'
@@ -283,7 +283,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
       const unit =
         row.telemetry?.units != null
           ? UNIT_LABELS[row.telemetry.units] || ''
-          : (row.telemetry?.unit || '')
+          : row.telemetry?.unit || ''
       return [row.received_at, sensorLabel, value, unit]
     })
 
@@ -316,7 +316,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
       const sensorLabel =
         sensorType != null
           ? SENSOR_LABELS[sensorType] || `Sensor ${sensorType}`
-          : (row.telemetry?.sensor || 'Unknown')
+          : row.telemetry?.sensor || 'Unknown'
       let value = row.telemetry?.value || 0
 
       // Apply temperature conversion if needed
@@ -345,9 +345,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     historicalData.forEach((row) => {
       const sensorType = row.telemetry?.type
       const label =
-        sensorType != null
-          ? SENSOR_LABELS[sensorType]
-          : row.telemetry?.sensor
+        sensorType != null ? SENSOR_LABELS[sensorType] : row.telemetry?.sensor
       if (label) types.add(label)
     })
     return Array.from(types)
@@ -360,9 +358,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     return historicalData.filter((row) => {
       const sensorType = row.telemetry?.type
       const label =
-        sensorType != null
-          ? SENSOR_LABELS[sensorType]
-          : row.telemetry?.sensor
+        sensorType != null ? SENSOR_LABELS[sensorType] : row.telemetry?.sensor
       return label === selectedSensor
     })
   }, [historicalData, selectedSensor])

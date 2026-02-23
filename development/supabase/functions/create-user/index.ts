@@ -21,7 +21,11 @@ export default createEdgeFunction(
 
     // Only admins, owners, and super admins can create users
     // Check global role first, then fall back to organization_members for sub-org owners
-    const hasGlobalPermission = ['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)
+    const hasGlobalPermission = [
+      'super_admin',
+      'org_owner',
+      'org_admin',
+    ].includes(userContext.role)
 
     let hasOrgPermission = false
     if (!hasGlobalPermission && userContext.organizationId) {
