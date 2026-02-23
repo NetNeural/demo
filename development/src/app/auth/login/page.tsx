@@ -34,6 +34,14 @@ interface OrgBranding {
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
+  loginPage?: {
+    backgroundUrl?: string | null
+    backgroundColor?: string | null
+    headline?: string | null
+    subtitle?: string | null
+    cardOpacity?: number | null
+    showAnimatedBg?: boolean
+  }
 }
 
 const DEFAULT_BRANDING = {
@@ -135,6 +143,15 @@ function LoginForm() {
 
   const orgName = branding?.name || DEFAULT_BRANDING.name
   const logoUrl = branding?.logoUrl || null
+
+  // Login page appearance
+  const loginPage = branding?.loginPage
+  const bgUrl = loginPage?.backgroundUrl || null
+  const bgColor = loginPage?.backgroundColor || '#030712'
+  const headline = loginPage?.headline || null
+  const subtitle = loginPage?.subtitle || null
+  const cardOpacity = loginPage?.cardOpacity ?? 70
+  const showAnimatedBg = loginPage?.showAnimatedBg !== false
 
   // Floating nodes for background animation
   const nodes = useMemo(() => generateNodes(12), [])
@@ -332,8 +349,25 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-950">
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+      style={{ backgroundColor: bgColor }}
+    >
+      {/* ───── Background image (if configured) ───── */}
+      {bgUrl && (
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={bgUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+      )}
+
       {/* ───── Animated mesh background ───── */}
+      {showAnimatedBg && (
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
         aria-hidden="true"
@@ -405,6 +439,7 @@ function LoginForm() {
           )
         })}
       </div>
+      )}
 
       {/* ───── Content ───── */}
       <div className="relative z-10 mx-4 w-full max-w-md">
@@ -436,10 +471,10 @@ function LoginForm() {
             className="text-3xl font-bold tracking-tight"
             style={{ color: colors.primary }}
           >
-            {orgName}
+            {headline || orgName}
           </h1>
           <p className="mt-1 text-3xl font-bold tracking-tight text-gray-300">
-            {branding ? 'Sentinel' : 'Sentinel by NetNeural'}
+            {subtitle || (branding ? 'Sentinel' : 'Sentinel by NetNeural')}
           </p>
         </div>
 
@@ -447,7 +482,7 @@ function LoginForm() {
         <div
           className="rounded-2xl border p-8 shadow-2xl backdrop-blur-xl"
           style={{
-            background: 'rgba(15, 23, 42, 0.7)',
+            background: `rgba(15, 23, 42, ${cardOpacity / 100})`,
             borderColor: `${colors.primary}20`,
             boxShadow: `0 0 80px ${colors.primary}08, 0 25px 50px rgba(0,0,0,0.4)`,
           }}

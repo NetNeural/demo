@@ -26,7 +26,9 @@ import {
   Image as ImageIcon,
   Palette,
   Monitor,
+  LogIn,
 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -51,7 +53,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [saveMessage, setSaveMessage] = useState('')
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingBg, setIsUploadingBg] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const bgFileInputRef = useRef<HTMLInputElement>(null)
 
   // Branding settings state
   const [logoUrl, setLogoUrl] = useState('')
@@ -63,6 +67,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [deviceTypeImages, setDeviceTypeImages] = useState<
     Record<string, string>
   >({})
+
+  // Login page appearance state
+  const [loginBgUrl, setLoginBgUrl] = useState('')
+  const [loginBgColor, setLoginBgColor] = useState('#030712')
+  const [loginHeadline, setLoginHeadline] = useState('')
+  const [loginSubtitle, setLoginSubtitle] = useState('')
+  const [loginCardOpacity, setLoginCardOpacity] = useState(70)
+  const [loginShowAnimatedBg, setLoginShowAnimatedBg] = useState(true)
 
   // Sync state when currentOrganization changes
   useEffect(() => {
@@ -80,6 +92,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setDeviceTypeImages(
         (settings.device_type_images as Record<string, string>) || {}
       )
+
+      // Login page settings
+      setLoginBgUrl(settings.login_page?.background_url || '')
+      setLoginBgColor(settings.login_page?.background_color || '#030712')
+      setLoginHeadline(settings.login_page?.headline || '')
+      setLoginSubtitle(settings.login_page?.subtitle || '')
+      setLoginCardOpacity(settings.login_page?.card_opacity ?? 70)
+      setLoginShowAnimatedBg(settings.login_page?.show_animated_bg !== false)
     }
   }, [currentOrganization])
 
@@ -265,6 +285,64 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }
 
+  const handleBgUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file || !currentOrganization) return
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (PNG, JPG, or WebP)')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB')
+      return
+    }
+
+    try {
+      setIsUploadingBg(true)
+      const supabase = createClient()
+
+      toast.info('Compressing background image...')
+      // Reuse compressImage but with larger dimensions for backgrounds
+      const compressedBlob = await compressImage(file)
+
+      const fileExt = 'webp'
+      const fileName = `${currentOrganization.id}/login-bg-${Date.now()}.${fileExt}`
+
+      // Delete old background if exists
+      if (loginBgUrl) {
+        const oldPath = loginBgUrl.split('/').slice(-2).join('/')
+        await supabase.storage.from('organization-assets').remove([oldPath])
+      }
+
+      const { data, error } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, compressedBlob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'image/webp',
+        })
+
+      if (error) throw error
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('organization-assets').getPublicUrl(data.path)
+
+      setLoginBgUrl(publicUrl)
+      toast.success('Background uploaded! Click "Save All Changes" to apply.')
+    } catch (error: any) {
+      console.error('Error uploading background:', error)
+      toast.error(error?.message || 'Failed to upload background image')
+    } finally {
+      setIsUploadingBg(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!currentOrganization) return
 
@@ -283,6 +361,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
+        },
+        login_page: {
+          background_url: loginBgUrl || undefined,
+          background_color: loginBgColor,
+          headline: loginHeadline || undefined,
+          subtitle: loginSubtitle || undefined,
+          card_opacity: loginCardOpacity,
+          show_animated_bg: loginShowAnimatedBg,
         },
         theme,
         timezone,
@@ -703,6 +789,209 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Login Page Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LogIn className="h-5 w-5" />
+            Login Page Appearance
+          </CardTitle>
+          <CardDescription>
+            Customize how the login page looks for your organization. Users access it via{' '}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              /auth/login?org={currentOrganization?.slug || 'your-slug'}
+            </code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Background Image */}
+          <div className="space-y-2">
+            <Label>Background Image</Label>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                {loginBgUrl ? (
+                  <div className="relative h-24 w-40 overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-950">
+                    <img
+                      src={loginBgUrl}
+                      alt="Login background"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-24 w-40 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+                    <ImageIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={bgFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleBgUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => bgFileInputRef.current?.click()}
+                  disabled={isUploadingBg}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {isUploadingBg ? 'Uploading...' : 'Upload Background'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1920x1080 or larger. PNG, JPG, or WebP. Will be displayed behind the login card.
+                </p>
+                {loginBgUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLoginBgUrl('')}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Remove Background
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Background Color */}
+          <div className="space-y-2">
+            <Label htmlFor="login-bg-color">Background Color</Label>
+            <div className="flex gap-2">
+              <Input
+                id="login-bg-color"
+                type="color"
+                value={loginBgColor}
+                onChange={(e) => setLoginBgColor(e.target.value)}
+                className="h-10 w-20 cursor-pointer p-1"
+              />
+              <Input
+                type="text"
+                value={loginBgColor}
+                onChange={(e) => setLoginBgColor(e.target.value)}
+                placeholder="#030712"
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Base background color. Visible when no background image is set, or behind transparent areas.
+            </p>
+          </div>
+
+          {/* Custom Headline & Subtitle */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="login-headline">Custom Headline</Label>
+              <Input
+                id="login-headline"
+                value={loginHeadline}
+                onChange={(e) => setLoginHeadline(e.target.value)}
+                placeholder={currentOrganization?.name || 'Organization Name'}
+              />
+              <p className="text-xs text-muted-foreground">
+                Main heading shown above the login form. Defaults to org name.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-subtitle">Custom Subtitle</Label>
+              <Input
+                id="login-subtitle"
+                value={loginSubtitle}
+                onChange={(e) => setLoginSubtitle(e.target.value)}
+                placeholder="Sentinel"
+              />
+              <p className="text-xs text-muted-foreground">
+                Smaller text below the headline. Defaults to &ldquo;Sentinel&rdquo;.
+              </p>
+            </div>
+          </div>
+
+          {/* Card Opacity */}
+          <div className="space-y-2">
+            <Label htmlFor="login-card-opacity">
+              Login Card Opacity: {loginCardOpacity}%
+            </Label>
+            <input
+              id="login-card-opacity"
+              type="range"
+              min={20}
+              max={100}
+              value={loginCardOpacity}
+              onChange={(e) => setLoginCardOpacity(Number(e.target.value))}
+              className="w-full accent-blue-600"
+            />
+            <p className="text-xs text-muted-foreground">
+              Controls the transparency of the login card. Lower values show more of the background.
+            </p>
+          </div>
+
+          {/* Animated Background Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Animated Background</Label>
+              <p className="text-xs text-muted-foreground">
+                Show floating IoT icons and gradient orbs on the login page
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={loginShowAnimatedBg}
+              onClick={() => setLoginShowAnimatedBg(!loginShowAnimatedBg)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                loginShowAnimatedBg ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  loginShowAnimatedBg ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Preview */}
+          <div className="space-y-2">
+            <Label>Preview</Label>
+            <div
+              className="relative h-48 overflow-hidden rounded-lg border"
+              style={{ backgroundColor: loginBgColor }}
+            >
+              {loginBgUrl && (
+                <img
+                  src={loginBgUrl}
+                  alt="Background preview"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="rounded-xl border border-white/10 p-6 text-center backdrop-blur-xl"
+                  style={{
+                    background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
+                  }}
+                >
+                  <p className="text-sm font-bold text-white">
+                    {loginHeadline || currentOrganization?.name || 'Organization'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {loginSubtitle || 'Sentinel'}
+                  </p>
+                  <div className="mt-2 h-2 w-24 rounded bg-gray-600" />
+                  <div className="mt-1 h-2 w-24 rounded bg-gray-600" />
+                  <div className="mt-2 h-4 w-24 rounded bg-blue-600" />
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

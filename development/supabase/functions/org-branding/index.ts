@@ -65,6 +65,7 @@ Deno.serve(async (req: Request) => {
 
     const settings = (org.settings || {}) as Record<string, unknown>
     const branding = (settings.branding || {}) as Record<string, string>
+    const loginPage = (settings.login_page || {}) as Record<string, unknown>
 
     // Only expose safe branding info — no secrets, no internal settings
     const response = {
@@ -74,6 +75,14 @@ Deno.serve(async (req: Request) => {
       primaryColor: branding.primary_color || null,
       secondaryColor: branding.secondary_color || null,
       accentColor: branding.accent_color || null,
+      loginPage: {
+        backgroundUrl: loginPage.background_url || null,
+        backgroundColor: loginPage.background_color || null,
+        headline: loginPage.headline || null,
+        subtitle: loginPage.subtitle || null,
+        cardOpacity: loginPage.card_opacity ?? null,
+        showAnimatedBg: loginPage.show_animated_bg ?? true,
+      },
     }
 
     return new Response(JSON.stringify({ success: true, data: response }), {

@@ -12,6 +12,14 @@ export interface OrganizationSettings {
     secondary_color?: string
     accent_color?: string
   }
+  login_page?: {
+    background_url?: string
+    background_color?: string
+    headline?: string
+    subtitle?: string
+    card_opacity?: number
+    show_animated_bg?: boolean
+  }
   theme?: 'light' | 'dark' | 'auto'
   display_name?: string
   timezone?: string
