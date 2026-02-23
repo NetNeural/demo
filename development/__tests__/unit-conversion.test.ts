@@ -138,7 +138,7 @@ describe('Unit Conversion Utilities', () => {
         '°F'
       )
       expect(result.lowerNormal).toBe('')
-      expect(result.upperNormal).toBeCloseTo(78.8, 1)
+      expect(parseFloat(result.upperNormal)).toBeCloseTo(78.8, 1)
     })
 
     test('returns empty strings when conversion not available', () => {

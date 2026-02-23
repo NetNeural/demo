@@ -1,6 +1,9 @@
 /**
  * Integration Tests: ConflictDetector
  * Tests Issue #87 with real database
+ *
+ * These tests require a running Supabase instance with a real database.
+ * They are skipped by default. Set RUN_INTEGRATION_TESTS=true to enable.
  */
 
 import { ConflictDetector } from '@/lib/sync/conflict-detector'
@@ -10,7 +13,14 @@ const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-describe('ConflictDetector - Integration Tests', () => {
+// Only run when explicitly opted in AND a real key is provided (not a placeholder)
+const hasRealSupabase =
+  process.env.RUN_INTEGRATION_TESTS === 'true' &&
+  SUPABASE_ANON_KEY.length > 10
+
+const describeIfSupabase = hasRealSupabase ? describe : describe.skip
+
+describeIfSupabase('ConflictDetector - Integration Tests', () => {
   let supabase: any
   let detector: ConflictDetector
   let testOrgId: string

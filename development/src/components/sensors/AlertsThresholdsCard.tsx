@@ -786,6 +786,7 @@ export function AlertsThresholdsCard({
                       size="sm"
                       disabled={testing === threshold.id}
                       title="Create a test alert to verify the alert system is working"
+                      aria-label="Test alert"
                     >
                       <TestTube className="h-4 w-4" />
                     </Button>
@@ -793,6 +794,7 @@ export function AlertsThresholdsCard({
                       onClick={() => handleEdit(threshold)}
                       variant="ghost"
                       size="sm"
+                      aria-label="Edit threshold"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -801,6 +803,7 @@ export function AlertsThresholdsCard({
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive"
+                      aria-label="Delete threshold"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

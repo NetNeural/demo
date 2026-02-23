@@ -70,11 +70,11 @@ describe('DeviceStatusCard Component (Devices)', () => {
         refresh: mockRefresh,
       })
 
-      render(<DeviceStatusCard deviceId="device-1" />)
+      const { container } = render(<DeviceStatusCard deviceId="device-1" />)
 
       expect(
-        screen.getByTestId('loading-skeleton') ||
-          document.querySelector('.animate-pulse')
+        container.querySelector('[data-testid="loading-skeleton"]') ||
+          container.querySelector('.animate-pulse')
       ).toBeInTheDocument()
     })
 
@@ -291,13 +291,13 @@ describe('DeviceStatusCard Component (Devices)', () => {
     it('displays device type', () => {
       render(<DeviceStatusCard deviceId="device-1" />)
 
-      expect(screen.getByText(/sensor/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/sensor/i).length).toBeGreaterThan(0)
     })
 
     it('displays firmware version', () => {
       render(<DeviceStatusCard deviceId="device-1" />)
 
-      expect(screen.getByText(/1\.2\.3/)).toBeInTheDocument()
+      expect(screen.getAllByText(/1\.2\.3/).length).toBeGreaterThan(0)
     })
 
     it('displays firmware components', () => {

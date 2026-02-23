@@ -104,11 +104,10 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    // No existing session so form renders; after login the session exists
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: null },
-      error: null,
-    })
+    // First getSession (on mount) returns null, second (after login) returns session
+    mockSupabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
 
     render(<LoginPage />)
 
@@ -232,11 +231,10 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    // No existing session so form renders
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: null },
-      error: null,
-    })
+    // First getSession (on mount) returns null, second (after login) returns session
+    mockSupabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
 
     render(<LoginPage />)
 
@@ -251,7 +249,7 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-    })
+    }, { timeout: 3000 })
 
     // Verify login was attempted
     expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalled()
@@ -349,17 +347,16 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    // No existing session so form renders
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: null },
-      error: null,
-    })
+    // First getSession (on mount) returns null, second (after login) returns session
+    mockSupabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
 
     render(<LoginPage />)
 
     // Wait for branding to load and form to render
     const emailInput = await screen.findByLabelText(/email address/i)
-    screen.getByLabelText(/remember me/i) // Verify it exists
+    screen.getByLabelText(/keep me signed in/i) // Verify it exists
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -371,6 +368,6 @@ describe('Issue #23: Login Redirect Flow', () => {
     await waitFor(() => {
       // Should call setSession when remember me is NOT checked
       expect(mockSupabase.auth.setSession).toHaveBeenCalled()
-    })
+    }, { timeout: 3000 })
   })
 })

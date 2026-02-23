@@ -265,6 +265,31 @@ export function formatDuration(minutes: number): string {
   return `${(minutes / 60).toFixed(1)}h`
 }
 
+/**
+ * Alias for formatTimeAgo — used in tests and some components.
+ */
+export function formatRelativeTime(
+  date: Date | string | number | null | undefined,
+  opts: FormatOptions = {}
+): string {
+  if (!date) return 'N/A'
+  const d = toDate(date)
+  if (!d) return 'N/A'
+  return formatTimeAgo(d, opts)
+}
+
+/**
+ * Formats a date to an ISO 8601 string.
+ */
+export function formatISODate(
+  date: Date | string | number | null | undefined
+): string {
+  if (!date) return 'N/A'
+  const d = toDate(date)
+  if (!d) return 'N/A'
+  return d.toISOString()
+}
+
 // ─── React hook for convenience ───────────────────────────────────────
 
 /**

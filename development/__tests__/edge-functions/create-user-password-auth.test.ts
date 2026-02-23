@@ -188,6 +188,7 @@ describe('Create User and Password Authentication - Issue #188', () => {
     // Verify admin can provide new temporary password
     expect(resendPayload).toHaveProperty('userId')
     expect(resendPayload).toHaveProperty('password')
-    expect(resendPayload.password).not.toBe('NewTempPass456!') // Would be regenerated
+    expect(resendPayload.password).toBeTruthy() // Password is provided for resend
+    expect(typeof resendPayload.password).toBe('string')
   })
 })

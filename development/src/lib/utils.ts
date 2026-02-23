@@ -22,6 +22,7 @@ export function formatDate(
   options: Intl.DateTimeFormatOptions = {}
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return 'Invalid Date'
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',

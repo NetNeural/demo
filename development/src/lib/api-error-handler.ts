@@ -168,6 +168,40 @@ export function isClientError(response: Response): boolean {
  * }
  * ```
  */
+/**
+ * Checks if a status code represents a retryable error (5xx)
+ *
+ * @param statusCode - The HTTP status code
+ * @returns true if the error is retryable (500-599)
+ */
+export function isRetryableError(statusCode: number): boolean {
+  return statusCode >= 500 && statusCode < 600
+}
+
+/**
+ * Formats an API error into a human-readable string
+ *
+ * @param statusCode - The HTTP status code
+ * @param statusText - The HTTP status text
+ * @param prefix - Optional error prefix
+ * @returns Formatted error string
+ */
+export function formatApiError(
+  statusCode: number,
+  statusText: string,
+  prefix?: string
+): string {
+  const isAuth = statusCode === 401 || statusCode === 403
+  if (isAuth) {
+    return prefix
+      ? `[Auth] ${prefix}: ${statusCode} ${statusText}`
+      : `[Auth] ${statusCode} ${statusText}`
+  }
+  return prefix
+    ? `${prefix}: ${statusCode} ${statusText}`
+    : `${statusCode} ${statusText}`
+}
+
 export async function safeFetch(
   url: string,
   options?: RequestInit,

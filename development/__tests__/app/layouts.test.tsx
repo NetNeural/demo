@@ -68,19 +68,9 @@ jest.mock('@/contexts/OrganizationContext', () => ({
 }))
 
 describe('Dashboard Layout', () => {
-  test('DashboardLayoutClient component exists', async () => {
-    const layoutModule = await import('@/app/dashboard/layout-client')
+  test('Dashboard layout module exists', async () => {
+    const layoutModule = await import('@/app/dashboard/layout')
     expect(layoutModule.default).toBeDefined()
-  })
-
-  test('DashboardLayoutClient renders children', async () => {
-    const LayoutClient = (await import('@/app/dashboard/layout-client')).default
-    const { container } = render(
-      <LayoutClient userEmail="test@example.com">
-        <div>Test Content</div>
-      </LayoutClient>
-    )
-    expect(container).toBeTruthy()
   })
 })
 

@@ -104,7 +104,7 @@ describe('Analytics - Time Series Data', () => {
     ]
 
     const hourlyData = data.reduce((acc: any, item) => {
-      const hour = new Date(item.timestamp).getHours()
+      const hour = new Date(item.timestamp).getUTCHours()
       if (!acc[hour]) acc[hour] = []
       acc[hour].push(item.value)
       return acc

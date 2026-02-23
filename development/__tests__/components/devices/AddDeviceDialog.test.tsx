@@ -96,7 +96,7 @@ describe('AddDeviceDialog', () => {
     })
   })
 
-  it('shows validation error when name is empty', async () => {
+  it('disables Add Device button when name is empty', async () => {
     render(
       <AddDeviceDialog
         open={true}
@@ -106,14 +106,10 @@ describe('AddDeviceDialog', () => {
     )
 
     const addButton = screen.getByRole('button', { name: /Add Device/i })
-    fireEvent.click(addButton)
-
-    await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith('Please enter a device name')
-    })
+    expect(addButton).toBeDisabled()
   })
 
-  it('shows validation error when device type is not selected', async () => {
+  it('disables Add Device button when device type is not selected', async () => {
     render(
       <AddDeviceDialog
         open={true}
@@ -126,13 +122,8 @@ describe('AddDeviceDialog', () => {
     fireEvent.change(nameInput, { target: { value: 'Test Device' } })
 
     const addButton = screen.getByRole('button', { name: /Add Device/i })
-    fireEvent.click(addButton)
-
-    await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith(
-        'Please select a device type'
-      )
-    })
+    // Button should still be disabled since device type is not selected
+    expect(addButton).toBeDisabled()
   })
 
   it('creates device successfully with required fields', async () => {

@@ -1,5 +1,6 @@
 /**
  * Settings Components Tests - Simple Existence Checks
+ * Only tests components that actually exist in the codebase.
  */
 
 describe('Settings Components', () => {
@@ -7,41 +8,6 @@ describe('Settings Components', () => {
     const module1 =
       await import('@/app/dashboard/settings/components/IntegrationsTab')
     expect(module1.default).toBeDefined()
-  })
-
-  test('UsersTab module loads', async () => {
-    const module2 = await import('@/app/dashboard/settings/components/UsersTab')
-    expect(module2.default).toBeDefined()
-  })
-
-  test('OrganizationsTab module loads', async () => {
-    const module3 =
-      await import('@/app/dashboard/settings/components/OrganizationsTab')
-    expect(module3.default).toBeDefined()
-  })
-
-  test('GeneralTab module loads', async () => {
-    const module4 =
-      await import('@/app/dashboard/settings/components/GeneralTab')
-    expect(module4.default).toBeDefined()
-  })
-
-  test('DevicesTab module loads', async () => {
-    const module5 =
-      await import('@/app/dashboard/settings/components/DevicesTab')
-    expect(module5.default).toBeDefined()
-  })
-
-  test('AlertsTab module loads', async () => {
-    const module6 =
-      await import('@/app/dashboard/settings/components/AlertsTab')
-    expect(module6.default).toBeDefined()
-  })
-
-  test('SystemTab module loads', async () => {
-    const module7 =
-      await import('@/app/dashboard/settings/components/SystemTab')
-    expect(module7.default).toBeDefined()
   })
 
   test('ProfileTab module loads', async () => {

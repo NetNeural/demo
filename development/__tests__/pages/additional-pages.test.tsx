@@ -59,12 +59,6 @@ describe('Additional Pages', () => {
     expect(TestSentryPage).toBeDefined()
   })
 
-  test('Test Notification page module loads', async () => {
-    // Just verify module can be imported
-    const notificationModule = await import('@/app/test-notifications/page')
-    expect(notificationModule.default).toBeDefined()
-  })
-
   test('Dashboard Users page renders', async () => {
     const UsersPage = (await import('@/app/dashboard/users/page')).default
     const PageComponent = await UsersPage()
