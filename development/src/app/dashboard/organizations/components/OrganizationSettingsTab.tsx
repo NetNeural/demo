@@ -882,7 +882,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </CardTitle>
           <CardDescription className="space-y-1">
             <span>
-              Customize how the login page looks for your organization. Share this link with your users so they see your branded login:
+              Customize how the login page looks for {currentOrganization?.name || 'your organization'}. Share this link with your users so they see your branded login:
             </span>
             <a
               href={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org=${currentOrganization?.slug || 'your-slug'}`}
@@ -892,9 +892,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             >
               {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
             </a>
-            <span className="block text-xs text-muted-foreground">
-              Without <code className="rounded bg-muted px-0.5">?org=</code>, the login page defaults to NetNeural branding. Each organization gets its own branded page by changing the slug.
-            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
