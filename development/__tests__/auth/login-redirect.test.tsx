@@ -5,13 +5,14 @@
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import LoginPage from '@/app/auth/login/page'
 import { createClient } from '@/lib/supabase/client'
 
-// Mock Next.js router
+// Mock Next.js router and search params
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(),
 }))
 
 // Mock Supabase client
@@ -30,12 +31,23 @@ describe('Issue #23: Login Redirect Flow', () => {
       signInWithPassword: jest.Mock
       getSession: jest.Mock
       setSession: jest.Mock
+      mfa: {
+        getAuthenticatorAssuranceLevel: jest.Mock
+        listFactors: jest.Mock
+      }
     }
+    from: jest.Mock
   }
 
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks()
+
+    // Mock global fetch for branding endpoint
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: null }),
+    }) as jest.Mock
 
     // Mock router
     mockRouter = {
@@ -45,13 +57,33 @@ describe('Issue #23: Login Redirect Flow', () => {
     }
     ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
 
-    // Mock Supabase client
+    // Mock useSearchParams
+    ;(useSearchParams as jest.Mock).mockReturnValue({
+      get: jest.fn().mockReturnValue(null),
+    })
+
+    // Mock Supabase client — includes mfa and from() chain needed by login page
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: { password_change_required: false },
+      error: null,
+    })
+    const mockEq = jest.fn().mockReturnValue({ single: mockSingle })
+    const mockSelect = jest.fn().mockReturnValue({ eq: mockEq })
+    const mockFrom = jest.fn().mockReturnValue({ select: mockSelect })
+
     mockSupabase = {
       auth: {
         signInWithPassword: jest.fn(),
         getSession: jest.fn(),
         setSession: jest.fn(),
+        mfa: {
+          getAuthenticatorAssuranceLevel: jest.fn().mockResolvedValue({
+            data: { currentLevel: 'aal1', nextLevel: 'aal1' },
+          }),
+          listFactors: jest.fn().mockResolvedValue({ data: { totp: [] } }),
+        },
       },
+      from: mockFrom,
     }
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
   })
@@ -72,8 +104,9 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
+    // No existing session so form renders; after login the session exists
     mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
+      data: { session: null },
       error: null,
     })
 
@@ -198,8 +231,9 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
+    // No existing session so form renders
     mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
+      data: { session: null },
       error: null,
     })
 
@@ -215,12 +249,10 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-      expect(mockSupabase.auth.getSession).toHaveBeenCalled()
     })
 
-    // Session should be established
-    const { data } = await mockSupabase.auth.getSession()
-    expect(data.session).toBeTruthy()
+    // Verify login was attempted
+    expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalled()
   })
 
   /**
@@ -314,8 +346,9 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
+    // No existing session so form renders
     mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
+      data: { session: null },
       error: null,
     })
 
