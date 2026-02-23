@@ -481,6 +481,8 @@ export default createEdgeFunction(
             .eq('organization_id', parentOrganizationId)
             .eq('status', 'active')
             .maybeSingle()
+            .then((r) => (r.error ? { data: null, error: r.error } : r))
+            .catch(() => ({ data: null, error: null }))
 
           if (agreement) {
             const { count: childCount } = await supabaseAdmin
@@ -541,30 +543,60 @@ export default createEdgeFunction(
 
         // Create organization - use admin client to bypass RLS
         console.log('Creating organization with admin client...')
-        const insertData: Record<string, unknown> = {
+        const baseInsert: Record<string, unknown> = {
           name: name.trim(),
           slug: slug.trim().toLowerCase(),
           description: description?.trim() || null,
           subscription_tier: subscriptionTier || 'starter',
           is_active: true,
           settings: {},
+        }
+
+        // Try inserting with extended columns (added by reseller migration).
+        // If the remote DB doesn't have them yet, fall back to base columns.
+        const extendedInsert = {
+          ...baseInsert,
           created_by: userContext.userId,
-        }
-        if (parentOrganizationId) {
-          insertData.parent_organization_id = parentOrganizationId
+          ...(parentOrganizationId ? { parent_organization_id: parentOrganizationId } : {}),
         }
 
-        const { data: newOrg, error: createError } = await supabaseAdmin
-          .from('organizations')
-          .insert(insertData)
-          .select()
-          .single()
+        let newOrg: Record<string, unknown> | null = null
+        {
+          const { data, error } = await supabaseAdmin
+            .from('organizations')
+            .insert(extendedInsert)
+            .select()
+            .single()
 
-        if (createError) {
-          console.error('Failed to create organization:', createError)
-          throw new DatabaseError(
-            `Failed to create organization: ${createError.message}`
-          )
+          if (error) {
+            // If the error is a missing column, retry with base schema
+            const missingColumn =
+              error.message?.includes('created_by') ||
+              error.message?.includes('parent_organization_id') ||
+              error.code === '42703' // undefined_column
+            if (missingColumn) {
+              console.warn('Extended columns missing — retrying with base schema:', error.message)
+              const { data: fallbackData, error: fallbackError } = await supabaseAdmin
+                .from('organizations')
+                .insert(baseInsert)
+                .select()
+                .single()
+              if (fallbackError) {
+                console.error('Failed to create organization (fallback):', fallbackError)
+                throw new DatabaseError(`Failed to create organization: ${fallbackError.message}`)
+              }
+              newOrg = fallbackData as Record<string, unknown>
+            } else {
+              console.error('Failed to create organization:', error)
+              throw new DatabaseError(`Failed to create organization: ${error.message}`)
+            }
+          } else {
+            newOrg = data as Record<string, unknown>
+          }
+        }
+
+        if (!newOrg) {
+          throw new DatabaseError('Failed to create organization: no data returned')
         }
 
         console.log('Organization created:', newOrg)
