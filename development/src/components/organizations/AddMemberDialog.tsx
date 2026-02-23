@@ -495,8 +495,14 @@ export function AddMemberDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="z-[300]">
+                    <SelectItem value="viewer">
+                      Viewer - Read-only access to organization data
+                    </SelectItem>
                     <SelectItem value="member">
                       Member - Can manage devices and alerts
+                    </SelectItem>
+                    <SelectItem value="billing">
+                      Billing - View and manage billing and invoices
                     </SelectItem>
                     <SelectItem value="admin">
                       Admin - Full management access including members

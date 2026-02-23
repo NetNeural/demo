@@ -205,6 +205,7 @@ export default function DashboardShell({
                 const colorMap: Record<string, string> = {
                   purple: 'bg-purple-600 hover:bg-purple-600',
                   blue: 'bg-blue-600 hover:bg-blue-600',
+                  amber: 'bg-amber-600 hover:bg-amber-600',
                   green: 'bg-green-600 hover:bg-green-600',
                   gray: 'bg-gray-500 hover:bg-gray-500',
                 }

@@ -3,7 +3,7 @@
  * Defines interfaces for multi-tenant organization management
  */
 
-export type OrganizationRole = 'owner' | 'admin' | 'member' | 'viewer'
+export type OrganizationRole = 'owner' | 'admin' | 'billing' | 'member' | 'viewer'
 
 export interface OrganizationSettings {
   branding?: {
@@ -157,6 +157,21 @@ export function getOrganizationPermissions(
         canDeleteOrganization: false,
         canViewAuditLogs: false,
       }
+    case 'billing':
+      return {
+        canManageMembers: false,
+        canInviteMembers: false,
+        canRemoveMembers: false,
+        canManageDevices: false,
+        canManageLocations: false,
+        canManageIntegrations: false,
+        canConfigureAlerts: false,
+        canViewBilling: true,
+        canManageBilling: true,
+        canUpdateSettings: false,
+        canDeleteOrganization: false,
+        canViewAuditLogs: false,
+      }
     case 'viewer':
       return {
         canManageMembers: false,
@@ -195,6 +210,12 @@ export function getRoleDisplayInfo(role: OrganizationRole): {
         label: 'Admin',
         color: 'blue',
         description: 'Manage members, devices, and integrations',
+      }
+    case 'billing':
+      return {
+        label: 'Billing',
+        color: 'amber',
+        description: 'View and manage billing and invoices',
       }
     case 'member':
       return {
