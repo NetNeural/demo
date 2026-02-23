@@ -64,12 +64,12 @@ export default function ReportsIndexPage() {
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', currentOrganization.id),
 
-          // Active alerts
+          // Active alerts (unresolved)
           supabase
             .from('alerts')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', currentOrganization.id)
-            .eq('status', 'active'),
+            .eq('is_resolved', false),
 
           // Recent exports (last 7 days)
           supabase
