@@ -29,6 +29,14 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
+    // Check if user is super_admin (bypass org membership)
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const isSuperAdmin = userProfile?.role === 'super_admin'
+
     const url = new URL(req.url)
     const params = new URLSearchParams(url.search)
     const integrationId = params.get('integration_id')
@@ -62,27 +70,29 @@ serve(async (req) => {
       throw new Error('Integration not found or access denied')
     }
 
-    // Then verify user is a member of the organization
-    const { data: orgUser, error: orgError } = await supabase
-      .from('organization_members')
-      .select('id, role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .maybeSingle()
+    // Then verify user is a member of the organization (super_admins bypass)
+    if (!isSuperAdmin) {
+      const { data: orgUser, error: orgError } = await supabase
+        .from('organization_members')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .maybeSingle()
 
-    console.log('👥 Organization membership:', { orgUser, orgError })
+      console.log('👥 Organization membership:', { orgUser, orgError })
 
-    if (orgError) {
-      console.error('❌ Database error checking membership:', orgError)
-      throw new Error('Failed to verify organization membership')
-    }
+      if (orgError) {
+        console.error('❌ Database error checking membership:', orgError)
+        throw new Error('Failed to verify organization membership')
+      }
 
-    if (!orgUser) {
-      console.error('❌ User not a member:', {
-        userId: user.id,
-        organizationId,
-      })
-      throw new Error('Unauthorized - not a member of this organization')
+      if (!orgUser) {
+        console.error('❌ User not a member:', {
+          userId: user.id,
+          organizationId,
+        })
+        throw new Error('Unauthorized - not a member of this organization')
+      }
     }
 
     console.log('✅ Access verified')

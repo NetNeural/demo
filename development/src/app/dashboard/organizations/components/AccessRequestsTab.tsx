@@ -299,7 +299,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                 incoming requests.
               </CardDescription>
             </div>
-            {(isOwner || isAdmin) && (
+            {(user?.isSuperAdmin || isOwner || isAdmin) && (
               <Button onClick={() => setShowNewRequest(true)} className="gap-2">
                 <Send className="h-4 w-4" />
                 Request Access
@@ -472,7 +472,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                         </TableCell>
                         <TableCell>
                           {request.status === 'pending' &&
-                            (isOwner || isAdmin) && (
+                            (user?.isSuperAdmin || isOwner || isAdmin) && (
                               <div className="flex gap-1">
                                 <Button
                                   size="sm"
@@ -490,7 +490,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                             )}
                           {request.status === 'approved' &&
                             !isRequestExpired(request) &&
-                            (isOwner || isAdmin) && (
+                            (user?.isSuperAdmin || isOwner || isAdmin) && (
                               <Button
                                 size="sm"
                                 variant="destructive"

@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization'
 import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -59,6 +60,8 @@ interface MembersTabProps {
 export function MembersTab({ organizationId }: MembersTabProps) {
   const { fmt } = useDateFormatter()
   const { permissions, userRole } = useOrganization()
+  const { user } = useUser()
+  const isSuperAdmin = user?.isSuperAdmin || false
   const { canManageMembers, canRemoveMembers } = permissions
   const { toast } = useToast()
 
@@ -373,14 +376,14 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   // 2. AND (target is not owner OR current user is owner - only owners can modify owners)
                   const canModifyThisMember =
                     canManageMembers &&
-                    (member.role !== 'owner' || userRole === 'owner')
+                    (member.role !== 'owner' || userRole === 'owner' || isSuperAdmin)
 
                   // Can delete if:
                   // 1. User has remove permissions (admin or owner)
-                  // 2. AND (target is not owner OR current user is owner - only owners can delete owners)
+                  // 2. AND (target is not owner OR current user is owner/super_admin)
                   const canDeleteThisMember =
                     canRemoveMembers &&
-                    (member.role !== 'owner' || userRole === 'owner')
+                    (member.role !== 'owner' || userRole === 'owner' || isSuperAdmin)
 
                   return (
                     <TableRow key={member.id}>
@@ -409,7 +412,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                             <SelectContent>
                               <SelectItem value="member">Member</SelectItem>
                               <SelectItem value="admin">Admin</SelectItem>
-                              {userRole === 'owner' && (
+                              {(userRole === 'owner' || isSuperAdmin) && (
                                 <SelectItem value="owner">Owner</SelectItem>
                               )}
                             </SelectContent>
@@ -491,6 +494,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         onOpenChange={setShowAddMemberDialog}
         onMemberAdded={fetchMembers}
         userRole={userRole || 'member'}
+        isSuperAdmin={isSuperAdmin}
       />
 
       {/* Reset Password Dialog */}

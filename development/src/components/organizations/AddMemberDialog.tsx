@@ -31,6 +31,7 @@ interface AddMemberDialogProps {
   onOpenChange: (open: boolean) => void
   onMemberAdded: () => void
   userRole: OrganizationRole
+  isSuperAdmin?: boolean
 }
 
 export function AddMemberDialog({
@@ -39,6 +40,7 @@ export function AddMemberDialog({
   onOpenChange,
   onMemberAdded,
   userRole,
+  isSuperAdmin = false,
 }: AddMemberDialogProps) {
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
@@ -499,7 +501,7 @@ export function AddMemberDialog({
                     <SelectItem value="admin">
                       Admin - Full management access including members
                     </SelectItem>
-                    {userRole === 'owner' && (
+                    {(userRole === 'owner' || isSuperAdmin) && (
                       <SelectItem value="owner">
                         Owner - Complete control including billing
                       </SelectItem>

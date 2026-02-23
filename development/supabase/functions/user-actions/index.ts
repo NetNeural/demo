@@ -128,21 +128,30 @@ async function handleRecordAction(
     throw new Error('Missing required fields: action_type, action_category')
   }
 
+  // Check if user is super_admin (can act without org membership)
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  const isSuperAdmin = userProfile?.role === 'super_admin'
+
   // Get user's organization
   const { data: orgMember, error: orgError } = await supabase
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', userId)
-    .single()
+    .limit(1)
+    .maybeSingle()
 
-  if (orgError || !orgMember) {
+  if (!isSuperAdmin && (orgError || !orgMember)) {
     throw new Error('User not associated with organization')
   }
 
   // Call database function to record action
   const { data, error } = await supabase.rpc('record_user_action', {
     p_user_id: userId,
-    p_organization_id: orgMember.organization_id,
+    p_organization_id: orgMember?.organization_id || null,
     p_action_type: body.action_type,
     p_action_category: body.action_category,
     p_description: body.description || null,

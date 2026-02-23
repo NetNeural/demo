@@ -57,19 +57,21 @@ export default createEdgeFunction(
         )
       }
 
-      // Check membership
-      const { data: membership } = await serviceClient
-        .from('organization_members')
-        .select('role')
-        .eq('user_id', user.userId)
-        .eq('organization_id', organizationId)
-        .single()
+      // Check membership (super_admins bypass)
+      if (!user.isSuperAdmin) {
+        const { data: membership } = await serviceClient
+          .from('organization_members')
+          .select('role')
+          .eq('user_id', user.userId)
+          .eq('organization_id', organizationId)
+          .single()
 
-      if (!membership) {
-        throw new DatabaseError(
-          'You must be a member of this organization',
-          403
-        )
+        if (!membership) {
+          throw new DatabaseError(
+            'You must be a member of this organization',
+            403
+          )
+        }
       }
 
       // Check for existing active agreement
@@ -136,19 +138,21 @@ export default createEdgeFunction(
       throw new DatabaseError('estimatedCustomers must be at least 1', 400)
     }
 
-    // Verify user is an owner of the organization
-    const { data: membership, error: memberError } = await serviceClient
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', user.userId)
-      .eq('organization_id', organizationId)
-      .single()
+    // Verify user is an owner of the organization (super_admins bypass)
+    if (!user.isSuperAdmin) {
+      const { data: membership, error: memberError } = await serviceClient
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', user.userId)
+        .eq('organization_id', organizationId)
+        .single()
 
-    if (memberError || !membership || membership.role !== 'owner') {
-      throw new DatabaseError(
-        'Only organization owners can apply for reseller agreements',
-        403
-      )
+      if (memberError || !membership || membership.role !== 'owner') {
+        throw new DatabaseError(
+          'Only organization owners can apply for reseller agreements',
+          403
+        )
+      }
     }
 
     // Check for existing pending/active application

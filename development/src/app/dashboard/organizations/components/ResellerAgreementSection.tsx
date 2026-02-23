@@ -457,7 +457,7 @@ export function ResellerAgreementSection({
                 </p>
               </div>
             </div>
-            {isOwner && (
+            {(user?.isSuperAdmin || isOwner) && (
               <Button
                 onClick={() => setShowApplyDialog(true)}
                 variant="outline"
@@ -543,7 +543,7 @@ export function ResellerAgreementSection({
             </div>
           </div>
 
-          {isOwner ? (
+          {(user?.isSuperAdmin || isOwner) ? (
             <Button
               onClick={() => setShowApplyDialog(true)}
               className="w-full sm:w-auto"
