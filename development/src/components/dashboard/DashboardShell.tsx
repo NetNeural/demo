@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import { getRoleDisplayInfo } from '@/types/organization'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -190,7 +191,7 @@ export default function DashboardShell({
                   : `Sentinel for ${currentOrganization.name}`}
               </h1>
             </div>
-            {isSuperAdmin && (
+            {isSuperAdmin ? (
               <Badge
                 variant="destructive"
                 className="flex flex-shrink-0 items-center gap-1"
@@ -198,7 +199,25 @@ export default function DashboardShell({
                 <Shield className="h-3 w-3" />
                 <span className="hidden sm:inline">Super Admin</span>
               </Badge>
-            )}
+            ) : currentOrganization?.role ? (
+              (() => {
+                const roleInfo = getRoleDisplayInfo(currentOrganization.role)
+                const colorMap: Record<string, string> = {
+                  purple: 'bg-purple-600 hover:bg-purple-600',
+                  blue: 'bg-blue-600 hover:bg-blue-600',
+                  green: 'bg-green-600 hover:bg-green-600',
+                  gray: 'bg-gray-500 hover:bg-gray-500',
+                }
+                return (
+                  <Badge
+                    className={`flex flex-shrink-0 items-center gap-1 text-white ${colorMap[roleInfo.color] || 'bg-gray-500'}`}
+                  >
+                    <Shield className="h-3 w-3" />
+                    <span className="hidden sm:inline">{roleInfo.label}</span>
+                  </Badge>
+                )
+              })()
+            ) : null}
           </div>
         </header>
 
