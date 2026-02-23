@@ -100,7 +100,13 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     if (token) {
       try {
         // Decode JWT payload without verification (staging only!)
-        const payload = JSON.parse(atob(token.split('.')[1]))
+        // JWT uses base64URL (- and _ instead of + and /), atob needs standard base64
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url
+          .replace(/-/g, '+')
+          .replace(/_/g, '/')
+          .padEnd(base64Url.length + ((4 - (base64Url.length % 4)) % 4), '=')
+        const payload = JSON.parse(atob(base64))
         console.log('Fallback: Using unverified token payload', {
           sub: payload.sub,
         })

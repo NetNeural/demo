@@ -61,6 +61,22 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     organization = org
   }
 
+  // Fallback: if organization_id is null on the users row (e.g. created by a
+  // super admin who has no org), look up the first active membership instead.
+  if (!organization && profile.role !== 'super_admin') {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id, organizations(id, name)')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single()
+
+    if (membership?.organizations) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      organization = membership.organizations as any
+    }
+  }
+
   const isSuperAdmin = profile.role === 'super_admin'
   const passwordChangeRequired = profile.password_change_required === true
 

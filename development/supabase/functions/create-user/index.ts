@@ -132,6 +132,7 @@ export default createEdgeFunction(
           },
           body: JSON.stringify({
             password: password,
+            email_confirm: true, // ensure email is confirmed when resetting
             user_metadata: {
               full_name: fullName,
             },
@@ -183,7 +184,8 @@ export default createEdgeFunction(
         body: JSON.stringify({
           email: email,
           password: password,
-          email_confirmed_at: new Date().toISOString(), // Explicitly confirm email immediately
+          email_confirmed_at: new Date().toISOString(), // legacy field
+          email_confirm: true, // newer Supabase versions require this boolean
           user_metadata: {
             full_name: fullName,
           },
@@ -207,7 +209,9 @@ export default createEdgeFunction(
           email: email,
           full_name: fullName,
           role: role || 'user',
-          organization_id: userContext.organizationId, // Assign to admin's organization
+          // Use the target org if provided (e.g. super admin creating user for a specific org),
+          // otherwise fall back to the creating admin's own org.
+          organization_id: targetOrganizationId || userContext.organizationId,
           password_change_required: true, // User must change password on first login
         })
         .select()
