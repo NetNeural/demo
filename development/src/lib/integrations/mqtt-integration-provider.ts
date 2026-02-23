@@ -29,7 +29,7 @@
  */
 
 // MQTT client imports
-import * as mqtt from 'mqtt'
+import mqtt from 'mqtt'
 
 import {
   DeviceIntegrationProvider,

@@ -119,13 +119,13 @@ jobs:
           echo "📦 Creating CNAME for custom domain..."
           echo "demo-stage.netneural.ai" > public/CNAME
           echo "✅ CNAME created"
-          echo "📦 Removing API routes and Sentry instrumentation (incompatible with static export)"
-          rm -rf src/app/api
+          echo "📦 Disabling Sentry instrumentation (incompatible with static export)"
           mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
           echo "🧹 Cleaning build cache..."
           rm -rf .next out
-          echo "✅ Development-only files removed - building static site..."
+          echo "✅ Building static site (API routes auto-excluded by next.config.js)..."
           npm run build
+          mv instrumentation.ts.disabled instrumentation.ts 2>/dev/null || true
           echo "✅ Build completed successfully!"
           if [ ! -f out/CNAME ]; then
             echo "⚠️ CNAME not in output, creating..."

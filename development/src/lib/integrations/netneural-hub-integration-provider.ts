@@ -26,7 +26,7 @@
  * Epic: #95 - Revive NetNeural Integration Hub
  */
 
-import * as mqtt from 'mqtt'
+import mqtt from 'mqtt'
 import {
   DeviceIntegrationProvider,
   DeviceListResult,

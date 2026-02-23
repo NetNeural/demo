@@ -135,8 +135,7 @@ jobs:
           echo "demo-stage.netneural.ai" > public/CNAME
           echo "✅ Created CNAME for custom domain"
           
-          # Remove API routes (incompatible with static export)
-          rm -rf src/app/api
+          # API routes are auto-excluded by next.config.js for static builds
           
           # Disable instrumentation for static build
           mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
@@ -146,6 +145,9 @@ jobs:
           
           # Build static site
           npm run build
+          
+          # Restore instrumentation
+          mv instrumentation.ts.disabled instrumentation.ts 2>/dev/null || true
           
           # Verify CNAME is included in build
           if [ ! -f out/CNAME ]; then
