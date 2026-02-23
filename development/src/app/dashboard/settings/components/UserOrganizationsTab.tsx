@@ -49,10 +49,18 @@ export function UserOrganizationsTab() {
                   className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-accent/50"
                 >
                   <div className="flex flex-1 items-start gap-4">
-                    {/* Organization Icon */}
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold text-white">
-                      {org.name.charAt(0).toUpperCase()}
-                    </div>
+                    {/* Organization Logo / Icon */}
+                    {org.settings?.branding?.logo_url ? (
+                      <img
+                        src={org.settings.branding.logo_url}
+                        alt={`${org.name} logo`}
+                        className="h-12 w-12 flex-shrink-0 rounded-lg object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold text-white">
+                        {org.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
 
                     {/* Organization Info */}
                     <div className="flex-1">
