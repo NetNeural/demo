@@ -79,6 +79,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deletingAll, setDeletingAll] = useState(false)
   const [selectedItem, setSelectedItem] = useState<FeedbackItem | null>(null)
 
   const fetchFeedback = useCallback(async () => {
@@ -129,6 +130,31 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
       toast.error('Failed to delete feedback')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (!currentOrganization) return
+    setDeletingAll(true)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('feedback')
+        .delete()
+        .eq('organization_id', currentOrganization.id)
+
+      if (error) {
+        console.error('Error deleting all feedback:', error)
+        toast.error(error.message || 'Could not delete feedback')
+      } else {
+        setItems([])
+        toast.success('All feedback has been deleted.')
+      }
+    } catch (err) {
+      console.error('Delete all error:', err)
+      toast.error('Failed to delete feedback')
+    } finally {
+      setDeletingAll(false)
     }
   }
 
@@ -218,6 +244,42 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
             )}
             {syncing ? 'Syncing...' : 'Sync from GitHub'}
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={deletingAll || items.length === 0}
+                className="text-muted-foreground hover:text-red-600"
+                title="Delete all feedback"
+              >
+                {deletingAll ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete All Feedback?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all {items.length} feedback{' '}
+                  {items.length === 1 ? 'item' : 'items'} for this organization.
+                  Linked GitHub issues will not be affected.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAll}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="ghost" size="sm" onClick={fetchFeedback}>
             <RefreshCw className="h-4 w-4" />
           </Button>
