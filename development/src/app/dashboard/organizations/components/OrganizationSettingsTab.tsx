@@ -728,6 +728,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         </CardContent>
       </Card>
 
+      {/* Only show delete for child organizations — root org (no parent) cannot be deleted */}
+      {currentOrganization?.parent_organization_id && (
       <Card className="border-red-200 bg-red-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-900">
@@ -772,6 +774,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

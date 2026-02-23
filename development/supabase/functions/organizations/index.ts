@@ -1056,7 +1056,7 @@ export default createEdgeFunction(
         // @ts-expect-error - Properties exist
         const { data: org, error: orgError } = await supabase
           .from('organizations')
-          .select('id, name')
+          .select('id, name, parent_organization_id')
           .eq('id', orgId)
           .maybeSingle()
 
@@ -1069,6 +1069,15 @@ export default createEdgeFunction(
 
         if (!org) {
           throw new DatabaseError('Organization not found', 404)
+        }
+
+        // Root organizations (no parent) cannot be deleted
+        // @ts-expect-error - parent_organization_id exists
+        if (!org.parent_organization_id) {
+          throw new DatabaseError(
+            'Root organizations cannot be deleted',
+            403
+          )
         }
 
         // Perform actual deletion (CASCADE will handle related records)
