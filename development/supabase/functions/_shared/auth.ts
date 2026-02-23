@@ -120,9 +120,22 @@ export async function getUserContext(req: Request): Promise<UserContext> {
           .single()
 
         if (profile) {
+          // Resolve org from membership if users.organization_id is null
+          let fallbackOrgId = profile.organization_id
+          if (!fallbackOrgId && profile.role !== 'super_admin') {
+            const { data: membership } = await serviceClient
+              .from('organization_members')
+              .select('organization_id')
+              .eq('user_id', payload.sub)
+              .limit(1)
+              .maybeSingle()
+            if (membership) {
+              fallbackOrgId = membership.organization_id
+            }
+          }
           return {
             userId: payload.sub,
-            organizationId: profile.organization_id,
+            organizationId: fallbackOrgId,
             role: profile.role as UserContext['role'],
             isSuperAdmin: profile.role === 'super_admin',
             email: profile.email || payload.email || '',
@@ -157,9 +170,27 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     email: string
   }
 
+  // If user has no default org in users table, try to resolve from organization_members
+  let resolvedOrgId = userProfile.organization_id
+  if (!resolvedOrgId && userProfile.role !== 'super_admin') {
+    const serviceClient = createServiceClient()
+    const { data: membership } = await serviceClient
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+    if (membership) {
+      resolvedOrgId = membership.organization_id
+      console.log(
+        `User ${userProfile.email} has no default org, resolved to ${resolvedOrgId} via organization_members`
+      )
+    }
+  }
+
   return {
     userId: user.id,
-    organizationId: userProfile.organization_id,
+    organizationId: resolvedOrgId,
     role: userProfile.role as UserContext['role'],
     isSuperAdmin: userProfile.role === 'super_admin',
     email: userProfile.email || user.email || '',
@@ -206,18 +237,43 @@ export async function resolveOrganizationId(
 
   // If no specific org requested, or requesting their default org, return it
   if (!requestedOrgId || requestedOrgId === userContext.organizationId) {
-    return userContext.organizationId
+    // If user has a default org, use it
+    if (userContext.organizationId) {
+      return userContext.organizationId
+    }
+    // No default org — try to find any membership
+    const serviceClient = createServiceClient()
+    const { data: anyMembership } = await serviceClient
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', userContext.userId)
+      .limit(1)
+      .maybeSingle()
+    if (anyMembership) {
+      console.log(
+        `User ${userContext.email} has no default org, resolved via membership to ${anyMembership.organization_id}`
+      )
+      return anyMembership.organization_id
+    }
+    return null
   }
 
   // Check if user is a member of the requested org
   // Also verify temporary memberships haven't expired
   const serviceClient = createServiceClient()
-  const { data: membership } = await serviceClient
+  const { data: membership, error: membershipError } = await serviceClient
     .from('organization_members')
     .select('organization_id, is_temporary, expires_at')
     .eq('user_id', userContext.userId)
     .eq('organization_id', requestedOrgId)
-    .single()
+    .maybeSingle()
+
+  if (membershipError) {
+    console.error(
+      `Error checking membership for ${userContext.email} in org ${requestedOrgId}:`,
+      membershipError
+    )
+  }
 
   if (membership) {
     // Check if temporary membership has expired
@@ -242,7 +298,7 @@ export async function resolveOrganizationId(
 
   // Not a member of the requested org — fall back to default
   console.warn(
-    `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org.`
+    `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org ${userContext.organizationId}.`
   )
   return userContext.organizationId
 }
