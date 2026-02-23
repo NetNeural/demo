@@ -231,6 +231,19 @@ function LoginForm() {
 
         if (session) {
           hasCheckedAuth.current = true
+
+          // Check password change requirement before navigating (fixes mobile race condition)
+          const { data: userRecord } = await supabase
+            .from('users')
+            .select('password_change_required')
+            .eq('id', data.user.id)
+            .single()
+
+          if (userRecord?.password_change_required) {
+            router.push('/auth/change-password')
+            return
+          }
+
           router.push('/dashboard')
           setTimeout(() => router.refresh(), 50)
         } else {
@@ -280,8 +293,25 @@ function LoginForm() {
           return
         }
 
-        // MFA verified — proceed to dashboard
+        // MFA verified — check password change requirement before navigating
         hasCheckedAuth.current = true
+
+        const {
+          data: { user: mfaUser },
+        } = await supabase.auth.getUser()
+        if (mfaUser) {
+          const { data: mfaUserRecord } = await supabase
+            .from('users')
+            .select('password_change_required')
+            .eq('id', mfaUser.id)
+            .single()
+
+          if (mfaUserRecord?.password_change_required) {
+            router.push('/auth/change-password')
+            return
+          }
+        }
+
         router.push('/dashboard')
         setTimeout(() => router.refresh(), 50)
       } catch {
