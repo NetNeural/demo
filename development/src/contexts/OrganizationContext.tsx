@@ -202,7 +202,11 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
   // Fetch organization stats
   const fetchOrganizationStats = useCallback(async () => {
-    if (!currentOrgId) {
+    // Guard: don't fetch until both org and user session are available.
+    // currentOrgId is eagerly set from localStorage before the Supabase session
+    // restores, so firing without user?.id sends the anon key as the Bearer
+    // token which the edge function correctly rejects.
+    if (!currentOrgId || !user?.id) {
       setStats(null)
       return
     }
@@ -276,7 +280,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       setIsLoadingStats(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentOrgId]) // Only depend on currentOrgId to prevent infinite loop from userOrganizations updates
+  }, [currentOrgId, user?.id]) // Include user?.id so stats re-fetch once the session is available after initial mount
 
   // Load organizations on mount or user change
   useEffect(() => {

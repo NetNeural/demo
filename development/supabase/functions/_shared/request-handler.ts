@@ -272,6 +272,7 @@ export function createErrorResponse(
 
   return new Response(
     JSON.stringify({
+      success: false,
       error: errorType,
       message,
       ...(details &&
