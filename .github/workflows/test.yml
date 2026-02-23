@@ -183,6 +183,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Auto-format code
+        run: npm run format
+
       - name: Check code formatting
         run: npm run format:check
 
