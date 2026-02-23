@@ -876,9 +876,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </CardTitle>
           <CardDescription>
             Customize how the login page looks for your organization. Users access it via{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">
-              /auth/login?org={currentOrganization?.slug || 'your-slug'}
-            </code>
+            <a
+              href={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org=${currentOrganization?.slug || 'your-slug'}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded bg-muted px-1 py-0.5 text-xs font-mono text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
+            </a>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1070,7 +1075,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
                   <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                   <span className="ml-2 flex-1 rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400 truncate">
-                    /auth/login?org={currentOrganization?.slug || 'your-slug'}
+                    {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
                   </span>
                 </div>
                 {/* Page viewport (16:9 aspect ratio) */}
