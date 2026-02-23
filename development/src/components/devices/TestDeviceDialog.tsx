@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface TestDeviceDialogProps {
@@ -77,6 +78,39 @@ export function TestDeviceDialog({
             ? response.error
             : response.error?.message || 'Failed to create test device'
         throw new Error(errorMsg)
+      }
+
+      // Seed initial telemetry so Temperature/Humidity/CO₂/Battery appear immediately
+      const createdDeviceId =
+        (
+          response.data as {
+            device?: {
+              id?: string
+            }
+          }
+        )?.device?.id || null
+
+      if (createdDeviceId) {
+        const supabase = createClient()
+        const now = new Date().toISOString()
+        const { error: telemetryError } = await supabase
+          .from('device_telemetry_history')
+          .insert({
+            device_id: createdDeviceId,
+            organization_id: currentOrganization.id,
+            telemetry: {
+              temperature: 22,
+              humidity: 45,
+              co2: 600,
+              battery: 85,
+            },
+            device_timestamp: now,
+            received_at: now,
+          })
+
+        if (telemetryError) {
+          console.warn('Created test device, but failed to seed telemetry:', telemetryError)
+        }
       }
 
       toast.success(`Test device "${name.trim()}" created successfully`)

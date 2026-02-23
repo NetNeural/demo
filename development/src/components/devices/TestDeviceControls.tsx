@@ -133,6 +133,8 @@ export function TestDeviceControls({
   >((currentStatus as 'online' | 'offline' | 'error' | 'warning') || 'online')
   const [batteryDevice, setBatteryDevice] = useState(85)
   const [signalStrength, setSignalStrength] = useState(-55)
+  const valuesRef = useRef(values)
+  const batteryDeviceRef = useRef(batteryDevice)
 
   // History generation controls
   const [histSpanHours, setHistSpanHours] = useState(24)
@@ -160,6 +162,14 @@ export function TestDeviceControls({
     }
     load()
   }, [isOpen, deviceId, organizationId])
+
+  useEffect(() => {
+    valuesRef.current = values
+  }, [values])
+
+  useEffect(() => {
+    batteryDeviceRef.current = batteryDevice
+  }, [batteryDevice])
 
   const setValue = (key: SensorKey, val: number) =>
     setValues((prev) => ({ ...prev, [key]: val }))
@@ -192,14 +202,31 @@ export function TestDeviceControls({
     setLoading(true)
     try {
       const supabase = createClient()
+      const batteryDrain = sendTarget === 'all' ? 0.8 : 0.3
+      const nextBatterySensor = Math.max(
+        SENSORS.battery.min,
+        parseFloat((values.battery - batteryDrain).toFixed(1))
+      )
+      const nextBatteryDevice = Math.max(
+        0,
+        parseFloat((batteryDevice - batteryDrain).toFixed(1))
+      )
 
       // Build flat JSONB payload — matches MQTT flat format, normalizer will expand it
       const payload: Record<string, number> =
         sendTarget === 'all'
           ? (Object.fromEntries(
-              SENSOR_KEYS.map((k) => [k, values[k]])
+              SENSOR_KEYS.map((k) => [
+                k,
+                k === 'battery' ? nextBatterySensor : values[k],
+              ])
             ) as Record<string, number>)
-          : { [sendTarget]: values[sendTarget as SensorKey] }
+          : {
+              [sendTarget]:
+                sendTarget === 'battery'
+                  ? nextBatterySensor
+                  : values[sendTarget as SensorKey],
+            }
 
       const { error: telError } = await supabase
         .from('device_telemetry_history')
@@ -216,12 +243,17 @@ export function TestDeviceControls({
         .from('devices')
         .update({
           status,
-          battery_level: batteryDevice,
+          battery_level: nextBatteryDevice,
           signal_strength: signalStrength,
           last_seen: new Date().toISOString(),
         })
         .eq('id', deviceId)
       if (devError) throw devError
+
+      setValues((prev) => ({ ...prev, battery: nextBatterySensor }))
+      valuesRef.current = { ...valuesRef.current, battery: nextBatterySensor }
+      setBatteryDevice(nextBatteryDevice)
+      batteryDeviceRef.current = nextBatteryDevice
 
       const alerting =
         anyOutOfRange &&
@@ -243,6 +275,154 @@ export function TestDeviceControls({
     } catch (err) {
       console.error('Failed to send test data:', err)
       toast.error('Failed to send test data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const SPIKE_VALUES: Record<SensorKey, number> = {
+    temperature: 45,
+    humidity: 88,
+    co2: 2200,
+    battery: 8,
+  }
+
+  const handleSendSingleSensorSpike = async (sensor: SensorKey) => {
+    if (!organizationId) {
+      toast.error('Organization not loaded yet — please try again.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const spikeValue = SPIKE_VALUES[sensor]
+      const payload: Record<string, number> = {
+        [sensor]: spikeValue,
+      }
+
+      const { error: telError } = await supabase
+        .from('device_telemetry_history')
+        .insert({
+          device_id: deviceId,
+          organization_id: organizationId,
+          telemetry: payload,
+          device_timestamp: new Date().toISOString(),
+          received_at: new Date().toISOString(),
+        })
+      if (telError) throw telError
+
+      const updatePayload: {
+        status: 'warning' | 'error'
+        last_seen: string
+        battery_level?: number
+      } = {
+        status: sensor === 'battery' ? 'error' : 'warning',
+        last_seen: new Date().toISOString(),
+      }
+
+      if (sensor === 'battery') {
+        updatePayload.battery_level = spikeValue
+      }
+
+      const { error: devError } = await supabase
+        .from('devices')
+        .update(updatePayload)
+        .eq('id', deviceId)
+      if (devError) throw devError
+
+      const nextValues = { ...valuesRef.current, [sensor]: spikeValue }
+      setValues(nextValues)
+      valuesRef.current = nextValues
+      if (sensor === 'battery') {
+        setBatteryDevice(spikeValue)
+        batteryDeviceRef.current = spikeValue
+      }
+      setStatus(sensor === 'battery' ? 'error' : 'warning')
+
+      toast.success(`🚨 ${SENSORS[sensor].label} spiked to alert state`, {
+        description: JSON.stringify(payload),
+      })
+      onDataSent?.()
+    } catch (err) {
+      console.error('Failed to send sensor spike alert data:', err)
+      toast.error('Failed to send sensor spike alert data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRecoverSingleSensor = async (sensor: SensorKey) => {
+    if (!organizationId) {
+      toast.error('Organization not loaded yet — please try again.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const recoveredValue = SENSORS[sensor].initial
+      const payload: Record<string, number> = {
+        [sensor]: recoveredValue,
+      }
+
+      const { error: telError } = await supabase
+        .from('device_telemetry_history')
+        .insert({
+          device_id: deviceId,
+          organization_id: organizationId,
+          telemetry: payload,
+          device_timestamp: new Date().toISOString(),
+          received_at: new Date().toISOString(),
+        })
+      if (telError) throw telError
+
+      const nextValues: Record<SensorKey, number> = {
+        ...valuesRef.current,
+        [sensor]: recoveredValue,
+      }
+      const stillOutOfRange = SENSOR_KEYS.some((key) => {
+        const sensorDef = SENSORS[key]
+        return (
+          nextValues[key] < sensorDef.normalMin ||
+          nextValues[key] > sensorDef.normalMax
+        )
+      })
+
+      const updatePayload: {
+        status: 'online' | 'warning'
+        last_seen: string
+        battery_level?: number
+      } = {
+        status: stillOutOfRange ? 'warning' : 'online',
+        last_seen: new Date().toISOString(),
+      }
+
+      if (sensor === 'battery') {
+        updatePayload.battery_level = recoveredValue
+      }
+
+      const { error: devError } = await supabase
+        .from('devices')
+        .update(updatePayload)
+        .eq('id', deviceId)
+      if (devError) throw devError
+
+      setValues(nextValues)
+      valuesRef.current = nextValues
+      if (sensor === 'battery') {
+        setBatteryDevice(recoveredValue)
+        batteryDeviceRef.current = recoveredValue
+      }
+      setStatus(stillOutOfRange ? 'warning' : 'online')
+
+      toast.success(`✅ ${SENSORS[sensor].label} recovered to normal`, {
+        description: JSON.stringify(payload),
+      })
+      onDataSent?.()
+    } catch (err) {
+      console.error('Failed to recover sensor data:', err)
+      toast.error('Failed to recover sensor data')
     } finally {
       setLoading(false)
     }
@@ -347,12 +527,44 @@ export function TestDeviceControls({
     if (!organizationId) return
     try {
       const supabase = createClient()
-      const payload: Record<string, number> = Object.fromEntries(
-        SENSOR_KEYS.map((k) => [
-          k,
-          driftValue(values[k], SENSORS[k].min, SENSORS[k].max, SENSORS[k].step),
-        ])
-      ) as Record<string, number>
+      const currentValues = valuesRef.current
+
+      const nextValues: Record<SensorKey, number> = {
+        temperature: driftValue(
+          currentValues.temperature,
+          SENSORS.temperature.min,
+          SENSORS.temperature.max,
+          SENSORS.temperature.step
+        ),
+        humidity: driftValue(
+          currentValues.humidity,
+          SENSORS.humidity.min,
+          SENSORS.humidity.max,
+          SENSORS.humidity.step
+        ),
+        co2: driftValue(
+          currentValues.co2,
+          SENSORS.co2.min,
+          SENSORS.co2.max,
+          SENSORS.co2.step
+        ),
+        battery: Math.max(
+          SENSORS.battery.min,
+          parseFloat((currentValues.battery - (Math.random() * 1.2 + 0.2)).toFixed(1))
+        ),
+      }
+
+      valuesRef.current = nextValues
+      setValues(nextValues)
+
+      const nextBatteryDevice = Math.max(
+        0,
+        parseFloat((batteryDeviceRef.current - (Math.random() * 0.8 + 0.1)).toFixed(1))
+      )
+      batteryDeviceRef.current = nextBatteryDevice
+      setBatteryDevice(nextBatteryDevice)
+
+      const payload: Record<string, number> = nextValues
       const ts = new Date().toISOString()
       await supabase.from('device_telemetry_history').insert({
         device_id: deviceId,
@@ -363,7 +575,11 @@ export function TestDeviceControls({
       })
       await supabase
         .from('devices')
-        .update({ status: 'online', last_seen: ts })
+        .update({
+          status: 'online',
+          battery_level: nextBatteryDevice,
+          last_seen: ts,
+        })
         .eq('id', deviceId)
       onDataSent?.()
     } catch (err) {
@@ -613,6 +829,43 @@ export function TestDeviceControls({
                 </>
               )}
             </Button>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Spike Single Sensor (Alert)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SENSOR_KEYS.map((sensor) => (
+                  <Button
+                    key={sensor}
+                    onClick={() => handleSendSingleSensorSpike(sensor)}
+                    disabled={loading}
+                    size="sm"
+                    variant="destructive"
+                    className="text-xs"
+                  >
+                    <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+                    {SENSORS[sensor].label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Recover Single Sensor</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SENSOR_KEYS.map((sensor) => (
+                  <Button
+                    key={`recover-${sensor}`}
+                    onClick={() => handleRecoverSingleSensor(sensor)}
+                    disabled={loading}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    {SENSORS[sensor].label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             {/* ── Generate Historical Data ─────────────────────────────── */}
             <div className="mt-4 rounded-md border border-dashed border-muted p-3 space-y-3">
