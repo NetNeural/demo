@@ -167,11 +167,13 @@ export function CreateOrganizationDialog({
       })
 
       if (!response.success) {
+        // Prefer response.message (the actual error) over response.error (generic type like "Bad Request")
         const errMsg =
-          typeof response.error === 'string'
+          response.message ||
+          (typeof response.error === 'string'
             ? response.error
             : (response.error as { message?: string })?.message ||
-              'Failed to create organization'
+              'Failed to create organization')
         setError(errMsg)
         return
       }

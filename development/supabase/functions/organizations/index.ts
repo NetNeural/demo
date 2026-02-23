@@ -2,6 +2,8 @@
 import {
   createEdgeFunction,
   createSuccessResponse,
+  createErrorResponse,
+  handleEdgeFunctionError,
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import {
@@ -619,12 +621,21 @@ export default createEdgeFunction(
             })
             .join('')
 
-          // Check if user already exists
-          const { data: existingAuthUser } =
-            await supabaseAdmin.auth.admin.listUsers()
-          const authUser = existingAuthUser.users.find(
-            (u) => u.email === ownerEmail
-          )
+          // Check if user already exists — use null-safe access
+          // (listUsers can return data: null on error)
+          const { data: existingAuthUser, error: listUsersError } =
+            await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+
+          if (listUsersError) {
+            console.error('Failed to list auth users:', listUsersError)
+            throw new DatabaseError(
+              `Failed to check existing users: ${listUsersError.message}`
+            )
+          }
+
+          const authUser = existingAuthUser?.users?.find(
+            (u: { email?: string }) => u.email === ownerEmail
+          ) || null
 
           if (authUser) {
             // User exists in auth - check if they exist in our users table
@@ -1053,27 +1064,14 @@ export default createEdgeFunction(
 
       throw new Error('Method not allowed')
     } catch (error) {
-      // Enhanced error handling for debugging
+      // Use the framework's error handler for consistent, structured responses.
+      // DatabaseError instances retain their status code (403, 409, etc.)
+      // instead of being wrapped in a generic 500.
       console.error('=== EDGE FUNCTION ERROR ===')
       console.error('Error type:', error?.constructor?.name)
       console.error('Error message:', error?.message)
-      console.error('Error stack:', error?.stack)
-      console.error('Full error:', error)
 
-      // Return detailed error for debugging (remove in production)
-      return new Response(
-        JSON.stringify({
-          error: 'Internal Server Error',
-          message: error?.message || 'Unknown error',
-          type: error?.constructor?.name || 'Error',
-          stack: error?.stack,
-          details: error,
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
-      )
+      return handleEdgeFunctionError(error)
     }
   },
   {

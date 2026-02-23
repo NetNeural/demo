@@ -19,6 +19,9 @@ export interface OrganizationsAPI {
     description?: string
     subscriptionTier?: SubscriptionTier
     parentOrganizationId?: string
+    ownerEmail?: string
+    ownerFullName?: string
+    sendWelcomeEmail?: boolean
   }) => Promise<EdgeFunctionResponse<unknown>>
   update: (
     organizationId: string,
