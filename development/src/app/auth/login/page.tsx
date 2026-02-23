@@ -366,15 +366,17 @@ function LoginForm() {
           <img
             src={bgUrl}
             alt=""
-            className={`h-full w-full ${
+            className={`h-full w-full object-center ${
               bgFit === 'cover' ? 'object-cover' :
               bgFit === 'contain' ? 'object-contain' :
               bgFit === 'fill' ? 'object-fill' :
               'object-none'
             }`}
-            style={enhanceBg ? {
-              filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
-            } : undefined}
+            style={{
+              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
+              minHeight: '100vh',
+              minWidth: '100vw',
+            }}
           />
           <div className="absolute inset-0 bg-black/40" />
         </div>
@@ -456,47 +458,47 @@ function LoginForm() {
       )}
 
       {/* ───── Content ───── */}
-      <div className="relative z-10 mx-4 w-full max-w-md">
+      <div className="relative z-10 mx-4 w-full max-w-md sm:mx-auto">
         {/* Brand header */}
-        <div className="mb-8 text-center">
+        <div className="mb-6 sm:mb-8 text-center">
           {showLogo && (
             logoUrl ? (
-              <div className="mb-4 flex justify-center">
+              <div className="mb-3 sm:mb-4 flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
                   alt={`${orgName} logo`}
-                  className="h-16 w-auto object-contain drop-shadow-lg"
+                  className="h-12 sm:h-16 w-auto object-contain drop-shadow-lg"
                 />
               </div>
             ) : (
-              <div className="mb-4 flex justify-center">
+              <div className="mb-3 sm:mb-4 flex justify-center">
                 <div
-                  className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg"
+                  className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl shadow-lg"
                   style={{
                     background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                     boxShadow: `0 8px 32px ${colors.primary}30`,
                   }}
                 >
-                  <Activity className="h-8 w-8 text-white" />
+                  <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
             )
           )}
           <h1
-            className="text-3xl font-bold tracking-tight"
+            className="text-2xl sm:text-3xl font-bold tracking-tight"
             style={{ color: colors.primary }}
           >
             {headline || orgName}
           </h1>
-          <p className="mt-1 text-3xl font-bold tracking-tight text-gray-300">
+          <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-gray-300">
             {subtitle || (branding ? 'Sentinel' : 'Sentinel by NetNeural')}
           </p>
         </div>
 
         {/* Glass card */}
         <div
-          className="rounded-2xl border p-8 shadow-2xl backdrop-blur-xl"
+          className="rounded-2xl border p-6 sm:p-8 shadow-2xl backdrop-blur-xl"
           style={{
             background: `rgba(15, 23, 42, ${cardOpacity / 100})`,
             borderColor: `${colors.primary}20`,
