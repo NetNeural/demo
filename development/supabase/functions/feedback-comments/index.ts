@@ -61,16 +61,21 @@ export default createEdgeFunction(
 
     const serviceClient = createServiceClient()
 
-    // Verify user is a member of the organization
-    const { data: membership } = await serviceClient
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', user.userId)
-      .eq('organization_id', organizationId)
-      .single()
+    // Super admins have global organization access (virtual membership)
+    if (user.role !== 'super_admin') {
+      const { data: membership } = await serviceClient
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', user.userId)
+        .eq('organization_id', organizationId)
+        .single()
 
-    if (!membership) {
-      throw new DatabaseError('You must be a member of this organization', 403)
+      if (!membership) {
+        throw new DatabaseError(
+          'You must be a member of this organization',
+          403
+        )
+      }
     }
 
     // Get the feedback entry
