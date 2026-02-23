@@ -61,19 +61,31 @@ jest.mock('@/hooks/queries/useOrganizations', () => ({
 
 jest.mock('@/contexts/OrganizationContext', () => ({
   useOrganization: jest.fn(() => ({
-    currentOrganization: { id: 'org-1', name: 'Test Org', slug: 'test-org', settings: null },
+    currentOrganization: {
+      id: 'org-1',
+      name: 'Test Org',
+      slug: 'test-org',
+      settings: null,
+    },
     userOrganizations: [{ id: 'org-1', name: 'Test Org', slug: 'test-org' }],
     canManageDevices: true,
     isLoading: false,
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
   })),
-  OrganizationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 jest.mock('@/contexts/PreferencesContext', () => ({
   usePreferences: jest.fn(() => ({
-    preferences: { timezone: 'UTC', dateFormat: 'MM/DD/YYYY', timeFormat: '12h', language: 'en' },
+    preferences: {
+      timezone: 'UTC',
+      dateFormat: 'MM/DD/YYYY',
+      timeFormat: '12h',
+      language: 'en',
+    },
     updatePreferences: jest.fn(),
     isLoading: false,
   })),
@@ -82,11 +94,21 @@ jest.mock('@/contexts/PreferencesContext', () => ({
 jest.mock('@/lib/edge-functions/client', () => ({
   edgeFunctions: {
     devices: {
-      list: jest.fn().mockResolvedValue({ success: true, data: { devices: [] }, error: null }),
-      create: jest.fn().mockResolvedValue({ success: true, data: null, error: null }),
+      list: jest.fn().mockResolvedValue({
+        success: true,
+        data: { devices: [] },
+        error: null,
+      }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ success: true, data: null, error: null }),
     },
     integrations: {
-      list: jest.fn().mockResolvedValue({ success: true, data: { integrations: [] }, error: null }),
+      list: jest.fn().mockResolvedValue({
+        success: true,
+        data: { integrations: [] },
+        error: null,
+      }),
     },
   },
 }))
@@ -134,7 +156,9 @@ describe('DeviceIntegrationManager', () => {
   })
 
   test('renders integration manager', () => {
-    const { DeviceIntegrationManager } = require('@/components/devices/DeviceIntegrationManager')
+    const {
+      DeviceIntegrationManager,
+    } = require('@/components/devices/DeviceIntegrationManager')
     render(<DeviceIntegrationManager />)
     expect(screen.getAllByText(/integration/i).length).toBeGreaterThan(0)
   })

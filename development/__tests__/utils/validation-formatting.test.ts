@@ -322,7 +322,13 @@ describe('Search and Filter', () => {
 })
 
 describe('Debounce Function', () => {
-  jest.useFakeTimers()
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
 
   test('delays function execution', () => {
     const func = jest.fn()
@@ -346,6 +352,4 @@ describe('Debounce Function', () => {
       timeout = setTimeout(() => func(...args), wait)
     }
   }
-
-  jest.useRealTimers()
 })
