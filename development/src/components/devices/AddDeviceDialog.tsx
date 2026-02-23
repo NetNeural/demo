@@ -28,6 +28,7 @@ import { Loader2, Plus, Network } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 import type { DeviceType } from '@/types/device-types'
 
@@ -101,8 +102,6 @@ export function AddDeviceDialog({
 
     setLoading(true)
     try {
-      const supabase = createClient()
-
       // Get the selected device type
       const selectedType = deviceTypes.find((t) => t.id === deviceTypeId)
 
@@ -123,13 +122,11 @@ export function AddDeviceDialog({
         ...(location.trim() && { location: location.trim() }),
       }
 
-      const { data, error } = await supabase
-        .from('devices')
-        .insert(deviceData)
-        .select()
-        .single()
+      const response = await edgeFunctions.devices.create(deviceData)
 
-      if (error) throw error
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to add device')
+      }
 
       toast.success(`Device "${name}" added successfully`)
 
@@ -146,7 +143,9 @@ export function AddDeviceDialog({
       onSuccess?.()
     } catch (error) {
       console.error('Failed to add device:', error)
-      toast.error('Failed to add device')
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to add device'
+      )
     } finally {
       setLoading(false)
     }

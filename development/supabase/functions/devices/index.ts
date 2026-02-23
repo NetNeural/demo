@@ -412,10 +412,14 @@ export default createEdgeFunction(
         device_id,
         name,
         device_type,
+        device_type_id,
         model,
         serial_number,
         firmware_version,
         location_id,
+        location,
+        metadata,
+        is_test_device,
       } = body
 
       // Verify required fields
@@ -438,10 +442,14 @@ export default createEdgeFunction(
           external_device_id: device_id || null,
           name,
           device_type,
+          device_type_id: device_type_id || null,
           model: model || null,
           serial_number: serial_number || null,
           firmware_version: firmware_version || null,
           location_id: location_id || null,
+          location: location || null,
+          metadata: metadata || null,
+          is_test_device: is_test_device === true,
           status: 'offline',
         } as any)
         .select()
