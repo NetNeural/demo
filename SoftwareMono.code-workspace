@@ -82,6 +82,7 @@
       "**/.next": true,
       "**/dist": true,
     },
+    "terminal.integrated.cwd": "/workspaces/MonoRepo",
     "powershell.cwd": "🚀 Active Development",
     "chat.tools.terminal.autoApprove": {
       "gh": true,
