@@ -236,15 +236,16 @@ Provide insights as JSON array: [{"type": "...", "title": "...", "message": "...
       }
     )
   } catch (error) {
+    // Degrade silently — AI insights are non-critical, don't surface 500 to the browser
     console.error('AI Insights error:', error)
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         fallback: true,
         insights: [],
       }),
       {
-        status: 500,
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
