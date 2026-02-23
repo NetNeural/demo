@@ -799,14 +799,16 @@ export default function DeviceViewPage() {
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="location">Location</Label>
                   <Select
-                    value={locationId || ''}
-                    onValueChange={(value) => setLocationId(value)}
+                    value={locationId || '__none__'}
+                    onValueChange={(value) =>
+                      setLocationId(value === '__none__' ? '' : value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="No location assigned" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No location</SelectItem>
+                      <SelectItem value="__none__">No location</SelectItem>
                       {locations.map((location) => (
                         <SelectItem key={location.id} value={location.id}>
                           {location.name}

@@ -420,6 +420,9 @@ export default createEdgeFunction(
         location,
         metadata,
         is_test_device,
+        status,
+        battery_level,
+        signal_strength,
       } = body
 
       // Verify required fields
@@ -450,7 +453,11 @@ export default createEdgeFunction(
           location: location || null,
           metadata: metadata || null,
           is_test_device: is_test_device === true,
-          status: 'offline',
+          status: status || 'offline',
+          battery_level:
+            typeof battery_level === 'number' ? battery_level : null,
+          signal_strength:
+            typeof signal_strength === 'number' ? signal_strength : null,
         } as any)
         .select()
         .single()

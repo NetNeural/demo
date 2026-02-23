@@ -28,7 +28,7 @@ import {
   BatteryMedium,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 
 interface TestDeviceDialogProps {
@@ -59,8 +59,7 @@ export function TestDeviceDialog({
 
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from('devices').insert({
+      const response = await edgeFunctions.devices.create({
         name: name.trim(),
         organization_id: currentOrganization.id,
         device_type: 'NetNeural Modular Test Sensor',
@@ -72,7 +71,13 @@ export function TestDeviceDialog({
         firmware_version: 'MODULAR-2.0.0',
       })
 
-      if (error) throw error
+      if (!response.success) {
+        const errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : response.error?.message || 'Failed to create test device'
+        throw new Error(errorMsg)
+      }
 
       toast.success(`Test device "${name.trim()}" created successfully`)
       setName('NetNeural Modular Test Sensor')
