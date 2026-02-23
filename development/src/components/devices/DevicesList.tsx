@@ -970,7 +970,7 @@ export function DevicesList() {
           {paginatedDevices.map((device) => (
             <Card
               key={device.id}
-              className={`transition-shadow hover:shadow-md ${
+              className={`!text-gray-900 transition-shadow hover:shadow-md [&_.text-foreground]:!text-gray-900 [&_.text-muted-foreground]:!text-gray-600 ${
                 device.status === 'online'
                   ? 'bg-[#D5F7D8]'
                   : device.status === 'offline'
