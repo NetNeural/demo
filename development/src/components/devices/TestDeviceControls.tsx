@@ -318,8 +318,8 @@ export function TestDeviceControls({
       }
 
       // Update device status/battery to reflect latest generated point
-      const lastRow = rows.length > 0 ? rows[rows.length - 1] : undefined
-      if (lastRow) {
+      if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1]
         await supabase
           .from('devices')
           .update({
