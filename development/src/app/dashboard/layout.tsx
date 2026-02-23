@@ -31,6 +31,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
+import { getRoleDisplayInfo } from '@/types/organization'
+import { Badge } from '@/components/ui/badge'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
@@ -38,6 +40,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isSuperAdmin = user?.isSuperAdmin || false
 
   // Keep browser tab title in sync with current page + org
   usePageTitle()
@@ -166,6 +169,29 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="sticky top-0 z-50 flex items-center justify-between border-b bg-background/95 px-4 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
+              {isSuperAdmin ? (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                  <span className="hidden sm:inline">Super Admin</span>
+                </Badge>
+              ) : currentOrganization?.role ? (
+                (() => {
+                  const roleInfo = getRoleDisplayInfo(currentOrganization.role)
+                  const colorMap: Record<string, string> = {
+                    purple: 'bg-purple-600 hover:bg-purple-600',
+                    blue: 'bg-blue-600 hover:bg-blue-600',
+                    amber: 'bg-amber-600 hover:bg-amber-600',
+                    green: 'bg-green-600 hover:bg-green-600',
+                    gray: 'bg-gray-500 hover:bg-gray-500',
+                  }
+                  return (
+                    <Badge className={`flex items-center gap-1 text-white ${colorMap[roleInfo.color] || 'bg-gray-500'}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                      <span className="hidden sm:inline">{roleInfo.label}</span>
+                    </Badge>
+                  )
+                })()
+              ) : null}
               <QuickActionsDropdown />
             </div>
           </div>
