@@ -616,7 +616,17 @@ function ApplicationDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ScrollText className="h-5 w-5" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="h-6 w-6 flex-shrink-0">
+              <rect width="100" height="100" rx="16" fill="#1e40af"/>
+              <circle cx="50" cy="35" r="8" fill="#60a5fa"/>
+              <circle cx="30" cy="60" r="8" fill="#60a5fa"/>
+              <circle cx="70" cy="60" r="8" fill="#60a5fa"/>
+              <circle cx="50" cy="80" r="8" fill="#60a5fa"/>
+              <line x1="50" y1="35" x2="30" y2="60" stroke="#93c5fd" strokeWidth="2"/>
+              <line x1="50" y1="35" x2="70" y2="60" stroke="#93c5fd" strokeWidth="2"/>
+              <line x1="30" y1="60" x2="50" y2="80" stroke="#93c5fd" strokeWidth="2"/>
+              <line x1="70" y1="60" x2="50" y2="80" stroke="#93c5fd" strokeWidth="2"/>
+            </svg>
             Reseller Agreement Application
           </DialogTitle>
           <DialogDescription>
