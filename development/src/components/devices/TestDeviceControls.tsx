@@ -110,6 +110,7 @@ const SENSORS = {
 type SensorKey = keyof typeof SENSORS
 type SendTarget = 'all' | SensorKey
 const SENSOR_KEYS = Object.keys(SENSORS) as SensorKey[]
+const TEST_TELEMETRY_TABLE = 'test_device_telemetry_history'
 
 function initialValues(): Record<SensorKey, number> {
   return Object.fromEntries(
@@ -179,6 +180,28 @@ export function TestDeviceControls({
   const setValue = (key: SensorKey, val: number) =>
     setValues((prev) => ({ ...prev, [key]: val }))
 
+  const insertTestTelemetry = async (
+    supabase: ReturnType<typeof createClient>,
+    row:
+      | {
+          device_id: string
+          organization_id: string
+          telemetry: Record<string, number>
+          device_timestamp: string
+          received_at: string
+        }
+      | Array<{
+          device_id: string
+          organization_id: string
+          telemetry: Record<string, number>
+          device_timestamp: string
+          received_at: string
+        }>
+  ) => {
+    const { error } = await (supabase as any).from(TEST_TELEMETRY_TABLE).insert(row)
+    if (error) throw error
+  }
+
   const handlePreset = (preset: 'normal' | 'warm' | 'alarm') => {
     if (preset === 'normal') {
       setValues({ temperature: 22, humidity: 45, co2: 600, battery: 85 })
@@ -235,23 +258,20 @@ export function TestDeviceControls({
 
       payload.rssi = signalStrength
 
-      const { error: telError } = await supabase
-        .from('device_telemetry_history')
-        .insert({
-          device_id: deviceId,
-          organization_id: organizationId,
-          telemetry: payload,
-          device_timestamp: new Date().toISOString(),
-          received_at: new Date().toISOString(),
-        })
-      if (telError) throw telError
+      await insertTestTelemetry(supabase, {
+        device_id: deviceId,
+        organization_id: organizationId,
+        telemetry: payload,
+        device_timestamp: new Date().toISOString(),
+        received_at: new Date().toISOString(),
+      })
 
       const { error: devError } = await supabase
         .from('devices')
         .update({
           status,
-          battery_level: nextBatteryDevice,
-          signal_strength: signalStrength,
+          battery_level: Math.round(nextBatteryDevice),
+          signal_strength: Math.round(signalStrength),
           last_seen: new Date().toISOString(),
         })
         .eq('id', deviceId)
@@ -308,16 +328,13 @@ export function TestDeviceControls({
         [sensor]: spikeValue,
       }
 
-      const { error: telError } = await supabase
-        .from('device_telemetry_history')
-        .insert({
-          device_id: deviceId,
-          organization_id: organizationId,
-          telemetry: payload,
-          device_timestamp: new Date().toISOString(),
-          received_at: new Date().toISOString(),
-        })
-      if (telError) throw telError
+      await insertTestTelemetry(supabase, {
+        device_id: deviceId,
+        organization_id: organizationId,
+        telemetry: payload,
+        device_timestamp: new Date().toISOString(),
+        received_at: new Date().toISOString(),
+      })
 
       const updatePayload: {
         status: 'warning' | 'error'
@@ -373,16 +390,13 @@ export function TestDeviceControls({
         [sensor]: recoveredValue,
       }
 
-      const { error: telError } = await supabase
-        .from('device_telemetry_history')
-        .insert({
-          device_id: deviceId,
-          organization_id: organizationId,
-          telemetry: payload,
-          device_timestamp: new Date().toISOString(),
-          received_at: new Date().toISOString(),
-        })
-      if (telError) throw telError
+      await insertTestTelemetry(supabase, {
+        device_id: deviceId,
+        organization_id: organizationId,
+        telemetry: payload,
+        device_timestamp: new Date().toISOString(),
+        received_at: new Date().toISOString(),
+      })
 
       const nextValues: Record<SensorKey, number> = {
         ...valuesRef.current,
@@ -501,27 +515,33 @@ export function TestDeviceControls({
       // Insert in batches of 100 to avoid payload limits
       const BATCH = 100
       for (let s = 0; s < rows.length; s += BATCH) {
-        const { error } = await supabase
-          .from('device_telemetry_history')
-          .insert(rows.slice(s, s + BATCH))
-        if (error) throw error
+        await insertTestTelemetry(supabase, rows.slice(s, s + BATCH))
       }
 
       // Update device status/battery to reflect latest generated point
       const lastRow = rows.at(-1)
       if (lastRow) {
+        const latestBattery =
+          typeof lastRow.telemetry.battery === 'number'
+            ? lastRow.telemetry.battery
+            : 0
+        const latestRssi =
+          typeof lastRow.telemetry.rssi === 'number'
+            ? lastRow.telemetry.rssi
+            : -55
+
         await supabase
           .from('devices')
           .update({
             status: 'online',
-            battery_level: lastRow.telemetry.battery,
-            signal_strength: lastRow.telemetry.rssi,
+            battery_level: Math.round(latestBattery),
+            signal_strength: Math.round(latestRssi),
             last_seen: lastRow.received_at,
           })
           .eq('id', deviceId)
-        if (typeof lastRow.telemetry.rssi === 'number') {
-          setSignalStrength(lastRow.telemetry.rssi)
-          signalStrengthRef.current = lastRow.telemetry.rssi
+        if (typeof latestRssi === 'number') {
+          setSignalStrength(latestRssi)
+          signalStrengthRef.current = latestRssi
         }
       }
 
@@ -594,7 +614,7 @@ export function TestDeviceControls({
         rssi: nextSignalStrength,
       }
       const ts = new Date().toISOString()
-      await supabase.from('device_telemetry_history').insert({
+      await insertTestTelemetry(supabase, {
         device_id: deviceId,
         organization_id: organizationId,
         telemetry: payload,
@@ -605,8 +625,8 @@ export function TestDeviceControls({
         .from('devices')
         .update({
           status: 'online',
-          battery_level: nextBatteryDevice,
-          signal_strength: nextSignalStrength,
+          battery_level: Math.round(nextBatteryDevice),
+          signal_strength: Math.round(nextSignalStrength),
           last_seen: ts,
         })
         .eq('id', deviceId)

@@ -93,8 +93,8 @@ export function TestDeviceDialog({
       if (createdDeviceId) {
         const supabase = createClient()
         const now = new Date().toISOString()
-        const { error: telemetryError } = await supabase
-          .from('device_telemetry_history')
+        const { error: telemetryError } = await (supabase as any)
+          .from('test_device_telemetry_history')
           .insert({
             device_id: createdDeviceId,
             organization_id: currentOrganization.id,

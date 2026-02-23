@@ -222,15 +222,23 @@ export default function SensorDetailsPage() {
       ).device
       if (!deviceData) throw new Error('Device not found')
 
+      const metadata =
+        (deviceData.metadata as Record<string, unknown> | undefined) || {}
+      const isTestDeviceRecord =
+        deviceData.is_test_device === true ||
+        metadata.is_test_device === true ||
+        metadata.isTestDevice === true ||
+        ((deviceData.device_type as string) || '')
+          .toLowerCase()
+          .includes('test') ||
+        ((deviceData.name as string) || '').toLowerCase().includes('test')
+
       setDevice({
         id: deviceData.id as string,
         name: deviceData.name as string,
         device_type: (deviceData.device_type as string) || 'unknown',
         device_type_id: (deviceData.device_type_id as string) || null,
-        is_test_device:
-          deviceData.is_test_device === true ||
-          ((deviceData.metadata as Record<string, unknown> | undefined)
-            ?.is_test_device === true),
+        is_test_device: isTestDeviceRecord,
         model: (deviceData.model as string) || undefined,
         serial_number: (deviceData.serial_number as string) || undefined,
         status: (deviceData.status as Device['status']) || 'offline',
@@ -246,27 +254,50 @@ export default function SensorDetailsPage() {
             ? (deviceData.signal_strength as number)
             : undefined,
         last_seen: (deviceData.last_seen as string) || undefined,
-        metadata: deviceData.metadata as Record<string, unknown> | undefined,
+        metadata,
         organization_id: deviceData.organization_id as string,
       })
 
-      // Fetch telemetry readings (48 hours) - uses direct client (RLS allows via USING(true))
+      // Fetch telemetry readings (48 hours)
       const supabase = createClient()
       const fortyEightHoursAgo = new Date(
         Date.now() - 48 * 60 * 60 * 1000
       ).toISOString()
-      const { data: telemetryData, error: telemetryError } = await supabase
-        .from('device_telemetry_history')
-        .select('device_id, telemetry, device_timestamp, received_at')
-        .eq('device_id', deviceId)
-        .gte('received_at', fortyEightHoursAgo)
-        .order('received_at', { ascending: false })
-        .limit(500)
+      const [primaryTelemetryResult, testTelemetryResult] = await Promise.all([
+        supabase
+          .from('device_telemetry_history')
+          .select('device_id, telemetry, device_timestamp, received_at')
+          .eq('device_id', deviceId)
+          .gte('received_at', fortyEightHoursAgo)
+          .order('received_at', { ascending: false })
+          .limit(500),
+        isTestDeviceRecord
+          ? (supabase as any)
+              .from('test_device_telemetry_history')
+              .select('device_id, telemetry, device_timestamp, received_at')
+              .eq('device_id', deviceId)
+              .gte('received_at', fortyEightHoursAgo)
+              .order('received_at', { ascending: false })
+              .limit(500)
+          : Promise.resolve({ data: [], error: null }),
+      ])
 
-      if (telemetryError) throw telemetryError
-      setTelemetryReadings(
-        normalizeTelemetryReadings((telemetryData as TelemetryReading[]) || [])
+      if (primaryTelemetryResult.error) throw primaryTelemetryResult.error
+      if (testTelemetryResult.error) throw testTelemetryResult.error
+
+      const telemetryData = (
+        [
+          ...(primaryTelemetryResult.data || []),
+          ...((testTelemetryResult.data as TelemetryReading[] | null) || []),
+        ] as TelemetryReading[]
       )
+        .sort(
+          (a, b) =>
+            new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+        )
+        .slice(0, 500)
+
+      setTelemetryReadings(normalizeTelemetryReadings(telemetryData))
 
       // Fetch temperature unit preference from any threshold
       const { data: thresholds } = await supabase
