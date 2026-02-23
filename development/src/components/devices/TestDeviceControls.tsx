@@ -4,10 +4,11 @@
  * NetNeural Modular Test Sensor — 4 sensor channels with independent controls:
  * Temperature (°C), Humidity (%), CO₂ (ppm), Battery (%).
  * Send all sensors at once or select individual channels.
+ * Auto-generate historical data to populate graphs.
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -36,6 +37,9 @@ import {
   Droplets,
   Wind,
   BatteryMedium,
+  BarChart2,
+  Play,
+  Square,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -120,6 +124,7 @@ export function TestDeviceControls({
 }: TestDeviceControlsProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [organizationId, setOrganizationId] = useState<string>('')
   const [values, setValues] = useState<Record<SensorKey, number>>(initialValues)
   const [sendTarget, setSendTarget] = useState<SendTarget>('all')
@@ -128,6 +133,15 @@ export function TestDeviceControls({
   >((currentStatus as 'online' | 'offline' | 'error' | 'warning') || 'online')
   const [batteryDevice, setBatteryDevice] = useState(85)
   const [signalStrength, setSignalStrength] = useState(-55)
+
+  // History generation controls
+  const [histSpanHours, setHistSpanHours] = useState(24)
+  const [histIntervalMins, setHistIntervalMins] = useState(15)
+
+  // Auto-stream controls
+  const [autoStreaming, setAutoStreaming] = useState(false)
+  const [autoIntervalSecs, setAutoIntervalSecs] = useState(30)
+  const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!isOpen || organizationId) return
@@ -233,6 +247,151 @@ export function TestDeviceControls({
       setLoading(false)
     }
   }
+
+  // ── Drift helper: walk a value randomly within bounds ───────────────────────
+  function driftValue(
+    current: number,
+    min: number,
+    max: number,
+    step: number
+  ): number {
+    const delta = (Math.random() - 0.5) * step * 4
+    return Math.min(max, Math.max(min, parseFloat((current + delta).toFixed(2))))
+  }
+
+  // ── Generate a bulk batch of fake historical telemetry rows ─────────────────
+  const handleGenerateHistory = async () => {
+    if (!organizationId) {
+      toast.error('Organization not loaded yet — please try again.')
+      return
+    }
+    setGenerating(true)
+    try {
+      const supabase = createClient()
+      const nowMs = Date.now()
+      const spanMs = histSpanHours * 60 * 60 * 1000
+      const stepMs = histIntervalMins * 60 * 1000
+      const totalPoints = Math.floor(spanMs / stepMs)
+
+      // Seed values from current slider positions
+      let t = values.temperature
+      let h = values.humidity
+      let c = values.co2
+      let b = values.battery
+
+      const rows: {
+        device_id: string
+        organization_id: string
+        telemetry: Record<string, number>
+        device_timestamp: string
+        received_at: string
+      }[] = []
+
+      for (let i = totalPoints; i >= 0; i--) {
+        const ts = new Date(nowMs - i * stepMs).toISOString()
+        // Realistic drift each step
+        t = driftValue(t, SENSORS.temperature.min, SENSORS.temperature.max, SENSORS.temperature.step)
+        h = driftValue(h, SENSORS.humidity.min, SENSORS.humidity.max, SENSORS.humidity.step)
+        c = driftValue(c, SENSORS.co2.min, SENSORS.co2.max, SENSORS.co2.step)
+        b = Math.max(0, Math.min(100, b - Math.random() * 0.2)) // slow drain
+        rows.push({
+          device_id: deviceId,
+          organization_id: organizationId,
+          telemetry: {
+            temperature: parseFloat(t.toFixed(1)),
+            humidity: parseFloat(h.toFixed(0)),
+            co2: parseFloat(c.toFixed(0)),
+            battery: parseFloat(b.toFixed(0)),
+          },
+          device_timestamp: ts,
+          received_at: ts,
+        })
+      }
+
+      // Insert in batches of 100 to avoid payload limits
+      const BATCH = 100
+      for (let s = 0; s < rows.length; s += BATCH) {
+        const { error } = await supabase
+          .from('device_telemetry_history')
+          .insert(rows.slice(s, s + BATCH))
+        if (error) throw error
+      }
+
+      // Update device status/battery to reflect latest generated point
+      const lastRow = rows[rows.length - 1]
+      await supabase
+        .from('devices')
+        .update({
+          status: 'online',
+          battery_level: lastRow.telemetry.battery,
+          last_seen: lastRow.received_at,
+        })
+        .eq('id', deviceId)
+
+      toast.success(`✅ Generated ${rows.length} data points`, {
+        description: `${histSpanHours}h history · every ${histIntervalMins} min`,
+      })
+      onDataSent?.()
+    } catch (err) {
+      console.error('Failed to generate history:', err)
+      toast.error('Failed to generate history')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  // ── Auto-stream: send a live reading every N seconds ────────────────────────
+  const sendOneLiveReading = async () => {
+    if (!organizationId) return
+    try {
+      const supabase = createClient()
+      const payload: Record<string, number> = Object.fromEntries(
+        SENSOR_KEYS.map((k) => [
+          k,
+          driftValue(values[k], SENSORS[k].min, SENSORS[k].max, SENSORS[k].step),
+        ])
+      ) as Record<string, number>
+      const ts = new Date().toISOString()
+      await supabase.from('device_telemetry_history').insert({
+        device_id: deviceId,
+        organization_id: organizationId,
+        telemetry: payload,
+        device_timestamp: ts,
+        received_at: ts,
+      })
+      await supabase
+        .from('devices')
+        .update({ status: 'online', last_seen: ts })
+        .eq('id', deviceId)
+      onDataSent?.()
+    } catch (err) {
+      console.error('Auto-stream error:', err)
+    }
+  }
+
+  const handleToggleAutoStream = () => {
+    if (autoStreaming) {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current)
+      autoTimerRef.current = null
+      setAutoStreaming(false)
+      toast.info('Auto-stream stopped')
+    } else {
+      setAutoStreaming(true)
+      void sendOneLiveReading()
+      autoTimerRef.current = setInterval(
+        () => void sendOneLiveReading(),
+        autoIntervalSecs * 1000
+      )
+      toast.success(`▶ Auto-streaming every ${autoIntervalSecs}s`)
+    }
+  }
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current)
+    }
+  }, [])
 
   const sensorsToShow: SensorKey[] =
     sendTarget === 'all' ? SENSOR_KEYS : [sendTarget as SensorKey]
@@ -452,6 +611,129 @@ export function TestDeviceControls({
                 </>
               )}
             </Button>
+
+            {/* ── Generate Historical Data ─────────────────────────────── */}
+            <div className="mt-4 rounded-md border border-dashed border-muted p-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <BarChart2 className="h-4 w-4 text-muted-foreground" />
+                Generate Historical Data
+              </div>
+
+              {/* Time span */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Span</span>
+                  <span>{histSpanHours}h</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={168}
+                  step={1}
+                  value={histSpanHours}
+                  onChange={(e) => setHistSpanHours(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              {/* Interval */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Interval</span>
+                  <span>{histIntervalMins} min</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={60}
+                  step={1}
+                  value={histIntervalMins}
+                  onChange={(e) => setHistIntervalMins(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              <div className="text-xs text-muted-foreground text-center">
+                ≈{' '}
+                {Math.floor((histSpanHours * 60) / histIntervalMins)} data
+                points
+              </div>
+
+              <Button
+                onClick={handleGenerateHistory}
+                disabled={generating}
+                variant="outline"
+                className="w-full"
+                size="sm"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    Generate{' '}
+                    {Math.floor((histSpanHours * 60) / histIntervalMins)}{' '}
+                    Points
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* ── Auto-Stream ──────────────────────────────────────────── */}
+            <div className="mt-2 rounded-md border border-dashed border-muted p-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                {autoStreaming ? (
+                  <Play className="h-4 w-4 text-green-500 animate-pulse" />
+                ) : (
+                  <Play className="h-4 w-4 text-muted-foreground" />
+                )}
+                Live Auto-Stream
+                {autoStreaming && (
+                  <span className="ml-auto text-xs font-normal text-green-600">
+                    ● active — every {autoIntervalSecs}s
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Interval</span>
+                  <span>{autoIntervalSecs}s</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={300}
+                  step={5}
+                  value={autoIntervalSecs}
+                  disabled={autoStreaming}
+                  onChange={(e) => setAutoIntervalSecs(Number(e.target.value))}
+                  className="w-full accent-primary disabled:opacity-50"
+                />
+              </div>
+
+              <Button
+                onClick={handleToggleAutoStream}
+                variant={autoStreaming ? 'destructive' : 'outline'}
+                className="w-full"
+                size="sm"
+              >
+                {autoStreaming ? (
+                  <>
+                    <Square className="mr-2 h-4 w-4" />
+                    Stop Streaming
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Streaming
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </CollapsibleContent>
       </Card>
