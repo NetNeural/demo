@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import {
+  formatPhoneE164,
+  isValidPhoneNumber,
+} from '@/lib/helpers/sms-users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +24,8 @@ import { useToast } from '@/hooks/use-toast'
 export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneNumberSecondary, setPhoneNumberSecondary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -37,6 +43,24 @@ export default function ChangePasswordPage() {
 
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match')
+      return
+    }
+
+    if (!phoneNumber.trim()) {
+      setError('Primary phone number is required for SMS notifications')
+      return
+    }
+
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setError('Primary phone number format is invalid')
+      return
+    }
+
+    if (
+      phoneNumberSecondary.trim() &&
+      !isValidPhoneNumber(phoneNumberSecondary)
+    ) {
+      setError('Secondary phone number format is invalid')
       return
     }
 
@@ -71,10 +95,34 @@ export default function ChangePasswordPage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) {
+        const normalizedPrimary = formatPhoneE164(phoneNumber.trim())
+        const normalizedSecondary = phoneNumberSecondary.trim()
+          ? formatPhoneE164(phoneNumberSecondary.trim())
+          : null
+
+        if (!normalizedPrimary) {
+          setError('Primary phone number format is invalid')
+          setIsSubmitting(false)
+          return
+        }
+
+        if (phoneNumberSecondary.trim() && !normalizedSecondary) {
+          setError('Secondary phone number format is invalid')
+          setIsSubmitting(false)
+          return
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await supabase
           .from('users')
-          .update({ password_change_required: false } as any)
+          .update({
+            password_change_required: false,
+            phone_number: normalizedPrimary,
+            phone_sms_enabled: true,
+            phone_number_secondary: normalizedSecondary,
+            phone_secondary_sms_enabled: !!normalizedSecondary,
+            updated_at: new Date().toISOString(),
+          } as any)
           .eq('id', user.id)
 
         if (dbError) {
@@ -124,7 +172,8 @@ export default function ChangePasswordPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Your password must be at least 8 characters and include uppercase,
-              lowercase, numbers, and special characters.
+              lowercase, numbers, and special characters. A primary SMS phone
+              number is required to continue.
             </AlertDescription>
           </Alert>
 
@@ -152,6 +201,33 @@ export default function ChangePasswordPage() {
                 placeholder="Confirm new password"
                 disabled={isSubmitting}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone-number">Primary SMS Phone Number</Label>
+              <Input
+                id="phone-number"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+15551234567"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone-number-secondary">
+                Secondary SMS Phone Number (Optional)
+              </Label>
+              <Input
+                id="phone-number-secondary"
+                type="tel"
+                value={phoneNumberSecondary}
+                onChange={(e) => setPhoneNumberSecondary(e.target.value)}
+                placeholder="+15559876543"
+                disabled={isSubmitting}
               />
             </div>
 
