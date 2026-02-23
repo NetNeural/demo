@@ -41,6 +41,8 @@ interface OrgBranding {
     headline?: string | null
     subtitle?: string | null
     cardOpacity?: number | null
+    showLogo?: boolean
+    enhanceBg?: boolean
     showAnimatedBg?: boolean
   }
 }
@@ -153,6 +155,8 @@ function LoginForm() {
   const headline = loginPage?.headline || null
   const subtitle = loginPage?.subtitle || null
   const cardOpacity = loginPage?.cardOpacity ?? 70
+  const showLogo = loginPage?.showLogo !== false
+  const enhanceBg = loginPage?.enhanceBg === true
   const showAnimatedBg = loginPage?.showAnimatedBg !== false
 
   // Floating nodes for background animation
@@ -368,6 +372,9 @@ function LoginForm() {
               bgFit === 'fill' ? 'object-fill' :
               'object-none'
             }`}
+            style={enhanceBg ? {
+              filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
+            } : undefined}
           />
           <div className="absolute inset-0 bg-black/40" />
         </div>
@@ -452,27 +459,29 @@ function LoginForm() {
       <div className="relative z-10 mx-4 w-full max-w-md">
         {/* Brand header */}
         <div className="mb-8 text-center">
-          {logoUrl ? (
-            <div className="mb-4 flex justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={logoUrl}
-                alt={`${orgName} logo`}
-                className="h-16 w-auto object-contain drop-shadow-lg"
-              />
-            </div>
-          ) : (
-            <div className="mb-4 flex justify-center">
-              <div
-                className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg"
-                style={{
-                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
-                  boxShadow: `0 8px 32px ${colors.primary}30`,
-                }}
-              >
-                <Activity className="h-8 w-8 text-white" />
+          {showLogo && (
+            logoUrl ? (
+              <div className="mb-4 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoUrl}
+                  alt={`${orgName} logo`}
+                  className="h-16 w-auto object-contain drop-shadow-lg"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="mb-4 flex justify-center">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                    boxShadow: `0 8px 32px ${colors.primary}30`,
+                  }}
+                >
+                  <Activity className="h-8 w-8 text-white" />
+                </div>
+              </div>
+            )
           )}
           <h1
             className="text-3xl font-bold tracking-tight"

@@ -82,6 +82,8 @@ Deno.serve(async (req: Request) => {
         headline: loginPage.headline || null,
         subtitle: loginPage.subtitle || null,
         cardOpacity: loginPage.card_opacity ?? null,
+        showLogo: loginPage.show_logo ?? true,
+        enhanceBg: loginPage.enhance_bg ?? false,
         showAnimatedBg: loginPage.show_animated_bg ?? true,
       },
     }

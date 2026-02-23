@@ -75,6 +75,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [loginHeadline, setLoginHeadline] = useState('')
   const [loginSubtitle, setLoginSubtitle] = useState('')
   const [loginCardOpacity, setLoginCardOpacity] = useState(70)
+  const [loginShowLogo, setLoginShowLogo] = useState(true)
+  const [loginEnhanceBg, setLoginEnhanceBg] = useState(false)
   const [loginShowAnimatedBg, setLoginShowAnimatedBg] = useState(true)
 
   // Sync state when currentOrganization changes
@@ -101,6 +103,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setLoginHeadline(settings.login_page?.headline || '')
       setLoginSubtitle(settings.login_page?.subtitle || '')
       setLoginCardOpacity(settings.login_page?.card_opacity ?? 70)
+      setLoginShowLogo(settings.login_page?.show_logo !== false)
+      setLoginEnhanceBg(settings.login_page?.enhance_bg === true)
       setLoginShowAnimatedBg(settings.login_page?.show_animated_bg !== false)
     }
   }, [currentOrganization])
@@ -442,6 +446,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           headline: loginHeadline || undefined,
           subtitle: loginSubtitle || undefined,
           card_opacity: loginCardOpacity,
+          show_logo: loginShowLogo,
+          enhance_bg: loginEnhanceBg,
           show_animated_bg: loginShowAnimatedBg,
         },
         theme,
@@ -1043,6 +1049,56 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             </p>
           </div>
 
+          {/* Show Logo on Login Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Show Logo on Login</Label>
+              <p className="text-xs text-muted-foreground">
+                Display your organization logo above the name on the login page
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={loginShowLogo}
+              onClick={() => setLoginShowLogo(!loginShowLogo)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                loginShowLogo ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  loginShowLogo ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Enhance Background Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Enhance Background</Label>
+              <p className="text-xs text-muted-foreground">
+                Apply AI-style enhancement — boosts brightness, contrast, and color vibrancy
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={loginEnhanceBg}
+              onClick={() => setLoginEnhanceBg(!loginEnhanceBg)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                loginEnhanceBg ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  loginEnhanceBg ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Animated Background Toggle */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
@@ -1098,6 +1154,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         loginBgFit === 'fill' ? 'object-fill' :
                         'object-none'
                       }`}
+                      style={loginEnhanceBg ? {
+                        filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
+                      } : undefined}
                     />
                   )}
                   {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
@@ -1108,6 +1167,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
                       }}
                     >
+                      {loginShowLogo && logoUrl && (
+                        <img src={logoUrl} alt="Logo" className="mx-auto mb-1 h-5 w-auto object-contain" />
+                      )}
                       <p className="text-[10px] font-bold text-white">
                         {loginHeadline || currentOrganization?.name || 'Organization'}
                       </p>

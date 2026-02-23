@@ -19,6 +19,8 @@ export interface OrganizationSettings {
     headline?: string
     subtitle?: string
     card_opacity?: number
+    show_logo?: boolean
+    enhance_bg?: boolean
     show_animated_bg?: boolean
   }
   theme?: 'light' | 'dark' | 'auto'
