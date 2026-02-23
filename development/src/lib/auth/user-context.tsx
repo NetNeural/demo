@@ -62,6 +62,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = useCallback(
     async (userId: string) => {
       try {
+        let resolvedProfile: UserProfile | null = null
+
         // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
           .from('users')
@@ -117,6 +119,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
             console.log('Successfully created user profile:', newProfile)
             setProfile(newProfile)
+            resolvedProfile = newProfile
           } else {
             // Show user-friendly modal instead of console error
             showNotification(
@@ -130,6 +133,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           setProfile(profileData)
+          resolvedProfile = profileData
         }
 
         // Fetch user's organization memberships with organization details
@@ -297,6 +301,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             'currentOrganizationId',
             currentOrg.organization_id
           )
+        }
+
+        const profilePromptKey = `profileCompletionPromptShown:${userId}`
+        const hasShownProfilePrompt =
+          localStorage.getItem(profilePromptKey) === 'true'
+        const needsPersonalInfoPrompt =
+          !!resolvedProfile && !resolvedProfile.full_name?.trim()
+
+        if (!hasShownProfilePrompt && needsPersonalInfoPrompt) {
+          showNotification(
+            'info',
+            'Complete Your Personal Information',
+            'Please go to Settings → Personal Information and complete your profile details.',
+            12
+          )
+          localStorage.setItem(profilePromptKey, 'true')
         }
       } catch (err) {
         console.error('Error in fetchUserProfile:', err)

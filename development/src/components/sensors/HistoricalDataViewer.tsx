@@ -32,6 +32,7 @@ import {
 
 interface HistoricalDataViewerProps {
   device: Device
+  refreshKey?: number
 }
 
 type TimeRange = '1H' | '6H' | '12H' | '24H' | 'custom'
@@ -143,13 +144,17 @@ function normalizeTelemetryRecords(records: TelemetryData[]): TelemetryData[] {
   return result
 }
 
-export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
+export function HistoricalDataViewer({
+  device,
+  refreshKey,
+}: HistoricalDataViewerProps) {
   const { currentOrganization } = useOrganization()
   const { preferences } = usePreferences()
   const [selectedRange, setSelectedRange] = useState<TimeRange>('24H')
   const [selectedSensor, setSelectedSensor] = useState<string>('all')
   const [loading, setLoading] = useState(false)
   const [historicalData, setHistoricalData] = useState<TelemetryData[]>([])
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null)
   const [customHours, setCustomHours] = useState<string>('48')
   const [showCustomInput, setShowCustomInput] = useState(false)
   const useFahrenheit =
@@ -228,6 +233,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
 
         const normalized = normalizeTelemetryRecords(typedData)
         setHistoricalData(normalized)
+        setLastRefreshedAt(new Date())
       } catch (err) {
         console.error('[HistoricalDataViewer] Error:', err)
         setHistoricalData([])
@@ -248,7 +254,7 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
     } else {
       fetchHistoricalData(selectedRange)
     }
-  }, [fetchHistoricalData, selectedRange, customHours])
+  }, [fetchHistoricalData, selectedRange, customHours, refreshKey])
 
   const handleCustomRangeApply = () => {
     const hours = parseInt(customHours, 10)
@@ -427,7 +433,12 @@ export function HistoricalDataViewer({ device }: HistoricalDataViewerProps) {
             <Calendar className="h-5 w-5" />
             🗃️ Historical Data
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {lastRefreshedAt && (
+              <span className="text-xs text-muted-foreground">
+                Last refreshed {formatTimestamp(lastRefreshedAt.toISOString())}
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"

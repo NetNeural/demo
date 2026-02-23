@@ -51,7 +51,6 @@ CREATE POLICY "Authenticated users can read test telemetry"
         FROM organization_members om
         WHERE om.user_id = auth.uid()
           AND om.organization_id = test_device_telemetry_history.organization_id
-          AND (om.expires_at IS NULL OR om.expires_at > NOW())
       )
       OR EXISTS (
         SELECT 1
@@ -80,7 +79,6 @@ CREATE POLICY "Authenticated users can insert test telemetry"
         FROM organization_members om
         WHERE om.user_id = auth.uid()
           AND om.organization_id = test_device_telemetry_history.organization_id
-          AND (om.expires_at IS NULL OR om.expires_at > NOW())
       )
       OR EXISTS (
         SELECT 1

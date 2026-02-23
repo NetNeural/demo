@@ -184,6 +184,7 @@ export default function SensorDetailsPage() {
   const [telemetryReadings, setTelemetryReadings] = useState<
     TelemetryReading[]
   >([])
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [temperatureUnit, setTemperatureUnit] = useState<
     'celsius' | 'fahrenheit'
@@ -392,7 +393,12 @@ export default function SensorDetailsPage() {
         )}
 
         {/* 2. Historical Data Viewer - Only for sensors with telemetry data */}
-        {!isGateway && <HistoricalDataViewer device={device} />}
+        {!isGateway && (
+          <HistoricalDataViewer
+            device={device}
+            refreshKey={historyRefreshKey}
+          />
+        )}
 
         {/* Test Device Controls - shown on device details for modular test sensors */}
         {testDevice && (
@@ -400,7 +406,10 @@ export default function SensorDetailsPage() {
             deviceId={device.id}
             deviceTypeId={device.device_type_id || null}
             currentStatus={device.status}
-            onDataSent={fetchDeviceData}
+            onDataSent={() => {
+              fetchDeviceData()
+              setHistoryRefreshKey((prev) => prev + 1)
+            }}
           />
         )}
 

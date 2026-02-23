@@ -36,6 +36,11 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<string>('medium')
+  const [bugOccurredDate, setBugOccurredDate] = useState('')
+  const [bugOccurredTime, setBugOccurredTime] = useState('')
+  const [bugTimezone, setBugTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  )
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +82,12 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
             title: title.trim(),
             description: description.trim(),
             severity: type === 'bug_report' ? severity : undefined,
+            bugOccurredDate:
+              type === 'bug_report' ? bugOccurredDate || undefined : undefined,
+            bugOccurredTime:
+              type === 'bug_report' ? bugOccurredTime || undefined : undefined,
+            bugTimezone:
+              type === 'bug_report' ? bugTimezone || undefined : undefined,
             browserInfo: navigator.userAgent,
             pageUrl: window.location.href,
           }),
@@ -99,6 +110,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
       setTitle('')
       setDescription('')
       setSeverity('medium')
+      setBugOccurredDate('')
+      setBugOccurredTime('')
+      setBugTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
       onSubmitted?.()
     } catch (error) {
       console.error('Feedback submission error:', error)
@@ -183,43 +197,104 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
 
           {/* Severity (bugs only) */}
           {type === 'bug_report' && (
-            <div className="space-y-2">
-              <Label>Severity</Label>
-              <Select value={severity} onValueChange={setSeverity}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="critical">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">
-                        Critical
-                      </Badge>
-                      System down or data loss
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <span className="flex items-center gap-2">
-                      <Badge className="bg-orange-500 text-xs">High</Badge>
-                      Major feature broken
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <span className="flex items-center gap-2">
-                      <Badge className="bg-yellow-500 text-xs">Medium</Badge>
-                      Minor issue, workaround exists
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="low">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        Low
-                      </Badge>
-                      Cosmetic or minor inconvenience
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Severity</Label>
+                <Select value={severity} onValueChange={setSeverity}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="critical">
+                      <span className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">
+                          Critical
+                        </Badge>
+                        System down or data loss
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="high">
+                      <span className="flex items-center gap-2">
+                        <Badge className="bg-orange-500 text-xs">High</Badge>
+                        Major feature broken
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <span className="flex items-center gap-2">
+                        <Badge className="bg-yellow-500 text-xs">Medium</Badge>
+                        Minor issue, workaround exists
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="low">
+                      <span className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Low
+                        </Badge>
+                        Cosmetic or minor inconvenience
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="bug-occurred-date">Date Observed</Label>
+                  <Input
+                    id="bug-occurred-date"
+                    type="date"
+                    value={bugOccurredDate}
+                    onChange={(e) => setBugOccurredDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bug-occurred-time">Time Observed</Label>
+                  <Input
+                    id="bug-occurred-time"
+                    type="time"
+                    value={bugOccurredTime}
+                    onChange={(e) => setBugOccurredTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Time Zone</Label>
+                <Select value={bugTimezone} onValueChange={setBugTimezone}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UTC">UTC</SelectItem>
+                    <SelectItem value="America/Los_Angeles">
+                      America/Los_Angeles
+                    </SelectItem>
+                    <SelectItem value="America/Denver">
+                      America/Denver
+                    </SelectItem>
+                    <SelectItem value="America/Chicago">
+                      America/Chicago
+                    </SelectItem>
+                    <SelectItem value="America/New_York">
+                      America/New_York
+                    </SelectItem>
+                    <SelectItem value="America/Phoenix">
+                      America/Phoenix
+                    </SelectItem>
+                    <SelectItem value="Europe/London">Europe/London</SelectItem>
+                    <SelectItem value="Europe/Berlin">Europe/Berlin</SelectItem>
+                    <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
+                    <SelectItem value="Asia/Singapore">Asia/Singapore</SelectItem>
+                    <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
+                    <SelectItem value="Australia/Sydney">
+                      Australia/Sydney
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Add when the issue occurred for accurate debugging timelines.
+                </p>
+              </div>
             </div>
           )}
 

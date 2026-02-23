@@ -24,6 +24,9 @@ interface FeedbackRequest {
   title: string
   description: string
   severity?: 'critical' | 'high' | 'medium' | 'low'
+  bugOccurredDate?: string
+  bugOccurredTime?: string
+  bugTimezone?: string
   browserInfo?: string
   pageUrl?: string
 }
@@ -42,6 +45,9 @@ export default createEdgeFunction(
       title,
       description,
       severity,
+      bugOccurredDate,
+      bugOccurredTime,
+      bugTimezone,
       browserInfo,
       pageUrl,
     } = body
@@ -93,12 +99,21 @@ export default createEdgeFunction(
       type === 'bug_report' ? `[Bug] ${title}` : `[Feature Request] ${title}`
 
     const severityLine = severity ? `**Severity:** ${severity}\n` : ''
+    const bugObservedLine =
+      type === 'bug_report' && bugOccurredDate && bugOccurredTime
+        ? `**Bug observed at:** ${bugOccurredDate} ${bugOccurredTime}${bugTimezone ? ` (${bugTimezone})` : ''}\n`
+        : ''
+    const bugTimezoneLine =
+      type === 'bug_report' && !bugObservedLine && bugTimezone
+        ? `**Bug time zone:** ${bugTimezone}\n`
+        : ''
     const issueBody = `## User Feedback
 
 **Type:** ${type === 'bug_report' ? '🐛 Bug Report' : '💡 Feature Request'}
 **Organization:** ${org?.name || organizationId}
 **Submitted by:** ${user.email}
 ${severityLine}
+${bugObservedLine}${bugTimezoneLine}
 ---
 
 ${description}
@@ -183,6 +198,9 @@ ${description}
         title: title.trim(),
         description: description.trim(),
         severity: severity || null,
+        bug_occurred_date: bugOccurredDate || null,
+        bug_occurred_time: bugOccurredTime || null,
+        bug_timezone: bugTimezone || null,
         github_issue_number: githubIssueNumber,
         github_issue_url: githubIssueUrl,
         browser_info: browserInfo || null,
