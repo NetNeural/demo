@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import type { OrganizationSettings } from '@/types/organization'
 import {
   Dialog,
   DialogContent,
@@ -473,6 +475,8 @@ export function ResellerAgreementSection({
         <ApplicationDialog
           open={showApplyDialog}
           onOpenChange={setShowApplyDialog}
+          organizationSettings={currentOrganization?.settings}
+          organizationName={currentOrganization?.name}
           form={form}
           setForm={setForm}
           onSubmit={handleSubmit}
@@ -563,6 +567,8 @@ export function ResellerAgreementSection({
       <ApplicationDialog
         open={showApplyDialog}
         onOpenChange={setShowApplyDialog}
+        organizationSettings={currentOrganization?.settings}
+        organizationName={currentOrganization?.name}
         form={form}
         setForm={setForm}
         onSubmit={handleSubmit}
@@ -579,6 +585,8 @@ export function ResellerAgreementSection({
 interface ApplicationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  organizationSettings?: OrganizationSettings
+  organizationName?: string
   form: {
     applicantName: string
     applicantEmail: string
@@ -602,6 +610,8 @@ interface ApplicationDialogProps {
 function ApplicationDialog({
   open,
   onOpenChange,
+  organizationSettings,
+  organizationName,
   form,
   setForm,
   onSubmit,
@@ -616,17 +626,7 @@ function ApplicationDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="h-6 w-6 flex-shrink-0">
-              <rect width="100" height="100" rx="16" fill="#1e40af"/>
-              <circle cx="50" cy="35" r="8" fill="#60a5fa"/>
-              <circle cx="30" cy="60" r="8" fill="#60a5fa"/>
-              <circle cx="70" cy="60" r="8" fill="#60a5fa"/>
-              <circle cx="50" cy="80" r="8" fill="#60a5fa"/>
-              <line x1="50" y1="35" x2="30" y2="60" stroke="#93c5fd" strokeWidth="2"/>
-              <line x1="50" y1="35" x2="70" y2="60" stroke="#93c5fd" strokeWidth="2"/>
-              <line x1="30" y1="60" x2="50" y2="80" stroke="#93c5fd" strokeWidth="2"/>
-              <line x1="70" y1="60" x2="50" y2="80" stroke="#93c5fd" strokeWidth="2"/>
-            </svg>
+            <OrganizationLogo settings={organizationSettings} name={organizationName} size="md" />
             Reseller Agreement Application
           </DialogTitle>
           <DialogDescription>
