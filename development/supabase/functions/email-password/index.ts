@@ -109,7 +109,43 @@ export default createEdgeFunction(async ({ req }) => {
     }
   }
 
-  // Send email notification to user (WITHOUT resetting password)
+  // Reset password in auth system to match the emailed temporary password
+  const resetResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${supabaseServiceKey}`,
+      'Content-Type': 'application/json',
+      apikey: supabaseServiceKey,
+    },
+    body: JSON.stringify({
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: targetUser.full_name,
+      },
+    }),
+  })
+
+  if (!resetResponse.ok) {
+    const error = await resetResponse.json()
+    console.error('❌ Failed to reset password in auth:', error)
+    throw new Error(error.message || 'Failed to reset password')
+  }
+
+  // Mark user to change password on next login
+  const { error: updateError } = await supabaseAdmin
+    .from('users')
+    .update({ password_change_required: true })
+    .eq('id', userId)
+
+  if (updateError) {
+    console.error('❌ Failed to set password_change_required:', updateError)
+    throw new DatabaseError(
+      `Failed to update user record: ${updateError.message}`
+    )
+  }
+
+  // Send email notification to user
   const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
   if (!resendApiKey) {
@@ -164,7 +200,7 @@ export default createEdgeFunction(async ({ req }) => {
                   </div>
                   
                   <div style="text-align: center;">
-                    <a href="https://demo-stage.netneural.ai/auth/signin" class="button">Go to Login</a>
+                    <a href="https://demo-stage.netneural.ai/auth/login" class="button">Go to Login</a>
                   </div>
                   
                   <p><strong>Login Instructions:</strong></p>

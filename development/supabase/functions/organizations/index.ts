@@ -652,12 +652,44 @@ export default createEdgeFunction(
                 ownerUserId
               )
 
+              // Reset password in auth system to match temporary password email
+              if (temporaryPassword) {
+                const resetResponse = await fetch(
+                  `${supabaseUrl}/auth/v1/admin/users/${ownerUserId}`,
+                  {
+                    method: 'PUT',
+                    headers: {
+                      Authorization: `Bearer ${supabaseServiceKey}`,
+                      'Content-Type': 'application/json',
+                      apikey: supabaseServiceKey,
+                    },
+                    body: JSON.stringify({
+                      password: temporaryPassword,
+                      email_confirm: true,
+                      user_metadata: {
+                        full_name: ownerFullName,
+                      },
+                    }),
+                  }
+                )
+
+                if (!resetResponse.ok) {
+                  const resetError = await resetResponse.text()
+                  console.error('Failed to reset existing auth user password:', resetError)
+                  throw new DatabaseError(
+                    'Failed to set temporary password for existing user'
+                  )
+                }
+              }
+
               // Update user's organization to the new org
               const { error: updateError } = await supabaseAdmin
                 .from('users')
                 .update({
                   // @ts-expect-error - id exists
                   organization_id: newOrg.id,
+                  full_name: ownerFullName,
+                  password_change_required: true,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', existingUser.id)
@@ -685,6 +717,7 @@ export default createEdgeFunction(
                   role: 'user',
                   // @ts-expect-error - id exists
                   organization_id: newOrg.id,
+                  password_change_required: true,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 })
@@ -728,6 +761,7 @@ export default createEdgeFunction(
                 role: 'user',
                 // @ts-expect-error - id exists
                 organization_id: newOrg.id,
+                password_change_required: true,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               })
