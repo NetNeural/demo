@@ -67,16 +67,41 @@ export function SensorOverviewCard({
 
   // Extract health metrics from latest telemetry reading
   const telemetryHealthMetrics = useMemo(() => {
-    if (!telemetryReadings.length || !telemetryReadings[0]) return null
+    if (!telemetryReadings.length) return null
 
-    const latest = telemetryReadings[0].telemetry
+    const latestWithBattery = telemetryReadings.find(
+      (reading) => typeof reading.telemetry?.battery === 'number'
+    )
+    const latestWithSignal = telemetryReadings.find(
+      (reading) =>
+        typeof reading.telemetry?.rssi === 'number' ||
+        typeof reading.telemetry?.RSSI === 'number'
+    )
+    const latestWithUptime = telemetryReadings.find(
+      (reading) => typeof reading.telemetry?.uptime === 'number'
+    )
+    const latestWithFirmware = telemetryReadings.find(
+      (reading) => typeof reading.telemetry?.firmware_version === 'string'
+    )
+
     return {
-      battery: typeof latest.battery === 'number' ? latest.battery : null,
-      rssi: typeof latest.rssi === 'number' ? latest.rssi : null,
-      uptime: typeof latest.uptime === 'number' ? latest.uptime : null,
+      battery:
+        typeof latestWithBattery?.telemetry?.battery === 'number'
+          ? (latestWithBattery.telemetry.battery as number)
+          : null,
+      rssi:
+        typeof latestWithSignal?.telemetry?.rssi === 'number'
+          ? (latestWithSignal.telemetry.rssi as number)
+          : typeof latestWithSignal?.telemetry?.RSSI === 'number'
+            ? (latestWithSignal.telemetry.RSSI as number)
+            : null,
+      uptime:
+        typeof latestWithUptime?.telemetry?.uptime === 'number'
+          ? (latestWithUptime.telemetry.uptime as number)
+          : null,
       firmware:
-        typeof latest.firmware_version === 'string'
-          ? latest.firmware_version
+        typeof latestWithFirmware?.telemetry?.firmware_version === 'string'
+          ? (latestWithFirmware.telemetry.firmware_version as string)
           : null,
     }
   }, [telemetryReadings])

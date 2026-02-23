@@ -135,6 +135,7 @@ export function TestDeviceControls({
   const [signalStrength, setSignalStrength] = useState(-55)
   const valuesRef = useRef(values)
   const batteryDeviceRef = useRef(batteryDevice)
+  const signalStrengthRef = useRef(signalStrength)
 
   // History generation controls
   const [histSpanHours, setHistSpanHours] = useState(24)
@@ -170,6 +171,10 @@ export function TestDeviceControls({
   useEffect(() => {
     batteryDeviceRef.current = batteryDevice
   }, [batteryDevice])
+
+  useEffect(() => {
+    signalStrengthRef.current = signalStrength
+  }, [signalStrength])
 
   const setValue = (key: SensorKey, val: number) =>
     setValues((prev) => ({ ...prev, [key]: val }))
@@ -227,6 +232,8 @@ export function TestDeviceControls({
                   ? nextBatterySensor
                   : values[sendTarget as SensorKey],
             }
+
+      payload.rssi = signalStrength
 
       const { error: telError } = await supabase
         .from('device_telemetry_history')
@@ -458,6 +465,7 @@ export function TestDeviceControls({
       let h = values.humidity
       let c = values.co2
       let b = values.battery
+      let s = signalStrength
 
       const rows: {
         device_id: string
@@ -474,6 +482,7 @@ export function TestDeviceControls({
         h = driftValue(h, SENSORS.humidity.min, SENSORS.humidity.max, SENSORS.humidity.step)
         c = driftValue(c, SENSORS.co2.min, SENSORS.co2.max, SENSORS.co2.step)
         b = Math.max(0, Math.min(100, b - Math.random() * 0.2)) // slow drain
+        s = Math.max(-120, Math.min(-30, s + (Math.random() - 0.5) * 4))
         rows.push({
           device_id: deviceId,
           organization_id: organizationId,
@@ -482,6 +491,7 @@ export function TestDeviceControls({
             humidity: parseFloat(h.toFixed(0)),
             co2: parseFloat(c.toFixed(0)),
             battery: parseFloat(b.toFixed(0)),
+            rssi: parseFloat(s.toFixed(0)),
           },
           device_timestamp: ts,
           received_at: ts,
@@ -505,9 +515,14 @@ export function TestDeviceControls({
           .update({
             status: 'online',
             battery_level: lastRow.telemetry.battery,
+            signal_strength: lastRow.telemetry.rssi,
             last_seen: lastRow.received_at,
           })
           .eq('id', deviceId)
+        if (typeof lastRow.telemetry.rssi === 'number') {
+          setSignalStrength(lastRow.telemetry.rssi)
+          signalStrengthRef.current = lastRow.telemetry.rssi
+        }
       }
 
       toast.success(`✅ Generated ${rows.length} data points`, {
@@ -564,7 +579,20 @@ export function TestDeviceControls({
       batteryDeviceRef.current = nextBatteryDevice
       setBatteryDevice(nextBatteryDevice)
 
-      const payload: Record<string, number> = nextValues
+      const nextSignalStrength = Math.max(
+        -120,
+        Math.min(
+          -30,
+          parseFloat((signalStrengthRef.current + (Math.random() - 0.5) * 6).toFixed(0))
+        )
+      )
+      signalStrengthRef.current = nextSignalStrength
+      setSignalStrength(nextSignalStrength)
+
+      const payload: Record<string, number> = {
+        ...nextValues,
+        rssi: nextSignalStrength,
+      }
       const ts = new Date().toISOString()
       await supabase.from('device_telemetry_history').insert({
         device_id: deviceId,
@@ -578,6 +606,7 @@ export function TestDeviceControls({
         .update({
           status: 'online',
           battery_level: nextBatteryDevice,
+          signal_strength: nextSignalStrength,
           last_seen: ts,
         })
         .eq('id', deviceId)

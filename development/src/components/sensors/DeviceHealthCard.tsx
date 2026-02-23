@@ -37,6 +37,23 @@ export function DeviceHealthCard({
 }: DeviceHealthCardProps) {
   const { fmt } = useDateFormatter()
 
+  const latestTelemetryBattery = telemetryReadings.find(
+    (reading) => typeof reading.telemetry?.battery === 'number'
+  )?.telemetry?.battery as number | undefined
+
+  const latestTelemetrySignal = telemetryReadings.find(
+    (reading) =>
+      typeof reading.telemetry?.rssi === 'number' ||
+      typeof reading.telemetry?.RSSI === 'number'
+  )?.telemetry
+
+  const liveSignalStrength =
+    typeof latestTelemetrySignal?.rssi === 'number'
+      ? latestTelemetrySignal.rssi
+      : typeof latestTelemetrySignal?.RSSI === 'number'
+        ? latestTelemetrySignal.RSSI
+        : undefined
+
   // Get last timestamp for each sensor type
   const getLastTelemetryTimestamps = () => {
     const sensorTimestamps: Record<string, string> = {}
@@ -118,28 +135,38 @@ export function DeviceHealthCard({
         )}
 
         {/* Battery */}
-        {device.battery_level != null && (
+        {(device.battery_level != null || latestTelemetryBattery != null) && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Battery className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Battery</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-medium">{device.battery_level}%</span>
+              <span className="font-medium">
+                {latestTelemetryBattery ?? device.battery_level}%
+              </span>
+              {latestTelemetryBattery != null && (
+                <span className="text-xs text-muted-foreground">(Live)</span>
+              )}
               <span>{getBatteryIcon()}</span>
             </div>
           </div>
         )}
 
         {/* Signal */}
-        {device.signal_strength != null && (
+        {(device.signal_strength != null || liveSignalStrength != null) && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Signal className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Signal</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-medium">{device.signal_strength} dBm</span>
+              <span className="font-medium">
+                {liveSignalStrength ?? device.signal_strength} dBm
+              </span>
+              {liveSignalStrength != null && (
+                <span className="text-xs text-muted-foreground">(Live)</span>
+              )}
               <span>{getSignalIcon()}</span>
             </div>
           </div>
