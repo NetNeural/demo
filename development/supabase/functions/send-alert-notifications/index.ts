@@ -93,6 +93,58 @@ async function resolveUserEmails(
   return records.map((r: { email: string }) => r.email).filter(Boolean)
 }
 
+function normalizePhoneNumber(value: string): string {
+  return value.replace(/[\s\-().]/g, '')
+}
+
+async function resolveUserPhoneNumbers(
+  supabaseUrl: string,
+  serviceKey: string,
+  userIds: string[]
+): Promise<string[]> {
+  if (!userIds?.length) return []
+
+  const sanitizedIds = userIds
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0)
+
+  if (!sanitizedIds.length) return []
+
+  const idFilter = sanitizedIds.join(',')
+
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/users?id=in.(${idFilter})&select=id,phone_number,phone_number_secondary,phone_sms_enabled,phone_secondary_sms_enabled`,
+    { headers: supabaseHeaders(serviceKey) }
+  )
+
+  if (!res.ok) {
+    console.error(
+      `[send-alert-notifications] Failed to resolve SMS numbers from users: ${res.status} ${res.statusText}`
+    )
+    return []
+  }
+
+  const users = await res.json()
+  const phoneNumbers: string[] = []
+
+  for (const user of users as Array<{
+    phone_number?: string | null
+    phone_number_secondary?: string | null
+    phone_sms_enabled?: boolean | null
+    phone_secondary_sms_enabled?: boolean | null
+  }>) {
+    if (user.phone_sms_enabled && user.phone_number) {
+      phoneNumbers.push(normalizePhoneNumber(user.phone_number))
+    }
+
+    if (user.phone_secondary_sms_enabled && user.phone_number_secondary) {
+      phoneNumbers.push(normalizePhoneNumber(user.phone_number_secondary))
+    }
+  }
+
+  return phoneNumbers.filter(Boolean)
+}
+
 // ─── Email via Resend ─────────────────────────────────────────────────
 
 async function sendEmailNotification(
@@ -490,12 +542,18 @@ serve(async (req) => {
     const recipientPhones: string[] = [
       ...(body.recipient_phone_numbers || []),
       ...((threshold?.notify_phone_numbers as string[]) || []),
-    ]
+    ].map(normalizePhoneNumber)
+
+    const recipientPhonesFromUsers = await resolveUserPhoneNumbers(
+      supabaseUrl,
+      serviceKey,
+      uniqueUserIds
+    )
 
     // Deduplicate
     const uniqueEmails = [...new Set(recipientEmails)]
     const uniqueUserIds = [...new Set(recipientUserIds)]
-    const uniquePhones = [...new Set(recipientPhones)]
+    const uniquePhones = [...new Set([...recipientPhones, ...recipientPhonesFromUsers])]
 
     // 7. Dispatch to each channel
     const results: NotificationResult[] = []
@@ -524,14 +582,17 @@ serve(async (req) => {
       const twilioConfig = {
         account_sid:
           orgNotifSettings.twilio_account_sid ||
+          orgNotifSettings.twilioAccountSid ||
           Deno.env.get('TWILIO_ACCOUNT_SID') ||
           '',
         auth_token:
           orgNotifSettings.twilio_auth_token ||
+          orgNotifSettings.twilioAuthToken ||
           Deno.env.get('TWILIO_AUTH_TOKEN') ||
           '',
         from_number:
           orgNotifSettings.twilio_from_number ||
+          orgNotifSettings.twilioFromNumber ||
           Deno.env.get('TWILIO_FROM_NUMBER') ||
           '',
       }

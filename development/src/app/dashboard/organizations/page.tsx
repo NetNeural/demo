@@ -172,7 +172,7 @@ export default function OrganizationsPage() {
             <span>Integrations</span>
           </TabsTrigger>
 
-          {(isOwner || isAdmin) && (
+          {(isSuperAdmin || isOwner || isAdmin) && (
             <TabsTrigger value="access" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               <span>Access Requests</span>
@@ -186,7 +186,7 @@ export default function OrganizationsPage() {
             </TabsTrigger>
           )}
 
-          {isOwner && (
+          {(isSuperAdmin || isOwner) && (
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span>Settings</span>
@@ -212,7 +212,7 @@ export default function OrganizationsPage() {
           />
         </TabsContent>
 
-        {(isOwner || isAdmin) && (
+        {(isSuperAdmin || isOwner || isAdmin) && (
           <TabsContent value="access">
             <AccessRequestsTab organizationId={currentOrganization.id} />
           </TabsContent>
@@ -224,7 +224,7 @@ export default function OrganizationsPage() {
           </TabsContent>
         )}
 
-        {isOwner && (
+        {(isSuperAdmin || isOwner) && (
           <TabsContent value="settings">
             <OrganizationSettingsTab organizationId={currentOrganization.id} />
           </TabsContent>

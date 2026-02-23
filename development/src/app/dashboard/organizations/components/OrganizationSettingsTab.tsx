@@ -28,6 +28,7 @@ import {
   Monitor,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { handleApiError } from '@/lib/sentry-utils'
 import { toast } from 'sonner'
@@ -42,6 +43,7 @@ interface OrganizationSettingsTabProps {
 export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const { currentOrganization, isOwner, refreshOrganizations } =
     useOrganization()
+  const { user } = useUser()
   const [orgName, setOrgName] = useState('')
   const [orgSlug, setOrgSlug] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -393,7 +395,10 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }
 
-  if (!isOwner) {
+  // Allow super_admin or organization owner to access settings
+  const canAccessSettings = isOwner || user?.role === 'super_admin'
+
+  if (!canAccessSettings) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-12">
