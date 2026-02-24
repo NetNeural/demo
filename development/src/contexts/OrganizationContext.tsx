@@ -198,7 +198,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.id, currentOrgId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]) // Bug #222 fix: removed currentOrgId — it caused a re-fetch loop on first org selection
 
   // Fetch organization stats
   const fetchOrganizationStats = useCallback(async () => {

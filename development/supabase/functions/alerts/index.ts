@@ -10,6 +10,24 @@ import {
   createServiceClient,
 } from '../_shared/auth.ts'
 
+// ─── Multi-Org Membership Check (Bug #221 fix) ──────────────────────
+// Checks if a user is a member of a given organization via organization_members.
+// Uses service_role client to bypass RLS.
+async function isUserMemberOfOrg(
+  supabase: ReturnType<typeof createServiceClient>,
+  userId: string,
+  organizationId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('organization_id', organizationId)
+    .limit(1)
+    .maybeSingle()
+  return !!data
+}
+
 // ─── Resolution Notification Helper ───────────────────────────────────
 async function sendResolutionNotification(
   supabase: ReturnType<typeof createServiceClient>,
@@ -301,18 +319,22 @@ export default createEdgeFunction(
         )
       }
 
-      // Check access for each alert
-      const invalidAlerts = alertsToAck?.filter(
-        (alert) =>
-          !userContext.isSuperAdmin &&
-          alert.organization_id !== userContext.organizationId
-      )
-
-      if (invalidAlerts && invalidAlerts.length > 0) {
-        throw new DatabaseError(
-          'You do not have access to some of these alerts',
-          403
+      // Check access for each alert — verify membership (Bug #221 fix)
+      if (!userContext.isSuperAdmin) {
+        const uniqueOrgIds = [...new Set(alertsToAck?.map(a => a.organization_id).filter(Boolean) || [])]
+        const membershipChecks = await Promise.all(
+          uniqueOrgIds.map(async (orgId) => ({
+            orgId,
+            isMember: await isUserMemberOfOrg(supabase, userContext.userId, orgId),
+          }))
         )
+        const deniedOrgs = membershipChecks.filter(c => !c.isMember)
+        if (deniedOrgs.length > 0) {
+          throw new DatabaseError(
+            'You do not have access to some of these alerts',
+            403
+          )
+        }
       }
 
       // Bulk insert acknowledgements
@@ -375,8 +397,11 @@ export default createEdgeFunction(
 
       if (!alert) throw new DatabaseError('Alert not found', 404)
 
-      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
-        throw new DatabaseError('Access denied', 403)
+      if (!userContext.isSuperAdmin) {
+        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        if (!hasMembership) {
+          throw new DatabaseError('Access denied', 403)
+        }
       }
 
       // Fetch timeline events
@@ -467,8 +492,11 @@ export default createEdgeFunction(
         .single()
 
       if (!alert) throw new DatabaseError('Alert not found', 404)
-      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
-        throw new DatabaseError('Access denied', 403)
+      if (!userContext.isSuperAdmin) {
+        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        if (!hasMembership) {
+          throw new DatabaseError('Access denied', 403)
+        }
       }
 
       const snoozedUntil = new Date(Date.now() + duration_minutes * 60 * 1000).toISOString()
@@ -505,8 +533,11 @@ export default createEdgeFunction(
         .single()
 
       if (!alert) throw new DatabaseError('Alert not found', 404)
-      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
-        throw new DatabaseError('Access denied', 403)
+      if (!userContext.isSuperAdmin) {
+        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        if (!hasMembership) {
+          throw new DatabaseError('Access denied', 403)
+        }
       }
 
       const { error } = await supabase
@@ -541,12 +572,12 @@ export default createEdgeFunction(
         throw new DatabaseError('Alert not found', 404)
       }
 
-      // Check if user has access to this organization
-      if (
-        !userContext.isSuperAdmin &&
-        alert.organization_id !== userContext.organizationId
-      ) {
-        throw new DatabaseError('You do not have access to this alert', 403)
+      // Check if user has access to this alert's organization (Bug #221 fix: check membership, not default org)
+      if (!userContext.isSuperAdmin) {
+        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        if (!hasMembership) {
+          throw new DatabaseError('You do not have access to this alert', 403)
+        }
       }
 
       // deno-lint-ignore no-explicit-any
