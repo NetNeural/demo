@@ -84,12 +84,34 @@ export default createEdgeFunction(
       throw new DatabaseError('Unauthorized - authentication failed', 401)
     }
 
-    // Helper: return requested org if super_admin, otherwise user's own org
-    const getTargetOrganizationId = (
+    // Helper: return requested org if user is a member, otherwise user's primary org
+    const getTargetOrganizationId = async (
       ctx: typeof userContext,
       requestedOrgId?: string
-    ): string | null => {
+    ): Promise<string | null> => {
+      // Super admins can target any org
       if (ctx.isSuperAdmin && requestedOrgId) return requestedOrgId
+
+      // If no specific org requested, use user's primary
+      if (!requestedOrgId) return ctx.organizationId || null
+
+      // If requesting their own primary org, allow it
+      if (requestedOrgId === ctx.organizationId) return requestedOrgId
+
+      // Check if user is a member of the requested org
+      const { data: membership } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', ctx.userId)
+        .eq('organization_id', requestedOrgId)
+        .maybeSingle()
+
+      if (membership) {
+        console.log(`✅ User ${ctx.userId} is ${membership.role} of org ${requestedOrgId}`)
+        return requestedOrgId
+      }
+
+      console.warn(`⚠️ User ${ctx.userId} is not a member of org ${requestedOrgId}, falling back to primary`)
       return ctx.organizationId || null
     }
 
@@ -431,7 +453,7 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this organization
-      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
 
       if (!targetOrgId) {
         throw new DatabaseError('User has no organization access', 403)
@@ -496,7 +518,7 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this device's organization
-      const targetOrgId = getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
 
       if (!targetOrgId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)
