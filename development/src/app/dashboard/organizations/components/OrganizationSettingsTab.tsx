@@ -510,10 +510,10 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const handleDelete = async () => {
     if (!currentOrganization) return
 
-    // Require user to type organization name to confirm
-    if (deleteConfirmation !== currentOrganization.name) {
+    // Require user to type organization name to confirm (case-insensitive, trimmed)
+    if (deleteConfirmation.trim().toLowerCase() !== currentOrganization.name.trim().toLowerCase()) {
       toast.error(
-        'Please type the organization name exactly to confirm deletion'
+        'Please type the organization name to confirm deletion'
       )
       return
     }
@@ -1323,7 +1323,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               variant="destructive"
               onClick={handleDelete}
               disabled={
-                isDeleting || deleteConfirmation !== currentOrganization?.name
+                isDeleting || deleteConfirmation.trim().toLowerCase() !== currentOrganization?.name?.trim().toLowerCase()
               }
             >
               {isDeleting ? 'Deleting...' : 'Delete Organization'}
