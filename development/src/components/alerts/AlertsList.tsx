@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Alert as AlertUI, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { handleApiError } from '@/lib/sentry-utils'
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import {
   AcknowledgeAlertDialog,
   type AcknowledgementType,
@@ -86,6 +88,7 @@ type TabType =
 export function AlertsList() {
   const { currentOrganization } = useOrganization()
   const { fmt } = useDateFormatter()
+  const searchParams = useSearchParams()
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null)
@@ -93,6 +96,13 @@ export function AlertsList() {
   const [ackAlertId, setAckAlertId] = useState<string | null>(null)
   const [ackAlertTitle, setAckAlertTitle] = useState<string>('')
   const [showAckDialog, setShowAckDialog] = useState(false)
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false)
+
+  // Clear All state
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false)
+  const [clearAllType, setClearAllType] = useState<AcknowledgementType>('resolved')
+  const [clearAllNotes, setClearAllNotes] = useState('')
+  const [clearingAll, setClearingAll] = useState(false)
 
   // Issue #108: New state for filters, view mode, tabs, bulk actions
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
@@ -178,6 +188,20 @@ export function AlertsList() {
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
+
+  // Deep-link: auto-open alert detail when ?alertId= is in URL
+  useEffect(() => {
+    if (deepLinkHandled || loading || alerts.length === 0) return
+    const alertId = searchParams.get('alertId')
+    if (!alertId) return
+
+    const target = alerts.find((a) => a.id === alertId)
+    if (target) {
+      setSelectedAlert(target)
+      setShowDetails(true)
+    }
+    setDeepLinkHandled(true)
+  }, [alerts, loading, searchParams, deepLinkHandled])
 
   // Filter alerts based on active tab
   const tabFilteredAlerts = useMemo(() => {
@@ -372,6 +396,45 @@ export function AlertsList() {
     setCategoryFilter('all')
   }
 
+  // Clear All: targets all unacknowledged (active) alerts
+  const unacknowledgedAlerts = useMemo(
+    () => alerts.filter((a) => !a.acknowledged),
+    [alerts]
+  )
+
+  const handleClearAll = async () => {
+    if (!currentOrganization || unacknowledgedAlerts.length === 0) return
+
+    setClearingAll(true)
+    try {
+      const alertIds = unacknowledgedAlerts.map((a) => a.id)
+      const response = await edgeFunctions.alerts.bulkAcknowledge(
+        alertIds,
+        currentOrganization.id,
+        clearAllType,
+        clearAllNotes.trim() || `Bulk cleared: ${clearAllType}`
+      )
+
+      if (!response.success) {
+        toast.error('Failed to clear alerts')
+        return
+      }
+
+      toast.success(
+        `Successfully cleared ${unacknowledgedAlerts.length} alert(s)`
+      )
+      setShowClearAllDialog(false)
+      setClearAllNotes('')
+      setClearAllType('resolved')
+      await fetchAlerts()
+    } catch (error) {
+      console.error('Error clearing all alerts:', error)
+      toast.error('Failed to clear alerts')
+    } finally {
+      setClearingAll(false)
+    }
+  }
+
   const toggleGroupCollapse = (category: string) => {
     setCollapsedGroups((prev) => {
       const newSet = new Set(prev)
@@ -501,8 +564,18 @@ export function AlertsList() {
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle + Clear All */}
           <div className="flex items-center space-x-2">
+            {unacknowledgedAlerts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950"
+                onClick={() => setShowClearAllDialog(true)}
+              >
+                Clear All ({unacknowledgedAlerts.length})
+              </Button>
+            )}
             <Button
               variant={viewMode === 'cards' ? 'default' : 'outline'}
               size="sm"
@@ -935,6 +1008,69 @@ export function AlertsList() {
         alertTitle={ackAlertTitle}
         onConfirm={handleAcknowledgeWithNotes}
       />
+
+      {/* Clear All Acknowledged Alerts Dialog */}
+      <Dialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Clear All Active Alerts</DialogTitle>
+            <DialogDescription>
+              This will clear {unacknowledgedAlerts.length} active alert
+              {unacknowledgedAlerts.length !== 1 ? 's' : ''}. Please provide a
+              reason.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Resolution Type</label>
+              <select
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                value={clearAllType}
+                onChange={(e) =>
+                  setClearAllType(e.target.value as AcknowledgementType)
+                }
+              >
+                <option value="resolved">Resolved — Issues fixed</option>
+                <option value="dismissed">Dismissed — Not actionable</option>
+                <option value="false_positive">
+                  False Positive — Triggered incorrectly
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                placeholder="Why are you clearing these alerts?"
+                value={clearAllNotes}
+                onChange={(e) => setClearAllNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowClearAllDialog(false)
+                setClearAllNotes('')
+                setClearAllType('resolved')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearAll}
+              disabled={clearingAll || !clearAllNotes.trim()}
+            >
+              {clearingAll ? 'Clearing…' : `Clear ${unacknowledgedAlerts.length} Alert${unacknowledgedAlerts.length !== 1 ? 's' : ''}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

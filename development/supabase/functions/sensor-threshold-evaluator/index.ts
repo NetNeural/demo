@@ -205,6 +205,38 @@ serve(async (req) => {
             `[sensor-threshold-evaluator] BREACH DETECTED: ${breachMessage}`
           )
 
+          // Check for existing unresolved alert for this device + threshold
+          const { data: existingAlerts } = await supabaseClient
+            .from('alerts')
+            .select('id, created_at')
+            .eq('device_id', threshold.device_id)
+            .eq('is_resolved', false)
+            .contains('metadata', { threshold_id: threshold.id })
+            .limit(1)
+
+          if (existingAlerts && existingAlerts.length > 0) {
+            console.log(
+              `[sensor-threshold-evaluator] Skipping — unresolved alert ${existingAlerts[0].id} already exists for device ${device.name} / threshold ${threshold.id}`
+            )
+            results.skipped++
+            results.evaluated++
+            continue
+          }
+
+          // Also skip if last notification was sent within the past 15 minutes (cooldown)
+          if (threshold.last_notification_at) {
+            const lastNotif = new Date(threshold.last_notification_at).getTime()
+            const cooldownMs = 15 * 60 * 1000 // 15 minutes
+            if (Date.now() - lastNotif < cooldownMs) {
+              console.log(
+                `[sensor-threshold-evaluator] Skipping — cooldown active (last notified ${threshold.last_notification_at})`
+              )
+              results.skipped++
+              results.evaluated++
+              continue
+            }
+          }
+
           // Create alert
           const sensorName =
             SENSOR_TYPE_NAMES[parseInt(threshold.sensor_type)] ||

@@ -184,7 +184,7 @@ serve(async (req) => {
         !isTest
           ? `
       <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 4px;">
-        <a href="https://demo-stage.netneural.ai/dashboard/alerts/" 
+        <a href="https://demo-stage.netneural.ai/dashboard/alerts?alertId=${alert.id}" 
            style="display: inline-block; background: #0ea5e9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
           View Alert in Dashboard
         </a>

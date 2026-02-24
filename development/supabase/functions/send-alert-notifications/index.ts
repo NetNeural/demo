@@ -311,7 +311,7 @@ function buildSlackBlocks(alert: Record<string, unknown>) {
                     text: '📊 View in Dashboard',
                     emoji: true,
                   },
-                  url: 'https://demo-stage.netneural.ai/dashboard/alerts/',
+                  url: `https://demo-stage.netneural.ai/dashboard/alerts?alertId=${(alert as { id: string }).id}`,
                   style: 'primary',
                 },
               ],
@@ -399,12 +399,13 @@ async function sendSmsNotification(
     const title = (alert as { title: string }).title
     const device = (alert as { devices?: { name?: string } }).devices
 
+    const alertId = (alert as { id: string }).id
     const smsBody = [
       isTest ? '🧪 TEST ALERT' : `⚠️ ${severity.toUpperCase()} ALERT`,
       title,
       device?.name ? `Device: ${device.name}` : '',
       '',
-      'View: https://demo-stage.netneural.ai/dashboard/alerts/',
+      `View: https://demo-stage.netneural.ai/dashboard/alerts?alertId=${alertId}`,
     ]
       .filter(Boolean)
       .join('\n')
