@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { auditLogin, auditLoginFailed } from '@/lib/audit-client'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -215,6 +216,7 @@ function LoginForm() {
           })
 
         if (loginError) {
+          auditLoginFailed(email.trim(), loginError.message)
           setError('Invalid email or password. Please try again.')
           setIsLoading(false)
           return
@@ -254,6 +256,12 @@ function LoginForm() {
 
         if (session) {
           hasCheckedAuth.current = true
+
+          // Audit log the successful login
+          auditLogin(data.user.id, data.user.email || email.trim(), {
+            mfa: false,
+            remember_me: rememberMe,
+          })
 
           // Check password change requirement before navigating (fixes mobile race condition)
           const { data: userRecord } = await supabase
@@ -323,6 +331,11 @@ function LoginForm() {
           data: { user: mfaUser },
         } = await supabase.auth.getUser()
         if (mfaUser) {
+          // Audit log the successful MFA login
+          auditLogin(mfaUser.id, mfaUser.email || email.trim(), {
+            mfa: true,
+          })
+
           const { data: mfaUserRecord } = await supabase
             .from('users')
             .select('password_change_required')

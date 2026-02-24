@@ -39,7 +39,7 @@ import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { toast } from 'sonner'
-import { format, subDays } from 'date-fns'
+import { format, subDays, formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
   Download,
@@ -56,6 +56,8 @@ import {
   ChevronRight,
   Shield,
   Send,
+  RotateCcw,
+  Bot,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -115,6 +117,13 @@ const ACTION_CATEGORIES = [
   { value: 'other', label: 'Other' },
 ]
 
+/** Humanize action_type for display */
+const humanizeAction = (action: string): string => {
+  return action
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l) => l.toUpperCase())
+}
+
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
   { value: 'success', label: 'Success' },
@@ -148,6 +157,7 @@ export function AuditLogReport() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [userFilter, setUserFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [hideSystemActions, setHideSystemActions] = useState<boolean>(true)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -175,25 +185,40 @@ export function AuditLogReport() {
   // Whether we're still resolving the user's admin status
   const isResolvingAdmin = !currentUser || isLoadingOrg
 
-  // Fetch users for filter dropdown
+  // Fetch users for filter dropdown — use organization_members + auth.users
   const fetchUsers = useCallback(async () => {
     if (!currentOrganization) return
 
     try {
       const supabase = createClient()
+      // Get all org members with their emails
       const { data, error } = await supabase
-        .from('users')
-        .select('id, email')
+        .from('organization_members')
+        .select('user_id')
         .eq('organization_id', currentOrganization.id)
-        .order('email')
 
       if (error) {
-        console.error('[AuditLogReport] Error fetching users:', error)
+        console.error('[AuditLogReport] Error fetching members:', error)
         return
       }
 
-      if (data) {
-        setUsers(data)
+      if (data && data.length > 0) {
+        // Now get user details for these member IDs
+        const userIds = data.map((m) => m.user_id).filter(Boolean)
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', userIds)
+          .order('email')
+
+        if (userError) {
+          console.error('[AuditLogReport] Error fetching user details:', userError)
+          return
+        }
+
+        if (userData) {
+          setUsers(userData)
+        }
       }
     } catch (error) {
       console.error('[AuditLogReport] Error fetching users:', error)
@@ -259,6 +284,11 @@ export function AuditLogReport() {
       // Apply user filter
       if (userFilter !== 'all') {
         query = query.eq('user_id', userFilter)
+      }
+
+      // Hide system/automated actions (no user_id)
+      if (hideSystemActions) {
+        query = query.not('user_id', 'is', null)
       }
 
       // Apply search query
@@ -342,6 +372,7 @@ export function AuditLogReport() {
     statusFilter,
     userFilter,
     searchQuery,
+    hideSystemActions,
   ])
 
   // Load data on mount and when filters change
@@ -659,8 +690,8 @@ export function AuditLogReport() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Date Range Presets */}
-          <div className="flex flex-wrap gap-2">
-            {(['24h', '7d', '30d', 'custom'] as DateRangePreset[]).map(
+          <div className="flex flex-wrap items-center gap-2">
+            {(['today', '24h', '7d', '30d', 'custom'] as DateRangePreset[]).map(
               (preset) => (
                 <Button
                   key={preset}
@@ -668,6 +699,7 @@ export function AuditLogReport() {
                   size="sm"
                   onClick={() => handleDateRangePresetChange(preset)}
                 >
+                  {preset === 'today' && 'Today'}
                   {preset === '24h' && 'Last 24 Hours'}
                   {preset === '7d' && 'Last 7 Days'}
                   {preset === '30d' && 'Last 30 Days'}
@@ -675,6 +707,36 @@ export function AuditLogReport() {
                 </Button>
               )
             )}
+
+            <div className="ml-auto flex items-center gap-3">
+              {/* System/Automated toggle */}
+              <Button
+                variant={hideSystemActions ? 'outline' : 'secondary'}
+                size="sm"
+                onClick={() => setHideSystemActions(!hideSystemActions)}
+                title={hideSystemActions ? 'Show system/automated actions' : 'Hide system/automated actions'}
+              >
+                <Bot className="mr-1.5 h-3.5 w-3.5" />
+                {hideSystemActions ? 'Show System' : 'Hide System'}
+              </Button>
+
+              {/* Clear Filters */}
+              {(categoryFilter !== 'all' || statusFilter !== 'all' || userFilter !== 'all' || searchQuery.trim()) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCategoryFilter('all')
+                    setStatusFilter('all')
+                    setUserFilter('all')
+                    setSearchQuery('')
+                  }}
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Custom Date Range */}
@@ -847,7 +909,9 @@ export function AuditLogReport() {
               <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
               <p className="text-lg font-medium">No audit log entries found</p>
               <p className="text-muted-foreground">
-                Try adjusting your filters
+                {hideSystemActions
+                  ? 'No user actions found. Try clicking "Show System" to include automated actions, or adjust your filters.'
+                  : 'Try adjusting your filters'}
               </p>
             </div>
           ) : (
@@ -871,15 +935,26 @@ export function AuditLogReport() {
                       <>
                         <TableRow key={log.id}>
                           <TableCell className="whitespace-nowrap">
-                            {format(
-                              new Date(log.created_at),
-                              'MMM dd, yyyy HH:mm:ss'
-                            )}
+                            <div>
+                              <div className="text-sm">
+                                {format(
+                                  new Date(log.created_at),
+                                  'MMM dd, yyyy HH:mm'
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">
+                              {log.user_id ? (
+                                <User className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Bot className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span className={cn('font-medium', !log.user_id && 'italic text-muted-foreground')}>
                                 {log.user_email || 'System'}
                               </span>
                             </div>
@@ -888,8 +963,8 @@ export function AuditLogReport() {
                             {getCategoryBadge(log.action_category)}
                           </TableCell>
                           <TableCell>
-                            <span className="font-mono text-sm">
-                              {log.action_type}
+                            <span className="text-sm">
+                              {humanizeAction(log.action_type)}
                             </span>
                           </TableCell>
                           <TableCell>

@@ -155,6 +155,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               onClick={async () => {
                 closeMobileMenu()
                 sessionStorage.setItem('manual_signout', '1')
+                // Audit log the logout before signing out
+                try {
+                  const { data: { user: signOutUser } } = await supabase.auth.getUser()
+                  if (signOutUser) {
+                    const { auditLogout } = await import('@/lib/audit-client')
+                    auditLogout(signOutUser.id, signOutUser.email || '')
+                    await new Promise((r) => setTimeout(r, 200))
+                  }
+                } catch { /* don't block logout */ }
                 await supabase.auth.signOut()
                 window.location.href = '/auth/login'
               }}

@@ -84,6 +84,14 @@ export default function DashboardShell({
     try {
       sessionStorage.setItem('manual_signout', '1')
       const supabase = createClient()
+      // Audit log the logout before signing out
+      const { data: { user: signOutUser } } = await supabase.auth.getUser()
+      if (signOutUser) {
+        const { auditLogout } = await import('@/lib/audit-client')
+        auditLogout(signOutUser.id, signOutUser.email || '')
+        // Small delay to allow the RPC to fire
+        await new Promise((r) => setTimeout(r, 200))
+      }
       await supabase.auth.signOut()
       window.location.href = '/auth/login'
     } catch (error) {
