@@ -224,8 +224,8 @@ export default function DashboardPage() {
 
       {/* Main Content - 2 Column Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Locations Card */}
-        <LocationsCard />
+        {/* Locations Card — key forces remount on org switch (Bug #232) */}
+        <LocationsCard key={currentOrganization.id} />
 
         {/* System Health Card */}
         <Card>

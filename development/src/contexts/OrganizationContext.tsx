@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -82,6 +83,9 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [stats, setStats] = useState<OrganizationStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingStats, setIsLoadingStats] = useState(false)
+
+  // Generation counter to discard stale stats responses after org switch (Bug #232)
+  const statsGenerationRef = useRef(0)
 
   // Fetch user's organizations
   const fetchUserOrganizations = useCallback(async () => {
@@ -212,6 +216,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       return
     }
 
+    // Bug #232 fix: bump generation so that in-flight responses from the
+    // previous org are discarded when they finally resolve.
+    const generation = ++statsGenerationRef.current
+
     try {
       setIsLoadingStats(true)
 
@@ -219,6 +227,12 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
       // Fetch dashboard stats using edge function client
       const response = await edgeFunctions.organizations.stats(currentOrgId)
+
+      // Bug #232: discard stale response if org switched while we were waiting
+      if (generation !== statsGenerationRef.current) {
+        console.log('📊 Discarding stale stats response (org switched)')
+        return
+      }
 
       console.log('📊 Stats response:', {
         success: response.success,
@@ -256,6 +270,9 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       console.log('📊 Final stats:', fetchedStats)
       setStats(fetchedStats)
     } catch (error) {
+      // Bug #232: don't set fallback stats if org already switched
+      if (generation !== statsGenerationRef.current) return
+
       console.error('Error fetching organization stats:', error)
       // Fall back to cached data from userOrganizations
       const currentOrg = userOrganizations.find(
@@ -278,7 +295,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         setStats(null)
       }
     } finally {
-      setIsLoadingStats(false)
+      // Bug #232: only clear loading state if this is still the active generation
+      if (generation === statsGenerationRef.current) {
+        setIsLoadingStats(false)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOrgId, user?.id]) // Include user?.id so stats re-fetch once the session is available after initial mount

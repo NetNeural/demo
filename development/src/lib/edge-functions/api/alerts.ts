@@ -39,19 +39,35 @@ export interface AlertsAPI {
     alertId: string,
     durationMinutes: number
   ) => Promise<EdgeFunctionResponse<{ message: string; snoozedUntil: string }>>
-  unsnooze: (alertId: string) => Promise<EdgeFunctionResponse<{ message: string }>>
+  unsnooze: (
+    alertId: string
+  ) => Promise<EdgeFunctionResponse<{ message: string }>>
   timeline: (
     alertId: string
   ) => Promise<EdgeFunctionResponse<{ events: AlertTimelineEvent[] }>>
   stats: (
     organizationId: string
-  ) => Promise<EdgeFunctionResponse<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>>
+  ) => Promise<
+    EdgeFunctionResponse<{
+      stats: AlertStats
+      topDevices: AlertDeviceRanking[]
+    }>
+  >
 }
 
 export interface AlertTimelineEvent {
   id: string
   alert_id: string
-  event_type: 'created' | 'notified' | 'viewed' | 'acknowledged' | 'resolved' | 'snoozed' | 'unsnoozed' | 'escalated' | 'comment'
+  event_type:
+    | 'created'
+    | 'notified'
+    | 'viewed'
+    | 'acknowledged'
+    | 'resolved'
+    | 'snoozed'
+    | 'unsnoozed'
+    | 'escalated'
+    | 'comment'
   user_id: string | null
   userName: string | null
   metadata: Record<string, unknown>
@@ -175,8 +191,11 @@ export function createAlertsAPI(
      * Get alert statistics for an organization
      */
     stats: (organizationId) =>
-      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>('alerts/stats', {
-        params: { organization_id: organizationId },
-      }),
+      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>(
+        'alerts/stats',
+        {
+          params: { organization_id: organizationId },
+        }
+      ),
   }
 }

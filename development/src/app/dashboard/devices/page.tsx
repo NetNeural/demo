@@ -33,8 +33,10 @@ export default function DevicesPage() {
       {/* Organization context: {currentOrganization.name} */}
       <DevicesHeader />
 
+      {/* Bug #232 fix: key forces full remount on org switch, preventing
+          stale device data from the previous org being displayed. */}
       <Suspense fallback={<LoadingSpinner />}>
-        <DevicesList />
+        <DevicesList key={currentOrganization.id} />
       </Suspense>
     </div>
   )

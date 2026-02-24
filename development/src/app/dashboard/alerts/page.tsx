@@ -33,8 +33,9 @@ export default function AlertsPage() {
       {/* Organization context: {currentOrganization.name} */}
       <AlertsHeader />
 
+      {/* Bug #232 fix: key forces full remount on org switch */}
       <Suspense fallback={<LoadingSpinner />}>
-        <AlertsList />
+        <AlertsList key={currentOrganization.id} />
       </Suspense>
     </div>
   )
