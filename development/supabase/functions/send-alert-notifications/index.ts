@@ -544,15 +544,17 @@ serve(async (req) => {
       ...((threshold?.notify_phone_numbers as string[]) || []),
     ].map(normalizePhoneNumber)
 
+    // Deduplicate first (before resolving phone numbers from user IDs)
+    const uniqueEmails = [...new Set(recipientEmails)]
+    const uniqueUserIds = [...new Set(recipientUserIds)]
+
+    // Resolve user IDs → phone numbers (must come after uniqueUserIds is declared)
     const recipientPhonesFromUsers = await resolveUserPhoneNumbers(
       supabaseUrl,
       serviceKey,
       uniqueUserIds
     )
 
-    // Deduplicate
-    const uniqueEmails = [...new Set(recipientEmails)]
-    const uniqueUserIds = [...new Set(recipientUserIds)]
     const uniquePhones = [...new Set([...recipientPhones, ...recipientPhonesFromUsers])]
 
     // 7. Dispatch to each channel
