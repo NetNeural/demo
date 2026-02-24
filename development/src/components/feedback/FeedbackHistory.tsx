@@ -68,6 +68,7 @@ const STATUS_COLORS: Record<string, string> = {
   submitted: 'bg-blue-500',
   acknowledged: 'bg-purple-500',
   in_progress: 'bg-yellow-500',
+  needs_info: 'bg-amber-500',
   resolved: 'bg-green-500',
   closed: 'bg-gray-500',
 }
@@ -76,6 +77,7 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted',
   acknowledged: 'Acknowledged',
   in_progress: 'In Progress',
+  needs_info: 'Needs Info',
   resolved: 'Resolved',
   closed: 'Closed',
 }
@@ -203,9 +205,33 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
 
       if (error) {
         console.error('Error updating feedback:', error)
-        toast.error(error.message || 'Could not delete feedback')
+        toast.error(error.message || 'Could not update feedback')
       } else {
         const updated = data as FeedbackItem
+
+        // Sync edit to GitHub issue via feedback-reply edge function
+        if (updated.github_issue_number) {
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const session = (await supabase.auth.getSession()).data.session
+            await fetch(`${supabaseUrl}/functions/v1/feedback-reply`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                feedbackId: updated.id,
+                action: 'edit',
+                title: editTitle.trim(),
+                description: editDescription.trim(),
+              }),
+            })
+          } catch (syncErr) {
+            console.warn('GitHub sync failed (edit saved locally):', syncErr)
+          }
+        }
+
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         )
@@ -545,6 +571,12 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
         open={!!selectedItem}
         onOpenChange={(open) => {
           if (!open) setSelectedItem(null)
+        }}
+        onUpdate={(updatedItem) => {
+          setItems((prev) =>
+            prev.map((i) => (i.id === updatedItem.id ? updatedItem : i))
+          )
+          setSelectedItem(updatedItem)
         }}
       />
 

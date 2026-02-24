@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Bug,
   Lightbulb,
@@ -22,10 +23,14 @@ import {
   User,
   AlertCircle,
   GitPullRequestClosed,
+  Send,
+  HelpCircle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
 import { getSupabaseUrl } from '@/lib/supabase/config'
+import { toast } from 'sonner'
 
 interface FeedbackItem {
   id: string
@@ -65,6 +70,7 @@ const STATUS_COLORS: Record<string, string> = {
   submitted: 'bg-blue-500',
   acknowledged: 'bg-purple-500',
   in_progress: 'bg-yellow-500',
+  needs_info: 'bg-amber-500',
   resolved: 'bg-green-500',
   closed: 'bg-gray-500',
 }
@@ -73,6 +79,7 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted',
   acknowledged: 'Acknowledged',
   in_progress: 'In Progress',
+  needs_info: 'Needs Info',
   resolved: 'Resolved',
   closed: 'Closed',
 }
@@ -88,68 +95,138 @@ interface FeedbackDetailDialogProps {
   item: FeedbackItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onUpdate?: (updatedItem: FeedbackItem) => void
 }
 
 export function FeedbackDetailDialog({
   item,
   open,
   onOpenChange,
+  onUpdate,
 }: FeedbackDetailDialogProps) {
   const { fmt } = useDateFormatter()
-  const { currentOrganization } = useOrganization()
+  const { currentOrganization, isAdmin, isOwner } = useOrganization()
+  const { user } = useUser()
   const supabase = createClient()
   const [issueDetail, setIssueDetail] = useState<GitHubIssueDetail | null>(null)
   const [loadingComments, setLoadingComments] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [sendingReply, setSendingReply] = useState(false)
+  const [requestingInfo, setRequestingInfo] = useState(false)
+
+  const isSubmitter = item?.user_id === user?.id
+  const isAdminOrAbove = isAdmin || isOwner
+
+  const handlePostComment = async (
+    action: 'comment' | 'request-info' = 'comment'
+  ) => {
+    if (!replyText.trim() || !item || !currentOrganization) return
+
+    const setter = action === 'request-info' ? setRequestingInfo : setSendingReply
+    setter(true)
+
+    try {
+      const supabaseUrl = getSupabaseUrl()
+      const session = (await supabase.auth.getSession()).data.session
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/feedback-reply`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            feedbackId: item.id,
+            organizationId: currentOrganization.id,
+            action,
+            comment: replyText.trim(),
+          }),
+        }
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        toast.error(result.error?.message || 'Failed to post comment')
+        return
+      }
+
+      toast.success(
+        action === 'request-info'
+          ? 'Information request sent to submitter'
+          : 'Reply posted successfully'
+      )
+      setReplyText('')
+
+      // If request-info, update the item's status locally
+      if (action === 'request-info' && onUpdate && item) {
+        onUpdate({ ...item, status: 'needs_info' })
+      }
+
+      // Refresh comments
+      await fetchIssueComments()
+    } catch {
+      toast.error('Failed to send reply')
+    } finally {
+      setter(false)
+    }
+  }
+
+  const fetchIssueComments = async () => {
+    if (!item || !item.github_issue_number || !currentOrganization) return
+
+    setLoadingComments(true)
+    setError(null)
+    try {
+      const supabaseUrl = getSupabaseUrl()
+      const session = (await supabase.auth.getSession()).data.session
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/feedback-comments`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            feedbackId: item.id,
+            organizationId: currentOrganization.id,
+          }),
+        }
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error?.message || 'Failed to load issue details')
+        return
+      }
+
+      if (result.data?.issue) {
+        setIssueDetail(result.data.issue)
+      }
+    } catch {
+      setError('Failed to connect to GitHub')
+    } finally {
+      setLoadingComments(false)
+    }
+  }
 
   useEffect(() => {
     if (!open || !item || !item.github_issue_number || !currentOrganization) {
       setIssueDetail(null)
       setError(null)
+      setReplyText('')
       return
     }
 
-    const fetchComments = async () => {
-      setLoadingComments(true)
-      setError(null)
-      try {
-        const supabaseUrl = getSupabaseUrl()
-        const session = (await supabase.auth.getSession()).data.session
-
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/feedback-comments`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({
-              feedbackId: item.id,
-              organizationId: currentOrganization.id,
-            }),
-          }
-        )
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          setError(result.error?.message || 'Failed to load issue details')
-          return
-        }
-
-        if (result.data?.issue) {
-          setIssueDetail(result.data.issue)
-        }
-      } catch {
-        setError('Failed to connect to GitHub')
-      } finally {
-        setLoadingComments(false)
-      }
-    }
-
-    fetchComments()
-  }, [open, item, currentOrganization, supabase])
+    fetchIssueComments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item?.id, currentOrganization?.id])
 
   if (!item) return null
 
@@ -357,6 +434,89 @@ export function FeedbackDetailDialog({
                 Communication tracking is available for items with linked GitHub
                 issues.
               </p>
+            </div>
+          )}
+          {/* Needs Info Banner */}
+          {item.status === 'needs_info' && isSubmitter && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+              <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+                <HelpCircle className="h-4 w-4" />
+                Additional information requested
+              </div>
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                An admin has requested more details. Please reply below with the
+                requested information.
+              </p>
+            </div>
+          )}
+
+          {/* Reply / Comment Section */}
+          {item.github_issue_number && !isResolved && (
+            <div className="space-y-2">
+              <Separator />
+              <div className="flex items-center gap-2">
+                <Send className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">
+                  {isSubmitter
+                    ? 'Add More Information'
+                    : 'Reply to Submitter'}
+                </h3>
+              </div>
+              <Textarea
+                placeholder={
+                  isSubmitter
+                    ? 'Add additional details or context...'
+                    : 'Reply to the submitter...'
+                }
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                rows={3}
+                className="resize-none text-sm"
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handlePostComment('comment')}
+                  disabled={
+                    sendingReply || requestingInfo || !replyText.trim()
+                  }
+                >
+                  {sendingReply ? (
+                    <>
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-1.5 h-3.5 w-3.5" />
+                      {isSubmitter ? 'Add Info' : 'Reply'}
+                    </>
+                  )}
+                </Button>
+                {isAdminOrAbove && !isSubmitter && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handlePostComment('request-info')}
+                    disabled={
+                      sendingReply || requestingInfo || !replyText.trim()
+                    }
+                    title="Send reply and mark ticket as needing more info from submitter"
+                  >
+                    {requestingInfo ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Request Info
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
