@@ -625,41 +625,78 @@ export default createEdgeFunction(
             })
             .join('')
 
-          // Check if user already exists — use null-safe access
-          // (listUsers can return data: null on error)
-          const { data: existingAuthUser, error: listUsersError } =
-            await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+          // === Create-first approach ===
+          // Instead of listing all auth users (breaks at >1000 users),
+          // try to create the user first and handle "already exists" gracefully.
+          let isNewAuthUser = false
+          let authUserId: string | null = null
 
-          if (listUsersError) {
-            console.error('Failed to list auth users:', listUsersError)
-            throw new DatabaseError(
-              `Failed to check existing users: ${listUsersError.message}`
+          const { data: newAuthUser, error: createAuthError } =
+            await supabaseAdmin.auth.admin.createUser({
+              email: ownerEmail,
+              password: temporaryPassword,
+              email_confirm: true,
+              user_metadata: {
+                full_name: ownerFullName,
+              },
+            })
+
+          if (!createAuthError && newAuthUser?.user) {
+            // Brand-new user created successfully
+            isNewAuthUser = true
+            authUserId = newAuthUser.user.id
+            console.log('Created new auth user:', authUserId)
+          } else {
+            // createUser failed — most likely "User already registered"
+            console.log(
+              'createUser returned error (expected if user exists):',
+              createAuthError?.message
             )
-          }
 
-          const authUser = existingAuthUser?.users?.find(
-            (u: { email?: string }) => u.email === ownerEmail
-          ) || null
-
-          if (authUser) {
-            // User exists in auth - check if they exist in our users table
-            const { data: existingUser } = await supabaseAdmin
-              .from('users')
-              .select('id')
-              .eq('email', ownerEmail)
-              .maybeSingle()
-
-            if (existingUser) {
-              ownerUserId = existingUser.id
-              console.log(
-                'User already exists, updating organization:',
-                ownerUserId
+            // Look up existing user via Admin REST API with email filter
+            // (avoids the listUsers pagination limit)
+            try {
+              const searchResp = await fetch(
+                `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=50&filter=${encodeURIComponent(ownerEmail)}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${supabaseServiceKey}`,
+                    apikey: supabaseServiceKey,
+                  },
+                }
               )
 
-              // Reset password in auth system to match temporary password email
-              if (temporaryPassword) {
+              if (searchResp.ok) {
+                const searchData = await searchResp.json()
+                const found = (searchData.users || []).find(
+                  (u: { email?: string }) => u.email === ownerEmail
+                )
+                if (found) {
+                  authUserId = found.id
+                  console.log('Found existing auth user via REST:', authUserId)
+                }
+              } else {
+                console.error(
+                  'Auth user search failed:',
+                  searchResp.status,
+                  await searchResp.text()
+                )
+              }
+            } catch (searchErr) {
+              console.error('Failed to search for auth user:', searchErr)
+            }
+
+            if (!authUserId) {
+              throw new DatabaseError(
+                `Failed to create owner account: ${createAuthError?.message || 'Unknown error'}`
+              )
+            }
+
+            // Reset password for existing user so the welcome email credentials work
+            if (temporaryPassword) {
+              try {
                 const resetResponse = await fetch(
-                  `${supabaseUrl}/auth/v1/admin/users/${authUser.id}`,
+                  `${supabaseUrl}/auth/v1/admin/users/${authUserId}`,
                   {
                     method: 'PUT',
                     headers: {
@@ -679,87 +716,24 @@ export default createEdgeFunction(
 
                 if (!resetResponse.ok) {
                   const resetError = await resetResponse.text()
-                  console.error('Failed to reset existing auth user password:', resetError)
-                  throw new DatabaseError(
-                    'Failed to set temporary password for existing user'
-                  )
+                  console.error('Failed to reset auth user password:', resetError)
+                  // Non-fatal — user can still log in with their old password
                 }
-              }
-
-              // Update user's organization to the new org
-              const { error: updateError } = await supabaseAdmin
-                .from('users')
-                .update({
-                  // @ts-expect-error - id exists
-                  organization_id: newOrg.id,
-                  full_name: ownerFullName,
-                  password_change_required: true,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', existingUser.id)
-
-              if (updateError) {
-                console.error(
-                  'Failed to update user organization:',
-                  updateError
-                )
-                throw new DatabaseError(
-                  `Failed to update user organization: ${updateError.message}`
-                )
-              }
-
-              console.log('Updated user organization successfully')
-            } else {
-              // Auth user exists but not in our table — upsert in case
-              // the auto-create trigger already inserted a partial row
-              ownerUserId = authUser.id
-              const { error: userInsertError } = await supabaseAdmin
-                .from('users')
-                .upsert({
-                  id: authUser.id,
-                  email: ownerEmail,
-                  full_name: ownerFullName,
-                  role: 'user',
-                  // @ts-expect-error - id exists
-                  organization_id: newOrg.id,
-                  password_change_required: true,
-                  updated_at: new Date().toISOString(),
-                }, { onConflict: 'id' })
-
-              if (userInsertError) {
-                console.error('Failed to upsert user record:', userInsertError)
-                throw new DatabaseError(
-                  `Failed to create user record: ${userInsertError.message}`
-                )
+              } catch (resetErr) {
+                console.error('Password reset fetch failed:', resetErr)
               }
             }
-          } else {
-            // Create new auth user
-            const { data: newAuthUser, error: authError } =
-              await supabaseAdmin.auth.admin.createUser({
-                email: ownerEmail,
-                password: temporaryPassword,
-                email_confirm: true,
-                user_metadata: {
-                  full_name: ownerFullName,
-                },
-              })
+          }
 
-            if (authError || !newAuthUser.user) {
-              console.error('Failed to create auth user:', authError)
-              throw new DatabaseError(
-                `Failed to create owner account: ${authError?.message || 'Unknown error'}`
-              )
-            }
+          ownerUserId = authUserId!
 
-            ownerUserId = newAuthUser.user.id
-            console.log('Created auth user:', ownerUserId)
-
-            // Upsert user record — the on_auth_user_created trigger may have
-            // already inserted a row, so we upsert to set organization_id etc.
-            const { error: userInsertError } = await supabaseAdmin
-              .from('users')
-              .upsert({
+          // Upsert user in public.users — the on_auth_user_created trigger
+          // may have already inserted a skeleton row, so we always upsert to
+          // set organization_id, full_name, etc.
+          const { error: userUpsertError } = await supabaseAdmin
+            .from('users')
+            .upsert(
+              {
                 id: ownerUserId,
                 email: ownerEmail,
                 full_name: ownerFullName,
@@ -768,17 +742,22 @@ export default createEdgeFunction(
                 organization_id: newOrg.id,
                 password_change_required: true,
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'id' })
+              },
+              { onConflict: 'id' }
+            )
 
-            if (userInsertError) {
-              console.error('Failed to upsert user record:', userInsertError)
-              throw new DatabaseError(
-                `Failed to create user record: ${userInsertError.message}`
-              )
-            }
-
-            console.log('Created user record in database')
+          if (userUpsertError) {
+            console.error('Failed to upsert user record:', userUpsertError)
+            throw new DatabaseError(
+              `Failed to create user record: ${userUpsertError.message}`
+            )
           }
+
+          console.log(
+            isNewAuthUser
+              ? 'Created new user record in database'
+              : 'Updated existing user record in database'
+          )
         }
 
         // Add the owner to the organization - use admin client
@@ -790,13 +769,16 @@ export default createEdgeFunction(
         // @ts-expect-error - Properties exist
         const { error: memberError } = await supabaseAdmin
           .from('organization_members')
-          .insert({
-            // @ts-expect-error - id exists
-            organization_id: newOrg.id,
-            user_id: ownerUserId,
-            role: 'owner',
-            joined_at: new Date().toISOString(),
-          })
+          .upsert(
+            {
+              // @ts-expect-error - id exists
+              organization_id: newOrg.id,
+              user_id: ownerUserId,
+              role: 'owner',
+              joined_at: new Date().toISOString(),
+            },
+            { onConflict: 'organization_id,user_id' }
+          )
 
         if (memberError) {
           console.error('Failed to add owner to organization:', memberError)
