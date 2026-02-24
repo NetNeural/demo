@@ -43,7 +43,7 @@ export function AlertsFilters({
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             id="alert-search"
-            placeholder="Search alerts, devices..."
+            placeholder="Search alert numbers, types, devices..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8"

@@ -208,13 +208,24 @@ serve(async (req) => {
           // Check for existing unresolved alert for this device + threshold
           const { data: existingAlerts } = await supabaseClient
             .from('alerts')
-            .select('id, created_at')
+            .select('id, created_at, snoozed_until')
             .eq('device_id', threshold.device_id)
             .eq('is_resolved', false)
             .contains('metadata', { threshold_id: threshold.id })
             .limit(1)
 
           if (existingAlerts && existingAlerts.length > 0) {
+            // Check if the existing alert is snoozed
+            const existingAlert = existingAlerts[0] as any
+            if (existingAlert.snoozed_until && new Date(existingAlert.snoozed_until) > new Date()) {
+              console.log(
+                `[sensor-threshold-evaluator] Skipping — alert ${existingAlert.id} is snoozed until ${existingAlert.snoozed_until}`
+              )
+              results.skipped++
+              results.evaluated++
+              continue
+            }
+
             console.log(
               `[sensor-threshold-evaluator] Skipping — unresolved alert ${existingAlerts[0].id} already exists for device ${device.name} / threshold ${threshold.id}`
             )

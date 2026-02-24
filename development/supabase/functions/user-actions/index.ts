@@ -3,6 +3,95 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getUserContext, createAuthenticatedClient, createServiceClient } from '../_shared/auth.ts'
 
+// ─── Resolution Notification Helper ─────────────────────────────────
+async function sendResolutionNotification(
+  supabase: SupabaseClient,
+  alertId: string,
+  resolvedByUserId: string,
+  acknowledgementType: string,
+  notes?: string | null
+) {
+  try {
+    const { data: alert } = await supabase
+      .from('alerts')
+      .select('*, devices!device_id(name, device_type, organization_id)')
+      .eq('id', alertId)
+      .single()
+
+    if (!alert) return
+
+    const { data: resolver } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', resolvedByUserId)
+      .single()
+    const resolverName = resolver?.full_name || resolver?.email || resolvedByUserId
+    const resolvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+
+    const thresholdId = alert.metadata?.threshold_id
+    let recipientUserIds: string[] = []
+    let recipientEmails: string[] = []
+    let channels: string[] = ['email']
+
+    if (thresholdId) {
+      const { data: threshold } = await supabase
+        .from('sensor_thresholds')
+        .select('notify_user_ids, notify_emails, notification_channels')
+        .eq('id', thresholdId)
+        .single()
+      if (threshold) {
+        recipientUserIds = threshold.notify_user_ids || []
+        recipientEmails = threshold.notify_emails || []
+        channels = threshold.notification_channels || ['email']
+      }
+    }
+
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) {
+      const orgId = alert.organization_id || alert.devices?.organization_id
+      if (orgId) {
+        const { data: members } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', orgId)
+          .in('role', ['owner', 'admin'])
+        recipientUserIds = members?.map((m: { user_id: string }) => m.user_id) || []
+      }
+    }
+
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) return
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const originalTitle = alert.title
+    const originalMessage = alert.message
+
+    await supabase.from('alerts').update({
+      title: `✅ RESOLVED: ${alertNum} — ${originalTitle}`,
+      message: `Resolved by ${resolverName} at ${resolvedAt}\nType: ${acknowledgementType}${notes ? `\nNotes: ${notes}` : ''}\n\nOriginal alert: ${originalMessage}`,
+      severity: 'low',
+    }).eq('id', alertId)
+
+    await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({
+        alert_id: alertId,
+        threshold_id: thresholdId || undefined,
+        channels, recipient_user_ids: recipientUserIds, recipient_emails: recipientEmails,
+      }),
+    })
+
+    await supabase.from('alerts').update({
+      title: originalTitle, message: originalMessage, severity: alert.severity,
+    }).eq('id', alertId)
+
+    console.log(`[user-actions] Resolution notification sent for ${alertNum}`)
+  } catch (err) {
+    console.warn('[user-actions] Resolution notification failed (non-fatal):', err)
+  }
+}
+
 interface AcknowledgeAlertRequest {
   alert_id: string
   acknowledgement_type?:
@@ -116,6 +205,12 @@ async function handleAcknowledgeAlert(
         resolved_at: new Date().toISOString(),
       })
       .eq('id', body.alert_id)
+
+    // Send resolution notification to original recipients (fire-and-forget)
+    sendResolutionNotification(
+      serviceClient, body.alert_id, userId,
+      body.acknowledgement_type || 'acknowledged', body.notes
+    ).catch(() => {})
   } catch (resolveErr) {
     console.warn('[Acknowledge Alert] Fallback resolve failed:', resolveErr)
     // Non-fatal: the RPC function should have handled this

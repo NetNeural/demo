@@ -15,6 +15,7 @@ import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 export interface Alert {
   id: string
+  alertNumber?: number
   title: string
   description: string
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -95,6 +96,7 @@ export function AlertsTable({
                 }
               />
             </TableHead>
+            <TableHead className="w-20">#</TableHead>
             <TableHead className="w-24">Severity</TableHead>
             <TableHead className="w-20">Type</TableHead>
             <TableHead>Alert</TableHead>
@@ -107,7 +109,7 @@ export function AlertsTable({
           {alerts.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={8}
                 className="py-8 text-center text-muted-foreground"
               >
                 No alerts found
@@ -127,6 +129,9 @@ export function AlertsTable({
                     onCheckedChange={() => onToggleSelect(alert.id)}
                     aria-label={`Select alert ${alert.id}`}
                   />
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {alert.alertNumber ? `ALT-${alert.alertNumber}` : '—'}
                 </TableCell>
                 <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
                 <TableCell className="text-2xl">

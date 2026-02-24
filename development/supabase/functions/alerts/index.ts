@@ -10,6 +10,119 @@ import {
   createServiceClient,
 } from '../_shared/auth.ts'
 
+// ─── Resolution Notification Helper ───────────────────────────────────
+async function sendResolutionNotification(
+  supabase: ReturnType<typeof createServiceClient>,
+  alertId: string,
+  resolvedByUserId: string,
+  acknowledgementType: string,
+  notes?: string | null
+) {
+  try {
+    // Fetch the full alert with device info + threshold metadata
+    const { data: alert } = await supabase
+      .from('alerts')
+      .select('*, devices!device_id(name, device_type, organization_id)')
+      .eq('id', alertId)
+      .single()
+
+    if (!alert) return
+
+    // Look up who resolved it
+    const { data: resolver } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', resolvedByUserId)
+      .single()
+    const resolverName = resolver?.full_name || resolver?.email || resolvedByUserId
+    const resolvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+
+    // Find threshold to get original notification recipients
+    const thresholdId = alert.metadata?.threshold_id
+    let recipientUserIds: string[] = []
+    let recipientEmails: string[] = []
+    let channels: string[] = ['email']
+
+    if (thresholdId) {
+      const { data: threshold } = await supabase
+        .from('sensor_thresholds')
+        .select('notify_user_ids, notify_emails, notification_channels')
+        .eq('id', thresholdId)
+        .single()
+
+      if (threshold) {
+        recipientUserIds = threshold.notify_user_ids || []
+        recipientEmails = threshold.notify_emails || []
+        channels = threshold.notification_channels || ['email']
+      }
+    }
+
+    // If no threshold recipients, notify all org admins/owners
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) {
+      const orgId = alert.organization_id || alert.devices?.organization_id
+      if (orgId) {
+        const { data: members } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', orgId)
+          .in('role', ['owner', 'admin'])
+        recipientUserIds = members?.map((m: { user_id: string }) => m.user_id) || []
+      }
+    }
+
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) return
+
+    // Send resolution notification via send-alert-notifications
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    // Build a resolution message and temporarily update alert for the notification
+    const originalTitle = alert.title
+    const originalMessage = alert.message
+
+    // Temporarily update alert fields for the notification template
+    await supabase
+      .from('alerts')
+      .update({
+        title: `✅ RESOLVED: ${alertNum} — ${originalTitle}`,
+        message: `Resolved by ${resolverName} at ${resolvedAt}\nType: ${acknowledgementType}${notes ? `\nNotes: ${notes}` : ''}\n\nOriginal alert: ${originalMessage}`,
+        severity: 'low', // Green/low severity for resolution
+      })
+      .eq('id', alertId)
+
+    // Fire resolution notification
+    await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        alert_id: alertId,
+        threshold_id: thresholdId || undefined,
+        channels: channels,
+        recipient_user_ids: recipientUserIds,
+        recipient_emails: recipientEmails,
+      }),
+    })
+
+    // Restore original alert fields
+    await supabase
+      .from('alerts')
+      .update({
+        title: originalTitle,
+        message: originalMessage,
+        severity: alert.severity,
+      })
+      .eq('id', alertId)
+
+    console.log(`[alerts] Resolution notification sent for alert ${alertId} (${alertNum})`)
+  } catch (err) {
+    console.warn('[alerts] Resolution notification failed (non-fatal):', err)
+  }
+}
+
 export default createEdgeFunction(
   async ({ req }) => {
     // Get authenticated user context
@@ -78,6 +191,7 @@ export default createEdgeFunction(
       const transformedAlerts =
         alerts?.map((alert: any) => ({
           id: alert.id,
+          alertNumber: alert.alert_number,
           title: alert.title,
           message: alert.message,
           severity: alert.severity,
@@ -90,6 +204,9 @@ export default createEdgeFunction(
           isResolved: alert.is_resolved,
           resolvedAt: alert.resolved_at,
           resolvedBy: alert.resolved_by,
+          snoozedUntil: alert.snoozed_until,
+          snoozedBy: alert.snoozed_by,
+          isSnoozed: alert.snoozed_until ? new Date(alert.snoozed_until) > new Date() : false,
           metadata: alert.metadata,
         })) || []
 
@@ -241,6 +358,167 @@ export default createEdgeFunction(
       })
     }
 
+    // ─── GET /alerts/timeline/{alertId} ────────────────────────────────
+    if (req.method === 'GET' && req.url.includes('/timeline/')) {
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const alertId = pathParts[pathParts.length - 1]
+
+      if (!alertId) throw new Error('Alert ID is required')
+
+      // Verify access
+      const { data: alert } = await supabase
+        .from('alerts')
+        .select('organization_id')
+        .eq('id', alertId)
+        .single()
+
+      if (!alert) throw new DatabaseError('Alert not found', 404)
+
+      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
+        throw new DatabaseError('Access denied', 403)
+      }
+
+      // Fetch timeline events
+      const { data: events, error: eventsError } = await supabase
+        .from('alert_events')
+        .select('*')
+        .eq('alert_id', alertId)
+        .order('created_at', { ascending: true })
+
+      if (eventsError) throw new DatabaseError(`Failed to fetch timeline: ${eventsError.message}`)
+
+      // Resolve user names for events that have user_ids
+      const userIds = [...new Set((events || []).filter((e: any) => e.user_id).map((e: any) => e.user_id))]
+      let userMap: Record<string, string> = {}
+
+      if (userIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .in('id', userIds)
+
+        userMap = (users || []).reduce((acc: Record<string, string>, u: any) => {
+          acc[u.id] = u.full_name || u.email || u.id
+          return acc
+        }, {})
+      }
+
+      // Record 'viewed' event
+      await supabase.from('alert_events').insert({
+        alert_id: alertId,
+        event_type: 'viewed',
+        user_id: userContext.userId,
+      })
+
+      const enrichedEvents = (events || []).map((e: any) => ({
+        ...e,
+        userName: e.user_id ? userMap[e.user_id] || e.user_id : null,
+      }))
+
+      return createSuccessResponse({ events: enrichedEvents })
+    }
+
+    // ─── GET /alerts/stats ─────────────────────────────────────────────
+    if (req.method === 'GET' && req.url.includes('/stats')) {
+      const url = new URL(req.url)
+      const requestedOrgId = url.searchParams.get('organization_id')
+      const organizationId = await resolveOrganizationId(userContext, requestedOrgId)
+
+      if (!organizationId && !userContext.isSuperAdmin) {
+        throw new DatabaseError('Organization required', 403)
+      }
+
+      // Get stats from the view
+      const { data: stats } = await supabase
+        .from('alert_statistics')
+        .select('*')
+        .eq('organization_id', organizationId!)
+        .single()
+
+      // Get top alerting devices
+      const { data: topDevices } = await supabase
+        .from('alert_device_rankings')
+        .select('*')
+        .eq('organization_id', organizationId!)
+        .order('alert_count', { ascending: false })
+        .limit(5)
+
+      return createSuccessResponse({
+        stats: stats || {},
+        topDevices: topDevices || [],
+      })
+    }
+
+    // ─── POST /alerts/snooze ──────────────────────────────────────────
+    if (req.method === 'POST' && req.url.includes('/snooze')) {
+      const body = await req.json()
+      const { alert_id, duration_minutes } = body
+
+      if (!alert_id || !duration_minutes) {
+        throw new Error('alert_id and duration_minutes are required')
+      }
+
+      // Verify access
+      const { data: alert } = await supabase
+        .from('alerts')
+        .select('organization_id, title, alert_number')
+        .eq('id', alert_id)
+        .single()
+
+      if (!alert) throw new DatabaseError('Alert not found', 404)
+      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
+        throw new DatabaseError('Access denied', 403)
+      }
+
+      const snoozedUntil = new Date(Date.now() + duration_minutes * 60 * 1000).toISOString()
+
+      const { error: snoozeError } = await supabase
+        .from('alerts')
+        .update({
+          snoozed_until: snoozedUntil,
+          snoozed_by: userContext.userId,
+        })
+        .eq('id', alert_id)
+
+      if (snoozeError) throw new DatabaseError(`Failed to snooze: ${snoozeError.message}`)
+
+      const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert_id.slice(0, 8)
+
+      return createSuccessResponse({
+        message: `${alertNum} snoozed for ${duration_minutes} minutes`,
+        snoozedUntil,
+      })
+    }
+
+    // ─── POST /alerts/unsnooze ────────────────────────────────────────
+    if (req.method === 'POST' && req.url.includes('/unsnooze')) {
+      const body = await req.json()
+      const { alert_id } = body
+
+      if (!alert_id) throw new Error('alert_id is required')
+
+      const { data: alert } = await supabase
+        .from('alerts')
+        .select('organization_id')
+        .eq('id', alert_id)
+        .single()
+
+      if (!alert) throw new DatabaseError('Alert not found', 404)
+      if (!userContext.isSuperAdmin && alert.organization_id !== userContext.organizationId) {
+        throw new DatabaseError('Access denied', 403)
+      }
+
+      const { error } = await supabase
+        .from('alerts')
+        .update({ snoozed_until: null, snoozed_by: userContext.userId })
+        .eq('id', alert_id)
+
+      if (error) throw new DatabaseError(`Failed to unsnooze: ${error.message}`)
+
+      return createSuccessResponse({ message: 'Alert unsnoozed' })
+    }
+
     if (req.method === 'PATCH' || req.method === 'PUT') {
       // Handle alert acknowledgement/update
       const url = new URL(req.url)
@@ -313,6 +591,12 @@ export default createEdgeFunction(
           console.error('Failed to resolve acknowledged alert:', resolveError)
           // Non-fatal: acknowledgement was recorded
         }
+
+        // Send resolution notification to original recipients
+        sendResolutionNotification(
+          supabase, alertId, userContext.userId,
+          acknowledgementType, notes
+        ).catch(() => {}) // Fire-and-forget
 
         return createSuccessResponse({
           acknowledgement,

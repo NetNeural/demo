@@ -35,6 +35,50 @@ export interface AlertsAPI {
     notes?: string
   ) => Promise<EdgeFunctionResponse<{ acknowledged_count: number }>>
   resolve: (alertId: string) => Promise<EdgeFunctionResponse<unknown>>
+  snooze: (
+    alertId: string,
+    durationMinutes: number
+  ) => Promise<EdgeFunctionResponse<{ message: string; snoozedUntil: string }>>
+  unsnooze: (alertId: string) => Promise<EdgeFunctionResponse<{ message: string }>>
+  timeline: (
+    alertId: string
+  ) => Promise<EdgeFunctionResponse<{ events: AlertTimelineEvent[] }>>
+  stats: (
+    organizationId: string
+  ) => Promise<EdgeFunctionResponse<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>>
+}
+
+export interface AlertTimelineEvent {
+  id: string
+  alert_id: string
+  event_type: 'created' | 'notified' | 'viewed' | 'acknowledged' | 'resolved' | 'snoozed' | 'unsnoozed' | 'escalated' | 'comment'
+  user_id: string | null
+  userName: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface AlertStats {
+  organization_id: string
+  total_alerts: number
+  active_alerts: number
+  resolved_alerts: number
+  active_critical: number
+  active_high: number
+  snoozed_alerts: number
+  mttr_minutes: number | null
+  fastest_resolution_minutes: number | null
+  alerts_last_24h: number
+  alerts_last_7d: number
+}
+
+export interface AlertDeviceRanking {
+  device_id: string
+  device_name: string
+  alert_count: number
+  active_count: number
+  critical_count: number
+  last_alert_at: string
 }
 
 export function createAlertsAPI(
@@ -101,6 +145,38 @@ export function createAlertsAPI(
     resolve: (alertId) =>
       call(`alerts/${alertId}/resolve`, {
         method: 'PATCH',
+      }),
+
+    /**
+     * Snooze an alert for a specified duration
+     */
+    snooze: (alertId, durationMinutes) =>
+      call<{ message: string; snoozedUntil: string }>('alerts/snooze', {
+        method: 'POST',
+        body: { alert_id: alertId, duration_minutes: durationMinutes },
+      }),
+
+    /**
+     * Remove snooze from an alert
+     */
+    unsnooze: (alertId) =>
+      call<{ message: string }>('alerts/unsnooze', {
+        method: 'POST',
+        body: { alert_id: alertId },
+      }),
+
+    /**
+     * Get timeline events for an alert
+     */
+    timeline: (alertId) =>
+      call<{ events: AlertTimelineEvent[] }>(`alerts/timeline/${alertId}`),
+
+    /**
+     * Get alert statistics for an organization
+     */
+    stats: (organizationId) =>
+      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>('alerts/stats', {
+        params: { organization_id: organizationId },
       }),
   }
 }

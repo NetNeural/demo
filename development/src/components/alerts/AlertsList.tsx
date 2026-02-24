@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert as AlertUI, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -15,7 +15,7 @@ import { AlertsSummaryBar } from './AlertsSummaryBar'
 import { AlertsFilters } from './AlertsFilters'
 import { AlertsBulkActions } from './AlertsBulkActions'
 import { AlertsTable, type Alert } from './AlertsTable'
-import { Table2, Grid3x3 } from 'lucide-react'
+import { Table2, Grid3x3, Download, Bell, BellOff } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,6 +38,7 @@ import {
   AcknowledgeAlertDialog,
   type AcknowledgementType,
 } from './AcknowledgeAlertDialog'
+import type { AlertTimelineEvent } from '@/lib/edge-functions/api/alerts'
 
 interface AlertMetadata {
   sensor_type?: string
@@ -56,6 +57,7 @@ interface AlertMetadata {
 
 interface AlertItem {
   id: string
+  alertNumber?: number
   title: string
   description: string
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -66,6 +68,8 @@ interface AlertItem {
   acknowledged: boolean
   acknowledgedBy?: string
   acknowledgedAt?: Date
+  snoozedUntil?: string | null
+  isSnoozed?: boolean
   category:
     | 'temperature'
     | 'connectivity'
@@ -116,6 +120,20 @@ export function AlertsList() {
     new Set(['connectivity'])
   )
 
+  // Snooze state
+  const [showSnoozeDialog, setShowSnoozeDialog] = useState(false)
+  const [snoozeAlertId, setSnoozeAlertId] = useState<string | null>(null)
+  const [snoozeDuration, setSnoozeDuration] = useState(30)
+  const [snoozing, setSnoozing] = useState(false)
+
+  // Timeline state
+  const [timelineEvents, setTimelineEvents] = useState<AlertTimelineEvent[]>([])
+  const [timelineLoading, setTimelineLoading] = useState(false)
+
+  // Browser notifications state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const prevAlertCountRef = useRef<number>(0)
+
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
       setAlerts([])
@@ -156,6 +174,7 @@ export function AlertsList() {
       const transformedAlerts = ((data as any).alerts || []).map(
         (alert: any) => ({
           id: alert.id,
+          alertNumber: alert.alertNumber || alert.alert_number,
           title: alert.title || alert.message || 'Alert',
           description: alert.description || alert.message || '',
           severity: alert.severity || 'medium',
@@ -170,6 +189,8 @@ export function AlertsList() {
           acknowledgedAt: alert.resolved_at
             ? new Date(alert.resolved_at)
             : undefined,
+          snoozedUntil: alert.snoozedUntil || alert.snoozed_until || null,
+          isSnoozed: alert.isSnoozed || false,
           category: alert.category || 'system',
           metadata: alert.metadata || {},
         })
@@ -188,6 +209,13 @@ export function AlertsList() {
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
+
+  // Load timeline when detail dialog opens
+  useEffect(() => {
+    if (showDetails && selectedAlert) {
+      loadTimeline(selectedAlert.id)
+    }
+  }, [showDetails, selectedAlert])
 
   // Deep-link: auto-open alert detail when ?alertId= is in URL
   useEffect(() => {
@@ -234,7 +262,11 @@ export function AlertsList() {
         (a) =>
           a.title.toLowerCase().includes(term) ||
           a.description.toLowerCase().includes(term) ||
-          a.device.toLowerCase().includes(term)
+          a.device.toLowerCase().includes(term) ||
+          a.category.toLowerCase().includes(term) ||
+          a.severity.toLowerCase().includes(term) ||
+          (a.alertNumber && `ALT-${a.alertNumber}`.toLowerCase().includes(term)) ||
+          (a.alertNumber && String(a.alertNumber).includes(term))
       )
     }
 
@@ -395,6 +427,143 @@ export function AlertsList() {
     setSeverityFilter('all')
     setCategoryFilter('all')
   }
+
+  // ─── Snooze Handlers ───────────────────────────────────────────────
+  const openSnoozeDialog = (alertId: string) => {
+    setSnoozeAlertId(alertId)
+    setSnoozeDuration(30)
+    setShowSnoozeDialog(true)
+  }
+
+  const handleSnooze = async () => {
+    if (!snoozeAlertId) return
+    setSnoozing(true)
+    try {
+      const response = await edgeFunctions.alerts.snooze(snoozeAlertId, snoozeDuration)
+      if (response.success) {
+        toast.success(`Alert snoozed for ${snoozeDuration} minutes`)
+        setShowSnoozeDialog(false)
+        await fetchAlerts()
+      } else {
+        toast.error('Failed to snooze alert')
+      }
+    } catch {
+      toast.error('Failed to snooze alert')
+    } finally {
+      setSnoozing(false)
+    }
+  }
+
+  const handleUnsnooze = async (alertId: string) => {
+    try {
+      const response = await edgeFunctions.alerts.unsnooze(alertId)
+      if (response.success) {
+        toast.success('Alert unsnoozed')
+        await fetchAlerts()
+      }
+    } catch {
+      toast.error('Failed to unsnooze')
+    }
+  }
+
+  // ─── Timeline Handler ──────────────────────────────────────────────
+  const loadTimeline = async (alertId: string) => {
+    setTimelineLoading(true)
+    setTimelineEvents([])
+    try {
+      const response = await edgeFunctions.alerts.timeline(alertId)
+      if (response.success && response.data) {
+        setTimelineEvents(response.data.events || [])
+      }
+    } catch {
+      console.error('Failed to load timeline')
+    } finally {
+      setTimelineLoading(false)
+    }
+  }
+
+  // ─── Export CSV ────────────────────────────────────────────────────
+  const handleExportCSV = () => {
+    const headers = ['Alert #', 'Title', 'Severity', 'Category', 'Device', 'Status', 'Timestamp']
+    const rows = filteredAlerts.map((a) => [
+      a.alertNumber ? `ALT-${a.alertNumber}` : '',
+      `"${a.title.replace(/"/g, '""')}"`,
+      a.severity,
+      a.category,
+      `"${a.device.replace(/"/g, '""')}"`,
+      a.acknowledged ? 'Acknowledged' : a.isSnoozed ? 'Snoozed' : 'Active',
+      a.rawTimestamp.toISOString(),
+    ])
+
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `alerts-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success(`Exported ${filteredAlerts.length} alerts to CSV`)
+  }
+
+  // ─── Browser Push Notifications ────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted')
+    }
+  }, [])
+
+  const toggleBrowserNotifications = async () => {
+    if (!('Notification' in window)) {
+      toast.error('Browser notifications are not supported')
+      return
+    }
+
+    if (Notification.permission === 'granted') {
+      setNotificationsEnabled(false)
+      toast.info('Browser notifications disabled')
+      return
+    }
+
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      setNotificationsEnabled(true)
+      toast.success('Browser notifications enabled for new alerts')
+    } else {
+      toast.error('Notification permission denied')
+    }
+  }
+
+  // Send browser notification when new critical/high alerts arrive
+  useEffect(() => {
+    if (!notificationsEnabled || typeof window === 'undefined') return
+    if (prevAlertCountRef.current === 0) {
+      prevAlertCountRef.current = alerts.length
+      return
+    }
+
+    const newAlerts = alerts.filter(
+      (a) =>
+        !a.acknowledged &&
+        (a.severity === 'critical' || a.severity === 'high') &&
+        a.rawTimestamp.getTime() > Date.now() - 60000 // Created in last 60s
+    )
+
+    if (alerts.length > prevAlertCountRef.current && newAlerts.length > 0) {
+      const newest = newAlerts[0]
+      const alertNum = newest.alertNumber ? `ALT-${newest.alertNumber}` : ''
+      try {
+        new Notification(`${newest.severity === 'critical' ? '🚨' : '⚠️'} ${alertNum} ${newest.title}`, {
+          body: `${newest.device}: ${newest.description}`,
+          icon: '/favicon.ico',
+          tag: `alert-${newest.id}`,
+        })
+      } catch {
+        // Notification may fail silently in some contexts
+      }
+    }
+    prevAlertCountRef.current = alerts.length
+  }, [alerts, notificationsEnabled])
 
   // Clear All: targets all unacknowledged (active) alerts
   const unacknowledgedAlerts = useMemo(
@@ -564,8 +733,35 @@ export function AlertsList() {
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
 
-          {/* View Mode Toggle + Clear All */}
+          {/* View Mode Toggle + Export + Notifications + Clear All */}
           <div className="flex items-center space-x-2">
+            {/* Browser Notifications Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleBrowserNotifications}
+              title={notificationsEnabled ? 'Disable browser notifications' : 'Enable browser notifications'}
+            >
+              {notificationsEnabled ? (
+                <Bell className="mr-1 h-4 w-4 text-green-600" />
+              ) : (
+                <BellOff className="mr-1 h-4 w-4" />
+              )}
+              {notificationsEnabled ? 'On' : 'Off'}
+            </Button>
+
+            {/* Export CSV */}
+            {filteredAlerts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+              >
+                <Download className="mr-1 h-4 w-4" />
+                Export
+              </Button>
+            )}
+
             {unacknowledgedAlerts.length > 0 && (
               <Button
                 variant="outline"
@@ -668,6 +864,11 @@ export function AlertsList() {
                                     </div>
                                     <div className="flex-1">
                                       <AlertDescription className="text-base font-medium text-gray-900 dark:text-gray-100">
+                                        {alert.alertNumber && (
+                                          <span className="mr-2 inline-block rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                            ALT-{alert.alertNumber}
+                                          </span>
+                                        )}
                                         {alert.title}
                                       </AlertDescription>
                                       <AlertDescription className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -678,11 +879,35 @@ export function AlertsList() {
                                           {alert.device}
                                         </span>{' '}
                                         • {fmt.timeAgo(alert.timestamp)}
+                                        {alert.isSnoozed && (
+                                          <span className="ml-2 inline-block rounded bg-yellow-200 px-1.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                            😴 Snoozed
+                                          </span>
+                                        )}
                                       </AlertDescription>
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end space-y-2">
                                     <div className="flex space-x-2">
+                                      {!alert.acknowledged && !alert.isSnoozed && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400"
+                                          onClick={() => openSnoozeDialog(alert.id)}
+                                        >
+                                          😴
+                                        </Button>
+                                      )}
+                                      {alert.isSnoozed && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleUnsnooze(alert.id)}
+                                        >
+                                          Wake
+                                        </Button>
+                                      )}
                                       {!alert.acknowledged && (
                                         <Button
                                           variant="outline"
@@ -722,7 +947,12 @@ export function AlertsList() {
       </Tabs>
 
       {/* Alert Details Dialog */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+      <Dialog open={showDetails} onOpenChange={(open) => {
+        setShowDetails(open)
+        if (!open) {
+          setTimelineEvents([])
+        }
+      }}>
         <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -754,7 +984,14 @@ export function AlertsList() {
             <div className="space-y-6">
               {/* Alert Overview */}
               <div className="space-y-2">
-                <h4 className="text-lg font-semibold">{selectedAlert.title}</h4>
+                <h4 className="text-lg font-semibold">
+                  {selectedAlert.alertNumber && (
+                    <span className="mr-2 inline-block rounded bg-primary/10 px-2 py-0.5 font-mono text-sm font-bold text-primary">
+                      ALT-{selectedAlert.alertNumber}
+                    </span>
+                  )}
+                  {selectedAlert.title}
+                </h4>
                 <p className="text-sm text-muted-foreground">
                   {selectedAlert.description}
                 </p>
@@ -980,6 +1217,68 @@ export function AlertsList() {
                   </p>
                 </div>
               )}
+
+              {/* Alert Timeline */}
+              <Separator />
+              <div>
+                <h4 className="mb-3 font-semibold">Timeline</h4>
+                {timelineLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <LoadingSpinner />
+                  </div>
+                ) : timelineEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No timeline events</p>
+                ) : (
+                  <div className="relative space-y-0 pl-6">
+                    {/* Vertical line */}
+                    <div className="absolute left-[9px] top-1 bottom-1 w-0.5 bg-border" />
+                    {timelineEvents
+                      .filter((e) => e.event_type !== 'viewed')
+                      .map((event, idx) => {
+                        const icons: Record<string, string> = {
+                          created: '🔔',
+                          notified: '📧',
+                          acknowledged: '✅',
+                          resolved: '✓',
+                          snoozed: '😴',
+                          unsnoozed: '⏰',
+                          escalated: '🔺',
+                          comment: '💬',
+                        }
+                        return (
+                          <div key={event.id || idx} className="relative flex items-start pb-3">
+                            <div className="absolute -left-6 flex h-5 w-5 items-center justify-center rounded-full bg-background text-sm">
+                              {icons[event.event_type] || '•'}
+                            </div>
+                            <div className="ml-2 min-w-0 flex-1">
+                              <p className="text-sm font-medium capitalize">
+                                {event.event_type.replace(/_/g, ' ')}
+                                {event.userName && (
+                                  <span className="ml-1 font-normal text-muted-foreground">
+                                    by {event.userName}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {fmt.dateTime(new Date(event.created_at))}
+                              </p>
+                              {event.event_type === 'escalated' && event.metadata?.minutes_open && (
+                                <p className="text-xs text-orange-600 dark:text-orange-400">
+                                  Open for {event.metadata.minutes_open as number} min
+                                </p>
+                              )}
+                              {event.event_type === 'snoozed' && event.metadata?.snoozed_until && (
+                                <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                  Until {fmt.dateTime(new Date(event.metadata.snoozed_until as string))}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -987,6 +1286,29 @@ export function AlertsList() {
             <Button variant="outline" onClick={() => setShowDetails(false)}>
               Close
             </Button>
+            {selectedAlert && !selectedAlert.acknowledged && !selectedAlert.isSnoozed && (
+              <Button
+                variant="outline"
+                className="text-yellow-600"
+                onClick={() => {
+                  setShowDetails(false)
+                  openSnoozeDialog(selectedAlert.id)
+                }}
+              >
+                😴 Snooze
+              </Button>
+            )}
+            {selectedAlert && selectedAlert.isSnoozed && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleUnsnooze(selectedAlert.id)
+                  setShowDetails(false)
+                }}
+              >
+                Wake Up
+              </Button>
+            )}
             {selectedAlert && !selectedAlert.acknowledged && (
               <Button
                 onClick={() => {
@@ -1067,6 +1389,49 @@ export function AlertsList() {
               disabled={clearingAll || !clearAllNotes.trim()}
             >
               {clearingAll ? 'Clearing…' : `Clear ${unacknowledgedAlerts.length} Alert${unacknowledgedAlerts.length !== 1 ? 's' : ''}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Snooze Alert Dialog */}
+      <Dialog open={showSnoozeDialog} onOpenChange={setShowSnoozeDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>😴 Snooze Alert</DialogTitle>
+            <DialogDescription>
+              Suppress notifications for this alert for a set duration. The alert
+              will reactivate automatically when the snooze expires.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <label className="text-sm font-medium">Duration</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: '30 min', value: 30 },
+                { label: '1 hour', value: 60 },
+                { label: '2 hours', value: 120 },
+                { label: '4 hours', value: 240 },
+                { label: '8 hours', value: 480 },
+                { label: '24 hours', value: 1440 },
+              ].map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant={snoozeDuration === opt.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSnoozeDuration(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSnoozeDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSnooze} disabled={snoozing}>
+              {snoozing ? 'Snoozing…' : `Snooze for ${snoozeDuration >= 60 ? `${snoozeDuration / 60}h` : `${snoozeDuration}m`}`}
             </Button>
           </DialogFooter>
         </DialogContent>
