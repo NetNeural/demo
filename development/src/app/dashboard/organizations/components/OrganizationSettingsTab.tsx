@@ -890,7 +890,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               rel="noopener noreferrer"
               className="block rounded bg-muted px-2 py-1 text-xs font-mono text-blue-600 hover:underline dark:text-blue-400 break-all"
             >
-              {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.name || 'your-org'}
+              {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
             </a>
           </CardDescription>
         </CardHeader>
