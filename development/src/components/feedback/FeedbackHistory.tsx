@@ -268,9 +268,50 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
     }
   }
 
+  // Auto-sync from GitHub on load so closed issues move to "Closed Tickets"
+  const syncFromGitHubSilent = useCallback(async () => {
+    if (!currentOrganization) return
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const session = (await supabase.auth.getSession()).data.session
+      if (!session?.access_token) return
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/feedback-sync`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ organizationId: currentOrganization.id }),
+        }
+      )
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.data?.synced > 0) {
+          // Silently refresh the list with updated statuses
+          await fetchFeedback()
+        }
+      }
+    } catch {
+      // Silent — don't bother user if background sync fails
+    }
+  }, [currentOrganization, supabase, fetchFeedback])
+
   useEffect(() => {
     fetchFeedback()
   }, [fetchFeedback, refreshKey])
+
+  // Auto-sync GitHub status after initial load
+  const [hasAutoSynced, setHasAutoSynced] = useState(false)
+  useEffect(() => {
+    if (!loading && items.length > 0 && !hasAutoSynced) {
+      setHasAutoSynced(true)
+      syncFromGitHubSilent()
+    }
+  }, [loading, items.length, hasAutoSynced, syncFromGitHubSilent])
 
   const openItems = items.filter(
     (item) => item.status !== 'resolved' && item.status !== 'closed'
