@@ -607,6 +607,10 @@ export default createEdgeFunction(
         let ownerUserId = userContext.userId // Default to creator
         let temporaryPassword: string | null = null
 
+        // Resolve Supabase URL and service key for direct Admin API calls
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+
         if (ownerEmail && ownerFullName) {
           console.log('Creating owner account:', { ownerEmail, ownerFullName })
 
