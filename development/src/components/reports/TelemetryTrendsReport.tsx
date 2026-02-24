@@ -34,7 +34,12 @@ import {
   Calendar as CalendarIcon,
   Activity,
   AlertTriangle,
+  Send,
 } from 'lucide-react'
+import {
+  SendReportDialog,
+  type ReportPayload,
+} from '@/components/reports/SendReportDialog'
 import {
   LineChart,
   Line,
@@ -131,6 +136,7 @@ export function TelemetryTrendsReport() {
   const [thresholds, setThresholds] = useState<Threshold[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   const supabase = createClient()
 
@@ -379,6 +385,30 @@ export function TelemetryTrendsReport() {
     URL.revokeObjectURL(url)
   }
 
+  // Build payload for SendReportDialog
+  const getReportPayload = (): ReportPayload => {
+    const rows: string[][] = [
+      ['Timestamp', ...statistics.map((s) => `${s.deviceName} (${sensorInfo?.unit || ''})`)],
+    ]
+    telemetryData.forEach((point) => {
+      rows.push([
+        format(new Date(point.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+        ...selectedDevices.map((deviceId) => {
+          const value = point[deviceId]
+          return typeof value === 'number' ? value.toFixed(2) : ''
+        }),
+      ])
+    })
+    const csv = rows.map((r) => r.join(',')).join('\n')
+    const deviceNames = statistics.map(s => s.deviceName).join(', ')
+    return {
+      title: 'Telemetry Trends Report',
+      csvContent: csv,
+      csvFilename: `telemetry-trends-${selectedSensor}-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      smsSummary: `${telemetryData.length} data points for ${selectedDevices.length} device(s) (${deviceNames}). Sensor: ${sensorInfo?.label || selectedSensor}. Time range: ${timeRange}.`,
+    }
+  }
+
   const filteredDevices = devices.filter((device) =>
     device.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -586,6 +616,14 @@ export function TelemetryTrendsReport() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => setSendDialogOpen(true)}
+              disabled={telemetryData.length === 0}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Report
+            </Button>
+            <Button
+              variant="outline"
               onClick={exportToCSV}
               disabled={telemetryData.length === 0}
             >
@@ -595,6 +633,12 @@ export function TelemetryTrendsReport() {
           </div>
         </CardContent>
       </Card>
+
+      <SendReportDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        getReportPayload={getReportPayload}
+      />
 
       {/* Statistics */}
       {statistics.length > 0 && telemetryData.length > 0 && (

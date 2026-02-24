@@ -47,8 +47,13 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  SendReportDialog,
+  type ReportPayload,
+} from '@/components/reports/SendReportDialog'
 
 interface Alert {
   id: string
@@ -137,6 +142,7 @@ export function AlertHistoryReport() {
   const [devices, setDevices] = useState<Array<{ id: string; name: string }>>(
     []
   )
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   // Fetch devices for filter dropdown
   const fetchDevices = useCallback(async () => {
@@ -463,6 +469,35 @@ export function AlertHistoryReport() {
     toast.success('Report exported successfully')
   }
 
+  // Build payload for SendReportDialog
+  const getReportPayload = (): ReportPayload => {
+    const csv = [
+      ['Date', 'Alert Type', 'Severity', 'Device', 'Status', 'Response Time (min)', 'Acknowledged By', 'Title', 'Description'].join(','),
+      ...alerts.map((alert) =>
+        [
+          format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm:ss'),
+          alert.alert_type,
+          alert.severity,
+          alert.device_name || 'N/A',
+          alert.is_resolved ? 'Resolved' : 'Unresolved',
+          alert.responseTimeMinutes ? alert.responseTimeMinutes.toFixed(2) : 'N/A',
+          alert.acknowledgement?.user_email || 'N/A',
+          `"${alert.title}"`,
+          `"${alert.message}"`,
+        ].join(',')
+      ),
+    ].join('\n')
+
+    const critical = alerts.filter(a => a.severity === 'critical').length
+    const unresolved = alerts.filter(a => !a.is_resolved).length
+    return {
+      title: 'Alert History Report',
+      csvContent: csv,
+      csvFilename: `alert-history-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      smsSummary: `${alerts.length} alerts (${critical} critical, ${unresolved} unresolved) from ${startDate ? format(startDate, 'MMM d') : 'N/A'} to ${endDate ? format(endDate, 'MMM d') : 'now'}.`,
+    }
+  }
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -509,14 +544,30 @@ export function AlertHistoryReport() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={handleExport}
-          disabled={loading || alerts.length === 0}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setSendDialogOpen(true)}
+            disabled={loading || alerts.length === 0}
+          >
+            <Send className="mr-2 h-4 w-4" />
+            Send Report
+          </Button>
+          <Button
+            onClick={handleExport}
+            disabled={loading || alerts.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
+
+      <SendReportDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        getReportPayload={getReportPayload}
+      />
 
       {/* AI Report Summary */}
       {alerts.length > 0 && currentOrganization && (

@@ -55,8 +55,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  SendReportDialog,
+  type ReportPayload,
+} from '@/components/reports/SendReportDialog'
 
 interface AuditLogEntry {
   id: string
@@ -152,6 +157,7 @@ export function AuditLogReport() {
 
   // Expanded row for viewing changes
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   // Check if user is admin - check both global and organization roles
   const isAdmin = useMemo(() => {
@@ -433,6 +439,26 @@ export function AuditLogReport() {
     document.body.removeChild(link)
 
     toast.success('Audit log exported successfully')
+  }
+
+  // Build payload for SendReportDialog
+  const getReportPayload = (): ReportPayload => {
+    const headers = ['Timestamp', 'User Email', 'Action Category', 'Action Type', 'Resource Type', 'Resource Name', 'Resource ID', 'Status', 'Method', 'Endpoint', 'IP Address', 'Error Message']
+    const csvData = logs.map((log) => [
+      format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+      log.user_email || 'System',
+      log.action_category, log.action_type,
+      log.resource_type || '', log.resource_name || '', log.resource_id || '',
+      log.status, log.method || '', log.endpoint || '',
+      log.ip_address || '', log.error_message || '',
+    ])
+    const csvContent = [headers.join(','), ...csvData.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n')
+    return {
+      title: 'User Activity Audit Log',
+      csvContent,
+      csvFilename: `audit-log-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      smsSummary: `${stats.totalActions} actions (${stats.successfulActions} success, ${stats.failedActions} failed) by ${stats.uniqueUsers} users. ${stats.criticalActions} critical actions.`,
+    }
   }
 
   // Get severity badge for action category
@@ -779,6 +805,14 @@ export function AuditLogReport() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => setSendDialogOpen(true)}
+              disabled={logs.length === 0}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Report
+            </Button>
+            <Button
+              variant="outline"
               onClick={exportToCSV}
               disabled={logs.length === 0}
             >
@@ -787,6 +821,12 @@ export function AuditLogReport() {
             </Button>
           </div>
         </CardContent>
+
+        <SendReportDialog
+          open={sendDialogOpen}
+          onOpenChange={setSendDialogOpen}
+          getReportPayload={getReportPayload}
+        />
       </Card>
 
       {/* Audit Log Table */}

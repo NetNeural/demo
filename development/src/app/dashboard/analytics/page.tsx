@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -15,6 +15,10 @@ import {
   DevicePerformanceTable,
   AlertStatsCards,
 } from './components'
+import {
+  SendReportDialog,
+  type ReportPayload,
+} from '@/components/reports/SendReportDialog'
 import type { TimeRange } from './types/analytics.types'
 
 export default function AnalyticsPage() {
@@ -24,6 +28,35 @@ export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h')
   const { data, loading, exportToCSV, currentOrganization } =
     useAnalyticsData(timeRange)
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
+
+  const getReportPayload = useCallback((): ReportPayload => {
+    const csvRows = [
+      ['Device Performance Report'],
+      ['Generated:', new Date().toISOString()],
+      ['Organization:', currentOrganization?.name || ''],
+      ['Time Range:', timeRange],
+      [],
+      ['Device Name', 'Uptime %', 'Data Points', 'Avg Battery %', 'Avg RSSI', 'Last Error'],
+      ...(data?.devicePerformance.map((d) => [
+        d.device_name,
+        d.uptime_percentage.toFixed(2),
+        d.data_points_count.toString(),
+        d.avg_battery?.toFixed(2) || 'N/A',
+        d.avg_rssi?.toFixed(2) || 'N/A',
+        d.last_error || 'None',
+      ]) || []),
+    ]
+    const csvContent = csvRows.map((row) => row.join(',')).join('\n')
+    const deviceCount = data?.devicePerformance.length || 0
+    const health = data?.systemHealth.overall_health || 0
+    return {
+      title: 'AI Analytics Report',
+      csvContent,
+      csvFilename: `analytics-${currentOrganization?.name || 'report'}-${new Date().toISOString().split('T')[0]}.csv`,
+      smsSummary: `${deviceCount} devices, ${health}% fleet health, ${data?.alertStats.total_alerts || 0} alerts (${data?.alertStats.critical_alerts || 0} critical). Time range: ${timeRange}.`,
+    }
+  }, [data, currentOrganization, timeRange])
 
   // Initialize activeTab from URL parameter or default
   const [activeTab, setActiveTab] = useState(() => {
@@ -131,6 +164,13 @@ export default function AnalyticsPage() {
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         onExport={exportToCSV}
+        onSendReport={() => setSendDialogOpen(true)}
+      />
+
+      <SendReportDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        getReportPayload={getReportPayload}
       />
 
       <SystemHealthCards health={data.systemHealth} />

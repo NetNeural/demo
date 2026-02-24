@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Download } from 'lucide-react'
+import { Download, Send } from 'lucide-react'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import type { TimeRange } from '../types/analytics.types'
 import type { OrganizationSettings } from '@/types/organization'
@@ -17,6 +17,7 @@ interface AnalyticsHeaderProps {
   timeRange: TimeRange
   onTimeRangeChange: (range: TimeRange) => void
   onExport: () => void
+  onSendReport?: () => void
 }
 
 export function AnalyticsHeader({
@@ -25,6 +26,7 @@ export function AnalyticsHeader({
   timeRange,
   onTimeRangeChange,
   onExport,
+  onSendReport,
 }: AnalyticsHeaderProps) {
   return (
     <div className="space-y-2">
@@ -61,6 +63,12 @@ export function AnalyticsHeader({
               <SelectItem value="30d">Last 30 Days</SelectItem>
             </SelectContent>
           </Select>
+          {onSendReport && (
+            <Button onClick={onSendReport} variant="outline" size="sm">
+              <Send className="mr-2 h-4 w-4" />
+              Send
+            </Button>
+          )}
           <Button onClick={onExport} variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
