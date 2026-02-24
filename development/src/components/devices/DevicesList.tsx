@@ -356,6 +356,8 @@ export function DevicesList() {
   }, [currentOrganization])
 
   // Fetch latest telemetry reading for each device (including multiple sensor types)
+  // Uses per-device queries so that high-frequency MQTT devices can't push
+  // low-frequency Golioth readings out of a global LIMIT.
   const fetchLatestTelemetry = useCallback(
     async (deviceIds: string[]) => {
       if (!currentOrganization || deviceIds.length === 0) return
@@ -363,26 +365,32 @@ export function DevicesList() {
       try {
         const supabase = createClient()
 
-        // Fetch recent telemetry for each device to capture multiple sensor types
-        // Multi-sensor devices report different sensor types (temp, humidity, etc.)
-        const { data, error: telError } = await supabase
-          .from('device_telemetry_history')
-          .select('device_id, telemetry, device_timestamp, received_at')
-          .in('device_id', deviceIds)
-          .order('received_at', { ascending: false })
-          .limit(deviceIds.length * 10) // Get multiple readings to capture different sensor types
+        // Query each device individually (parallelised) to guarantee every
+        // device gets its latest readings regardless of other devices' volume.
+        const perDeviceResults = await Promise.all(
+          deviceIds.map((id) =>
+            supabase
+              .from('device_telemetry_history')
+              .select('device_id, telemetry, device_timestamp, received_at')
+              .eq('device_id', id)
+              .order('received_at', { ascending: false })
+              .limit(10)
+          )
+        )
 
-        if (telError) {
-          console.error('[DevicesList] Error fetching telemetry:', telError)
-          return
-        }
+        // Group by device_id and keep latest reading for each unique sensor type.
+        // Flat JSONB rows (V-Mark MQTT, Modular Test Sensor) are first expanded into
+        // one virtual row per numeric key so every sensor channel is captured.
+        const grouped: DeviceTelemetry = {}
 
-        if (data && data.length > 0) {
-          // Group by device_id and keep latest reading for each unique sensor type.
-          // Flat JSONB rows (V-Mark MQTT, Modular Test Sensor) are first expanded into
-          // one virtual row per numeric key so every sensor channel is captured.
-          const grouped: DeviceTelemetry = {}
-          for (const row of data) {
+        for (const result of perDeviceResults) {
+          if (result.error) {
+            console.error('[DevicesList] Error fetching telemetry:', result.error)
+            continue
+          }
+          if (!result.data || result.data.length === 0) continue
+
+          for (const row of result.data) {
             const expanded = expandFlatTelemetryRow(row as TelemetryReading)
             for (const reading of expanded) {
               if (!grouped[row.device_id]) {
@@ -408,15 +416,16 @@ export function DevicesList() {
               }
             }
           }
-          setLatestTelemetry(grouped)
-          const totalReadings = Object.values(grouped).reduce(
-            (sum, readings) => sum + readings.length,
-            0
-          )
-          console.log(
-            `[DevicesList] Loaded ${totalReadings} sensor readings across ${Object.keys(grouped).length} devices`
-          )
         }
+
+        setLatestTelemetry(grouped)
+        const totalReadings = Object.values(grouped).reduce(
+          (sum, readings) => sum + readings.length,
+          0
+        )
+        console.log(
+          `[DevicesList] Loaded ${totalReadings} sensor readings across ${Object.keys(grouped).length} devices`
+        )
       } catch (err) {
         console.error('[DevicesList] Error fetching telemetry:', err)
       }
