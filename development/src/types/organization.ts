@@ -13,11 +13,11 @@ export interface OrganizationSettings {
     accent_color?: string
   }
   login_page?: {
-    background_url?: string
+    background_url?: string | null
     background_color?: string
     background_fit?: 'cover' | 'contain' | 'fill' | 'center'
-    headline?: string
-    subtitle?: string
+    headline?: string | null
+    subtitle?: string | null
     card_opacity?: number
     show_logo?: boolean
     enhance_bg?: boolean
