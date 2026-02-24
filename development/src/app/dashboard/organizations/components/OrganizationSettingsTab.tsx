@@ -1132,65 +1132,133 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             </button>
           </div>
 
-          {/* Preview */}
+          {/* Preview — Desktop & Mobile side by side */}
           <div className="space-y-2">
             <Label>Preview</Label>
-            <div className="flex justify-center rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-              {/* Scaled-down browser-window thumbnail */}
-              <div className="w-[320px] overflow-hidden rounded-md shadow-lg">
-                {/* Fake browser chrome */}
-                <div className="flex items-center gap-1.5 bg-gray-700 px-2 py-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                  <span className="ml-2 flex-1 rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400 truncate">
-                    {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
-                  </span>
-                </div>
-                {/* Page viewport (16:9 aspect ratio) */}
-                <div
-                  className="relative overflow-hidden"
-                  style={{ backgroundColor: loginBgColor, aspectRatio: '16 / 9' }}
-                >
-                  {loginBgUrl && (
-                    <img
-                      src={loginBgUrl}
-                      alt="Background preview"
-                      className={`absolute inset-0 h-full w-full ${
-                        loginBgFit === 'cover' ? 'object-cover' :
-                        loginBgFit === 'contain' ? 'object-contain' :
-                        loginBgFit === 'fill' ? 'object-fill' :
-                        'object-none'
-                      }`}
-                      style={loginEnhanceBg ? {
-                        filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
-                      } : undefined}
-                    />
-                  )}
-                  {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div
-                      className="rounded-lg border border-white/10 px-4 py-3 text-center backdrop-blur-xl"
-                      style={{
-                        background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
-                      }}
-                    >
-                      {loginShowLogo && logoUrl && (
-                        <img src={logoUrl} alt="Logo" className="mx-auto mb-1 h-5 w-auto object-contain" />
-                      )}
-                      <p className="text-[10px] font-bold text-white">
-                        {loginHeadline || currentOrganization?.name || 'Organization'}
-                      </p>
-                      <p className="text-[8px] text-gray-400">
-                        {loginSubtitle || 'Sentinel'}
-                      </p>
-                      <div className="mt-1 h-1 w-16 rounded bg-gray-600 mx-auto" />
-                      <div className="mt-0.5 h-1 w-16 rounded bg-gray-600 mx-auto" />
-                      <div className="mt-1 h-2 w-16 rounded bg-blue-600 mx-auto" />
+            <div className="flex items-end justify-center gap-6 rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+
+              {/* ── Desktop preview ── */}
+              <div className="space-y-1">
+                <p className="text-center text-[10px] font-medium text-muted-foreground">
+                  <Monitor className="mr-1 inline h-3 w-3" />Desktop
+                </p>
+                <div className="w-[320px] overflow-hidden rounded-md shadow-lg">
+                  {/* Fake browser chrome */}
+                  <div className="flex items-center gap-1.5 bg-gray-700 px-2 py-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                    <span className="ml-2 flex-1 rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400 truncate">
+                      {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
+                    </span>
+                  </div>
+                  {/* Page viewport (16:9) */}
+                  <div
+                    className="relative overflow-hidden"
+                    style={{ backgroundColor: loginBgColor, aspectRatio: '16 / 9' }}
+                  >
+                    {loginBgUrl && (
+                      <img
+                        src={loginBgUrl}
+                        alt="Background preview"
+                        className={`absolute inset-0 h-full w-full ${
+                          loginBgFit === 'cover' ? 'object-cover' :
+                          loginBgFit === 'contain' ? 'object-contain' :
+                          loginBgFit === 'fill' ? 'object-fill' :
+                          'object-none'
+                        }`}
+                        style={loginEnhanceBg ? {
+                          filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
+                        } : undefined}
+                      />
+                    )}
+                    {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div
+                        className="rounded-lg border border-white/10 px-4 py-3 text-center backdrop-blur-xl"
+                        style={{
+                          background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
+                        }}
+                      >
+                        {loginShowLogo && logoUrl && (
+                          <img src={logoUrl} alt="Logo" className="mx-auto mb-1 h-5 w-auto object-contain" />
+                        )}
+                        <p className="text-[10px] font-bold text-white">
+                          {loginHeadline || currentOrganization?.name || 'Organization'}
+                        </p>
+                        <p className="text-[8px] text-gray-400">
+                          {loginSubtitle || 'Sentinel'}
+                        </p>
+                        <div className="mt-1 h-1 w-16 rounded bg-gray-600 mx-auto" />
+                        <div className="mt-0.5 h-1 w-16 rounded bg-gray-600 mx-auto" />
+                        <div className="mt-1 h-2 w-16 rounded bg-blue-600 mx-auto" />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* ── Mobile preview ── */}
+              <div className="space-y-1">
+                <p className="text-center text-[10px] font-medium text-muted-foreground">
+                  📱 Mobile
+                </p>
+                {/* Phone frame */}
+                <div className="w-[120px] overflow-hidden rounded-[14px] border-[3px] border-gray-800 bg-gray-800 shadow-lg">
+                  {/* Status bar */}
+                  <div className="flex items-center justify-between bg-black/60 px-2 py-0.5">
+                    <span className="text-[5px] text-white/70">9:41</span>
+                    <div className="mx-auto h-1.5 w-8 rounded-full bg-gray-700" />
+                    <div className="flex gap-0.5">
+                      <span className="text-[5px] text-white/70">5G</span>
+                      <span className="text-[5px] text-white/70">🔋</span>
+                    </div>
+                  </div>
+                  {/* Phone viewport (9:19.5 mobile ratio ≈ iPhone) */}
+                  <div
+                    className="relative overflow-hidden"
+                    style={{ backgroundColor: loginBgColor, aspectRatio: '9 / 16' }}
+                  >
+                    {loginBgUrl && (
+                      <img
+                        src={loginBgUrl}
+                        alt="Mobile preview"
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                        style={loginEnhanceBg ? {
+                          filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
+                        } : undefined}
+                      />
+                    )}
+                    {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <div
+                        className="w-full rounded-md border border-white/10 px-2 py-2 text-center backdrop-blur-xl"
+                        style={{
+                          background: `rgba(15, 23, 42, ${loginCardOpacity / 100})`,
+                        }}
+                      >
+                        {loginShowLogo && logoUrl && (
+                          <img src={logoUrl} alt="Logo" className="mx-auto mb-0.5 h-3 w-auto object-contain" />
+                        )}
+                        <p className="text-[7px] font-bold text-white leading-tight">
+                          {loginHeadline || currentOrganization?.name || 'Organization'}
+                        </p>
+                        <p className="text-[5px] text-gray-400">
+                          {loginSubtitle || 'Sentinel'}
+                        </p>
+                        <div className="mt-0.5 h-0.5 w-10 rounded bg-gray-600 mx-auto" />
+                        <div className="mt-0.5 h-0.5 w-10 rounded bg-gray-600 mx-auto" />
+                        <div className="mt-0.5 h-1.5 w-10 rounded bg-blue-600 mx-auto" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Home indicator */}
+                  <div className="flex justify-center bg-black/60 py-1">
+                    <div className="h-0.5 w-8 rounded-full bg-white/40" />
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </CardContent>
