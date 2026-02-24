@@ -659,7 +659,7 @@ export default createEdgeFunction(
               // Reset password in auth system to match temporary password email
               if (temporaryPassword) {
                 const resetResponse = await fetch(
-                  `${supabaseUrl}/auth/v1/admin/users/${ownerUserId}`,
+                  `${supabaseUrl}/auth/v1/admin/users/${authUser.id}`,
                   {
                     method: 'PUT',
                     headers: {
@@ -710,11 +710,12 @@ export default createEdgeFunction(
 
               console.log('Updated user organization successfully')
             } else {
-              // Auth user exists but not in our table - create user record
+              // Auth user exists but not in our table — upsert in case
+              // the auto-create trigger already inserted a partial row
               ownerUserId = authUser.id
               const { error: userInsertError } = await supabaseAdmin
                 .from('users')
-                .insert({
+                .upsert({
                   id: authUser.id,
                   email: ownerEmail,
                   full_name: ownerFullName,
@@ -722,12 +723,11 @@ export default createEdgeFunction(
                   // @ts-expect-error - id exists
                   organization_id: newOrg.id,
                   password_change_required: true,
-                  created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
-                })
+                }, { onConflict: 'id' })
 
               if (userInsertError) {
-                console.error('Failed to create user record:', userInsertError)
+                console.error('Failed to upsert user record:', userInsertError)
                 throw new DatabaseError(
                   `Failed to create user record: ${userInsertError.message}`
                 )
@@ -755,10 +755,11 @@ export default createEdgeFunction(
             ownerUserId = newAuthUser.user.id
             console.log('Created auth user:', ownerUserId)
 
-            // Create user record in our database
+            // Upsert user record — the on_auth_user_created trigger may have
+            // already inserted a row, so we upsert to set organization_id etc.
             const { error: userInsertError } = await supabaseAdmin
               .from('users')
-              .insert({
+              .upsert({
                 id: ownerUserId,
                 email: ownerEmail,
                 full_name: ownerFullName,
@@ -766,12 +767,11 @@ export default createEdgeFunction(
                 // @ts-expect-error - id exists
                 organization_id: newOrg.id,
                 password_change_required: true,
-                created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-              })
+              }, { onConflict: 'id' })
 
             if (userInsertError) {
-              console.error('Failed to create user record:', userInsertError)
+              console.error('Failed to upsert user record:', userInsertError)
               throw new DatabaseError(
                 `Failed to create user record: ${userInsertError.message}`
               )
