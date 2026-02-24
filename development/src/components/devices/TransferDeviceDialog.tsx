@@ -23,6 +23,8 @@ import { ArrowRightLeft, Copy, Loader2, AlertCircle, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseUrl } from '@/lib/supabase/config'
 import { toast } from 'sonner'
+import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import type { Device } from '@/types/sensor-details'
 
 interface Organization {
@@ -51,52 +53,32 @@ export function TransferDeviceDialog({
   const [telemetryCount, setTelemetryCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingOrgs, setLoadingOrgs] = useState(false)
+  const { user } = useUser()
+  const { userOrganizations } = useOrganization()
 
   const fetchOrganizations = useCallback(async () => {
     try {
       setLoadingOrgs(true)
-      const supabase = createClient()
+      const isSuperAdmin =
+        user?.isSuperAdmin || user?.role === 'super_admin'
 
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error('User not authenticated')
-        return
-      }
-
-      // Get all organizations where user is a member
-      const { data: memberships, error: membershipsError } = await supabase
-        .from('organization_members')
-        .select('organization_id, role, organizations(id, name)')
-        .eq('user_id', user.id)
-
-      if (membershipsError) throw membershipsError
-
-      // Only show orgs where user has admin/owner role (required for cross-org transfer)
-      const adminRoles = ['owner', 'admin', 'org_owner', 'org_admin']
-      const orgs =
-        memberships
-          ?.filter((m) => {
-            const org = m.organizations as { id: string; name: string } | null
-            return (
-              org !== null &&
-              org.id !== currentOrgId &&
-              adminRoles.includes(m.role as string)
-            )
+      // Use organizations from context — already fetched via edge function
+      // which handles permissions (super_admin sees all, others see their memberships).
+      // The context's userOrganizations includes each org's role for the user.
+      if (userOrganizations && userOrganizations.length > 0) {
+        const adminRoles = ['owner', 'admin', 'org_owner', 'org_admin']
+        const orgs = userOrganizations
+          .filter((o) => {
+            if (o.id === currentOrgId) return false
+            // Super admins can transfer to any org
+            if (isSuperAdmin) return true
+            // Others need admin/owner role in the target org
+            return adminRoles.includes(o.role)
           })
-          .map((m) => {
-            const org = m.organizations as { id: string; name: string }
-            return { id: org.id, name: org.name }
-          }) || []
-
-      setOrganizations(orgs)
-
-      if (orgs.length === 0) {
-        toast.info(
-          'No other organizations available where you have admin/owner role'
-        )
+          .map((o) => ({ id: o.id, name: o.name }))
+        setOrganizations(orgs)
+      } else {
+        setOrganizations([])
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
@@ -104,7 +86,7 @@ export function TransferDeviceDialog({
     } finally {
       setLoadingOrgs(false)
     }
-  }, [currentOrgId])
+  }, [currentOrgId, user, userOrganizations])
 
   const fetchTelemetryCount = useCallback(async () => {
     try {
