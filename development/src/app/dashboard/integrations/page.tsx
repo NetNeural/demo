@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -39,15 +39,19 @@ export default function IntegrationsPage() {
   const [loading, setLoading] = useState(true)
   const [conflictOpen, setConflictOpen] = useState(false)
   const [pendingConflicts, setPendingConflicts] = useState(0)
+  const activeOrgRef = useRef<string | null>(null)
 
   const loadIntegrations = useCallback(async () => {
     if (!currentOrganization) return
+    const fetchOrgId = currentOrganization.id
 
     setLoading(true)
     try {
       const response = await edgeFunctions.integrations.list(
-        currentOrganization.id
+        fetchOrgId
       )
+
+      if (activeOrgRef.current !== fetchOrgId) return // org switched, discard stale data
 
       if (!response.success) {
         throw new Error(
@@ -71,28 +75,33 @@ export default function IntegrationsPage() {
 
       setIntegrations(mappedIntegrations)
     } catch (error) {
+      if (activeOrgRef.current !== fetchOrgId) return
       console.error('Failed to load integrations:', error)
       toast.error('Failed to load integrations')
     } finally {
-      setLoading(false)
+      if (activeOrgRef.current === fetchOrgId) setLoading(false)
     }
   }, [currentOrganization])
 
   const loadPendingConflicts = useCallback(async () => {
     if (!currentOrganization) return
+    const fetchOrgId = currentOrganization.id
 
     try {
       const conflicts = await integrationSyncService.getPendingConflicts(
-        currentOrganization.id
+        fetchOrgId
       )
+      if (activeOrgRef.current !== fetchOrgId) return
       setPendingConflicts(conflicts.length)
     } catch (error) {
+      if (activeOrgRef.current !== fetchOrgId) return
       console.error('Failed to load conflicts:', error)
     }
   }, [currentOrganization])
 
   useEffect(() => {
     if (currentOrganization?.id) {
+      activeOrgRef.current = currentOrganization.id
       loadIntegrations()
       loadPendingConflicts()
     }

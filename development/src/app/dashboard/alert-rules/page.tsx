@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
@@ -27,22 +27,27 @@ export default function AlertRulesPage() {
   const [rules, setRules] = useState<AlertRule[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'telemetry' | 'offline'>('all')
+  const activeOrgRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (currentOrganization) {
+      activeOrgRef.current = currentOrganization.id
       fetchRules()
     }
   }, [currentOrganization, filter])
 
   const fetchRules = async () => {
     if (!currentOrganization) return
+    const fetchOrgId = currentOrganization.id
 
     try {
       setLoading(true)
       const response = await edgeFunctions.alertRules.list(
-        currentOrganization.id,
+        fetchOrgId,
         filter !== 'all' ? { rule_type: filter } : undefined
       )
+
+      if (activeOrgRef.current !== fetchOrgId) return // org switched, discard stale data
 
       if (response.success && response.data) {
         setRules(response.data)
@@ -50,10 +55,11 @@ export default function AlertRulesPage() {
         toast.error('Failed to load rules')
       }
     } catch (error) {
+      if (activeOrgRef.current !== fetchOrgId) return
       console.error('Error loading rules:', error)
       toast.error('Failed to load rules')
     } finally {
-      setLoading(false)
+      if (activeOrgRef.current === fetchOrgId) setLoading(false)
     }
   }
 

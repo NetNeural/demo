@@ -31,7 +31,7 @@ export default function AlertHistoryReportPage() {
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <Suspense fallback={<LoadingSpinner />}>
-        <AlertHistoryReport />
+        <AlertHistoryReport key={currentOrganization.id} />
       </Suspense>
     </div>
   )

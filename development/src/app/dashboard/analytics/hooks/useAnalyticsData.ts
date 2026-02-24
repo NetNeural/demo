@@ -45,6 +45,8 @@ export function useAnalyticsData(timeRange: TimeRange) {
       return
     }
 
+    let cancelled = false
+
     async function fetchAnalytics() {
       try {
         setLoading(true)
@@ -253,6 +255,8 @@ export function useAnalyticsData(timeRange: TimeRange) {
           0
         )
 
+        if (cancelled) return
+
         setData({
           devicePerformance,
           alertStats: {
@@ -277,13 +281,17 @@ export function useAnalyticsData(timeRange: TimeRange) {
         })
       } catch (error) {
         console.error('Error fetching analytics:', error)
-        setData(EMPTY_DATA)
+        if (!cancelled) setData(EMPTY_DATA)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchAnalytics()
+
+    return () => {
+      cancelled = true
+    }
   }, [currentOrganization, timeRange, supabase])
 
   // Real-time subscription

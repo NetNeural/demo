@@ -52,6 +52,8 @@ export default function ReportsIndexPage() {
   useEffect(() => {
     if (!currentOrganization) return
 
+    let cancelled = false
+
     const loadData = async () => {
       const supabase = createClient()
 
@@ -83,6 +85,8 @@ export default function ReportsIndexPage() {
             ),
         ])
 
+        if (cancelled) return
+
         setStats({
           totalDevices: devicesResult.count || 0,
           activeAlerts: alertsResult.count || 0,
@@ -98,15 +102,21 @@ export default function ReportsIndexPage() {
           .order('created_at', { ascending: false })
           .limit(5)
 
+        if (cancelled) return
+
         setRecentActivity(activityData || [])
       } catch (error) {
         console.error('Error loading reports data:', error)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     loadData()
+
+    return () => {
+      cancelled = true
+    }
   }, [currentOrganization])
 
   const reports = [

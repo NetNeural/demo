@@ -31,7 +31,7 @@ export default function TelemetryTrendsPage() {
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <Suspense fallback={<LoadingSpinner />}>
-        <TelemetryTrendsReport />
+        <TelemetryTrendsReport key={currentOrganization.id} />
       </Suspense>
     </div>
   )
