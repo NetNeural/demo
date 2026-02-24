@@ -36,10 +36,11 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization'
-import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2 } from 'lucide-react'
+import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2, Pencil } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useToast } from '@/hooks/use-toast'
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog'
+import { EditMemberDialog } from '@/components/organizations/EditMemberDialog'
 import { handleApiError } from '@/lib/sentry-utils'
 
 interface OrganizationMember {
@@ -68,6 +69,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false)
+  const [showEditMemberDialog, setShowEditMemberDialog] = useState(false)
+  const [editingMember, setEditingMember] =
+    useState<OrganizationMember | null>(null)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null)
@@ -463,20 +467,35 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {canDeleteThisMember ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(member.id)}
-                            title="Remove member from organization"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            -
-                          </span>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {canModifyThisMember && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingMember(member)
+                                setShowEditMemberDialog(true)
+                              }}
+                              title="Edit member profile"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDeleteThisMember ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id)}
+                              title="Remove member from organization"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              -
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
@@ -495,6 +514,15 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         onMemberAdded={fetchMembers}
         userRole={userRole || 'member'}
         isSuperAdmin={isSuperAdmin}
+      />
+
+      {/* Edit Member Dialog */}
+      <EditMemberDialog
+        organizationId={organizationId}
+        open={showEditMemberDialog}
+        onOpenChange={setShowEditMemberDialog}
+        member={editingMember}
+        onMemberUpdated={fetchMembers}
       />
 
       {/* Reset Password Dialog */}

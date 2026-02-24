@@ -16,6 +16,11 @@ export interface DevicesAPI {
     data: unknown
   ) => Promise<EdgeFunctionResponse<unknown>>
   delete: (deviceId: string) => Promise<EdgeFunctionResponse<unknown>>
+  /** Transfer a device to a different organization */
+  transfer: (
+    deviceId: string,
+    targetOrganizationId: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
   mapToExternal: (
     deviceId: string,
     integrationId: string,
@@ -78,6 +83,16 @@ export function createDevicesAPI(
     delete: (deviceId: string) =>
       call(`devices/${deviceId}`, {
         method: 'DELETE',
+      }),
+
+    /**
+     * Transfer a device to a different organization
+     * User must have access to both source and target organizations
+     */
+    transfer: (deviceId: string, targetOrganizationId: string) =>
+      call(`devices/${deviceId}`, {
+        method: 'PUT',
+        body: { organization_id: targetOrganizationId },
       }),
 
     /**

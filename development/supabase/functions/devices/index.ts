@@ -371,6 +371,31 @@ export default createEdgeFunction(
       if (device_type_id !== undefined) updates.device_type_id = device_type_id
       if (model !== undefined) updates.model = model
 
+      // Handle organization_id change (device transfer between orgs)
+      if (organization_id !== undefined && organization_id !== existingDevice.organization_id) {
+        // Verify user has access to the TARGET organization too
+        if (!userContext.isSuperAdmin) {
+          const { data: targetMembership } = await supabase
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', userContext.userId)
+            .eq('organization_id', organization_id)
+            .single()
+
+          if (!targetMembership) {
+            throw new DatabaseError(
+              'You do not have permission to transfer devices to that organization',
+              403
+            )
+          }
+        }
+        updates.organization_id = organization_id
+        console.log('🔵 Device transfer:', {
+          from: existingDevice.organization_id,
+          to: organization_id,
+        })
+      }
+
       // Handle serial_number carefully - empty string should be null
       if (serial_number !== undefined) {
         const normalizedSerialNumber = serial_number?.trim() || null

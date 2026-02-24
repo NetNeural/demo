@@ -136,6 +136,60 @@ export interface DeviceTypeFormValues {
   icon: string
 }
 
+/** Full descriptive names for common measurement units (tooltip/hover text) */
+export const UNIT_FULL_NAMES: Record<string, string> = {
+  '°C': 'Degrees Celsius',
+  '°F': 'Degrees Fahrenheit',
+  K: 'Kelvin',
+  '%': 'Percent',
+  '% RH': 'Relative Humidity (%)',
+  hPa: 'Hectopascals',
+  mbar: 'Millibars',
+  Pa: 'Pascals',
+  psi: 'Pounds per Square Inch',
+  atm: 'Atmospheres',
+  lux: 'Lux (Illuminance)',
+  lm: 'Lumens',
+  fc: 'Foot-candles',
+  V: 'Volts',
+  mV: 'Millivolts',
+  kV: 'Kilovolts',
+  A: 'Amperes',
+  mA: 'Milliamperes',
+  µA: 'Microamperes',
+  W: 'Watts',
+  kW: 'Kilowatts',
+  mW: 'Milliwatts',
+  ppm: 'Parts per Million',
+  ppb: 'Parts per Billion',
+  'mg/m³': 'Milligrams per Cubic Meter',
+  'µg/m³': 'Micrograms per Cubic Meter',
+  'L/min': 'Liters per Minute',
+  'gal/min': 'Gallons per Minute',
+  'm³/h': 'Cubic Meters per Hour',
+  cm: 'Centimeters',
+  m: 'Meters',
+  mm: 'Millimeters',
+  km: 'Kilometers',
+  ft: 'Feet',
+  in: 'Inches',
+  'm/s': 'Meters per Second',
+  'km/h': 'Kilometers per Hour',
+  mph: 'Miles per Hour',
+  knots: 'Knots',
+  kg: 'Kilograms',
+  g: 'Grams',
+  lb: 'Pounds',
+  oz: 'Ounces',
+  dBm: 'Decibel-milliwatts',
+  dB: 'Decibels',
+}
+
+/** Get full name for a unit abbreviation */
+export function getUnitFullName(unit: string): string {
+  return UNIT_FULL_NAMES[unit] || unit
+}
+
 /** Default form values */
 export const DEFAULT_DEVICE_TYPE_FORM: DeviceTypeFormValues = {
   name: '',

@@ -17,6 +17,12 @@ export interface MembersAPI {
     memberId: string,
     role: string
   ) => Promise<EdgeFunctionResponse<unknown>>
+  /** Update member profile (name, email) */
+  updateProfile: (
+    organizationId: string,
+    memberId: string,
+    data: { fullName?: string; email?: string }
+  ) => Promise<EdgeFunctionResponse<unknown>>
   remove: (
     organizationId: string,
     memberId: string
@@ -64,6 +70,16 @@ export function createMembersAPI(
         method: 'PATCH',
         params: { organization_id: organizationId },
         body: { memberId, role },
+      }),
+
+    /**
+     * Update member profile (name, email)
+     */
+    updateProfile: (organizationId, memberId, data) =>
+      call('members', {
+        method: 'PATCH',
+        params: { organization_id: organizationId },
+        body: { memberId, action: 'update-profile', ...data },
       }),
 
     /**

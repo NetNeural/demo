@@ -34,6 +34,7 @@ import { toast } from 'sonner'
 
 interface FeedbackItem {
   id: string
+  user_id?: string
   type: 'bug_report' | 'feature_request'
   title: string
   description: string

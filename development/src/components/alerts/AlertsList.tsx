@@ -551,6 +551,7 @@ export function AlertsList() {
 
     if (alerts.length > prevAlertCountRef.current && newAlerts.length > 0) {
       const newest = newAlerts[0]
+      if (newest) {
       const alertNum = newest.alertNumber ? `ALT-${newest.alertNumber}` : ''
       try {
         new Notification(`${newest.severity === 'critical' ? '🚨' : '⚠️'} ${alertNum} ${newest.title}`, {
@@ -560,6 +561,7 @@ export function AlertsList() {
         })
       } catch {
         // Notification may fail silently in some contexts
+      }
       }
     }
     prevAlertCountRef.current = alerts.length
@@ -1262,14 +1264,14 @@ export function AlertsList() {
                               <p className="text-xs text-muted-foreground">
                                 {fmt.dateTime(new Date(event.created_at))}
                               </p>
-                              {event.event_type === 'escalated' && event.metadata?.minutes_open && (
+                              {event.event_type === 'escalated' && Boolean(event.metadata?.minutes_open) && (
                                 <p className="text-xs text-orange-600 dark:text-orange-400">
-                                  Open for {event.metadata.minutes_open as number} min
+                                  Open for {Number(event.metadata?.minutes_open)} min
                                 </p>
                               )}
-                              {event.event_type === 'snoozed' && event.metadata?.snoozed_until && (
+                              {event.event_type === 'snoozed' && Boolean(event.metadata?.snoozed_until) && (
                                 <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                                  Until {fmt.dateTime(new Date(event.metadata.snoozed_until as string))}
+                                  Until {fmt.dateTime(new Date(String(event.metadata?.snoozed_until)))}
                                 </p>
                               )}
                             </div>

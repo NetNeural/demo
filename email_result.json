@@ -1,0 +1,11 @@
+﻿{
+    "success":  true,
+    "message":  "Email sent to 4 recipients",
+    "id":  "db9b5b95-b71d-4221-bcaf-ae86c0f89e92",
+    "recipients":  [
+                       "heath.scheiman@netneural.ai",
+                       "chris.payne@netneural.ai",
+                       "mike.jordan@netneural.ai",
+                       "matt.scholle@netneural.ai"
+                   ]
+}

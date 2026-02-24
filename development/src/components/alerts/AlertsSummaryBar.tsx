@@ -141,7 +141,7 @@ export function AlertsSummaryBar({
                 <span className="text-xs font-semibold">{stats.resolved_alerts}</span>
               </div>
 
-              {topDevices.length > 0 && (
+              {topDevices.length > 0 && topDevices[0] && (
                 <div
                   className="flex items-center space-x-1 rounded-md bg-orange-50 px-2.5 py-1 dark:bg-orange-950"
                   title={`Top Alerting Devices (30d)\n${topDevices.slice(0, 5).map((d, i) => `${i + 1}. ${d.device_name} — ${d.alert_count} alerts${d.critical_count > 0 ? ` (${d.critical_count} critical)` : ''}`).join('\n')}`}

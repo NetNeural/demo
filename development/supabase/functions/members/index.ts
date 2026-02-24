@@ -276,7 +276,7 @@ export default createEdgeFunction(
       )
     }
 
-    // PATCH - Update member role
+    // PATCH - Update member role OR profile
     if (method === 'PATCH') {
       // Only admins and owners can update members
       if (!['admin', 'owner'].includes(userRole)) {
@@ -287,7 +287,120 @@ export default createEdgeFunction(
       }
 
       const body = await req.json()
-      const { memberId, role } = body
+      const { memberId, role, action, fullName, email } = body
+
+      // Determine action type: 'update-profile' or default role update
+      if (action === 'update-profile') {
+        // ── Profile Update (name, email) ──
+        if (!memberId) {
+          throw new Error('memberId is required')
+        }
+
+        console.log('🔵 Updating member profile:', { memberId, fullName, email })
+
+        // Get the member being updated
+        const { data: targetMember, error: targetError } = await supabaseAdmin
+          .from('organization_members')
+          .select('id, role, user_id')
+          .eq('user_id', memberId)
+          .eq('organization_id', organizationId)
+          .single()
+
+        if (targetError || !targetMember) {
+          throw new DatabaseError('Member not found', 404)
+        }
+
+        // Cannot edit owner profiles unless you're an owner
+        if (targetMember.role === 'owner' && userRole !== 'owner') {
+          throw new DatabaseError('Only owners can edit owner profiles', 403)
+        }
+
+        // Build update object for users table
+        const userUpdates: Record<string, unknown> = {}
+        if (fullName !== undefined && fullName.trim()) {
+          userUpdates.full_name = fullName.trim()
+        }
+
+        // Update auth.users metadata (for Supabase Auth sync)
+        if (email !== undefined && email.trim()) {
+          // Update email via Supabase Auth Admin API
+          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+            targetMember.user_id,
+            {
+              email: email.trim(),
+              user_metadata: {
+                ...(fullName ? { full_name: fullName.trim() } : {}),
+              },
+            }
+          )
+
+          if (authError) {
+            console.error('❌ Auth update error:', authError)
+            throw new DatabaseError(`Failed to update email: ${authError.message}`, 500)
+          }
+        } else if (fullName) {
+          // Only update metadata (no email change)
+          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+            targetMember.user_id,
+            {
+              user_metadata: { full_name: fullName.trim() },
+            }
+          )
+          if (authError) {
+            console.error('❌ Auth metadata update error:', authError)
+          }
+        }
+
+        // Update users table directly
+        if (Object.keys(userUpdates).length > 0) {
+          const { error: updateError } = await supabaseAdmin
+            .from('users')
+            .update(userUpdates)
+            .eq('id', targetMember.user_id)
+
+          if (updateError) {
+            console.error('❌ Users table update error:', updateError)
+            throw new DatabaseError(`Failed to update profile: ${updateError.message}`, 500)
+          }
+        }
+
+        // Fetch updated member data
+        const { data: updatedMember, error: fetchError } = await supabaseAdmin
+          .from('organization_members')
+          .select(`
+            id,
+            user_id,
+            role,
+            created_at,
+            users!organization_members_user_id_fkey (
+              id,
+              email,
+              full_name
+            )
+          `)
+          .eq('user_id', memberId)
+          .eq('organization_id', organizationId)
+          .single()
+
+        if (fetchError || !updatedMember) {
+          throw new DatabaseError('Failed to fetch updated member', 500)
+        }
+
+        console.log('✅ Member profile updated successfully')
+
+        return createSuccessResponse({
+          member: {
+            id: updatedMember.user_id,
+            userId: updatedMember.user_id,
+            name: updatedMember.users?.full_name || 'Unknown User',
+            email: updatedMember.users?.email || '',
+            role: updatedMember.role,
+            joinedAt: updatedMember.created_at,
+          },
+        })
+      }
+
+      // ── Default: Role Update ──
 
       if (!memberId || !role) {
         throw new Error('memberId and role are required')

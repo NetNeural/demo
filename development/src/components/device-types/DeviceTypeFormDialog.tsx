@@ -44,6 +44,7 @@ import {
   DEVICE_CLASSES,
   COMMON_UNITS,
   DEFAULT_DEVICE_TYPE_FORM,
+  UNIT_FULL_NAMES,
   type DeviceType,
   type DeviceTypeFormValues,
   type DeviceTypePayload,
@@ -456,6 +457,7 @@ export function DeviceTypeFormDialog({
                       variant={form.unit === u ? 'default' : 'outline'}
                       className="cursor-pointer text-xs"
                       onClick={() => updateField('unit', u)}
+                      title={UNIT_FULL_NAMES[u] || u}
                     >
                       {u}
                     </Badge>
