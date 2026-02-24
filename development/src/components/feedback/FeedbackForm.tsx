@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Bug, Lightbulb, Send, Loader2 } from 'lucide-react'
+import { Bug, Lightbulb, Send, Loader2, ImagePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -41,8 +41,93 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const [bugTimezone, setBugTimezone] = useState(
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   )
+  const [screenshots, setScreenshots] = useState<File[]>([])
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([])
+  const [uploadingScreenshots, setUploadingScreenshots] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [recentlySubmitted, setRecentlySubmitted] = useState(false)
+
+  const MAX_SCREENSHOTS = 3
+  const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
+  const handleScreenshotAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    const remaining = MAX_SCREENSHOTS - screenshots.length
+    if (remaining <= 0) {
+      toast.error(`Maximum ${MAX_SCREENSHOTS} screenshots allowed`)
+      return
+    }
+
+    const validFiles = files.slice(0, remaining).filter((file) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image file`)
+        return false
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} exceeds 5MB limit`)
+        return false
+      }
+      return true
+    })
+
+    if (validFiles.length === 0) return
+
+    // Create previews
+    validFiles.forEach((file) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setScreenshotPreviews((prev) => [...prev, reader.result as string])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    setScreenshots((prev) => [...prev, ...validFiles])
+    // Reset the input so same file can be re-selected
+    e.target.value = ''
+  }
+
+  const handleScreenshotRemove = (index: number) => {
+    setScreenshots((prev) => prev.filter((_, i) => i !== index))
+    setScreenshotPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadScreenshots = async (): Promise<string[]> => {
+    if (screenshots.length === 0) return []
+
+    setUploadingScreenshots(true)
+    const urls: string[] = []
+
+    try {
+      for (const file of screenshots) {
+        const ext = file.name.split('.').pop() || 'png'
+        const path = `${user?.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+        const { error } = await supabase.storage
+          .from('feedback-attachments')
+          .upload(path, file, { contentType: file.type })
+
+        if (error) {
+          console.error('Screenshot upload failed:', error)
+          toast.error(`Failed to upload ${file.name}`)
+          continue
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('feedback-attachments')
+          .getPublicUrl(path)
+
+        if (urlData?.publicUrl) {
+          urls.push(urlData.publicUrl)
+        }
+      }
+    } finally {
+      setUploadingScreenshots(false)
+    }
+
+    return urls
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +148,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     setSubmitting(true)
 
     try {
+      // Upload screenshots first (if any)
+      const screenshotUrls = await uploadScreenshots()
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -92,6 +180,7 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
               type === 'bug_report' ? bugOccurredTime || undefined : undefined,
             bugTimezone:
               type === 'bug_report' ? bugTimezone || undefined : undefined,
+            screenshotUrls: screenshotUrls.length > 0 ? screenshotUrls : undefined,
             browserInfo: navigator.userAgent,
             pageUrl: window.location.href,
           }),
@@ -117,6 +206,8 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
       setBugOccurredDate('')
       setBugOccurredTime('')
       setBugTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+      setScreenshots([])
+      setScreenshotPreviews([])
       setRecentlySubmitted(true)
       setTimeout(() => setRecentlySubmitted(false), 10000) // 10s cooldown
       onSubmitted?.()
@@ -304,6 +395,50 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
             </div>
           )}
 
+          {/* Screenshots */}
+          <div className="space-y-2">
+            <Label>Screenshots (optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              Attach up to {MAX_SCREENSHOTS} screenshots (max 5MB each). PNG, JPG, WebP, or GIF.
+            </p>
+
+            {/* Preview grid */}
+            {screenshotPreviews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {screenshotPreviews.map((preview, index) => (
+                  <div key={index} className="group relative rounded-md border overflow-hidden">
+                    <img
+                      src={preview}
+                      alt={`Screenshot ${index + 1}`}
+                      className="h-24 w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleScreenshotRemove(index)}
+                      className="absolute right-1 top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {screenshots.length < MAX_SCREENSHOTS && (
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                <ImagePlus className="h-4 w-4" />
+                <span>Add screenshot{screenshots.length > 0 ? ` (${screenshots.length}/${MAX_SCREENSHOTS})` : ''}</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                  onChange={handleScreenshotAdd}
+                  className="hidden"
+                  multiple
+                />
+              </label>
+            )}
+          </div>
+
           {/* Context info */}
           <div className="space-y-1 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
             <p>
@@ -318,13 +453,13 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={submitting || recentlySubmitted || !title.trim() || !description.trim()}
+            disabled={submitting || uploadingScreenshots || recentlySubmitted || !title.trim() || !description.trim()}
             className="w-full"
           >
-            {submitting ? (
+            {submitting || uploadingScreenshots ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
+                {uploadingScreenshots ? 'Uploading screenshots...' : 'Submitting...'}
               </>
             ) : recentlySubmitted ? (
               <>

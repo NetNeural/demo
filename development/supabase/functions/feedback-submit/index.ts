@@ -27,6 +27,7 @@ interface FeedbackRequest {
   bugOccurredDate?: string
   bugOccurredTime?: string
   bugTimezone?: string
+  screenshotUrls?: string[]
   browserInfo?: string
   pageUrl?: string
 }
@@ -48,6 +49,7 @@ export default createEdgeFunction(
       bugOccurredDate,
       bugOccurredTime,
       bugTimezone,
+      screenshotUrls,
       browserInfo,
       pageUrl,
     } = body
@@ -157,6 +159,11 @@ ${description}
 - **Org ID:** ${organizationId}
 </details>
 
+${screenshotUrls && screenshotUrls.length > 0 ? `
+## Screenshots
+
+${screenshotUrls.map((url: string, i: number) => `![Screenshot ${i + 1}](${url})`).join('\n\n')}
+` : ''}
 > _This issue was automatically created from the NetNeural in-app feedback form._`
 
     // Build labels
@@ -228,6 +235,7 @@ ${description}
         bug_occurred_date: bugOccurredDate || null,
         bug_occurred_time: bugOccurredTime || null,
         bug_timezone: bugTimezone || null,
+        screenshot_urls: screenshotUrls && screenshotUrls.length > 0 ? screenshotUrls : null,
         github_issue_number: githubIssueNumber,
         github_issue_url: githubIssueUrl,
         browser_info: browserInfo || null,
