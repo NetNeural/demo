@@ -16,7 +16,7 @@ name: Deploy Staging to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [staging]
     paths: 
       - 'development/**'
       - '.github/workflows/deploy-staging.yml'
@@ -50,10 +50,10 @@ jobs:
         working-directory: ./development
     
     steps:
-      - name: 📥 Checkout main branch
+      - name: 📥 Checkout staging branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: staging
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -178,9 +178,10 @@ jobs:
           echo "📊 GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
           echo "🗄️ Database: ${{ secrets.STAGING_SUPABASE_URL }}"
           echo ""
-          echo "✅ Staging environment is completely isolated from production"
-          echo "   Production: https://demo.netneural.ai (main branch)"
+          echo "✅ Staging environment is completely isolated"
+          echo "   Production: https://sentinel.netneural.ai (main branch)"
           echo "   Staging: https://demo-stage.netneural.ai (this deployment)"
+          echo "   Development: https://demo.netneural.ai (develop branch)"
 
       - name: 🔍 Post-Deployment Verification
         if: success()

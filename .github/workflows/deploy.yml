@@ -1,12 +1,16 @@
-name: Deploy NetNeural Platform to GitHub Pages
+name: "[DEPRECATED] Deploy NetNeural Platform to GitHub Pages"
 
-# DISABLED auto-push: Only staging deploys on push now (save Actions minutes)
-# Re-enable push trigger when ready for production deploys
+# ⚠️ DEPRECATED: This workflow is replaced by deploy-production.yml
+# Kept for reference only. Use deploy-production.yml for production deployments.
+# See issue #71 for 3-environment setup details.
 on:
-  # push:
-  #   branches: [ main ]
-  #   paths: [ 'development/**' ]
   workflow_dispatch:
+    inputs:
+      confirm_deprecated:
+        description: '⚠️ This workflow is DEPRECATED. Use deploy-production.yml instead.'
+        required: true
+        default: 'I understand this is deprecated'
+        type: string
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
