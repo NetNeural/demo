@@ -219,6 +219,21 @@ export default createEdgeFunction(
         )
       }
 
+      // Mark all acknowledged alerts as resolved so they disappear from active list
+      const { error: resolveError } = await supabase
+        .from('alerts')
+        .update({
+          is_resolved: true,
+          resolved_by: userContext.userId,
+          resolved_at: new Date().toISOString(),
+        })
+        .in('id', alert_ids)
+
+      if (resolveError) {
+        console.error('Failed to resolve bulk acknowledged alerts:', resolveError)
+        // Non-fatal: acknowledgements were recorded, but alerts may still show
+      }
+
       return createSuccessResponse({
         acknowledged_count: data?.length || 0,
         acknowledgements: data,
@@ -282,6 +297,21 @@ export default createEdgeFunction(
           throw new DatabaseError(
             `Failed to acknowledge alert: ${ackError.message}`
           )
+        }
+
+        // Also mark the alert as resolved so it disappears from active alerts list
+        const { error: resolveError } = await supabase
+          .from('alerts')
+          .update({
+            is_resolved: true,
+            resolved_by: userContext.userId,
+            resolved_at: new Date().toISOString(),
+          })
+          .eq('id', alertId)
+
+        if (resolveError) {
+          console.error('Failed to resolve acknowledged alert:', resolveError)
+          // Non-fatal: acknowledgement was recorded
         }
 
         return createSuccessResponse({

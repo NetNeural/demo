@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getUserContext, createAuthenticatedClient } from '../_shared/auth.ts'
+import { getUserContext, createAuthenticatedClient, createServiceClient } from '../_shared/auth.ts'
 
 interface AcknowledgeAlertRequest {
   alert_id: string
@@ -102,6 +102,23 @@ async function handleAcknowledgeAlert(
   if (error) {
     console.error('[Acknowledge Alert] Database error:', error)
     throw new Error(`Failed to acknowledge alert: ${error.message}`)
+  }
+
+  // Belt-and-suspenders: also directly mark alert as resolved
+  // This ensures is_resolved is set even if the DB function is outdated
+  try {
+    const serviceClient = createServiceClient()
+    await serviceClient
+      .from('alerts')
+      .update({
+        is_resolved: true,
+        resolved_by: userId,
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('id', body.alert_id)
+  } catch (resolveErr) {
+    console.warn('[Acknowledge Alert] Fallback resolve failed:', resolveErr)
+    // Non-fatal: the RPC function should have handled this
   }
 
   return new Response(
