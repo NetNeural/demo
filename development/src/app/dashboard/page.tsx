@@ -1,6 +1,5 @@
-'use client'
+﻿'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -24,34 +23,22 @@ import {
   Smartphone,
   Users,
   AlertTriangle,
-  TrendingUp,
   Activity,
   ArrowUpRight,
   ArrowDownRight,
   Settings,
 } from 'lucide-react'
-import { QuickActionsDropdown } from '@/components/ui/QuickActionsDropdown'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { fmt } = useDateFormatter()
-  const [loading, setLoading] = useState(true)
   const {
     currentOrganization,
     stats,
     isLoading: isLoadingOrg,
   } = useOrganization()
 
-  useEffect(() => {
-    // Simple timeout to simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading || isLoadingOrg) {
+  if (isLoadingOrg) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div className="text-center">
@@ -104,8 +91,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          {/* Quick Actions Dropdown */}
-          <QuickActionsDropdown />
+          {/* Quick Actions lives in dashboard layout â€” no duplicate here */}
         </div>
       </div>
 
@@ -125,12 +111,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.totalDevices || currentOrganization.deviceCount || 0}
+              {stats?.totalDevices ?? currentOrganization.deviceCount ?? 0}
             </div>
             <div className="mt-1 flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-              <span className="font-medium text-green-500">+12%</span>
-              <span className="ml-1">from last month</span>
+              <Activity className="mr-1 h-3 w-3 text-blue-500" />
+              <span>{stats?.onlineDevices ?? 0} currently online</span>
             </div>
           </CardContent>
         </Card>
@@ -149,9 +134,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.onlineDevices || 0}
+              {stats?.onlineDevices ?? 0}
               <span className="ml-2 text-sm text-muted-foreground">
-                / {stats?.totalDevices || 0}
+                / {stats?.totalDevices ?? 0}
               </span>
             </div>
             <div className="mt-1 flex items-center text-xs text-muted-foreground">
@@ -179,9 +164,10 @@ export default function DashboardPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeAlerts || 0}</div>
+            <div className="text-2xl font-bold">
+              {stats?.activeAlerts ?? 0}</div>
             <div className="mt-1 flex items-center text-xs text-muted-foreground">
-              {(stats?.activeAlerts || 0) > 0 ? (
+              {(stats?.activeAlerts ?? 0) > 0 ? (
                 <>
                   <ArrowUpRight className="mr-1 h-3 w-3 text-orange-500" />
                   <span className="font-medium text-orange-500">
@@ -192,7 +178,7 @@ export default function DashboardPage() {
                 <>
                   <ArrowDownRight className="mr-1 h-3 w-3 text-green-500" />
                   <span className="font-medium text-green-500">
-                    -8% from last week
+                    All clear
                   </span>
                 </>
               )}
@@ -211,12 +197,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.totalUsers || currentOrganization.userCount || 0}
+              {stats?.totalUsers ?? currentOrganization.userCount ?? 0}
             </div>
             <div className="mt-1 flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-              <span className="font-medium text-green-500">+5%</span>
-              <span className="ml-1">from last month</span>
+              <Users className="mr-1 h-3 w-3 text-blue-500" />
+              <span>across this organization</span>
             </div>
           </CardContent>
         </Card>
@@ -224,7 +209,7 @@ export default function DashboardPage() {
 
       {/* Main Content - 2 Column Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Locations Card — key forces remount on org switch (Bug #232) */}
+        {/* Locations Card - key forces remount on org switch (Bug #232) */}
         <LocationsCard key={currentOrganization.id} />
 
         {/* System Health Card */}
@@ -241,7 +226,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Online</span>
                 <span className="font-medium text-green-600">
-                  {stats?.onlineDevices || 0} devices
+                  {stats?.onlineDevices ?? 0} devices
                 </span>
               </div>
               <div className="h-2 w-full rounded-full bg-muted">
@@ -265,7 +250,7 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Offline</span>
                 <span className="font-medium text-red-600">
                   {stats?.totalDevices
-                    ? stats.totalDevices - (stats.onlineDevices || 0)
+                    ? stats.totalDevices - (stats.onlineDevices ?? 0)
                     : 0}{' '}
                   devices
                 </span>
@@ -315,7 +300,7 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {(stats?.activeAlerts || 0) > 0 ? (
+            {(stats?.activeAlerts ?? 0) > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-3">
@@ -325,14 +310,14 @@ export default function DashboardPage() {
                         System notifications active
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {stats?.activeAlerts || 0} alert
-                        {(stats?.activeAlerts || 0) !== 1 ? 's' : ''} require
+                        {stats?.activeAlerts ?? 0} alert
+                        {(stats?.activeAlerts ?? 0) !== 1 ? 's' : ''} require
                         attention
                       </p>
                     </div>
                   </div>
                   <Badge variant="destructive">
-                    {stats?.activeAlerts || 0}
+                    {stats?.activeAlerts ?? 0}
                   </Badge>
                 </div>
                 <Button
@@ -388,13 +373,13 @@ export default function DashboardPage() {
                   Integrations
                 </span>
                 <span className="text-sm font-medium">
-                  {stats?.activeIntegrations || 0} active
+                  {stats?.activeIntegrations ?? 0} active
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Locations</span>
                 <span className="text-sm font-medium">
-                  {stats?.totalLocations || 0} configured
+                  {stats?.totalLocations ?? 0} configured
                 </span>
               </div>
             </div>

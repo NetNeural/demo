@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Users,
@@ -18,6 +18,8 @@ import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { canAccessSupport } from '@/lib/permissions'
 import { toast } from 'sonner'
+
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 import CustomerAssistanceTab from './components/CustomerAssistanceTab'
 import TroubleshootingTab from './components/TroubleshootingTab'
@@ -68,6 +70,14 @@ const tabs = [
 ]
 
 export default function SupportPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <SupportPageContent />
+    </Suspense>
+  )
+}
+
+function SupportPageContent() {
   const { user, loading: userLoading } = useUser()
   const { currentOrganization, userRole } = useOrganization()
   const router = useRouter()
@@ -87,7 +97,7 @@ export default function SupportPage() {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {

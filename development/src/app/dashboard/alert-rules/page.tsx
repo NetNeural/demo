@@ -119,6 +119,21 @@ export default function AlertRulesPage() {
     }
   }
 
+  if (!currentOrganization) {
+    return (
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
+            <p className="text-muted-foreground">No organization selected</p>
+            <p className="text-sm text-muted-foreground">
+              Please select an organization from the sidebar to view alert rules
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">

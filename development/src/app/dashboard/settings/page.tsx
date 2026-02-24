@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User, Settings, Shield, Building2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -11,8 +11,17 @@ import { SecurityTab } from './components/SecurityTab'
 import { UserOrganizationsTab } from './components/UserOrganizationsTab'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <SettingsPageContent />
+    </Suspense>
+  )
+}
+
+function SettingsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -33,7 +42,7 @@ export default function SettingsPage() {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {

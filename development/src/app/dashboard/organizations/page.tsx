@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -27,8 +27,17 @@ import { OrganizationSettingsTab } from './components/OrganizationSettingsTab'
 import { AccessRequestsTab } from './components/AccessRequestsTab'
 import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function OrganizationsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <OrganizationsPageContent />
+    </Suspense>
+  )
+}
+
+function OrganizationsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -45,7 +54,7 @@ export default function OrganizationsPage() {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {

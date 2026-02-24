@@ -54,6 +54,15 @@ import {
 } from 'recharts'
 import { format, subHours } from 'date-fns'
 
+// Lazy singleton — avoids calling createClient() at module eval time
+// (which fails during static export since env vars aren't available)
+// but still preserves referential stability to prevent infinite useEffect loops.
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
+
 interface Device {
   id: string
   name: string
@@ -138,14 +147,12 @@ export function TelemetryTrendsReport() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
-  const supabase = createClient()
-
   // Fetch devices
   useEffect(() => {
     if (!currentOrganization) return
 
     const fetchDevices = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('devices')
         .select('id, name')
         .eq('organization_id', currentOrganization.id)
@@ -157,14 +164,14 @@ export function TelemetryTrendsReport() {
     }
 
     fetchDevices()
-  }, [currentOrganization, supabase])
+  }, [currentOrganization])
 
   // Fetch thresholds for selected devices
   useEffect(() => {
     if (selectedDevices.length === 0) return
 
     const fetchThresholds = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('sensor_thresholds')
         .select(
           'device_id, sensor_type, min_value, max_value, critical_min, critical_max'
@@ -178,7 +185,7 @@ export function TelemetryTrendsReport() {
     }
 
     fetchThresholds()
-  }, [selectedDevices, selectedSensor, supabase])
+  }, [selectedDevices, selectedSensor])
 
   // Fetch telemetry data
   const fetchTelemetryData = useCallback(async () => {
@@ -198,7 +205,7 @@ export function TelemetryTrendsReport() {
         startDate = subHours(new Date(), range?.hours || 24)
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('device_telemetry_history')
         .select('device_id, telemetry, device_timestamp, received_at')
         .in('device_id', selectedDevices)
@@ -246,7 +253,6 @@ export function TelemetryTrendsReport() {
     selectedSensor,
     timeRange,
     customDateRange,
-    supabase,
   ])
 
   useEffect(() => {

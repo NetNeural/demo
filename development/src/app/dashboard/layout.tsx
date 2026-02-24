@@ -34,10 +34,16 @@ import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
 import { Badge } from '@/components/ui/badge'
 
+// Lazy singleton — avoids calling createClient() at module eval time during static export
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
+
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
   const { currentOrganization, userRole } = useOrganization()
-  const supabase = createClient()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isSuperAdmin = user?.isSuperAdmin || false
@@ -157,14 +163,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 sessionStorage.setItem('manual_signout', '1')
                 // Audit log the logout before signing out
                 try {
-                  const { data: { user: signOutUser } } = await supabase.auth.getUser()
+                  const { data: { user: signOutUser } } = await getSupabase().auth.getUser()
                   if (signOutUser) {
                     const { auditLogout } = await import('@/lib/audit-client')
                     auditLogout(signOutUser.id, signOutUser.email || '')
                     await new Promise((r) => setTimeout(r, 200))
                   }
                 } catch { /* don't block logout */ }
-                await supabase.auth.signOut()
+                await getSupabase().auth.signOut()
                 window.location.href = '/auth/login'
               }}
               className="btn btn-ghost btn-sm"

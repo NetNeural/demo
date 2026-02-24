@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,8 +20,17 @@ import {
   type ReportPayload,
 } from '@/components/reports/SendReportDialog'
 import type { TimeRange } from './types/analytics.types'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <AnalyticsPageContent />
+    </Suspense>
+  )
+}
+
+function AnalyticsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -31,20 +40,26 @@ export default function AnalyticsPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   const getReportPayload = useCallback((): ReportPayload => {
+    // Sanitize a value for safe CSV inclusion (prevent formula injection)
+    const sanitize = (v: string) => {
+      if (/^[=+\-@\t\r]/.test(v)) return `'${v}`
+      return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v
+    }
+
     const csvRows = [
       ['Device Performance Report'],
       ['Generated:', new Date().toISOString()],
-      ['Organization:', currentOrganization?.name || ''],
+      ['Organization:', sanitize(currentOrganization?.name || '')],
       ['Time Range:', timeRange],
       [],
       ['Device Name', 'Uptime %', 'Data Points', 'Avg Battery %', 'Avg RSSI', 'Last Error'],
       ...(data?.devicePerformance.map((d) => [
-        d.device_name,
+        sanitize(d.device_name),
         d.uptime_percentage.toFixed(2),
         d.data_points_count.toString(),
         d.avg_battery?.toFixed(2) || 'N/A',
         d.avg_rssi?.toFixed(2) || 'N/A',
-        d.last_error || 'None',
+        sanitize(d.last_error || 'None'),
       ]) || []),
     ]
     const csvContent = csvRows.map((row) => row.join(',')).join('\n')

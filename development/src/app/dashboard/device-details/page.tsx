@@ -1,7 +1,7 @@
 'use client'
 
 // Cache bust: 2026-02-17 v4 - Use edge function for device fetch (multi-org support)
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Suspense, useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
@@ -19,6 +19,14 @@ import { HistoricalDataViewer } from '@/components/sensors/HistoricalDataViewer'
 import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
 import { TestDeviceControls } from '@/components/devices/TestDeviceControls'
 import type { Device } from '@/types/sensor-details'
+
+export default function DeviceDetailsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <DeviceDetailsContent />
+    </Suspense>
+  )
+}
 
 /**
  * Determine if a device is a gateway/cellular type (not an environmental sensor)
@@ -173,7 +181,7 @@ function normalizeTelemetryReadings(
   return result
 }
 
-export default function SensorDetailsPage() {
+function DeviceDetailsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { currentOrganization } = useOrganization()

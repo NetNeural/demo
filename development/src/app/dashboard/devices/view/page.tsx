@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft,
@@ -42,6 +42,14 @@ import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCa
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { toast } from 'sonner'
 
+export default function DeviceViewPage() {
+  return (
+    <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <DeviceViewContent />
+    </Suspense>
+  )
+}
+
 interface Device {
   id: string
   name: string
@@ -79,7 +87,7 @@ interface Device {
   updated_at?: string
 }
 
-export default function DeviceViewPage() {
+function DeviceViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const deviceId = searchParams.get('id')
@@ -104,7 +112,7 @@ export default function DeviceViewPage() {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam)
     }
-  }, [searchParams, activeTab])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {
@@ -149,10 +157,6 @@ export default function DeviceViewPage() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const responseData = response.data as any // Use any to handle snake_case or camelCase from API
-      console.log(
-        'Device data received:',
-        JSON.stringify(responseData, null, 2)
-      )
 
       // Extract the device object (edge function wraps it in { device: {...} })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -175,7 +179,7 @@ export default function DeviceViewPage() {
         lastSeen:
           deviceData.lastSeen ||
           deviceData.last_seen ||
-          new Date().toISOString(),
+          '',
         batteryLevel: deviceData.batteryLevel ?? deviceData.battery_level,
         signal_strength: deviceData.signal_strength,
         isExternallyManaged:
@@ -192,8 +196,6 @@ export default function DeviceViewPage() {
         created_at: deviceData.created_at,
         updated_at: deviceData.updated_at,
       }
-
-      console.log('Mapped device:', JSON.stringify(mappedDevice, null, 2))
 
       setDevice(mappedDevice)
       setName(mappedDevice.name || '')

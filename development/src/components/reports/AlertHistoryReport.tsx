@@ -172,7 +172,6 @@ export function AlertHistoryReport() {
   // Fetch alerts with acknowledgements
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
-      console.log('[AlertHistoryReport] No organization selected')
       setAlerts([])
       setLoading(false)
       return
@@ -180,22 +179,8 @@ export function AlertHistoryReport() {
 
     try {
       setLoading(true)
-      console.log(
-        '[AlertHistoryReport] Fetching alerts for org:',
-        currentOrganization.id
-      )
 
       const supabase = createClient()
-
-      // Log Supabase connection details
-      const supabaseUrl = (supabase as any).supabaseUrl || 'unknown'
-      console.log('[AlertHistoryReport] Supabase URL:', supabaseUrl)
-      console.log('[AlertHistoryReport] Environment:', {
-        NEXT_PUBLIC_SUPABASE_URL:
-          process.env.NEXT_PUBLIC_SUPABASE_URL || 'not set',
-        hostname:
-          typeof window !== 'undefined' ? window.location.hostname : 'server',
-      })
 
       // Build query - simplified without device join to avoid RLS issues
       let query = supabase
@@ -207,24 +192,12 @@ export function AlertHistoryReport() {
 
       const { data: alertsData, error } = await query
 
-      console.log('[AlertHistoryReport] Query result:', {
-        data: alertsData,
-        error,
-        orgId: currentOrganization.id,
-      })
-
       if (error) {
         console.error('[AlertHistoryReport] Database error:', error)
         throw new Error(`Failed to fetch alerts: ${error.message}`)
       }
 
-      console.log(
-        '[AlertHistoryReport] Fetched alerts:',
-        alertsData?.length || 0
-      )
-
       if (!alertsData || alertsData.length === 0) {
-        console.warn('[AlertHistoryReport] No alerts found for organization')
         setAlerts([])
         setStats({
           totalAlerts: 0,
@@ -256,6 +229,9 @@ export function AlertHistoryReport() {
         )
       }
 
+      // Build a device name lookup from the already-fetched devices list
+      const deviceNameMap = new Map(devices.map((d) => [d.id, d.name]))
+
       // Combine alerts with acknowledgements and calculate response times
       // deno-lint-ignore no-explicit-any
       const alertsWithAck: AlertWithAck[] = alertsData.map((alert: any) => {
@@ -281,7 +257,7 @@ export function AlertHistoryReport() {
           severity: alert.severity,
           alert_type: alert.alert_type,
           device_id: alert.device_id,
-          device_name: alert.device_id || 'No Device',
+          device_name: (alert.device_id && deviceNameMap.get(alert.device_id)) || alert.title || 'Unknown Device',
           created_at: alert.created_at,
           is_resolved: alert.is_resolved,
           resolved_at: alert.resolved_at,

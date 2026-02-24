@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,8 +12,17 @@ import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog'
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog'
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog'
 import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function IntegrationViewPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <IntegrationViewContent />
+    </Suspense>
+  )
+}
+
+function IntegrationViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const integrationId = searchParams.get('id')

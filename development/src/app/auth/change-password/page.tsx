@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Lock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function ChangePasswordPage() {
@@ -28,8 +28,29 @@ export default function ChangePasswordPage() {
   const [phoneNumberSecondary, setPhoneNumberSecondary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [authChecking, setAuthChecking] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
+
+  // Auth guard — redirect unauthenticated users to login
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.replace('/auth/login')
+      } else {
+        setAuthChecking(false)
+      }
+    })
+  }, [router])
+
+  if (authChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +89,7 @@ export default function ChangePasswordPage() {
     const hasUpperCase = /[A-Z]/.test(newPassword)
     const hasLowerCase = /[a-z]/.test(newPassword)
     const hasNumber = /[0-9]/.test(newPassword)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+    const hasSpecialChar = /[^a-zA-Z0-9\s]/.test(newPassword)
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
       setError(
@@ -143,7 +164,7 @@ export default function ChangePasswordPage() {
       router.push('/dashboard')
     } catch (err) {
       console.error('Password change error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to change password')
+      setError('Failed to change password. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
