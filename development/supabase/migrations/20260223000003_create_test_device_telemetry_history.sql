@@ -56,7 +56,7 @@ CREATE POLICY "Authenticated users can read test telemetry"
         SELECT 1
         FROM users u
         WHERE u.id = auth.uid()
-          AND u.is_super_admin = true
+          AND u.role = 'super_admin'
       )
     )
   );
@@ -84,7 +84,7 @@ CREATE POLICY "Authenticated users can insert test telemetry"
         SELECT 1
         FROM users u
         WHERE u.id = auth.uid()
-          AND u.is_super_admin = true
+          AND u.role = 'super_admin'
       )
     )
   );
