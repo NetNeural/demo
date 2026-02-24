@@ -121,7 +121,7 @@ const STATUS_OPTIONS = [
 const ITEMS_PER_PAGE = 100
 
 export function AuditLogReport() {
-  const { currentOrganization, userRole } = useOrganization()
+  const { currentOrganization, userRole, isLoading: isLoadingOrg } = useOrganization()
   const { user: currentUser } = useUser()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -166,6 +166,9 @@ export function AuditLogReport() {
     return false
   }, [currentUser, userRole])
 
+  // Whether we're still resolving the user's admin status
+  const isResolvingAdmin = !currentUser || isLoadingOrg
+
   // Fetch users for filter dropdown
   const fetchUsers = useCallback(async () => {
     if (!currentOrganization) return
@@ -197,6 +200,11 @@ export function AuditLogReport() {
       console.log('[AuditLogReport] No organization selected')
       setLogs([])
       setLoading(false)
+      return
+    }
+
+    // Don't evaluate access until user/org context is fully loaded
+    if (isResolvingAdmin) {
       return
     }
 
@@ -321,6 +329,7 @@ export function AuditLogReport() {
   }, [
     currentOrganization,
     isAdmin,
+    isResolvingAdmin,
     startDate,
     endDate,
     categoryFilter,
