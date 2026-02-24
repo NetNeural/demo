@@ -42,9 +42,13 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   )
   const [submitting, setSubmitting] = useState(false)
+  const [recentlySubmitted, setRecentlySubmitted] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevent duplicate submissions from double-clicks or rapid re-submits
+    if (submitting || recentlySubmitted) return
 
     if (!title.trim() || !description.trim()) {
       toast.error('Please fill in both the title and description.')
@@ -106,13 +110,15 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           : 'Feedback submitted! Your feedback has been recorded.'
       )
 
-      // Reset form
+      // Reset form and apply cooldown to prevent duplicates
       setTitle('')
       setDescription('')
       setSeverity('medium')
       setBugOccurredDate('')
       setBugOccurredTime('')
       setBugTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+      setRecentlySubmitted(true)
+      setTimeout(() => setRecentlySubmitted(false), 10000) // 10s cooldown
       onSubmitted?.()
     } catch (error) {
       console.error('Feedback submission error:', error)
@@ -312,13 +318,18 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={submitting || !title.trim() || !description.trim()}
+            disabled={submitting || recentlySubmitted || !title.trim() || !description.trim()}
             className="w-full"
           >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
+              </>
+            ) : recentlySubmitted ? (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Submitted ✓
               </>
             ) : (
               <>

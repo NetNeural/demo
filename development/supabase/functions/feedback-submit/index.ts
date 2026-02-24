@@ -68,6 +68,33 @@ export default createEdgeFunction(
 
     const serviceClient = createServiceClient()
 
+    // ---------------------------------------------------------------
+    // Duplicate prevention: reject if same user submitted feedback
+    // with the same title in the last 5 minutes
+    // ---------------------------------------------------------------
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: recentDupe } = await serviceClient
+      .from('feedback')
+      .select('id')
+      .eq('user_id', user.userId)
+      .eq('organization_id', organizationId)
+      .eq('title', title.trim())
+      .gte('created_at', fiveMinutesAgo)
+      .limit(1)
+      .maybeSingle()
+
+    if (recentDupe) {
+      console.log(
+        `[feedback-submit] Duplicate blocked: user ${user.userId} already submitted "${title}" recently (id=${recentDupe.id})`
+      )
+      // Return success (not an error) so the UI doesn't keep retrying
+      return createSuccessResponse({
+        feedback: recentDupe,
+        message: 'This feedback was already submitted recently.',
+        duplicate: true,
+      })
+    }
+
     // Super admins have global organization access (virtual membership)
     if (user.role !== 'super_admin') {
       const { data: membership, error: memberError } = await serviceClient
