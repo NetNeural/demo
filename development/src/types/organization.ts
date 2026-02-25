@@ -16,6 +16,10 @@ export interface OrganizationSettings {
     background_url?: string | null
     background_color?: string
     background_fit?: 'cover' | 'contain' | 'fill' | 'center'
+    /** Focal point for the background image on desktop (0–100 %). Defaults to { x: 50, y: 50 } (center). */
+    background_position?: { x: number; y: number }
+    /** Focal point for the background image on mobile (0–100 %). Defaults to desktop value. */
+    background_position_mobile?: { x: number; y: number }
     headline?: string | null
     subtitle?: string | null
     card_opacity?: number
