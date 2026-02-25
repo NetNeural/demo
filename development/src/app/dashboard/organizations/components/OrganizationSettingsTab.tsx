@@ -72,8 +72,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [loginBgUrl, setLoginBgUrl] = useState('')
   const [loginBgColor, setLoginBgColor] = useState('#030712')
   const [loginBgFit, setLoginBgFit] = useState<'cover' | 'contain' | 'fill' | 'center'>('cover')
-  const [loginBgPosition, setLoginBgPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 })
-  const [loginBgPositionMobile, setLoginBgPositionMobile] = useState<{ x: number; y: number }>({ x: 50, y: 50 })
   const [loginHeadline, setLoginHeadline] = useState('')
   const [loginSubtitle, setLoginSubtitle] = useState('')
   const [loginCardOpacity, setLoginCardOpacity] = useState(70)
@@ -102,8 +100,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setLoginBgUrl(settings.login_page?.background_url || '')
       setLoginBgColor(settings.login_page?.background_color || '#030712')
       setLoginBgFit(settings.login_page?.background_fit || 'cover')
-      setLoginBgPosition(settings.login_page?.background_position || { x: 50, y: 50 })
-      setLoginBgPositionMobile(settings.login_page?.background_position_mobile || settings.login_page?.background_position || { x: 50, y: 50 })
       setLoginHeadline(settings.login_page?.headline || '')
       setLoginSubtitle(settings.login_page?.subtitle || '')
       setLoginCardOpacity(settings.login_page?.card_opacity ?? 70)
@@ -447,8 +443,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           background_url: loginBgUrl || null,
           background_color: loginBgColor,
           background_fit: loginBgFit,
-          background_position: loginBgPosition,
-          background_position_mobile: loginBgPositionMobile,
           headline: loginHeadline || null,
           subtitle: loginSubtitle || null,
           card_opacity: loginCardOpacity,
@@ -991,79 +985,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               Controls how the background image fills the browser window.
             </p>
           </div>
-
-          {/* Background Focal Point (Desktop & Mobile) */}
-          {loginBgUrl && loginBgFit === 'cover' && (
-            <div className="space-y-3">
-              <Label>Image Focal Point</Label>
-              <p className="text-xs text-muted-foreground">
-                Click or drag on each preview to set where the image focuses. This ensures the important part of your image stays visible on both screen sizes.
-              </p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Desktop preview */}
-                <div className="space-y-1.5">
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <Monitor className="h-4 w-4" /> Desktop ({loginBgPosition.x}%, {loginBgPosition.y}%)
-                  </span>
-                  <div
-                    className="relative h-32 w-full cursor-crosshair overflow-hidden rounded-lg border-2 border-gray-300 dark:border-gray-600"
-                    style={{ aspectRatio: '16/9' }}
-                    onMouseDown={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      const setPos = (ev: { clientX: number; clientY: number }) => {
-                        const x = Math.max(0, Math.min(100, Math.round(((ev.clientX - rect.left) / rect.width) * 100)))
-                        const y = Math.max(0, Math.min(100, Math.round(((ev.clientY - rect.top) / rect.height) * 100)))
-                        setLoginBgPosition({ x, y })
-                      }
-                      setPos(e)
-                      const onMove = (ev: MouseEvent) => setPos(ev)
-                      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
-                      document.addEventListener('mousemove', onMove)
-                      document.addEventListener('mouseup', onUp)
-                    }}
-                  >
-                    <img src={loginBgUrl} alt="Desktop preview" className="h-full w-full object-cover" style={{ objectPosition: `${loginBgPosition.x}% ${loginBgPosition.y}%` }} />
-                    <div className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-lg" style={{ left: `${loginBgPosition.x}%`, top: `${loginBgPosition.y}%` }} />
-                  </div>
-                </div>
-                {/* Mobile preview */}
-                <div className="space-y-1.5">
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-                    Mobile ({loginBgPositionMobile.x}%, {loginBgPositionMobile.y}%)
-                  </span>
-                  <div
-                    className="relative mx-auto h-32 w-20 cursor-crosshair overflow-hidden rounded-lg border-2 border-gray-300 dark:border-gray-600"
-                    style={{ aspectRatio: '9/16' }}
-                    onMouseDown={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      const setPos = (ev: { clientX: number; clientY: number }) => {
-                        const x = Math.max(0, Math.min(100, Math.round(((ev.clientX - rect.left) / rect.width) * 100)))
-                        const y = Math.max(0, Math.min(100, Math.round(((ev.clientY - rect.top) / rect.height) * 100)))
-                        setLoginBgPositionMobile({ x, y })
-                      }
-                      setPos(e)
-                      const onMove = (ev: MouseEvent) => setPos(ev)
-                      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
-                      document.addEventListener('mousemove', onMove)
-                      document.addEventListener('mouseup', onUp)
-                    }}
-                  >
-                    <img src={loginBgUrl} alt="Mobile preview" className="h-full w-full object-cover" style={{ objectPosition: `${loginBgPositionMobile.x}% ${loginBgPositionMobile.y}%` }} />
-                    <div className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-green-500 shadow-lg" style={{ left: `${loginBgPositionMobile.x}%`, top: `${loginBgPositionMobile.y}%` }} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setLoginBgPosition({ x: 50, y: 50 }); setLoginBgPositionMobile({ x: 50, y: 50 }) }}>
-                  Reset Both to Center
-                </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setLoginBgPositionMobile({ ...loginBgPosition })}>
-                  Copy Desktop → Mobile
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Background Color */}
           <div className="space-y-2">

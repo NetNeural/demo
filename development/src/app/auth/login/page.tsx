@@ -39,8 +39,6 @@ interface OrgBranding {
     backgroundUrl?: string | null
     backgroundColor?: string | null
     backgroundFit?: 'cover' | 'contain' | 'fill' | 'center' | null
-    backgroundPosition?: { x: number; y: number }
-    backgroundPositionMobile?: { x: number; y: number }
     headline?: string | null
     subtitle?: string | null
     cardOpacity?: number | null
@@ -155,8 +153,6 @@ function LoginForm() {
   const bgUrl = loginPage?.backgroundUrl || null
   const bgColor = loginPage?.backgroundColor || '#030712'
   const bgFit = loginPage?.backgroundFit || 'cover'
-  const bgPosDesktop = loginPage?.backgroundPosition || { x: 50, y: 50 }
-  const bgPosMobile = loginPage?.backgroundPositionMobile || bgPosDesktop
   const headline = loginPage?.headline || null
   const subtitle = loginPage?.subtitle || null
   const cardOpacity = loginPage?.cardOpacity ?? 70
@@ -380,35 +376,16 @@ function LoginForm() {
       {bgUrl && (
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {/* Desktop background */}
           <img
             src={bgUrl}
             alt=""
-            className={`hidden h-full w-full md:block ${
+            className={`h-full w-full object-center ${
               bgFit === 'cover' ? 'object-cover' :
               bgFit === 'contain' ? 'object-contain' :
               bgFit === 'fill' ? 'object-fill' :
               'object-none'
             }`}
             style={{
-              objectPosition: `${bgPosDesktop.x}% ${bgPosDesktop.y}%`,
-              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
-              minHeight: '100vh',
-              minWidth: '100vw',
-            }}
-          />
-          {/* Mobile background */}
-          <img
-            src={bgUrl}
-            alt=""
-            className={`block h-full w-full md:hidden ${
-              bgFit === 'cover' ? 'object-cover' :
-              bgFit === 'contain' ? 'object-contain' :
-              bgFit === 'fill' ? 'object-fill' :
-              'object-none'
-            }`}
-            style={{
-              objectPosition: `${bgPosMobile.x}% ${bgPosMobile.y}%`,
               ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
               minHeight: '100vh',
               minWidth: '100vw',

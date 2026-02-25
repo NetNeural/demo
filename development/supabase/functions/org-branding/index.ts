@@ -79,8 +79,6 @@ Deno.serve(async (req: Request) => {
         backgroundUrl: loginPage.background_url || null,
         backgroundColor: loginPage.background_color || null,
         backgroundFit: loginPage.background_fit || 'cover',
-        backgroundPosition: loginPage.background_position || { x: 50, y: 50 },
-        backgroundPositionMobile: loginPage.background_position_mobile || loginPage.background_position || { x: 50, y: 50 },
         headline: loginPage.headline || null,
         subtitle: loginPage.subtitle || null,
         cardOpacity: loginPage.card_opacity ?? null,
