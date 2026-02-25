@@ -1,15 +1,18 @@
 # Fixing VS Code Deno/TypeScript Conflicts
 
 ## Problem
+
 VS Code's TypeScript language server was checking Deno files (Supabase Edge Functions) and showing errors in two categories:
 
 ### 1. False Positive Errors (VS Code Only)
+
 - `Cannot find module 'https://esm.sh/@supabase/supabase-js@2'` ❌ FALSE
 - `Cannot find name 'Deno'` ❌ FALSE
 
 These aren't real errors - just VS Code using TypeScript instead of Deno's language server.
 
 ### 2. Supabase Type System Errors (Real but Acceptable)
+
 - `Argument of type 'any' is not assignable to parameter of type 'never'` ⚠️ EXPECTED
 - `Property 'id' does not exist on type 'never'` ⚠️ EXPECTED
 - `Type '"public"' is not assignable to type 'never'` ⚠️ EXPECTED
@@ -19,6 +22,7 @@ These are **real Deno type errors** from Supabase's overly strict generated type
 ## Solution Applied
 
 ### 1. ✅ Created `.vscode/settings.json` in Supabase Functions Directory
+
 **File**: `supabase/functions/.vscode/settings.json`
 
 ```json
@@ -33,9 +37,11 @@ These are **real Deno type errors** from Supabase's overly strict generated type
 This tells VS Code to **always use Deno** for files in this directory.
 
 ### 2. ✅ Enhanced Workspace Settings
+
 **File**: `.vscode/settings.json`
 
 Added:
+
 ```json
 "deno.importMap": "supabase/functions/deno.json",
 "typescript.disableAutomaticTypeAcquisition": false,
@@ -43,6 +49,7 @@ Added:
 ```
 
 ### 3. ✅ TypeScript Config Already Excludes Deno Files
+
 **File**: `tsconfig.json`
 
 ```json
@@ -57,6 +64,7 @@ Added:
 ```
 
 ### 4. ✅ Deno Extension Already Recommended
+
 **File**: `.vscode/extensions.json`
 
 ```json
@@ -69,17 +77,21 @@ Added:
 ## How to Verify the Fix
 
 ### Step 1: Reload VS Code
+
 ```
 Ctrl+Shift+P → "Developer: Reload Window"
 ```
 
 ### Step 2: Check Deno Status
+
 1. Open any file in `supabase/functions/`
 2. Look at bottom-right status bar
 3. Should see: **"Deno: Enabled"** or Deno icon
 
 ### Step 3: Verify No TypeScript Errors
+
 Open `supabase/functions/integrations/index.ts` and verify:
+
 - ✅ No red squiggles on `import { createClient } from 'https://esm.sh/...'`
 - ✅ No errors on `Deno.env.get(...)`
 - ✅ Autocomplete works for Deno APIs
@@ -87,12 +99,14 @@ Open `supabase/functions/integrations/index.ts` and verify:
 ## What Changed
 
 ### Before:
+
 ```
 VS Code → TypeScript Language Server → ❌ Can't understand Deno imports
          → Shows 40+ false positive errors
 ```
 
 ### After:
+
 ```
 VS Code → Deno Language Server (for supabase/functions/**/*.ts)
          → TypeScript Language Server (for src/**/*.ts)
@@ -105,21 +119,25 @@ VS Code → Deno Language Server (for supabase/functions/**/*.ts)
 ### If You Still See Errors:
 
 **1. Make sure Deno extension is installed**
+
 ```bash
 code --install-extension denoland.vscode-deno
 ```
 
 **2. Restart VS Code (not just reload)**
+
 - Close VS Code completely
 - Reopen the workspace
 
 **3. Check Deno is enabled for the file**
+
 - Open `supabase/functions/integrations/index.ts`
 - Click status bar (bottom right)
 - Should show "Deno: Enabled"
 - If not, click and select "Enable Deno"
 
 **4. Clear VS Code cache**
+
 ```bash
 # Close VS Code first, then:
 rm -rf ~/.vscode/extensions/.vscode-deno/
@@ -127,9 +145,11 @@ rm -rf .vscode/.deno/
 ```
 
 **5. Check extension settings**
+
 ```
 Ctrl+Shift+P → "Preferences: Open Settings (JSON)"
 ```
+
 Verify `"deno.enable": true` and `"deno.enablePaths": ["supabase/functions"]`
 
 ## Alternative: Manual Per-File Enable
@@ -144,11 +164,13 @@ If workspace settings don't work, you can enable Deno per-file:
 ## Why This Approach Works
 
 **Deno uses HTTP imports** (ESM from URLs):
+
 ```typescript
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 ```
 
 **TypeScript expects Node.js imports** (from node_modules):
+
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 ```
@@ -164,12 +186,14 @@ By separating Deno files into their own directory with Deno language server enab
 After applying these fixes:
 
 ### Before:
+
 - ❌ 40+ false positive errors in Supabase functions
 - ❌ Red squiggles everywhere in Deno files
 - ❌ No autocomplete for Deno APIs
 - ❌ Confusing error messages
 
 ### After:
+
 - ✅ Zero false positive errors
 - ✅ Clean code with no red squiggles
 - ✅ Full Deno API autocomplete

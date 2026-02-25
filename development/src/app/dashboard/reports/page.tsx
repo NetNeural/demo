@@ -2,12 +2,28 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileText, TrendingUp, ArrowRight, Shield, Activity, Clock, Calendar, BarChart } from 'lucide-react'
+import {
+  FileText,
+  TrendingUp,
+  ArrowRight,
+  Shield,
+  Activity,
+  Clock,
+  Calendar,
+  BarChart,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { format } from 'date-fns'
@@ -36,6 +52,8 @@ export default function ReportsIndexPage() {
   useEffect(() => {
     if (!currentOrganization) return
 
+    let cancelled = false
+
     const loadData = async () => {
       const supabase = createClient()
 
@@ -47,22 +65,27 @@ export default function ReportsIndexPage() {
             .from('devices')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', currentOrganization.id),
-          
-          // Active alerts
+
+          // Active alerts (unresolved)
           supabase
             .from('alerts')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', currentOrganization.id)
-            .eq('status', 'active'),
-          
+            .eq('is_resolved', false),
+
           // Recent exports (last 7 days)
           supabase
             .from('user_audit_log')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', currentOrganization.id)
             .eq('action_category', 'export')
-            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+            .gte(
+              'created_at',
+              new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            ),
         ])
+
+        if (cancelled) return
 
         setStats({
           totalDevices: devicesResult.count || 0,
@@ -79,49 +102,84 @@ export default function ReportsIndexPage() {
           .order('created_at', { ascending: false })
           .limit(5)
 
+        if (cancelled) return
+
         setRecentActivity(activityData || [])
       } catch (error) {
         console.error('Error loading reports data:', error)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     loadData()
+
+    return () => {
+      cancelled = true
+    }
   }, [currentOrganization])
 
   const reports = [
     {
       title: 'Alert History Report',
-      description: 'View historical alert data with filtering, statistics, and response time analysis',
+      description:
+        'View historical alert data with filtering, statistics, and response time analysis',
       icon: FileText,
       href: '/dashboard/reports/alerts',
-      features: ['Date range filtering', 'Severity breakdown', 'Response time tracking', 'CSV export'],
+      features: [
+        'Date range filtering',
+        'Severity breakdown',
+        'Response time tracking',
+        'CSV export',
+      ],
     },
     {
       title: 'Telemetry Trends Report',
-      description: 'Compare sensor data across multiple devices over time with threshold overlays',
+      description:
+        'Compare sensor data across multiple devices over time with threshold overlays',
       icon: TrendingUp,
       href: '/dashboard/reports/telemetry',
-      features: ['Multi-device comparison', 'Threshold visualization', 'Statistics dashboard', 'Chart & table views'],
+      features: [
+        'Multi-device comparison',
+        'Threshold visualization',
+        'Statistics dashboard',
+        'Chart & table views',
+      ],
     },
     {
       title: 'User Activity Audit Log',
-      description: 'Track all user actions in the system for compliance and troubleshooting (Admin only)',
+      description:
+        'Track all user actions in the system for compliance and troubleshooting (Admin only)',
       icon: Shield,
       href: '/dashboard/reports/audit-log',
-      features: ['Complete activity tracking', 'Advanced filtering', 'Before/after changes', 'CSV export'],
+      features: [
+        'Complete activity tracking',
+        'Advanced filtering',
+        'Before/after changes',
+        'CSV export',
+      ],
       adminOnly: true,
     },
   ]
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-        <p className="text-muted-foreground mt-2">
-          Analyze your IoT data with comprehensive reporting tools
-        </p>
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {currentOrganization?.name
+              ? `${currentOrganization.name} Reports`
+              : 'Reports'}
+          </h2>
+          <p className="text-muted-foreground">
+            Analyze your IoT data with comprehensive reporting tools
+          </p>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -136,12 +194,16 @@ export default function ReportsIndexPage() {
           <>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Devices
+                </CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalDevices || 0}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-2xl font-bold">
+                  {stats?.totalDevices || 0}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Across all locations
                 </p>
               </CardContent>
@@ -149,12 +211,16 @@ export default function ReportsIndexPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Alerts
+                </CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.activeAlerts || 0}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-2xl font-bold">
+                  {stats?.activeAlerts || 0}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Requiring attention
                 </p>
               </CardContent>
@@ -162,12 +228,16 @@ export default function ReportsIndexPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recent Exports</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Recent Exports
+                </CardTitle>
                 <BarChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.recentExports || 0}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-2xl font-bold">
+                  {stats?.recentExports || 0}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Last 7 days
                 </p>
               </CardContent>
@@ -178,52 +248,58 @@ export default function ReportsIndexPage() {
 
       {/* Available Reports */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Available Reports</h2>
+        <h2 className="mb-4 text-xl font-semibold">Available Reports</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {reports.map((report) => {
-          const Icon = report.icon
-          return (
-            <Card key={report.href} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <Icon className="w-10 h-10 text-primary mb-2" />
-                  {report.adminOnly && (
-                    <Badge variant="secondary" className="ml-auto">
-                      <Shield className="w-3 h-3 mr-1" />
-                      Admin Only
-                    </Badge>
-                  )}
-                </div>
-                <CardTitle className="text-xl">{report.title}</CardTitle>
-                <CardDescription>{report.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  {report.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => router.push(report.href)}
-                  className="w-full"
-                  variant="default"
-                >
-                  Open Report
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+          {reports.map((report) => {
+            const Icon = report.icon
+            return (
+              <Card
+                key={report.href}
+                className="transition-shadow hover:shadow-lg"
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <Icon className="mb-2 h-10 w-10 text-primary" />
+                    {report.adminOnly && (
+                      <Badge variant="secondary" className="ml-auto">
+                        <Shield className="mr-1 h-3 w-3" />
+                        Admin Only
+                      </Badge>
+                    )}
+                  </div>
+                  <CardTitle className="text-xl">{report.title}</CardTitle>
+                  <CardDescription>{report.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {report.features.map((feature, index) => (
+                      <li
+                        key={index}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    onClick={() => router.push(report.href)}
+                    className="w-full"
+                    variant="default"
+                  >
+                    Open Report
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
       </div>
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+        <h2 className="mb-4 text-xl font-semibold">Recent Activity</h2>
         <Card>
           <CardContent className="pt-6">
             {loading ? (
@@ -233,24 +309,25 @@ export default function ReportsIndexPage() {
                 ))}
               </div>
             ) : recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <div className="py-8 text-center text-muted-foreground">
+                <FileText className="mx-auto mb-3 h-12 w-12 opacity-50" />
                 <p>No recent report activity</p>
-                <p className="text-sm mt-1">Open a report to get started</p>
+                <p className="mt-1 text-sm">Open a report to get started</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, index) => {
-                  const actionIcon = activity.action_category === 'export' ? BarChart : FileText
+                  const actionIcon =
+                    activity.action_category === 'export' ? BarChart : FileText
                   const ActionIcon = actionIcon
-                  
+
                   return (
                     <div
                       key={index}
-                      className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                      className="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-accent"
                     >
-                      <ActionIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
-                      <div className="flex-1 min-w-0">
+                      <ActionIcon className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">
                           {activity.action_type.replace(/_/g, ' ')}
                         </p>
@@ -272,17 +349,17 @@ export default function ReportsIndexPage() {
 
       {/* Scheduled Reports (Placeholder) */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Scheduled Reports</h2>
+        <h2 className="mb-4 text-xl font-semibold">Scheduled Reports</h2>
         <Card className="border-dashed">
           <CardContent className="pt-6">
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <div className="py-8 text-center text-muted-foreground">
+              <Calendar className="mx-auto mb-3 h-12 w-12 opacity-50" />
               <p className="font-medium">Scheduled Reports Coming Soon</p>
-              <p className="text-sm mt-1">
+              <p className="mt-1 text-sm">
                 Configure automated report generation and delivery
               </p>
               <Button variant="outline" disabled className="mt-4">
-                <Clock className="w-4 h-4 mr-2" />
+                <Clock className="mr-2 h-4 w-4" />
                 Set Up Schedule
               </Button>
             </div>

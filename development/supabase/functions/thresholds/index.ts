@@ -1,10 +1,14 @@
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { getUserContext } from '../_shared/auth.ts'
 
 export default createEdgeFunction(async ({ req }) => {
   const userContext = await getUserContext(req)
-  
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
@@ -61,6 +65,28 @@ export default createEdgeFunction(async ({ req }) => {
       throw new Error('device_id and sensor_type are required')
     }
 
+    // Validate threshold hierarchy: critical_min ≤ min_value ≤ max_value ≤ critical_max
+    if (min_value != null && max_value != null && min_value >= max_value) {
+      throw new Error('Warning Minimum must be less than Warning Maximum')
+    }
+    if (critical_min != null && min_value != null && critical_min > min_value) {
+      throw new Error(
+        'Critical Minimum must be ≤ Warning Minimum. Critical min is the extreme low boundary.'
+      )
+    }
+    if (critical_max != null && max_value != null && critical_max < max_value) {
+      throw new Error(
+        'Critical Maximum must be ≥ Warning Maximum. Critical max is the extreme high boundary.'
+      )
+    }
+    if (
+      critical_min != null &&
+      critical_max != null &&
+      critical_min >= critical_max
+    ) {
+      throw new Error('Critical Minimum must be less than Critical Maximum')
+    }
+
     // Check if threshold already exists for this device+sensor_type
     const { data: existing } = await supabaseAdmin
       .from('sensor_thresholds')
@@ -70,7 +96,9 @@ export default createEdgeFunction(async ({ req }) => {
       .maybeSingle()
 
     if (existing) {
-      throw new Error(`Threshold for ${sensor_type} already exists on this device`)
+      throw new Error(
+        `Threshold for ${sensor_type} already exists on this device`
+      )
     }
 
     const { data: threshold, error } = await supabaseAdmin
@@ -122,6 +150,28 @@ export default createEdgeFunction(async ({ req }) => {
       notify_emails,
       notification_channels,
     } = body
+
+    // Validate threshold hierarchy: critical_min ≤ min_value ≤ max_value ≤ critical_max
+    if (min_value != null && max_value != null && min_value >= max_value) {
+      throw new Error('Warning Minimum must be less than Warning Maximum')
+    }
+    if (critical_min != null && min_value != null && critical_min > min_value) {
+      throw new Error(
+        'Critical Minimum must be ≤ Warning Minimum. Critical min is the extreme low boundary.'
+      )
+    }
+    if (critical_max != null && max_value != null && critical_max < max_value) {
+      throw new Error(
+        'Critical Maximum must be ≥ Warning Maximum. Critical max is the extreme high boundary.'
+      )
+    }
+    if (
+      critical_min != null &&
+      critical_max != null &&
+      critical_min >= critical_max
+    ) {
+      throw new Error('Critical Minimum must be less than Critical Maximum')
+    }
 
     const { data: threshold, error } = await supabaseAdmin
       .from('sensor_thresholds')

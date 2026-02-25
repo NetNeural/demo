@@ -1,6 +1,6 @@
 /**
  * COMPREHENSIVE TEST SUITE: Device Management
- * 
+ *
  * Tests all device CRUD operations, business logic, and edge cases
  * Coverage: API, Database, Business Rules, Error Handling
  */
@@ -155,7 +155,11 @@ describe('Device Management - Complete Coverage', () => {
         insert: jest.fn().mockReturnValue({
           select: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({
-              data: { ...deviceWithoutStatus, status: 'active', id: 'device-id' },
+              data: {
+                ...deviceWithoutStatus,
+                status: 'active',
+                id: 'device-id',
+              },
               error: null,
             }),
           }),
@@ -214,9 +218,24 @@ describe('Device Management - Complete Coverage', () => {
   describe('Device Retrieval (GET /api/devices)', () => {
     test('should retrieve all devices for organization', async () => {
       const mockDevices = [
-        { id: '1', name: 'Device 1', organization_id: 'org-123', status: 'active' },
-        { id: '2', name: 'Device 2', organization_id: 'org-123', status: 'active' },
-        { id: '3', name: 'Device 3', organization_id: 'org-123', status: 'inactive' },
+        {
+          id: '1',
+          name: 'Device 1',
+          organization_id: 'org-123',
+          status: 'active',
+        },
+        {
+          id: '2',
+          name: 'Device 2',
+          organization_id: 'org-123',
+          status: 'active',
+        },
+        {
+          id: '3',
+          name: 'Device 3',
+          organization_id: 'org-123',
+          status: 'inactive',
+        },
       ]
 
       const mockFrom = mockSupabase.from as jest.Mock
@@ -262,7 +281,9 @@ describe('Device Management - Complete Coverage', () => {
         .eq('organization_id', 'org-123')
         .eq('status', 'active')
 
-      expect(result.data?.every((d: { status: string }) => d.status === 'active')).toBe(true)
+      expect(
+        result.data?.every((d: { status: string }) => d.status === 'active')
+      ).toBe(true)
     })
 
     test('should retrieve single device by ID', async () => {
@@ -440,7 +461,10 @@ describe('Device Management - Complete Coverage', () => {
             select: jest.fn().mockReturnValue({
               single: jest.fn().mockResolvedValue({
                 data: null,
-                error: { message: 'device_id cannot be modified', code: '42501' },
+                error: {
+                  message: 'device_id cannot be modified',
+                  code: '42501',
+                },
               }),
             }),
           }),
@@ -604,7 +628,9 @@ describe('Device Management - Complete Coverage', () => {
 
     test('should handle device offline detection', async () => {
       const offlineThreshold = 5 * 60 * 1000 // 5 minutes
-      const oldTimestamp = new Date(Date.now() - offlineThreshold - 1000).toISOString()
+      const oldTimestamp = new Date(
+        Date.now() - offlineThreshold - 1000
+      ).toISOString()
 
       const mockFrom = mockSupabase.from as jest.Mock
       mockFrom.mockReturnValue({
@@ -669,7 +695,12 @@ describe('Device Management - Complete Coverage', () => {
 
       const result = await mockSupabase.from('devices').select('*')
 
-      expect(result.data?.every((d: { organization_id: string }) => d.organization_id === 'user-org-123')).toBe(true)
+      expect(
+        result.data?.every(
+          (d: { organization_id: string }) =>
+            d.organization_id === 'user-org-123'
+        )
+      ).toBe(true)
     })
 
     test('should block access to other organization devices', async () => {
@@ -710,7 +741,10 @@ describe('Device Management - Complete Coverage', () => {
         }),
       })
 
-      const result = await mockSupabase.from('devices').insert(bulkDevices).select()
+      const result = await mockSupabase
+        .from('devices')
+        .insert(bulkDevices)
+        .select()
 
       expect(result.data).toHaveLength(100)
     })

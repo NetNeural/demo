@@ -1,6 +1,6 @@
 /**
  * Test Suite for GitHub Issue #42 - Add Member Functionality
- * 
+ *
  * Tests:
  * - Frontend: MembersTab component and Add Member dialog
  * - Backend: Members Edge Function API
@@ -44,7 +44,6 @@ describe('Issue #42 - Add Member Functionality', () => {
       },
       from: jest.fn(),
     }
-
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
 
     mockFetch = jest.fn()
@@ -244,7 +243,9 @@ describe('Issue #42 - Add Member Functionality', () => {
 
       scenarios.forEach(({ userRole, addingRole, allowed }) => {
         const canAdd =
-          addingRole === 'owner' ? userRole === 'owner' : ['admin', 'owner'].includes(userRole)
+          addingRole === 'owner'
+            ? userRole === 'owner'
+            : ['admin', 'owner'].includes(userRole)
         expect(canAdd).toBe(allowed)
       })
     })
@@ -421,8 +422,7 @@ describe('Issue #42 - Add Member Functionality', () => {
 
       mockToast({
         title: 'Cannot add member',
-        description:
-          error.error + '. Make sure the user has an account first.',
+        description: error.error + '. Make sure the user has an account first.',
         variant: 'destructive',
       })
 
@@ -562,7 +562,11 @@ describe('Issue #42 - Add Member Functionality', () => {
       const list = await listResponse.json()
 
       expect(list.members).toHaveLength(2)
-      expect(list.members.find((m: { email: string }) => m.email === 'newuser@example.com')).toBeDefined()
+      expect(
+        list.members.find(
+          (m: { email: string }) => m.email === 'newuser@example.com'
+        )
+      ).toBeDefined()
     })
   })
 
@@ -592,9 +596,7 @@ describe('Issue #42 - Add Member Functionality', () => {
       )
 
       const data = await response.json()
-      expect(data.member.email.toLowerCase()).toBe(
-        'uppercase@example.com'
-      )
+      expect(data.member.email.toLowerCase()).toBe('uppercase@example.com')
     })
 
     test('dialog should close after successful add', async () => {

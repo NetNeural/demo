@@ -20,11 +20,22 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token)
+
     if (authError || !user) {
       throw new Error('Unauthorized')
     }
+
+    // Check if user is super_admin (bypass org membership)
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const isSuperAdmin = userProfile?.role === 'super_admin'
 
     const url = new URL(req.url)
     const params = new URLSearchParams(url.search)
@@ -35,7 +46,11 @@ serve(async (req) => {
       throw new Error('Missing integration_id or organization_id')
     }
 
-    console.log('🔍 Verifying access:', { userId: user.id, integrationId, organizationId })
+    console.log('🔍 Verifying access:', {
+      userId: user.id,
+      integrationId,
+      organizationId,
+    })
 
     // Verify user has access to the integration via organization membership
     // First, check if the integration belongs to the organization
@@ -50,29 +65,34 @@ serve(async (req) => {
       console.error('❌ Integration not found or access denied:', {
         integrationId,
         organizationId,
-        error: integrationError?.message
+        error: integrationError?.message,
       })
       throw new Error('Integration not found or access denied')
     }
 
-    // Then verify user is a member of the organization
-    const { data: orgUser, error: orgError } = await supabase
-      .from('organization_members')
-      .select('id, role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .maybeSingle()
+    // Then verify user is a member of the organization (super_admins bypass)
+    if (!isSuperAdmin) {
+      const { data: orgUser, error: orgError } = await supabase
+        .from('organization_members')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .maybeSingle()
 
-    console.log('👥 Organization membership:', { orgUser, orgError })
+      console.log('👥 Organization membership:', { orgUser, orgError })
 
-    if (orgError) {
-      console.error('❌ Database error checking membership:', orgError)
-      throw new Error('Failed to verify organization membership')
-    }
+      if (orgError) {
+        console.error('❌ Database error checking membership:', orgError)
+        throw new Error('Failed to verify organization membership')
+      }
 
-    if (!orgUser) {
-      console.error('❌ User not a member:', { userId: user.id, organizationId })
-      throw new Error('Unauthorized - not a member of this organization')
+      if (!orgUser) {
+        console.error('❌ User not a member:', {
+          userId: user.id,
+          organizationId,
+        })
+        throw new Error('Unauthorized - not a member of this organization')
+      }
     }
 
     console.log('✅ Access verified')
@@ -103,7 +123,10 @@ serve(async (req) => {
             deviceFilter: 'all',
           },
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -152,19 +175,22 @@ serve(async (req) => {
           success: true,
           data,
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     console.error('Auto-sync config error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

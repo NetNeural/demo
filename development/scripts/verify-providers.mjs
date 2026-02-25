@@ -2,14 +2,14 @@
  * Provider Verification Script
  * ============================
  * Verifies all integration providers can be instantiated and tested
- * 
+ *
  * Usage: node scripts/verify-providers.mjs
  */
 
-import { IntegrationProviderFactory } from '../src/lib/integrations/integration-provider-factory.ts';
+import { IntegrationProviderFactory } from '../src/lib/integrations/integration-provider-factory.ts'
 
-console.log('🔍 Provider Verification Script');
-console.log('================================\n');
+console.log('🔍 Provider Verification Script')
+console.log('================================\n')
 
 // Test data
 const testIntegrations = [
@@ -47,7 +47,8 @@ const testIntegrations = [
     integration_type: 'azure_iot',
     name: 'Test Azure IoT',
     settings: {
-      connectionString: 'HostName=test.azure-devices.net;SharedAccessKeyName=test;SharedAccessKey=test',
+      connectionString:
+        'HostName=test.azure-devices.net;SharedAccessKeyName=test;SharedAccessKey=test',
     },
     status: 'active',
     created_at: new Date(),
@@ -67,50 +68,60 @@ const testIntegrations = [
     created_at: new Date(),
     updated_at: new Date(),
   },
-];
+]
 
-console.log('📋 Registered Provider Types:');
-const registeredTypes = IntegrationProviderFactory.getRegisteredTypes();
-console.log(`   ${registeredTypes.join(', ')}\n`);
+console.log('📋 Registered Provider Types:')
+const registeredTypes = IntegrationProviderFactory.getRegisteredTypes()
+console.log(`   ${registeredTypes.join(', ')}\n`)
 
-console.log('🧪 Testing Provider Instantiation:\n');
+console.log('🧪 Testing Provider Instantiation:\n')
 
-let passed = 0;
-let failed = 0;
+let passed = 0
+let failed = 0
 
 for (const integration of testIntegrations) {
   try {
-    const provider = IntegrationProviderFactory.create(integration);
-    
-    console.log(`✅ ${integration.integration_type.toUpperCase()}`);
-    console.log(`   Provider ID: ${provider.providerId}`);
-    console.log(`   Provider Type: ${provider.providerType}`);
-    console.log(`   Provider Name: ${provider.providerName}`);
-    
-    const capabilities = provider.getCapabilities();
-    console.log(`   Capabilities:`);
-    console.log(`     - Real-time Status: ${capabilities.supportsRealTimeStatus ? '✅' : '❌'}`);
-    console.log(`     - Telemetry: ${capabilities.supportsTelemetry ? '✅' : '❌'}`);
-    console.log(`     - Firmware Mgmt: ${capabilities.supportsFirmwareManagement ? '✅' : '❌'}`);
-    console.log(`     - Remote Commands: ${capabilities.supportsRemoteCommands ? '✅' : '❌'}`);
-    console.log(`     - Bidirectional Sync: ${capabilities.supportsBidirectionalSync ? '✅' : '❌'}`);
-    console.log('');
-    
-    passed++;
+    const provider = IntegrationProviderFactory.create(integration)
+
+    console.log(`✅ ${integration.integration_type.toUpperCase()}`)
+    console.log(`   Provider ID: ${provider.providerId}`)
+    console.log(`   Provider Type: ${provider.providerType}`)
+    console.log(`   Provider Name: ${provider.providerName}`)
+
+    const capabilities = provider.getCapabilities()
+    console.log(`   Capabilities:`)
+    console.log(
+      `     - Real-time Status: ${capabilities.supportsRealTimeStatus ? '✅' : '❌'}`
+    )
+    console.log(
+      `     - Telemetry: ${capabilities.supportsTelemetry ? '✅' : '❌'}`
+    )
+    console.log(
+      `     - Firmware Mgmt: ${capabilities.supportsFirmwareManagement ? '✅' : '❌'}`
+    )
+    console.log(
+      `     - Remote Commands: ${capabilities.supportsRemoteCommands ? '✅' : '❌'}`
+    )
+    console.log(
+      `     - Bidirectional Sync: ${capabilities.supportsBidirectionalSync ? '✅' : '❌'}`
+    )
+    console.log('')
+
+    passed++
   } catch (error) {
-    console.log(`❌ ${integration.integration_type.toUpperCase()}`);
-    console.log(`   Error: ${error.message}\n`);
-    failed++;
+    console.log(`❌ ${integration.integration_type.toUpperCase()}`)
+    console.log(`   Error: ${error.message}\n`)
+    failed++
   }
 }
 
-console.log('================================');
-console.log(`📊 Results: ${passed} passed, ${failed} failed`);
+console.log('================================')
+console.log(`📊 Results: ${passed} passed, ${failed} failed`)
 
 if (failed === 0) {
-  console.log('✅ All providers instantiate successfully!');
-  process.exit(0);
+  console.log('✅ All providers instantiate successfully!')
+  process.exit(0)
 } else {
-  console.log('❌ Some providers failed to instantiate');
-  process.exit(1);
+  console.log('❌ Some providers failed to instantiate')
+  process.exit(1)
 }

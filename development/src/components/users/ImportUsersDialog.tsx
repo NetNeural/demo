@@ -23,7 +23,7 @@ interface ImportUsersDialogProps {
 export function ImportUsersDialog({
   open,
   onOpenChange,
-  onImportComplete
+  onImportComplete,
 }: ImportUsersDialogProps) {
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
@@ -32,7 +32,10 @@ export function ImportUsersDialog({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
-      if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
+      if (
+        selectedFile.type !== 'text/csv' &&
+        !selectedFile.name.endsWith('.csv')
+      ) {
         toast.error('Please select a CSV file')
         return
       }
@@ -63,10 +66,10 @@ export function ImportUsersDialog({
       //   method: 'POST',
       //   body: formData
       // })
-      
+
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
       toast.success('Users imported successfully')
       onImportComplete?.()
       onOpenChange(false)
@@ -109,22 +112,23 @@ Mike Johnson,mike.johnson@example.com,viewer,pending,Support`
 
         <div className="space-y-4">
           {/* Download Template */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex items-start gap-3">
-              <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+              <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-blue-900 mb-1">
+                <h4 className="mb-1 text-sm font-medium text-blue-900">
                   Need a template?
                 </h4>
-                <p className="text-xs text-blue-700 mb-2">
-                  Download our CSV template with example data and required columns
+                <p className="mb-2 text-xs text-blue-700">
+                  Download our CSV template with example data and required
+                  columns
                 </p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleDownloadTemplate}
-                  className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                  className="border-blue-300 text-blue-600 hover:bg-blue-100"
                 >
                   Download Template
                 </Button>
@@ -145,9 +149,9 @@ Mike Johnson,mike.johnson@example.com,viewer,pending,Support`
                 disabled={importing}
               />
               {file && (
-                <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                  <FileText className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm flex-1 truncate">{file.name}</span>
+                <div className="flex items-center gap-2 rounded-lg border bg-gray-50 p-3">
+                  <FileText className="h-4 w-4 text-gray-600" />
+                  <span className="flex-1 truncate text-sm">{file.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {(file.size / 1024).toFixed(2)} KB
                   </span>
@@ -159,18 +163,19 @@ Mike Johnson,mike.johnson@example.com,viewer,pending,Support`
                     disabled={importing}
                     className="h-6 w-6 p-0"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              CSV must include columns: name, email, role, status, department (optional)
+              CSV must include columns: name, email, role, status, department
+              (optional)
             </p>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex justify-end gap-2 border-t pt-4">
             <Button
               type="button"
               variant="outline"
@@ -179,18 +184,15 @@ Mike Johnson,mike.johnson@example.com,viewer,pending,Support`
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleImport}
-              disabled={!file || importing}
-            >
+            <Button onClick={handleImport} disabled={!file || importing}>
               {importing ? (
                 <>
-                  <Upload className="w-4 h-4 mr-2 animate-spin" />
+                  <Upload className="mr-2 h-4 w-4 animate-spin" />
                   Importing...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="mr-2 h-4 w-4" />
                   Import Users
                 </>
               )}

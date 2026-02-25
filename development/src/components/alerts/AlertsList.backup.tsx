@@ -22,7 +22,13 @@ interface AlertItem {
   acknowledged: boolean
   acknowledgedBy?: string
   acknowledgedAt?: Date
-  category: 'temperature' | 'connectivity' | 'battery' | 'vibration' | 'security' | 'system'
+  category:
+    | 'temperature'
+    | 'connectivity'
+    | 'battery'
+    | 'vibration'
+    | 'security'
+    | 'system'
 }
 
 export function AlertsList() {
@@ -33,8 +39,11 @@ export function AlertsList() {
   const [showDetails, setShowDetails] = useState(false)
 
   const fetchAlerts = useCallback(async () => {
-    console.log('[AlertsList] fetchAlerts called, currentOrganization:', currentOrganization)
-    
+    console.log(
+      '[AlertsList] fetchAlerts called, currentOrganization:',
+      currentOrganization
+    )
+
     if (!currentOrganization) {
       console.log('[AlertsList] No organization, returning early')
       setAlerts([])
@@ -43,26 +52,32 @@ export function AlertsList() {
     }
 
     try {
-      console.log('[AlertsList] Fetching alerts for organization:', currentOrganization.id)
+      console.log(
+        '[AlertsList] Fetching alerts for organization:',
+        currentOrganization.id
+      )
       setLoading(true)
-      
+
       // Fetch only unresolved (active) alerts
       const response = await edgeFunctions.alerts.list(currentOrganization.id, {
-        resolved: false
+        resolved: false,
       })
 
       if (!response.success || !response.data) {
         console.error('[AlertsList] Failed to fetch alerts:', response.error)
-        
-        handleApiError(new Error(response.error?.message || 'Failed to load alerts'), {
-          endpoint: `/functions/v1/alerts`,
-          method: 'GET',
-          status: response.error?.status || 500,
-          context: {
-            organizationId: currentOrganization.id,
-          },
-        })
-        
+
+        handleApiError(
+          new Error(response.error?.message || 'Failed to load alerts'),
+          {
+            endpoint: `/functions/v1/alerts`,
+            method: 'GET',
+            status: response.error?.status || 500,
+            context: {
+              organizationId: currentOrganization.id,
+            },
+          }
+        )
+
         toast.error('Failed to load alerts')
         setAlerts([])
         return
@@ -70,25 +85,37 @@ export function AlertsList() {
 
       const data = response.data
       console.log('[AlertsList] API response:', data)
-      
+
       // Transform API response to match AlertItem format
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const transformedAlerts = ((data as any).alerts || []).map((alert: any) => ({
-        id: alert.id,
-        title: alert.title || alert.message || 'Alert',
-        description: alert.description || alert.message || '',
-        severity: alert.severity || 'medium',
-        device: alert.deviceName || alert.device_name || 'Unknown Device',
-        deviceId: alert.deviceId || alert.device_id || '',
-        timestamp: alert.created_at ? new Date(alert.created_at).toLocaleString() : 'Unknown',
-        rawTimestamp: alert.created_at ? new Date(alert.created_at) : new Date(),
-        acknowledged: alert.is_resolved || false,
-        acknowledgedBy: alert.resolved_by,
-        acknowledgedAt: alert.resolved_at ? new Date(alert.resolved_at) : undefined,
-        category: alert.category || 'system'
-      }))
-      
-      console.log('[AlertsList] Transformed alerts:', transformedAlerts.length, 'alerts')
+      const transformedAlerts = ((data as any).alerts || []).map(
+        (alert: any) => ({
+          id: alert.id,
+          title: alert.title || alert.message || 'Alert',
+          description: alert.description || alert.message || '',
+          severity: alert.severity || 'medium',
+          device: alert.deviceName || alert.device_name || 'Unknown Device',
+          deviceId: alert.deviceId || alert.device_id || '',
+          timestamp: alert.created_at
+            ? new Date(alert.created_at).toLocaleString()
+            : 'Unknown',
+          rawTimestamp: alert.created_at
+            ? new Date(alert.created_at)
+            : new Date(),
+          acknowledged: alert.is_resolved || false,
+          acknowledgedBy: alert.resolved_by,
+          acknowledgedAt: alert.resolved_at
+            ? new Date(alert.resolved_at)
+            : undefined,
+          category: alert.category || 'system',
+        })
+      )
+
+      console.log(
+        '[AlertsList] Transformed alerts:',
+        transformedAlerts.length,
+        'alerts'
+      )
       setAlerts(transformedAlerts)
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -108,41 +135,50 @@ export function AlertsList() {
 
     try {
       // Acknowledge alert using user-actions edge function
-      const response = await edgeFunctions.userActions.acknowledgeAlert(alertId, 'acknowledged')
+      const response = await edgeFunctions.userActions.acknowledgeAlert(
+        alertId,
+        'acknowledged'
+      )
 
       if (!response.success) {
-        console.error('[AlertsList] Failed to acknowledge alert:', response.error)
-        
-        handleApiError(new Error(response.error?.message || 'Failed to acknowledge alert'), {
-          endpoint: `/functions/v1/user-actions`,
-          method: 'POST',
-          status: response.error?.status || 500,
-          context: {
-            alertId,
-            organizationId: currentOrganization.id,
-          },
-        })
-        
+        console.error(
+          '[AlertsList] Failed to acknowledge alert:',
+          response.error
+        )
+
+        handleApiError(
+          new Error(response.error?.message || 'Failed to acknowledge alert'),
+          {
+            endpoint: `/functions/v1/user-actions`,
+            method: 'POST',
+            status: response.error?.status || 500,
+            context: {
+              alertId,
+              organizationId: currentOrganization.id,
+            },
+          }
+        )
+
         toast.error('Failed to acknowledge alert')
         return
       }
 
       // Optimistically update UI
-      setAlerts(prevAlerts => 
-        prevAlerts.map(alert => 
-          alert.id === alertId 
+      setAlerts((prevAlerts) =>
+        prevAlerts.map((alert) =>
+          alert.id === alertId
             ? {
-                ...alert, 
-                acknowledged: true, 
+                ...alert,
+                acknowledged: true,
                 acknowledgedBy: 'Current User',
-                acknowledgedAt: new Date()
+                acknowledgedAt: new Date(),
               }
             : alert
         )
       )
-      
+
       toast.success('Alert acknowledged successfully')
-      
+
       // Refresh alerts to get updated list
       await fetchAlerts()
     } catch (error) {
@@ -158,38 +194,55 @@ export function AlertsList() {
 
   const getSeverityIcon = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return '🚨'
-      case 'high': return '⚠️'
-      case 'medium': return '🟡'
-      case 'low': return 'ℹ️'
-      default: return '❓'
+      case 'critical':
+        return '🚨'
+      case 'high':
+        return '⚠️'
+      case 'medium':
+        return '🟡'
+      case 'low':
+        return 'ℹ️'
+      default:
+        return '❓'
     }
   }
 
   const getCategoryIcon = (category: AlertItem['category']) => {
     switch (category) {
-      case 'temperature': return '🌡️'
-      case 'connectivity': return '📡'
-      case 'battery': return '🔋'
-      case 'vibration': return '📳'
-      case 'security': return '🔒'
-      case 'system': return '💻'
-      default: return '⚙️'
+      case 'temperature':
+        return '🌡️'
+      case 'connectivity':
+        return '📡'
+      case 'battery':
+        return '🔋'
+      case 'vibration':
+        return '📳'
+      case 'security':
+        return '🔒'
+      case 'system':
+        return '💻'
+      default:
+        return '⚙️'
     }
   }
 
   const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-800'
-      case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-800'
-      case 'medium': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800'
-      case 'low': return 'border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800'
-      default: return 'border-gray-500 bg-gray-50 dark:bg-gray-900 dark:border-gray-700'
+      case 'critical':
+        return 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-800'
+      case 'high':
+        return 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-800'
+      case 'medium':
+        return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800'
+      case 'low':
+        return 'border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800'
+      default:
+        return 'border-gray-500 bg-gray-50 dark:bg-gray-900 dark:border-gray-700'
     }
   }
 
-  const activeAlerts = alerts.filter(a => !a.acknowledged)
-  const acknowledgedAlerts = alerts.filter(a => a.acknowledged)
+  const activeAlerts = alerts.filter((a) => !a.acknowledged)
+  const acknowledgedAlerts = alerts.filter((a) => a.acknowledged)
 
   if (loading) {
     return (
@@ -208,11 +261,11 @@ export function AlertsList() {
             <CardTitle className="flex items-center justify-between">
               <span>🚨 Active Alerts ({activeAlerts.length})</span>
               {activeAlerts.length > 0 && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
-                    activeAlerts.forEach(alert => handleAcknowledge(alert.id))
+                    activeAlerts.forEach((alert) => handleAcknowledge(alert.id))
                   }}
                 >
                   Acknowledge All
@@ -223,44 +276,57 @@ export function AlertsList() {
           <CardContent className="space-y-3">
             {activeAlerts.length > 0 ? (
               activeAlerts.map((alert) => (
-                <Alert key={alert.id} className={getSeverityColor(alert.severity)}>
-                  <div className="flex items-start justify-between w-full">
+                <Alert
+                  key={alert.id}
+                  className={getSeverityColor(alert.severity)}
+                >
+                  <div className="flex w-full items-start justify-between">
                     <div className="flex items-start space-x-3">
                       <div className="flex flex-col items-center space-y-1">
-                        <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
-                        <span className="text-sm">{getCategoryIcon(alert.category)}</span>
+                        <span className="text-xl">
+                          {getSeverityIcon(alert.severity)}
+                        </span>
+                        <span className="text-sm">
+                          {getCategoryIcon(alert.category)}
+                        </span>
                       </div>
                       <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-900 dark:text-gray-100">
+                        <AlertDescription className="text-base font-medium text-gray-900 dark:text-gray-100">
                           {alert.title}
                         </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <AlertDescription className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                           {alert.description}
                         </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                          <span className="font-medium">{alert.device}</span> • {alert.timestamp}
+                        <AlertDescription className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                          <span className="font-medium">{alert.device}</span> •{' '}
+                          {alert.timestamp}
                         </AlertDescription>
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${
-                        alert.severity === 'critical' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
-                        alert.severity === 'high' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
-                        alert.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                        'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                      }`}>
+                      <span
+                        className={`rounded px-2 py-1 text-xs font-medium ${
+                          alert.severity === 'critical'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            : alert.severity === 'high'
+                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                              : alert.severity === 'medium'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        }`}
+                      >
                         {alert.severity.toUpperCase()}
                       </span>
                       <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleAcknowledge(alert.id)}
                         >
                           Acknowledge
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetails(alert)}
                         >
@@ -272,9 +338,11 @@ export function AlertsList() {
                 </Alert>
               ))
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p className="text-green-600 dark:text-green-500 text-lg">🎉 No active alerts</p>
-                <p className="text-sm mt-1">All systems operating normally</p>
+              <div className="py-8 text-center text-muted-foreground">
+                <p className="text-lg text-green-600 dark:text-green-500">
+                  🎉 No active alerts
+                </p>
+                <p className="mt-1 text-sm">All systems operating normally</p>
               </div>
             )}
           </CardContent>
@@ -284,40 +352,50 @@ export function AlertsList() {
         {acknowledgedAlerts.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>✅ Acknowledged Alerts ({acknowledgedAlerts.length})</CardTitle>
+              <CardTitle>
+                ✅ Acknowledged Alerts ({acknowledgedAlerts.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {acknowledgedAlerts.map((alert) => (
-                <Alert key={alert.id} className={`${getSeverityColor(alert.severity)} opacity-60`}>
-                  <div className="flex items-start justify-between w-full">
+                <Alert
+                  key={alert.id}
+                  className={`${getSeverityColor(alert.severity)} opacity-60`}
+                >
+                  <div className="flex w-full items-start justify-between">
                     <div className="flex items-start space-x-3">
                       <div className="flex flex-col items-center space-y-1">
-                        <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
-                        <span className="text-sm">{getCategoryIcon(alert.category)}</span>
+                        <span className="text-xl">
+                          {getSeverityIcon(alert.severity)}
+                        </span>
+                        <span className="text-sm">
+                          {getCategoryIcon(alert.category)}
+                        </span>
                       </div>
                       <div className="flex-1">
-                        <AlertDescription className="font-medium text-base text-gray-700 dark:text-gray-300">
+                        <AlertDescription className="text-base font-medium text-gray-700 dark:text-gray-300">
                           {alert.title}
                         </AlertDescription>
-                        <AlertDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <AlertDescription className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {alert.description}
                         </AlertDescription>
-                        <AlertDescription className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                          <span className="font-medium">{alert.device}</span> • {alert.timestamp}
+                        <AlertDescription className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                          <span className="font-medium">{alert.device}</span> •{' '}
+                          {alert.timestamp}
                         </AlertDescription>
                         {alert.acknowledgedBy && (
-                          <AlertDescription className="text-xs text-green-600 dark:text-green-500 mt-1">
+                          <AlertDescription className="mt-1 text-xs text-green-600 dark:text-green-500">
                             ✓ Acknowledged by {alert.acknowledgedBy}
                           </AlertDescription>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                      <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
                         ACKNOWLEDGED
                       </span>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleViewDetails(alert)}
                       >
@@ -335,87 +413,127 @@ export function AlertsList() {
       {/* Alert Details Modal */}
       {showDetails && selectedAlert && (
         <div className="modal-overlay" onClick={() => setShowDetails(false)}>
-          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title flex items-center">
-                {getSeverityIcon(selectedAlert.severity)} {getCategoryIcon(selectedAlert.category)} Alert Details
+                {getSeverityIcon(selectedAlert.severity)}{' '}
+                {getCategoryIcon(selectedAlert.category)} Alert Details
               </h3>
-              <button 
+              <button
                 onClick={() => setShowDetails(false)}
                 className="modal-close"
               >
                 ✕
               </button>
             </div>
-            
+
             <div className="modal-body space-y-4">
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">{selectedAlert.title}</h4>
+                <h4 className="mb-2 font-medium text-gray-900">
+                  {selectedAlert.title}
+                </h4>
                 <p className="text-gray-600">{selectedAlert.description}</p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Device</label>
-                  <p className="text-sm text-gray-900">{selectedAlert.device}</p>
+                  <label className="text-sm font-medium text-gray-700">
+                    Device
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedAlert.device}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Device ID</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedAlert.deviceId}</p>
+                  <label className="text-sm font-medium text-gray-700">
+                    Device ID
+                  </label>
+                  <p className="font-mono text-sm text-gray-900">
+                    {selectedAlert.deviceId}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Severity</label>
-                  <p className={`text-sm font-medium ${
-                    selectedAlert.severity === 'critical' ? 'text-red-600' :
-                    selectedAlert.severity === 'high' ? 'text-orange-600' :
-                    selectedAlert.severity === 'medium' ? 'text-yellow-600' :
-                    'text-blue-600'
-                  }`}>
+                  <label className="text-sm font-medium text-gray-700">
+                    Severity
+                  </label>
+                  <p
+                    className={`text-sm font-medium ${
+                      selectedAlert.severity === 'critical'
+                        ? 'text-red-600'
+                        : selectedAlert.severity === 'high'
+                          ? 'text-orange-600'
+                          : selectedAlert.severity === 'medium'
+                            ? 'text-yellow-600'
+                            : 'text-blue-600'
+                    }`}
+                  >
                     {selectedAlert.severity.toUpperCase()}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Category</label>
-                  <p className="text-sm text-gray-900 capitalize">{selectedAlert.category}</p>
+                  <label className="text-sm font-medium text-gray-700">
+                    Category
+                  </label>
+                  <p className="text-sm capitalize text-gray-900">
+                    {selectedAlert.category}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Timestamp</label>
-                  <p className="text-sm text-gray-900">{selectedAlert.rawTimestamp.toLocaleString()}</p>
+                  <label className="text-sm font-medium text-gray-700">
+                    Timestamp
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedAlert.rawTimestamp.toLocaleString()}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <p className={`text-sm font-medium ${
-                    selectedAlert.acknowledged ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <label className="text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <p
+                    className={`text-sm font-medium ${
+                      selectedAlert.acknowledged
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
                     {selectedAlert.acknowledged ? 'Acknowledged' : 'Active'}
                   </p>
                 </div>
               </div>
-              
+
               {selectedAlert.acknowledged && selectedAlert.acknowledgedBy && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <h5 className="font-medium text-green-800 mb-1">Acknowledgment Details</h5>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                  <h5 className="mb-1 font-medium text-green-800">
+                    Acknowledgment Details
+                  </h5>
                   <p className="text-sm text-green-700">
-                    Acknowledged by <span className="font-medium">{selectedAlert.acknowledgedBy}</span>
+                    Acknowledged by{' '}
+                    <span className="font-medium">
+                      {selectedAlert.acknowledgedBy}
+                    </span>
                   </p>
                   {selectedAlert.acknowledgedAt && (
-                    <p className="text-sm text-green-600 mt-1">
+                    <p className="mt-1 text-sm text-green-600">
                       {selectedAlert.acknowledgedAt.toLocaleString()}
                     </p>
                   )}
                 </div>
               )}
             </div>
-            
+
             <div className="modal-footer">
-              <button 
+              <button
                 onClick={() => setShowDetails(false)}
                 className="btn btn-secondary"
               >
                 Close
               </button>
               {!selectedAlert.acknowledged && (
-                <button 
+                <button
                   onClick={() => {
                     handleAcknowledge(selectedAlert.id)
                     setShowDetails(false)

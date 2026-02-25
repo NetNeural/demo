@@ -19,7 +19,7 @@ NC='\033[0m'
 # Staging configuration
 STAGING_PROJECT_REF="atgbmxicqikmapfqouco"
 STAGING_URL="https://atgbmxicqikmapfqouco.supabase.co"
-STAGING_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY"
+STAGING_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Auto-Sync Cron Setup for Staging${NC}"
@@ -78,7 +78,7 @@ CREATE POLICY IF NOT EXISTS "Service role can manage secrets"
 INSERT INTO public.pg_cron_secrets (name, secret) 
 VALUES 
     ('project_url', 'https://atgbmxicqikmapfqouco.supabase.co'),
-    ('service_role_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY')
+    ('service_role_key', ${SUPABASE_SERVICE_ROLE_KEY})
 ON CONFLICT (name) 
 DO UPDATE SET 
     secret = EXCLUDED.secret,
@@ -93,7 +93,7 @@ EOF
 
 echo -e "${BLUE}Executing SQL to set up secrets table...${NC}"
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/setup_cron_secrets.sql
     echo -e "${GREEN}✅ Secrets configured${NC}\n"
 else
@@ -156,7 +156,7 @@ EOF
 
 echo -e "${BLUE}Executing SQL to create cron job...${NC}"
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/setup_cron_job.sql
     echo -e "${GREEN}✅ Cron job created${NC}\n"
 else
@@ -217,7 +217,7 @@ WHERE integration_type = 'golioth';
 EOF
 
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/verify_setup.sql
 else
     echo -e "${YELLOW}⚠️  psql not found - skipping verification${NC}"

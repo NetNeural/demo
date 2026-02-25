@@ -13,13 +13,20 @@ import type { EdgeFunctionResponse, EdgeFunctionOptions } from './types'
 // Import API module creators
 import { createDevicesAPI, type DevicesAPI } from './api/devices'
 import { createAlertsAPI, type AlertsAPI } from './api/alerts'
-import { createOrganizationsAPI, type OrganizationsAPI } from './api/organizations'
+import {
+  createOrganizationsAPI,
+  type OrganizationsAPI,
+} from './api/organizations'
 import { createMembersAPI, type MembersAPI } from './api/members'
 import { createUsersAPI, type UsersAPI } from './api/users'
 import { createLocationsAPI, type LocationsAPI } from './api/locations'
 import { createIntegrationsAPI, type IntegrationsAPI } from './api/integrations'
 import { createUserActionsAPI, type UserActionsAPI } from './api/user-actions'
 import { createThresholdsAPI, type ThresholdsAPI } from './api/thresholds'
+import {
+  createAccessRequestsAPI,
+  type AccessRequestsAPI,
+} from './api/access-requests'
 import { alertRules } from './api/alert-rules'
 
 // Re-export types for convenience
@@ -34,6 +41,7 @@ export type {
   IntegrationsAPI,
   UserActionsAPI,
   ThresholdsAPI,
+  AccessRequestsAPI,
 }
 
 /**
@@ -54,6 +62,7 @@ export class EdgeFunctionClient {
   public integrations: IntegrationsAPI
   public userActions: UserActionsAPI
   public thresholds: ThresholdsAPI
+  public accessRequests: AccessRequestsAPI
   public alertRules: typeof alertRules
 
   constructor() {
@@ -71,6 +80,7 @@ export class EdgeFunctionClient {
     this.integrations = createIntegrationsAPI(callBound)
     this.userActions = createUserActionsAPI(callBound)
     this.thresholds = createThresholdsAPI(callBound)
+    this.accessRequests = createAccessRequestsAPI(callBound)
     this.alertRules = alertRules
   }
 
@@ -78,8 +88,10 @@ export class EdgeFunctionClient {
    * Get authentication headers for requests
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const { data: { session } } = await this.supabase.auth.getSession()
-    
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession()
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -108,7 +120,7 @@ export class EdgeFunctionClient {
     options: EdgeFunctionOptions = {}
   ): Promise<EdgeFunctionResponse<T>> {
     const { method = 'GET', body, params, headers: customHeaders } = options
-    
+
     // Build URL with query params
     const url = new URL(`${this.baseUrl}/${functionName}`)
     if (params) {
@@ -154,11 +166,14 @@ export class EdgeFunctionClient {
 
       // Log response (in development only)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[EdgeFunction ${requestId}] ← ${response.status} (${duration}ms)`, {
-          success: rawData.success,
-          hasData: !!rawData.data,
-          hasError: !!rawData.error,
-        })
+        console.log(
+          `[EdgeFunction ${requestId}] ← ${response.status} (${duration}ms)`,
+          {
+            success: rawData.success,
+            hasData: !!rawData.data,
+            hasError: !!rawData.error,
+          }
+        )
       }
 
       // Track metrics
@@ -169,7 +184,7 @@ export class EdgeFunctionClient {
       // So we extract the nested data layer automatically
       return {
         success: rawData.success,
-        data: rawData.data,  // ← Automatic unwrap
+        data: rawData.data, // ← Automatic unwrap
         error: rawData.error,
         message: rawData.message,
         meta: rawData.meta,
@@ -179,7 +194,10 @@ export class EdgeFunctionClient {
       const endTime = performance.now()
       const duration = Math.round(endTime - startTime)
 
-      console.error(`[EdgeFunction ${requestId}] ✖ Error (${duration}ms)`, error)
+      console.error(
+        `[EdgeFunction ${requestId}] ✖ Error (${duration}ms)`,
+        error
+      )
 
       // Track failed metrics
       this.trackMetrics(functionName, method, duration, 0)
@@ -188,7 +206,8 @@ export class EdgeFunctionClient {
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Network request failed',
+          message:
+            error instanceof Error ? error.message : 'Network request failed',
           status: 0,
         },
         timestamp: new Date().toISOString(),
@@ -206,7 +225,7 @@ export class EdgeFunctionClient {
     status: number
   ): void {
     if (typeof window === 'undefined') return
-    
+
     try {
       const metricsKey = 'edge-function-metrics'
       const existing = JSON.parse(sessionStorage.getItem(metricsKey) || '[]')

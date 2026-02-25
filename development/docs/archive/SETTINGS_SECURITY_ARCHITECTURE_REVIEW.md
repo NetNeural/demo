@@ -3,6 +3,7 @@
 ## 🚨 Critical Issues Identified
 
 After reviewing the Settings page structure against the actual database schema and multi-tenant security model, several **CRITICAL MISALIGNMENTS** have been identified that could lead to:
+
 - Security vulnerabilities
 - Poor user experience
 - Confusion about organizational boundaries
@@ -29,6 +30,7 @@ Current Tab Structure (WRONG):
 ```
 
 **Why This is WRONG:**
+
 - **Users Tab shows organization members** - but which organization?
 - **Devices Tab** manages org devices - but user may be in multiple orgs!
 - **No organization context selector** - dangerous!
@@ -47,6 +49,7 @@ export default function UsersTab() {
 ```
 
 **Real Data Model:**
+
 ```sql
 -- User can belong to MULTIPLE organizations!
 organization_members (
@@ -57,6 +60,7 @@ organization_members (
 ```
 
 **The Problem:**
+
 - User is in **NetNeural Industries (Admin)** AND **Acme Manufacturing (Member)**
 - Opens Settings > Users tab... **WHICH ORG'S USERS ARE SHOWN?**
 - No way to switch organization context!
@@ -75,6 +79,7 @@ export default function UsersTab() {
 ```
 
 **Real Security Model:**
+
 ```
 Permissions per Organization:
 ├── Owner: Can manage members, integrations, billing, delete org
@@ -84,7 +89,7 @@ Permissions per Organization:
 
 User "john@example.com" might be:
 ├── Owner in "NetNeural Industries"
-├── Admin in "Acme Manufacturing"  
+├── Admin in "Acme Manufacturing"
 └── Member in "Beta Test Org"
 ```
 
@@ -135,7 +140,7 @@ User "john@example.com" might be:
 
 📂 /dashboard/organizations (Organization Management)
 ├── Organization Selector (Top-level context)
-│   
+│
 ├── Overview Tab
 │   ├── Organization name, settings
 │   ├── Subscription/billing info
@@ -196,10 +201,10 @@ Keep settings unified but add **Organization Context Selector**:
 
 ```tsx
 export default function SettingsPage() {
-  const { user } = useUser();
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const { data: userOrgs } = useUserOrganizations(user?.id);
-  const currentOrgRole = useOrganizationRole(selectedOrgId, user?.id);
+  const { user } = useUser()
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+  const { data: userOrgs } = useUserOrganizations(user?.id)
+  const currentOrgRole = useOrganizationRole(selectedOrgId, user?.id)
 
   return (
     <div>
@@ -237,7 +242,7 @@ export default function SettingsPage() {
         )}
       </Tabs>
     </div>
-  );
+  )
 }
 ```
 
@@ -248,6 +253,7 @@ export default function SettingsPage() {
 ### **BEST APPROACH: Option 1 (Split Sections)**
 
 **Why:**
+
 1. ✅ **Clear separation of concerns** - Personal vs Organizational
 2. ✅ **Better security** - Org management is clearly scoped
 3. ✅ **Scalable** - Easy to add more org features
@@ -275,7 +281,7 @@ interface OrganizationContextType {
 export const OrganizationProvider = ({ children }) => {
   const { user } = useUser();
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
-  
+
   // Fetch user's organizations
   const { data: userOrgs } = useQuery({
     queryKey: ['user-organizations', user?.id],
@@ -364,12 +370,12 @@ export default function PersonalSettingsPage() {
 ```typescript
 // src/app/dashboard/organizations/page.tsx
 export default function OrganizationManagementPage() {
-  const { 
+  const {
     currentOrganization,
     userOrganizations,
     switchOrganization,
     canManageMembers,
-    userRole 
+    userRole
   } = useOrganization();
 
   if (!currentOrganization) {
@@ -384,7 +390,7 @@ export default function OrganizationManagementPage() {
           title={currentOrganization.name}
           description={`Managing as ${userRole}`}
         />
-        
+
         <OrganizationSwitcher
           organizations={userOrganizations}
           currentId={currentOrganization.id}
@@ -395,19 +401,19 @@ export default function OrganizationManagementPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          
+
           {canManageMembers && (
             <TabsTrigger value="members">Members</TabsTrigger>
           )}
-          
+
           <TabsTrigger value="devices">Devices</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
-          
+
           {canManageMembers && (
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
           )}
-          
+
           {userRole === 'owner' && (
             <TabsTrigger value="settings">Settings</TabsTrigger>
           )}
@@ -445,27 +451,29 @@ const navigation = [
   { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
   { name: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  
+
   // Separator
   { separator: true },
-  
+
   // Organization Management
-  { 
-    name: 'Organization', 
-    href: '/dashboard/organizations', 
+  {
+    name: 'Organization',
+    href: '/dashboard/organizations',
     icon: Building2,
-    badge: currentOrg?.name 
+    badge: currentOrg?.name,
   },
-  
+
   // Personal Settings
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-  
+
   // Super Admin Only
-  ...(user?.isSuperAdmin ? [
-    { separator: true },
-    { name: 'Super Admin', href: '/superadmin', icon: Shield }
-  ] : [])
-];
+  ...(user?.isSuperAdmin
+    ? [
+        { separator: true },
+        { name: 'Super Admin', href: '/superadmin', icon: Shield },
+      ]
+    : []),
+]
 ```
 
 ---
@@ -473,12 +481,14 @@ const navigation = [
 ## 📋 Migration Checklist
 
 ### Phase 1: Context & Infrastructure
+
 - [ ] Create `OrganizationContext` provider
 - [ ] Add organization switching UI component
 - [ ] Update database queries to be org-scoped
 - [ ] Add RLS policy validation
 
 ### Phase 2: Split Settings
+
 - [ ] Rename current `/dashboard/settings` to `/dashboard/settings-old`
 - [ ] Create new `/dashboard/settings` (personal only)
   - [ ] Profile tab
@@ -487,6 +497,7 @@ const navigation = [
   - [ ] Organizations list tab
 
 ### Phase 3: Organization Management
+
 - [ ] Create `/dashboard/organizations` page
 - [ ] Add organization selector component
 - [ ] Migrate Members tab (with permission checks)
@@ -497,6 +508,7 @@ const navigation = [
 - [ ] Create Organization Settings tab (owner only)
 
 ### Phase 4: Update Existing Tabs
+
 - [ ] Update `UsersTab` → `MembersTab` (org context)
 - [ ] Update `DevicesTab` (org context)
 - [ ] Update `IntegrationsTab` (org context)
@@ -504,6 +516,7 @@ const navigation = [
 - [ ] Remove `SystemTab` from settings (move to superadmin)
 
 ### Phase 5: Navigation & UX
+
 - [ ] Update sidebar navigation
 - [ ] Add organization badge/indicator
 - [ ] Add breadcrumbs for context clarity
@@ -511,6 +524,7 @@ const navigation = [
 - [ ] Add permission-based UI hiding
 
 ### Phase 6: Super Admin
+
 - [ ] Create `/superadmin` layout
 - [ ] Move System settings to superadmin
 - [ ] Add platform-wide analytics
@@ -532,9 +546,9 @@ const navigation = [
       <span>245 devices • 12 users</span>
     </div>
   </div>
-  
+
   <Separator />
-  
+
   <div className="org-card">
     <Building2 />
     <div>
@@ -543,7 +557,7 @@ const navigation = [
       <span>89 devices • 8 users</span>
     </div>
   </div>
-  
+
   <Button variant="outline" fullWidth>
     <Plus /> Create Organization
   </Button>
@@ -554,19 +568,23 @@ const navigation = [
 
 ```tsx
 // Only show if user can manage members
-{canManageMembers && (
-  <Button onClick={handleInviteUser}>
-    <UserPlus /> Invite Member
-  </Button>
-)}
+{
+  canManageMembers && (
+    <Button onClick={handleInviteUser}>
+      <UserPlus /> Invite Member
+    </Button>
+  )
+}
 
 // Show read-only view for members
-{!canManageMembers && (
-  <Alert>
-    <Info /> You don't have permission to manage members. 
-    Contact an admin if you need access.
-  </Alert>
-)}
+{
+  !canManageMembers && (
+    <Alert>
+      <Info /> You don't have permission to manage members. Contact an admin if
+      you need access.
+    </Alert>
+  )
+}
 ```
 
 ---
@@ -578,22 +596,22 @@ const navigation = [
 ```typescript
 // api/organizations/[orgId]/members/route.ts
 export async function POST(req: Request, { params }) {
-  const user = await getCurrentUser();
-  const { orgId } = params;
-  
+  const user = await getCurrentUser()
+  const { orgId } = params
+
   // Verify user is admin/owner in this org
   const membership = await db.organization_members.findFirst({
     where: {
       organization_id: orgId,
       user_id: user.id,
-      role: { in: ['owner', 'admin'] }
-    }
-  });
-  
+      role: { in: ['owner', 'admin'] },
+    },
+  })
+
   if (!membership) {
-    return Response.json({ error: 'Unauthorized' }, { status: 403 });
+    return Response.json({ error: 'Unauthorized' }, { status: 403 })
   }
-  
+
   // Proceed with member invitation
 }
 ```
@@ -627,24 +645,28 @@ CREATE POLICY "Admins can manage members" ON organization_members
 ## 📊 Benefits of This Architecture
 
 ### **Security**
+
 ✅ Clear organizational boundaries
 ✅ Permission-based access control
 ✅ No accidental cross-org data exposure
 ✅ Audit trail per organization
 
 ### **User Experience**
+
 ✅ Clear separation: Personal vs Organizational
 ✅ Explicit organization context
 ✅ Role-based UI (show what user can do)
 ✅ Multi-org support done right
 
 ### **Developer Experience**
+
 ✅ Easier to reason about permissions
 ✅ Clear component responsibilities
 ✅ Testable permission logic
 ✅ Follows industry best practices
 
 ### **Scalability**
+
 ✅ Easy to add org-level features
 ✅ Support for org hierarchies (future)
 ✅ Per-org billing/subscriptions (future)
@@ -667,6 +689,7 @@ CREATE POLICY "Admins can manage members" ON organization_members
 ## 📚 References
 
 Similar multi-tenant architectures:
+
 - **GitHub**: Personal settings vs Organization settings
 - **Slack**: User preferences vs Workspace admin
 - **AWS Console**: Account settings vs Organization management

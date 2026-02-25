@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,7 +15,16 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Copy, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff, Server } from 'lucide-react'
+import {
+  Copy,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Server,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 
@@ -32,7 +47,10 @@ interface ExternalBrokerConfig {
 
 interface BrokerConfig {
   broker_type?: string
-  config?: Record<string, unknown> | ExternalBrokerConfig | { use_hosted: boolean }
+  config?:
+    | Record<string, unknown>
+    | ExternalBrokerConfig
+    | { use_hosted: boolean }
 }
 
 interface CredentialsResponse {
@@ -51,12 +69,22 @@ interface MqttBrokerConfigProps {
   onSave: (config: BrokerConfig) => Promise<void>
 }
 
-export function MqttBrokerConfig({ integrationId, organizationId, currentConfig, onSave }: MqttBrokerConfigProps) {
+export function MqttBrokerConfig({
+  integrationId,
+  organizationId,
+  currentConfig,
+  onSave,
+}: MqttBrokerConfigProps) {
   const [brokerType, setBrokerType] = useState<'hosted' | 'external'>(
-    (currentConfig?.broker_type === 'external' ? 'external' : 'hosted') as 'hosted' | 'external'
+    (currentConfig?.broker_type === 'external' ? 'external' : 'hosted') as
+      | 'hosted'
+      | 'external'
   )
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
 
   // Hosted broker state
   const [credentials, setCredentials] = useState<MqttCredentials | null>(null)
@@ -64,7 +92,9 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
   const [generatingCreds, setGeneratingCreds] = useState(false)
 
   // External broker state
-  const currentExternal = currentConfig?.config as ExternalBrokerConfig | undefined
+  const currentExternal = currentConfig?.config as
+    | ExternalBrokerConfig
+    | undefined
   const [externalConfig, setExternalConfig] = useState<ExternalBrokerConfig>({
     broker_url: currentExternal?.broker_url || '',
     port: currentExternal?.port || 1883,
@@ -83,20 +113,26 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
   const generateCredentials = useCallback(async () => {
     setGeneratingCreds(true)
     try {
-      const result = await edgeFunctions.call<CredentialsResponse>('mqtt-hybrid/credentials', {
-        body: {
-          integration_id: integrationId,
-          organization_id: organizationId,
-          action: 'generate',
-        },
-      })
-      
+      const result = await edgeFunctions.call<CredentialsResponse>(
+        'mqtt-hybrid/credentials',
+        {
+          body: {
+            integration_id: integrationId,
+            organization_id: organizationId,
+            action: 'generate',
+          },
+        }
+      )
+
       if (result.success && result.data) {
         setCredentials(result.data.credentials)
         toast.success('Credentials generated successfully')
         if (result.data.warning) toast.warning(result.data.warning)
       } else {
-        const errorMsg = typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to generate credentials'
+        const errorMsg =
+          typeof result.error === 'string'
+            ? result.error
+            : result.error?.message || 'Failed to generate credentials'
         throw new Error(errorMsg)
       }
     } catch (error: unknown) {
@@ -109,14 +145,17 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
 
   const loadCredentials = useCallback(async () => {
     try {
-      const result = await edgeFunctions.call<CredentialsResponse>('mqtt-hybrid/credentials', {
-        body: {
-          integration_id: integrationId,
-          organization_id: organizationId,
-          action: 'get',
-        },
-      })
-      
+      const result = await edgeFunctions.call<CredentialsResponse>(
+        'mqtt-hybrid/credentials',
+        {
+          body: {
+            integration_id: integrationId,
+            organization_id: organizationId,
+            action: 'get',
+          },
+        }
+      )
+
       if (result.success && result.data?.credentials) {
         setCredentials(result.data.credentials)
       } else {
@@ -133,22 +172,28 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
   async function testConnection() {
     setTesting(true)
     setTestResult(null)
-    
+
     try {
-      const result = await edgeFunctions.call<TestResponse>('mqtt-hybrid/test', {
-        body: {
-          integration_id: integrationId,
-          organization_id: organizationId,
-        },
-      })
-      
-      const errorMsg = typeof result.error === 'string' ? result.error : result.error?.message || 'Connection failed'
-      
+      const result = await edgeFunctions.call<TestResponse>(
+        'mqtt-hybrid/test',
+        {
+          body: {
+            integration_id: integrationId,
+            organization_id: organizationId,
+          },
+        }
+      )
+
+      const errorMsg =
+        typeof result.error === 'string'
+          ? result.error
+          : result.error?.message || 'Connection failed'
+
       setTestResult({
         success: result.success,
         message: result.data?.message || errorMsg,
       })
-      
+
       if (result.success) {
         toast.success('Connection test successful!')
       } else {
@@ -171,7 +216,7 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
       broker_type: brokerType,
       config: brokerType === 'external' ? externalConfig : { use_hosted: true },
     }
-    
+
     await onSave(config)
     toast.success('MQTT configuration saved')
   }
@@ -184,11 +229,13 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
   return (
     <div className="space-y-6">
       {/* Broker Type Selection - Clear Visual Cards */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Hosted Broker Option */}
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${
-            brokerType === 'hosted' ? 'ring-2 ring-primary shadow-md' : 'hover:border-primary/50'
+            brokerType === 'hosted'
+              ? 'shadow-md ring-2 ring-primary'
+              : 'hover:border-primary/50'
           }`}
           onClick={() => setBrokerType('hosted')}
         >
@@ -224,9 +271,11 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
         </Card>
 
         {/* External Broker Option */}
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${
-            brokerType === 'external' ? 'ring-2 ring-primary shadow-md' : 'hover:border-primary/50'
+            brokerType === 'external'
+              ? 'shadow-md ring-2 ring-primary'
+              : 'hover:border-primary/50'
           }`}
           onClick={() => setBrokerType('external')}
         >
@@ -257,10 +306,44 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
                 <span>On-premise or cloud</span>
               </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                <span>Persistent MQTT subscriptions available</span>
+              </li>
             </ul>
           </CardContent>
         </Card>
       </div>
+
+      {/* MQTT Subscriber Service Info - Only for External Brokers */}
+      {brokerType === 'external' && (
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+          <Server className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-900 dark:text-blue-100">
+            Optional: Persistent MQTT Subscriber Service
+          </AlertTitle>
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            For advanced use cases requiring persistent MQTT subscriptions
+            (e.g., devices publishing to broker topics), we offer a Docker-based
+            subscriber service.
+            <div className="mt-2 space-y-1 text-sm">
+              <div>✓ Multi-broker support</div>
+              <div>✓ Auto-reconnection & structured logging</div>
+              <div>✓ Real-time telemetry storage</div>
+            </div>
+            <div className="mt-3">
+              <a
+                href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                View Setup Documentation →
+              </a>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Configuration Card */}
       <Card>
@@ -268,19 +351,22 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>
-                {brokerType === 'hosted' ? '🚀 Hosted Message Queue Setup' : '🔧 External Broker Configuration'}
+                {brokerType === 'hosted'
+                  ? '🚀 Hosted Message Queue Setup'
+                  : '🔧 External Broker Configuration'}
               </CardTitle>
               <CardDescription>
-                {brokerType === 'hosted' 
+                {brokerType === 'hosted'
                   ? 'Get your credentials - devices POST messages via HTTP to our queue endpoint'
-                  : 'Configure connection to your own MQTT broker infrastructure'
-                }
+                  : 'Configure connection to your own MQTT broker infrastructure'}
               </CardDescription>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setBrokerType(brokerType === 'hosted' ? 'external' : 'hosted')}
+              onClick={() =>
+                setBrokerType(brokerType === 'hosted' ? 'external' : 'hosted')
+              }
             >
               Switch to {brokerType === 'hosted' ? 'External' : 'Hosted'}
             </Button>
@@ -295,21 +381,28 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                 <AlertTitle>How It Works: Hosted Message Queue</AlertTitle>
                 <AlertDescription>
                   <div className="space-y-2">
-                    <p>Your devices send data via simple HTTP POST requests to our queue endpoint.</p>
+                    <p>
+                      Your devices send data via simple HTTP POST requests to
+                      our queue endpoint.
+                    </p>
                     <p className="text-xs">
-                      <strong>Behind the scenes:</strong> Messages go to a Postgres Message Queue (PGMQ) for reliable, 
-                      asynchronous processing. This ensures no data loss, automatic retries, and scalable handling of message bursts.
+                      <strong>Behind the scenes:</strong> Messages go to a
+                      Postgres Message Queue (PGMQ) for reliable, asynchronous
+                      processing. This ensures no data loss, automatic retries,
+                      and scalable handling of message bursts.
                     </p>
                   </div>
                 </AlertDescription>
               </Alert>
 
               {!credentials ? (
-                <div className="text-center py-8">
+                <div className="py-8 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      {generatingCreds ? 'Generating credentials...' : 'Loading credentials...'}
+                      {generatingCreds
+                        ? 'Generating credentials...'
+                        : 'Loading credentials...'}
                     </p>
                   </div>
                 </div>
@@ -317,12 +410,18 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                 <div className="space-y-4">
                   <Alert>
                     <CheckCircle2 className="h-4 w-4" />
-                    <AlertTitle>✅ Credentials Generated Successfully</AlertTitle>
+                    <AlertTitle>
+                      ✅ Credentials Generated Successfully
+                    </AlertTitle>
                     <AlertDescription>
                       <div className="space-y-1">
-                        <p>Use these credentials to authenticate your devices. Messages will be queued and processed automatically.</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          ⚠️ Save the password now - it cannot be retrieved later (only regenerated).
+                        <p>
+                          Use these credentials to authenticate your devices.
+                          Messages will be queued and processed automatically.
+                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          ⚠️ Save the password now - it cannot be retrieved
+                          later (only regenerated).
                         </p>
                       </div>
                     </AlertDescription>
@@ -333,7 +432,16 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                       <Label>Broker URL</Label>
                       <div className="flex gap-2">
                         <Input value={credentials.broker_url} readOnly />
-                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.broker_url, 'Broker URL')}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() =>
+                            copyToClipboard(
+                              credentials.broker_url,
+                              'Broker URL'
+                            )
+                          }
+                        >
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
@@ -342,7 +450,13 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                       <Label>Client ID</Label>
                       <div className="flex gap-2">
                         <Input value={credentials.client_id} readOnly />
-                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.client_id, 'Client ID')}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() =>
+                            copyToClipboard(credentials.client_id, 'Client ID')
+                          }
+                        >
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
@@ -354,7 +468,13 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                       <Label>Username</Label>
                       <div className="flex gap-2">
                         <Input value={credentials.username} readOnly />
-                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(credentials.username, 'Username')}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() =>
+                            copyToClipboard(credentials.username, 'Username')
+                          }
+                        >
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
@@ -362,16 +482,31 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                     <div>
                       <Label>Password</Label>
                       <div className="flex gap-2">
-                        <Input 
-                          type={showPassword ? 'text' : 'password'} 
-                          value={credentials.password || '••••••••••••••••'} 
-                          readOnly 
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          value={credentials.password || '••••••••••••••••'}
+                          readOnly
                         />
-                        <Button size="icon" variant="outline" onClick={() => setShowPassword(!showPassword)}>
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </Button>
                         {credentials.password && (
-                          <Button size="icon" variant="outline" onClick={() => credentials.password && copyToClipboard(credentials.password, 'Password')}>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() =>
+                              credentials.password &&
+                              copyToClipboard(credentials.password, 'Password')
+                            }
+                          >
                             <Copy className="h-4 w-4" />
                           </Button>
                         )}
@@ -382,19 +517,25 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                   <div>
                     <Label>Topic Prefix</Label>
                     <Input value={credentials.topic_prefix} readOnly />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Example: {credentials.topic_prefix}devices/sensor01/telemetry
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Example: {credentials.topic_prefix}
+                      devices/sensor01/telemetry
                     </p>
                   </div>
 
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      Save these credentials now. You can regenerate them, but the current password will be lost.
+                      Save these credentials now. You can regenerate them, but
+                      the current password will be lost.
                     </AlertDescription>
                   </Alert>
 
-                  <Button variant="outline" onClick={generateCredentials} disabled={generatingCreds}>
+                  <Button
+                    variant="outline"
+                    onClick={generateCredentials}
+                    disabled={generatingCreds}
+                  >
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Regenerate Credentials
                   </Button>
@@ -408,7 +549,8 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>
-                  Configure connection to your own MQTT broker. Supports TCP, TLS, and WebSocket protocols.
+                  Configure connection to your own MQTT broker. Supports TCP,
+                  TLS, and WebSocket protocols.
                 </AlertDescription>
               </Alert>
 
@@ -419,7 +561,12 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                     id="broker_url"
                     placeholder="mqtt.example.com"
                     value={externalConfig.broker_url}
-                    onChange={(e) => setExternalConfig({ ...externalConfig, broker_url: e.target.value })}
+                    onChange={(e) =>
+                      setExternalConfig({
+                        ...externalConfig,
+                        broker_url: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -429,7 +576,12 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                     type="number"
                     placeholder="1883"
                     value={externalConfig.port}
-                    onChange={(e) => setExternalConfig({ ...externalConfig, port: parseInt(e.target.value) || 1883 })}
+                    onChange={(e) =>
+                      setExternalConfig({
+                        ...externalConfig,
+                        port: parseInt(e.target.value) || 1883,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -441,7 +593,12 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                   title="MQTT Protocol"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
                   value={externalConfig.protocol}
-                  onChange={(e) => setExternalConfig({ ...externalConfig, protocol: e.target.value })}
+                  onChange={(e) =>
+                    setExternalConfig({
+                      ...externalConfig,
+                      protocol: e.target.value,
+                    })
+                  }
                 >
                   <option value="mqtt">MQTT (TCP)</option>
                   <option value="mqtts">MQTTS (TLS)</option>
@@ -457,7 +614,12 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                     id="username"
                     placeholder="mqtt_user"
                     value={externalConfig.username}
-                    onChange={(e) => setExternalConfig({ ...externalConfig, username: e.target.value })}
+                    onChange={(e) =>
+                      setExternalConfig({
+                        ...externalConfig,
+                        username: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -467,7 +629,12 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                     type="password"
                     placeholder="••••••••"
                     value={externalConfig.password}
-                    onChange={(e) => setExternalConfig({ ...externalConfig, password: e.target.value })}
+                    onChange={(e) =>
+                      setExternalConfig({
+                        ...externalConfig,
+                        password: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -476,21 +643,25 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                 <Switch
                   id="use_tls"
                   checked={externalConfig.use_tls}
-                  onCheckedChange={(checked) => setExternalConfig({ ...externalConfig, use_tls: checked })}
+                  onCheckedChange={(checked) =>
+                    setExternalConfig({ ...externalConfig, use_tls: checked })
+                  }
                 />
                 <Label htmlFor="use_tls">Use TLS/SSL Encryption</Label>
               </div>
 
               <Alert>
                 <AlertDescription>
-                  <strong>Connection String:</strong> {externalConfig.protocol}://{externalConfig.broker_url || 'broker.example.com'}:{externalConfig.port}
+                  <strong>Connection String:</strong> {externalConfig.protocol}
+                  ://{externalConfig.broker_url || 'broker.example.com'}:
+                  {externalConfig.port}
                 </AlertDescription>
               </Alert>
             </div>
           )}
 
           {/* Test Connection - Same for Both */}
-          <div className="space-y-4 pt-4 border-t">
+          <div className="space-y-4 border-t pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold">Test Connection</h3>
@@ -498,7 +669,11 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
                   Verify your broker connection before saving
                 </p>
               </div>
-              <Button onClick={testConnection} disabled={testing} variant="outline">
+              <Button
+                onClick={testConnection}
+                disabled={testing}
+                variant="outline"
+              >
                 {testing && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                 {testing ? 'Testing...' : 'Test Connection'}
               </Button>
@@ -517,26 +692,41 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-between items-center pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <div className="flex-1">
               {brokerType === 'hosted' ? (
                 credentials ? (
                   <div className="text-sm">
-                    <p className="font-medium text-green-600">✓ Ready to save</p>
-                    <p className="text-xs text-muted-foreground">Credentials generated. Saving will activate this integration.</p>
+                    <p className="font-medium text-green-600">
+                      ✓ Ready to save
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Credentials generated. Saving will activate this
+                      integration.
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Loading credentials...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Loading credentials...
+                  </p>
                 )
               ) : (
                 <div className="text-sm">
                   <p className="font-medium">Test connection first</p>
-                  <p className="text-xs text-muted-foreground">Verify your broker is reachable before saving</p>
+                  <p className="text-xs text-muted-foreground">
+                    Verify your broker is reachable before saving
+                  </p>
                 </div>
               )}
             </div>
-            <Button onClick={handleSave} size="lg" disabled={brokerType === 'hosted' && !credentials}>
-              {brokerType === 'hosted' && !credentials ? 'Loading...' : 'Save Configuration'}
+            <Button
+              onClick={handleSave}
+              size="lg"
+              disabled={brokerType === 'hosted' && !credentials}
+            >
+              {brokerType === 'hosted' && !credentials
+                ? 'Loading...'
+                : 'Save Configuration'}
             </Button>
           </div>
         </CardContent>
@@ -547,7 +737,7 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
         <CardHeader>
           <CardTitle>📝 Integration Code Examples</CardTitle>
           <CardDescription>
-            {brokerType === 'hosted' 
+            {brokerType === 'hosted'
               ? 'Copy these examples to send telemetry data. Works with any HTTP client - no MQTT library required!'
               : 'Sample code for connecting your devices to your MQTT broker'}
           </CardDescription>
@@ -574,7 +764,7 @@ export function MqttBrokerConfig({ integrationId, organizationId, currentConfig,
             {brokerType === 'hosted' ? (
               <>
                 <TabsContent value="curl" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`# Send telemetry data via HTTP POST
 curl -X POST ${credentials?.broker_url || 'https://your-project.supabase.co/functions/v1/mqtt-ingest'} \\
   -H "Authorization: Bearer ${credentials?.password ? '********' : 'your_password'}" \\
@@ -590,7 +780,7 @@ curl -X POST ${credentials?.broker_url || 'https://your-project.supabase.co/func
                 </TabsContent>
 
                 <TabsContent value="python" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`import requests
 
 url = "${credentials?.broker_url || 'https://your-project.supabase.co/functions/v1/mqtt-ingest'}"
@@ -612,7 +802,7 @@ print(response.json())`}</code>
                 </TabsContent>
 
                 <TabsContent value="nodejs" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`const fetch = require('node-fetch');
 
 const url = '${credentials?.broker_url || 'https://your-project.supabase.co/functions/v1/mqtt-ingest'}';
@@ -636,7 +826,7 @@ fetch(url, {
                 </TabsContent>
 
                 <TabsContent value="arduino" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`#include <WiFi.h>
 #include <HTTPClient.h>
 
@@ -667,7 +857,7 @@ void sendTelemetry() {
             ) : (
               <>
                 <TabsContent value="arduino" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`#include <WiFi.h>
 #include <PubSubClient.h>
 
@@ -689,7 +879,7 @@ void setup() {
                 </TabsContent>
 
                 <TabsContent value="python" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`import paho.mqtt.client as mqtt
 
 client = mqtt.Client(client_id="python_client")
@@ -702,7 +892,7 @@ client.loop()`}</code>
                 </TabsContent>
 
                 <TabsContent value="nodejs" className="mt-4">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     <code>{`const mqtt = require('mqtt');
 
 const client = mqtt.connect('${externalConfig.protocol}://${externalConfig.broker_url || 'mqtt.example.com'}:${externalConfig.port || 1883}', {

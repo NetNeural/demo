@@ -1,4 +1,5 @@
 # Sentry Configuration Deep Dive Report
+
 **Date:** November 7, 2025  
 **Project:** NetNeural IoT Platform  
 **Status:** ✅ COMPREHENSIVE & PRODUCTION-READY
@@ -16,7 +17,7 @@ Sentry is **fully configured and production-ready** with comprehensive error tra
 ✅ **Error Boundaries**: Multiple layers of error catching  
 ✅ **User Feedback**: Automatic feedback dialogs on errors  
 ✅ **Performance Monitoring**: Request tracing and profiling  
-✅ **Integration**: Supabase error tracking included  
+✅ **Integration**: Supabase error tracking included
 
 ---
 
@@ -51,6 +52,7 @@ Sentry is **fully configured and production-ready** with comprehensive error tra
 **Status:** Fully Configured  
 **Location:** Loaded in root layout  
 **Features:**
+
 - ✅ Session Replay with masking
 - ✅ Performance tracing (100% in dev, 10% in prod)
 - ✅ Breadcrumb filtering (removes console logs in prod)
@@ -60,6 +62,7 @@ Sentry is **fully configured and production-ready** with comprehensive error tra
 - ✅ Debug mode enabled for troubleshooting
 
 **Key Configuration:**
+
 ```typescript
 {
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -84,6 +87,7 @@ Sentry is **fully configured and production-ready** with comprehensive error tra
 **Status:** Fully Configured  
 **Runtime:** Node.js  
 **Features:**
+
 - ✅ Supabase integration (automatic query tracking)
 - ✅ Request tracing enabled
 - ✅ Breadcrumbs for database calls
@@ -91,6 +95,7 @@ Sentry is **fully configured and production-ready** with comprehensive error tra
 - ✅ Release tracking
 
 **Key Configuration:**
+
 ```typescript
 integrations: [
   new SupabaseIntegration(SupabaseClient, {
@@ -109,6 +114,7 @@ tracesSampleRate: NODE_ENV === 'production' ? 0.1 : 1.0
 **Status:** Fully Configured  
 **Runtime:** Edge Functions  
 **Features:**
+
 - ✅ Supabase integration for edge
 - ✅ Tracing and breadcrumbs
 - ✅ Lightweight configuration for edge runtime
@@ -119,11 +125,13 @@ tracesSampleRate: NODE_ENV === 'production' ? 0.1 : 1.0
 
 **Status:** Fully Configured  
 **Features:**
+
 - ✅ Automatic runtime detection (nodejs vs edge)
 - ✅ Request error handling via `onRequestError`
 - ✅ Context enrichment (route path, router type)
 
 **Key Function:**
+
 ```typescript
 export async function onRequestError(err, request, context) {
   Sentry.captureException(err, {
@@ -133,9 +141,9 @@ export async function onRequestError(err, request, context) {
         router_kind: context.routerKind,
         router_path: context.routePath,
         route_type: context.routeType,
-      }
-    }
-  });
+      },
+    },
+  })
 }
 ```
 
@@ -147,6 +155,7 @@ export async function onRequestError(err, request, context) {
 
 **Catches:** Root-level unrecoverable errors  
 **Features:**
+
 - ✅ Automatic Sentry capture
 - ✅ User feedback dialog
 - ✅ Error ID display
@@ -158,6 +167,7 @@ export async function onRequestError(err, request, context) {
 
 **Catches:** Dashboard route errors  
 **Features:**
+
 - ✅ Automatic Sentry capture
 - ✅ Production feedback dialog
 - ✅ Development error details
@@ -169,6 +179,7 @@ export async function onRequestError(err, request, context) {
 
 **Catches:** Authentication flow errors  
 **Features:**
+
 - ✅ Authentication-specific error handling
 - ✅ Automatic Sentry capture
 - ✅ User-friendly messaging
@@ -182,6 +193,7 @@ export async function onRequestError(err, request, context) {
 
 **Purpose:** Consistent API error handling  
 **Features:**
+
 - ✅ Authentication error detection (401/403)
 - ✅ Silent auth error handling
 - ✅ Configurable error throwing
@@ -189,20 +201,22 @@ export async function onRequestError(err, request, context) {
 - ✅ Graceful degradation
 
 **Usage Pattern:**
+
 ```typescript
-const response = await fetch(url);
+const response = await fetch(url)
 const errorResult = handleApiError(response, {
   errorPrefix: 'Failed to fetch data',
   throwOnError: false,
-});
+})
 
 if (errorResult.isAuthError) {
   // Handle auth errors gracefully
-  return null;
+  return null
 }
 ```
 
 **Current Usage:**
+
 - ✅ `DevicesList.tsx` - Device fetching
 - ✅ `OrganizationContext.tsx` - Organization queries
 - ✅ Multiple other components
@@ -215,36 +229,41 @@ if (errorResult.isAuthError) {
 **Features:**
 
 #### `handleApiError(error, options)`
+
 - ✅ Automatic Sentry capture for API errors
 - ✅ Context enrichment (endpoint, method, status)
 - ✅ Automatic user feedback dialogs for 4xx/5xx
 - ✅ Conditional dialog display (production only)
 
 #### `withSentryErrorHandler(fn, context)`
+
 - ✅ Wraps async functions
 - ✅ Automatic error capture
 - ✅ Context preservation
 
 #### `reportError(error, context)`
+
 - ✅ Manual error reporting
 - ✅ Custom tags and context
 - ✅ Component/action tracking
 
 **Usage Pattern:**
+
 ```typescript
 try {
-  const result = await apiCall();
+  const result = await apiCall()
 } catch (error) {
   handleApiError(error, {
     endpoint: '/api/data',
     method: 'GET',
     status: response.status,
-    context: { userId: user.id }
-  });
+    context: { userId: user.id },
+  })
 }
 ```
 
 **Current Usage:**
+
 - ✅ `MembersTab.tsx` - Member management
 - ⚠️ **NOT used in DevicesList.tsx** (uses api-error-handler instead)
 
@@ -256,10 +275,12 @@ try {
 
 **Status:** Fully Integrated  
 **Files:**
+
 - `sentry.server.config.ts`
 - `sentry.edge.config.ts`
 
 **Features:**
+
 - ✅ Automatic query tracking
 - ✅ Database error capture
 - ✅ Performance monitoring
@@ -273,6 +294,7 @@ try {
 **File:** `next.config.js`
 
 **Features:**
+
 ```javascript
 {
   org: process.env.SENTRY_ORG,
@@ -293,6 +315,7 @@ try {
 
 **Location:** `http://localhost:3000/test-sentry`  
 **Features:**
+
 - ✅ Manual error triggering
 - ✅ Unhandled error testing
 - ✅ Message capture
@@ -303,6 +326,7 @@ try {
 - ✅ Event ID tracking
 
 **Test Cases:**
+
 1. ✅ Basic Error
 2. ✅ Unhandled Error
 3. ✅ Message Capture
@@ -318,7 +342,7 @@ try {
 ### ✅ Environment Variables
 
 **File:** `.env.local`  
-**Status:** Fully Configured  
+**Status:** Fully Configured
 
 ```bash
 # Sentry Configuration
@@ -329,6 +353,7 @@ SENTRY_AUTH_TOKEN=<redacted-use-github-secrets>
 ```
 
 **Validation:**
+
 - ✅ DSN is public and properly formatted
 - ✅ Organization ID matches
 - ✅ Project ID matches
@@ -340,16 +365,16 @@ SENTRY_AUTH_TOKEN=<redacted-use-github-secrets>
 
 ### ✅ What's Being Tracked
 
-| Layer | Coverage | Status |
-|-------|----------|--------|
-| Client Errors | 100% | ✅ Global handlers + Error boundaries |
-| Server Errors | 100% | ✅ Instrumentation + Server config |
-| Edge Errors | 100% | ✅ Edge config |
-| API Errors | 95% | ⚠️ Mixed usage (2 different utilities) |
-| Unhandled Promises | 100% | ✅ Global unhandledrejection listener |
-| React Errors | 100% | ✅ Error boundaries at multiple levels |
-| Network Errors | 100% | ✅ Fetch interceptors via breadcrumbs |
-| Authentication Errors | 100% | ✅ Graceful handling, no noise |
+| Layer                 | Coverage | Status                                 |
+| --------------------- | -------- | -------------------------------------- |
+| Client Errors         | 100%     | ✅ Global handlers + Error boundaries  |
+| Server Errors         | 100%     | ✅ Instrumentation + Server config     |
+| Edge Errors           | 100%     | ✅ Edge config                         |
+| API Errors            | 95%      | ⚠️ Mixed usage (2 different utilities) |
+| Unhandled Promises    | 100%     | ✅ Global unhandledrejection listener  |
+| React Errors          | 100%     | ✅ Error boundaries at multiple levels |
+| Network Errors        | 100%     | ✅ Fetch interceptors via breadcrumbs  |
+| Authentication Errors | 100%     | ✅ Graceful handling, no noise         |
 
 ---
 
@@ -366,10 +391,12 @@ SENTRY_AUTH_TOKEN=<redacted-use-github-secrets>
 #### 1. **Standardize API Error Handling**
 
 **Issue:** Two different error handling utilities in use:
+
 - `api-error-handler.ts` - Used in DevicesList, OrganizationContext
 - `sentry-utils.ts` - Used in MembersTab
 
-**Recommendation:** 
+**Recommendation:**
+
 ```typescript
 // Consolidate into ONE utility that combines both:
 // 1. Graceful auth error handling (from api-error-handler)
@@ -378,11 +405,11 @@ SENTRY_AUTH_TOKEN=<redacted-use-github-secrets>
 export function handleApiError(
   response: Response | Error,
   options: {
-    endpoint: string;
-    method?: string;
-    silentAuthErrors?: boolean;
-    sendToSentry?: boolean; // Default: true
-    showFeedbackDialog?: boolean;
+    endpoint: string
+    method?: string
+    silentAuthErrors?: boolean
+    sendToSentry?: boolean // Default: true
+    showFeedbackDialog?: boolean
   }
 ): ApiErrorResult {
   // Combines both utilities
@@ -390,12 +417,14 @@ export function handleApiError(
 ```
 
 **Benefits:**
+
 - Consistent error handling across all API calls
 - Automatic Sentry tracking for all errors
 - Graceful auth error handling everywhere
 - Single source of truth
 
 **Files to Update:**
+
 - `DevicesList.tsx`
 - `OrganizationContext.tsx`
 - `MembersTab.tsx`
@@ -408,6 +437,7 @@ export function handleApiError(
 **Issue:** Source maps currently disabled for static export
 
 **Current Config:**
+
 ```javascript
 disableServerWebpackPlugin: true, // Always disabled
 disableClientWebpackPlugin: NODE_ENV === 'development'
@@ -415,6 +445,7 @@ disableClientWebpackPlugin: NODE_ENV === 'development'
 
 **Recommendation:**
 Enable source map upload for production builds:
+
 ```javascript
 {
   hideSourceMaps: true, // Keep this
@@ -424,6 +455,7 @@ Enable source map upload for production builds:
 ```
 
 **Benefits:**
+
 - Readable stack traces in Sentry dashboard
 - Faster debugging
 - Better error context
@@ -441,17 +473,18 @@ Add custom performance transactions:
 // In critical user flows
 const transaction = Sentry.startTransaction({
   op: 'user_action',
-  name: 'Load Device List'
-});
+  name: 'Load Device List',
+})
 
 try {
-  await fetchDevices();
+  await fetchDevices()
 } finally {
-  transaction.finish();
+  transaction.finish()
 }
 ```
 
 **Benefits:**
+
 - Identify slow operations
 - Track API response times
 - User experience monitoring
@@ -472,14 +505,15 @@ Sentry.setUser({
   email: user.email,
   username: user.full_name,
   organizationId: currentOrg.id,
-  role: user.role
-});
+  role: user.role,
+})
 
 // On logout
-Sentry.setUser(null);
+Sentry.setUser(null)
 ```
 
 **Benefits:**
+
 - Track errors per user
 - Better support capabilities
 - User-specific debugging
@@ -499,11 +533,12 @@ Sentry.setTags({
   feature: 'devices',
   organization: currentOrg.id,
   user_role: user.role,
-  deployment: 'production-v1'
-});
+  deployment: 'production-v1',
+})
 ```
 
 **Benefits:**
+
 - Filter errors by feature
 - Track errors per organization
 - Better error categorization
@@ -521,23 +556,26 @@ Sentry.setTags({
 ✅ **Graceful Degradation** - Auth errors handled silently  
 ✅ **Test Page** - Comprehensive Sentry testing  
 ✅ **Release Tracking** - Version tracking configured  
-✅ **Ignored Errors** - Known noise filtered out  
+✅ **Ignored Errors** - Known noise filtered out
 
 ---
 
 ## 📋 Action Items
 
 ### Priority 1: Immediate (Before Production)
+
 - [ ] **Consolidate API error handling utilities** (1 hour)
 - [ ] **Add user context on login/logout** (30 minutes)
 - [ ] **Enable source map upload for production** (15 minutes)
 
 ### Priority 2: Enhancement (Next Sprint)
+
 - [ ] **Add performance monitoring transactions** (2 hours)
 - [ ] **Add custom tags for filtering** (1 hour)
 - [ ] **Document error handling patterns** (1 hour)
 
 ### Priority 3: Future Improvements
+
 - [ ] **Set up Sentry alerts for critical errors** (30 minutes)
 - [ ] **Configure Sentry releases with git commits** (1 hour)
 - [ ] **Add Sentry integration tests** (2 hours)
@@ -547,6 +585,7 @@ Sentry.setTags({
 ## ✅ Verification Checklist
 
 ### Configuration
+
 - [x] Sentry DSN configured
 - [x] Organization ID set
 - [x] Project ID set
@@ -554,6 +593,7 @@ Sentry.setTags({
 - [x] Environment variables in .env.local
 
 ### Client-Side
+
 - [x] SentryInit component loaded
 - [x] Global error handlers attached
 - [x] Unhandled promise rejection handler
@@ -562,21 +602,25 @@ Sentry.setTags({
 - [x] Token sanitization
 
 ### Server-Side
+
 - [x] Server config loaded
 - [x] Supabase integration
 - [x] Instrumentation file
 - [x] onRequestError handler
 
 ### Edge Runtime
+
 - [x] Edge config loaded
 - [x] Supabase integration for edge
 
 ### Error Boundaries
+
 - [x] Global error boundary
 - [x] Dashboard error boundary
 - [x] Auth error boundary
 
 ### Testing
+
 - [x] Test page exists
 - [x] Manual error testing works
 - [x] User feedback dialog works
@@ -597,6 +641,7 @@ Sentry.setTags({
 **Recommended improvements** are optimizations rather than critical fixes. The current setup provides excellent visibility into production errors and will enable fast debugging and resolution.
 
 **Next Steps:**
+
 1. Test Sentry in production with real errors
 2. Monitor Sentry dashboard for initial issues
 3. Implement Priority 1 action items before scaling

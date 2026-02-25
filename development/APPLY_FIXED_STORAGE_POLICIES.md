@@ -1,5 +1,4 @@
-🔧 APPLY THIS SQL IN SUPABASE SQL EDITOR
-============================================
+# 🔧 APPLY THIS SQL IN SUPABASE SQL EDITOR
 
 Go to: https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql/new
 
@@ -68,10 +67,10 @@ USING (
 );
 
 -- Verify policies created
-SELECT policyname, cmd 
-FROM pg_policies 
-WHERE schemaname = 'storage' 
-AND tablename = 'objects' 
+SELECT policyname, cmd
+FROM pg_policies
+WHERE schemaname = 'storage'
+AND tablename = 'objects'
 AND policyname LIKE '%organization%';
 ```
 

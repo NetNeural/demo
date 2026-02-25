@@ -19,10 +19,12 @@ When clicking "Configure" or "Edit" on MQTT integrations, the route navigation w
 **File:** `src/components/integrations/MqttConfigDialog.tsx`
 
 Added a `mode` prop with two options:
+
 - `'dialog'` - Renders as modal overlay (default for backward compatibility)
 - `'page'` - Renders as inline page content
 
 **Changes:**
+
 ```typescript
 interface Props {
   mode?: 'dialog' | 'page' // NEW
@@ -54,6 +56,7 @@ const renderContent = () => (
 ### 3. Conditional Rendering Based on Mode
 
 **Dialog Mode** (existing behavior):
+
 ```typescript
 if (mode === 'dialog') {
   return (
@@ -70,6 +73,7 @@ if (mode === 'dialog') {
 ```
 
 **Page Mode** (new inline rendering):
+
 ```typescript
 if (mode === 'page') {
   return (
@@ -96,6 +100,7 @@ if (mode === 'page') {
 **File:** `src/app/dashboard/integrations/mqtt/[id]/MqttPageClient.tsx`
 
 Changed from:
+
 ```typescript
 <MqttConfigDialog
   open={true}
@@ -105,6 +110,7 @@ Changed from:
 ```
 
 To:
+
 ```typescript
 <MqttConfigDialog
   mode="page"  // ← NEW: Renders inline, not as modal
@@ -159,8 +165,9 @@ The "Add Integration" dropdown now displays these categories with visual separat
 ✅ **Next.js build successful** (no errors, only ESLint warnings for `any` types)
 
 Routes generated:
+
 ```
-├ ● /dashboard/integrations/mqtt/[id]      857 B         343 kB        
+├ ● /dashboard/integrations/mqtt/[id]      857 B         343 kB
 ├   └ /dashboard/integrations/mqtt/new
 ```
 
@@ -179,6 +186,7 @@ Routes generated:
 ## Next Steps
 
 1. **Deploy MQTT migrations** (if not already deployed):
+
    ```bash
    npx supabase db push --linked
    ```

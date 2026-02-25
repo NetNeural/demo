@@ -35,47 +35,48 @@ Any error that happens in your app is automatically caught and sent to Sentry:
 
 ```typescript
 // This automatically goes to Sentry - NO code needed!
-throw new Error('Something broke!');
+throw new Error('Something broke!')
 
 // Unhandled promise - also automatic!
 async function fetchData() {
-  throw new Error('API failed');
+  throw new Error('API failed')
 }
-fetchData(); // Sentry captures it automatically
+fetchData() // Sentry captures it automatically
 ```
 
 ### API Calls (One Line of Code)
 
 For API calls, use `handleApiError` to get:
+
 - ✅ Error sent to Sentry with full context
 - ✅ User feedback dialog (production only)
 - ✅ Status-appropriate error messages
 - ✅ Consistent error handling everywhere
 
 ```typescript
-import { handleApiError } from '@/lib/sentry-utils';
+import { handleApiError } from '@/lib/sentry-utils'
 
 try {
-  const response = await fetch('/api/users');
-  
+  const response = await fetch('/api/users')
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.error || `HTTP ${response.status}`);
-    
+    const errorData = await response.json().catch(() => ({}))
+    const error = new Error(errorData.error || `HTTP ${response.status}`)
+
     // This ONE line does everything:
     handleApiError(error, {
       endpoint: '/api/users',
       method: 'GET',
       status: response.status,
       errorData,
-    });
-    
-    throw error;
+    })
+
+    throw error
   }
-  
-  const data = await response.json();
+
+  const data = await response.json()
 } catch (error) {
-  console.error('Failed to fetch users:', error);
+  console.error('Failed to fetch users:', error)
   // Error already sent to Sentry by handleApiError
 }
 ```
@@ -83,6 +84,7 @@ try {
 ## 📋 Current Status
 
 ### ✅ Complete Infrastructure
+
 - All error boundaries in place
 - All utilities created and working
 - Documentation complete
@@ -100,6 +102,7 @@ Using handleApiError:       3  ⚠️ Needs improvement
 ### 🎯 Next Steps for Team
 
 #### Priority 1: High-Traffic Components
+
 Update these components first (they have the most API calls):
 
 1. **Settings/Integrations** - `src/app/dashboard/settings/components/IntegrationsTab.tsx`
@@ -121,6 +124,7 @@ Update these components first (they have the most API calls):
    - 1 fetch call
 
 #### Priority 2: Pages with Error Handling
+
 Update these pages to use reportError instead of just console.error:
 
 - `src/app/auth/login/page.tsx`
@@ -142,6 +146,7 @@ cp src/templates/page-template.tsx src/app/your-feature/page.tsx
 ```
 
 The template includes:
+
 - ✅ Proper imports
 - ✅ API error handling example
 - ✅ Error boundary wrapper example
@@ -150,39 +155,41 @@ The template includes:
 ### Updating an Existing Component
 
 **Before (Missing Sentry):**
+
 ```typescript
 try {
-  const response = await fetch('/api/data');
-  if (!response.ok) throw new Error('Failed');
-  const data = await response.json();
+  const response = await fetch('/api/data')
+  if (!response.ok) throw new Error('Failed')
+  const data = await response.json()
 } catch (error) {
-  console.error(error); // ❌ Not sent to Sentry
-  toast.error('Error'); // ❌ No feedback dialog
+  console.error(error) // ❌ Not sent to Sentry
+  toast.error('Error') // ❌ No feedback dialog
 }
 ```
 
 **After (With Sentry):**
+
 ```typescript
-import { handleApiError } from '@/lib/sentry-utils';
+import { handleApiError } from '@/lib/sentry-utils'
 
 try {
-  const response = await fetch('/api/data');
+  const response = await fetch('/api/data')
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.error || `HTTP ${response.status}`);
-    
+    const errorData = await response.json().catch(() => ({}))
+    const error = new Error(errorData.error || `HTTP ${response.status}`)
+
     handleApiError(error, {
       endpoint: '/api/data',
       method: 'GET',
       status: response.status,
       errorData,
-    });
-    
-    throw error;
+    })
+
+    throw error
   }
-  const data = await response.json();
+  const data = await response.json()
 } catch (error) {
-  console.error('Failed to fetch data:', error);
+  console.error('Failed to fetch data:', error)
 }
 ```
 
@@ -196,6 +203,7 @@ bash scripts/audit-error-handling.sh
 ```
 
 This shows:
+
 - All fetch() calls in the codebase
 - All console.error calls (potential missing Sentry)
 - Components already using handleApiError
@@ -237,15 +245,18 @@ Your Sentry integration is successful when:
 ## 🔍 Monitoring
 
 ### Sentry Dashboard
+
 https://sentry.io/organizations/o4510253191135232/projects/
 
 Check for:
+
 - Error rate trends
 - Most common errors
 - User feedback submissions
 - Source map accuracy
 
 ### Weekly Review
+
 1. Check error patterns
 2. Identify frequently occurring errors
 3. Prioritize fixes based on user impact
@@ -265,6 +276,7 @@ Check for:
 ## 💡 Best Practices
 
 ### Do This ✅
+
 - Let errors bubble up (automatic tracking)
 - Use `handleApiError` for ALL API calls
 - Use the page template for new pages
@@ -272,6 +284,7 @@ Check for:
 - Test error scenarios during development
 
 ### Don't Do This ❌
+
 - Catch errors without reporting them
 - Use console.error for production errors
 - Create custom Sentry code in each component
@@ -281,12 +294,14 @@ Check for:
 ## 🎓 Training Resources
 
 ### For New Developers
+
 1. Read [SENTRY_GUIDE.md](./SENTRY_GUIDE.md)
 2. Review [src/templates/page-template.tsx](./src/templates/page-template.tsx)
 3. Look at `MembersTab.tsx` as a real example
 4. Try the test page at `/test-sentry`
 
 ### Quick Reference
+
 ```typescript
 // API Error
 import { handleApiError } from '@/lib/sentry-utils';
@@ -317,6 +332,7 @@ import { ErrorBoundaryWrapper } from '@/lib/error-boundary-wrapper';
 ## 🎉 Bottom Line
 
 **You now have a global error handling solution that:**
+
 - ✅ Works automatically everywhere
 - ✅ Requires minimal code from developers
 - ✅ Provides excellent user experience

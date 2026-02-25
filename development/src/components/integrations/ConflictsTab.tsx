@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -31,7 +37,9 @@ interface ConflictsTabProps {
   integrationId?: string
 }
 
-export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integrationId'>) {
+export function ConflictsTab({
+  organizationId,
+}: Omit<ConflictsTabProps, 'integrationId'>) {
   const [conflicts, setConflicts] = useState<DeviceConflict[]>([])
   const [loading, setLoading] = useState(true)
   const [resolving, setResolving] = useState<string | null>(null)
@@ -39,7 +47,8 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
   const loadConflicts = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await integrationSyncService.getPendingConflicts(organizationId)
+      const data =
+        await integrationSyncService.getPendingConflicts(organizationId)
       // Filter by integration if specified (integrationId would require device lookup)
       setConflicts(data as unknown as DeviceConflict[])
     } catch (error) {
@@ -61,11 +70,16 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
   ) => {
     setResolving(conflictId)
     try {
-      const resolvedValue = strategy === 'local_wins' 
-        ? { [conflict.field_name]: conflict.local_value }
-        : { [conflict.field_name]: conflict.remote_value }
+      const resolvedValue =
+        strategy === 'local_wins'
+          ? { [conflict.field_name]: conflict.local_value }
+          : { [conflict.field_name]: conflict.remote_value }
 
-      await integrationSyncService.resolveConflict(conflictId, strategy, resolvedValue)
+      await integrationSyncService.resolveConflict(
+        conflictId,
+        strategy,
+        resolvedValue
+      )
       toast.success(`Conflict resolved: ${strategy.replace('_', ' ')}`)
       await loadConflicts()
     } catch (error) {
@@ -79,7 +93,11 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
   const ignoreConflict = async (conflictId: string) => {
     setResolving(conflictId)
     try {
-      await integrationSyncService.resolveConflict(conflictId, 'local_wins', undefined)
+      await integrationSyncService.resolveConflict(
+        conflictId,
+        'local_wins',
+        undefined
+      )
       toast.success('Conflict ignored')
       await loadConflicts()
     } catch (error) {
@@ -92,12 +110,20 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
 
   const renderValue = (value: unknown) => {
     if (value === null || value === undefined) {
-      return <span className="text-muted-foreground italic">null</span>
+      return <span className="italic text-muted-foreground">null</span>
     }
     if (typeof value === 'object') {
-      return <code className="text-xs bg-muted px-1 py-0.5 rounded">{JSON.stringify(value)}</code>
+      return (
+        <code className="rounded bg-muted px-1 py-0.5 text-xs">
+          {JSON.stringify(value)}
+        </code>
+      )
     }
-    return <code className="text-xs bg-muted px-1 py-0.5 rounded">{String(value)}</code>
+    return (
+      <code className="rounded bg-muted px-1 py-0.5 text-xs">
+        {String(value)}
+      </code>
+    )
   }
 
   const getConflictTypeColor = (type: string) => {
@@ -126,8 +152,8 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
       <Card>
         <CardContent className="py-12">
           <div className="text-center">
-            <Check className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Conflicts</h3>
+            <Check className="mx-auto mb-4 h-12 w-12 text-green-500" />
+            <h3 className="mb-2 text-lg font-semibold">No Conflicts</h3>
             <p className="text-muted-foreground">
               All device data is synchronized successfully
             </p>
@@ -141,13 +167,15 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{conflicts.length} Pending Conflicts</h3>
+          <h3 className="text-lg font-semibold">
+            {conflicts.length} Pending Conflicts
+          </h3>
           <p className="text-sm text-muted-foreground">
             Review and resolve conflicts between local and remote data
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={loadConflicts}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
@@ -155,8 +183,8 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Conflicts occur when the same device has different values locally and remotely.
-          Choose which version to keep or ignore the conflict.
+          Conflicts occur when the same device has different values locally and
+          remotely. Choose which version to keep or ignore the conflict.
         </AlertDescription>
       </Alert>
 
@@ -170,9 +198,15 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
                     {conflict.device?.name || 'Unknown Device'}
                   </CardTitle>
                   <CardDescription>
-                    Field: <code className="text-xs bg-muted px-1 py-0.5 rounded">{conflict.field_name}</code>
+                    Field:{' '}
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                      {conflict.field_name}
+                    </code>
                     {' • '}
-                    <Badge variant="outline" className={getConflictTypeColor(conflict.conflict_type)}>
+                    <Badge
+                      variant="outline"
+                      className={getConflictTypeColor(conflict.conflict_type)}
+                    >
                       {conflict.conflict_type.replace('_', ' ')}
                     </Badge>
                   </CardDescription>
@@ -186,56 +220,70 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Local Value (NetNeural)</h4>
+                    <h4 className="text-sm font-medium">
+                      Local Value (NetNeural)
+                    </h4>
                     {conflict.local_updated_at && (
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(conflict.local_updated_at), 'MMM d, h:mm a')}
+                        {format(
+                          new Date(conflict.local_updated_at),
+                          'MMM d, h:mm a'
+                        )}
                       </span>
                     )}
                   </div>
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
+                  <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-950">
                     {renderValue(conflict.local_value)}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Remote Value (Golioth)</h4>
+                    <h4 className="text-sm font-medium">
+                      Remote Value (Golioth)
+                    </h4>
                     {conflict.remote_updated_at && (
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(conflict.remote_updated_at), 'MMM d, h:mm a')}
+                        {format(
+                          new Date(conflict.remote_updated_at),
+                          'MMM d, h:mm a'
+                        )}
                       </span>
                     )}
                   </div>
-                  <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-md">
+                  <div className="rounded-md bg-purple-50 p-3 dark:bg-purple-950">
                     {renderValue(conflict.remote_value)}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t">
+              <div className="flex items-center gap-2 border-t pt-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => resolveConflict(conflict.id, 'local_wins', conflict)}
+                  onClick={() =>
+                    resolveConflict(conflict.id, 'local_wins', conflict)
+                  }
                   disabled={resolving === conflict.id}
                 >
                   {resolving === conflict.id ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="mr-2 h-4 w-4" />
                   )}
                   Keep Local
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => resolveConflict(conflict.id, 'remote_wins', conflict)}
+                  onClick={() =>
+                    resolveConflict(conflict.id, 'remote_wins', conflict)
+                  }
                   disabled={resolving === conflict.id}
                 >
                   {resolving === conflict.id ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="mr-2 h-4 w-4" />
                   )}
                   Keep Remote
                 </Button>
@@ -245,7 +293,7 @@ export function ConflictsTab({ organizationId }: Omit<ConflictsTabProps, 'integr
                   onClick={() => ignoreConflict(conflict.id)}
                   disabled={resolving === conflict.id}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="mr-2 h-4 w-4" />
                   Ignore
                 </Button>
               </div>

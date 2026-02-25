@@ -1,17 +1,118 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getUserContext, createAuthenticatedClient } from '../_shared/auth.ts'
+import { getUserContext, createAuthenticatedClient, createServiceClient } from '../_shared/auth.ts'
+
+// ─── Resolution Notification Helper ─────────────────────────────────
+async function sendResolutionNotification(
+  supabase: SupabaseClient,
+  alertId: string,
+  resolvedByUserId: string,
+  acknowledgementType: string,
+  notes?: string | null
+) {
+  try {
+    const { data: alert } = await supabase
+      .from('alerts')
+      .select('*, devices!device_id(name, device_type, organization_id)')
+      .eq('id', alertId)
+      .single()
+
+    if (!alert) return
+
+    const { data: resolver } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', resolvedByUserId)
+      .single()
+    const resolverName = resolver?.full_name || resolver?.email || resolvedByUserId
+    const resolvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+
+    const thresholdId = alert.metadata?.threshold_id
+    let recipientUserIds: string[] = []
+    let recipientEmails: string[] = []
+    let channels: string[] = ['email']
+
+    if (thresholdId) {
+      const { data: threshold } = await supabase
+        .from('sensor_thresholds')
+        .select('notify_user_ids, notify_emails, notification_channels')
+        .eq('id', thresholdId)
+        .single()
+      if (threshold) {
+        recipientUserIds = threshold.notify_user_ids || []
+        recipientEmails = threshold.notify_emails || []
+        channels = threshold.notification_channels || ['email']
+      }
+    }
+
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) {
+      const orgId = alert.organization_id || alert.devices?.organization_id
+      if (orgId) {
+        const { data: members } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', orgId)
+          .in('role', ['owner', 'admin'])
+        recipientUserIds = members?.map((m: { user_id: string }) => m.user_id) || []
+      }
+    }
+
+    if (recipientUserIds.length === 0 && recipientEmails.length === 0) return
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const originalTitle = alert.title
+    const originalMessage = alert.message
+
+    await supabase.from('alerts').update({
+      title: `✅ RESOLVED: ${alertNum} — ${originalTitle}`,
+      message: `Resolved by ${resolverName} at ${resolvedAt}\nType: ${acknowledgementType}${notes ? `\nNotes: ${notes}` : ''}\n\nOriginal alert: ${originalMessage}`,
+      severity: 'low',
+    }).eq('id', alertId)
+
+    await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({
+        alert_id: alertId,
+        threshold_id: thresholdId || undefined,
+        channels, recipient_user_ids: recipientUserIds, recipient_emails: recipientEmails,
+      }),
+    })
+
+    await supabase.from('alerts').update({
+      title: originalTitle, message: originalMessage, severity: alert.severity,
+    }).eq('id', alertId)
+
+    console.log(`[user-actions] Resolution notification sent for ${alertNum}`)
+  } catch (err) {
+    console.warn('[user-actions] Resolution notification failed (non-fatal):', err)
+  }
+}
 
 interface AcknowledgeAlertRequest {
   alert_id: string
-  acknowledgement_type?: 'acknowledged' | 'dismissed' | 'resolved' | 'false_positive'
+  acknowledgement_type?:
+    | 'acknowledged'
+    | 'dismissed'
+    | 'resolved'
+    | 'false_positive'
   notes?: string
 }
 
 interface RecordActionRequest {
   action_type: string
-  action_category: 'device_management' | 'integration_management' | 'alert_management' | 'sync_operation' | 'configuration' | 'authentication' | 'analytics_view' | 'other'
+  action_category:
+    | 'device_management'
+    | 'integration_management'
+    | 'alert_management'
+    | 'sync_operation'
+    | 'configuration'
+    | 'authentication'
+    | 'analytics_view'
+    | 'other'
   description?: string
   device_id?: string
   integration_id?: string
@@ -31,7 +132,7 @@ serve(async (req) => {
   try {
     // Get authenticated user context
     const userContext = await getUserContext(req)
-    
+
     // Create authenticated Supabase client
     const supabaseClient = createAuthenticatedClient(req)
 
@@ -40,7 +141,11 @@ serve(async (req) => {
 
     // Route based on action
     if (action === 'acknowledge_alert') {
-      return await handleAcknowledgeAlert(req, supabaseClient, userContext.userId)
+      return await handleAcknowledgeAlert(
+        req,
+        supabaseClient,
+        userContext.userId
+      )
     } else if (action === 'record_action') {
       return await handleRecordAction(req, supabaseClient, userContext.userId)
     } else if (action === 'get_alert_acknowledgements') {
@@ -64,7 +169,11 @@ serve(async (req) => {
   }
 })
 
-async function handleAcknowledgeAlert(req: Request, supabase: SupabaseClient, userId: string) {
+async function handleAcknowledgeAlert(
+  req: Request,
+  supabase: SupabaseClient,
+  userId: string
+) {
   const body: AcknowledgeAlertRequest = await req.json()
 
   if (!body.alert_id) {
@@ -84,6 +193,29 @@ async function handleAcknowledgeAlert(req: Request, supabase: SupabaseClient, us
     throw new Error(`Failed to acknowledge alert: ${error.message}`)
   }
 
+  // Belt-and-suspenders: also directly mark alert as resolved
+  // This ensures is_resolved is set even if the DB function is outdated
+  try {
+    const serviceClient = createServiceClient()
+    await serviceClient
+      .from('alerts')
+      .update({
+        is_resolved: true,
+        resolved_by: userId,
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('id', body.alert_id)
+
+    // Send resolution notification to original recipients (fire-and-forget)
+    sendResolutionNotification(
+      serviceClient, body.alert_id, userId,
+      body.acknowledgement_type || 'acknowledged', body.notes
+    ).catch(() => {})
+  } catch (resolveErr) {
+    console.warn('[Acknowledge Alert] Fallback resolve failed:', resolveErr)
+    // Non-fatal: the RPC function should have handled this
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
@@ -97,28 +229,41 @@ async function handleAcknowledgeAlert(req: Request, supabase: SupabaseClient, us
   )
 }
 
-async function handleRecordAction(req: Request, supabase: SupabaseClient, userId: string) {
+async function handleRecordAction(
+  req: Request,
+  supabase: SupabaseClient,
+  userId: string
+) {
   const body: RecordActionRequest = await req.json()
 
   if (!body.action_type || !body.action_category) {
     throw new Error('Missing required fields: action_type, action_category')
   }
 
+  // Check if user is super_admin (can act without org membership)
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  const isSuperAdmin = userProfile?.role === 'super_admin'
+
   // Get user's organization
   const { data: orgMember, error: orgError } = await supabase
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', userId)
-    .single()
+    .limit(1)
+    .maybeSingle()
 
-  if (orgError || !orgMember) {
+  if (!isSuperAdmin && (orgError || !orgMember)) {
     throw new Error('User not associated with organization')
   }
 
   // Call database function to record action
   const { data, error } = await supabase.rpc('record_user_action', {
     p_user_id: userId,
-    p_organization_id: orgMember.organization_id,
+    p_organization_id: orgMember?.organization_id || null,
     p_action_type: body.action_type,
     p_action_category: body.action_category,
     p_description: body.description || null,
@@ -148,14 +293,18 @@ async function handleRecordAction(req: Request, supabase: SupabaseClient, userId
   )
 }
 
-async function handleGetAlertAcknowledgements(req: Request, supabase: SupabaseClient) {
+async function handleGetAlertAcknowledgements(
+  req: Request,
+  supabase: SupabaseClient
+) {
   const url = new URL(req.url)
   const alertId = url.searchParams.get('alert_id')
   const organizationId = url.searchParams.get('organization_id')
 
   let query = supabase
     .from('alert_acknowledgements')
-    .select(`
+    .select(
+      `
       *,
       user:user_id (
         id,
@@ -166,7 +315,8 @@ async function handleGetAlertAcknowledgements(req: Request, supabase: SupabaseCl
         title,
         severity
       )
-    `)
+    `
+    )
     .order('acknowledged_at', { ascending: false })
 
   if (alertId) {
@@ -199,13 +349,15 @@ async function handleGetUserActions(req: Request, supabase: SupabaseClient) {
 
   let query = supabase
     .from('user_actions')
-    .select(`
+    .select(
+      `
       *,
       user:user_id (
         id,
         email
       )
-    `)
+    `
+    )
     .order('created_at', { ascending: false })
     .limit(limit)
 

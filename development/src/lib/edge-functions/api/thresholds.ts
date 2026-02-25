@@ -5,10 +5,48 @@ import type { EdgeFunctionResponse } from '../types'
 import type { SensorThreshold } from '@/types/sensor-details'
 
 export interface ThresholdsAPI {
-  list: (deviceId: string) => Promise<EdgeFunctionResponse<{ thresholds: SensorThreshold[] }>>
-  create: (payload: ThresholdPayload) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
-  update: (thresholdId: string, payload: Partial<ThresholdPayload>) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
-  delete: (thresholdId: string) => Promise<EdgeFunctionResponse<{ success: boolean }>>
+  list: (
+    deviceId: string
+  ) => Promise<EdgeFunctionResponse<{ thresholds: SensorThreshold[] }>>
+  create: (
+    payload: ThresholdPayload
+  ) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  update: (
+    thresholdId: string,
+    payload: Partial<ThresholdPayload>
+  ) => Promise<EdgeFunctionResponse<{ threshold: SensorThreshold }>>
+  delete: (
+    thresholdId: string
+  ) => Promise<EdgeFunctionResponse<{ success: boolean }>>
+  recommend: (
+    deviceId: string,
+    sensorType: string,
+    temperatureUnit?: string
+  ) => Promise<EdgeFunctionResponse<AIRecommendation>>
+}
+
+export interface AIRecommendation {
+  available: boolean
+  data_points: number
+  analysis_window_days: number
+  earliest_reading: string | null
+  latest_reading: string | null
+  statistics: {
+    mean: number
+    stddev: number
+    min_observed: number
+    max_observed: number
+    p5: number
+    p95: number
+  } | null
+  recommended: {
+    min_value: number
+    max_value: number
+    critical_min: number
+    critical_max: number
+    temperature_unit?: string
+  } | null
+  message: string
 }
 
 export interface ThresholdPayload {
@@ -29,7 +67,10 @@ export interface ThresholdPayload {
 }
 
 export const createThresholdsAPI = (
-  call: <T>(functionName: string, options?: any) => Promise<EdgeFunctionResponse<T>>
+  call: <T>(
+    functionName: string,
+    options?: any
+  ) => Promise<EdgeFunctionResponse<T>>
 ): ThresholdsAPI => ({
   /**
    * List all thresholds for a device
@@ -66,5 +107,22 @@ export const createThresholdsAPI = (
     call('thresholds', {
       method: 'DELETE',
       params: { threshold_id: thresholdId },
+    }),
+
+  /**
+   * Get AI-recommended thresholds based on historical telemetry
+   */
+  recommend: (
+    deviceId: string,
+    sensorType: string,
+    temperatureUnit = 'celsius'
+  ) =>
+    call('threshold-ai-recommend', {
+      method: 'GET',
+      params: {
+        device_id: deviceId,
+        sensor_type: sensorType,
+        temperature_unit: temperatureUnit,
+      },
     }),
 })

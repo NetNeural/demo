@@ -4,7 +4,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Activity, WifiOff } from 'lucide-react'
 
 interface RuleTypeStepProps {
@@ -40,27 +46,37 @@ export function RuleTypeStep({ state, updateState }: RuleTypeStepProps) {
         <Label>Rule Type *</Label>
         <RadioGroup
           value={state.ruleType || ''}
-          onValueChange={(value) => updateState({ ruleType: value as 'telemetry' | 'offline' })}
+          onValueChange={(value) =>
+            updateState({ ruleType: value as 'telemetry' | 'offline' })
+          }
         >
-          <Card className={state.ruleType === 'telemetry' ? 'border-primary' : ''}>
+          <Card
+            className={state.ruleType === 'telemetry' ? 'border-primary' : ''}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start space-x-3">
-                <RadioGroupItem value="telemetry" id="telemetry" className="mt-1" />
+                <RadioGroupItem
+                  value="telemetry"
+                  id="telemetry"
+                  className="mt-1"
+                />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <Activity className="h-5 w-5 text-primary" />
                     <CardTitle>Telemetry Rule</CardTitle>
                   </div>
                   <CardDescription className="mt-2">
-                    Monitor sensor data and trigger alerts based on threshold conditions (temperature,
-                    battery, custom metrics)
+                    Monitor sensor data and trigger alerts based on threshold
+                    conditions (temperature, battery, custom metrics)
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
           </Card>
 
-          <Card className={state.ruleType === 'offline' ? 'border-primary' : ''}>
+          <Card
+            className={state.ruleType === 'offline' ? 'border-primary' : ''}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start space-x-3">
                 <RadioGroupItem value="offline" id="offline" className="mt-1" />
@@ -70,7 +86,8 @@ export function RuleTypeStep({ state, updateState }: RuleTypeStepProps) {
                     <CardTitle>Offline Detection</CardTitle>
                   </div>
                   <CardDescription className="mt-2">
-                    Get notified when devices go offline or stop reporting for a specified period
+                    Get notified when devices go offline or stop reporting for a
+                    specified period
                   </CardDescription>
                 </div>
               </div>

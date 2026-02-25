@@ -4,7 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -13,13 +19,13 @@ import type { Device } from '@/types/sensor-details'
 import dynamic from 'next/dynamic'
 
 // Dynamically import the map component (client-side only)
-const LocationMap = dynamic(() => import('./LocationMap'), { 
+const LocationMap = dynamic(() => import('./LocationMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+    <div className="flex h-[300px] items-center justify-center rounded-lg bg-muted">
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
     </div>
-  )
+  ),
 })
 
 interface LocationDetailsCardProps {
@@ -41,10 +47,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [loadingLocations, setLoadingLocations] = useState(false)
-  
+
   // Form state
-  const [selectedLocationId, setSelectedLocationId] = useState<string>(device.location_id || '')
-  const [installedAt, setInstalledAt] = useState<string>(device.metadata?.installed_at || '')
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(
+    device.location_id || ''
+  )
+  const [installedAt, setInstalledAt] = useState<string>(
+    device.metadata?.installed_at || ''
+  )
 
   const fetchLocations = useCallback(async () => {
     if (!device.organization_id) {
@@ -55,13 +65,13 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
     try {
       setLoadingLocations(true)
       const supabase = createClient()
-      
+
       const { data, error } = await supabase
         .from('locations')
         .select('id, name, address, city, state, latitude, longitude')
         .eq('organization_id', device.organization_id)
         .order('name')
-      
+
       if (error) throw error
       setLocations(data || [])
     } catch (error) {
@@ -102,7 +112,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
       toast.success('Location details updated successfully')
 
       setIsEditing(false)
-      
+
       // Reload page to show updated data
       window.location.reload()
     } catch (error) {
@@ -120,8 +130,11 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   }
 
   // Get selected location display name
-  const selectedLocation = locations.find(loc => loc.id === selectedLocationId)
-  const displayLocationName = selectedLocation?.name || device.location || 'Not assigned'
+  const selectedLocation = locations.find(
+    (loc) => loc.id === selectedLocationId
+  )
+  const displayLocationName =
+    selectedLocation?.name || device.location || 'Not assigned'
 
   // Debug logging for map display
   useEffect(() => {
@@ -132,10 +145,15 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
         hasLongitude: !!selectedLocation.longitude,
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
-        willShowMap: !!(selectedLocation.latitude && selectedLocation.longitude)
+        willShowMap: !!(
+          selectedLocation.latitude && selectedLocation.longitude
+        ),
       })
     } else if (selectedLocationId) {
-      console.log('⚠️ [LocationDetailsCard] Location ID set but not found:', selectedLocationId)
+      console.log(
+        '⚠️ [LocationDetailsCard] Location ID set but not found:',
+        selectedLocationId
+      )
     }
   }, [selectedLocation, selectedLocationId])
 
@@ -153,7 +171,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
               variant="outline"
               onClick={() => setIsEditing(true)}
             >
-              <Edit2 className="h-4 w-4 mr-1" />
+              <Edit2 className="mr-1 h-4 w-4" />
               Edit
             </Button>
           ) : (
@@ -164,18 +182,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                 onClick={handleCancel}
                 disabled={isSaving}
               >
-                <X className="h-4 w-4 mr-1" />
+                <X className="mr-1 h-4 w-4" />
                 Cancel
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
+              <Button size="sm" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="mr-1 h-4 w-4" />
                 )}
                 Save
               </Button>
@@ -197,7 +211,9 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
               ) : (
                 <Select
                   value={selectedLocationId || 'none'}
-                  onValueChange={(value) => setSelectedLocationId(value === 'none' ? '' : value)}
+                  onValueChange={(value) =>
+                    setSelectedLocationId(value === 'none' ? '' : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a location" />
@@ -207,7 +223,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                     {locations.map((location) => (
                       <SelectItem key={location.id} value={location.id}>
                         {location.name}
-                        {location.city && ` - ${location.city}, ${location.state}`}
+                        {location.city &&
+                          ` - ${location.city}, ${location.state}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -269,8 +286,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             {/* Map display when location has coordinates */}
             {selectedLocation?.latitude && selectedLocation?.longitude && (
               <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">Map</p>
-                <LocationMap 
+                <p className="mb-2 text-sm text-muted-foreground">Map</p>
+                <LocationMap
                   latitude={selectedLocation.latitude}
                   longitude={selectedLocation.longitude}
                   locationName={selectedLocation.name}
@@ -279,19 +296,22 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                 />
               </div>
             )}
-            
+
             {/* Message when location exists but has no coordinates */}
-            {selectedLocation && !selectedLocation.latitude && !selectedLocation.longitude && (
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-dashed">
-                <p className="text-sm text-muted-foreground">
-                  📍 <strong>Map Not Available</strong>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add GPS coordinates (latitude/longitude) to this location to display the map. 
-                  Edit the location in <strong>Organizations → Locations</strong> tab.
-                </p>
-              </div>
-            )}
+            {selectedLocation &&
+              !selectedLocation.latitude &&
+              !selectedLocation.longitude && (
+                <div className="mt-4 rounded-lg border border-dashed bg-muted/50 p-3">
+                  <p className="text-sm text-muted-foreground">
+                    📍 <strong>Map Not Available</strong>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add GPS coordinates (latitude/longitude) to this location to
+                    display the map. Edit the location in{' '}
+                    <strong>Organizations → Locations</strong> tab.
+                  </p>
+                </div>
+              )}
           </>
         )}
       </CardContent>

@@ -3,16 +3,19 @@
 ## 🚨 Critical Issues Discovered
 
 ### Issue #1: Components Not Filtering by Organization (FIXED)
+
 **Problem:** Components were showing ALL data across ALL organizations instead of filtering by current organization.
 
 **Root Cause:** Components were calling edge functions WITHOUT the `organization_id` query parameter.
 
-**Impact:** 
+**Impact:**
+
 - User sees devices from ALL organizations, not just their current one
 - Alert counts don't match between dashboard and detail pages
 - Confusing user experience - data seems inconsistent
 
 **Components Fixed:**
+
 1. ✅ **DevicesList.tsx** - Now filters by `currentOrganization.id`
 2. ✅ **AlertsCard.tsx** - Now filters by `currentOrganization.id`
 3. ✅ **SystemStatsCard.tsx** - Now filters by `currentOrganization.id`
@@ -21,9 +24,11 @@
 ---
 
 ### Issue #2: Missing Add/Edit Functionality
+
 **Problem:** No buttons or dialogs to add/edit devices, alerts, integrations, etc.
 
 **Missing Components:**
+
 - [ ] Add Device button & dialog
 - [ ] Edit Device dialog
 - [ ] Delete Device confirmation
@@ -38,7 +43,9 @@
 ## 🔧 Changes Made
 
 ### 1. DevicesList.tsx
+
 **Before:**
+
 ```typescript
 const response = await fetch(
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices`,
@@ -47,6 +54,7 @@ const response = await fetch(
 ```
 
 **After:**
+
 ```typescript
 import { useOrganization } from '@/contexts/OrganizationContext'
 
@@ -54,7 +62,7 @@ const { currentOrganization } = useOrganization()
 
 const fetchDevices = useCallback(async () => {
   if (!currentOrganization) return;
-  
+
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices?organization_id=${currentOrganization.id}`;
   const response = await fetch(url, { headers: { ... } });
 }, [currentOrganization])
@@ -65,7 +73,9 @@ const fetchDevices = useCallback(async () => {
 ---
 
 ### 2. AlertsCard.tsx
+
 **Before:**
+
 ```typescript
 const response = await fetch(
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts`,
@@ -74,6 +84,7 @@ const response = await fetch(
 ```
 
 **After:**
+
 ```typescript
 import { useOrganization } from '@/contexts/OrganizationContext'
 
@@ -81,7 +92,7 @@ const { currentOrganization } = useOrganization()
 
 const fetchAlerts = useCallback(async () => {
   if (!currentOrganization) return;
-  
+
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/alerts?organization_id=${currentOrganization.id}`;
   const response = await fetch(url, { headers: { ... } });
 }, [currentOrganization])
@@ -92,7 +103,9 @@ const fetchAlerts = useCallback(async () => {
 ---
 
 ### 3. SystemStatsCard.tsx
+
 **Before:**
+
 ```typescript
 const response = await fetch(
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dashboard-stats`,
@@ -101,6 +114,7 @@ const response = await fetch(
 ```
 
 **After:**
+
 ```typescript
 import { useOrganization } from '@/contexts/OrganizationContext'
 
@@ -108,7 +122,7 @@ const { currentOrganization } = useOrganization()
 
 const fetchStats = useCallback(async () => {
   if (!currentOrganization) return;
-  
+
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dashboard-stats?organization_id=${currentOrganization.id}`;
   const response = await fetch(url, { headers: { ... } });
 }, [currentOrganization])
@@ -123,6 +137,7 @@ const fetchStats = useCallback(async () => {
 ### 1. Test Organization Filtering
 
 **Steps:**
+
 1. Start dev server: `npm run dev`
 2. Login as superadmin@netneural.ai
 3. Check dashboard shows stats for current org
@@ -130,15 +145,18 @@ const fetchStats = useCallback(async () => {
 5. Verify all numbers change (devices, alerts, stats)
 
 **Expected Results:**
+
 - Dashboard device count = Devices page device count
 - Dashboard alert count = Alerts shown in AlertsCard
 - Switching orgs updates all data immediately
 
 **Before Fix:**
+
 - Dashboard shows 3 devices for Org A
 - Devices page shows 50 devices (ALL orgs combined) ❌
 
 **After Fix:**
+
 - Dashboard shows 3 devices for Org A
 - Devices page shows 3 devices (ONLY Org A) ✅
 
@@ -147,6 +165,7 @@ const fetchStats = useCallback(async () => {
 ### 2. Verify Data Consistency
 
 **Test Case 1: NetNeural Industries**
+
 ```bash
 # Check database
 SELECT COUNT(*) FROM devices WHERE organization_id = 'org-1';  # Should match UI
@@ -154,12 +173,14 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-1';   # Should match UI
 ```
 
 **Test Case 2: Acme Manufacturing**
+
 ```bash
 SELECT COUNT(*) FROM devices WHERE organization_id = 'org-2';  # Should match UI
 SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 ```
 
 **Test Case 3: Switch Organizations**
+
 1. Select "NetNeural Industries" from organization switcher
 2. Note device count on dashboard (e.g., 15 devices)
 3. Go to Devices page, count should match (15 devices)
@@ -172,17 +193,20 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 ## 🚧 Still Missing - Add/Edit Functionality
 
 ### Devices Page Missing:
+
 1. **Add Device Button** - Should open dialog to register new device
 2. **Edit Device Button** - Should open dialog to edit device details
 3. **Delete Device Button** - Should confirm and delete device
 4. **Sync Device Button** - Should trigger device sync
 
 ### Alerts Missing:
+
 1. **Resolve Alert Button** - Mark alert as resolved
 2. **Acknowledge Alert Button** - Acknowledge alert
 3. **Configure Alerts** - Set alert thresholds/rules
 
 ### Integrations Missing:
+
 1. **Add Integration Button** - Add new integration (Golioth, Email, etc.)
 2. **Edit Integration Button** - Edit integration settings
 3. **Test Integration Button** - Verify integration works
@@ -193,17 +217,20 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 ## 🎯 Next Steps
 
 ### Immediate (Critical):
+
 1. ✅ Fix organization filtering (COMPLETE)
 2. [ ] Test switching between organizations
 3. [ ] Verify counts match everywhere
 
 ### Short-term (High Priority):
+
 1. [ ] Add "Add Device" button and dialog
 2. [ ] Add "Edit Device" dialog
 3. [ ] Add "Resolve Alert" button functionality
 4. [ ] Make integration buttons functional
 
 ### Medium-term:
+
 1. [ ] Create device registration flow
 2. [ ] Create alert configuration UI
 3. [ ] Add bulk operations (select multiple devices)
@@ -214,6 +241,7 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 ## 📋 Verification Checklist
 
 ### Organization Filtering:
+
 - [x] DevicesList filters by organization
 - [x] AlertsCard filters by organization
 - [x] SystemStatsCard filters by organization
@@ -223,12 +251,14 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 - [ ] Switching orgs updates all data
 
 ### Data Consistency:
+
 - [ ] Device counts match between pages
 - [ ] Alert counts match between pages
 - [ ] Stats are accurate for selected org
 - [ ] No cross-org data leakage
 
 ### Missing Functionality:
+
 - [ ] Add Device works
 - [ ] Edit Device works
 - [ ] Delete Device works
@@ -242,7 +272,9 @@ SELECT COUNT(*) FROM alerts WHERE organization_id = 'org-2';   # Should match UI
 ## 🐛 Known Issues
 
 ### Issue: Edge Functions May Not Filter Properly
+
 **Check edge function code:**
+
 ```typescript
 // In supabase/functions/devices/index.ts
 // Verify it respects organization_id query parameter
@@ -259,12 +291,14 @@ If edge function doesn't filter, RLS should still protect data, but need to veri
 ## 📊 Expected Behavior After Fixes
 
 ### Scenario: User in "NetNeural Industries"
+
 - **Dashboard:** Shows 15 devices, 5 alerts, 92% uptime
 - **Devices Page:** Shows 15 devices (same 15 from dashboard)
 - **Alerts:** Shows 5 alerts (same 5 from dashboard)
 - **Integrations:** Shows integrations for NetNeural only
 
 ### Scenario: Switch to "Acme Manufacturing"
+
 - **Dashboard:** Shows 8 devices, 12 alerts, 85% uptime
 - **Devices Page:** Shows 8 devices (different devices)
 - **Alerts:** Shows 12 alerts (different alerts)
@@ -277,6 +311,7 @@ If edge function doesn't filter, RLS should still protect data, but need to veri
 ## 🔍 Debugging Tips
 
 ### Check Network Tab:
+
 ```
 # Should see:
 GET /functions/v1/devices?organization_id=org-1
@@ -288,18 +323,20 @@ GET /functions/v1/devices (without organization_id)
 ```
 
 ### Check Console:
+
 ```javascript
 // Should NOT see:
-"Showing all devices across all organizations"
+'Showing all devices across all organizations'
 
 // Should see:
-"Fetching devices for organization: org-1"
+'Fetching devices for organization: org-1'
 ```
 
 ### Check Database:
+
 ```sql
 -- Verify organization has correct data
-SELECT 
+SELECT
   o.name,
   COUNT(DISTINCT d.id) as device_count,
   COUNT(DISTINCT a.id) as alert_count
@@ -315,6 +352,7 @@ GROUP BY o.name;
 ## ✅ Success Criteria
 
 **Fix is successful when:**
+
 1. ✅ All components filter by current organization
 2. ✅ Device count matches between dashboard and devices page
 3. ✅ Alert count matches between dashboard and alerts card
@@ -323,6 +361,7 @@ GROUP BY o.name;
 6. [ ] Add/Edit buttons are functional (still TODO)
 
 **Current Status:**
+
 - Organization filtering: ✅ FIXED
 - Data consistency: 🧪 NEEDS TESTING
 - Add/Edit functionality: ❌ MISSING (separate work needed)

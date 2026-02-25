@@ -50,8 +50,15 @@ jest.mock('@/contexts/UserContext', () => ({
 // Mock organization context - FIXED: Using correct paths from actual app
 jest.mock('@/contexts/OrganizationContext', () => ({
   useOrganization: () => ({
-    currentOrganization: { id: 'org123', name: 'Test Org', slug: 'test-org', role: 'admin' },
-    userOrganizations: [{ id: 'org123', name: 'Test Org', slug: 'test-org', role: 'admin' }],
+    currentOrganization: {
+      id: 'org123',
+      name: 'Test Org',
+      slug: 'test-org',
+      role: 'admin',
+    },
+    userOrganizations: [
+      { id: 'org123', name: 'Test Org', slug: 'test-org', role: 'admin' },
+    ],
     isLoading: false,
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
@@ -82,38 +89,45 @@ jest.mock('@/lib/auth/user-context', () => ({
 
 describe('Organization Components Integration', () => {
   test('CreateOrganizationDialog component exists', async () => {
-    const { CreateOrganizationDialog } = await import('@/components/organizations/CreateOrganizationDialog')
+    const { CreateOrganizationDialog } =
+      await import('@/components/organizations/CreateOrganizationDialog')
     expect(CreateOrganizationDialog).toBeDefined()
   })
 
   test('EditOrganizationDialog component exists', async () => {
-    const { EditOrganizationDialog } = await import('@/components/organizations/EditOrganizationDialog')
+    const { EditOrganizationDialog } =
+      await import('@/components/organizations/EditOrganizationDialog')
     expect(EditOrganizationDialog).toBeDefined()
   })
 
   test('CreateUserDialog component exists', async () => {
-    const { CreateUserDialog } = await import('@/components/organizations/CreateUserDialog')
+    const { CreateUserDialog } =
+      await import('@/components/organizations/CreateUserDialog')
     expect(CreateUserDialog).toBeDefined()
   })
 
   test('OrganizationSwitcher component exists', async () => {
-    const { OrganizationSwitcher } = await import('@/components/organizations/OrganizationSwitcher')
+    const { OrganizationSwitcher } =
+      await import('@/components/organizations/OrganizationSwitcher')
     expect(OrganizationSwitcher).toBeDefined()
   })
 
   test('OrganizationSelector component exists', async () => {
-    const { OrganizationSelector } = await import('@/components/organization/OrganizationSelector')
+    const { OrganizationSelector } =
+      await import('@/components/organization/OrganizationSelector')
     expect(OrganizationSelector).toBeDefined()
   })
 
   test('OrganizationSwitcher renders with context', async () => {
-    const { OrganizationSwitcher } = await import('@/components/organizations/OrganizationSwitcher')
+    const { OrganizationSwitcher } =
+      await import('@/components/organizations/OrganizationSwitcher')
     const { container } = render(<OrganizationSwitcher />)
     await waitFor(() => expect(container).toBeTruthy())
   })
 
   test('OrganizationSelector renders with context', async () => {
-    const { OrganizationSelector } = await import('@/components/organization/OrganizationSelector')
+    const { OrganizationSelector } =
+      await import('@/components/organization/OrganizationSelector')
     const { container } = render(<OrganizationSelector />)
     await waitFor(() => expect(container).toBeTruthy())
   })

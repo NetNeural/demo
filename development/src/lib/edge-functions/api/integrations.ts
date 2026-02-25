@@ -12,12 +12,15 @@ export interface IntegrationsAPI {
     name: string
     config: Record<string, unknown>
   }) => Promise<EdgeFunctionResponse<unknown>>
-  update: (integrationId: string, data: {
-    name?: string
-    settings?: Record<string, unknown>
-    config?: Record<string, unknown>
-    status?: string
-  }) => Promise<EdgeFunctionResponse<unknown>>
+  update: (
+    integrationId: string,
+    data: {
+      name?: string
+      settings?: Record<string, unknown>
+      config?: Record<string, unknown>
+      status?: string
+    }
+  ) => Promise<EdgeFunctionResponse<unknown>>
   delete: (integrationId: string) => Promise<EdgeFunctionResponse<unknown>>
   test: (integrationId: string) => Promise<EdgeFunctionResponse<unknown>>
   sync: (data: {
@@ -26,13 +29,16 @@ export interface IntegrationsAPI {
     operation: 'test' | 'import' | 'export' | 'bidirectional'
     deviceIds?: string[]
   }) => Promise<EdgeFunctionResponse<unknown>>
-  getActivityLog: (integrationId: string, options?: {
-    organizationId?: string
-    limit?: number
-    direction?: 'incoming' | 'outgoing' | 'all'
-    status?: 'success' | 'failed' | 'all'
-  }) => Promise<EdgeFunctionResponse<unknown>>
-  
+  getActivityLog: (
+    integrationId: string,
+    options?: {
+      organizationId?: string
+      limit?: number
+      direction?: 'incoming' | 'outgoing' | 'all'
+      status?: 'success' | 'failed' | 'all'
+    }
+  ) => Promise<EdgeFunctionResponse<unknown>>
+
   // Notification methods
   sendNotification: (data: {
     organization_id: string
@@ -41,7 +47,7 @@ export interface IntegrationsAPI {
     severity?: string
     metadata?: Record<string, unknown>
   }) => Promise<EdgeFunctionResponse<unknown>>
-  
+
   // MQTT methods
   publishMqtt: (data: {
     organization_id: string
@@ -49,7 +55,7 @@ export interface IntegrationsAPI {
     topic: string
     message: string
   }) => Promise<EdgeFunctionResponse<unknown>>
-  
+
   subscribeMqtt: (data: {
     organization_id: string
     integration_id: string
@@ -57,7 +63,12 @@ export interface IntegrationsAPI {
   }) => Promise<EdgeFunctionResponse<unknown>>
 }
 
-export function createIntegrationsAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): IntegrationsAPI {
+export function createIntegrationsAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): IntegrationsAPI {
   return {
     /**
      * List integrations for an organization
@@ -66,7 +77,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
       call('integrations', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Create a new integration
      */
@@ -75,7 +86,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an integration
      */
@@ -85,7 +96,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         params: { id: integrationId },
         body: data,
       }),
-    
+
     /**
      * Delete an integration
      */
@@ -94,7 +105,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         method: 'DELETE',
         params: { id: integrationId },
       }),
-    
+
     /**
      * Test an integration configuration
      */
@@ -103,7 +114,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         method: 'POST',
         body: { integrationId },
       }),
-    
+
     /**
      * Trigger device sync
      */
@@ -112,7 +123,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Get activity logs for an integration
      */
@@ -126,7 +137,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
           status: options.status,
         },
       }),
-    
+
     /**
      * Send a notification via integration
      */
@@ -135,7 +146,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Publish MQTT message
      */
@@ -147,7 +158,7 @@ export function createIntegrationsAPI(call: <T>(functionName: string, options?: 
           action: 'publish',
         },
       }),
-    
+
     /**
      * Subscribe to MQTT topic
      */

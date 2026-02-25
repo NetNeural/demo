@@ -11,10 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 export interface Alert {
   id: string
+  alertNumber?: number
   title: string
   description: string
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -39,24 +40,26 @@ export function AlertsTable({
   onToggleSelect,
   onToggleSelectAll,
   onAcknowledge,
-  onViewDetails
+  onViewDetails,
 }: AlertsTableProps) {
-  const allSelected = alerts.length > 0 && alerts.every(a => selectedIds.has(a.id))
-  const someSelected = alerts.some(a => selectedIds.has(a.id)) && !allSelected
+  const { fmt } = useDateFormatter()
+  const allSelected =
+    alerts.length > 0 && alerts.every((a) => selectedIds.has(a.id))
+  const someSelected = alerts.some((a) => selectedIds.has(a.id)) && !allSelected
 
   const getSeverityBadge = (severity: Alert['severity']) => {
     const variants = {
       critical: 'destructive',
       high: 'outline',
       medium: 'outline',
-      low: 'outline'
+      low: 'outline',
     } as const
 
     const colors = {
       critical: '',
       high: 'border-orange-500 text-orange-700 dark:text-orange-400',
       medium: 'border-yellow-500 text-yellow-700 dark:text-yellow-400',
-      low: 'border-blue-500 text-blue-700 dark:text-blue-400'
+      low: 'border-blue-500 text-blue-700 dark:text-blue-400',
     }
 
     return (
@@ -73,13 +76,13 @@ export function AlertsTable({
       battery: '🔋',
       vibration: '📳',
       security: '🔒',
-      system: '💻'
+      system: '💻',
     }
     return icons[category] || '⚙️'
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -88,9 +91,12 @@ export function AlertsTable({
                 checked={allSelected}
                 onCheckedChange={onToggleSelectAll}
                 aria-label="Select all"
-                className={someSelected ? 'data-[state=checked]:bg-blue-600' : ''}
+                className={
+                  someSelected ? 'data-[state=checked]:bg-blue-600' : ''
+                }
               />
             </TableHead>
+            <TableHead className="w-20">#</TableHead>
             <TableHead className="w-24">Severity</TableHead>
             <TableHead className="w-20">Type</TableHead>
             <TableHead>Alert</TableHead>
@@ -102,15 +108,20 @@ export function AlertsTable({
         <TableBody>
           {alerts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={8}
+                className="py-8 text-center text-muted-foreground"
+              >
                 No alerts found
               </TableCell>
             </TableRow>
           ) : (
             alerts.map((alert) => (
-              <TableRow 
+              <TableRow
                 key={alert.id}
-                className={selectedIds.has(alert.id) ? 'bg-blue-50 dark:bg-blue-950' : ''}
+                className={
+                  selectedIds.has(alert.id) ? 'bg-blue-50 dark:bg-blue-950' : ''
+                }
               >
                 <TableCell>
                   <Checkbox
@@ -119,19 +130,24 @@ export function AlertsTable({
                     aria-label={`Select alert ${alert.id}`}
                   />
                 </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {alert.alertNumber ? `ALT-${alert.alertNumber}` : '—'}
+                </TableCell>
                 <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
-                <TableCell className="text-2xl">{getCategoryIcon(alert.category)}</TableCell>
+                <TableCell className="text-2xl">
+                  {getCategoryIcon(alert.category)}
+                </TableCell>
                 <TableCell>
                   <div>
                     <div className="font-medium">{alert.title}</div>
-                    <div className="text-sm text-muted-foreground line-clamp-1">
+                    <div className="line-clamp-1 text-sm text-muted-foreground">
                       {alert.description}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">{alert.device}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
+                  {fmt.timeAgo(alert.timestamp)}
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">

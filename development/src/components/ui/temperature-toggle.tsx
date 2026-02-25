@@ -7,7 +7,10 @@ interface TemperatureToggleProps {
   onToggle: (value: boolean) => void
 }
 
-export function TemperatureToggle({ useFahrenheit, onToggle }: TemperatureToggleProps) {
+export function TemperatureToggle({
+  useFahrenheit,
+  onToggle,
+}: TemperatureToggleProps) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-muted-foreground">Temperature:</span>
@@ -15,7 +18,7 @@ export function TemperatureToggle({ useFahrenheit, onToggle }: TemperatureToggle
         <Button
           variant={!useFahrenheit ? 'default' : 'ghost'}
           size="sm"
-          className="rounded-r-none h-8 px-3"
+          className="h-8 rounded-r-none px-3"
           onClick={() => onToggle(false)}
         >
           °C
@@ -23,7 +26,7 @@ export function TemperatureToggle({ useFahrenheit, onToggle }: TemperatureToggle
         <Button
           variant={useFahrenheit ? 'default' : 'ghost'}
           size="sm"
-          className="rounded-l-none h-8 px-3"
+          className="h-8 rounded-l-none px-3"
           onClick={() => onToggle(true)}
         >
           °F

@@ -1,18 +1,25 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  RefreshCw, 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
-  Download, 
-  Upload, 
+import { useDateFormatter } from '@/hooks/useDateFormatter'
+import {
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Download,
+  Upload,
   ArrowLeftRight,
-  Clock
+  Clock,
 } from 'lucide-react'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import type { Database } from '@/types/supabase'
@@ -33,13 +40,17 @@ export function SyncHistoryList({
   limit = 50,
   autoRefresh = false,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [logs, setLogs] = useState<SyncLog[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadLogs = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await integrationSyncService.getSyncHistory(organizationId, limit)
+      const data = await integrationSyncService.getSyncHistory(
+        organizationId,
+        limit
+      )
       const filtered = integrationId
         ? data.filter((log) => log.integration_id === integrationId)
         : data
@@ -106,11 +117,7 @@ export function SyncHistoryList({
       processing: 'outline',
     }
 
-    return (
-      <Badge variant={variants[status] || 'outline'}>
-        {status}
-      </Badge>
-    )
+    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>
   }
 
   return (
@@ -132,10 +139,10 @@ export function SyncHistoryList({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[400px] pr-4 overflow-y-auto">
+        <div className="h-[400px] overflow-y-auto pr-4">
           {logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <RefreshCw className="h-8 w-8 mb-2" />
+              <RefreshCw className="mb-2 h-8 w-8" />
               <p>No sync history yet</p>
             </div>
           ) : (
@@ -143,17 +150,15 @@ export function SyncHistoryList({
               {logs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
                 >
                   {/* Operation Icon */}
-                  <div className="mt-1">
-                    {getOperationIcon(log.operation)}
-                  </div>
+                  <div className="mt-1">{getOperationIcon(log.operation)}</div>
 
                   {/* Content */}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm capitalize">
+                      <span className="text-sm font-medium capitalize">
                         {log.operation}
                       </span>
                       {getStatusBadge(log.status)}
@@ -162,44 +167,56 @@ export function SyncHistoryList({
                     {/* Stats */}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>
-                        <strong className="text-green-600">{log.devices_succeeded}</strong> succeeded
+                        <strong className="text-green-600">
+                          {log.devices_succeeded}
+                        </strong>{' '}
+                        succeeded
                       </span>
                       {(log.devices_failed ?? 0) > 0 && (
                         <span>
-                          <strong className="text-red-600">{log.devices_failed}</strong> failed
+                          <strong className="text-red-600">
+                            {log.devices_failed}
+                          </strong>{' '}
+                          failed
                         </span>
                       )}
                       {(log.conflicts_detected ?? 0) > 0 && (
                         <span>
-                          <strong className="text-amber-600">{log.conflicts_detected}</strong> conflicts
+                          <strong className="text-amber-600">
+                            {log.conflicts_detected}
+                          </strong>{' '}
+                          conflicts
                         </span>
                       )}
                     </div>
 
                     {/* Timestamp */}
                     <p className="text-xs text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString()}
+                      {fmt.dateTime(log.created_at)}
                       {log.completed_at && (
-                        <> • Duration: {
-                          Math.round(
-                            (new Date(log.completed_at).getTime() - new Date(log.created_at).getTime()) / 1000
-                          )
-                        }s</>
+                        <>
+                          {' '}
+                          • Duration:{' '}
+                          {Math.round(
+                            (new Date(log.completed_at).getTime() -
+                              new Date(log.created_at).getTime()) /
+                              1000
+                          )}
+                          s
+                        </>
                       )}
                     </p>
 
                     {/* Error Message */}
                     {log.error_message && (
-                      <p className="text-xs text-red-600 bg-red-50 dark:bg-red-950 p-2 rounded mt-2">
+                      <p className="mt-2 rounded bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950">
                         {log.error_message}
                       </p>
                     )}
                   </div>
 
                   {/* Status Icon */}
-                  <div className="mt-1">
-                    {getStatusIcon(log.status)}
-                  </div>
+                  <div className="mt-1">{getStatusIcon(log.status)}</div>
                 </div>
               ))}
             </div>

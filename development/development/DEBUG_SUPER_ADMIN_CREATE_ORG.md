@@ -1,6 +1,7 @@
 # Debug: Super Admin "Create Organization" Not Showing
 
 ## Problem
+
 User logged in as `superadmin@netneural.ai` but the "Create Organization" option is not visible in the sidebar organization dropdown.
 
 ## Root Cause Analysis
@@ -12,6 +13,7 @@ The implementation is correct, but there are a few potential issues:
 When you log in, the `UserContext` loads the user profile. However, if the browser already had cached data or if the context hasn't refreshed, `user.isSuperAdmin` might be `false` or `undefined`.
 
 **Check in Browser Console:**
+
 ```javascript
 // Open browser console (F12)
 // Navigate to Components tab (React DevTools)
@@ -24,10 +26,11 @@ When you log in, the `UserContext` loads the user profile. However, if the brows
 The super admin user might not have `role = 'super_admin'` in the `users` table.
 
 **Verify in Supabase:**
+
 ```sql
 -- Run in Supabase SQL Editor
-SELECT id, email, role, organization_id 
-FROM users 
+SELECT id, email, role, organization_id
+FROM users
 WHERE email = 'superadmin@netneural.ai';
 
 -- Should return:
@@ -48,10 +51,13 @@ The `getCurrentUser()` function in `lib/auth.ts` might not be setting `isSuperAd
 1. **Open Developer Tools** (F12)
 2. **Go to Console tab**
 3. **Type this command:**
+
    ```javascript
    // Check user context
-   const userContext = window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers?.values().next()?.value;
-   console.log('User loaded:', userContext);
+   const userContext = window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers
+     ?.values()
+     .next()?.value
+   console.log('User loaded:', userContext)
    ```
 
 4. **Or use React DevTools:**
@@ -67,7 +73,7 @@ Run this in Supabase SQL Editor:
 
 ```sql
 -- Check users table
-SELECT 
+SELECT
   u.id,
   u.email,
   u.role,
@@ -128,21 +134,21 @@ Add console.log to see what's happening:
 **Edit `src/components/organizations/OrganizationSwitcher.tsx`:**
 
 ```tsx
-export function OrganizationSwitcher({ 
+export function OrganizationSwitcher({
   className,
   showCreateButton = true,
   compact = false
 }: OrganizationSwitcherProps) {
-  const { 
-    currentOrganization, 
-    userOrganizations, 
+  const {
+    currentOrganization,
+    userOrganizations,
     switchOrganization,
-    isLoading 
+    isLoading
   } = useOrganization();
-  
+
   const { user } = useUser();
   const isSuperAdmin = user?.isSuperAdmin || false;
-  
+
   // 🔍 DEBUG: Log user info
   console.log('OrganizationSwitcher - User:', {
     email: user?.email,
@@ -151,7 +157,7 @@ export function OrganizationSwitcher({
     calculatedIsSuperAdmin: isSuperAdmin,
     showCreateButton: showCreateButton
   });
-  
+
   const [open, setOpen] = useState(false);
   // ... rest of component
 ```
@@ -161,10 +167,10 @@ export function OrganizationSwitcher({
 ```typescript
 export async function getCurrentUser(): Promise<UserProfile | null> {
   const supabase = createClient()
-  
+
   // Get authenticated user
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+
   if (!user || authError) {
     return null
   }
@@ -199,7 +205,7 @@ Check that RLS policies allow reading the correct role:
 ```sql
 -- Run in Supabase SQL Editor
 -- Check RLS policies on users table
-SELECT 
+SELECT
   schemaname,
   tablename,
   policyname,
@@ -213,6 +219,7 @@ WHERE tablename = 'users';
 ```
 
 Make sure there's a policy like:
+
 ```sql
 -- Users can read their own profile
 CREATE POLICY "Users can read own profile"
@@ -232,6 +239,7 @@ npm run db:reset
 ```
 
 This will:
+
 1. Reset the database
 2. Run migrations
 3. Seed data (creates organizations)
@@ -280,18 +288,22 @@ Organization Dropdown:
 ## Common Issues & Solutions
 
 ### Issue 1: "Create Organization" shows for everyone
+
 **Cause:** `isSuperAdmin` check not working
 **Fix:** Verify database has `role = 'super_admin'` for the user
 
 ### Issue 2: "Create Organization" shows for no one
+
 **Cause:** `showCreateButton` prop is false
 **Fix:** Check where `<OrganizationSwitcher />` is used in sidebar
 
 ### Issue 3: User context is null or undefined
+
 **Cause:** UserContext not loaded yet or auth failed
 **Fix:** Re-login, check network tab for auth errors
 
 ### Issue 4: Database role is correct but still not showing
+
 **Cause:** Browser cache or stale context
 **Fix:** Hard refresh (Ctrl+Shift+R), clear cookies, re-login
 
@@ -300,6 +312,7 @@ Organization Dropdown:
 ## Test Plan
 
 ### Test Case 1: Super Admin Login
+
 1. Log out completely
 2. Clear browser cookies/cache
 3. Navigate to `/auth/login`
@@ -309,12 +322,14 @@ Organization Dropdown:
 7. **EXPECTED:** See "Create Organization" at bottom
 
 ### Test Case 2: Regular User Login
+
 1. Log out
 2. Log in as `admin@netneural.ai` / `password123`
 3. Click organization dropdown in sidebar
 4. **EXPECTED:** NO "Create Organization" option
 
 ### Test Case 3: Console Logging
+
 1. Open browser console (F12)
 2. Refresh page
 3. Click organization dropdown
@@ -325,10 +340,12 @@ Organization Dropdown:
 ## Next Steps
 
 **If "Create Organization" now shows:**
+
 1. Click it and verify console logs "Create organization clicked"
 2. Ready to implement the create organization dialog
 
 **If still not showing:**
+
 1. Share the console.log output from debug logging
 2. Share the SQL query result from `SELECT * FROM users WHERE email = 'superadmin@netneural.ai'`
 3. Check network tab for any auth errors
@@ -338,17 +355,20 @@ Organization Dropdown:
 ## Code Reference
 
 **Location of Super Admin Check:**
+
 - File: `src/components/organizations/OrganizationSwitcher.tsx`
 - Line: ~183-196
 - Code: `{showCreateButton && isSuperAdmin && (...)`
 
 **Location of User Loading:**
+
 - File: `src/lib/auth.ts`
 - Function: `getCurrentUser()`
 - Line: ~50-60
 - Code: `isSuperAdmin: profile.role === 'super_admin'`
 
 **Location of Database Setup:**
+
 - File: `scripts/create-test-users.js`
 - User ID: `10000000-0000-0000-0000-000000000000`
 - Role: `super_admin`
@@ -363,6 +383,7 @@ Organization Dropdown:
 **Why:** The browser might have cached the old user profile before `isSuperAdmin` was implemented. A fresh login will load the correct role from the database.
 
 **Quick Test:**
+
 1. Open browser console (F12)
 2. Run: `localStorage.clear(); sessionStorage.clear();`
 3. Refresh page

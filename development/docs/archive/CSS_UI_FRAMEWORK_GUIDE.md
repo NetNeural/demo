@@ -5,6 +5,7 @@
 ### **CSS Framework: Tailwind CSS 3.4.13**
 
 **Core:**
+
 - **Tailwind CSS** - Utility-first CSS framework
 - **@tailwindcss/forms** - Beautiful form styling
 - **@tailwindcss/typography** - Rich text formatting
@@ -13,6 +14,7 @@
 - **prettier-plugin-tailwindcss** - Auto-sort classes
 
 **Configuration:**
+
 - Custom color scheme with CSS variables (HSL-based)
 - Custom theme extending Tailwind defaults
 - Dark mode support (class-based)
@@ -22,12 +24,14 @@
 ### **UI Component Library: Custom shadcn/ui-style**
 
 **Component Architecture:**
+
 - Based on **Radix UI** primitives (accessible, unstyled)
 - Styled with **Tailwind CSS**
 - Type-safe with **TypeScript**
 - Component variants using **class-variance-authority (CVA)**
 
 **Available Components:**
+
 ```
 src/components/ui/
 ├── alert.tsx              - Alert messages
@@ -63,6 +67,7 @@ src/components/ui/
 ### **New: Tailwind CSS MCP Server**
 
 Now you have AI-powered assistance for:
+
 - ✅ **Class Lookup**: What classes to use
 - ✅ **Configuration**: Tailwind config help
 - ✅ **Best Practices**: Responsive design patterns
@@ -73,6 +78,7 @@ Now you have AI-powered assistance for:
 ### **All MCP Servers (16 Total):**
 
 #### Frontend & Styling (5)
+
 1. **Next.js Docs** - App Router, SSR, routing
 2. **React Docs** - Components, hooks, patterns
 3. **TypeScript Docs** - Type safety
@@ -80,24 +86,29 @@ Now you have AI-powered assistance for:
 5. **Tailwind CSS** - Utility classes ⭐ NEW
 
 #### Backend & Database (2)
+
 6. **Supabase Official** - Full Supabase integration
 7. **PostgreSQL** - Database queries
 
 #### Development Tools (3)
+
 8. **Git** - Version control
 9. **Filesystem** - File operations
 10. **GitHub** - Repository management
 
 #### Testing (2)
+
 11. **Jest Docs** - Unit testing
 12. **Playwright Docs** - E2E testing
 
 #### Utilities (3)
+
 13. **Fetch** - HTTP requests
 14. **Memory** - Knowledge retention
 15. **Sequential Thinking** - Problem solving
 
 #### Runtime (1)
+
 16. **Node.js Docs** - Node APIs
 
 ## 💡 How to Use with AI
@@ -105,26 +116,31 @@ Now you have AI-powered assistance for:
 ### **Example Prompts for Tailwind:**
 
 **Layout Questions:**
+
 - "How do I create a responsive grid with Tailwind?"
 - "What's the best way to center content vertically and horizontally?"
 - "Show me a Tailwind navbar pattern"
 
 **Component Styling:**
+
 - "Style this button with Tailwind to look like a primary action"
 - "Create a card component with shadow and hover effects"
 - "What Tailwind classes for a sticky sidebar?"
 
 **Colors & Theme:**
+
 - "What are the available color utilities in Tailwind?"
 - "How do I use custom CSS variables with Tailwind?"
 - "Create a gradient background"
 
 **Responsive Design:**
+
 - "Make this div stack on mobile but flex on desktop"
 - "Hide this element on mobile only"
 - "Responsive text sizing"
 
 **Animations:**
+
 - "Add a fade-in animation to this component"
 - "Transition on hover with Tailwind"
 - "Animate height changes"
@@ -132,11 +148,13 @@ Now you have AI-powered assistance for:
 ### **Example Prompts for UI Components:**
 
 **Component Creation:**
+
 - "Create a shadcn-style dropdown menu"
 - "Build an accessible modal dialog"
 - "Design a loading spinner component"
 
 **Radix UI Integration:**
+
 - "Show me how to use Radix UI Select with Tailwind"
 - "Create an accessible accordion"
 - "Build a tooltip component"
@@ -144,12 +162,14 @@ Now you have AI-powered assistance for:
 ## 📚 Documentation Links
 
 ### **Official Docs:**
+
 - **Tailwind CSS**: https://tailwindcss.com/docs
 - **Radix UI**: https://www.radix-ui.com/primitives
 - **shadcn/ui**: https://ui.shadcn.com (inspiration, not using directly)
 - **CVA**: https://cva.style/docs
 
 ### **Your Config Files:**
+
 - `tailwind.config.js` - Tailwind configuration
 - `src/app/globals.css` - Global styles & CSS variables
 - `src/lib/utils.ts` - Utility functions (cn, etc.)
@@ -158,6 +178,7 @@ Now you have AI-powered assistance for:
 ## 🎯 Best Practices in Your Project
 
 ### **1. Class Naming with `cn` utility:**
+
 ```typescript
 import { cn } from "@/lib/utils"
 
@@ -169,21 +190,20 @@ import { cn } from "@/lib/utils"
 ```
 
 ### **2. Component Variants:**
+
 ```typescript
-const buttonVariants = cva(
-  "base classes",
-  {
-    variants: {
-      variant: {
-        default: "default classes",
-        outline: "outline classes"
-      }
-    }
-  }
-)
+const buttonVariants = cva('base classes', {
+  variants: {
+    variant: {
+      default: 'default classes',
+      outline: 'outline classes',
+    },
+  },
+})
 ```
 
 ### **3. Responsive Design:**
+
 ```typescript
 <div className="
   grid grid-cols-1     // Mobile
@@ -193,6 +213,7 @@ const buttonVariants = cva(
 ```
 
 ### **4. Custom Colors:**
+
 ```typescript
 // Use your theme colors
 <div className="bg-primary text-primary-foreground" />
@@ -200,6 +221,7 @@ const buttonVariants = cva(
 ```
 
 ### **5. Dark Mode:**
+
 ```typescript
 // Class-based dark mode
 <div className="bg-white dark:bg-gray-900" />
@@ -215,6 +237,7 @@ const buttonVariants = cva(
 ## 🆘 Common Tasks
 
 ### **Create a New Component:**
+
 ```typescript
 // Ask AI: "Create a shadcn-style Alert component with variants"
 import { cn } from "@/lib/utils"
@@ -234,7 +257,7 @@ const alertVariants = cva(
 
 export function Alert({ variant, className, ...props }) {
   return (
-    <div 
+    <div
       className={cn(alertVariants({ variant }), className)}
       {...props}
     />
@@ -243,6 +266,7 @@ export function Alert({ variant, className, ...props }) {
 ```
 
 ### **Style a Form:**
+
 ```typescript
 // Ask AI: "Create a beautiful form with Tailwind"
 <form className="space-y-6">
@@ -250,10 +274,10 @@ export function Alert({ variant, className, ...props }) {
     <label className="text-sm font-medium">
       Email
     </label>
-    <input 
+    <input
       type="email"
-      className="w-full px-3 py-2 border rounded-md 
-                focus:outline-none focus:ring-2 
+      className="w-full px-3 py-2 border rounded-md
+                focus:outline-none focus:ring-2
                 focus:ring-primary"
     />
   </div>
@@ -261,6 +285,7 @@ export function Alert({ variant, className, ...props }) {
 ```
 
 ### **Create a Layout:**
+
 ```typescript
 // Ask AI: "Create a dashboard layout with sidebar"
 <div className="flex h-screen">

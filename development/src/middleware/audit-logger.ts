@@ -9,7 +9,7 @@ export interface AuditLogEntry {
   userId?: string
   userEmail?: string
   organizationId?: string
-  actionCategory: 
+  actionCategory:
     | 'authentication'
     | 'device_management'
     | 'integration_management'
@@ -40,17 +40,21 @@ export interface AuditLogEntry {
 /**
  * Log a user action to the audit log
  */
-export async function logUserAction(entry: AuditLogEntry): Promise<string | null> {
+export async function logUserAction(
+  entry: AuditLogEntry
+): Promise<string | null> {
   try {
     const supabase = await createServerSupabaseClient()
-    
+
     // Get current user if not provided
     if (!entry.userId) {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       entry.userId = user?.id
       entry.userEmail = entry.userEmail || user?.email
     }
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc('log_user_action', {
       p_user_id: entry.userId || null,
@@ -71,12 +75,12 @@ export async function logUserAction(entry: AuditLogEntry): Promise<string | null
       p_user_agent: entry.userAgent || null,
       p_session_id: entry.sessionId || null,
     })
-    
+
     if (error) {
       console.error('[AuditLog] Failed to log action:', error)
       return null
     }
-    
+
     return data
   } catch (error) {
     console.error('[AuditLog] Exception logging action:', error)
@@ -91,11 +95,12 @@ export async function logFromRequest(
   request: Request,
   entry: Omit<AuditLogEntry, 'ipAddress' | 'userAgent'>
 ): Promise<string | null> {
-  const ipAddress = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
-                    'unknown'
+  const ipAddress =
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
   const userAgent = request.headers.get('user-agent') || 'unknown'
-  
+
   return logUserAction({
     ...entry,
     ipAddress,
@@ -120,7 +125,11 @@ export const auditLog = {
       status: 'success',
     }),
 
-  loginFailed: (email: string, errorMessage: string, metadata?: Record<string, unknown>) =>
+  loginFailed: (
+    email: string,
+    errorMessage: string,
+    metadata?: Record<string, unknown>
+  ) =>
     logUserAction({
       userEmail: email,
       actionCategory: 'authentication',
@@ -144,7 +153,12 @@ export const auditLog = {
     }),
 
   // Device management
-  deviceCreate: (userId: string, organizationId: string, deviceId: string, deviceName: string) =>
+  deviceCreate: (
+    userId: string,
+    organizationId: string,
+    deviceId: string,
+    deviceName: string
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -158,7 +172,13 @@ export const auditLog = {
       status: 'success',
     }),
 
-  deviceUpdate: (userId: string, organizationId: string, deviceId: string, deviceName: string, changes: Record<string, unknown>) =>
+  deviceUpdate: (
+    userId: string,
+    organizationId: string,
+    deviceId: string,
+    deviceName: string,
+    changes: Record<string, unknown>
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -173,7 +193,12 @@ export const auditLog = {
       status: 'success',
     }),
 
-  deviceDelete: (userId: string, organizationId: string, deviceId: string, deviceName: string) =>
+  deviceDelete: (
+    userId: string,
+    organizationId: string,
+    deviceId: string,
+    deviceName: string
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -188,7 +213,13 @@ export const auditLog = {
     }),
 
   // Integration management
-  integrationCreate: (userId: string, organizationId: string, integrationId: string, integrationName: string, integrationType: string) =>
+  integrationCreate: (
+    userId: string,
+    organizationId: string,
+    integrationId: string,
+    integrationName: string,
+    integrationType: string
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -203,7 +234,13 @@ export const auditLog = {
       status: 'success',
     }),
 
-  integrationUpdate: (userId: string, organizationId: string, integrationId: string, integrationName: string, changes: Record<string, unknown>) =>
+  integrationUpdate: (
+    userId: string,
+    organizationId: string,
+    integrationId: string,
+    integrationName: string,
+    changes: Record<string, unknown>
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -218,7 +255,12 @@ export const auditLog = {
       status: 'success',
     }),
 
-  integrationDelete: (userId: string, organizationId: string, integrationId: string, integrationName: string) =>
+  integrationDelete: (
+    userId: string,
+    organizationId: string,
+    integrationId: string,
+    integrationName: string
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -233,7 +275,12 @@ export const auditLog = {
     }),
 
   // Alert management
-  alertAcknowledge: (userId: string, organizationId: string, alertId: string, alertType: string) =>
+  alertAcknowledge: (
+    userId: string,
+    organizationId: string,
+    alertId: string,
+    alertType: string
+  ) =>
     logUserAction({
       userId,
       organizationId,
@@ -248,7 +295,11 @@ export const auditLog = {
     }),
 
   // Configuration
-  settingsUpdate: (userId: string, organizationId: string, changes: Record<string, unknown>) =>
+  settingsUpdate: (
+    userId: string,
+    organizationId: string,
+    changes: Record<string, unknown>
+  ) =>
     logUserAction({
       userId,
       organizationId,

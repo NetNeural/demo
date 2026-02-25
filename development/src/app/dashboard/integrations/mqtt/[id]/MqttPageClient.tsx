@@ -19,10 +19,10 @@ export function MqttPageClient() {
 
   if (!organizationId) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Missing organization ID</p>
         <Button onClick={handleClose}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Integrations
         </Button>
       </div>

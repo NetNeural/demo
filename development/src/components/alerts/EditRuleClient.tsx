@@ -48,7 +48,7 @@ export function EditRuleClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <LoadingSpinner />
       </div>
     )
@@ -73,7 +73,9 @@ export function EditRuleClient() {
 
       <div>
         <h1 className="text-3xl font-bold">Edit Alert Rule</h1>
-        <p className="text-muted-foreground mt-1">Modify your existing alert rule</p>
+        <p className="mt-1 text-muted-foreground">
+          Modify your existing alert rule
+        </p>
       </div>
 
       <RuleWizard

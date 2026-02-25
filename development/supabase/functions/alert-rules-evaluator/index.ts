@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface AlertRule {
@@ -45,7 +46,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     console.log('[alert-rules-evaluator] Starting rule evaluation...')
@@ -64,7 +65,9 @@ serve(async (req) => {
       })
     }
 
-    console.log(`[alert-rules-evaluator] Found ${rules?.length || 0} enabled rules`)
+    console.log(
+      `[alert-rules-evaluator] Found ${rules?.length || 0} enabled rules`
+    )
 
     const results = {
       evaluated: 0,
@@ -75,14 +78,20 @@ serve(async (req) => {
 
     for (const rule of rules || []) {
       try {
-        console.log(`[alert-rules-evaluator] Evaluating rule: ${rule.name} (${rule.rule_type})`)
+        console.log(
+          `[alert-rules-evaluator] Evaluating rule: ${rule.name} (${rule.rule_type})`
+        )
 
         // Check cooldown period
         if (rule.last_triggered_at) {
           const lastTriggered = new Date(rule.last_triggered_at)
-          const cooldownEnd = new Date(lastTriggered.getTime() + rule.cooldown_minutes * 60000)
+          const cooldownEnd = new Date(
+            lastTriggered.getTime() + rule.cooldown_minutes * 60000
+          )
           if (new Date() < cooldownEnd) {
-            console.log(`[alert-rules-evaluator] Rule ${rule.name} in cooldown, skipping`)
+            console.log(
+              `[alert-rules-evaluator] Rule ${rule.name} in cooldown, skipping`
+            )
             results.skipped++
             continue
           }
@@ -90,7 +99,9 @@ serve(async (req) => {
 
         // Get devices in scope
         const devices = await getDevicesInScope(supabaseClient, rule)
-        console.log(`[alert-rules-evaluator] Rule ${rule.name} applies to ${devices.length} devices`)
+        console.log(
+          `[alert-rules-evaluator] Rule ${rule.name} applies to ${devices.length} devices`
+        )
 
         if (devices.length === 0) {
           results.skipped++
@@ -101,12 +112,22 @@ serve(async (req) => {
         let triggeredDevices: Device[] = []
 
         if (rule.rule_type === 'telemetry') {
-          triggeredDevices = await evaluateTelemetryRule(supabaseClient, rule, devices)
+          triggeredDevices = await evaluateTelemetryRule(
+            supabaseClient,
+            rule,
+            devices
+          )
         } else if (rule.rule_type === 'offline') {
-          triggeredDevices = await evaluateOfflineRule(supabaseClient, rule, devices)
+          triggeredDevices = await evaluateOfflineRule(
+            supabaseClient,
+            rule,
+            devices
+          )
         }
 
-        console.log(`[alert-rules-evaluator] Rule ${rule.name} triggered for ${triggeredDevices.length} devices`)
+        console.log(
+          `[alert-rules-evaluator] Rule ${rule.name} triggered for ${triggeredDevices.length} devices`
+        )
 
         if (triggeredDevices.length > 0) {
           // Create alerts
@@ -126,7 +147,10 @@ serve(async (req) => {
 
         results.evaluated++
       } catch (error) {
-        console.error(`[alert-rules-evaluator] Error evaluating rule ${rule.name}:`, error)
+        console.error(
+          `[alert-rules-evaluator] Error evaluating rule ${rule.name}:`,
+          error
+        )
         results.errors++
       }
     }
@@ -139,7 +163,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('[alert-rules-evaluator] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -148,7 +174,10 @@ serve(async (req) => {
   }
 })
 
-async function getDevicesInScope(supabaseClient: any, rule: AlertRule): Promise<Device[]> {
+async function getDevicesInScope(
+  supabaseClient: any,
+  rule: AlertRule
+): Promise<Device[]> {
   const { device_scope } = rule
 
   let query = supabaseClient
@@ -187,7 +216,9 @@ async function evaluateTelemetryRule(
   const triggered: Device[] = []
 
   // Get recent telemetry for each device
-  const timeWindow = new Date(Date.now() - (duration_minutes || 5) * 60000).toISOString()
+  const timeWindow = new Date(
+    Date.now() - (duration_minutes || 5) * 60000
+  ).toISOString()
 
   for (const device of devices) {
     const { data: telemetry, error } = await supabaseClient
@@ -326,14 +357,20 @@ async function executeRuleActions(
   for (const action of rule.actions) {
     try {
       if (action.type === 'email') {
-        console.log(`[executeRuleActions] Sending email to ${action.recipients?.join(', ')}`)
+        console.log(
+          `[executeRuleActions] Sending email to ${action.recipients?.join(', ')}`
+        )
         // TODO: Integrate with email service
       } else if (action.type === 'sms') {
-        console.log(`[executeRuleActions] Sending SMS to ${action.recipients?.join(', ')}`)
+        console.log(
+          `[executeRuleActions] Sending SMS to ${action.recipients?.join(', ')}`
+        )
         // TODO: Integrate with SMS service
       } else if (action.type === 'webhook') {
-        console.log(`[executeRuleActions] Calling webhook: ${action.webhook_url}`)
-        
+        console.log(
+          `[executeRuleActions] Calling webhook: ${action.webhook_url}`
+        )
+
         const payload = {
           rule_id: rule.id,
           rule_name: rule.name,
@@ -351,7 +388,10 @@ async function executeRuleActions(
         })
       }
     } catch (error) {
-      console.error(`[executeRuleActions] Error executing ${action.type} action:`, error)
+      console.error(
+        `[executeRuleActions] Error executing ${action.type} action:`,
+        error
+      )
     }
   }
 }

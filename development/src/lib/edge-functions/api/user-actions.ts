@@ -28,15 +28,31 @@ export interface AlertAcknowledgement {
   user_id: string
   organization_id: string
   acknowledged_at: string
-  acknowledgement_type: 'acknowledged' | 'dismissed' | 'resolved' | 'false_positive'
+  acknowledgement_type:
+    | 'acknowledged'
+    | 'dismissed'
+    | 'resolved'
+    | 'false_positive'
   notes?: string
 }
 
 export interface UserActionsAPI {
-  acknowledgeAlert: (alertId: string, type?: 'acknowledged' | 'dismissed' | 'resolved' | 'false_positive', notes?: string) => Promise<EdgeFunctionResponse<{ acknowledgement_id: string }>>
+  acknowledgeAlert: (
+    alertId: string,
+    type?: 'acknowledged' | 'dismissed' | 'resolved' | 'false_positive',
+    notes?: string
+  ) => Promise<EdgeFunctionResponse<{ acknowledgement_id: string }>>
   recordAction: (action: {
     action_type: string
-    action_category: 'device_management' | 'integration_management' | 'alert_management' | 'sync_operation' | 'configuration' | 'authentication' | 'analytics_view' | 'other'
+    action_category:
+      | 'device_management'
+      | 'integration_management'
+      | 'alert_management'
+      | 'sync_operation'
+      | 'configuration'
+      | 'authentication'
+      | 'analytics_view'
+      | 'other'
     description?: string
     device_id?: string
     integration_id?: string
@@ -46,7 +62,12 @@ export interface UserActionsAPI {
     success?: boolean
     error_message?: string
   }) => Promise<EdgeFunctionResponse<{ action_id: string }>>
-  getAlertAcknowledgements: (alertId?: string, organizationId?: string) => Promise<EdgeFunctionResponse<{ acknowledgements: AlertAcknowledgement[] }>>
+  getAlertAcknowledgements: (
+    alertId?: string,
+    organizationId?: string
+  ) => Promise<
+    EdgeFunctionResponse<{ acknowledgements: AlertAcknowledgement[] }>
+  >
   getUserActions: (options?: {
     device_id?: string
     user_id?: string
@@ -55,7 +76,12 @@ export interface UserActionsAPI {
   }) => Promise<EdgeFunctionResponse<{ actions: UserAction[] }>>
 }
 
-export function createUserActionsAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): UserActionsAPI {
+export function createUserActionsAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): UserActionsAPI {
   return {
     /**
      * Acknowledge an alert with optional notes
@@ -70,7 +96,7 @@ export function createUserActionsAPI(call: <T>(functionName: string, options?: E
           ...(notes && { notes }),
         },
       }),
-    
+
     /**
      * Record a user action
      */
@@ -80,7 +106,7 @@ export function createUserActionsAPI(call: <T>(functionName: string, options?: E
         params: { action: 'record_action' },
         body: action,
       }),
-    
+
     /**
      * Get alert acknowledgements
      */
@@ -92,7 +118,7 @@ export function createUserActionsAPI(call: <T>(functionName: string, options?: E
           ...(organizationId && { organization_id: organizationId }),
         },
       }),
-    
+
     /**
      * Get user actions history
      */

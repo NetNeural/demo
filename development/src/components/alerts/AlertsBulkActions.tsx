@@ -15,7 +15,7 @@ export function AlertsBulkActions({
   selectedCount,
   onAcknowledgeSelected,
   onClearSelection,
-  isProcessing = false
+  isProcessing = false,
 }: AlertsBulkActionsProps) {
   if (selectedCount === 0) return null
 
@@ -29,7 +29,7 @@ export function AlertsBulkActions({
               {selectedCount} alert{selectedCount !== 1 ? 's' : ''} selected
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Button
               variant="default"

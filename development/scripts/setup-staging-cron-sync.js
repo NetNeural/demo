@@ -5,21 +5,21 @@
  * Sets up 5-minute cron job to pull data from Golioth API
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js')
 
-const STAGING_URL = 'https://atgbmxicqikmapfqouco.supabase.co';
-const STAGING_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY';
+const STAGING_URL = 'https://atgbmxicqikmapfqouco.supabase.co'
+const STAGING_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const supabase = createClient(STAGING_URL, STAGING_SERVICE_ROLE_KEY);
+const supabase = createClient(STAGING_URL, STAGING_SERVICE_ROLE_KEY)
 
 async function setupCronSync() {
-  console.log('🚀 Setting up Auto-Sync Cron for Staging\n');
-  console.log('=' .repeat(70));
+  console.log('🚀 Setting up Auto-Sync Cron for Staging\n')
+  console.log('='.repeat(70))
 
   try {
     // Step 1: Create pg_cron_secrets table
-    console.log('\n📋 Step 1: Creating pg_cron_secrets table...');
-    
+    console.log('\n📋 Step 1: Creating pg_cron_secrets table...')
+
     const { error: tableError } = await supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.pg_cron_secrets (
@@ -38,78 +38,83 @@ async function setupCronSync() {
           TO service_role
           USING (true)
           WITH CHECK (true);
-      `
-    });
+      `,
+    })
 
     if (tableError) {
-      console.log('   ⚠️  Using alternative method (RPC may not be available)');
-      console.log('   This SQL needs to be run manually in Supabase SQL Editor:\n');
-      console.log(getSecretsTableSQL());
-      console.log('\n   Then run:', getCronJobSQL());
-      return;
+      console.log('   ⚠️  Using alternative method (RPC may not be available)')
+      console.log(
+        '   This SQL needs to be run manually in Supabase SQL Editor:\n'
+      )
+      console.log(getSecretsTableSQL())
+      console.log('\n   Then run:', getCronJobSQL())
+      return
     }
 
-    console.log('   ✅ Table created');
+    console.log('   ✅ Table created')
 
     // Step 2: Insert secrets
-    console.log('\n🔐 Step 2: Configuring secrets...');
-    
+    console.log('\n🔐 Step 2: Configuring secrets...')
+
     const { error: insertError } = await supabase
       .from('pg_cron_secrets')
       .upsert([
         { name: 'project_url', secret: STAGING_URL },
-        { name: 'service_role_key', secret: STAGING_SERVICE_ROLE_KEY }
-      ]);
+        { name: 'service_role_key', secret: STAGING_SERVICE_ROLE_KEY },
+      ])
 
     if (insertError) {
-      console.error('   ❌ Failed to insert secrets:', insertError.message);
-      console.log('\n   Run this SQL manually:\n');
-      console.log(getSecretsInsertSQL());
-      return;
+      console.error('   ❌ Failed to insert secrets:', insertError.message)
+      console.log('\n   Run this SQL manually:\n')
+      console.log(getSecretsInsertSQL())
+      return
     }
 
-    console.log('   ✅ Secrets configured');
+    console.log('   ✅ Secrets configured')
 
     // Step 3: Provide SQL for cron job creation
-    console.log('\n⏰ Step 3: Creating cron job...');
-    console.log('   📝 Run this SQL in Supabase SQL Editor:\n');
-    console.log(getCronJobSQL());
+    console.log('\n⏰ Step 3: Creating cron job...')
+    console.log('   📝 Run this SQL in Supabase SQL Editor:\n')
+    console.log(getCronJobSQL())
 
     // Step 4: Check current state
-    console.log('\n\n📊 Current Integration Settings:');
+    console.log('\n\n📊 Current Integration Settings:')
     const { data: integration } = await supabase
       .from('device_integrations')
       .select('*')
       .eq('integration_type', 'golioth')
-      .single();
+      .single()
 
     if (integration) {
-      const settings = integration.settings || {};
-      console.log('   Name:', integration.name);
-      console.log('   Sync Enabled:', settings.syncEnabled ? '✅ YES' : '❌ NO');
-      console.log('   Sync Interval:', settings.syncIntervalSeconds, 'seconds');
-      console.log('   Sync Direction:', settings.syncDirection);
-      console.log('   Last Sync:', integration.last_sync_at || 'Never');
+      const settings = integration.settings || {}
+      console.log('   Name:', integration.name)
+      console.log('   Sync Enabled:', settings.syncEnabled ? '✅ YES' : '❌ NO')
+      console.log('   Sync Interval:', settings.syncIntervalSeconds, 'seconds')
+      console.log('   Sync Direction:', settings.syncDirection)
+      console.log('   Last Sync:', integration.last_sync_at || 'Never')
     }
 
-    console.log('\n' + '='.repeat(70));
-    console.log('✅ Setup Script Complete!');
-    console.log('='.repeat(70));
+    console.log('\n' + '='.repeat(70))
+    console.log('✅ Setup Script Complete!')
+    console.log('='.repeat(70))
 
-    console.log('\n📋 Manual Steps Required:');
-    console.log('1. Deploy edge function:');
-    console.log('   npx supabase functions deploy auto-sync-cron --project-ref atgbmxicqikmapfqouco');
-    console.log('');
-    console.log('2. Run the cron job SQL (shown above) in Supabase SQL Editor:');
-    console.log('   https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql');
-    console.log('');
-    console.log('3. Verify after 5 minutes:');
-    console.log('   node scripts/check-webhook-config.js');
-
+    console.log('\n📋 Manual Steps Required:')
+    console.log('1. Deploy edge function:')
+    console.log(
+      '   npx supabase functions deploy auto-sync-cron --project-ref atgbmxicqikmapfqouco'
+    )
+    console.log('')
+    console.log('2. Run the cron job SQL (shown above) in Supabase SQL Editor:')
+    console.log(
+      '   https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql'
+    )
+    console.log('')
+    console.log('3. Verify after 5 minutes:')
+    console.log('   node scripts/check-webhook-config.js')
   } catch (error) {
-    console.error('\n❌ Error:', error.message);
-    console.log('\n📝 Complete SQL to run manually:\n');
-    console.log(getCompleteSetupSQL());
+    console.error('\n❌ Error:', error.message)
+    console.log('\n📝 Complete SQL to run manually:\n')
+    console.log(getCompleteSetupSQL())
   }
 }
 
@@ -129,7 +134,7 @@ CREATE POLICY "Service role can manage secrets"
   FOR ALL
   TO service_role
   USING (true)
-  WITH CHECK (true);`;
+  WITH CHECK (true);`
 }
 
 function getSecretsInsertSQL() {
@@ -144,7 +149,7 @@ DO UPDATE SET
   updated_at = now();
 
 -- Verify
-SELECT name, left(secret, 30) || '...' as secret_preview FROM public.pg_cron_secrets;`;
+SELECT name, left(secret, 30) || '...' as secret_preview FROM public.pg_cron_secrets;`
 }
 
 function getCronJobSQL() {
@@ -176,11 +181,17 @@ SELECT cron.schedule(
 );
 
 -- Verify
-SELECT jobid, jobname, schedule, active FROM cron.job WHERE jobname = 'auto-sync-cron-job';`;
+SELECT jobid, jobname, schedule, active FROM cron.job WHERE jobname = 'auto-sync-cron-job';`
 }
 
 function getCompleteSetupSQL() {
-  return getSecretsTableSQL() + '\n\n' + getSecretsInsertSQL() + '\n\n' + getCronJobSQL();
+  return (
+    getSecretsTableSQL() +
+    '\n\n' +
+    getSecretsInsertSQL() +
+    '\n\n' +
+    getCronJobSQL()
+  )
 }
 
-setupCronSync().catch(console.error);
+setupCronSync().catch(console.error)

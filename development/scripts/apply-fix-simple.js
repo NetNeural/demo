@@ -4,18 +4,18 @@
  * Apply migration by executing SQL statements
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js')
 
-const STAGING_URL = 'https://atgbmxicqikmapfqouco.supabase.co';
-const STAGING_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY';
+const STAGING_URL = 'https://atgbmxicqikmapfqouco.supabase.co'
+const STAGING_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabase = createClient(STAGING_URL, STAGING_SERVICE_ROLE_KEY, {
   db: { schema: 'public' },
-  auth: { persistSession: false }
-});
+  auth: { persistSession: false },
+})
 
 async function applyFix() {
-  console.log('🔧 Fixing organization_members RLS policy...\n');
+  console.log('🔧 Fixing organization_members RLS policy...\n')
 
   try {
     // Method 1: Use Supabase REST API to execute SQL
@@ -23,8 +23,8 @@ async function applyFix() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': STAGING_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${STAGING_SERVICE_ROLE_KEY}`,
+        apikey: STAGING_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${STAGING_SERVICE_ROLE_KEY}`,
       },
       body: JSON.stringify({
         query: `
@@ -52,16 +52,20 @@ CREATE POLICY "Users can view members in their organizations" ON organization_me
             WHERE om.user_id = auth.uid()
         )
     );
-        `
-      })
-    });
+        `,
+      }),
+    })
 
     if (!response.ok) {
-      console.log('❌ exec_sql RPC not available');
-      console.log('📝 Please apply this migration manually in Supabase SQL Editor:');
-      console.log('   https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql/new\n');
-      console.log('SQL to execute:');
-      console.log('--- COPY BELOW ---');
+      console.log('❌ exec_sql RPC not available')
+      console.log(
+        '📝 Please apply this migration manually in Supabase SQL Editor:'
+      )
+      console.log(
+        '   https://supabase.com/dashboard/project/atgbmxicqikmapfqouco/sql/new\n'
+      )
+      console.log('SQL to execute:')
+      console.log('--- COPY BELOW ---')
       console.log(`
 DROP POLICY IF EXISTS "Users view own memberships only" ON organization_members;
 
@@ -82,29 +86,28 @@ CREATE POLICY "Users can view members in their organizations" ON organization_me
             WHERE om.user_id = auth.uid()
         )
     );
-      `);
-      console.log('--- COPY ABOVE ---');
-      return;
+      `)
+      console.log('--- COPY ABOVE ---')
+      return
     }
 
-    console.log('✅ Migration applied successfully!\n');
+    console.log('✅ Migration applied successfully!\n')
 
     // Test the fix
-    console.log('🧪 Testing member count...');
+    console.log('🧪 Testing member count...')
     const { count, error } = await supabase
       .from('organization_members')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', '00000000-0000-0000-0000-000000000001');
+      .eq('organization_id', '00000000-0000-0000-0000-000000000001')
 
     if (error) {
-      console.error('❌ Test failed:', error.message);
+      console.error('❌ Test failed:', error.message)
     } else {
-      console.log(`✅ Success! Can now see ${count} members`);
+      console.log(`✅ Success! Can now see ${count} members`)
     }
-
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error:', error.message)
   }
 }
 
-applyFix().catch(console.error);
+applyFix().catch(console.error)

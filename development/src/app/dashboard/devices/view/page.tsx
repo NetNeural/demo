@@ -1,20 +1,54 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Loader2, Activity, Calendar, Info } from 'lucide-react'
+import {
+  ArrowLeft,
+  Save,
+  Trash2,
+  Loader2,
+  Activity,
+  Calendar,
+  Info,
+  Network,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { PageHeader } from '@/components/ui/page-header'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
+import { Switch } from '@/components/ui/switch'
+import { DeviceTypeSelector } from '@/components/device-types/DeviceTypeSelector'
+import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { toast } from 'sonner'
+
+export default function DeviceViewPage() {
+  return (
+    <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <DeviceViewContent />
+    </Suspense>
+  )
+}
 
 interface Device {
   id: string
@@ -41,6 +75,7 @@ interface Device {
   integration_id?: string | null
   integrationName?: string | null
   integrationType?: string | null
+  device_type_id?: string | null
   description?: string
   metadata?: Record<string, unknown>
   hardware_ids?: string[]
@@ -52,7 +87,7 @@ interface Device {
   updated_at?: string
 }
 
-export default function DeviceViewPage() {
+function DeviceViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const deviceId = searchParams.get('id')
@@ -61,19 +96,47 @@ export default function DeviceViewPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [device, setDevice] = useState<Device | null>(null)
-  const [activeTab, setActiveTab] = useState('details')
-  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
+
+  // Initialize activeTab from URL parameter or default
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || 'details'
+  })
+
+  const [locations, setLocations] = useState<
+    Array<{ id: string; name: string }>
+  >([])
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle tab change - update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', newTab)
+    router.push(`?${params.toString()}`, { scroll: false })
+  }
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
 
   // Form state
   const [name, setName] = useState('')
   const [deviceType, setDeviceType] = useState('')
+  const [deviceTypeId, setDeviceTypeId] = useState<string | null>(null)
   const [model, setModel] = useState('')
   const [serialNumber, setSerialNumber] = useState('')
   const [firmwareVersion, setFirmwareVersion] = useState('')
+  const [isGateway, setIsGateway] = useState(false)
   const [locationId, setLocationId] = useState('')
   const [departmentId, setDepartmentId] = useState('')
-  const [status, setStatus] = useState<'online' | 'offline' | 'warning' | 'error' | 'maintenance'>('offline')
+  const [status, setStatus] = useState<
+    'online' | 'offline' | 'warning' | 'error' | 'maintenance'
+  >('offline')
 
   const loadDevice = useCallback(async () => {
     if (!deviceId) {
@@ -85,7 +148,7 @@ export default function DeviceViewPage() {
     try {
       setLoading(true)
       const response = await edgeFunctions.devices.get(deviceId)
-      
+
       if (!response.success || !response.data) {
         toast.error('Device not found')
         router.push('/dashboard/devices')
@@ -94,17 +157,17 @@ export default function DeviceViewPage() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const responseData = response.data as any // Use any to handle snake_case or camelCase from API
-      console.log('Device data received:', JSON.stringify(responseData, null, 2))
-      
+
       // Extract the device object (edge function wraps it in { device: {...} })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const deviceData = responseData.device || responseData as any
-      
+      const deviceData = responseData.device || (responseData as any)
+
       // Map the data properly - the API might use different field names (snake_case vs camelCase)
       const mappedDevice: Device = {
         id: deviceData.id || '',
         name: deviceData.name || '',
         device_type: deviceData.device_type || deviceData.type || '',
+        device_type_id: deviceData.device_type_id || null,
         type: deviceData.type || deviceData.device_type || '',
         status: deviceData.status || 'offline',
         model: deviceData.model,
@@ -113,29 +176,37 @@ export default function DeviceViewPage() {
         location_id: deviceData.location_id,
         location: deviceData.location,
         department_id: deviceData.department_id,
-        lastSeen: deviceData.lastSeen || deviceData.last_seen || new Date().toISOString(),
+        lastSeen:
+          deviceData.lastSeen ||
+          deviceData.last_seen ||
+          '',
         batteryLevel: deviceData.batteryLevel ?? deviceData.battery_level,
         signal_strength: deviceData.signal_strength,
-        isExternallyManaged: deviceData.isExternallyManaged ?? deviceData.is_externally_managed ?? false,
-        externalDeviceId: deviceData.externalDeviceId ?? deviceData.external_device_id,
-        integrationName: deviceData.integrationName ?? deviceData.integration_name,
+        isExternallyManaged:
+          deviceData.isExternallyManaged ??
+          deviceData.is_externally_managed ??
+          false,
+        externalDeviceId:
+          deviceData.externalDeviceId ?? deviceData.external_device_id,
+        integrationName:
+          deviceData.integrationName ?? deviceData.integration_name,
         description: deviceData.description,
         metadata: deviceData.metadata,
         organization_id: deviceData.organization_id || '',
         created_at: deviceData.created_at,
-        updated_at: deviceData.updated_at
+        updated_at: deviceData.updated_at,
       }
-      
-      console.log('Mapped device:', JSON.stringify(mappedDevice, null, 2))
-      
+
       setDevice(mappedDevice)
       setName(mappedDevice.name || '')
       setDeviceType(mappedDevice.device_type || mappedDevice.type || '')
+      setDeviceTypeId(mappedDevice.device_type_id || null)
       setModel(mappedDevice.model || '')
       setSerialNumber(mappedDevice.serial_number || '')
       setFirmwareVersion(mappedDevice.firmware_version || '')
       setLocationId(mappedDevice.location_id || '')
       setDepartmentId(mappedDevice.department_id || '')
+      setIsGateway(mappedDevice.metadata?.is_gateway === true)
       setStatus(mappedDevice.status || 'offline')
     } catch (error) {
       console.error('Error loading device:', error)
@@ -150,10 +221,14 @@ export default function DeviceViewPage() {
     if (!currentOrganization?.id) return
 
     try {
-      const response = await edgeFunctions.locations.list(currentOrganization.id)
+      const response = await edgeFunctions.locations.list(
+        currentOrganization.id
+      )
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setLocations(response.data.map((loc: any) => ({ id: loc.id, name: loc.name })))
+        setLocations(
+          response.data.map((loc: any) => ({ id: loc.id, name: loc.name }))
+        )
       }
     } catch (error) {
       console.error('Error loading locations:', error)
@@ -166,8 +241,13 @@ export default function DeviceViewPage() {
   }, [loadDevice, loadLocations])
 
   const handleSave = async () => {
-    if (!name.trim() || !deviceType.trim()) {
-      toast.error('Name and type are required')
+    if (!name.trim()) {
+      toast.error('Name is required')
+      return
+    }
+
+    if (!deviceTypeId && !deviceType.trim()) {
+      toast.error('Device type is required')
       return
     }
 
@@ -177,13 +257,18 @@ export default function DeviceViewPage() {
       setSaving(true)
       const response = await edgeFunctions.devices.update(deviceId, {
         name: name.trim(),
-        device_type: deviceType.trim(),
+        device_type: isGateway ? 'gateway' : deviceType.trim(),
+        device_type_id: isGateway ? null : deviceTypeId,
         model: model.trim() || undefined,
         serial_number: serialNumber.trim() || undefined,
         firmware_version: firmwareVersion.trim() || undefined,
         location_id: locationId || undefined,
         department_id: departmentId || undefined,
         status,
+        metadata: {
+          ...(device?.metadata || {}),
+          is_gateway: isGateway,
+        },
       })
 
       if (!response.success) {
@@ -203,8 +288,12 @@ export default function DeviceViewPage() {
 
   const handleDelete = async () => {
     if (!deviceId) return
-    
-    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+
+    if (
+      !confirm(
+        `Are you sure you want to delete "${name}"? This action cannot be undone.`
+      )
+    ) {
       return
     }
 
@@ -229,18 +318,18 @@ export default function DeviceViewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
   }
 
   if (!device) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Device not found</p>
         <Button onClick={() => router.push('/dashboard/devices')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Devices
         </Button>
       </div>
@@ -252,19 +341,59 @@ export default function DeviceViewPage() {
       <PageHeader
         title={device.name}
         description={`${device.device_type || device.type || 'Unknown'} • ID: ${device.id?.substring(0, 8) || 'N/A'}`}
+        icon={(() => {
+          const typeName = device.device_type || device.type || ''
+          const settings = currentOrganization?.settings as
+            | Record<string, unknown>
+            | undefined
+          const rawImages =
+            (settings?.device_type_images as Record<string, string>) || {}
+          const imgUrl = Object.entries(rawImages).find(
+            ([k]) => k.toLowerCase() === typeName.toLowerCase()
+          )?.[1]
+          if (imgUrl) {
+            return (
+              <img
+                src={imgUrl}
+                alt={typeName}
+                className="h-12 w-12 rounded-lg border bg-white object-contain p-1"
+              />
+            )
+          }
+          return undefined
+        })()}
         action={
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/dashboard/devices')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Devices
-          </Button>
+          <div className="flex items-center gap-2">
+            {currentOrganization && (
+              <TransferDeviceDialog
+                device={{
+                  id: device.id,
+                  name: device.name,
+                  device_type: device.device_type,
+                  status: device.status,
+                  organization_id: device.organization_id,
+                }}
+                currentOrgId={currentOrganization.id}
+                onTransferComplete={() => router.push('/dashboard/devices')}
+              />
+            )}
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/dashboard/devices')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Devices
+            </Button>
+          </div>
         }
       />
 
       {/* Tabs for different sections */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-4"
+      >
         <TabsList className="w-full justify-start">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="edit">Edit</TabsTrigger>
@@ -279,23 +408,33 @@ export default function DeviceViewPage() {
           <Card>
             <CardHeader>
               <CardTitle>Device Information</CardTitle>
-              <CardDescription>Comprehensive device details and specifications</CardDescription>
+              <CardDescription>
+                Comprehensive device details and specifications
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Information */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="mb-3 text-lg font-semibold">
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {device.name && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Device Name</p>
+                      <p className="text-sm text-muted-foreground">
+                        Device Name
+                      </p>
                       <p className="font-medium">{device.name}</p>
                     </div>
                   )}
                   {(device.device_type || device.type) && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Device Type</p>
-                      <p className="font-medium">{device.device_type || device.type}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Device Type
+                      </p>
+                      <p className="font-medium">
+                        {device.device_type || device.type}
+                      </p>
                     </div>
                   )}
                   {device.model && (
@@ -306,13 +445,19 @@ export default function DeviceViewPage() {
                   )}
                   {device.serial_number && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Serial Number</p>
-                      <p className="font-mono text-sm">{device.serial_number}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Serial Number
+                      </p>
+                      <p className="font-mono text-sm">
+                        {device.serial_number}
+                      </p>
                     </div>
                   )}
                   {device.firmware_version && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Firmware Version</p>
+                      <p className="text-sm text-muted-foreground">
+                        Firmware Version
+                      </p>
                       <p className="font-medium">{device.firmware_version}</p>
                     </div>
                   )}
@@ -330,10 +475,16 @@ export default function DeviceViewPage() {
                   )}
                   {device.hardware_ids && device.hardware_ids.length > 0 && (
                     <div className="md:col-span-2">
-                      <p className="text-sm text-muted-foreground">Hardware IDs</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground">
+                        Hardware IDs
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-2">
                         {device.hardware_ids.map((id, idx) => (
-                          <Badge key={idx} variant="outline" className="font-mono text-xs">
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="font-mono text-xs"
+                          >
                             {id}
                           </Badge>
                         ))}
@@ -343,16 +494,39 @@ export default function DeviceViewPage() {
                 </div>
               </div>
 
+              {/* Inherited Device Type Config */}
+              {device.device_type_id && (
+                <>
+                  <Separator />
+                  <InheritedConfigCard deviceTypeId={device.device_type_id} />
+                </>
+              )}
+
               <Separator />
 
               {/* Connection & Activity */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Connection & Activity</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="mb-3 text-lg font-semibold">
+                  Connection & Activity
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {device.status && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Current Status</p>
-                      <Badge variant={device.status === 'online' ? 'default' : device.status === 'warning' ? 'secondary' : device.status === 'error' ? 'destructive' : 'outline'} className="mt-1">
+                      <p className="text-sm text-muted-foreground">
+                        Current Status
+                      </p>
+                      <Badge
+                        variant={
+                          device.status === 'online'
+                            ? 'default'
+                            : device.status === 'warning'
+                              ? 'secondary'
+                              : device.status === 'error'
+                                ? 'destructive'
+                                : 'outline'
+                        }
+                        className="mt-1"
+                      >
                         {device.status.toUpperCase()}
                       </Badge>
                     </div>
@@ -361,46 +535,75 @@ export default function DeviceViewPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen</p>
                       <p className="font-medium">
-                        {device.last_seen 
-                          ? new Date(device.last_seen).toLocaleString()
-                          : new Date(device.lastSeen).toLocaleString()}
+                        {device.last_seen
+                          ? fmt.dateTime(device.last_seen)
+                          : fmt.dateTime(device.lastSeen)}
                       </p>
                     </div>
                   )}
                   {device.last_seen_online && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Last Seen Online</p>
-                      <p className="font-medium">{new Date(device.last_seen_online).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Last Seen Online
+                      </p>
+                      <p className="font-medium">
+                        {fmt.dateTime(device.last_seen_online)}
+                      </p>
                     </div>
                   )}
                   {device.last_seen_offline && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Last Seen Offline</p>
-                      <p className="font-medium">{new Date(device.last_seen_offline).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Last Seen Offline
+                      </p>
+                      <p className="font-medium">
+                        {fmt.dateTime(device.last_seen_offline)}
+                      </p>
                     </div>
                   )}
-                  {(device.batteryLevel != null || device.battery_level != null) && (
+                  {(device.batteryLevel != null ||
+                    device.battery_level != null) && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Battery Level</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden" role="progressbar" aria-label={`Battery level ${device.batteryLevel ?? device.battery_level ?? 0}%`}>
-                          <div 
+                      <p className="text-sm text-muted-foreground">
+                        Battery Level
+                      </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div
+                          className="h-2 flex-1 overflow-hidden rounded-full bg-secondary"
+                          role="progressbar"
+                          aria-label={`Battery level ${device.batteryLevel ?? device.battery_level ?? 0}%`}
+                        >
+                          <div
                             className={`h-full transition-all ${
-                              (device.batteryLevel ?? device.battery_level ?? 0) > 50 ? 'bg-green-500' : 
-                              (device.batteryLevel ?? device.battery_level ?? 0) > 20 ? 'bg-yellow-500' : 
-                              'bg-red-500'
+                              (device.batteryLevel ??
+                                device.battery_level ??
+                                0) > 50
+                                ? 'bg-green-500'
+                                : (device.batteryLevel ??
+                                      device.battery_level ??
+                                      0) > 20
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
                             }`}
-                            style={{ width: `${device.batteryLevel ?? device.battery_level ?? 0}%` }}
+                            style={{
+                              width: `${device.batteryLevel ?? device.battery_level ?? 0}%`,
+                            }}
                           />
                         </div>
-                        <span className="text-sm font-medium">{device.batteryLevel ?? device.battery_level}%</span>
+                        <span className="text-sm font-medium">
+                          {device.batteryLevel ?? device.battery_level}%
+                        </span>
                       </div>
                     </div>
                   )}
                   {device.signal_strength != null && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Signal Strength</p>
-                      <p className="font-medium">{device.signal_strength} dBm</p>
+                      <p className="text-sm text-muted-foreground">
+                        Signal Strength
+                      </p>
+                      <p className="font-medium">
+                        {device.signal_strength} dBm
+                      </p>
                     </div>
                   )}
                 </div>
@@ -412,38 +615,55 @@ export default function DeviceViewPage() {
               {(device.isExternallyManaged || device.integration_id) && (
                 <>
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Integration</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <h3 className="mb-3 text-lg font-semibold">Integration</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {device.integrationName && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Integration Name</p>
-                          <p className="font-medium">{device.integrationName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Integration Name
+                          </p>
+                          <p className="font-medium">
+                            {device.integrationName}
+                          </p>
                         </div>
                       )}
                       {device.integrationType && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Integration Type</p>
-                          <p className="font-medium">{device.integrationType}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Integration Type
+                          </p>
+                          <p className="font-medium">
+                            {device.integrationType}
+                          </p>
                         </div>
                       )}
                       {device.integration_id && (
                         <div>
-                          <p className="text-sm text-muted-foreground">Integration ID</p>
-                          <p className="font-mono text-xs">{device.integration_id}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Integration ID
+                          </p>
+                          <p className="font-mono text-xs">
+                            {device.integration_id}
+                          </p>
                         </div>
                       )}
                       {device.externalDeviceId && (
                         <div>
-                          <p className="text-sm text-muted-foreground">External Device ID</p>
-                          <p className="font-mono text-xs">{device.externalDeviceId}</p>
+                          <p className="text-sm text-muted-foreground">
+                            External Device ID
+                          </p>
+                          <p className="font-mono text-xs">
+                            {device.externalDeviceId}
+                          </p>
                         </div>
                       )}
                     </div>
                     {device.isExternallyManaged && (
-                      <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground flex items-start gap-2">
-                          <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          This device is managed by an external integration. Some fields may be read-only or synced automatically.
+                      <div className="mt-4 rounded-lg bg-muted p-3">
+                        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          This device is managed by an external integration.
+                          Some fields may be read-only or synced automatically.
                         </p>
                       </div>
                     )}
@@ -456,8 +676,10 @@ export default function DeviceViewPage() {
                 <>
                   <Separator />
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Description</h3>
-                    <p className="text-sm text-muted-foreground">{device.description}</p>
+                    <h3 className="mb-3 text-lg font-semibold">Description</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {device.description}
+                    </p>
                   </div>
                 </>
               )}
@@ -470,7 +692,9 @@ export default function DeviceViewPage() {
           <Card>
             <CardHeader>
               <CardTitle>Edit Device</CardTitle>
-              <CardDescription>Update device information and configuration</CardDescription>
+              <CardDescription>
+                Update device information and configuration
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
@@ -484,14 +708,47 @@ export default function DeviceViewPage() {
                   />
                 </div>
 
+                {/* Gateway Toggle */}
+                <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <Network className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <Label
+                        htmlFor="edit-is-gateway"
+                        className="cursor-pointer font-medium"
+                      >
+                        Gateway Device
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Hub that relays data from child sensors
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="edit-is-gateway"
+                    checked={isGateway}
+                    onCheckedChange={setIsGateway}
+                    disabled={saving || deleting}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="type">Device Type *</Label>
-                  <Input
-                    id="type"
-                    value={deviceType}
-                    onChange={(e) => setDeviceType(e.target.value)}
-                    placeholder="e.g., Sensor, Gateway, Controller"
+                  <DeviceTypeSelector
+                    value={deviceTypeId}
+                    onValueChange={(typeId, dt) => {
+                      setDeviceTypeId(typeId)
+                      if (dt) setDeviceType(dt.name)
+                      else if (!typeId) setDeviceType('')
+                    }}
+                    allowNone={true}
+                    placeholder="Select or assign a device type..."
                   />
+                  {!deviceTypeId && deviceType && (
+                    <p className="text-xs text-muted-foreground">
+                      Legacy type: {deviceType}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -543,11 +800,17 @@ export default function DeviceViewPage() {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="location">Location</Label>
-                  <Select value={locationId || undefined} onValueChange={(value) => setLocationId(value)}>
+                  <Select
+                    value={locationId || '__none__'}
+                    onValueChange={(value) =>
+                      setLocationId(value === '__none__' ? '' : value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="No location assigned" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="__none__">No location</SelectItem>
                       {locations.map((location) => (
                         <SelectItem key={location.id} value={location.id}>
                           {location.name}
@@ -577,12 +840,12 @@ export default function DeviceViewPage() {
                 >
                   {deleting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Deleting...
                     </>
                   ) : (
                     <>
-                      <Trash2 className="w-4 h-4 mr-2" />
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete Device
                     </>
                   )}
@@ -590,16 +853,16 @@ export default function DeviceViewPage() {
 
                 <Button
                   onClick={handleSave}
-                  disabled={saving || deleting || !name.trim() || !deviceType.trim()}
+                  disabled={saving || deleting || !name.trim()}
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 mr-2" />
+                      <Save className="mr-2 h-4 w-4" />
                       Save Changes
                     </>
                   )}
@@ -607,12 +870,16 @@ export default function DeviceViewPage() {
               </div>
 
               {device.isExternallyManaged && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
-                    <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950">
+                  <p className="flex items-start gap-2 text-sm text-yellow-800 dark:text-yellow-200">
+                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <span>
-                      This device is managed by <strong>{device.integrationName || 'an external integration'}</strong>. 
-                      Deletion is disabled. Device properties (except location) may be overwritten by the integration.
+                      This device is managed by{' '}
+                      <strong>
+                        {device.integrationName || 'an external integration'}
+                      </strong>
+                      . Deletion is disabled. Device properties (except
+                      location) may be overwritten by the integration.
                     </span>
                   </p>
                 </div>
@@ -627,11 +894,13 @@ export default function DeviceViewPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Device Metadata</CardTitle>
-                <CardDescription>Additional device properties and custom fields</CardDescription>
+                <CardDescription>
+                  Additional device properties and custom fields
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <pre className="p-4 bg-muted rounded-lg overflow-x-auto text-sm">
+                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
                     {JSON.stringify(device.metadata, null, 2)}
                   </pre>
                 </div>
@@ -645,20 +914,28 @@ export default function DeviceViewPage() {
           <Card>
             <CardHeader>
               <CardTitle>System Information</CardTitle>
-              <CardDescription>Internal identifiers and timestamps</CardDescription>
+              <CardDescription>
+                Internal identifiers and timestamps
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Primary Identifiers */}
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase">Primary Identifiers</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
+                  Primary Identifiers
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <p className="text-sm text-muted-foreground">Device ID</p>
-                    <p className="font-mono text-sm break-all">{device.id}</p>
+                    <p className="break-all font-mono text-sm">{device.id}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Organization ID</p>
-                    <p className="font-mono text-sm break-all">{device.organization_id}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Organization ID
+                    </p>
+                    <p className="break-all font-mono text-sm">
+                      {device.organization_id}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -667,30 +944,48 @@ export default function DeviceViewPage() {
 
               {/* Related Entity IDs */}
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase">Related Entities</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
+                  Related Entities
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {device.location_id && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Location ID</p>
-                      <p className="font-mono text-sm break-all">{device.location_id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Location ID
+                      </p>
+                      <p className="break-all font-mono text-sm">
+                        {device.location_id}
+                      </p>
                     </div>
                   )}
                   {device.department_id && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Department ID</p>
-                      <p className="font-mono text-sm break-all">{device.department_id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Department ID
+                      </p>
+                      <p className="break-all font-mono text-sm">
+                        {device.department_id}
+                      </p>
                     </div>
                   )}
                   {device.integration_id && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Integration ID</p>
-                      <p className="font-mono text-sm break-all">{device.integration_id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Integration ID
+                      </p>
+                      <p className="break-all font-mono text-sm">
+                        {device.integration_id}
+                      </p>
                     </div>
                   )}
                   {device.external_device_id && (
                     <div>
-                      <p className="text-sm text-muted-foreground">External Device ID</p>
-                      <p className="font-mono text-sm break-all">{device.external_device_id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        External Device ID
+                      </p>
+                      <p className="break-all font-mono text-sm">
+                        {device.external_device_id}
+                      </p>
                     </div>
                   )}
                   {device.cohort_id && (
@@ -706,56 +1001,78 @@ export default function DeviceViewPage() {
 
               {/* Timestamps */}
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase">Timestamps</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
+                  Timestamps
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {device.created_at && (
                     <div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
                         Created At
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.created_at).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{device.created_at}</p>
+                      <p className="text-sm font-medium">
+                        {fmt.dateTime(device.created_at)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {device.created_at}
+                      </p>
                     </div>
                   )}
                   {device.updated_at && (
                     <div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
                         Updated At
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.updated_at).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{device.updated_at}</p>
+                      <p className="text-sm font-medium">
+                        {fmt.dateTime(device.updated_at)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {device.updated_at}
+                      </p>
                     </div>
                   )}
                   {device.last_seen && (
                     <div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Activity className="w-3 h-3" />
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Activity className="h-3 w-3" />
                         Last Seen
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{device.last_seen}</p>
+                      <p className="text-sm font-medium">
+                        {fmt.dateTime(device.last_seen)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {device.last_seen}
+                      </p>
                     </div>
                   )}
                   {device.last_seen_online && (
                     <div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Activity className="w-3 h-3" />
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Activity className="h-3 w-3" />
                         Last Seen Online
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen_online).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{device.last_seen_online}</p>
+                      <p className="text-sm font-medium">
+                        {fmt.dateTime(device.last_seen_online)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {device.last_seen_online}
+                      </p>
                     </div>
                   )}
                   {device.last_seen_offline && (
                     <div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Activity className="w-3 h-3" />
+                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Activity className="h-3 w-3" />
                         Last Seen Offline
                       </p>
-                      <p className="font-medium text-sm">{new Date(device.last_seen_offline).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{device.last_seen_offline}</p>
+                      <p className="text-sm font-medium">
+                        {fmt.dateTime(device.last_seen_offline)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {device.last_seen_offline}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -765,10 +1082,16 @@ export default function DeviceViewPage() {
                 <>
                   <Separator />
                   <div>
-                    <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase">Hardware Identifiers</h3>
+                    <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
+                      Hardware Identifiers
+                    </h3>
                     <div className="flex flex-wrap gap-2">
                       {device.hardware_ids.map((id, idx) => (
-                        <Badge key={idx} variant="outline" className="font-mono text-xs">
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="font-mono text-xs"
+                        >
                           {id}
                         </Badge>
                       ))}

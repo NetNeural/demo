@@ -1,22 +1,45 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { AIReportSummary } from '@/components/reports/AIReportSummary'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  LineChart as LineChartIcon, 
-  Table as TableIcon, 
-  Download, 
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import {
+  LineChart as LineChartIcon,
+  Table as TableIcon,
+  Download,
   Calendar as CalendarIcon,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  Send,
 } from 'lucide-react'
+import {
+  SendReportDialog,
+  type ReportPayload,
+} from '@/components/reports/SendReportDialog'
 import {
   LineChart,
   Line,
@@ -27,9 +50,18 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
-  ReferenceArea
+  ReferenceArea,
 } from 'recharts'
 import { format, subHours } from 'date-fns'
+
+// Lazy singleton — avoids calling createClient() at module eval time
+// (which fails during static export since env vars aren't available)
+// but still preserves referential stability to prevent infinite useEffect loops.
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 interface Device {
   id: string
@@ -101,7 +133,10 @@ export function TelemetryTrendsReport() {
   const [selectedDevices, setSelectedDevices] = useState<string[]>([])
   const [selectedSensor, setSelectedSensor] = useState<string>('temperature')
   const [timeRange, setTimeRange] = useState<string>('24h')
-  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [customDateRange, setCustomDateRange] = useState<{
+    from: Date | undefined
+    to: Date | undefined
+  }>({
     from: undefined,
     to: undefined,
   })
@@ -110,15 +145,14 @@ export function TelemetryTrendsReport() {
   const [thresholds, setThresholds] = useState<Threshold[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-
-  const supabase = createClient()
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
 
   // Fetch devices
   useEffect(() => {
     if (!currentOrganization) return
 
     const fetchDevices = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('devices')
         .select('id, name')
         .eq('organization_id', currentOrganization.id)
@@ -130,16 +164,18 @@ export function TelemetryTrendsReport() {
     }
 
     fetchDevices()
-  }, [currentOrganization, supabase])
+  }, [currentOrganization])
 
   // Fetch thresholds for selected devices
   useEffect(() => {
     if (selectedDevices.length === 0) return
 
     const fetchThresholds = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('sensor_thresholds')
-        .select('device_id, sensor_type, min_value, max_value, critical_min, critical_max')
+        .select(
+          'device_id, sensor_type, min_value, max_value, critical_min, critical_max'
+        )
         .in('device_id', selectedDevices)
         .eq('sensor_type', selectedSensor)
 
@@ -149,7 +185,7 @@ export function TelemetryTrendsReport() {
     }
 
     fetchThresholds()
-  }, [selectedDevices, selectedSensor, supabase])
+  }, [selectedDevices, selectedSensor])
 
   // Fetch telemetry data
   const fetchTelemetryData = useCallback(async () => {
@@ -165,11 +201,11 @@ export function TelemetryTrendsReport() {
         startDate = customDateRange.from
         endDate = customDateRange.to
       } else {
-        const range = TIME_RANGES.find(r => r.value === timeRange)
+        const range = TIME_RANGES.find((r) => r.value === timeRange)
         startDate = subHours(new Date(), range?.hours || 24)
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('device_telemetry_history')
         .select('device_id, telemetry, device_timestamp, received_at')
         .in('device_id', selectedDevices)
@@ -181,13 +217,13 @@ export function TelemetryTrendsReport() {
 
       // Process data into chart format
       const processedData: Map<number, TelemetryDataPoint> = new Map()
-      
+
       data?.forEach((record: any) => {
         const timestamp = record.device_timestamp || record.received_at
         const timeMs = new Date(timestamp).getTime()
-        const value = record.telemetry?.[selectedSensor] || 
-                     record.telemetry?.value // fallback for generic value field
-        
+        const value =
+          record.telemetry?.[selectedSensor] || record.telemetry?.value // fallback for generic value field
+
         if (value === undefined || value === null) return
 
         if (!processedData.has(timeMs)) {
@@ -198,17 +234,26 @@ export function TelemetryTrendsReport() {
         }
 
         const dataPoint = processedData.get(timeMs)!
-        dataPoint[record.device_id] = typeof value === 'number' ? value : parseFloat(value)
+        dataPoint[record.device_id] =
+          typeof value === 'number' ? value : parseFloat(value)
       })
 
-      const sortedData = Array.from(processedData.values()).sort((a, b) => a.time - b.time)
+      const sortedData = Array.from(processedData.values()).sort(
+        (a, b) => a.time - b.time
+      )
       setTelemetryData(sortedData)
     } catch (error) {
       console.error('Error fetching telemetry:', error)
     } finally {
       setLoading(false)
     }
-  }, [currentOrganization, selectedDevices, selectedSensor, timeRange, customDateRange, supabase])
+  }, [
+    currentOrganization,
+    selectedDevices,
+    selectedSensor,
+    timeRange,
+    customDateRange,
+  ])
 
   useEffect(() => {
     fetchTelemetryData()
@@ -217,10 +262,10 @@ export function TelemetryTrendsReport() {
   // Calculate statistics
   const statistics = useMemo((): DeviceStats[] => {
     return selectedDevices.map((deviceId, index) => {
-      const deviceData = devices.find(d => d.id === deviceId)
+      const deviceData = devices.find((d) => d.id === deviceId)
       const color = DEVICE_COLORS[index % DEVICE_COLORS.length] || '#3b82f6'
       const values = telemetryData
-        .map(d => d[deviceId])
+        .map((d) => d[deviceId])
         .filter((v): v is number => typeof v === 'number' && !isNaN(v))
 
       if (values.length === 0) {
@@ -252,9 +297,9 @@ export function TelemetryTrendsReport() {
   // Identify threshold breaches
   const breachPeriods = useMemo((): BreachPeriod[] => {
     const periods: BreachPeriod[] = []
-    
-    selectedDevices.forEach(deviceId => {
-      const threshold = thresholds.find(t => t.device_id === deviceId)
+
+    selectedDevices.forEach((deviceId) => {
+      const threshold = thresholds.find((t) => t.device_id === deviceId)
       if (!threshold) return
 
       let currentBreach: BreachPeriod | null = null
@@ -264,14 +309,15 @@ export function TelemetryTrendsReport() {
         if (value === undefined) return
 
         // Check critical range breach (outside critical_min to critical_max)
-        const isCritical = (threshold.critical_min !== null && value < threshold.critical_min) || 
-                          (threshold.critical_max !== null && value > threshold.critical_max)
-        
+        const isCritical =
+          (threshold.critical_min !== null && value < threshold.critical_min) ||
+          (threshold.critical_max !== null && value > threshold.critical_max)
+
         // Check warning range breach (outside min_value to max_value, but not critical)
-        const isWarning = !isCritical && (
-          (threshold.min_value !== null && value < threshold.min_value) || 
-          (threshold.max_value !== null && value > threshold.max_value)
-        )
+        const isWarning =
+          !isCritical &&
+          ((threshold.min_value !== null && value < threshold.min_value) ||
+            (threshold.max_value !== null && value > threshold.max_value))
 
         if (isCritical || isWarning) {
           if (!currentBreach) {
@@ -304,9 +350,9 @@ export function TelemetryTrendsReport() {
 
   // Handle device selection (max 5)
   const handleDeviceToggle = (deviceId: string) => {
-    setSelectedDevices(prev => {
+    setSelectedDevices((prev) => {
       if (prev.includes(deviceId)) {
-        return prev.filter(id => id !== deviceId)
+        return prev.filter((id) => id !== deviceId)
       } else if (prev.length < 5) {
         return [...prev, deviceId]
       }
@@ -316,23 +362,26 @@ export function TelemetryTrendsReport() {
 
   // CSV Export
   const exportToCSV = () => {
-    const sensorInfo = SENSOR_TYPES.find(s => s.value === selectedSensor)
+    const sensorInfo = SENSOR_TYPES.find((s) => s.value === selectedSensor)
     const rows = [
-      ['Timestamp', ...statistics.map(s => `${s.deviceName} (${sensorInfo?.unit || ''})`)]
+      [
+        'Timestamp',
+        ...statistics.map((s) => `${s.deviceName} (${sensorInfo?.unit || ''})`),
+      ],
     ]
 
-    telemetryData.forEach(point => {
+    telemetryData.forEach((point) => {
       const row = [
         format(new Date(point.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-        ...selectedDevices.map(deviceId => {
+        ...selectedDevices.map((deviceId) => {
           const value = point[deviceId]
           return typeof value === 'number' ? value.toFixed(2) : ''
-        })
+        }),
       ]
       rows.push(row)
     })
 
-    const csv = rows.map(row => row.join(',')).join('\n')
+    const csv = rows.map((row) => row.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -342,21 +391,85 @@ export function TelemetryTrendsReport() {
     URL.revokeObjectURL(url)
   }
 
-  const filteredDevices = devices.filter(device =>
+  // Build payload for SendReportDialog
+  const getReportPayload = (): ReportPayload => {
+    const rows: string[][] = [
+      ['Timestamp', ...statistics.map((s) => `${s.deviceName} (${sensorInfo?.unit || ''})`)],
+    ]
+    telemetryData.forEach((point) => {
+      rows.push([
+        format(new Date(point.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+        ...selectedDevices.map((deviceId) => {
+          const value = point[deviceId]
+          return typeof value === 'number' ? value.toFixed(2) : ''
+        }),
+      ])
+    })
+    const csv = rows.map((r) => r.join(',')).join('\n')
+    const deviceNames = statistics.map(s => s.deviceName).join(', ')
+    return {
+      title: 'Telemetry Trends Report',
+      csvContent: csv,
+      csvFilename: `telemetry-trends-${selectedSensor}-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      smsSummary: `${telemetryData.length} data points for ${selectedDevices.length} device(s) (${deviceNames}). Sensor: ${sensorInfo?.label || selectedSensor}. Time range: ${timeRange}.`,
+    }
+  }
+
+  const filteredDevices = devices.filter((device) =>
     device.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const sensorInfo = SENSOR_TYPES.find(s => s.value === selectedSensor)
+  const sensorInfo = SENSOR_TYPES.find((s) => s.value === selectedSensor)
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Telemetry Trends</h1>
-        <p className="text-muted-foreground mt-2">
-          Compare sensor data across devices over time
-        </p>
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Telemetry Trends
+          </h2>
+          <p className="text-muted-foreground">
+            Compare sensor data across devices over time
+          </p>
+        </div>
       </div>
+
+      {/* AI Report Summary */}
+      {telemetryData.length > 0 && currentOrganization && (
+        <AIReportSummary
+          reportType="telemetry-trends"
+          reportData={{
+            dateRange:
+              timeRange === '24h'
+                ? 'Last 24 hours'
+                : timeRange === '7d'
+                  ? 'Last 7 days'
+                  : timeRange === '30d'
+                    ? 'Last 30 days'
+                    : customDateRange.from && customDateRange.to
+                      ? `${format(customDateRange.from, 'MMM d, yyyy')} - ${format(customDateRange.to, 'MMM d, yyyy')}`
+                      : 'Custom',
+            totalRecords: telemetryData.length,
+            metadata: {
+              selectedDevices: selectedDevices.length,
+              sensorType: selectedSensor,
+              deviceStats: statistics.map((stat) => ({
+                device: stat.deviceName,
+                min: stat.min,
+                max: stat.max,
+                avg: stat.avg,
+              })),
+            },
+          }}
+          organizationId={currentOrganization.id}
+        />
+      )}
 
       {/* Filters */}
       <Card>
@@ -369,7 +482,7 @@ export function TelemetryTrendsReport() {
         <CardContent className="space-y-6">
           {/* Device Selection */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label className="mb-2 block text-sm font-medium">
               Devices ({selectedDevices.length}/5)
             </label>
             <input
@@ -377,26 +490,33 @@ export function TelemetryTrendsReport() {
               placeholder="Search devices..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md mb-2"
+              className="mb-2 w-full rounded-md border px-3 py-2"
             />
-            <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-              {filteredDevices.map(device => (
+            <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border p-4">
+              {filteredDevices.map((device) => (
                 <label
                   key={device.id}
-                  className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                  className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-muted"
                 >
                   <input
                     type="checkbox"
                     checked={selectedDevices.includes(device.id)}
                     onChange={() => handleDeviceToggle(device.id)}
-                    disabled={!selectedDevices.includes(device.id) && selectedDevices.length >= 5}
+                    disabled={
+                      !selectedDevices.includes(device.id) &&
+                      selectedDevices.length >= 5
+                    }
                     className="rounded"
                   />
                   <span>{device.name}</span>
                   {selectedDevices.includes(device.id) && (
                     <Badge
                       style={{
-                        backgroundColor: DEVICE_COLORS[selectedDevices.indexOf(device.id) % DEVICE_COLORS.length]
+                        backgroundColor:
+                          DEVICE_COLORS[
+                            selectedDevices.indexOf(device.id) %
+                              DEVICE_COLORS.length
+                          ],
                       }}
                       className="ml-auto"
                     >
@@ -409,15 +529,17 @@ export function TelemetryTrendsReport() {
           </div>
 
           {/* Sensor Type & Time Range */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <label className="text-sm font-medium mb-2 block">Sensor Type</label>
+              <label className="mb-2 block text-sm font-medium">
+                Sensor Type
+              </label>
               <Select value={selectedSensor} onValueChange={setSelectedSensor}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SENSOR_TYPES.map(sensor => (
+                  {SENSOR_TYPES.map((sensor) => (
                     <SelectItem key={sensor.value} value={sensor.value}>
                       {sensor.label} ({sensor.unit})
                     </SelectItem>
@@ -427,13 +549,15 @@ export function TelemetryTrendsReport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Time Range</label>
+              <label className="mb-2 block text-sm font-medium">
+                Time Range
+              </label>
               <Select value={timeRange} onValueChange={setTimeRange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_RANGES.map(range => (
+                  {TIME_RANGES.map((range) => (
                     <SelectItem key={range.value} value={range.value}>
                       {range.label}
                     </SelectItem>
@@ -444,7 +568,9 @@ export function TelemetryTrendsReport() {
 
             {timeRange === 'custom' && (
               <div>
-                <label className="text-sm font-medium mb-2 block">Custom Date Range</label>
+                <label className="mb-2 block text-sm font-medium">
+                  Custom Date Range
+                </label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start">
@@ -461,7 +587,9 @@ export function TelemetryTrendsReport() {
                         from: customDateRange.from,
                         to: customDateRange.to,
                       }}
-                      onSelect={(range) => setCustomDateRange({ from: range?.from, to: range?.to })}
+                      onSelect={(range) =>
+                        setCustomDateRange({ from: range?.from, to: range?.to })
+                      }
                       numberOfMonths={2}
                     />
                   </PopoverContent>
@@ -472,36 +600,59 @@ export function TelemetryTrendsReport() {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button onClick={fetchTelemetryData} disabled={loading || selectedDevices.length === 0}>
+            <Button
+              onClick={fetchTelemetryData}
+              disabled={loading || selectedDevices.length === 0}
+            >
               {loading ? 'Loading...' : 'Update Chart'}
             </Button>
             <Button
               variant="outline"
-              onClick={() => setViewMode(viewMode === 'chart' ? 'table' : 'chart')}
+              onClick={() =>
+                setViewMode(viewMode === 'chart' ? 'table' : 'chart')
+              }
               disabled={selectedDevices.length === 0}
             >
-              {viewMode === 'chart' ? <TableIcon className="w-4 h-4 mr-2" /> : <LineChartIcon className="w-4 h-4 mr-2" />}
+              {viewMode === 'chart' ? (
+                <TableIcon className="mr-2 h-4 w-4" />
+              ) : (
+                <LineChartIcon className="mr-2 h-4 w-4" />
+              )}
               {viewMode === 'chart' ? 'Table View' : 'Chart View'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSendDialogOpen(true)}
+              disabled={telemetryData.length === 0}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Report
             </Button>
             <Button
               variant="outline"
               onClick={exportToCSV}
               disabled={telemetryData.length === 0}
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      <SendReportDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        getReportPayload={getReportPayload}
+      />
+
       {/* Statistics */}
       {statistics.length > 0 && telemetryData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {statistics.map(stat => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          {statistics.map((stat) => (
             <Card key={stat.deviceId}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium truncate">
+                <CardTitle className="truncate text-sm font-medium">
                   {stat.deviceName}
                 </CardTitle>
                 <Badge
@@ -514,15 +665,21 @@ export function TelemetryTrendsReport() {
               <CardContent className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Min:</span>
-                  <span className="font-medium">{stat.min.toFixed(2)} {sensorInfo?.unit}</span>
+                  <span className="font-medium">
+                    {stat.min.toFixed(2)} {sensorInfo?.unit}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Max:</span>
-                  <span className="font-medium">{stat.max.toFixed(2)} {sensorInfo?.unit}</span>
+                  <span className="font-medium">
+                    {stat.max.toFixed(2)} {sensorInfo?.unit}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Avg:</span>
-                  <span className="font-medium">{stat.avg.toFixed(2)} {sensorInfo?.unit}</span>
+                  <span className="font-medium">
+                    {stat.avg.toFixed(2)} {sensorInfo?.unit}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -534,8 +691,8 @@ export function TelemetryTrendsReport() {
       {selectedDevices.length === 0 ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center space-y-3">
-              <Activity className="w-12 h-12 mx-auto text-muted-foreground" />
+            <div className="space-y-3 text-center">
+              <Activity className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">
                 Select at least one device to view telemetry trends
               </p>
@@ -551,8 +708,8 @@ export function TelemetryTrendsReport() {
       ) : telemetryData.length === 0 ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center space-y-3">
-              <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground" />
+            <div className="space-y-3 text-center">
+              <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">
                 No telemetry data found for the selected configuration
               </p>
@@ -562,18 +719,21 @@ export function TelemetryTrendsReport() {
       ) : viewMode === 'chart' ? (
         <Card>
           <CardHeader>
-            <CardTitle>
-              {sensorInfo?.label || 'Sensor'} Trends
-            </CardTitle>
+            <CardTitle>{sensorInfo?.label || 'Sensor'} Trends</CardTitle>
             <CardDescription>
               {(() => {
                 const firstPoint = telemetryData[0]
                 const lastPoint = telemetryData[telemetryData.length - 1]
-                if (telemetryData.length > 0 && firstPoint?.timestamp && lastPoint?.timestamp) {
+                if (
+                  telemetryData.length > 0 &&
+                  firstPoint?.timestamp &&
+                  lastPoint?.timestamp
+                ) {
                   return (
                     <>
-                      {telemetryData.length} data points from {format(new Date(firstPoint.timestamp), 'MMM d, HH:mm')} to{' '}
-                      {format(new Date(lastPoint.timestamp), 'MMM d, HH:mm')}
+                      {telemetryData.length} data points from{' '}
+                      {format(new Date(firstPoint.timestamp), 'MMM d, HH:mm')}{' '}
+                      to {format(new Date(lastPoint.timestamp), 'MMM d, HH:mm')}
                     </>
                   )
                 }
@@ -589,19 +749,30 @@ export function TelemetryTrendsReport() {
                   dataKey="time"
                   type="number"
                   domain={['dataMin', 'dataMax']}
-                  tickFormatter={(time) => format(new Date(time), 'MMM d HH:mm')}
+                  tickFormatter={(time) =>
+                    format(new Date(time), 'MMM d HH:mm')
+                  }
                 />
                 <YAxis
-                  label={{ value: sensorInfo?.unit || '', angle: -90, position: 'insideLeft' }}
+                  label={{
+                    value: sensorInfo?.unit || '',
+                    angle: -90,
+                    position: 'insideLeft',
+                  }}
                 />
                 <Tooltip
-                  labelFormatter={(time) => format(new Date(time as number), 'MMM d, yyyy HH:mm:ss')}
-                  formatter={(value: any) => [`${Number(value).toFixed(2)} ${sensorInfo?.unit}`, '']}
+                  labelFormatter={(time) =>
+                    format(new Date(time as number), 'MMM d, yyyy HH:mm:ss')
+                  }
+                  formatter={(value: any) => [
+                    `${Number(value).toFixed(2)} ${sensorInfo?.unit}`,
+                    '',
+                  ]}
                 />
                 <Legend />
-                
+
                 {/* Threshold Lines */}
-                {thresholds.map(threshold => (
+                {thresholds.map((threshold) => (
                   <React.Fragment key={threshold.device_id}>
                     {/* Warning thresholds */}
                     {threshold.min_value !== null && (
@@ -609,7 +780,11 @@ export function TelemetryTrendsReport() {
                         y={threshold.min_value}
                         stroke="#f59e0b"
                         strokeDasharray="3 3"
-                        label={{ value: 'Warning Min', position: 'right', fill: '#f59e0b' }}
+                        label={{
+                          value: 'Warning Min',
+                          position: 'right',
+                          fill: '#f59e0b',
+                        }}
                       />
                     )}
                     {threshold.max_value !== null && (
@@ -617,17 +792,25 @@ export function TelemetryTrendsReport() {
                         y={threshold.max_value}
                         stroke="#f59e0b"
                         strokeDasharray="3 3"
-                        label={{ value: 'Warning Max', position: 'right', fill: '#f59e0b' }}
+                        label={{
+                          value: 'Warning Max',
+                          position: 'right',
+                          fill: '#f59e0b',
+                        }}
                       />
                     )}
-                    
+
                     {/* Critical thresholds */}
                     {threshold.critical_min !== null && (
                       <ReferenceLine
                         y={threshold.critical_min}
                         stroke="#ef4444"
                         strokeDasharray="3 3"
-                        label={{ value: 'Critical Min', position: 'right', fill: '#ef4444' }}
+                        label={{
+                          value: 'Critical Min',
+                          position: 'right',
+                          fill: '#ef4444',
+                        }}
                       />
                     )}
                     {threshold.critical_max !== null && (
@@ -635,7 +818,11 @@ export function TelemetryTrendsReport() {
                         y={threshold.critical_max}
                         stroke="#ef4444"
                         strokeDasharray="3 3"
-                        label={{ value: 'Critical Max', position: 'right', fill: '#ef4444' }}
+                        label={{
+                          value: 'Critical Max',
+                          position: 'right',
+                          fill: '#ef4444',
+                        }}
                       />
                     )}
                   </React.Fragment>
@@ -654,7 +841,8 @@ export function TelemetryTrendsReport() {
 
                 {/* Device Lines */}
                 {selectedDevices.map((deviceId, index) => {
-                  const deviceName = devices.find(d => d.id === deviceId)?.name || 'Unknown'
+                  const deviceName =
+                    devices.find((d) => d.id === deviceId)?.name || 'Unknown'
                   return (
                     <Line
                       key={deviceId}
@@ -678,17 +866,22 @@ export function TelemetryTrendsReport() {
             <CardTitle>Telemetry Data Table</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-hidden rounded-lg border">
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/50 sticky top-0">
+                  <thead className="sticky top-0 bg-muted/50">
                     <tr>
-                      <th className="text-left p-2 font-medium">Timestamp</th>
-                      {statistics.map(stat => (
-                        <th key={stat.deviceId} className="text-right p-2 font-medium">
+                      <th className="p-2 text-left font-medium">Timestamp</th>
+                      {statistics.map((stat) => (
+                        <th
+                          key={stat.deviceId}
+                          className="p-2 text-right font-medium"
+                        >
                           {stat.deviceName}
                           <br />
-                          <span className="text-xs text-muted-foreground font-normal">({sensorInfo?.unit})</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            ({sensorInfo?.unit})
+                          </span>
                         </th>
                       ))}
                     </tr>
@@ -697,13 +890,18 @@ export function TelemetryTrendsReport() {
                     {telemetryData.map((point, index) => (
                       <tr key={index} className="hover:bg-muted/30">
                         <td className="p-2 text-muted-foreground">
-                          {format(new Date(point.timestamp), 'MMM d, yyyy HH:mm:ss')}
+                          {format(
+                            new Date(point.timestamp),
+                            'MMM d, yyyy HH:mm:ss'
+                          )}
                         </td>
-                        {selectedDevices.map(deviceId => {
+                        {selectedDevices.map((deviceId) => {
                           const value = point[deviceId]
                           return (
-                            <td key={deviceId} className="text-right p-2">
-                              {typeof value === 'number' ? value.toFixed(2) : '-'}
+                            <td key={deviceId} className="p-2 text-right">
+                              {typeof value === 'number'
+                                ? value.toFixed(2)
+                                : '-'}
                             </td>
                           )
                         })}

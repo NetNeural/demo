@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * COMPREHENSIVE TEST SUITE: Integration Edge Functions
- * 
+ *
  * Tests Supabase Edge Functions for integrations API
  * Coverage: CRUD operations, validation, authentication, error handling
  */
@@ -14,7 +14,12 @@ describe('Integrations Edge Function - Complete Coverage', () => {
         status: 200,
         json: async () => ({
           integrations: [
-            { id: '1', type: 'golioth', name: 'Golioth Integration', status: 'active' },
+            {
+              id: '1',
+              type: 'golioth',
+              name: 'Golioth Integration',
+              status: 'active',
+            },
             { id: '2', type: 'aws_iot', name: 'AWS IoT', status: 'active' },
           ],
         }),
@@ -37,7 +42,11 @@ describe('Integrations Edge Function - Complete Coverage', () => {
       }
 
       const data = await response.json()
-      expect(data.integrations.every((i: { organization_id: string }) => i.organization_id === 'org-123')).toBe(true)
+      expect(
+        data.integrations.every(
+          (i: { organization_id: string }) => i.organization_id === 'org-123'
+        )
+      ).toBe(true)
     })
 
     test('should return 401 without authentication', async () => {
@@ -49,9 +58,7 @@ describe('Integrations Edge Function - Complete Coverage', () => {
       const response = {
         status: 200,
         json: async () => ({
-          integrations: [
-            { id: '1', name: 'Test', device_count: 25 },
-          ],
+          integrations: [{ id: '1', name: 'Test', device_count: 25 }],
         }),
       }
 

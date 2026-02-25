@@ -15,7 +15,9 @@ interface BatteryHealthOverviewProps {
   organizationId: string
 }
 
-export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewProps) {
+export function BatteryHealthOverview({
+  organizationId,
+}: BatteryHealthOverviewProps) {
   const [health, setHealth] = useState<BatteryHealth | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -53,7 +55,7 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
           .not('telemetry->battery', 'is', null)
           .order('device_timestamp', { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
 
         if (telemetry?.telemetry?.battery) {
           const batteryLevel = parseFloat(String(telemetry.telemetry.battery))
@@ -65,7 +67,9 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
 
       // Categorize battery levels
       const critical = batteryLevels.filter((level) => level < 20).length
-      const warning = batteryLevels.filter((level) => level >= 20 && level < 50).length
+      const warning = batteryLevels.filter(
+        (level) => level >= 20 && level < 50
+      ).length
       const healthy = batteryLevels.filter((level) => level >= 50).length
 
       setHealth({
@@ -98,7 +102,9 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
   if (!health || health.total === 0) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Battery Health Overview</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+          Battery Health Overview
+        </h3>
         <p className="text-sm text-gray-500">No battery data available</p>
       </div>
     )
@@ -110,13 +116,15 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Battery Health Overview</h3>
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        Battery Health Overview
+      </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Critical */}
-        <div className="flex items-start space-x-3 p-4 rounded-lg bg-red-50 border border-red-200">
-          <BatteryLow className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
-          <div className="flex-1 min-w-0">
+        <div className="flex items-start space-x-3 rounded-lg border border-red-200 bg-red-50 p-4">
+          <BatteryLow className="mt-1 h-6 w-6 flex-shrink-0 text-red-600" />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-red-900">Critical</p>
             <p className="text-2xl font-bold text-red-600">{health.critical}</p>
             <p className="text-xs text-red-700">Below 20%</p>
@@ -124,21 +132,25 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
         </div>
 
         {/* Warning */}
-        <div className="flex items-start space-x-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
-          <BatteryWarning className="h-6 w-6 text-amber-600 flex-shrink-0 mt-1" />
-          <div className="flex-1 min-w-0">
+        <div className="flex items-start space-x-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <BatteryWarning className="mt-1 h-6 w-6 flex-shrink-0 text-amber-600" />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-amber-900">Warning</p>
-            <p className="text-2xl font-bold text-amber-600">{health.warning}</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {health.warning}
+            </p>
             <p className="text-xs text-amber-700">20-50%</p>
           </div>
         </div>
 
         {/* Healthy */}
-        <div className="flex items-start space-x-3 p-4 rounded-lg bg-green-50 border border-green-200">
-          <Battery className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
-          <div className="flex-1 min-w-0">
+        <div className="flex items-start space-x-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <Battery className="mt-1 h-6 w-6 flex-shrink-0 text-green-600" />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-green-900">Healthy</p>
-            <p className="text-2xl font-bold text-green-600">{health.healthy}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {health.healthy}
+            </p>
             <p className="text-xs text-green-700">Above 50%</p>
           </div>
         </div>
@@ -150,24 +162,24 @@ export function BatteryHealthOverview({ organizationId }: BatteryHealthOverviewP
           <span className="text-gray-600">Total devices with battery data</span>
           <span className="font-semibold text-gray-900">{health.total}</span>
         </div>
-        <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden flex">
+        <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100">
           {health.critical > 0 && (
             <div
-              className="bg-red-500 h-full transition-all"
+              className="h-full bg-red-500 transition-all"
               style={{ width: `${criticalPercent}%` }}
               title={`Critical: ${health.critical} devices (${criticalPercent.toFixed(1)}%)`}
             />
           )}
           {health.warning > 0 && (
             <div
-              className="bg-amber-500 h-full transition-all"
+              className="h-full bg-amber-500 transition-all"
               style={{ width: `${warningPercent}%` }}
               title={`Warning: ${health.warning} devices (${warningPercent.toFixed(1)}%)`}
             />
           )}
           {health.healthy > 0 && (
             <div
-              className="bg-green-500 h-full transition-all"
+              className="h-full bg-green-500 transition-all"
               style={{ width: `${healthyPercent}%` }}
               title={`Healthy: ${health.healthy} devices (${healthyPercent.toFixed(1)}%)`}
             />

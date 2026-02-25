@@ -1,0 +1,20 @@
+[Unit]
+Description=MQTT Restart Webhook Service
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/mqtt-subscriber
+Environment="WEBHOOK_PORT=9999"
+Environment="SERVICE_DIR=/opt/mqtt-subscriber"
+Environment="RESTART_TOKEN=__REPLACE_WITH_SECRET_TOKEN__"
+ExecStart=/usr/bin/node /opt/mqtt-subscriber/restart-webhook.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

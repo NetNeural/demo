@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { Save, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,34 +10,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import type { UserOrganization } from '@/types/organization';
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/hooks/use-toast'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import type { UserOrganization } from '@/types/organization'
 
 interface EditOrganizationDialogProps {
-  organization: UserOrganization | {
-    id: string;
-    name: string;
-    slug: string;
-    description?: string;
-    subscriptionTier?: string;
-    is_active: boolean;
-  };
-  onSuccess?: () => void;
-  trigger?: React.ReactNode;
+  organization:
+    | UserOrganization
+    | {
+        id: string
+        name: string
+        slug: string
+        description?: string
+        subscriptionTier?: string
+        is_active: boolean
+      }
+  onSuccess?: () => void
+  trigger?: React.ReactNode
 }
 
 export function EditOrganizationDialog({
@@ -45,114 +47,122 @@ export function EditOrganizationDialog({
   onSuccess,
   trigger,
 }: EditOrganizationDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   // Form state
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'starter' | 'professional' | 'enterprise'>('starter');
-  const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [subscriptionTier, setSubscriptionTier] = useState<
+    'free' | 'starter' | 'professional' | 'enterprise'
+  >('starter')
+  const [isActive, setIsActive] = useState(true)
 
   // Validation errors
   const [errors, setErrors] = useState<{
-    name?: string;
-    description?: string;
-  }>({});
+    name?: string
+    description?: string
+  }>({})
 
   // Initialize form when dialog opens or organization changes
   useEffect(() => {
     if (open && organization) {
-      setName(organization.name);
-      setDescription('description' in organization ? organization.description || '' : '');
+      setName(organization.name)
+      setDescription(
+        'description' in organization ? organization.description || '' : ''
+      )
       setSubscriptionTier(
-        ('subscriptionTier' in organization ? organization.subscriptionTier : 'starter') as typeof subscriptionTier
-      );
-      setIsActive(organization.is_active);
+        ('subscriptionTier' in organization
+          ? organization.subscriptionTier
+          : 'starter') as typeof subscriptionTier
+      )
+      setIsActive(organization.is_active)
     }
-  }, [open, organization]);
+  }, [open, organization])
 
   const validateForm = (): boolean => {
-    const newErrors: typeof errors = {};
+    const newErrors: typeof errors = {}
 
     if (!name.trim()) {
-      newErrors.name = 'Organization name is required';
+      newErrors.name = 'Organization name is required'
     } else if (name.trim().length < 3) {
-      newErrors.name = 'Name must be at least 3 characters';
+      newErrors.name = 'Name must be at least 3 characters'
     } else if (name.trim().length > 100) {
-      newErrors.name = 'Name must be less than 100 characters';
+      newErrors.name = 'Name must be less than 100 characters'
     }
 
     if (description && description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      newErrors.description = 'Description must be less than 500 characters'
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateForm()) {
-      return;
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const response = await edgeFunctions.organizations.update(organization.id, {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        subscriptionTier,
-        isActive,
-      });
+      const response = await edgeFunctions.organizations.update(
+        organization.id,
+        {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          subscriptionTier,
+          isActive,
+        }
+      )
 
       if (!response.success) {
         throw new Error(
           typeof response.error === 'string'
             ? response.error
             : 'Failed to update organization'
-        );
+        )
       }
 
       toast({
         title: 'Success!',
         description: `Organization "${name}" has been updated.`,
-      });
+      })
 
-      setOpen(false);
+      setOpen(false)
 
       // Call success callback
       if (onSuccess) {
-        onSuccess();
+        onSuccess()
       }
     } catch (error) {
-      console.error('Error updating organization:', error);
+      console.error('Error updating organization:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update organization',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to update organization',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleCancel = () => {
-    setOpen(false);
-    setErrors({});
-  };
+    setOpen(false)
+    setErrors({})
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline">
-            Edit Organization
-          </Button>
-        )}
+        {trigger || <Button variant="outline">Edit Organization</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px]">
         <form onSubmit={handleSubmit}>
@@ -221,7 +231,9 @@ export function EditOrganizationDialog({
               <Label htmlFor="edit-subscription-tier">Subscription Tier</Label>
               <Select
                 value={subscriptionTier}
-                onValueChange={(value) => setSubscriptionTier(value as typeof subscriptionTier)}
+                onValueChange={(value) =>
+                  setSubscriptionTier(value as typeof subscriptionTier)
+                }
                 disabled={isLoading}
               >
                 <SelectTrigger id="edit-subscription-tier">
@@ -229,9 +241,15 @@ export function EditOrganizationDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="free">Free (Up to 5 devices)</SelectItem>
-                  <SelectItem value="starter">Starter (Up to 50 devices)</SelectItem>
-                  <SelectItem value="professional">Professional (Up to 500 devices)</SelectItem>
-                  <SelectItem value="enterprise">Enterprise (Unlimited)</SelectItem>
+                  <SelectItem value="starter">
+                    Starter (Up to 50 devices)
+                  </SelectItem>
+                  <SelectItem value="professional">
+                    Professional (Up to 500 devices)
+                  </SelectItem>
+                  <SelectItem value="enterprise">
+                    Enterprise (Unlimited)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -265,12 +283,12 @@ export function EditOrganizationDialog({
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </>
               )}
@@ -279,5 +297,5 @@ export function EditOrganizationDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

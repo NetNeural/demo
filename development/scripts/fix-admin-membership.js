@@ -1,75 +1,75 @@
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js')
 
 const supabase = createClient(
   'https://atgbmxicqikmapfqouco.supabase.co',
   process.env.STAGE_SUPABASE_SERVICE_ROLE_KEY || ''
-);
+)
 
 async function fixMembership() {
-  console.log('Checking organization memberships...\n');
-  
+  console.log('Checking organization memberships...\n')
+
   // Find admin user
   const { data: users, error: userError } = await supabase
     .from('users')
     .select('id, email, role')
     .eq('email', 'admin@netneural.ai')
-    .single();
-  
+    .single()
+
   if (userError) {
-    console.error('Error finding admin user:', userError);
-    return;
+    console.error('Error finding admin user:', userError)
+    return
   }
-  
-  console.log('Admin user:', users);
-  
+
+  console.log('Admin user:', users)
+
   if (users) {
     // Check membership
     const { data: membership } = await supabase
       .from('organization_members')
       .select('*')
       .eq('user_id', users.id)
-      .eq('organization_id', '00000000-0000-0000-0000-000000000001');
-    
-    console.log('Current membership:', membership);
-    
+      .eq('organization_id', '00000000-0000-0000-0000-000000000001')
+
+    console.log('Current membership:', membership)
+
     if (!membership || membership.length === 0) {
-      console.log('\n❌ No membership found! Creating owner membership...');
-      
+      console.log('\n❌ No membership found! Creating owner membership...')
+
       const { data: newMembership, error } = await supabase
         .from('organization_members')
         .insert({
           organization_id: '00000000-0000-0000-0000-000000000001',
           user_id: users.id,
-          role: 'owner'
+          role: 'owner',
         })
-        .select();
-      
+        .select()
+
       if (error) {
-        console.error('Error creating membership:', error);
+        console.error('Error creating membership:', error)
       } else {
-        console.log('✅ Created owner membership:', newMembership);
+        console.log('✅ Created owner membership:', newMembership)
       }
     } else if (membership[0].role !== 'owner') {
-      console.log(`\n⚠️ Found membership but role is: ${membership[0].role}`);
-      console.log('Updating to owner...');
-      
+      console.log(`\n⚠️ Found membership but role is: ${membership[0].role}`)
+      console.log('Updating to owner...')
+
       const { data: updated, error } = await supabase
         .from('organization_members')
         .update({ role: 'owner' })
         .eq('id', membership[0].id)
-        .select();
-      
+        .select()
+
       if (error) {
-        console.error('Error updating role:', error);
+        console.error('Error updating role:', error)
       } else {
-        console.log('✅ Updated to owner:', updated);
+        console.log('✅ Updated to owner:', updated)
       }
     } else {
-      console.log('✅ Membership is correct (owner role)');
+      console.log('✅ Membership is correct (owner role)')
     }
   }
-  
-  console.log('\n📋 Now refresh the page and try uploading again.');
+
+  console.log('\n📋 Now refresh the page and try uploading again.')
 }
 
-fixMembership().catch(console.error);
+fixMembership().catch(console.error)

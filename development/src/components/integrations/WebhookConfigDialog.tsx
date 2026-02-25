@@ -1,15 +1,40 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, CheckCircle, XCircle, Copy, ExternalLink, FileCode } from 'lucide-react'
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Copy,
+  ExternalLink,
+  FileCode,
+} from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { integrationService } from '@/services/integration.service'
@@ -32,24 +57,32 @@ interface Props {
   mode?: 'dialog' | 'page'
 }
 
-export function WebhookConfigDialog({ 
-  open, 
-  onOpenChange, 
-  integrationId, 
+export function WebhookConfigDialog({
+  open,
+  onOpenChange,
+  integrationId,
   organizationId,
   onSaved,
-  mode = 'dialog'
+  mode = 'dialog',
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
-  
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
+
   const [config, setConfig] = useState<WebhookConfig>({
     name: 'Custom Webhook Integration',
     url: '',
     secret: '',
     custom_headers: '',
-    trigger_events: ['device.created', 'device.updated', 'device.deleted', 'device.status_changed'],
+    trigger_events: [
+      'device.created',
+      'device.updated',
+      'device.deleted',
+      'device.status_changed',
+    ],
   })
 
   const [generatedApiKey, setGeneratedApiKey] = useState<string>('')
@@ -58,9 +91,11 @@ export function WebhookConfigDialog({
   useEffect(() => {
     if (!integrationId && !generatedApiKey) {
       // Generate a secure random API key
-      const key = 'ntrl_' + Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
+      const key =
+        'ntrl_' +
+        Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('')
       setGeneratedApiKey(key)
     }
   }, [integrationId, generatedApiKey])
@@ -70,7 +105,7 @@ export function WebhookConfigDialog({
     toast.success('Copied to clipboard!')
   }
 
-  const ourWebhookEndpoint = process.env.NEXT_PUBLIC_SUPABASE_URL 
+  const ourWebhookEndpoint = process.env.NEXT_PUBLIC_SUPABASE_URL
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/integration-webhook`
     : 'https://your-project.supabase.co/functions/v1/integration-webhook'
 
@@ -79,7 +114,8 @@ export function WebhookConfigDialog({
     info: {
       title: 'NetNeural Webhook Receiver API',
       version: '1.0.0',
-      description: 'Webhook endpoint on NetNeural platform to receive events from external IoT platforms like Golioth, AWS IoT, Azure IoT Hub, and custom MQTT brokers.',
+      description:
+        'Webhook endpoint on NetNeural platform to receive events from external IoT platforms like Golioth, AWS IoT, Azure IoT Hub, and custom MQTT brokers.',
       contact: {
         name: 'NetNeural Support',
         url: 'https://netneural.io/support',
@@ -126,7 +162,8 @@ export function WebhookConfigDialog({
                 format: 'uuid',
                 example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
               },
-              description: 'Your integration ID from NetNeural (required to route webhook to correct integration)',
+              description:
+                'Your integration ID from NetNeural (required to route webhook to correct integration)',
             },
             {
               name: 'X-Webhook-Signature',
@@ -134,9 +171,11 @@ export function WebhookConfigDialog({
               required: false,
               schema: {
                 type: 'string',
-                example: 'a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5',
+                example:
+                  'a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5',
               },
-              description: 'HMAC SHA-256 signature of request body (required only if webhook secret is configured)',
+              description:
+                'HMAC SHA-256 signature of request body (required only if webhook secret is configured)',
             },
           ],
           requestBody: {
@@ -168,7 +207,8 @@ export function WebhookConfigDialog({
                   },
                   deviceUpdated: {
                     summary: 'Device Updated Event',
-                    description: 'Updates existing device or creates if not found',
+                    description:
+                      'Updates existing device or creates if not found',
                     value: {
                       event: 'device.updated',
                       timestamp: '2025-11-16T10:35:00Z',
@@ -186,7 +226,8 @@ export function WebhookConfigDialog({
                   },
                   deviceTelemetry: {
                     summary: 'Telemetry Data Event',
-                    description: 'Updates device with telemetry data (creates if not found)',
+                    description:
+                      'Updates device with telemetry data (creates if not found)',
                     value: {
                       event: 'device.telemetry',
                       timestamp: '2025-11-16T10:40:00Z',
@@ -221,7 +262,8 @@ export function WebhookConfigDialog({
                   },
                   minimalPayload: {
                     summary: 'Minimal Required Fields',
-                    description: 'Minimum required fields - device will be created with defaults',
+                    description:
+                      'Minimum required fields - device will be created with defaults',
                     value: {
                       event: 'device.updated',
                       timestamp: '2025-11-16T10:50:00Z',
@@ -256,7 +298,8 @@ export function WebhookConfigDialog({
               },
             },
             '400': {
-              description: 'Bad Request - Missing integration ID or malformed request',
+              description:
+                'Bad Request - Missing integration ID or malformed request',
               content: {
                 'application/json': {
                   schema: {
@@ -284,7 +327,8 @@ export function WebhookConfigDialog({
               },
             },
             '404': {
-              description: 'Not Found - Integration not found or webhook not enabled',
+              description:
+                'Not Found - Integration not found or webhook not enabled',
               content: {
                 'application/json': {
                   schema: {
@@ -306,7 +350,8 @@ export function WebhookConfigDialog({
                   },
                   example: {
                     error: 'Internal server error',
-                    message: 'An unexpected error occurred while processing the webhook',
+                    message:
+                      'An unexpected error occurred while processing the webhook',
                   },
                 },
               },
@@ -323,8 +368,17 @@ export function WebhookConfigDialog({
           properties: {
             event: {
               type: 'string',
-              enum: ['device.created', 'device.updated', 'device.deleted', 'device.status_changed', 'device.telemetry', 'device.online', 'device.offline'],
-              description: 'Type of event being reported. All events support auto-create if device not found.',
+              enum: [
+                'device.created',
+                'device.updated',
+                'device.deleted',
+                'device.status_changed',
+                'device.telemetry',
+                'device.online',
+                'device.offline',
+              ],
+              description:
+                'Type of event being reported. All events support auto-create if device not found.',
             },
             timestamp: {
               type: 'string',
@@ -336,7 +390,8 @@ export function WebhookConfigDialog({
               $ref: '#/components/schemas/Device',
             },
           },
-          description: 'Webhook event payload. The webhook will automatically create devices if they don\'t exist, or update them if they do.',
+          description:
+            "Webhook event payload. The webhook will automatically create devices if they don't exist, or update them if they do.",
         },
         Device: {
           type: 'object',
@@ -344,24 +399,28 @@ export function WebhookConfigDialog({
           properties: {
             id: {
               type: 'string',
-              description: 'Unique device identifier (required). This is used to match devices in the system.',
+              description:
+                'Unique device identifier (required). This is used to match devices in the system.',
               example: 'dev_abc123',
             },
             name: {
               type: 'string',
-              description: 'Human-readable device name (optional). If not provided, device ID will be used as the name.',
+              description:
+                'Human-readable device name (optional). If not provided, device ID will be used as the name.',
               example: 'Temperature Sensor 001',
             },
             status: {
               type: 'string',
               enum: ['online', 'offline', 'unknown'],
-              description: 'Current device status (optional). Defaults to "unknown" if not provided.',
+              description:
+                'Current device status (optional). Defaults to "unknown" if not provided.',
               example: 'online',
             },
             metadata: {
               type: 'object',
               additionalProperties: true,
-              description: 'Custom key-value pairs with device-specific data (optional). Can include telemetry, configuration, or any custom fields. All values are preserved.',
+              description:
+                'Custom key-value pairs with device-specific data (optional). Can include telemetry, configuration, or any custom fields. All values are preserved.',
               example: {
                 temperature: 22.5,
                 humidity: 65,
@@ -372,7 +431,8 @@ export function WebhookConfigDialog({
               },
             },
           },
-          description: 'Device information. Only "id" is required - all other fields are optional.',
+          description:
+            'Device information. Only "id" is required - all other fields are optional.',
         },
         Error: {
           type: 'object',
@@ -405,9 +465,13 @@ export function WebhookConfigDialog({
     setLoading(true)
     try {
       const response = await edgeFunctions.integrations.list(organizationId)
-      
+
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to load integrations'
+        )
       }
 
       const integrations = (response.data as any)?.integrations || []
@@ -442,19 +506,23 @@ export function WebhookConfigDialog({
     setTestResult(null)
 
     try {
-      const result: any = await integrationService.testIntegration(integrationId, 'webhook')
+      const result: any = await integrationService.testIntegration(
+        integrationId,
+        'webhook'
+      )
       setTestResult({
         success: result.success,
-        message: result.message || 'Test webhook sent successfully'
+        message: result.message || 'Test webhook sent successfully',
       })
-      
+
       if (result.success) {
         toast.success('Test webhook sent successfully!')
       } else {
         toast.error(result.message || 'Failed to send test webhook')
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to send test webhook'
+      const message =
+        error instanceof Error ? error.message : 'Failed to send test webhook'
       setTestResult({ success: false, message })
       toast.error(message)
     } finally {
@@ -492,12 +560,18 @@ export function WebhookConfigDialog({
       }
 
       if (!response.success) {
-        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
-        
-        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+        let errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to save integration'
+
+        if (
+          errorMsg.includes('duplicate key') ||
+          errorMsg.includes('unique constraint')
+        ) {
           errorMsg = `A webhook integration with the name "${config.name}" already exists. Please choose a different name.`
         }
-        
+
         throw new Error(errorMsg)
       }
 
@@ -533,7 +607,9 @@ export function WebhookConfigDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>NetNeural Webhook URL (Use this in your external platform)</Label>
+            <Label>
+              NetNeural Webhook URL (Use this in your external platform)
+            </Label>
             <div className="flex gap-2">
               <Input
                 readOnly
@@ -550,7 +626,8 @@ export function WebhookConfigDialog({
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Configure this URL in your external IoT platform (Golioth, AWS IoT, etc.) to send webhooks to NetNeural
+              Configure this URL in your external IoT platform (Golioth, AWS
+              IoT, etc.) to send webhooks to NetNeural
             </p>
           </div>
 
@@ -566,7 +643,9 @@ export function WebhookConfigDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => copyToClipboard(integrationId || generatedApiKey)}
+                onClick={() =>
+                  copyToClipboard(integrationId || generatedApiKey)
+                }
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -586,42 +665,52 @@ export function WebhookConfigDialog({
               placeholder="Secret from your external platform"
             />
             <p className="text-sm text-muted-foreground">
-              If your external platform signs webhooks, enter the secret key here for verification
+              If your external platform signs webhooks, enter the secret key
+              here for verification
             </p>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <h4 className="font-semibold text-sm mb-2 text-blue-900 dark:text-blue-100">How to Configure</h4>
-            <ol className="text-sm space-y-1 text-blue-800 dark:text-blue-200 list-decimal list-inside">
+          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+            <h4 className="mb-2 text-sm font-semibold text-blue-900 dark:text-blue-100">
+              How to Configure
+            </h4>
+            <ol className="list-inside list-decimal space-y-1 text-sm text-blue-800 dark:text-blue-200">
               <li>Copy the NetNeural Webhook URL above</li>
               <li>Go to your external IoT platform&apos;s webhook settings</li>
               <li>Add our webhook URL as the destination</li>
               <li>Add X-Integration-ID header with the value shown above</li>
-              <li>If your platform requires signature verification, enter the secret key</li>
+              <li>
+                If your platform requires signature verification, enter the
+                secret key
+              </li>
             </ol>
           </div>
         </TabsContent>
 
-
         <TabsContent value="openapi" className="space-y-4 py-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between text-lg">
                 OpenAPI 3.0 Specification
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(JSON.stringify(openApiSpec, null, 2))}
+                    onClick={() =>
+                      copyToClipboard(JSON.stringify(openApiSpec, null, 2))
+                    }
                   >
-                    <Copy className="h-4 w-4 mr-2" />
+                    <Copy className="mr-2 h-4 w-4" />
                     Copy Spec
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const blob = new Blob([JSON.stringify(openApiSpec, null, 2)], { type: 'application/json' })
+                      const blob = new Blob(
+                        [JSON.stringify(openApiSpec, null, 2)],
+                        { type: 'application/json' }
+                      )
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
@@ -629,17 +718,18 @@ export function WebhookConfigDialog({
                       a.click()
                     }}
                   >
-                    <FileCode className="h-4 w-4 mr-2" />
+                    <FileCode className="mr-2 h-4 w-4" />
                     Download
                   </Button>
                 </div>
               </CardTitle>
               <CardDescription>
-                Import this specification into tools like Postman, Insomnia, or API documentation generators
+                Import this specification into tools like Postman, Insomnia, or
+                API documentation generators
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto max-h-96">
+              <pre className="max-h-96 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs">
                 {JSON.stringify(openApiSpec, null, 2)}
               </pre>
             </CardContent>
@@ -647,24 +737,28 @@ export function WebhookConfigDialog({
         </TabsContent>
       </Tabs>
 
-        {testResult && (
-          <div className={`p-3 rounded-md flex items-start gap-2 ${
-            testResult.success ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200'
-          }`}>
-            {testResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            ) : (
-              <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            )}
-            <div className="text-sm">{testResult.message}</div>
-          </div>
-        )}
+      {testResult && (
+        <div
+          className={`flex items-start gap-2 rounded-md p-3 ${
+            testResult.success
+              ? 'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200'
+              : 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200'
+          }`}
+        >
+          {testResult.success ? (
+            <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          ) : (
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          )}
+          <div className="text-sm">{testResult.message}</div>
+        </div>
+      )}
 
-      <div className="flex justify-end gap-2 pt-4 border-t">
+      <div className="flex justify-end gap-2 border-t pt-4">
         {integrationId && (
-          <Button 
-            variant="secondary" 
-            onClick={handleTest} 
+          <Button
+            variant="secondary"
+            onClick={handleTest}
             disabled={testing || loading}
           >
             {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -685,20 +779,20 @@ export function WebhookConfigDialog({
   // Render as page or dialog based on mode
   if (mode === 'page') {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
               {integrationId ? 'Edit' : 'Add'} Custom Webhook Integration
             </h2>
-            <p className="text-muted-foreground">Configure your custom webhook settings</p>
+            <p className="text-muted-foreground">
+              Configure your custom webhook settings
+            </p>
           </div>
         </div>
 
         <Card>
-          <CardContent className="pt-6">
-            {renderContent()}
-          </CardContent>
+          <CardContent className="pt-6">{renderContent()}</CardContent>
         </Card>
       </div>
     )
@@ -706,7 +800,7 @@ export function WebhookConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {integrationId ? 'Edit' : 'Add'} Custom Webhook Integration

@@ -11,6 +11,7 @@ I've added debug logging to the code. Please do this:
 5. **Look for these debug messages:**
 
 You should see:
+
 ```
 🔍 getCurrentUser Debug: {
   email: "superadmin@netneural.ai",
@@ -21,6 +22,7 @@ You should see:
 ```
 
 And when you click the organization dropdown:
+
 ```
 🔍 OrganizationSwitcher Debug: {
   userEmail: "superadmin@netneural.ai",
@@ -35,30 +37,37 @@ And when you click the organization dropdown:
 ## Step 2: What the Console Tells You
 
 ### Scenario A: `isSuperAdmin: false` or `undefined`
+
 **Problem:** User role not loading correctly from database
-**Solution:** 
+**Solution:**
+
 ```sql
 -- Run in Supabase SQL Editor
-UPDATE users 
-SET role = 'super_admin', 
-    organization_id = NULL 
+UPDATE users
+SET role = 'super_admin',
+    organization_id = NULL
 WHERE email = 'superadmin@netneural.ai';
 ```
+
 Then **log out and log back in**.
 
 ### Scenario B: `isSuperAdmin: true` but still not showing
+
 **Problem:** React not re-rendering or component cache issue
 **Solution:**
+
 1. Clear browser cache: Ctrl+Shift+Delete
 2. Clear localStorage: In Console tab, type: `localStorage.clear()`
 3. Hard refresh: Ctrl+Shift+R
 4. Log out and log back in
 
 ### Scenario C: User is null or undefined
+
 **Problem:** Not logged in or session expired
 **Solution:** Log in again at `/auth/login`
 
 ### Scenario D: `showCreateButton: false`
+
 **Problem:** Component is being called with `showCreateButton={false}`
 **Solution:** Check where OrganizationSwitcher is used in the sidebar
 
@@ -67,18 +76,19 @@ Then **log out and log back in**.
 Open Supabase Dashboard → SQL Editor → Run:
 
 ```sql
-SELECT 
+SELECT
   id,
-  email, 
-  role, 
+  email,
+  role,
   organization_id,
   full_name,
   is_active
-FROM users 
+FROM users
 WHERE email = 'superadmin@netneural.ai';
 ```
 
 **Expected Result:**
+
 ```
 id: 10000000-0000-0000-0000-000000000000
 email: superadmin@netneural.ai
@@ -89,10 +99,11 @@ is_active: true
 ```
 
 If the role is NOT `super_admin`, run:
+
 ```sql
-UPDATE users 
-SET role = 'super_admin', 
-    organization_id = NULL 
+UPDATE users
+SET role = 'super_admin',
+    organization_id = NULL
 WHERE email = 'superadmin@netneural.ai';
 ```
 
@@ -108,6 +119,7 @@ location.reload();
 ```
 
 Then:
+
 1. Log out
 2. Close ALL browser tabs
 3. Open new tab
@@ -123,6 +135,7 @@ Need to see where `<OrganizationSwitcher />` is used in the sidebar/navigation.
 ## What to Report Back
 
 Please share:
+
 1. **Console output** - Copy the debug messages from console
 2. **Database query result** - What role does the user have?
 3. **Are you logged in?** - Check if you see your email in the sidebar
@@ -142,6 +155,7 @@ When you click the organization dropdown in the sidebar, you should see:
 ```
 
 The "Create Organization" button should:
+
 - Be at the bottom of the dropdown
 - Have a blue color (text-blue-600)
 - Have a "+" icon
@@ -157,11 +171,11 @@ Run these in your browser console (F12):
 // Check localStorage
 console.log('LocalStorage:', {
   currentOrg: localStorage.getItem('currentOrganization'),
-  userOrgs: localStorage.getItem('userOrganizations')
-});
+  userOrgs: localStorage.getItem('userOrganizations'),
+})
 
 // Check if React is loaded
-console.log('React version:', window.React?.version || 'Not loaded');
+console.log('React version:', window.React?.version || 'Not loaded')
 
 // Force reload user context (if available)
 // This would need to be exposed by UserContext
@@ -175,7 +189,8 @@ Based on experience, the most common issue is:
 
 **You're still logged in with an OLD session from before we added the super admin check.**
 
-**FIX:** 
+**FIX:**
+
 1. Click your profile menu in the sidebar
 2. Click "Sign Out"
 3. Wait 2 seconds

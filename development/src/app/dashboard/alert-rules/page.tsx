@@ -1,13 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Plus, Power, PowerOff, Copy, Trash2, Edit } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
@@ -15,25 +23,31 @@ import type { AlertRule } from '@/lib/edge-functions/api/alert-rules'
 export default function AlertRulesPage() {
   const router = useRouter()
   const { currentOrganization } = useOrganization()
+  const { fmt } = useDateFormatter()
   const [rules, setRules] = useState<AlertRule[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'telemetry' | 'offline'>('all')
+  const activeOrgRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (currentOrganization) {
+      activeOrgRef.current = currentOrganization.id
       fetchRules()
     }
   }, [currentOrganization, filter])
 
   const fetchRules = async () => {
     if (!currentOrganization) return
+    const fetchOrgId = currentOrganization.id
 
     try {
       setLoading(true)
       const response = await edgeFunctions.alertRules.list(
-        currentOrganization.id,
+        fetchOrgId,
         filter !== 'all' ? { rule_type: filter } : undefined
       )
+
+      if (activeOrgRef.current !== fetchOrgId) return // org switched, discard stale data
 
       if (response.success && response.data) {
         setRules(response.data)
@@ -41,20 +55,23 @@ export default function AlertRulesPage() {
         toast.error('Failed to load rules')
       }
     } catch (error) {
+      if (activeOrgRef.current !== fetchOrgId) return
       console.error('Error loading rules:', error)
       toast.error('Failed to load rules')
     } finally {
-      setLoading(false)
+      if (activeOrgRef.current === fetchOrgId) setLoading(false)
     }
   }
 
   const handleToggle = async (ruleId: string, enabled: boolean) => {
     try {
       const response = await edgeFunctions.alertRules.toggle(ruleId, !enabled)
-      
+
       if (response.success) {
         setRules((prev) =>
-          prev.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !enabled } : rule))
+          prev.map((rule) =>
+            rule.id === ruleId ? { ...rule, enabled: !enabled } : rule
+          )
         )
         toast.success(`Rule ${!enabled ? 'enabled' : 'disabled'}`)
       } else {
@@ -69,7 +86,7 @@ export default function AlertRulesPage() {
   const handleDuplicate = async (ruleId: string) => {
     try {
       const response = await edgeFunctions.alertRules.duplicate(ruleId)
-      
+
       if (response.success) {
         toast.success('Rule duplicated')
         await fetchRules()
@@ -89,7 +106,7 @@ export default function AlertRulesPage() {
 
     try {
       const response = await edgeFunctions.alertRules.delete(ruleId)
-      
+
       if (response.success) {
         setRules((prev) => prev.filter((rule) => rule.id !== ruleId))
         toast.success('Rule deleted')
@@ -102,9 +119,24 @@ export default function AlertRulesPage() {
     }
   }
 
+  if (!currentOrganization) {
+    return (
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+        <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
+          <div className="space-y-3 text-center">
+            <p className="text-muted-foreground">No organization selected</p>
+            <p className="text-sm text-muted-foreground">
+              Please select an organization from the sidebar to view alert rules
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <LoadingSpinner />
       </div>
     )
@@ -113,11 +145,22 @@ export default function AlertRulesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Alert Rules</h1>
-          <p className="text-muted-foreground mt-1">
-            Create automated rules to monitor your devices and trigger actions
-          </p>
+        <div className="flex items-center gap-3">
+          <OrganizationLogo
+            settings={currentOrganization?.settings}
+            name={currentOrganization?.name || 'NetNeural'}
+            size="xl"
+          />
+          <div>
+            <h1 className="text-3xl font-bold">
+              {currentOrganization?.name
+                ? `${currentOrganization.name} Alert Rules`
+                : 'Alert Rules'}
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              Create automated rules to monitor your devices and trigger actions
+            </p>
+          </div>
         </div>
         <Button onClick={() => router.push('/dashboard/alert-rules/new')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -149,7 +192,7 @@ export default function AlertRulesPage() {
       {rules.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No alert rules yet</p>
+            <p className="mb-4 text-muted-foreground">No alert rules yet</p>
             <Button onClick={() => router.push('/dashboard/alert-rules/new')}>
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Rule
@@ -169,7 +212,9 @@ export default function AlertRulesPage() {
                         {rule.enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
                       <Badge variant="outline">
-                        {rule.rule_type === 'telemetry' ? 'Telemetry' : 'Offline Detection'}
+                        {rule.rule_type === 'telemetry'
+                          ? 'Telemetry'
+                          : 'Offline Detection'}
                       </Badge>
                     </div>
                     {rule.description && (
@@ -192,7 +237,9 @@ export default function AlertRulesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/alert-rules/${rule.id}/edit`)}
+                      onClick={() =>
+                        router.push(`/dashboard/alert-rules/${rule.id}/edit`)
+                      }
                       title="Edit rule"
                     >
                       <Edit className="h-4 w-4" />
@@ -217,7 +264,7 @@ export default function AlertRulesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                   <div>
                     <p className="text-muted-foreground">Device Scope</p>
                     <p className="font-medium">
@@ -228,17 +275,21 @@ export default function AlertRulesPage() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Actions</p>
-                    <p className="font-medium">{rule.actions.length} configured</p>
+                    <p className="font-medium">
+                      {rule.actions.length} configured
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Cooldown</p>
-                    <p className="font-medium">{rule.cooldown_minutes} minutes</p>
+                    <p className="font-medium">
+                      {rule.cooldown_minutes} minutes
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Last Triggered</p>
                     <p className="font-medium">
                       {rule.last_triggered_at
-                        ? new Date(rule.last_triggered_at).toLocaleString()
+                        ? fmt.dateTime(rule.last_triggered_at)
                         : 'Never'}
                     </p>
                   </div>

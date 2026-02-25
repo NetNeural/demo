@@ -30,11 +30,13 @@
 
 **Problem:**
 You have extensive custom CSS in `globals.css` alongside Tailwind:
+
 - Custom `.btn`, `.card`, `.nav-*`, `.stat-*` classes
 - CSS-in-JS with `<style jsx>` in components
 - ~1355 lines of custom CSS
 
 **Why It's an Issue:**
+
 - Defeats Tailwind's utility-first approach
 - Harder to maintain (two styling systems)
 - Larger bundle size
@@ -42,6 +44,7 @@ You have extensive custom CSS in `globals.css` alongside Tailwind:
 - Can't benefit from Tailwind's JIT compiler for custom classes
 
 **Examples Found:**
+
 ```tsx
 // ❌ Using custom CSS classes
 <div className="card">
@@ -59,6 +62,7 @@ You have extensive custom CSS in `globals.css` alongside Tailwind:
 #### 2. **Duplicate Styling Systems**
 
 You have:
+
 - `src/components/ui/card.tsx` (Tailwind-based) ✅
 - `.card` CSS class in globals.css ❌
 - Components using both inconsistently
@@ -66,6 +70,7 @@ You have:
 #### 3. **Inline CSS-in-JS**
 
 Found in:
+
 - `src/app/auth/login/page.tsx` - `<style jsx>`
 - `src/components/dashboard/DashboardShell.tsx` - `<style jsx>`
 - `src/app/dashboard/page-complex.tsx` - `<style jsx>`
@@ -75,6 +80,7 @@ Found in:
 #### 4. **Inconsistent Component Usage**
 
 Some pages use:
+
 - Custom CSS classes: `<div className="card">`
 - UI components: `<Card>`
 - Mixed: Both in same file
@@ -88,6 +94,7 @@ Some pages use:
 **Login Page Example:**
 
 **Before:**
+
 ```tsx
 <div className="card">
   <div className="card-content">
@@ -110,6 +117,7 @@ Some pages use:
 ```
 
 **After:**
+
 ```tsx
 <Card>
   <CardContent>
@@ -128,6 +136,7 @@ Some pages use:
 #### B. Convert Dashboard Shell to Tailwind
 
 **Before:**
+
 ```tsx
 <nav className={`nav-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
   <div className="nav-header">
@@ -138,6 +147,7 @@ Some pages use:
 ```
 
 **After:**
+
 ```tsx
 <nav className={cn(
   "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r",
@@ -151,8 +161,8 @@ Some pages use:
   <div className="flex flex-col gap-1 p-4">
     <Link className={cn(
       "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-      pathname === item.href 
-        ? "bg-primary text-primary-foreground" 
+      pathname === item.href
+        ? "bg-primary text-primary-foreground"
         : "hover:bg-muted"
     )}>
 ```
@@ -160,11 +170,13 @@ Some pages use:
 #### C. Remove globals.css Custom Classes
 
 Keep only:
+
 - Tailwind directives (`@tailwind`)
 - CSS variables for theme (HSL values)
 - Global resets (if needed)
 
 Remove:
+
 - All `.btn-*`, `.card-*`, `.nav-*`, `.stat-*` classes
 - Custom spacing/typography variables (use Tailwind)
 - Shadow definitions (use Tailwind shadows)
@@ -174,12 +186,14 @@ Remove:
 #### D. Standardize Card Usage
 
 Replace all instances of:
+
 ```tsx
 <div className="card">
   <div className="card-content">
 ```
 
 With:
+
 ```tsx
 <Card>
   <CardContent>
@@ -188,6 +202,7 @@ With:
 #### E. Create Layout Components
 
 Instead of CSS classes for layouts, create:
+
 - `DashboardLayout` component
 - `PageHeader` component
 - `StatsGrid` component
@@ -197,6 +212,7 @@ Instead of CSS classes for layouts, create:
 #### F. Add Missing UI Components
 
 Create Tailwind-based versions of:
+
 - `Badge` component (for status indicators)
 - `Alert` component (styled consistently)
 - `Avatar` component (for user avatars)
@@ -205,6 +221,7 @@ Create Tailwind-based versions of:
 #### G. Optimize Tailwind Config
 
 Add to `tailwind.config.js`:
+
 ```javascript
 theme: {
   extend: {
@@ -222,34 +239,40 @@ safelist: [], // Only if you have dynamic classes
 ## 📋 Action Plan
 
 ### Step 1: Audit & Document (15 min)
+
 - [ ] Count files using custom CSS classes
 - [ ] List all custom CSS classes in use
 - [ ] Identify critical pages to refactor first
 
 ### Step 2: Create Migration Guide (30 min)
+
 - [ ] Document custom class → Tailwind mapping
 - [ ] Create component replacement guide
 - [ ] Set up linting rules to catch custom classes
 
 ### Step 3: Refactor Core Components (2-3 hours)
+
 1. [ ] DashboardShell.tsx → Full Tailwind
 2. [ ] Login page → Remove `<style jsx>`
 3. [ ] Dashboard page → Use UI components
 4. [ ] Settings page → Replace custom classes
 
 ### Step 4: Clean Up globals.css (1 hour)
+
 - [ ] Remove custom class definitions
 - [ ] Keep only CSS variables
 - [ ] Add Tailwind directives
 - [ ] Verify nothing breaks
 
 ### Step 5: Create Missing Components (2 hours)
+
 - [ ] StatsCard component
 - [ ] PageHeader component
 - [ ] Navigation component
 - [ ] Empty state components
 
 ### Step 6: Update Documentation (30 min)
+
 - [ ] Component usage guide
 - [ ] Styling conventions
 - [ ] Code examples
@@ -259,6 +282,7 @@ safelist: [], // Only if you have dynamic classes
 ### 1. Add ESLint Rule to Catch Custom Classes
 
 Create `.eslintrc.json` rule:
+
 ```json
 {
   "rules": {
@@ -276,9 +300,10 @@ Create `.eslintrc.json` rule:
 ### 2. Create Utility Components
 
 **StatsCard.tsx:**
+
 ```tsx
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { Card, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface StatsCardProps {
   icon: React.ReactNode
@@ -289,13 +314,13 @@ interface StatsCardProps {
   className?: string
 }
 
-export function StatsCard({ 
-  icon, 
-  label, 
-  value, 
-  change, 
-  trend, 
-  className 
+export function StatsCard({
+  icon,
+  label,
+  value,
+  change,
+  trend,
+  className,
 }: StatsCardProps) {
   return (
     <Card className={className}>
@@ -308,12 +333,14 @@ export function StatsCard({
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="text-2xl font-bold">{value}</p>
             {change && (
-              <p className={cn(
-                "text-xs",
-                trend === 'up' && "text-green-600",
-                trend === 'down' && "text-red-600",
-                trend === 'neutral' && "text-gray-600"
-              )}>
+              <p
+                className={cn(
+                  'text-xs',
+                  trend === 'up' && 'text-green-600',
+                  trend === 'down' && 'text-red-600',
+                  trend === 'neutral' && 'text-gray-600'
+                )}
+              >
                 {change}
               </p>
             )}
@@ -328,6 +355,7 @@ export function StatsCard({
 ### 3. Create Page Header Component
 
 **PageHeader.tsx:**
+
 ```tsx
 interface PageHeaderProps {
   title: string
@@ -337,11 +365,11 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between pb-4 border-b">
+    <div className="flex items-center justify-between border-b pb-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
         {description && (
-          <p className="text-muted-foreground mt-1">{description}</p>
+          <p className="mt-1 text-muted-foreground">{description}</p>
         )}
       </div>
       {action && <div>{action}</div>}
@@ -353,17 +381,20 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
 ## 📊 Expected Benefits
 
 ### Performance
+
 - **Bundle Size**: Reduce by ~20-30% (remove unused custom CSS)
 - **JIT Compilation**: Faster builds with pure Tailwind
 - **CSS Purging**: Better tree-shaking
 
 ### Maintainability
+
 - **Single Source of Truth**: Tailwind utilities only
 - **Consistency**: All components styled the same way
 - **Easier Onboarding**: New devs only learn Tailwind
 - **Better IDE Support**: Tailwind IntelliSense works better
 
 ### Developer Experience
+
 - **Faster Development**: No context switching between CSS and Tailwind
 - **Better AI Assistance**: Tailwind MCP server works optimally
 - **Less Code**: Utility classes are more concise
@@ -372,17 +403,20 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
 ## 🎯 Recommendation Summary
 
 **Immediate Actions:**
+
 1. ✅ Keep using Tailwind (you're already set up)
 2. 🔄 Gradually replace custom CSS classes with Tailwind
 3. 📦 Create reusable components for common patterns
 4. 🧹 Clean up globals.css to only keep theme variables
 
 **Long-term Goal:**
+
 - Pure Tailwind + UI components approach
 - No custom CSS classes (except for very specific edge cases)
 - All styling through utility classes and component variants
 
 **Estimated Refactoring Time:**
+
 - **Quick wins**: 1-2 days (core components)
 - **Full refactor**: 1-2 weeks (entire codebase)
 - **Can be done incrementally** (doesn't break existing code)

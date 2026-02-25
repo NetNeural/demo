@@ -1,0 +1,193 @@
+# 🏭 Production Environment Deployment (Sentinel)
+# This workflow deploys to the Production (Sentinel) environment.
+#
+# Environment Details:
+#   - Repository: NetNeural/MonoRepo-Staging
+#   - Domain: sentinel.netneural.ai (custom domain)
+#   - Supabase: Production project (bldojxpockljyivldxwf)
+#   - Data: LIVE production data
+#   - Branch: main
+#
+# ⚠️ PRODUCTION: This deploys to the live customer-facing environment.
+# Ensure all changes have been validated in staging before merging to main.
+
+name: Deploy Production (Sentinel) to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'development/**'
+      - '.github/workflows/deploy-production.yml'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if no changes'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "production-deployment"
+  cancel-in-progress: false  # Never cancel production deploys
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://sentinel.netneural.ai
+
+    defaults:
+      run:
+        working-directory: ./development
+
+    steps:
+      - name: 📥 Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install dependencies
+        run: npm install --legacy-peer-deps --ignore-scripts
+
+      - name: 🏗️ Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🚀 Deploy edge functions
+        run: npx supabase functions deploy --project-ref bldojxpockljyivldxwf --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: false  # Edge function failures BLOCK production deploy
+
+      - name: 🧹 Lint code
+        run: npm run lint
+        continue-on-error: true
+
+      - name: 🗑️ Clear build cache
+        run: |
+          rm -rf .next
+          rm -rf out
+          rm -rf node_modules/.cache
+          rm -rf .turbo
+          rm -rf .swc
+          rm -rf node_modules/.vite
+          find . -name "*.tsbuildinfo" -delete
+          echo "✅ Build cache cleared completely"
+
+      - name: ✅ Verify environment
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          GOLIOTH_API_KEY: ${{ secrets.PROD_GOLIOTH_API_KEY }}
+        run: |
+          echo "🔍 Production Environment Configuration:"
+          echo "NODE_ENV: $NODE_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:20}..."
+          echo "GOLIOTH_API_KEY: ${GOLIOTH_API_KEY:0:10}..."
+          echo "Target: sentinel.netneural.ai"
+          echo "Project: bldojxpockljyivldxwf"
+
+      - name: 🏗️ Build application
+        env:
+          NODE_ENV: production
+          BUILD_MODE: static
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          GOLIOTH_API_KEY: ${{ secrets.PROD_GOLIOTH_API_KEY }}
+          GOLIOTH_PROJECT_ID: ${{ secrets.GOLIOTH_PROJECT_ID || 'nn-cellular-alerts' }}
+          NEXT_PUBLIC_APP_URL: "https://sentinel.netneural.ai"
+          NEXT_PUBLIC_APP_NAME: "NetNeural IoT Platform"
+          NEXT_PUBLIC_APP_VERSION: "1.0.0"
+        run: |
+          echo "🚀 Building NetNeural Platform for PRODUCTION..."
+          echo "Target: https://sentinel.netneural.ai/"
+
+          # Create CNAME file for custom domain
+          echo "sentinel.netneural.ai" > public/CNAME
+          echo "✅ Created CNAME for custom domain"
+
+          # Disable instrumentation for static build
+          mv instrumentation.ts instrumentation.ts.disabled 2>/dev/null || true
+
+          # Clean build artifacts
+          rm -rf .next out
+
+          # Build static site
+          npm run build
+
+          # Restore instrumentation
+          mv instrumentation.ts.disabled instrumentation.ts 2>/dev/null || true
+
+          # Verify CNAME is included in build
+          if [ ! -f out/CNAME ]; then
+            echo "⚠️  WARNING: CNAME not found in build output, creating..."
+            echo "sentinel.netneural.ai" > out/CNAME
+          fi
+
+          echo "✅ Production build completed!"
+          echo "📁 Output:"
+          ls -la out/
+          echo ""
+          echo "🌐 Production deployment target: https://sentinel.netneural.ai/"
+
+      - name: 📤 Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './development/out'
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ Deployment Success
+        if: success()
+        run: |
+          echo "🎉 PRODUCTION deployment successful!"
+          echo "🌐 Production URL: https://sentinel.netneural.ai/"
+          echo "📊 GitHub Pages: ${{ steps.deployment.outputs.page_url }}"
+          echo "🗄️ Database: ${{ secrets.PROD_SUPABASE_URL }}"
+          echo ""
+          echo "Environment Map:"
+          echo "   🏭 Production: https://sentinel.netneural.ai (main branch) ← THIS"
+          echo "   🧪 Staging: https://demo-stage.netneural.ai (staging branch)"
+          echo "   🔧 Development: https://demo.netneural.ai (develop branch)"
+
+      - name: 🔍 Post-Deployment Verification
+        if: success()
+        run: |
+          echo "Waiting for GitHub Pages to update (30s)..."
+          sleep 30
+
+          echo "Testing production endpoint..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://sentinel.netneural.ai/)
+
+          if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ]; then
+            echo "✅ Production site is accessible (HTTP $response)"
+            echo "   URL: https://sentinel.netneural.ai/"
+          else
+            echo "⚠️ Production site returned status: $response"
+            echo "   This may be normal during DNS propagation (first deployment)"
+            echo "   DNS can take up to 24 hours to propagate fully"
+          fi
+
+      - name: 📧 Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ PRODUCTION deployment FAILED!"
+          echo "🚨 IMMEDIATE ATTENTION REQUIRED"
+          echo "Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

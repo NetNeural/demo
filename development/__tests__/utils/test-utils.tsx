@@ -1,6 +1,6 @@
 /**
  * Test Utilities for React Components
- * 
+ *
  * Custom render function that wraps components with necessary providers
  * (OrganizationProvider, UserProvider, etc.) for testing.
  */
@@ -24,7 +24,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
     loading: boolean
     error: string | null
   }
-  
+
   /**
    * Initial user context value
    */
@@ -37,7 +37,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
     isOrgAdmin: boolean
     role: string | null
   }
-  
+
   /**
    * Whether to skip provider wrappers (for testing providers themselves)
    */
@@ -73,11 +73,7 @@ export const mockUser = {
  * Create a wrapper component with all necessary providers
  */
 function createWrapper(options: CustomRenderOptions = {}) {
-  const {
-    organizationValue,
-    userValue,
-    skipProviders = false,
-  } = options
+  const { organizationValue, userValue, skipProviders = false } = options
 
   if (skipProviders) {
     return ({ children }: { children: React.ReactNode }) => <>{children}</>
@@ -116,15 +112,15 @@ function createWrapper(options: CustomRenderOptions = {}) {
 
 /**
  * Custom render function that includes providers
- * 
+ *
  * @example
  * ```tsx
  * import { customRender, screen } from '@/__tests__/utils/test-utils'
- * 
+ *
  * customRender(<MyComponent />)
  * expect(screen.getByText('Hello')).toBeInTheDocument()
  * ```
- * 
+ *
  * @example With custom context values
  * ```tsx
  * customRender(<MyComponent />, {

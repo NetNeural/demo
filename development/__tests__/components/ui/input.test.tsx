@@ -75,7 +75,9 @@ describe('Input Component - Real Source Code Tests', () => {
     test('should update controlled input', () => {
       const TestComponent = () => {
         const [value, setValue] = React.useState('')
-        return <Input value={value} onChange={(e) => setValue(e.target.value)} />
+        return (
+          <Input value={value} onChange={(e) => setValue(e.target.value)} />
+        )
       }
       const { container } = render(<TestComponent />)
       const input = container.querySelector('input') as HTMLInputElement

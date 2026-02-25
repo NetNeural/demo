@@ -3,9 +3,14 @@
 *Enterprise-Grade IoT Platform-as-a-Service Solution*
 
 [![GitHub](https://img.shields.io/badge/GitHub-NetNeural/MonoRepo-blue.svg)](https://github.com/NetNeural/MonoRepo)
-[![MVP Progress](https://img.shields.io/badge/MVP_Progress-78%25-green.svg)](docs/README.md)
+[![MVP Progress](https://img.shields.io/badge/MVP_Progress-92%25-brightgreen.svg)](docs/README.md)
 [![Documentation](https://img.shields.io/badge/Documentation-Complete-brightgreen.svg)](docs/README.md)
 [![Market Size](https://img.shields.io/badge/Target_Market-$2.3B-gold.svg)](docs/generated/business/ENHANCED_MARKET_ANALYSIS.md)
+
+[![CI Tests](https://github.com/NetNeural/MonoRepo/actions/workflows/test.yml/badge.svg)](https://github.com/NetNeural/MonoRepo/actions/workflows/test.yml)
+[![Nightly Performance](https://github.com/NetNeural/MonoRepo/actions/workflows/performance.yml/badge.svg)](https://github.com/NetNeural/MonoRepo/actions/workflows/performance.yml)
+[![codecov](https://codecov.io/gh/NetNeural/MonoRepo/branch/main/graph/badge.svg)](https://codecov.io/gh/NetNeural/MonoRepo)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 A comprehensive IoT Platform-as-a-Service (PaaS) solution designed to bridge the gap between developer-friendly platforms and enterprise-grade solutions. NetNeural provides enterprise features at competitive pricing with 67% cost savings compared to traditional IoT platforms.
 
@@ -25,11 +30,12 @@ The NetNeural platform is built on a modern cloud-native microservices architect
 
 ### Technology Stack
 
-- **Backend**: Go microservices (31 services) - Cloud-native, high-performance
+- **Backend**: Go microservices (31 services) + Next.js 15 (Supabase-first) - Cloud-native, high-performance
 - **Frontend**: React 19 + TypeScript (7 applications) - Modern, responsive UI
 - **Mobile**: Native iOS (Swift), Android (Java) - Real-time alerts and monitoring
 - **Infrastructure**: Docker, Kubernetes, GitHub Actions - Production-ready DevOps
-- **Communication**: MQTT, WebSocket, REST APIs - Multi-protocol IoT connectivity
+- **Communication**: MQTT (persistent subscribers + Edge Functions), WebSocket, REST APIs - Multi-protocol IoT connectivity
+- **IoT Integration**: Dual MQTT architecture (HTTP push + persistent subscriptions) - Flexible device connectivity
 - **Databases**: PostgreSQL (primary), MySQL - Enterprise data management
 - **Security**: JWT authentication, role-based access, encryption - Enterprise security
 - **Monitoring**: Real-time dashboards, predictive analytics - Business intelligence
@@ -45,7 +51,40 @@ The NetNeural platform is built on a modern cloud-native microservices architect
 | **Overall Score** | **7.0/10** | **8.0/10** | **7.0/10** | **7.3/10** |
 
 *See [Complete Competitive Analysis](docs/generated/business/COMPETITIVE_ANALYSIS.md) for detailed comparison.*
+## 🌐 IoT Integration Capabilities
 
+### Dual MQTT Architecture
+
+NetNeural provides **flexible MQTT integration** with two complementary approaches:
+
+#### 1. HTTP Push Model (Stateless)
+- **Edge Function**: `mqtt-ingest` (Supabase Edge Function)
+- **Use Case**: Devices push data via HTTP POST
+- **Advantages**: Serverless, auto-scaling, no infrastructure maintenance
+- **Best For**: HTTP-capable devices, cloud-native architectures
+
+#### 2. MQTT Subscribe Model (Stateful)  
+- **Service**: Persistent MQTT Subscriber (Docker containerized)
+- **Location**: `development/services/mqtt-subscriber/`
+- **Use Case**: Subscribe to MQTT topics for inbound messages
+- **Features**:
+  - ✅ Multi-broker support (connect to multiple MQTT brokers simultaneously)
+  - ✅ Auto-reconnection with exponential backoff
+  - ✅ Structured logging with Pino
+  - ✅ Telemetry parsing (standard, VMark, custom formats)
+  - ✅ Real-time database storage
+  - ✅ Activity logging for all MQTT events
+- **Best For**: MQTT-only devices, persistent topic monitoring, real-time subscriptions
+- **Status**: Production-ready (February 2026)
+
+#### Integration Support
+- ✅ **Golioth IoT Platform** - Full integration via Edge Functions
+- ✅ **Generic MQTT Brokers** - Mosquitto, HiveMQ, AWS IoT Core, Azure IoT Hub
+- ✅ **AWS IoT** - Native connectivity
+- ✅ **Azure IoT Hub** - Native connectivity
+- ✅ **Custom Brokers** - Configurable MQTT v3.1.1 and v5.0 support
+
+**See** [MQTT Data Architecture](development/MQTT_DATA_ARCHITECTURE.md) for technical details.
 ## � Business Intelligence & Documentation
 
 ### 📈 Interactive Dashboards

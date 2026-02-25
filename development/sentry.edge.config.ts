@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/nextjs'
 
 // Only initialize Sentry if DSN is configured
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
@@ -13,7 +13,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 
     // Environment
     environment: process.env.NODE_ENV,
-  });
+  })
 } else {
-  console.log('[Sentry] Skipping edge initialization - no DSN configured');
+  console.log('[Sentry] Skipping edge initialization - no DSN configured')
 }

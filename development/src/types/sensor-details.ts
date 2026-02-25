@@ -29,6 +29,7 @@ export interface SensorThreshold {
   last_notification_at: string | null
   notify_user_ids: string[] | null
   notify_emails: string[] | null
+  notify_phone_numbers: string[] | null
   notification_channels: string[] | null
   created_at: string
   updated_at: string
@@ -38,7 +39,7 @@ export interface SensorActivity {
   id: string
   device_id: string
   sensor_type: string
-  activity_type: 
+  activity_type:
     | 'threshold_updated'
     | 'alert_triggered'
     | 'alert_resolved'
@@ -80,6 +81,8 @@ export interface Device {
   id: string
   name: string
   device_type: string
+  device_type_id?: string | null
+  is_test_device?: boolean
   model?: string
   serial_number?: string
   external_device_id?: string

@@ -3,11 +3,12 @@ import { createClient } from '@/lib/supabase/client'
 export interface UserProfile {
   id: string
   email: string
-  organizationId: string | null  // NULL for super admins
+  fullName: string | null
+  organizationId: string | null // NULL for super admins
   organizationName: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
-  passwordChangeRequired: boolean  // True if user has temp password and must change it
+  passwordChangeRequired: boolean // True if user has temp password and must change it
 }
 
 /**
@@ -16,21 +17,32 @@ export interface UserProfile {
  */
 export async function getCurrentUser(): Promise<UserProfile | null> {
   const supabase = createClient()
-  
+
   // Get authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
   if (!user || authError) {
     return null
   }
 
   // Get user's profile with organization info
   // Note: organization can be NULL for super admins
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = (await supabase
     .from('users')
-    .select('role, organization_id, password_change_required')
+    .select('role, organization_id, password_change_required, full_name')
     .eq('id', user.id)
-    .single() as { data: { role: string; organization_id: string | null; password_change_required: boolean | null } | null; error: any }
+    .single()) as {
+    data: {
+      role: string
+      organization_id: string | null
+      password_change_required: boolean | null
+      full_name: string | null
+    } | null
+    error: any
+  }
 
   if (profileError || !profile) {
     console.error('Failed to fetch user profile:', profileError)
@@ -45,8 +57,24 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       .select('id, name')
       .eq('id', profile.organization_id)
       .single()
-    
+
     organization = org
+  }
+
+  // Fallback: if organization_id is null on the users row (e.g. created by a
+  // super admin who has no org), look up the first active membership instead.
+  if (!organization && profile.role !== 'super_admin') {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id, organizations(id, name)')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single()
+
+    if (membership?.organizations) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      organization = membership.organizations as any
+    }
   }
 
   const isSuperAdmin = profile.role === 'super_admin'
@@ -57,11 +85,17 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     return {
       id: user.id,
       email: user.email || '',
+      fullName: profile.full_name || null,
       organizationId: null,
       organizationName: null,
-      role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
+      role: (profile.role || 'viewer') as
+        | 'super_admin'
+        | 'org_admin'
+        | 'org_owner'
+        | 'user'
+        | 'viewer',
       isSuperAdmin: true,
-      passwordChangeRequired
+      passwordChangeRequired,
     }
   }
 
@@ -74,11 +108,17 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   return {
     id: user.id,
     email: user.email || '',
+    fullName: profile.full_name || null,
     organizationId: organization.id,
     organizationName: organization.name,
-    role: (profile.role || 'viewer') as 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer',
+    role: (profile.role || 'viewer') as
+      | 'super_admin'
+      | 'org_admin'
+      | 'org_owner'
+      | 'user'
+      | 'viewer',
     isSuperAdmin: false,
-    passwordChangeRequired
+    passwordChangeRequired,
   }
 }
 
@@ -109,9 +149,9 @@ export async function fetchEdgeFunction(
 
   const response = await fetch(url.toString(), {
     headers: {
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!response.ok) {

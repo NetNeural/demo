@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 
 interface Conflict {
   id: string
@@ -37,6 +38,7 @@ export function ConflictResolutionDialog({
   organizationId,
   onResolved,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
@@ -45,7 +47,8 @@ export function ConflictResolutionDialog({
   const loadConflicts = async () => {
     setLoading(true)
     try {
-      const data = await integrationSyncService.getPendingConflicts(organizationId)
+      const data =
+        await integrationSyncService.getPendingConflicts(organizationId)
       setConflicts(data as unknown as Conflict[])
       setCurrentIndex(0)
     } catch (error) {
@@ -63,14 +66,22 @@ export function ConflictResolutionDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, organizationId])
 
-  const handleResolve = async (strategy: 'local_wins' | 'remote_wins' | 'merge') => {
+  const handleResolve = async (
+    strategy: 'local_wins' | 'remote_wins' | 'merge'
+  ) => {
     if (!currentConflict) return
 
     setResolving(true)
     try {
-      const value = strategy === 'remote_wins' ? currentConflict.remote_value : currentConflict.local_value
-      const resolvedValue = typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined
-      
+      const value =
+        strategy === 'remote_wins'
+          ? currentConflict.remote_value
+          : currentConflict.local_value
+      const resolvedValue =
+        typeof value === 'object' && value !== null
+          ? (value as Record<string, unknown>)
+          : undefined
+
       await integrationSyncService.resolveConflict(
         currentConflict.id,
         strategy,
@@ -99,7 +110,9 @@ export function ConflictResolutionDialog({
 
   const currentConflict = conflicts[currentIndex]
 
-  const formatValue = (value: Record<string, unknown> | string | number | boolean | null): string => {
+  const formatValue = (
+    value: Record<string, unknown> | string | number | boolean | null
+  ): string => {
     if (value === null || value === undefined) return 'null'
     if (typeof value === 'object') return JSON.stringify(value, null, 2)
     return String(value)
@@ -114,11 +127,9 @@ export function ConflictResolutionDialog({
             Resolve Device Conflicts
           </DialogTitle>
           <DialogDescription>
-            {conflicts.length === 0 ? (
-              'No pending conflicts'
-            ) : (
-              `Conflict ${currentIndex + 1} of ${conflicts.length}`
-            )}
+            {conflicts.length === 0
+              ? 'No pending conflicts'
+              : `Conflict ${currentIndex + 1} of ${conflicts.length}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -127,17 +138,18 @@ export function ConflictResolutionDialog({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : conflicts.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="py-8 text-center text-muted-foreground">
             <p>No conflicts to resolve</p>
           </div>
         ) : currentConflict ? (
           <div className="space-y-6">
             {/* Device Info */}
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="flex items-center justify-between rounded-lg bg-muted p-4">
               <div>
                 <h4 className="font-medium">{currentConflict.device_name}</h4>
                 <p className="text-sm text-muted-foreground">
-                  Field: <code className="px-1 py-0.5 bg-background rounded">
+                  Field:{' '}
+                  <code className="rounded bg-background px-1 py-0.5">
                     {currentConflict.field_name}
                   </code>
                 </p>
@@ -150,11 +162,11 @@ export function ConflictResolutionDialog({
               {/* Local Value */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-medium text-sm">NetNeural (Local)</h5>
+                  <h5 className="text-sm font-medium">NetNeural (Local)</h5>
                   <Badge variant="outline">Local</Badge>
                 </div>
-                <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <pre className="text-sm overflow-auto max-h-40">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                  <pre className="max-h-40 overflow-auto text-sm">
                     {formatValue(currentConflict.local_value)}
                   </pre>
                 </div>
@@ -164,7 +176,9 @@ export function ConflictResolutionDialog({
                   onClick={() => handleResolve('local_wins')}
                   disabled={resolving}
                 >
-                  {resolving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {resolving && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Keep Local
                 </Button>
               </div>
@@ -172,11 +186,11 @@ export function ConflictResolutionDialog({
               {/* Remote Value */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-medium text-sm">Golioth (Remote)</h5>
+                  <h5 className="text-sm font-medium">Golioth (Remote)</h5>
                   <Badge variant="outline">Remote</Badge>
                 </div>
-                <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                  <pre className="text-sm overflow-auto max-h-40">
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+                  <pre className="max-h-40 overflow-auto text-sm">
                     {formatValue(currentConflict.remote_value)}
                   </pre>
                 </div>
@@ -186,14 +200,16 @@ export function ConflictResolutionDialog({
                   onClick={() => handleResolve('remote_wins')}
                   disabled={resolving}
                 >
-                  {resolving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {resolving && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Keep Remote
                 </Button>
               </div>
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between border-t pt-4">
               <Button
                 variant="ghost"
                 onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
@@ -203,12 +219,16 @@ export function ConflictResolutionDialog({
               </Button>
 
               <p className="text-sm text-muted-foreground">
-                Detected {new Date(currentConflict.detected_at).toLocaleString()}
+                Detected {fmt.dateTime(currentConflict.detected_at)}
               </p>
 
               <Button
                 variant="ghost"
-                onClick={() => setCurrentIndex(Math.min(conflicts.length - 1, currentIndex + 1))}
+                onClick={() =>
+                  setCurrentIndex(
+                    Math.min(conflicts.length - 1, currentIndex + 1)
+                  )
+                }
                 disabled={currentIndex === conflicts.length - 1 || resolving}
               >
                 Next

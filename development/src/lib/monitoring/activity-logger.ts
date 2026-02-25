@@ -1,6 +1,6 @@
 /**
  * Activity Logger for Frontend Integration Providers
- * 
+ *
  * Mirrors the edge function activity-logger.ts but works in frontend/client context
  * Logs all integration activity to integration_activity_log table
  */
@@ -89,7 +89,10 @@ export class FrontendActivityLogger {
   /**
    * Complete an activity log
    */
-  async complete(logId: string | null, update: ActivityLogComplete): Promise<void> {
+  async complete(
+    logId: string | null,
+    update: ActivityLogComplete
+  ): Promise<void> {
     if (!logId) return
 
     try {
@@ -107,20 +110,23 @@ export class FrontendActivityLogger {
         .eq('id', logId)
 
       if (error) {
-        console.error('[ActivityLogger] Failed to complete activity log:', error)
+        console.error(
+          '[ActivityLogger] Failed to complete activity log:',
+          error
+        )
       }
     } catch (error) {
-      console.error('[ActivityLogger] Exception completing activity log:', error)
+      console.error(
+        '[ActivityLogger] Exception completing activity log:',
+        error
+      )
     }
   }
 
   /**
    * Wrap an async operation with automatic activity logging
    */
-  async withLog<T>(
-    params: ActivityLogStart,
-    fn: () => Promise<T>
-  ): Promise<T> {
+  async withLog<T>(params: ActivityLogStart, fn: () => Promise<T>): Promise<T> {
     const startTime = Date.now()
     const logId = await this.start(params)
 
@@ -131,7 +137,10 @@ export class FrontendActivityLogger {
       await this.complete(logId, {
         status: 'success',
         responseTimeMs,
-        responseBody: typeof result === 'object' ? result as Record<string, unknown> : { value: result },
+        responseBody:
+          typeof result === 'object'
+            ? (result as Record<string, unknown>)
+            : { value: result },
       })
 
       return result
@@ -222,14 +231,17 @@ export class FrontendActivityLogger {
     }
 
     const total = data.length
-    const success = data.filter(d => d.status === 'success').length
-    const failed = data.filter(d => ['failed', 'error', 'timeout'].includes(d.status)).length
+    const success = data.filter((d) => d.status === 'success').length
+    const failed = data.filter((d) =>
+      ['failed', 'error', 'timeout'].includes(d.status)
+    ).length
     const responseTimes = data
-      .filter(d => d.response_time_ms !== null)
-      .map(d => d.response_time_ms!)
-    const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a! + b!, 0) / responseTimes.length
-      : null
+      .filter((d) => d.response_time_ms !== null)
+      .map((d) => d.response_time_ms!)
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((a, b) => a! + b!, 0) / responseTimes.length
+        : null
 
     return { total, success, failed, avgResponseTime }
   }

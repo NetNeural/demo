@@ -1,1 +1,597 @@
-{"list":[{"id":"686d5da09c3ca8d766c1672b", "hardwareIds":["20250708180416-c252400001"], "name":"C252400001", "createdAt":"2025-07-08T18:04:16.266Z", "updatedAt":"2025-09-08T18:15:00.710Z", "tagIds":[], "data":null, "lastReport":"2025-11-15T03:05:08.036Z", "status":"-", "metadata":{"update":{"cellgateway-nrf9151-firmware":{"package":"cellgateway-nrf9151-firmware", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-11-14T15:27:59.512133674Z", "version":"1.0.6"}, "main":{"package":"main", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-07-09T16:47:07.441859003Z", "version":"1.2.5"}}, "status":"-", "lastReport":"2025-11-15T03:05:08.036Z", "lastSeenOnline":"2025-11-14T15:27:44.391Z", "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true, "cohortId":"nrf9151-cell-gateways"}, {"id":"68a8a716f4e0923417340f67", "hardwareIds":["20250822172126-nn-gateway-01"], "name":"nn-gateway-01", "createdAt":"2025-08-22T17:21:26.796Z", "updatedAt":"2025-08-22T17:21:26.796Z", "tagIds":[], "data":null, "lastReport":"2025-10-27T18:52:10.861Z", "status":"-", "metadata":{"update":{"main":{"package":"main", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-08-25T17:19:13.504585841Z", "version":"1.2.5"}}, "status":"-", "lastReport":"2025-10-27T18:52:10.861Z", "lastSeenOnline":"2025-08-25T17:19:12.705Z", "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"68bf1cc5425dd2ea93f248a3", "hardwareIds":["20250908181325-c253700003"], "name":"C253700003", "createdAt":"2025-09-08T18:13:25.775Z", "updatedAt":"2025-09-08T18:13:25.775Z", "tagIds":[], "data":null, "lastReport":"2025-11-15T00:06:16.120Z", "status":"-", "metadata":{"update":{"cellgateway-nrf9151-firmware":{"package":"cellgateway-nrf9151-firmware", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-11-10T19:51:27.112283907Z", "version":"1.0.6"}, "main":{"package":"main", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-09-29T20:20:29.762844822Z", "version":"1.0.0"}}, "status":"-", "lastReport":"2025-11-15T00:06:16.120Z", "lastSeenOnline":"2025-11-14T22:40:23.576Z", "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true, "cohortId":"nrf9151-cell-gateways"}, {"id":"68bf3337425dd2ea93f248ce", "hardwareIds":["20250908194911-c253700002"], "name":"C253700002", "createdAt":"2025-09-08T19:49:11.110Z", "updatedAt":"2025-09-08T19:49:11.110Z", "tagIds":[], "data":null, "lastReport":"2025-11-01T01:29:06.557Z", "status":"-", "metadata":{"update":{"cellgateway-nrf9151-firmware":{"package":"cellgateway-nrf9151-firmware", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-11-01T00:02:04.563151338Z", "version":"1.0.6"}}, "status":"-", "lastReport":"2025-11-01T01:29:06.557Z", "lastSeenOnline":"2025-10-31T23:46:43.544Z", "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true, "cohortId":"nrf9151-cell-gateways"}, {"id":"6913a4ccafb9ed23a5fb26a7", "hardwareIds":["20251111210412-temperature-sensor-1"], "name":"Temperature Sensor 1", "createdAt":"2025-11-11T21:04:12.249Z", "updatedAt":"2025-11-11T21:04:12.249Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ccafb9ed23a5fb26a8", "hardwareIds":["20251111210412-humidity-sensor-1"], "name":"Humidity Sensor 1", "createdAt":"2025-11-11T21:04:12.405Z", "updatedAt":"2025-11-11T21:04:12.405Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ccafb9ed23a5fb26a9", "hardwareIds":["20251111210412-pressure-sensor-1"], "name":"Pressure Sensor 1", "createdAt":"2025-11-11T21:04:12.562Z", "updatedAt":"2025-11-11T21:04:12.562Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ccafb9ed23a5fb26aa", "hardwareIds":["20251111210412-motion-detector-1"], "name":"Motion Detector 1", "createdAt":"2025-11-11T21:04:12.722Z", "updatedAt":"2025-11-11T21:04:12.722Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ccafb9ed23a5fb26ab", "hardwareIds":["20251111210412-temperature-sensor-2"], "name":"Temperature Sensor 2", "createdAt":"2025-11-11T21:04:12.878Z", "updatedAt":"2025-11-11T21:04:12.878Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26ac", "hardwareIds":["20251111210413-humidity-sensor-2"], "name":"Humidity Sensor 2", "createdAt":"2025-11-11T21:04:13.030Z", "updatedAt":"2025-11-11T21:04:13.030Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26ad", "hardwareIds":["20251111210413-light-level-sensor"], "name":"Light Level Sensor", "createdAt":"2025-11-11T21:04:13.182Z", "updatedAt":"2025-11-11T21:04:13.182Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26ae", "hardwareIds":["20251111210413-vibration-monitor"], "name":"Vibration Monitor", "createdAt":"2025-11-11T21:04:13.335Z", "updatedAt":"2025-11-11T21:04:13.335Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26af", "hardwareIds":["20251111210413-co2-monitor"], "name":"CO2 Monitor", "createdAt":"2025-11-11T21:04:13.495Z", "updatedAt":"2025-11-11T21:04:13.495Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26b0", "hardwareIds":["20251111210413-door-sensor-a1"], "name":"Door Sensor A1", "createdAt":"2025-11-11T21:04:13.659Z", "updatedAt":"2025-11-11T21:04:13.659Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26b1", "hardwareIds":["20251111210413-water-level-sensor"], "name":"Water Level Sensor", "createdAt":"2025-11-11T21:04:13.815Z", "updatedAt":"2025-11-11T21:04:13.815Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cdafb9ed23a5fb26b2", "hardwareIds":["20251111210413-energy-meter-1"], "name":"Energy Meter 1", "createdAt":"2025-11-11T21:04:13.967Z", "updatedAt":"2025-11-11T21:04:13.967Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b3", "hardwareIds":["20251111210414-smoke-detector-b2"], "name":"Smoke Detector B2", "createdAt":"2025-11-11T21:04:14.159Z", "updatedAt":"2025-11-11T21:04:14.159Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b4", "hardwareIds":["20251111210414-motion-detector-2"], "name":"Motion Detector 2", "createdAt":"2025-11-11T21:04:14.321Z", "updatedAt":"2025-11-11T21:04:14.321Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b5", "hardwareIds":["20251111210414-flow-meter-1"], "name":"Flow Meter 1", "createdAt":"2025-11-11T21:04:14.473Z", "updatedAt":"2025-11-11T21:04:14.474Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b6", "hardwareIds":["20251111210414-gateway-device"], "name":"Gateway Device", "createdAt":"2025-11-11T21:04:14.633Z", "updatedAt":"2025-11-11T21:04:14.633Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b7", "hardwareIds":["20251111210414-pressure-sensor-2"], "name":"Pressure Sensor 2", "createdAt":"2025-11-11T21:04:14.785Z", "updatedAt":"2025-11-11T21:04:14.785Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4ceafb9ed23a5fb26b8", "hardwareIds":["20251111210414-tank-level-monitor"], "name":"Tank Level Monitor", "createdAt":"2025-11-11T21:04:14.940Z", "updatedAt":"2025-11-11T21:04:14.940Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cfafb9ed23a5fb26b9", "hardwareIds":["20251111210415-hvac-controller"], "name":"HVAC Controller", "createdAt":"2025-11-11T21:04:15.097Z", "updatedAt":"2025-11-11T21:04:15.097Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6913a4cfafb9ed23a5fb26ba", "hardwareIds":["20251111210415-security-camera-1"], "name":"Security Camera 1", "createdAt":"2025-11-11T21:04:15.254Z", "updatedAt":"2025-11-11T21:04:15.254Z", "tagIds":[], "data":null, "lastReport":null, "status":"-", "metadata":{"update":{}, "status":"-", "lastReport":null, "lastSeenOnline":null, "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true}, {"id":"6915265240fbe317313d5462", "hardwareIds":["20251113002906-uniquedevicecertid01"], "name":"uniquedevicecertid01", "createdAt":"2025-11-13T00:29:06.056Z", "updatedAt":"2025-11-14T15:32:33.673Z", "tagIds":[], "data":null, "lastReport":"2025-11-15T00:06:17.020Z", "status":"-", "metadata":{"update":{"main":{"package":"main", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-11-14T20:55:00.259552901Z", "version":"1.0.1"}, "test-bleconnectivity-nrf52840dk":{"package":"test-bleconnectivity-nrf52840dk", "reason":"ready state", "reasonCode":"0", "state":"IDLE", "stateCode":"0", "target":"", "time":"2025-11-15T00:06:16.971834921Z", "version":"1.0.2"}}, "status":"-", "lastReport":"2025-11-15T00:06:17.020Z", "lastSeenOnline":"2025-11-15T00:06:17.020Z", "lastSeenOffline":null, "lastSettingsStatus":null}, "enabled":true, "certificateId":"uniquedevicecertid01", "cohortId":"test-bleconnectivity-fota"}], "page":0, "perPage":100, "total":25}
+{
+  "list": [
+    {
+      "id": "686d5da09c3ca8d766c1672b",
+      "hardwareIds": ["20250708180416-c252400001"],
+      "name": "C252400001",
+      "createdAt": "2025-07-08T18:04:16.266Z",
+      "updatedAt": "2025-09-08T18:15:00.710Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": "2025-11-15T03:05:08.036Z",
+      "status": "-",
+      "metadata": {
+        "update": {
+          "cellgateway-nrf9151-firmware": {
+            "package": "cellgateway-nrf9151-firmware",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-11-14T15:27:59.512133674Z",
+            "version": "1.0.6"
+          },
+          "main": {
+            "package": "main",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-07-09T16:47:07.441859003Z",
+            "version": "1.2.5"
+          }
+        },
+        "status": "-",
+        "lastReport": "2025-11-15T03:05:08.036Z",
+        "lastSeenOnline": "2025-11-14T15:27:44.391Z",
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true,
+      "cohortId": "nrf9151-cell-gateways"
+    },
+    {
+      "id": "68a8a716f4e0923417340f67",
+      "hardwareIds": ["20250822172126-nn-gateway-01"],
+      "name": "nn-gateway-01",
+      "createdAt": "2025-08-22T17:21:26.796Z",
+      "updatedAt": "2025-08-22T17:21:26.796Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": "2025-10-27T18:52:10.861Z",
+      "status": "-",
+      "metadata": {
+        "update": {
+          "main": {
+            "package": "main",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-08-25T17:19:13.504585841Z",
+            "version": "1.2.5"
+          }
+        },
+        "status": "-",
+        "lastReport": "2025-10-27T18:52:10.861Z",
+        "lastSeenOnline": "2025-08-25T17:19:12.705Z",
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "68bf1cc5425dd2ea93f248a3",
+      "hardwareIds": ["20250908181325-c253700003"],
+      "name": "C253700003",
+      "createdAt": "2025-09-08T18:13:25.775Z",
+      "updatedAt": "2025-09-08T18:13:25.775Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": "2025-11-15T00:06:16.120Z",
+      "status": "-",
+      "metadata": {
+        "update": {
+          "cellgateway-nrf9151-firmware": {
+            "package": "cellgateway-nrf9151-firmware",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-11-10T19:51:27.112283907Z",
+            "version": "1.0.6"
+          },
+          "main": {
+            "package": "main",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-09-29T20:20:29.762844822Z",
+            "version": "1.0.0"
+          }
+        },
+        "status": "-",
+        "lastReport": "2025-11-15T00:06:16.120Z",
+        "lastSeenOnline": "2025-11-14T22:40:23.576Z",
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true,
+      "cohortId": "nrf9151-cell-gateways"
+    },
+    {
+      "id": "68bf3337425dd2ea93f248ce",
+      "hardwareIds": ["20250908194911-c253700002"],
+      "name": "C253700002",
+      "createdAt": "2025-09-08T19:49:11.110Z",
+      "updatedAt": "2025-09-08T19:49:11.110Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": "2025-11-01T01:29:06.557Z",
+      "status": "-",
+      "metadata": {
+        "update": {
+          "cellgateway-nrf9151-firmware": {
+            "package": "cellgateway-nrf9151-firmware",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-11-01T00:02:04.563151338Z",
+            "version": "1.0.6"
+          }
+        },
+        "status": "-",
+        "lastReport": "2025-11-01T01:29:06.557Z",
+        "lastSeenOnline": "2025-10-31T23:46:43.544Z",
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true,
+      "cohortId": "nrf9151-cell-gateways"
+    },
+    {
+      "id": "6913a4ccafb9ed23a5fb26a7",
+      "hardwareIds": ["20251111210412-temperature-sensor-1"],
+      "name": "Temperature Sensor 1",
+      "createdAt": "2025-11-11T21:04:12.249Z",
+      "updatedAt": "2025-11-11T21:04:12.249Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ccafb9ed23a5fb26a8",
+      "hardwareIds": ["20251111210412-humidity-sensor-1"],
+      "name": "Humidity Sensor 1",
+      "createdAt": "2025-11-11T21:04:12.405Z",
+      "updatedAt": "2025-11-11T21:04:12.405Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ccafb9ed23a5fb26a9",
+      "hardwareIds": ["20251111210412-pressure-sensor-1"],
+      "name": "Pressure Sensor 1",
+      "createdAt": "2025-11-11T21:04:12.562Z",
+      "updatedAt": "2025-11-11T21:04:12.562Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ccafb9ed23a5fb26aa",
+      "hardwareIds": ["20251111210412-motion-detector-1"],
+      "name": "Motion Detector 1",
+      "createdAt": "2025-11-11T21:04:12.722Z",
+      "updatedAt": "2025-11-11T21:04:12.722Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ccafb9ed23a5fb26ab",
+      "hardwareIds": ["20251111210412-temperature-sensor-2"],
+      "name": "Temperature Sensor 2",
+      "createdAt": "2025-11-11T21:04:12.878Z",
+      "updatedAt": "2025-11-11T21:04:12.878Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26ac",
+      "hardwareIds": ["20251111210413-humidity-sensor-2"],
+      "name": "Humidity Sensor 2",
+      "createdAt": "2025-11-11T21:04:13.030Z",
+      "updatedAt": "2025-11-11T21:04:13.030Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26ad",
+      "hardwareIds": ["20251111210413-light-level-sensor"],
+      "name": "Light Level Sensor",
+      "createdAt": "2025-11-11T21:04:13.182Z",
+      "updatedAt": "2025-11-11T21:04:13.182Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26ae",
+      "hardwareIds": ["20251111210413-vibration-monitor"],
+      "name": "Vibration Monitor",
+      "createdAt": "2025-11-11T21:04:13.335Z",
+      "updatedAt": "2025-11-11T21:04:13.335Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26af",
+      "hardwareIds": ["20251111210413-co2-monitor"],
+      "name": "CO2 Monitor",
+      "createdAt": "2025-11-11T21:04:13.495Z",
+      "updatedAt": "2025-11-11T21:04:13.495Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26b0",
+      "hardwareIds": ["20251111210413-door-sensor-a1"],
+      "name": "Door Sensor A1",
+      "createdAt": "2025-11-11T21:04:13.659Z",
+      "updatedAt": "2025-11-11T21:04:13.659Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26b1",
+      "hardwareIds": ["20251111210413-water-level-sensor"],
+      "name": "Water Level Sensor",
+      "createdAt": "2025-11-11T21:04:13.815Z",
+      "updatedAt": "2025-11-11T21:04:13.815Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cdafb9ed23a5fb26b2",
+      "hardwareIds": ["20251111210413-energy-meter-1"],
+      "name": "Energy Meter 1",
+      "createdAt": "2025-11-11T21:04:13.967Z",
+      "updatedAt": "2025-11-11T21:04:13.967Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b3",
+      "hardwareIds": ["20251111210414-smoke-detector-b2"],
+      "name": "Smoke Detector B2",
+      "createdAt": "2025-11-11T21:04:14.159Z",
+      "updatedAt": "2025-11-11T21:04:14.159Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b4",
+      "hardwareIds": ["20251111210414-motion-detector-2"],
+      "name": "Motion Detector 2",
+      "createdAt": "2025-11-11T21:04:14.321Z",
+      "updatedAt": "2025-11-11T21:04:14.321Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b5",
+      "hardwareIds": ["20251111210414-flow-meter-1"],
+      "name": "Flow Meter 1",
+      "createdAt": "2025-11-11T21:04:14.473Z",
+      "updatedAt": "2025-11-11T21:04:14.474Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b6",
+      "hardwareIds": ["20251111210414-gateway-device"],
+      "name": "Gateway Device",
+      "createdAt": "2025-11-11T21:04:14.633Z",
+      "updatedAt": "2025-11-11T21:04:14.633Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b7",
+      "hardwareIds": ["20251111210414-pressure-sensor-2"],
+      "name": "Pressure Sensor 2",
+      "createdAt": "2025-11-11T21:04:14.785Z",
+      "updatedAt": "2025-11-11T21:04:14.785Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4ceafb9ed23a5fb26b8",
+      "hardwareIds": ["20251111210414-tank-level-monitor"],
+      "name": "Tank Level Monitor",
+      "createdAt": "2025-11-11T21:04:14.940Z",
+      "updatedAt": "2025-11-11T21:04:14.940Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cfafb9ed23a5fb26b9",
+      "hardwareIds": ["20251111210415-hvac-controller"],
+      "name": "HVAC Controller",
+      "createdAt": "2025-11-11T21:04:15.097Z",
+      "updatedAt": "2025-11-11T21:04:15.097Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6913a4cfafb9ed23a5fb26ba",
+      "hardwareIds": ["20251111210415-security-camera-1"],
+      "name": "Security Camera 1",
+      "createdAt": "2025-11-11T21:04:15.254Z",
+      "updatedAt": "2025-11-11T21:04:15.254Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": null,
+      "status": "-",
+      "metadata": {
+        "update": {},
+        "status": "-",
+        "lastReport": null,
+        "lastSeenOnline": null,
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true
+    },
+    {
+      "id": "6915265240fbe317313d5462",
+      "hardwareIds": ["20251113002906-uniquedevicecertid01"],
+      "name": "uniquedevicecertid01",
+      "createdAt": "2025-11-13T00:29:06.056Z",
+      "updatedAt": "2025-11-14T15:32:33.673Z",
+      "tagIds": [],
+      "data": null,
+      "lastReport": "2025-11-15T00:06:17.020Z",
+      "status": "-",
+      "metadata": {
+        "update": {
+          "main": {
+            "package": "main",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-11-14T20:55:00.259552901Z",
+            "version": "1.0.1"
+          },
+          "test-bleconnectivity-nrf52840dk": {
+            "package": "test-bleconnectivity-nrf52840dk",
+            "reason": "ready state",
+            "reasonCode": "0",
+            "state": "IDLE",
+            "stateCode": "0",
+            "target": "",
+            "time": "2025-11-15T00:06:16.971834921Z",
+            "version": "1.0.2"
+          }
+        },
+        "status": "-",
+        "lastReport": "2025-11-15T00:06:17.020Z",
+        "lastSeenOnline": "2025-11-15T00:06:17.020Z",
+        "lastSeenOffline": null,
+        "lastSettingsStatus": null
+      },
+      "enabled": true,
+      "certificateId": "uniquedevicecertid01",
+      "cohortId": "test-bleconnectivity-fota"
+    }
+  ],
+  "page": 0,
+  "perPage": 100,
+  "total": 25
+}

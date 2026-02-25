@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -54,7 +60,7 @@ export function IntegrationAutoSync({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  
+
   const [config, setConfig] = useState<AutoSyncConfig>({
     enabled: false,
     frequencyMinutes: 15,
@@ -160,7 +166,7 @@ export function IntegrationAutoSync({
             Automatically synchronize devices on a schedule
           </p>
         </div>
-        
+
         <Button
           onClick={saveConfig}
           disabled={saving}
@@ -172,15 +178,20 @@ export function IntegrationAutoSync({
       </div>
 
       {/* Simple Mode */}
-      <div className="rounded-lg border p-4 space-y-4">
+      <div className="space-y-4 rounded-lg border p-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label htmlFor="auto-sync-enabled" className="text-base font-medium">
+            <Label
+              htmlFor="auto-sync-enabled"
+              className="text-base font-medium"
+            >
               Enable Auto-Sync
             </Label>
             <p className="text-sm text-muted-foreground">
               {config.enabled ? 'Running' : 'Disabled'} - Syncs every{' '}
-              {FREQUENCY_OPTIONS.find((opt) => opt.value === (config.frequencyMinutes || 15))?.label.toLowerCase() || '15 minutes'}
+              {FREQUENCY_OPTIONS.find(
+                (opt) => opt.value === (config.frequencyMinutes || 15)
+              )?.label.toLowerCase() || '15 minutes'}
             </p>
           </div>
           <Switch
@@ -195,14 +206,19 @@ export function IntegrationAutoSync({
             <Label htmlFor="frequency">Sync Frequency</Label>
             <Select
               value={(config.frequencyMinutes || 15).toString()}
-              onValueChange={(value) => updateConfig({ frequencyMinutes: parseInt(value) })}
+              onValueChange={(value) =>
+                updateConfig({ frequencyMinutes: parseInt(value) })
+              }
             >
               <SelectTrigger id="frequency">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {FREQUENCY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value.toString()}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value.toString()}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
@@ -235,14 +251,16 @@ export function IntegrationAutoSync({
           </Button>
 
           {showAdvanced && (
-            <div className="rounded-lg border p-4 space-y-6 bg-muted/20">
+            <div className="space-y-6 rounded-lg border bg-muted/20 p-4">
               {/* Sync Direction */}
               <div className="space-y-3">
                 <Label>Sync Direction</Label>
                 <Select
                   value={config.direction}
                   onValueChange={(value) =>
-                    updateConfig({ direction: value as AutoSyncConfig['direction'] })
+                    updateConfig({
+                      direction: value as AutoSyncConfig['direction'],
+                    })
                   }
                 >
                   <SelectTrigger>
@@ -250,10 +268,14 @@ export function IntegrationAutoSync({
                   </SelectTrigger>
                   <SelectContent>
                     {availableDirections.includes('import') && (
-                      <SelectItem value="import">Import (Remote → Local)</SelectItem>
+                      <SelectItem value="import">
+                        Import (Remote → Local)
+                      </SelectItem>
                     )}
                     {availableDirections.includes('export') && (
-                      <SelectItem value="export">Export (Local → Remote)</SelectItem>
+                      <SelectItem value="export">
+                        Export (Local → Remote)
+                      </SelectItem>
                     )}
                     {availableDirections.includes('bidirectional') && (
                       <SelectItem value="bidirectional">
@@ -272,31 +294,44 @@ export function IntegrationAutoSync({
                     value={config.conflictResolution}
                     onValueChange={(value) =>
                       updateConfig({
-                        conflictResolution: value as AutoSyncConfig['conflictResolution'],
+                        conflictResolution:
+                          value as AutoSyncConfig['conflictResolution'],
                       })
                     }
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="newest_wins" id="newest" />
-                      <Label htmlFor="newest" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="newest"
+                        className="cursor-pointer font-normal"
+                      >
                         Newest Wins (Recommended)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="local_wins" id="local" />
-                      <Label htmlFor="local" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="local"
+                        className="cursor-pointer font-normal"
+                      >
                         Local Wins (Prefer This System)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="remote_wins" id="remote" />
-                      <Label htmlFor="remote" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="remote"
+                        className="cursor-pointer font-normal"
+                      >
                         Remote Wins (Prefer {integrationType})
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="manual" id="manual" />
-                      <Label htmlFor="manual" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="manual"
+                        className="cursor-pointer font-normal"
+                      >
                         Manual Review (Pause and Notify)
                       </Label>
                     </div>
@@ -312,9 +347,14 @@ export function IntegrationAutoSync({
                     <Switch
                       id="only-online"
                       checked={config.onlyOnline}
-                      onCheckedChange={(checked) => updateConfig({ onlyOnline: checked })}
+                      onCheckedChange={(checked) =>
+                        updateConfig({ onlyOnline: checked })
+                      }
                     />
-                    <Label htmlFor="only-online" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="only-online"
+                      className="cursor-pointer font-normal"
+                    >
                       Only sync online devices
                     </Label>
                   </div>
@@ -326,7 +366,10 @@ export function IntegrationAutoSync({
                         updateConfig({ timeWindowEnabled: checked })
                       }
                     />
-                    <Label htmlFor="time-window" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="time-window"
+                      className="cursor-pointer font-normal"
+                    >
                       Restrict to time window
                     </Label>
                   </div>
@@ -351,7 +394,9 @@ export function IntegrationAutoSync({
                         id="end-time"
                         type="time"
                         value={config.timeWindowEnd || '23:59'}
-                        onChange={(e) => updateConfig({ timeWindowEnd: e.target.value })}
+                        onChange={(e) =>
+                          updateConfig({ timeWindowEnd: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -369,13 +414,19 @@ export function IntegrationAutoSync({
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="all" id="all-devices" />
-                    <Label htmlFor="all-devices" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="all-devices"
+                      className="cursor-pointer font-normal"
+                    >
                       All devices
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="tagged" id="tagged-devices" />
-                    <Label htmlFor="tagged-devices" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="tagged-devices"
+                      className="cursor-pointer font-normal"
+                    >
                       Only devices with specific tags
                     </Label>
                   </div>
@@ -402,7 +453,7 @@ export function IntegrationAutoSync({
                       </Button>
                     </div>
                     {config.deviceTags && config.deviceTags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {config.deviceTags.map((tag) => (
                           <Badge
                             key={tag}
@@ -425,12 +476,14 @@ export function IntegrationAutoSync({
 
       {/* Info Box */}
       {config.enabled && (
-        <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-4">
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
           <p className="text-sm text-blue-900 dark:text-blue-100">
-            <strong>ℹ️ Auto-sync is active.</strong> Devices will sync automatically{' '}
-            {config.direction === 'bidirectional' && 'in both directions'}{' '}
-            every{' '}
-            {FREQUENCY_OPTIONS.find((opt) => opt.value === config.frequencyMinutes)?.label.toLowerCase()}
+            <strong>ℹ️ Auto-sync is active.</strong> Devices will sync
+            automatically{' '}
+            {config.direction === 'bidirectional' && 'in both directions'} every{' '}
+            {FREQUENCY_OPTIONS.find(
+              (opt) => opt.value === config.frequencyMinutes
+            )?.label.toLowerCase()}
             {config.deviceFilter === 'tagged' &&
               ` for ${config.deviceTags?.length || 0} tagged device(s)`}
             .

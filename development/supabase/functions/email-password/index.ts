@@ -1,18 +1,41 @@
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { getUserContext } from '../_shared/auth.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 export default createEdgeFunction(async ({ req }) => {
   // Get authenticated user context
   const userContext = await getUserContext(req)
-  
+
   // Create service_role client for bypassing RLS
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
   // Only admins, owners, and super admins can email passwords
-  if (!['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
+  // Check global role first, then fall back to organization_members for sub-org owners
+  const hasGlobalPermission = [
+    'super_admin',
+    'org_owner',
+    'org_admin',
+  ].includes(userContext.role)
+
+  let hasOrgPermission = false
+  if (!hasGlobalPermission && userContext.organizationId) {
+    const { data: orgMembership } = await supabaseAdmin
+      .from('organization_members')
+      .select('role')
+      .eq('user_id', userContext.userId)
+      .eq('organization_id', userContext.organizationId)
+      .in('role', ['owner', 'admin'])
+      .single()
+    hasOrgPermission = !!orgMembership
+  }
+
+  if (!hasGlobalPermission && !hasOrgPermission) {
     throw new DatabaseError('Insufficient permissions', 403)
   }
 
@@ -21,15 +44,18 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   const body = await req.json()
-  console.log('📥 Email password request received:', { 
+  console.log('📥 Email password request received:', {
     userId: body.userId,
     hasPassword: !!body.password,
   })
-  
+
   const { userId, password } = body
 
   if (!userId || !password) {
-    console.error('❌ Missing required fields:', { hasUserId: !!userId, hasPassword: !!password })
+    console.error('❌ Missing required fields:', {
+      hasUserId: !!userId,
+      hasPassword: !!password,
+    })
     throw new Error('userId and password are required')
   }
 
@@ -48,7 +74,7 @@ export default createEdgeFunction(async ({ req }) => {
 
   // Check if requester has permission
   const isSuperAdmin = userContext.role === 'super_admin'
-  
+
   if (!isSuperAdmin) {
     // Check if target user is in the same organization
     const { data: membership } = await supabaseAdmin
@@ -59,7 +85,10 @@ export default createEdgeFunction(async ({ req }) => {
       .maybeSingle()
 
     if (!membership) {
-      throw new DatabaseError('You can only email passwords for users in your organization', 403)
+      throw new DatabaseError(
+        'You can only email passwords for users in your organization',
+        403
+      )
     }
 
     // Check requester's role in the organization
@@ -80,20 +109,56 @@ export default createEdgeFunction(async ({ req }) => {
     }
   }
 
-  // Send email notification to user (WITHOUT resetting password)
+  // Reset password in auth system to match the emailed temporary password
+  const resetResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${supabaseServiceKey}`,
+      'Content-Type': 'application/json',
+      apikey: supabaseServiceKey,
+    },
+    body: JSON.stringify({
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: targetUser.full_name,
+      },
+    }),
+  })
+
+  if (!resetResponse.ok) {
+    const error = await resetResponse.json()
+    console.error('❌ Failed to reset password in auth:', error)
+    throw new Error(error.message || 'Failed to reset password')
+  }
+
+  // Mark user to change password on next login
+  const { error: updateError } = await supabaseAdmin
+    .from('users')
+    .update({ password_change_required: true })
+    .eq('id', userId)
+
+  if (updateError) {
+    console.error('❌ Failed to set password_change_required:', updateError)
+    throw new DatabaseError(
+      `Failed to update user record: ${updateError.message}`
+    )
+  }
+
+  // Send email notification to user
   const resendApiKey = Deno.env.get('RESEND_API_KEY')
-  
+
   if (!resendApiKey) {
     throw new Error('Email service not configured')
   }
 
   try {
     console.log('📧 Sending password email...')
-    
+
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -135,7 +200,7 @@ export default createEdgeFunction(async ({ req }) => {
                   </div>
                   
                   <div style="text-align: center;">
-                    <a href="https://demo-stage.netneural.ai/auth/signin" class="button">Go to Login</a>
+                    <a href="https://demo-stage.netneural.ai/auth/login" class="button">Go to Login</a>
                   </div>
                   
                   <p><strong>Login Instructions:</strong></p>
@@ -162,19 +227,23 @@ export default createEdgeFunction(async ({ req }) => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json()
       console.error('❌ Resend API error:', errorData)
-      
-      // Return the error details instead of throwing
+      console.error('Email send failed with status:', emailResponse.status)
+      console.error('Email error response:', errorData)
+
+      // Return meaningful error instead of throwing
+      const errorMessage =
+        errorData.message || `Failed to send email (${emailResponse.status})`
       return createSuccessResponse({
         success: false,
-        message: 'Failed to send email',
-        error: `Resend API error: ${errorData.message || 'Unknown error'}`,
+        message: 'Failed to send password email',
+        error: errorMessage,
         details: errorData,
       })
     }
 
     const emailData = await emailResponse.json()
     console.log('✅ Email sent successfully:', { emailId: emailData.id })
-    
+
     return createSuccessResponse({
       message: 'Password email sent successfully',
       emailId: emailData.id,
@@ -182,11 +251,11 @@ export default createEdgeFunction(async ({ req }) => {
   } catch (error) {
     console.error('❌ Error sending email:', error)
     console.log('⚠️ Email error details:', error)
-    
+
     // Return error details instead of throwing
     return createSuccessResponse({
       success: false,
-      message: 'Failed to send email',
+      message: 'Failed to send password email - an unexpected error occurred',
       error: error instanceof Error ? error.message : 'Unknown error',
     })
   }
