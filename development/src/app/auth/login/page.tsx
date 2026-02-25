@@ -171,7 +171,10 @@ function LoginForm() {
   useEffect(() => {
     const errorParam = searchParams?.get('error')
     if (errorParam) {
-      setError(decodeURIComponent(errorParam))
+      // Silent redirect for expired sessions — not an actionable user error
+      if (errorParam !== 'session_expired') {
+        setError(decodeURIComponent(errorParam))
+      }
       window.history.replaceState(
         {},
         '',
