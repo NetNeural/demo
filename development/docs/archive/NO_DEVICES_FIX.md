@@ -62,7 +62,7 @@ Serving functions on http://127.0.0.1:54321/functions/v1/<function-name>
 
 ```bash
 # Test with correct authorization header
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
      http://localhost:54321/functions/v1/devices
 ```
 
@@ -148,7 +148,7 @@ const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/
 Check `.env.local` has:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_LOCAL_SUPABASE_ANON_KEY
 ```
 
 ### ✅ 5. No CORS Errors
@@ -192,7 +192,7 @@ catch (error) {
 
 ### Test 1: Direct API Call
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
      http://localhost:54321/functions/v1/devices | grep -o "\"name\"" | wc -l
 ```
 **Expected**: Should print `20` (one name per device)
@@ -202,7 +202,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJz
 // Run in browser console at http://localhost:3000/dashboard
 fetch('http://localhost:54321/functions/v1/devices', {
   headers: {
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+    'Authorization': 'Bearer YOUR_LOCAL_SUPABASE_ANON_KEY'
   }
 })
 .then(r => r.json())

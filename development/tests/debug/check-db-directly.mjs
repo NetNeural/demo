@@ -45,7 +45,7 @@ async function checkDatabaseDirectly() {
       
       const headers = {
         'Authorization': `Bearer ${token}`,
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ',
+        'apikey': 'YOUR_SUPABASE_ANON_KEY',
         'Content-Type': 'application/json'
       };
       

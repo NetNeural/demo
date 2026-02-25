@@ -4,7 +4,7 @@
  */
 
 const STAGING_URL = "https://atgbmxicqikmapfqouco.supabase.co";
-const STAGING_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg";
+const STAGING_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
 async function testCreateOrganization() {
   console.log('🧪 Testing organization creation edge function...\n');

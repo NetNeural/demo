@@ -92,21 +92,21 @@ npm run dev
 
 #### Test Devices Endpoint:
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   http://localhost:54321/functions/v1/devices
 ```
 
 #### Test Alerts Endpoint:
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   http://localhost:54321/functions/v1/alerts
 ```
 
 #### Test Dashboard Stats:
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   http://localhost:54321/functions/v1/dashboard-stats
 ```

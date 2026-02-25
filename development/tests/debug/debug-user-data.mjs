@@ -47,7 +47,7 @@ async function debugUserData() {
         const userResponse = await fetch('https://bldojxpockljyivldxwf.supabase.co/auth/v1/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ'
+            'apikey': 'YOUR_SUPABASE_ANON_KEY'
           }
         });
         const user = await userResponse.json();
@@ -56,7 +56,7 @@ async function debugUserData() {
         const userRecordResponse = await fetch(`https://bldojxpockljyivldxwf.supabase.co/rest/v1/users?id=eq.${user.id}&select=*`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ'
+            'apikey': 'YOUR_SUPABASE_ANON_KEY'
           }
         });
         const userRecord = await userRecordResponse.json();

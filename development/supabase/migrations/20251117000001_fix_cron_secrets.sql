@@ -21,7 +21,7 @@ CREATE POLICY "Service role only" ON public.pg_cron_secrets
 INSERT INTO public.pg_cron_secrets (name, secret)
 VALUES
   ('project_url', 'https://bldojxpockljyivldxwf.supabase.co'),
-  ('service_role_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAyNjk1NSwiZXhwIjoyMDcwNjAyOTU1fQ.u9OK1PbjHLKMY8K1LM-bn8zYlRm-U5Zk1ef5NqQEhDQ')
+  ('service_role_key', 'YOUR_SUPABASE_SERVICE_ROLE_KEY')
 ON CONFLICT (name) DO UPDATE SET 
   secret = EXCLUDED.secret,
   updated_at = NOW();

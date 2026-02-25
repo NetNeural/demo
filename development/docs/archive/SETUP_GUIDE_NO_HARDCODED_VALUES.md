@@ -138,7 +138,7 @@ Serving functions on http://127.0.0.1:54321/functions/v1/<function-name>
 
 **Test manually**:
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+curl -H "Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY" \
   http://localhost:54321/functions/v1/devices?organization_id=00000000-0000-0000-0000-000000000001
 ```
 
