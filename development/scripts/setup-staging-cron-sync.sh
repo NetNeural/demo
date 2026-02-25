@@ -93,7 +93,7 @@ EOF
 
 echo -e "${BLUE}Executing SQL to set up secrets table...${NC}"
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/setup_cron_secrets.sql
     echo -e "${GREEN}✅ Secrets configured${NC}\n"
 else
@@ -156,7 +156,7 @@ EOF
 
 echo -e "${BLUE}Executing SQL to create cron job...${NC}"
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/setup_cron_job.sql
     echo -e "${GREEN}✅ Cron job created${NC}\n"
 else
@@ -217,7 +217,7 @@ WHERE integration_type = 'golioth';
 EOF
 
 if command -v psql &> /dev/null; then
-    psql "postgresql://postgres.atgbmxicqikmapfqouco:Datazoom-21@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+    psql "${STAGING_DB_URL:?Set STAGING_DB_URL env var}" \
         -f /tmp/verify_setup.sql
 else
     echo -e "${YELLOW}⚠️  psql not found - skipping verification${NC}"

@@ -76,7 +76,7 @@ Content-Type: application/json
 **Response:**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access_token": "<YOUR_SUPABASE_KEY>",
   "token_type": "bearer",
   "expires_in": 3600,
   "refresh_token": "v1.MR5S8Y_...",

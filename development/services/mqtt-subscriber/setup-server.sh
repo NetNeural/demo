@@ -43,7 +43,7 @@ npm install --omit=dev
 if [ ! -f "$DEPLOY_DIR/.env" ]; then
   cat > "$DEPLOY_DIR/.env" <<ENV
 SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNzgwOSwiZXhwIjoyMDg2NTkzODA5fQ.tGj8TfFUR3DiXWEYT1Lt41zvzxb5HipUnpfF-QfHbjY
+SUPABASE_SERVICE_ROLE_KEY=<YOUR_SUPABASE_KEY>
 LOG_LEVEL=info
 SERVICE_DIR=/opt/mqtt-subscriber
 RESTART_POLL_INTERVAL=30

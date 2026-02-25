@@ -19,13 +19,13 @@ IoT devices must include an Authorization header with one of these keys:
 #### Option 1: Anonymous Key (Recommended for IoT)
 
 ```bash
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+Authorization: Bearer <YOUR_SUPABASE_ANON_KEY>
 ```
 
 #### Option 2: Service Role Key (Admin Access)
 
 ```bash
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+Authorization: Bearer <YOUR_SUPABASE_SERVICE_ROLE_KEY>
 ```
 
 ### Testing Examples

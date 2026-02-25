@@ -4,7 +4,7 @@
 set -e
 
 STAGING_URL="https://atgbmxicqikmapfqouco.supabase.co"
-STAGING_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Z2JteGljcWlrbWFwZnFvdWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMTc4MDksImV4cCI6MjA4NjU5MzgwOX0.V-nVEkKdoNbzl_9bmS0d4X7QbNt7raxEYuevpaPEYwg"
+STAGING_ANON_KEY="<YOUR_SUPABASE_KEY>"
 
 echo "🧪 Testing Staging SMS Notifications"
 echo "====================================="

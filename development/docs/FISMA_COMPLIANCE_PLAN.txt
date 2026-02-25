@@ -43,7 +43,7 @@ The platform has a **solid foundation** in several FISMA control families — pa
 
 ### 0.1 — Revoke Hardcoded Supabase Access Token ⛔ CRITICAL
 
-**Finding:** `.github/workflows/deploy.yml` contains a plaintext Supabase access token (`sbp_05bc2b8ff6f905262c0fcf067ac011b30af9429a`) on lines 59, 65, 71, 77.
+**Finding:** `.github/workflows/deploy.yml` contains a plaintext Supabase access token (`<SUPABASE_ACCESS_TOKEN>`) on lines 59, 65, 71, 77.
 
 **Remediation:**
 1. Rotate the Supabase access token immediately (Project Settings → API → Regenerate)

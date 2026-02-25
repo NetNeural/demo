@@ -188,8 +188,8 @@ supabase start
 # API URL: http://127.0.0.1:54321
 # DB URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 # Studio URL: http://localhost:54323
-# anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-# service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# anon key: <YOUR_SUPABASE_KEY>
+# service_role key: <YOUR_SUPABASE_KEY>
 ```
 
 **Copy the `anon key` and `service_role key` to your `.env.local` file.**
@@ -257,8 +257,8 @@ npm run supabase:status
 #       Studio URL: http://127.0.0.1:54323
 #     Inbucket URL: http://127.0.0.1:54324
 #       JWT secret: super-secret-jwt-token
-#         anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-# service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+#         anon key: <YOUR_SUPABASE_KEY>
+# service_role key: <YOUR_SUPABASE_KEY>
 ```
 
 ### 4.3 Development URLs Reference

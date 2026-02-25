@@ -70,7 +70,7 @@ Should contain:
 
 ```env
 SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=<YOUR_SUPABASE_KEY>
 ```
 
 ### Step 5: Install Dependencies
