@@ -100,7 +100,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         userProfile.passwordChangeRequired &&
         pathname !== '/auth/change-password'
       ) {
-        console.log('User must change password, redirecting...')
         router.push('/auth/change-password')
         return
       }

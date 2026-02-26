@@ -72,8 +72,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
       .single()
 
     if (membership?.organizations) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      organization = membership.organizations as any
+      organization = membership.organizations as { id: string; name: string }
     }
   }
 

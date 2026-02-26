@@ -106,7 +106,7 @@ export function auditLogin(
       p_session_id: null,
     })
     .then(() => {
-      console.log('[ClientAudit] Login recorded')
+      // Login recorded successfully
     })
     .catch((err: unknown) => {
       console.error('[ClientAudit] Failed to record login:', err)
@@ -144,7 +144,7 @@ export function auditLoginFailed(
       p_session_id: null,
     })
     .then(() => {
-      console.log('[ClientAudit] Login failure recorded')
+      // Login failure recorded successfully
     })
     .catch((err: unknown) => {
       console.error('[ClientAudit] Failed to record login failure:', err)
@@ -182,7 +182,7 @@ export function auditLogout(
       p_session_id: null,
     })
     .then(() => {
-      console.log('[ClientAudit] Logout recorded')
+      // Logout recorded successfully
     })
     .catch((err: unknown) => {
       console.error('[ClientAudit] Failed to record logout:', err)

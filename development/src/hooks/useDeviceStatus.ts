@@ -5,6 +5,28 @@ import type {
   DeviceConnectionStatus,
 } from '@/types/unified-device-status'
 
+// Issue #280: Typed device status API response
+interface DeviceStatusApiData {
+  deviceId: string
+  externalDeviceId?: string
+  organizationId: string
+  integration?: { id: string; name: string }
+  status?: string
+  lastSeen?: string | null
+  lastSeenOnline?: string | null
+  lastSeenOffline?: string | null
+  name: string
+  deviceType?: string
+  batteryLevel?: number | null
+  signalStrength?: number | null
+  latestTelemetry?: Record<string, unknown> | null
+  location?: { latitude: number; longitude: number } | null
+  metadata?: Record<string, unknown> | null
+  firmware?: { version: string; updateAvailable?: boolean } | null
+  createdAt?: string
+  updatedAt?: string
+}
+
 interface UseDeviceStatusOptions {
   deviceId: string
   refreshInterval?: number // milliseconds, 0 = no auto-refresh
@@ -61,7 +83,7 @@ export function useDeviceStatus({
         )
       }
 
-      const deviceData = response.data?.status as any
+      const deviceData = response.data?.status as DeviceStatusApiData | undefined
 
       if (!deviceData) {
         throw new Error('Device not found')
@@ -78,8 +100,8 @@ export function useDeviceStatus({
 
         // Status
         status: (deviceData.status as DeviceConnectionStatus) || 'unknown',
-        lastSeen: deviceData.lastSeen,
-        lastSeenOnline: deviceData.lastSeen,
+        lastSeen: deviceData.lastSeen ?? null,
+        lastSeenOnline: deviceData.lastSeen ?? null,
         lastSeenOffline: null,
 
         // Device info

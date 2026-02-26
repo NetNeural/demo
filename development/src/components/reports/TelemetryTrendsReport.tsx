@@ -146,6 +146,9 @@ export function TelemetryTrendsReport() {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
+  // Issue #276: Track if query results were truncated
+  const [dataLimited, setDataLimited] = useState(false)
+  const TELEMETRY_ROW_LIMIT = 1000
 
   // Fetch devices
   useEffect(() => {
@@ -212,8 +215,12 @@ export function TelemetryTrendsReport() {
         .gte('received_at', startDate.toISOString())
         .lte('received_at', endDate.toISOString())
         .order('received_at', { ascending: true })
+        .limit(TELEMETRY_ROW_LIMIT) // Issue #276: Prevent unbounded queries
 
       if (error) throw error
+
+      // Issue #276: Detect if data was truncated
+      setDataLimited(data?.length === TELEMETRY_ROW_LIMIT)
 
       // Process data into chart format
       const processedData: Map<number, TelemetryDataPoint> = new Map()
@@ -442,6 +449,13 @@ export function TelemetryTrendsReport() {
 
       {/* AI Report Summary */}
       {telemetryData.length > 0 && currentOrganization && (
+        <>
+          {/* Issue #276: Truncation notice */}
+          {dataLimited && (
+            <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
+              Showing latest {TELEMETRY_ROW_LIMIT.toLocaleString()} data points. Narrow the date range for complete data.
+            </div>
+          )}
         <AIReportSummary
           reportType="telemetry-trends"
           reportData={{
@@ -469,6 +483,7 @@ export function TelemetryTrendsReport() {
           }}
           organizationId={currentOrganization.id}
         />
+        </>
       )}
 
       {/* Filters */}

@@ -16,8 +16,43 @@ import type {
   OrganizationPermissions,
   OrganizationRole,
   OrganizationStats,
+  SubscriptionTier,
+  OrganizationSettings,
 } from '@/types/organization'
 import { getOrganizationPermissions, isResellerOrg } from '@/types/organization'
+
+// Issue #280: Typed API response shapes (replace 'as any')
+interface OrgApiItem {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  subscriptionTier: string
+  isActive: boolean
+  settings: Record<string, unknown> | null
+  parentOrganizationId: string | null
+  createdBy: string | null
+  memberRole: string | null
+  createdAt: string
+  updatedAt: string
+  deviceCount: number
+  userCount: number
+  alertCount: number
+}
+
+interface OrgListResponse {
+  organizations: OrgApiItem[]
+  isSuperAdmin: boolean
+}
+
+interface OrgStatsResponse {
+  totalDevices: number
+  onlineDevices: number
+  totalUsers: number
+  activeAlerts: number
+  totalLocations: number
+  activeIntegrations: number
+}
 
 interface OrganizationContextType {
   // Current organization
@@ -111,32 +146,22 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         return
       }
 
-      const data = response.data
-
-      console.log('🏢 Organizations data received:', {
-        count: data.organizations?.length,
-        isSuperAdmin: data.isSuperAdmin,
-      })
+      const data = response.data as OrgListResponse
 
       // Transform API response to UserOrganization format
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const organizations: UserOrganization[] = (
-        (data.organizations as any[]) || []
-      ).map((org: any) => {
-        console.log(
-          `🏢 Org: ${org.name} - userCount: ${org.userCount}, deviceCount: ${org.deviceCount}`
-        )
-        return {
+        data.organizations || []
+      ).map((org: OrgApiItem): UserOrganization => ({
           id: org.id,
           name: org.name,
           slug: org.slug,
-          description: org.description,
-          subscription_tier: org.subscriptionTier,
+          description: org.description ?? undefined,
+          subscription_tier: org.subscriptionTier as SubscriptionTier,
           is_active: org.isActive,
-          settings: org.settings, // Include settings (branding, theme, etc.)
+          settings: (org.settings as OrganizationSettings) ?? undefined,
           parent_organization_id: org.parentOrganizationId || null,
           created_by: org.createdBy || null,
-          role: org.memberRole || (data.isSuperAdmin ? 'owner' : 'admin'),
+          role: (org.memberRole || (data.isSuperAdmin ? 'owner' : 'admin')) as OrganizationRole,
           membershipId: `mem-${org.id}`,
           joinedAt: org.createdAt,
           created_at: org.createdAt,
@@ -144,28 +169,16 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           deviceCount: org.deviceCount,
           userCount: org.userCount,
           activeAlertsCount: org.alertCount,
-        }
-      })
+        })
+      )
 
       setUserOrganizations(organizations)
 
       // Auto-select first org if none selected AND none saved in localStorage
       const savedOrgId = localStorage.getItem('netneural_current_org')
 
-      console.log('🔍 Organization auto-selection:', {
-        savedOrgId,
-        currentOrgId,
-        organizationsCount: organizations.length,
-        firstOrgId: organizations[0]?.id,
-        firstOrgName: organizations[0]?.name,
-      })
-
       if (!savedOrgId && organizations.length > 0 && organizations[0]) {
         // No saved org, select first one
-        console.log(
-          '✅ Auto-selecting first organization:',
-          organizations[0].name
-        )
         setCurrentOrgId(organizations[0].id)
         localStorage.setItem('netneural_current_org', organizations[0].id)
       } else if (
@@ -173,14 +186,9 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         organizations.some((org) => org.id === savedOrgId)
       ) {
         // Ensure the saved org is set
-        console.log('✅ Using saved organization:', savedOrgId)
         setCurrentOrgId(savedOrgId)
       } else if (savedOrgId && organizations.length > 0 && organizations[0]) {
         // Saved org not found, select first available
-        console.log(
-          '⚠️ Saved org not found, selecting first available:',
-          organizations[0].name
-        )
         setCurrentOrgId(organizations[0].id)
         localStorage.setItem('netneural_current_org', organizations[0].id)
       } else if (
@@ -189,10 +197,6 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         organizations[0]
       ) {
         // Edge case: currentOrgId is null but we have orgs - force selection
-        console.log(
-          '🔧 Force-selecting first organization:',
-          organizations[0].name
-        )
         setCurrentOrgId(organizations[0].id)
         localStorage.setItem('netneural_current_org', organizations[0].id)
       }
@@ -223,22 +227,13 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoadingStats(true)
 
-      console.log('📊 Fetching stats for organization:', currentOrgId)
-
       // Fetch dashboard stats using edge function client
       const response = await edgeFunctions.organizations.stats(currentOrgId)
 
       // Bug #232: discard stale response if org switched while we were waiting
       if (generation !== statsGenerationRef.current) {
-        console.log('📊 Discarding stale stats response (org switched)')
         return
       }
-
-      console.log('📊 Stats response:', {
-        success: response.success,
-        hasData: !!response.data,
-        error: response.error,
-      })
 
       if (!response.success || !response.data) {
         // Only log error if we're authenticated (not on login page)
@@ -249,14 +244,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         return
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const statsData = response.data as any
-
-      console.log('📊 Stats data received:', {
-        totalDevices: statsData.totalDevices,
-        totalUsers: statsData.totalUsers,
-        activeAlerts: statsData.activeAlerts,
-      })
+      const statsData = response.data as OrgStatsResponse
 
       const fetchedStats: OrganizationStats = {
         totalDevices: statsData.totalDevices || 0,
@@ -267,7 +255,6 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         activeIntegrations: statsData.activeIntegrations || 0,
       }
 
-      console.log('📊 Final stats:', fetchedStats)
       setStats(fetchedStats)
     } catch (error) {
       // Bug #232: don't set fallback stats if org already switched
@@ -279,10 +266,6 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         (org) => org.id === currentOrgId
       )
       if (currentOrg) {
-        console.log('📊 Using fallback stats from cached org data:', {
-          userCount: currentOrg.userCount,
-          deviceCount: currentOrg.deviceCount,
-        })
         setStats({
           totalDevices: currentOrg.deviceCount || 0,
           onlineDevices: Math.floor((currentOrg.deviceCount || 0) * 0.85),

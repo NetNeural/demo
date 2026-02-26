@@ -86,7 +86,7 @@ export function handleApiError(
   // Handle authentication errors silently
   if (result.isAuthError && silentAuthErrors) {
     if (logErrors) {
-      console.log(
+      console.warn(
         `[Auth] ${errorPrefix}: ${response.status} ${response.statusText}`,
         '- User may not be authenticated or lacks permissions'
       )

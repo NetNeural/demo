@@ -219,6 +219,23 @@ export function AlertsList() {
     }
   }, [currentOrganization, page])
 
+  // ─── Timeline Handler ──────────────────────────────────────────────
+  // Issue #275: Wrap in useCallback to prevent re-renders of children receiving this as a prop
+  const loadTimeline = useCallback(async (alertId: string) => {
+    setTimelineLoading(true)
+    setTimelineEvents([])
+    try {
+      const response = await edgeFunctions.alerts.timeline(alertId)
+      if (response.success && response.data) {
+        setTimelineEvents(response.data.events || [])
+      }
+    } catch {
+      console.error('Failed to load timeline')
+    } finally {
+      setTimelineLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
@@ -228,7 +245,7 @@ export function AlertsList() {
     if (showDetails && selectedAlert) {
       loadTimeline(selectedAlert.id)
     }
-  }, [showDetails, selectedAlert])
+  }, [showDetails, selectedAlert, loadTimeline])
 
   // Deep-link: auto-open alert detail when ?alertId= is in URL
   useEffect(() => {
@@ -476,22 +493,6 @@ export function AlertsList() {
       }
     } catch {
       toast.error('Failed to unsnooze')
-    }
-  }
-
-  // ─── Timeline Handler ──────────────────────────────────────────────
-  const loadTimeline = async (alertId: string) => {
-    setTimelineLoading(true)
-    setTimelineEvents([])
-    try {
-      const response = await edgeFunctions.alerts.timeline(alertId)
-      if (response.success && response.data) {
-        setTimelineEvents(response.data.events || [])
-      }
-    } catch {
-      console.error('Failed to load timeline')
-    } finally {
-      setTimelineLoading(false)
     }
   }
 

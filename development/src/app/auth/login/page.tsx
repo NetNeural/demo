@@ -95,6 +95,15 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const hasCheckedAuth = useRef(false)
+  // Issue #275: Prevent state updates on unmounted component
+  const isMounted = useRef(true)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
 
   // MFA challenge state
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -223,11 +232,13 @@ function LoginForm() {
 
         if (loginError) {
           auditLoginFailed(email.trim(), loginError.message)
+          if (!isMounted.current) return
           setError('Invalid email or password. Please try again.')
           setIsLoading(false)
           return
         }
         if (!data.user) {
+          if (!isMounted.current) return
           setError('Login failed — please try again')
           setIsLoading(false)
           return
@@ -284,10 +295,12 @@ function LoginForm() {
           router.push('/dashboard')
           setTimeout(() => router.refresh(), 50)
         } else {
+          if (!isMounted.current) return
           setError('Session could not be established. Please try again.')
           setIsLoading(false)
         }
       } catch {
+        if (!isMounted.current) return
         setError('An unexpected error occurred. Please try again.')
         setIsLoading(false)
       }
@@ -313,6 +326,7 @@ function LoginForm() {
             factorId: mfaFactorId,
           })
         if (challengeError) {
+          if (!isMounted.current) return
           setError(`Verification failed: ${challengeError.message}`)
           setMfaVerifying(false)
           return
@@ -324,6 +338,7 @@ function LoginForm() {
           code: mfaCode,
         })
         if (verifyError) {
+          if (!isMounted.current) return
           setError('Invalid verification code. Please try again.')
           setMfaCode('')
           setMfaVerifying(false)
@@ -357,6 +372,7 @@ function LoginForm() {
         router.push('/dashboard')
         setTimeout(() => router.refresh(), 50)
       } catch {
+        if (!isMounted.current) return
         setError('An unexpected error occurred during verification.')
         setMfaVerifying(false)
       }

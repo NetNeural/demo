@@ -234,15 +234,18 @@ describe('handleApiError', () => {
   describe('Logging behavior', () => {
     let consoleErrorSpy: jest.SpyInstance
     let consoleLogSpy: jest.SpyInstance
+    let consoleWarnSpy: jest.SpyInstance
 
     beforeEach(() => {
       consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
       consoleLogSpy = jest.spyOn(console, 'log').mockImplementation()
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
     })
 
     afterEach(() => {
       consoleErrorSpy.mockRestore()
       consoleLogSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
     })
 
     test('logs errors when logErrors is true', () => {
@@ -268,7 +271,7 @@ describe('handleApiError', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled()
     })
 
-    test('logs auth errors to console.log instead of console.error', () => {
+    test('logs auth errors to console.warn instead of console.error', () => {
       const response = new Response(null, {
         status: 401,
         statusText: 'Unauthorized',
@@ -276,7 +279,7 @@ describe('handleApiError', () => {
 
       handleApiError(response, { throwOnError: false, logErrors: true })
 
-      expect(consoleLogSpy).toHaveBeenCalled()
+      expect(consoleWarnSpy).toHaveBeenCalled()
       expect(consoleErrorSpy).not.toHaveBeenCalled()
     })
   })
