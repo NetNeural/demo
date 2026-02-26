@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -20,9 +20,21 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Popover,
   PopoverContent,
@@ -123,6 +135,14 @@ const DAYS_OF_WEEK = [
   { value: '6', label: 'Saturday' },
 ]
 
+// Mirror of the edge function's default recipients — shown in the confirmation dialog
+const DEFAULT_LEADERSHIP_RECIPIENTS = [
+  'heath.scheiman@netneural.ai',
+  'chris.payne@netneural.ai',
+  'mike.jordan@netneural.ai',
+  'matt.scholle@netneural.ai',
+]
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -162,6 +182,13 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
   const [recipientSearch, setRecipientSearch] = useState('')
   const [recipientPopoverOpen, setRecipientPopoverOpen] = useState(false)
+
+  // Confirmation dialog state
+  const [confirmSendType, setConfirmSendType] = useState<string | null>(null)
+
+  // Ref guards to prevent double-fire on rapid clicks
+  const sendingRef = useRef(false)
+  const previewingRef = useRef(false)
 
   // -------------------------------------------------------------------------
   // Data fetching
@@ -246,6 +273,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   // -------------------------------------------------------------------------
 
   const runReport = async (reportType: string) => {
+    if (sendingRef.current) return
+    sendingRef.current = true
     setRunningReport(reportType)
     const startTime = Date.now()
 
@@ -305,6 +334,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
       toast.error(`Failed to send report`, { description: msg })
     } finally {
+      sendingRef.current = false
       setRunningReport(null)
       fetchRecentRuns()
       fetchSchedules()
@@ -316,6 +346,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   // -------------------------------------------------------------------------
 
   const previewReport = async (reportType: string) => {
+    if (previewingRef.current) return
+    previewingRef.current = true
     setPreviewingReport(reportType)
     try {
       const { data, error } = await supabase.functions.invoke(reportType, {
@@ -345,6 +377,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       toast.error('Preview failed', { description: msg })
     } finally {
+      previewingRef.current = false
       setPreviewingReport(null)
     }
   }
@@ -579,7 +612,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => runReport(key)}
+                    onClick={() => setConfirmSendType(key)}
                     disabled={isRunning || isPreviewing}
                   >
                     {isRunning ? (
@@ -815,6 +848,57 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {/* Send Confirmation Dialog */}
+      <AlertDialog open={!!confirmSendType} onOpenChange={(open) => { if (!open) setConfirmSendType(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Report</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  You are about to send the{' '}
+                  <strong>
+                    {confirmSendType === 'daily-report'
+                      ? 'Daily Platform Report'
+                      : 'Software Assessment'}
+                  </strong>.
+                </p>
+                <div>
+                  <p className="mb-1 font-medium text-foreground">Recipients:</p>
+                  <ul className="list-inside list-disc space-y-0.5 text-sm">
+                    {(selectedRecipients.length > 0
+                      ? selectedRecipients
+                      : DEFAULT_LEADERSHIP_RECIPIENTS
+                    ).map((email) => (
+                      <li key={email}>{email}</li>
+                    ))}
+                  </ul>
+                  {selectedRecipients.length === 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No recipients selected — using default leadership list
+                    </p>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmSendType) {
+                  runReport(confirmSendType)
+                  setConfirmSendType(null)
+                }
+              }}
+            >
+              <Send className="mr-1 h-4 w-4" />
+              Send Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Preview Dialog */}
       <Dialog open={!!previewHtml} onOpenChange={() => setPreviewHtml(null)}>
