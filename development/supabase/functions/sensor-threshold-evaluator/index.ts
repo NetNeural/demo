@@ -28,6 +28,7 @@ interface Device {
   id: string
   name: string
   organization_id: string
+  is_test_device?: boolean
 }
 
 interface TelemetryHistoryReading {
@@ -80,7 +81,8 @@ serve(async (req) => {
         devices!sensor_thresholds_device_id_fkey (
           id,
           name,
-          organization_id
+          organization_id,
+          is_test_device
         )
       `
       )
@@ -135,9 +137,14 @@ serve(async (req) => {
           SENSOR_TYPE_TO_ID[threshold.sensor_type.toLowerCase()] ||
           threshold.sensor_type
 
+        // Choose the correct telemetry table based on device type
+        const telemetryTable = device.is_test_device
+          ? 'test_device_telemetry_history'
+          : 'device_telemetry_history'
+
         // Get most recent telemetry reading for this device and sensor type
         const { data: readings, error: readingsError } = await supabaseClient
-          .from('device_telemetry_history')
+          .from(telemetryTable)
           .select('*')
           .eq('device_id', threshold.device_id)
           .eq('telemetry->>type', sensorTypeId)
