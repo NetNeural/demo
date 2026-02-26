@@ -62,6 +62,7 @@ import {
   Settings2,
   FileText,
   BarChart3,
+  ScrollText,
   RefreshCw,
   History,
   Users,
@@ -122,6 +123,13 @@ const REPORT_TYPES = [
     description: 'Architecture scorecard, feature roadmap, 10-dimension grading',
     icon: FileText,
     color: 'text-purple-500',
+  },
+  {
+    key: 'executive-summary',
+    label: 'Executive Summary',
+    description: 'MVP status, issue tracking, environment health, risk assessment, financials',
+    icon: ScrollText,
+    color: 'text-emerald-500',
   },
 ] as const
 
@@ -314,8 +322,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           .eq('id', runRow.id)
       }
 
+      const reportLabel = REPORT_TYPES.find(r => r.key === reportType)?.label ?? reportType
       toast.success(
-        `${reportType === 'daily-report' ? 'Daily Report' : 'Assessment Report'} sent successfully`,
+        `${reportLabel} sent successfully`,
         { description: `Completed in ${(durationMs / 1000).toFixed(1)}s` }
       )
     } catch (err: unknown) {
@@ -370,7 +379,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
         html = `<pre>${JSON.stringify(data, null, 2)}</pre>`
       }
 
-      const label = reportType === 'daily-report' ? 'Daily Platform Report' : 'Software Assessment'
+      const label = REPORT_TYPES.find(r => r.key === reportType)?.label ?? reportType
       setPreviewTitle(label)
       setPreviewHtml(html)
     } catch (err: unknown) {
@@ -574,58 +583,60 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           </div>
 
           <Separator />
-          {REPORT_TYPES.map(({ key, label, description, icon: Icon, color }) => {
-            const schedule = getScheduleForType(key)
-            const isRunning = runningReport === key
-            const isPreviewing = previewingReport === key
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {REPORT_TYPES.map(({ key, label, description, icon: Icon, color }) => {
+              const schedule = getScheduleForType(key)
+              const isRunning = runningReport === key
+              const isPreviewing = previewingReport === key
 
-            return (
-              <div
-                key={key}
-                className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex items-start gap-3">
-                  <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${color}`} />
-                  <div>
-                    <p className="text-sm font-medium">{label}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
-                    {schedule?.last_run_at && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Last sent: {formatTimestamp(schedule.last_run_at)}
-                      </p>
-                    )}
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col gap-3 rounded-lg border p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${color}`} />
+                    <div>
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                      {schedule?.last_run_at && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Last sent: {formatTimestamp(schedule.last_run_at)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-auto flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => previewReport(key)}
+                      disabled={isPreviewing || isRunning}
+                    >
+                      {isPreviewing ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="mr-1 h-4 w-4" />
+                      )}
+                      Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setConfirmSendType(key)}
+                      disabled={isRunning || isPreviewing}
+                    >
+                      {isRunning ? (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-1 h-4 w-4" />
+                      )}
+                      {isRunning ? 'Sending...' : 'Send Now'}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => previewReport(key)}
-                    disabled={isPreviewing || isRunning}
-                  >
-                    {isPreviewing ? (
-                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Eye className="mr-1 h-4 w-4" />
-                    )}
-                    Preview
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setConfirmSendType(key)}
-                    disabled={isRunning || isPreviewing}
-                  >
-                    {isRunning ? (
-                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="mr-1 h-4 w-4" />
-                    )}
-                    {isRunning ? 'Sending...' : 'Send Now'}
-                  </Button>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -824,9 +835,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   <div className="flex items-center gap-3">
                     {statusBadge(run.status)}
                     <span className="font-medium">
-                      {run.report_type === 'daily-report'
-                        ? 'Daily Report'
-                        : 'Assessment'}
+                      {REPORT_TYPES.find(r => r.key === run.report_type)?.label ?? run.report_type}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {run.triggered_by === 'scheduler' ? (
@@ -859,9 +868,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                 <p>
                   You are about to send the{' '}
                   <strong>
-                    {confirmSendType === 'daily-report'
-                      ? 'Daily Platform Report'
-                      : 'Software Assessment'}
+                    {REPORT_TYPES.find(r => r.key === confirmSendType)?.label ?? confirmSendType}
                   </strong>.
                 </p>
                 <div>
