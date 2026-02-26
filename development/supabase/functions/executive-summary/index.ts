@@ -240,11 +240,15 @@ serve(async (req) => {
     // ─── Build HTML ──────────────────────────────────────────────────
 
     const statCard = (value: string, label: string, sub: string, color = '#1a1a2e') => `
-      <div style="flex:1; min-width:120px; background:#f9fafb; border-radius:8px; padding:14px 10px; text-align:center; border:1px solid #e5e7eb;">
-        <div style="font-size:24px; font-weight:700; color:${color};">${value}</div>
-        <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:3px;">${label}</div>
-        ${sub ? `<div style="font-size:10px; color:#9ca3af; margin-top:2px;">${sub}</div>` : ''}
-      </div>`
+      <td style="padding:4px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:14px 10px; text-align:center;">
+            <div style="font-size:24px; font-weight:700; color:${color};">${value}</div>
+            <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:3px;">${label}</div>
+            ${sub ? `<div style="font-size:10px; color:#9ca3af; margin-top:2px;">${sub}</div>` : ''}
+          </td></tr>
+        </table>
+      </td>`
 
     const recentClosureRows = recentClosures.map((c) => {
       const isBug = c.labels.some((l) => l.toLowerCase().includes('bug'))
@@ -300,10 +304,10 @@ serve(async (req) => {
 <div style="max-width:740px; margin:0 auto; background:white;">
 
   <!-- Header -->
-  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%); color:white; padding:32px; text-align:center;">
+  <div style="background-color:#1a1a2e; color:white; padding:32px; text-align:center;">
     <h1 style="margin:0 0 4px; font-size:22px; letter-spacing:-0.5px; color:white;">NetNeural — Executive Summary</h1>
     <p style="margin:0; opacity:0.8; font-size:13px;">${today}</p>
-    <div style="display:inline-block; padding:4px 14px; border-radius:16px; font-size:13px; font-weight:600; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); margin-top:10px;">v${APP_VERSION}</div>
+    <div style="display:inline-block; padding:4px 14px; border-radius:16px; font-size:13px; font-weight:600; background-color:#2a2a4e; border:1px solid #4a4a6e; margin-top:10px;">v${APP_VERSION}</div>
     <div style="margin-top:12px;">
       <span style="display:inline-block; padding:5px 16px; border-radius:16px; font-size:14px; font-weight:700; background:${healthBg}; color:${healthColor};">
         ${healthStatus}
@@ -313,44 +317,66 @@ serve(async (req) => {
 
   <!-- MVP Progress -->
   <div style="padding:20px 24px 0;">
-    <div style="display:flex; justify-content:space-between; align-items:baseline;">
-      <span style="font-size:13px; font-weight:600; color:#0f172a;">MVP Completion</span>
-      <span style="font-size:20px; font-weight:800; color:#059669;">${mvpPct}%</span>
-    </div>
-    <div style="background:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px;"><div style="background:linear-gradient(90deg,#10b981,#059669); border-radius:6px; height:12px; width:${mvpPct}%;"></div></div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:13px; font-weight:600; color:#0f172a; text-align:left;">MVP Completion</td>
+        <td style="font-size:20px; font-weight:800; color:#059669; text-align:right;">${mvpPct}%</td>
+      </tr>
+    </table>
+    <div style="background-color:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px;"><div style="background-color:#10b981; border-radius:6px; height:12px; width:${mvpPct}%;"></div></div>
     <p style="font-size:11px; color:#9ca3af; margin-top:4px;">Remaining: test coverage refinement (~1 week, 1 dev)</p>
   </div>
 
   <!-- Platform Health Cards -->
-  <div style="display:flex; flex-wrap:wrap; padding:16px 24px; gap:8px;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:16px 24px;">
+    <tr>
     ${statCard(String(totalDevices), 'Devices', `${uptimePct}% uptime`)}
     ${statCard(String(onlineDevices), 'Online', `${offlineDevices} offline`, onlineDevices === totalDevices ? '#10b981' : '#f59e0b')}
     ${statCard(String(totalUnresolved), 'Active Alerts', `${totalCritical} crit · ${totalHigh} high`, totalUnresolved > 0 ? '#ef4444' : '#10b981')}
     ${statCard(String(uniqueUsers), 'Users', `${totalOrgs} organizations`)}
     ${statCard(String(resolvedAlerts), 'Resolved 24h', `${newAlerts} new`, '#10b981')}
-  </div>
+    </tr>
+  </table>
 
   <!-- GitHub Issue Tracking -->
   <div style="padding:0 24px 16px;">
     <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📊 Issue Tracking</h2>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-      <div style="flex:1; min-width:100px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#16a34a;">${totalClosed}</div>
-        <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Closed</div>
-      </div>
-      <div style="flex:1; min-width:100px; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:10px; text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#d97706;">${totalOpen}</div>
-        <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open</div>
-      </div>
-      <div style="flex:1; min-width:100px; background:#fee2e2; border:1px solid #fecaca; border-radius:8px; padding:10px; text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#dc2626;">${openBugs}</div>
-        <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open Bugs</div>
-      </div>
-      <div style="flex:1; min-width:100px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px; text-align:center;">
-        <div style="font-size:20px; font-weight:700; color:#1a1a2e;">${closureRate}%</div>
-        <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Close Rate</div>
-      </div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+      <tr>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#16a34a;">${totalClosed}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Closed</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fef3c7; border:1px solid #fde68a; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#d97706;">${totalOpen}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fee2e2; border:1px solid #fecaca; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#dc2626;">${openBugs}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open Bugs</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#1a1a2e;">${closureRate}%</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Close Rate</div>
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
     <p style="font-size:12px; color:#6b7280;">Total: ${totalIssues} issues tracked · ${totalClosed} resolved · ${totalOpen} remaining</p>
   </div>
 
@@ -390,9 +416,9 @@ serve(async (req) => {
   <!-- Technology Stack -->
   <div style="padding:0 24px 16px;">
     <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🛠 Technology Stack</h2>
-    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+    <div>
       ${['Next.js 15', 'React 18', 'TypeScript 5.9', 'Supabase', 'PostgreSQL 17', 'Deno Edge Functions', 'Tailwind CSS', 'GitHub Actions'].map(t =>
-        `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">${t}</span>`
+        `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; background-color:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; margin:2px;">${t}</span>`
       ).join('')}
     </div>
   </div>

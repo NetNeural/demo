@@ -247,41 +247,63 @@ serve(async (req) => {
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.5; color:#1f2937; margin:0; padding:0; background:#f3f4f6;">
 <div style="max-width:700px; margin:0 auto; background:white;">
-  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:white; padding:30px; text-align:center;">
+  <div style="background-color:#1a1a2e; color:white; padding:30px; text-align:center;">
     <h1 style="margin:0 0 5px; font-size:24px; color:white;">NetNeural Daily Platform Report</h1>
     <p style="margin:0; opacity:0.8; font-size:14px;">${reportDateFormatted}</p>
-    <div style="display:inline-block; padding:6px 16px; border-radius:20px; font-weight:600; font-size:14px; margin-top:12px; background:${healthColor}22; color:${healthColor}; border:1px solid ${healthColor}44;">
+    <div style="display:inline-block; padding:6px 16px; border-radius:20px; font-weight:600; font-size:14px; margin-top:12px; background-color:#f3f4f6; color:${healthColor}; border:1px solid ${healthColor};">
       ${healthStatus}
     </div>
   </div>
 
-  <div style="display:flex; flex-wrap:wrap; padding:20px; gap:12px;">
-    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
-      <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalDevices}</div>
-      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Total Devices</div>
-      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uptimePct}% uptime</div>
-    </div>
-    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
-      <div style="font-size:28px; font-weight:700; color:${onlineDevices === totalDevices ? '#10b981' : '#f59e0b'};">${onlineDevices}</div>
-      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Online</div>
-      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${offlineDevices} offline</div>
-    </div>
-    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
-      <div style="font-size:28px; font-weight:700; color:${totalUnresolved > 0 ? '#ef4444' : '#10b981'};">${totalUnresolved}</div>
-      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Active Alerts</div>
-      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${totalCritical} critical, ${totalHigh} high</div>
-    </div>
-    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
-      <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalNew24h}</div>
-      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">New (24h)</div>
-      <div style="font-size:11px; color:#9ca3af; margin-top:2px;"><span style="color:${parseInt(alertTrend) > 0 ? '#ef4444' : parseInt(alertTrend) < 0 ? '#10b981' : '#6b7280'};">${parseInt(alertTrend) > 0 ? '↑' : parseInt(alertTrend) < 0 ? '↓' : '→'} ${Math.abs(parseInt(alertTrend))}% vs prev day</span></div>
-    </div>
-    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
-      <div style="font-size:28px; font-weight:700; color:#10b981;">${totalResolved24h}</div>
-      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Resolved (24h)</div>
-      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uniqueUsers} active users</div>
-    </div>
-  </div>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px;">
+    <tr>
+      <td width="20%" style="padding:6px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalDevices}</div>
+            <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Total Devices</div>
+            <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uptimePct}% uptime</div>
+          </td></tr>
+        </table>
+      </td>
+      <td width="20%" style="padding:6px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:${onlineDevices === totalDevices ? '#10b981' : '#f59e0b'};">${onlineDevices}</div>
+            <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Online</div>
+            <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${offlineDevices} offline</div>
+          </td></tr>
+        </table>
+      </td>
+      <td width="20%" style="padding:6px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:${totalUnresolved > 0 ? '#ef4444' : '#10b981'};">${totalUnresolved}</div>
+            <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Active Alerts</div>
+            <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${totalCritical} critical, ${totalHigh} high</div>
+          </td></tr>
+        </table>
+      </td>
+      <td width="20%" style="padding:6px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalNew24h}</div>
+            <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">New (24h)</div>
+            <div style="font-size:11px; color:#9ca3af; margin-top:2px;"><span style="color:${parseInt(alertTrend) > 0 ? '#ef4444' : parseInt(alertTrend) < 0 ? '#10b981' : '#6b7280'};">${parseInt(alertTrend) > 0 ? '↑' : parseInt(alertTrend) < 0 ? '↓' : '→'} ${Math.abs(parseInt(alertTrend))}% vs prev day</span></div>
+          </td></tr>
+        </table>
+      </td>
+      <td width="20%" style="padding:6px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:16px; text-align:center;">
+            <div style="font-size:28px; font-weight:700; color:#10b981;">${totalResolved24h}</div>
+            <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Resolved (24h)</div>
+            <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uniqueUsers} active users</div>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 
   <div style="padding:0 20px 20px;">
     <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">Organization Breakdown</h2>

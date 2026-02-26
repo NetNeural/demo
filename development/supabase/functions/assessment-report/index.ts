@@ -161,10 +161,14 @@ serve(async (req) => {
     `).join('')
 
     const metricCards = metrics.map(m => `
-      <div style="flex:1; min-width:130px; background:#f9fafb; border-radius:8px; padding:12px; text-align:center; border:1px solid #e5e7eb;">
-        <div style="font-size:22px; font-weight:700; color:#1a1a2e;">${m.value}</div>
-        <div style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">${m.label}</div>
-      </div>
+      <td style="padding:5px; vertical-align:top;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+          <tr><td style="padding:12px; text-align:center;">
+            <div style="font-size:22px; font-weight:700; color:#1a1a2e;">${m.value}</div>
+            <div style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">${m.label}</div>
+          </td></tr>
+        </table>
+      </td>
     `).join('')
 
     const valuationRows = valuation.map(v => `
@@ -197,17 +201,19 @@ serve(async (req) => {
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.5; color:#1f2937; margin:0; padding:0; background:#f3f4f6;">
 <div style="max-width:780px; margin:0 auto; background:white;">
-  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); color:white; padding:35px; text-align:center;">
+  <div style="background-color:#1a1a2e; color:white; padding:35px; text-align:center;">
     <h1 style="margin:0 0 5px; font-size:22px; letter-spacing:-0.5px; color:white;">NetNeural Software Assessment & Roadmap</h1>
     <p style="margin:0; opacity:0.8; font-size:13px;">Daily Executive Summary — ${today}</p>
-    <div style="display:inline-block; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.15); border:3px solid rgba(255,255,255,0.4); line-height:80px; font-size:32px; font-weight:800; margin:15px 0 5px; letter-spacing:-1px;">${overallGrade}</div>
+    <div style="display:inline-block; width:80px; height:80px; border-radius:50%; background-color:#2a2a4e; border:3px solid #4a4a6e; line-height:80px; font-size:32px; font-weight:800; margin:15px 0 5px; letter-spacing:-1px;">${overallGrade}</div>
     <p style="font-size:16px; font-weight:600; margin-top:4px;">${overallScore}/100</p>
     <p style="opacity:0.7; font-size:12px; margin-top:2px;">Estimated Value: $400K – $700K</p>
   </div>
 
-  <div style="display:flex; flex-wrap:wrap; padding:20px 24px; gap:10px;">
-    ${metricCards}
-  </div>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:20px 24px;">
+    <tr>
+      ${metricCards}
+    </tr>
+  </table>
 
   <div style="padding:0 24px 20px;">
     <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">📊 10-Dimension Software Grade</h2>
