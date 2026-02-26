@@ -42,6 +42,7 @@ import {
   Square,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { toast } from 'sonner'
 
 interface TestDeviceControlsProps {
@@ -198,7 +199,7 @@ export function TestDeviceControls({
           received_at: string
         }>
   ) => {
-    const { error } = await (supabase as any).from(TEST_TELEMETRY_TABLE).insert(row)
+    const { error } = await testTelemetryFrom(supabase).insert(row as any)  // eslint-disable-line @typescript-eslint/no-explicit-any
     if (error) throw error
   }
 

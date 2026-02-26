@@ -324,7 +324,6 @@ export function AlertsList() {
       )
 
       if (!response.success) {
-        toast.error('Failed to acknowledge alert')
         throw new Error('Failed to acknowledge alert')
       }
 
@@ -356,7 +355,8 @@ export function AlertsList() {
     } catch (error) {
       console.error('Error acknowledging alert:', error)
       toast.error('Failed to acknowledge alert')
-      throw error
+      // Bug #248: don't re-throw — the toast already notifies the user and
+      // re-throwing prevents the AcknowledgeAlertDialog from closing properly
     }
   }
 

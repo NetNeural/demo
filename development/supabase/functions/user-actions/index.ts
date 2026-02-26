@@ -141,9 +141,14 @@ serve(async (req) => {
 
     // Route based on action
     if (action === 'acknowledge_alert') {
+      // Bug #248: use service_role client for acknowledge to bypass RLS completely.
+      // The acknowledge_alert RPC is SECURITY DEFINER, but calling it through
+      // the user-auth client can still fail if RLS on the alerts table blocks
+      // the initial SELECT inside the function (Supabase edge case).
+      const serviceClient = createServiceClient()
       return await handleAcknowledgeAlert(
         req,
-        supabaseClient,
+        serviceClient,
         userContext.userId
       )
     } else if (action === 'record_action') {

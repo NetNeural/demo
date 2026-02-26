@@ -250,13 +250,7 @@ export function DevicesList() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingDevice, setDeletingDevice] = useState<Device | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [useFahrenheit, setUseFahrenheit] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('temperatureUnit')
-      return stored ? stored === 'F' : true // Default: Fahrenheit
-    }
-    return true
-  })
+  const [useFahrenheit, setUseFahrenheit] = useState(true) // Default: Fahrenheit; synced from localStorage in useEffect
 
   // Filter and Sort states
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -280,6 +274,14 @@ export function DevicesList() {
 
   // View mode state
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+
+  // Bug #277 fix: sync temperature unit from localStorage in useEffect to avoid hydration mismatch
+  useEffect(() => {
+    const stored = localStorage.getItem('temperatureUnit')
+    if (stored) {
+      setUseFahrenheit(stored === 'F')
+    }
+  }, [])
 
   const fetchDevices = useCallback(
     async (isManualRefresh = false) => {
@@ -356,8 +358,10 @@ export function DevicesList() {
   }, [currentOrganization])
 
   // Fetch latest telemetry reading for each device (including multiple sensor types)
-  // Uses per-device queries so that high-frequency MQTT devices can't push
-  // low-frequency Golioth readings out of a global LIMIT.
+  // Bug #267 fix: Batched query replaces per-device N+1 pattern.
+  // A single .in() query fetches for all devices at once. If any devices are
+  // crowded out of the global limit by high-frequency neighbours, a small
+  // targeted follow-up fetches only those missing devices.
   const fetchLatestTelemetry = useCallback(
     async (deviceIds: string[]) => {
       if (!currentOrganization || deviceIds.length === 0) return
@@ -365,32 +369,28 @@ export function DevicesList() {
       try {
         const supabase = createClient()
 
-        // Query each device individually (parallelised) to guarantee every
-        // device gets its latest readings regardless of other devices' volume.
-        const perDeviceResults = await Promise.all(
-          deviceIds.map((id) =>
-            supabase
-              .from('device_telemetry_history')
-              .select('device_id, telemetry, device_timestamp, received_at')
-              .eq('device_id', id)
-              .order('received_at', { ascending: false })
-              .limit(10)
-          )
-        )
+        // Single batched query — ~15 rows per device to cover multiple sensor types
+        const batchLimit = Math.max(deviceIds.length * 15, 500)
+        const { data: allTelemetry, error: batchError } = await supabase
+          .from('device_telemetry_history')
+          .select('device_id, telemetry, device_timestamp, received_at')
+          .in('device_id', deviceIds)
+          .order('received_at', { ascending: false })
+          .limit(batchLimit)
+
+        if (batchError) {
+          console.error('[DevicesList] Error fetching telemetry:', batchError)
+          return
+        }
 
         // Group by device_id and keep latest reading for each unique sensor type.
         // Flat JSONB rows (V-Mark MQTT, Modular Test Sensor) are first expanded into
         // one virtual row per numeric key so every sensor channel is captured.
         const grouped: DeviceTelemetry = {}
 
-        for (const result of perDeviceResults) {
-          if (result.error) {
-            console.error('[DevicesList] Error fetching telemetry:', result.error)
-            continue
-          }
-          if (!result.data || result.data.length === 0) continue
-
-          for (const row of result.data) {
+        const processRows = (rows: typeof allTelemetry) => {
+          if (!rows) return
+          for (const row of rows) {
             const expanded = expandFlatTelemetryRow(row as TelemetryReading)
             for (const reading of expanded) {
               if (!grouped[row.device_id]) {
@@ -416,6 +416,24 @@ export function DevicesList() {
               }
             }
           }
+        }
+
+        processRows(allTelemetry)
+
+        // Follow-up fetch for any devices that were crowded out of the batch
+        const missingIds = deviceIds.filter((id) => !grouped[id])
+        if (missingIds.length > 0 && missingIds.length < deviceIds.length) {
+          console.log(
+            `[DevicesList] Following up on ${missingIds.length} devices not in batch result`
+          )
+          const { data: followUp } = await supabase
+            .from('device_telemetry_history')
+            .select('device_id, telemetry, device_timestamp, received_at')
+            .in('device_id', missingIds)
+            .order('received_at', { ascending: false })
+            .limit(missingIds.length * 10)
+
+          processRows(followUp ?? [])
         }
 
         setLatestTelemetry(grouped)

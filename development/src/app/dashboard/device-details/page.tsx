@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
+import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { SensorOverviewCard } from '@/components/sensors/SensorOverviewCardNew'
 import { GatewayOverviewCard } from '@/components/sensors/GatewayOverviewCard'
@@ -281,8 +282,7 @@ function DeviceDetailsContent() {
           .order('received_at', { ascending: false })
           .limit(500),
         isTestDeviceRecord
-          ? (supabase as any)
-              .from('test_device_telemetry_history')
+          ? testTelemetryFrom(supabase)
               .select('device_id, telemetry, device_timestamp, received_at')
               .eq('device_id', deviceId)
               .gte('received_at', fortyEightHoursAgo)

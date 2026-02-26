@@ -16,6 +16,7 @@ import {
 import { Download, Calendar } from 'lucide-react'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { usePreferences } from '@/contexts/PreferencesContext'
 import type { Device } from '@/types/sensor-details'
@@ -199,8 +200,7 @@ export function HistoricalDataViewer({
             .order('received_at', { ascending: false })
             .limit(500),
           isTestDev
-            ? (supabase as any)
-                .from('test_device_telemetry_history')
+            ? testTelemetryFrom(supabase)
                 .select('device_id, telemetry, device_timestamp, received_at')
                 .eq('device_id', device.id)
                 .gte('received_at', startTime)

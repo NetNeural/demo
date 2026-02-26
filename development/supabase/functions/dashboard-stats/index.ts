@@ -31,7 +31,28 @@ export default createEdgeFunction(
         requestedOrgId
       )
 
-      if (!organizationId && !userContext.isSuperAdmin) {
+      // Bug #247: Always require an organization_id for dashboard stats.
+      // Previously, super admins with no org_id got unfiltered results showing
+      // ALL devices across ALL organizations, which caused wrong counts on
+      // initial org selection.
+      if (!organizationId) {
+        if (userContext.isSuperAdmin) {
+          console.warn('[dashboard-stats] Super admin request without organization_id — returning empty stats')
+          return createSuccessResponse({
+            totalDevices: 0,
+            onlineDevices: 0,
+            offlineDevices: 0,
+            warningDevices: 0,
+            totalAlerts: 0,
+            criticalAlerts: 0,
+            highAlerts: 0,
+            unresolvedAlerts: 0,
+            uptimePercentage: '0.0',
+            systemStatus: 'healthy',
+            activeAlerts: 0,
+            lastUpdated: new Date().toISOString(),
+          })
+        }
         throw new DatabaseError('User has no organization access', 403)
       }
 
@@ -40,10 +61,7 @@ export default createEdgeFunction(
         .from('devices')
         .select('id, status, last_seen')
         .is('deleted_at', null)
-
-      if (organizationId) {
-        deviceQuery = deviceQuery.eq('organization_id', organizationId)
-      }
+        .eq('organization_id', organizationId)
 
       // Build alerts query (last 24 hours)
       const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -51,10 +69,7 @@ export default createEdgeFunction(
         .from('alerts')
         .select('id, severity, is_resolved')
         .gte('created_at', last24h)
-
-      if (organizationId) {
-        alertsQuery = alertsQuery.eq('organization_id', organizationId)
-      }
+        .eq('organization_id', organizationId)
 
       // Execute queries in parallel
       const [devicesResult, alertsResult] = await Promise.all([
@@ -123,34 +138,22 @@ export default createEdgeFunction(
       }
 
       // Get additional stats for complete dashboard
-      // Use admin client to bypass RLS for counting (super admins need to see all counts)
-      let membersQuery = supabaseAdmin
+      // organizationId is guaranteed non-null (early return above)
+      const membersQuery = supabaseAdmin
         .from('organization_members')
         .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
 
-      if (organizationId) {
-        membersQuery = membersQuery.eq('organization_id', organizationId)
-      }
-
-      let locationsQuery = supabaseAdmin
+      const locationsQuery = supabaseAdmin
         .from('locations')
         .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
 
-      if (organizationId) {
-        locationsQuery = locationsQuery.eq('organization_id', organizationId)
-      }
-
-      let integrationsQuery = supabaseAdmin
+      const integrationsQuery = supabaseAdmin
         .from('device_integrations')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'active')
-
-      if (organizationId) {
-        integrationsQuery = integrationsQuery.eq(
-          'organization_id',
-          organizationId
-        )
-      }
+        .eq('organization_id', organizationId)
 
       const [membersResult, locationsResult, integrationsResult] =
         await Promise.all([membersQuery, locationsQuery, integrationsQuery])

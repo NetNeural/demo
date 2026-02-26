@@ -195,6 +195,14 @@ function DeviceViewContent() {
         organization_id: deviceData.organization_id || '',
         created_at: deviceData.created_at,
         updated_at: deviceData.updated_at,
+        // Bug #279: add missing fields so device-view has full data
+        is_gateway:
+          deviceData.is_gateway ??
+          deviceData.metadata?.is_gateway ??
+          false,
+        hardware_ids: deviceData.hardware_ids || [],
+        cohort_id: deviceData.cohort_id,
+        parent_device_id: deviceData.parent_device_id,
       }
 
       setDevice(mappedDevice)

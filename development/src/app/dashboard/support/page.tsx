@@ -135,12 +135,8 @@ function SupportPageContent() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
-  // NetNeural org admins/owners also get access to platform tabs (troubleshooting, system-health, tests)
-  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
-  const isNetNeuralOrg = currentOrganization?.id === NETNEURAL_ORG_ID
-  const canAccessPlatformTabs =
-    isSuperAdmin ||
-    (isNetNeuralOrg && ['admin', 'owner'].includes(userRole ?? ''))
+  // Super admins get access to platform tabs (troubleshooting, system-health, tests)
+  const canAccessPlatformTabs = isSuperAdmin
 
   const visibleTabs = tabs.filter(
     (tab) => !tab.superAdminOnly || canAccessPlatformTabs

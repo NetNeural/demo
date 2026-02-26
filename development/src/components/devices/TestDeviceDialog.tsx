@@ -30,6 +30,7 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { createClient } from '@/lib/supabase/client'
+import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { toast } from 'sonner'
 
 interface TestDeviceDialogProps {
@@ -93,8 +94,7 @@ export function TestDeviceDialog({
       if (createdDeviceId) {
         const supabase = createClient()
         const now = new Date().toISOString()
-        const { error: telemetryError } = await (supabase as any)
-          .from('test_device_telemetry_history')
+        const { error: telemetryError } = await testTelemetryFrom(supabase)
           .insert({
             device_id: createdDeviceId,
             organization_id: currentOrganization.id,
@@ -106,7 +106,7 @@ export function TestDeviceDialog({
             },
             device_timestamp: now,
             received_at: now,
-          })
+          } as any)  // eslint-disable-line @typescript-eslint/no-explicit-any
 
         if (telemetryError) {
           console.warn('Created test device, but failed to seed telemetry:', telemetryError)

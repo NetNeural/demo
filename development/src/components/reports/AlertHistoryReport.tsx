@@ -215,13 +215,38 @@ export function AlertHistoryReport() {
         return
       }
 
-      // Fetch acknowledgements for all alerts
-      // Note: This would need to be implemented in the edge function
+      // Fetch acknowledgements for all alerts (Bug #268 fix)
       const acknowledgementsMap = new Map<string, AlertAcknowledgement>()
 
       try {
-        // For now, we'll calculate stats based on is_resolved flag
-        // In a full implementation, you'd fetch from alert_acknowledgements table
+        const alertIds = alertsData.map((a: any) => a.id)
+        // Fetch in batches of 200 to stay within Supabase query limits
+        for (let i = 0; i < alertIds.length; i += 200) {
+          const batch = alertIds.slice(i, i + 200)
+          const { data: ackData, error: ackError } = await supabase
+            .from('alert_acknowledgements')
+            .select('id, alert_id, user_id, acknowledgement_type, acknowledged_at, notes')
+            .in('alert_id', batch)
+            .order('acknowledged_at', { ascending: false })
+
+          if (ackError) {
+            console.warn('[AlertHistoryReport] Error fetching acknowledgements:', ackError)
+          } else if (ackData) {
+            for (const ack of ackData) {
+              // Keep only the latest acknowledgement per alert
+              if (!acknowledgementsMap.has(ack.alert_id)) {
+                acknowledgementsMap.set(ack.alert_id, {
+                  id: ack.id,
+                  alert_id: ack.alert_id,
+                  user_id: ack.user_id,
+                  acknowledgement_type: ack.acknowledgement_type as AlertAcknowledgement['acknowledgement_type'],
+                  acknowledged_at: ack.acknowledged_at,
+                  notes: ack.notes ?? undefined,
+                })
+              }
+            }
+          }
+        }
       } catch (ackError) {
         console.warn(
           '[AlertHistoryReport] Could not fetch acknowledgements:',
@@ -239,15 +264,13 @@ export function AlertHistoryReport() {
         let responseTimeMinutes: number | undefined
         let isFalsePositive = false
 
-        if (alert.is_resolved && alert.resolved_at && ack?.acknowledged_at) {
+        if (ack?.acknowledged_at) {
           const createdTime = new Date(alert.created_at).getTime()
           const acknowledgedTime = new Date(ack.acknowledged_at).getTime()
           responseTimeMinutes = (acknowledgedTime - createdTime) / 1000 / 60
 
-          // False positive: acknowledged within 5 minutes
-          isFalsePositive =
-            responseTimeMinutes < 5 &&
-            ack.acknowledgement_type === 'false_positive'
+          // False positive: marked as false_positive by the acknowledger
+          isFalsePositive = ack.acknowledgement_type === 'false_positive'
         }
 
         return {
@@ -318,7 +341,7 @@ export function AlertHistoryReport() {
         (a) => a.severity === 'low'
       ).length
       const acknowledgedAlerts = filteredAlerts.filter(
-        (a) => a.is_resolved
+        (a) => a.is_resolved || a.acknowledgement
       ).length
       const unresolvedAlerts = totalAlerts - acknowledgedAlerts
       const falsePositiveCount = filteredAlerts.filter(
