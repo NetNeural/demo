@@ -30,6 +30,7 @@ import {
   FileJson,
   FileSpreadsheet,
 } from 'lucide-react'
+import ExecutiveReportsCard from './ExecutiveReportsCard'
 
 interface Props {
   organizationId: string
@@ -181,6 +182,9 @@ export default function AdminToolsTab({ organizationId }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Executive Reports */}
+      <ExecutiveReportsCard organizationId={organizationId} />
+
       {/* Data Export */}
       <Card>
         <CardHeader>

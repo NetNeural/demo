@@ -72,12 +72,13 @@ serve(async (req) => {
     let recipients = DEFAULT_RECIPIENTS
     let reportDate = new Date().toISOString().split('T')[0]
     const url = new URL(req.url)
-    const isPreview = url.searchParams.get('preview') === 'true'
+    let isPreview = url.searchParams.get('preview') === 'true'
 
     try {
       const body = await req.json()
       if (body.recipients?.length > 0) recipients = body.recipients
       if (body.date) reportDate = body.date
+      if (body.preview === true) isPreview = true
     } catch { /* no body — use defaults */ }
 
     console.log(`[daily-report] Generating report for ${reportDate}`)
