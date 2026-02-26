@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import { AlertHistoryReport } from '@/components/reports/AlertHistoryReport'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { BackButton } from '@/components/ui/back-button'
 import { useOrganization } from '@/contexts/OrganizationContext'
 
 export default function AlertHistoryReportPage() {
@@ -30,6 +31,7 @@ export default function AlertHistoryReportPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+      <BackButton href="/dashboard/reports" label="Back to Reports" />
       <Suspense fallback={<LoadingSpinner />}>
         <AlertHistoryReport key={currentOrganization.id} />
       </Suspense>

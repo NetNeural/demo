@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import { TelemetryTrendsReport } from '@/components/reports/TelemetryTrendsReport'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { BackButton } from '@/components/ui/back-button'
 import { useOrganization } from '@/contexts/OrganizationContext'
 
 export default function TelemetryTrendsPage() {
@@ -30,6 +31,7 @@ export default function TelemetryTrendsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+      <BackButton href="/dashboard/reports" label="Back to Reports" />
       <Suspense fallback={<LoadingSpinner />}>
         <TelemetryTrendsReport key={currentOrganization.id} />
       </Suspense>
