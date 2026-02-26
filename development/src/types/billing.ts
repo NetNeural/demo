@@ -5,37 +5,55 @@
 
 /** Feature flags stored in the billing_plans.features JSONB column */
 export interface BillingPlanFeatures {
-  ai_analytics: boolean
-  pdf_export: boolean
-  mfa: boolean
-  custom_branding: boolean
-  api_access: boolean
-  priority_support: boolean
-  sla: boolean
-  audit_log: boolean
-  webhook_integrations: boolean
-  email_alerts: boolean
+  // Core (all plans)
   dashboard: boolean
   telemetry_charts: boolean
-  // Enterprise-only
-  dedicated_support?: boolean
-  custom_integrations?: boolean
-  on_premise?: boolean
+  email_alerts: boolean
+  sms_alerts: boolean
+  compliance_logs: boolean
+  haccp_export: boolean
+  manual_report_export: boolean
+  // Protect+ features
+  ai_analytics: boolean
+  predictive_alerts: boolean
+  multi_site_dashboard: boolean
+  role_based_access: boolean
+  api_access: boolean
+  automated_audit_reporting: boolean
+  pdf_export: boolean
+  mfa: boolean
+  audit_log: boolean
+  webhook_integrations: boolean
+  // Command features
+  ai_optimization: boolean
+  chain_benchmarking: boolean
+  esg_reporting: boolean
+  carbon_analytics: boolean
+  custom_integrations: boolean
+  dedicated_support: boolean
+  sla: boolean
+  custom_branding: boolean
+  priority_support: boolean
 }
+
+/** Pricing model type */
+export type PricingModel = 'flat' | 'per_device' | 'custom'
 
 /** Database row from billing_plans table */
 export interface BillingPlan {
   id: string
   name: string
   slug: string
+  pricing_model: PricingModel
+  price_per_device: number   // per-sensor monthly price (e.g., $2, $4, $6)
   stripe_price_id_monthly: string | null
   stripe_price_id_annual: string | null
-  price_monthly: number
-  price_annual: number
-  max_devices: number      // -1 = unlimited
-  max_users: number         // -1 = unlimited
-  max_integrations: number  // -1 = unlimited
-  telemetry_retention_days: number
+  price_monthly: number      // base monthly price (0 for per-device plans)
+  price_annual: number       // base annual price (0 for per-device plans)
+  max_devices: number        // -1 = unlimited
+  max_users: number          // -1 = unlimited
+  max_integrations: number   // -1 = unlimited
+  telemetry_retention_days: number  // -1 = unlimited
   features: BillingPlanFeatures
   is_active: boolean
   is_public: boolean
@@ -45,8 +63,11 @@ export interface BillingPlan {
   updated_at: string
 }
 
-/** Slugs matching the seed data */
-export type BillingPlanSlug = 'free' | 'starter' | 'professional' | 'enterprise'
+/** Slugs matching the active seed data (per-sensor pricing model) */
+export type BillingPlanSlug = 'monitor' | 'protect' | 'command'
+
+/** Legacy slugs (deactivated, kept for historical subscription references) */
+export type LegacyBillingPlanSlug = 'free' | 'starter' | 'professional' | 'enterprise'
 
 /** Feature display metadata for plan comparison UI */
 export interface PlanFeatureDisplay {
@@ -57,30 +78,71 @@ export interface PlanFeatureDisplay {
 
 /** All displayable features for the comparison table */
 export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
-  { key: 'dashboard', label: 'Dashboard', description: 'Real-time device monitoring dashboard' },
-  { key: 'telemetry_charts', label: 'Telemetry Charts', description: 'Historical telemetry visualization' },
+  // Monitor (all plans)
+  { key: 'dashboard', label: 'Real-time Monitoring', description: 'Live temperature and sensor dashboard' },
+  { key: 'compliance_logs', label: 'Compliance Logs', description: 'Automated HACCP-ready compliance logging' },
+  { key: 'haccp_export', label: 'HACCP Export', description: 'Export compliance data for auditors' },
   { key: 'email_alerts', label: 'Email Alerts', description: 'Alert notifications via email' },
-  { key: 'webhook_integrations', label: 'Webhook Integrations', description: 'Connect to external services' },
-  { key: 'audit_log', label: 'Audit Log', description: 'Track all user actions' },
+  { key: 'sms_alerts', label: 'SMS Alerts', description: 'Alert notifications via SMS' },
+  { key: 'manual_report_export', label: 'Report Export', description: 'Manual data export and reporting' },
+  // Protect+
+  { key: 'ai_analytics', label: 'AI Anomaly Detection', description: 'Detect anomalies like doors left open' },
+  { key: 'predictive_alerts', label: 'Predictive Alerts', description: 'Predict equipment failures before they happen' },
+  { key: 'multi_site_dashboard', label: 'Multi-site Dashboard', description: 'Monitor all locations from one view' },
+  { key: 'role_based_access', label: 'Role-based Access', description: 'Granular permissions per user' },
   { key: 'api_access', label: 'API Access', description: 'Programmatic access via REST API' },
-  { key: 'mfa', label: 'Multi-Factor Auth', description: 'TOTP/authenticator app support' },
+  { key: 'automated_audit_reporting', label: 'Automated Audit Reports', description: 'Scheduled compliance reports' },
   { key: 'pdf_export', label: 'PDF Export', description: 'Export reports as PDF' },
-  { key: 'custom_branding', label: 'Custom Branding', description: 'Logo, colors, and login page customization' },
-  { key: 'ai_analytics', label: 'AI Analytics', description: 'Anomaly detection and predictive maintenance' },
-  { key: 'priority_support', label: 'Priority Support', description: 'Faster response times' },
+  { key: 'mfa', label: 'Multi-Factor Auth', description: 'TOTP/authenticator app support' },
+  { key: 'audit_log', label: 'Audit Log', description: 'Track all user actions' },
+  { key: 'webhook_integrations', label: 'Webhook Integrations', description: 'Connect to external services' },
+  // Command
+  { key: 'ai_optimization', label: 'AI Optimization', description: 'Energy and equipment runtime optimization insights' },
+  { key: 'chain_benchmarking', label: 'Chain Benchmarking', description: 'Compare performance across all locations' },
+  { key: 'esg_reporting', label: 'ESG Reporting', description: 'Environmental, Social, and Governance dashboard' },
+  { key: 'carbon_analytics', label: 'Carbon Analytics', description: 'Carbon impact tracking and reporting' },
+  { key: 'custom_integrations', label: 'Custom Integrations', description: 'Custom API and system integrations' },
+  { key: 'dedicated_support', label: 'Dedicated Support', description: 'Named account manager and support engineer' },
   { key: 'sla', label: 'SLA Guarantee', description: 'Uptime and response time guarantees' },
+  { key: 'custom_branding', label: 'Custom Branding', description: 'Logo, colors, and login page customization' },
+  { key: 'priority_support', label: 'Priority Support', description: 'Faster response times' },
 ]
 
 /**
  * Format plan price for display.
- * Enterprise (price 0 with slug 'enterprise') shows "Custom".
- * Free shows "Free".
+ * Per-device plans show "$X/sensor/mo".
+ * Flat-rate plans show "$X/mo" or "$X/yr".
+ * Custom plans show "Custom".
  */
 export function formatPlanPrice(plan: BillingPlan, interval: 'monthly' | 'annual' = 'monthly'): string {
+  if (plan.pricing_model === 'custom') return 'Custom'
+  if (plan.pricing_model === 'per_device') {
+    return `$${plan.price_per_device}/sensor/mo`
+  }
+  // Legacy flat-rate plans
   if (plan.slug === 'enterprise') return 'Custom'
   const price = interval === 'monthly' ? plan.price_monthly : plan.price_annual
   if (price === 0) return 'Free'
   return `$${price}/${interval === 'monthly' ? 'mo' : 'yr'}`
+}
+
+/**
+ * Calculate monthly cost for a per-device plan given sensor count.
+ */
+export function calculateMonthlyCost(plan: BillingPlan, deviceCount: number): number {
+  if (plan.pricing_model === 'per_device') {
+    return plan.price_per_device * deviceCount + plan.price_monthly
+  }
+  return plan.price_monthly
+}
+
+/**
+ * Format the calculated monthly cost for display.
+ */
+export function formatMonthlyCost(plan: BillingPlan, deviceCount: number): string {
+  if (plan.pricing_model === 'custom') return 'Custom'
+  const cost = calculateMonthlyCost(plan, deviceCount)
+  return `$${cost.toFixed(2)}/mo`
 }
 
 /**
