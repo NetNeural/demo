@@ -4,28 +4,41 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getUserContext } from '../_shared/auth.ts'
+
+// ─── Org Membership Check ────────────────────────────────────────────
+// Verifies the user belongs to the target organization (or is super_admin).
+async function verifyOrgAccess(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  organizationId: string,
+  isSuperAdmin: boolean
+): Promise<void> {
+  if (isSuperAdmin) return
+
+  const { data: membership } = await supabaseAdmin
+    .from('organization_members')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('organization_id', organizationId)
+    .limit(1)
+    .maybeSingle()
+
+  if (!membership) {
+    throw new DatabaseError('You do not have access to this organization', 403)
+  }
+}
 
 export default createEdgeFunction(
   async ({ req }) => {
-    // Create Supabase client with user's auth
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+    // Authenticate user via JWT
+    const userContext = await getUserContext(req)
 
-    // Verify authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser()
-    if (authError || !user) {
-      throw new DatabaseError('Unauthorized', 401)
-    }
+    // Service-role client bypasses RLS — authorization enforced in function logic
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
 
     const url = new URL(req.url)
     const organizationId = url.searchParams.get('organization_id')
@@ -36,7 +49,9 @@ export default createEdgeFunction(
         throw new Error('organization_id parameter required')
       }
 
-      const { data: locations, error } = await supabaseClient
+      await verifyOrgAccess(supabaseAdmin, userContext.userId, organizationId, userContext.isSuperAdmin)
+
+      const { data: locations, error } = await supabaseAdmin
         .from('locations')
         .select('*')
         .eq('organization_id', organizationId)
@@ -70,7 +85,9 @@ export default createEdgeFunction(
         throw new Error('organization_id and name are required')
       }
 
-      const { data: location, error } = await supabaseClient
+      await verifyOrgAccess(supabaseAdmin, userContext.userId, organization_id, userContext.isSuperAdmin)
+
+      const { data: location, error } = await supabaseAdmin
         .from('locations')
         .insert({
           organization_id,
@@ -102,6 +119,19 @@ export default createEdgeFunction(
         throw new Error('id parameter required')
       }
 
+      // Fetch the location to verify org access
+      const { data: existing } = await supabaseAdmin
+        .from('locations')
+        .select('organization_id')
+        .eq('id', locationId)
+        .single()
+
+      if (!existing) {
+        throw new DatabaseError('Location not found', 404)
+      }
+
+      await verifyOrgAccess(supabaseAdmin, userContext.userId, existing.organization_id, userContext.isSuperAdmin)
+
       const body = await req.json()
       const {
         name,
@@ -128,7 +158,7 @@ export default createEdgeFunction(
       if (latitude !== undefined) updates.latitude = latitude
       if (longitude !== undefined) updates.longitude = longitude
 
-      const { data: location, error } = await supabaseClient
+      const { data: location, error } = await supabaseAdmin
         .from('locations')
         .update(updates)
         .eq('id', locationId)
@@ -150,7 +180,20 @@ export default createEdgeFunction(
         throw new Error('id parameter required')
       }
 
-      const { error } = await supabaseClient
+      // Fetch the location to verify org access
+      const { data: existing } = await supabaseAdmin
+        .from('locations')
+        .select('organization_id')
+        .eq('id', locationId)
+        .single()
+
+      if (!existing) {
+        throw new DatabaseError('Location not found', 404)
+      }
+
+      await verifyOrgAccess(supabaseAdmin, userContext.userId, existing.organization_id, userContext.isSuperAdmin)
+
+      const { error } = await supabaseAdmin
         .from('locations')
         .delete()
         .eq('id', locationId)
