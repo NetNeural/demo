@@ -31,7 +31,8 @@ export default function PricingPage() {
     async function fetchPlans() {
       try {
         const supabase = getSupabase()
-        const { data, error } = await supabase
+        // Cast needed: billing_plans table not yet in generated DB types
+        const { data, error } = await (supabase as any)
           .from('billing_plans')
           .select('*')
           .eq('is_active', true)
@@ -72,7 +73,8 @@ export default function PricingPage() {
 
         if (!membership) return
 
-        const { data: subscription } = await supabase
+        // Cast needed: subscriptions table not yet in generated DB types
+        const { data: subscription } = await (supabase as any)
           .from('subscriptions')
           .select('plan_id, billing_plan:plan_id(slug)')
           .eq('organization_id', membership.organization_id)
@@ -163,7 +165,7 @@ export default function PricingPage() {
           </label>
           <Slider
             value={[sensorCount]}
-            onValueChange={([val]) => setSensorCount(val)}
+            onValueChange={([val]) => setSensorCount(val ?? 10)}
             min={1}
             max={200}
             step={1}
