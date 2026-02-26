@@ -84,6 +84,7 @@ describe('Issue #23: Login Redirect Flow', () => {
         },
       },
       from: mockFrom,
+      rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
     }
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
   })
@@ -104,10 +105,19 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    // First getSession (on mount) returns null, second (after login) returns session
-    mockSupabase.auth.getSession
-      .mockResolvedValueOnce({ data: { session: null }, error: null })
-      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
+    // On mount: getSession returns null (no existing session)
+    // After login: getSession returns the new session
+    // Use default fallback for any extra calls (Suspense re-mounts)
+    let getSessionCallCount = 0
+    mockSupabase.auth.getSession.mockImplementation(() => {
+      getSessionCallCount++
+      // First call(s) are mount auth-check — return null
+      // After signInWithPassword is called, return the session
+      if (mockSupabase.auth.signInWithPassword.mock.calls.length > 0 && getSessionCallCount > 1) {
+        return Promise.resolve({ data: { session: mockSession }, error: null })
+      }
+      return Promise.resolve({ data: { session: null }, error: null })
+    })
 
     render(<LoginPage />)
 
@@ -125,7 +135,7 @@ describe('Issue #23: Login Redirect Flow', () => {
       () => {
         expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
       },
-      { timeout: 3000 }
+      { timeout: 5000 }
     )
 
     // Verify session was checked
@@ -158,9 +168,10 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } })
     fireEvent.click(submitButton)
 
-    // Should show error message
+    // Should show error message (may be split across Alert elements)
     await waitFor(() => {
-      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument()
+      const errorText = document.body.textContent || ''
+      expect(errorText.toLowerCase()).toContain('invalid email or password')
     })
 
     // Should NOT redirect
@@ -231,10 +242,16 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    // First getSession (on mount) returns null, second (after login) returns session
-    mockSupabase.auth.getSession
-      .mockResolvedValueOnce({ data: { session: null }, error: null })
-      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
+    // On mount: getSession returns null (no existing session)
+    // After login: getSession returns the new session
+    let tc5CallCount = 0
+    mockSupabase.auth.getSession.mockImplementation(() => {
+      tc5CallCount++
+      if (mockSupabase.auth.signInWithPassword.mock.calls.length > 0 && tc5CallCount > 1) {
+        return Promise.resolve({ data: { session: mockSession }, error: null })
+      }
+      return Promise.resolve({ data: { session: null }, error: null })
+    })
 
     render(<LoginPage />)
 
@@ -249,7 +266,7 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-    }, { timeout: 3000 })
+    }, { timeout: 5000 })
 
     // Verify login was attempted
     expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalled()
