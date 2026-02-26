@@ -224,10 +224,10 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   }
 
   const availableRoles = (() => {
-    const allRoles = ['viewer', 'user', 'org_admin', 'org_owner']
+    const allRoles = ['viewer', 'user', 'billing', 'org_admin', 'org_owner']
     if (user?.isSuperAdmin) return allRoles
-    if (user?.role === 'org_owner') return ['viewer', 'user', 'org_admin']
-    if (user?.role === 'org_admin') return ['viewer', 'user']
+    if (user?.role === 'org_owner') return ['viewer', 'user', 'billing', 'org_admin']
+    if (user?.role === 'org_admin') return ['viewer', 'user', 'billing']
     return []
   })()
 
@@ -349,6 +349,7 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="org_owner">Owner</SelectItem>
                 <SelectItem value="org_admin">Admin</SelectItem>
+                <SelectItem value="billing">Billing</SelectItem>
                 <SelectItem value="user">Member</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
@@ -510,9 +511,11 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
                                                 ? 'Owner'
                                                 : role === 'org_admin'
                                                   ? 'Admin'
-                                                  : role === 'user'
-                                                    ? 'Member'
-                                                    : 'Viewer'}
+                                                  : role === 'billing'
+                                                    ? 'Billing'
+                                                    : role === 'user'
+                                                      ? 'Member'
+                                                      : 'Viewer'}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>

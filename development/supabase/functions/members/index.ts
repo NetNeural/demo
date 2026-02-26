@@ -155,7 +155,7 @@ export default createEdgeFunction(
       }
 
       // Validate role (only roles that exist in database)
-      const validRoles = ['member', 'admin', 'owner']
+      const validRoles = ['member', 'admin', 'billing', 'viewer', 'owner']
       if (!validRoles.includes(role)) {
         throw new Error(
           `Invalid role. Must be one of: ${validRoles.join(', ')}`
@@ -407,7 +407,7 @@ export default createEdgeFunction(
       }
 
       // Validate role (only roles that exist in database)
-      const validRoles = ['member', 'admin', 'owner']
+      const validRoles = ['member', 'admin', 'billing', 'viewer', 'owner']
       if (!validRoles.includes(role)) {
         throw new Error(
           `Invalid role. Must be one of: ${validRoles.join(', ')}`

@@ -414,7 +414,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                               </Badge>
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="viewer">Viewer</SelectItem>
                               <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="billing">Billing</SelectItem>
                               <SelectItem value="admin">Admin</SelectItem>
                               {(userRole === 'owner' || isSuperAdmin) && (
                                 <SelectItem value="owner">Owner</SelectItem>
