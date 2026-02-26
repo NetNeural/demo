@@ -295,30 +295,15 @@ serve(async (req) => {
 <html>
 <head>
 <meta charset="utf-8">
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.5; color: #1f2937; margin: 0; padding: 0; background: #f3f4f6; }
-  .container { max-width: 740px; margin: 0 auto; background: white; }
-  .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 32px; text-align: center; }
-  .header h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.5px; }
-  .header p { margin: 0; opacity: 0.8; font-size: 13px; }
-  .version-badge { display: inline-block; padding: 4px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); margin-top: 10px; }
-  .section { padding: 0 24px 16px; }
-  .section h2 { font-size: 14px; color: #0f172a; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.3px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #f3f4f6; padding: 7px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
-  .footer { background: #f9fafb; padding: 18px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-  .mvp-bar { background:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px; }
-  .mvp-fill { background: linear-gradient(90deg, #10b981, #059669); border-radius:6px; height:12px; transition: width 0.3s; }
-</style>
 </head>
-<body>
-<div class="container">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.5; color:#1f2937; margin:0; padding:0; background:#f3f4f6;">
+<div style="max-width:740px; margin:0 auto; background:white;">
 
   <!-- Header -->
-  <div class="header">
-    <h1>NetNeural — Executive Summary</h1>
-    <p>${today}</p>
-    <div class="version-badge">v${APP_VERSION}</div>
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%); color:white; padding:32px; text-align:center;">
+    <h1 style="margin:0 0 4px; font-size:22px; letter-spacing:-0.5px; color:white;">NetNeural — Executive Summary</h1>
+    <p style="margin:0; opacity:0.8; font-size:13px;">${today}</p>
+    <div style="display:inline-block; padding:4px 14px; border-radius:16px; font-size:13px; font-weight:600; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); margin-top:10px;">v${APP_VERSION}</div>
     <div style="margin-top:12px;">
       <span style="display:inline-block; padding:5px 16px; border-radius:16px; font-size:14px; font-weight:700; background:${healthBg}; color:${healthColor};">
         ${healthStatus}
@@ -332,7 +317,7 @@ serve(async (req) => {
       <span style="font-size:13px; font-weight:600; color:#0f172a;">MVP Completion</span>
       <span style="font-size:20px; font-weight:800; color:#059669;">${mvpPct}%</span>
     </div>
-    <div class="mvp-bar"><div class="mvp-fill" style="width:${mvpPct}%;"></div></div>
+    <div style="background:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px;"><div style="background:linear-gradient(90deg,#10b981,#059669); border-radius:6px; height:12px; width:${mvpPct}%;"></div></div>
     <p style="font-size:11px; color:#9ca3af; margin-top:4px;">Remaining: test coverage refinement (~1 week, 1 dev)</p>
   </div>
 
@@ -346,8 +331,8 @@ serve(async (req) => {
   </div>
 
   <!-- GitHub Issue Tracking -->
-  <div class="section">
-    <h2>📊 Issue Tracking</h2>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📊 Issue Tracking</h2>
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
       <div style="flex:1; min-width:100px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; text-align:center;">
         <div style="font-size:20px; font-weight:700; color:#16a34a;">${totalClosed}</div>
@@ -371,14 +356,14 @@ serve(async (req) => {
 
   ${recentClosures.length > 0 ? `
   <!-- Recent Achievements -->
-  <div class="section">
-    <h2>🎯 Recent Achievements (Last 7 Days)</h2>
-    <table>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🎯 Recent Achievements (Last 7 Days)</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th style="width:55px; text-align:center;">Ticket</th>
-          <th>Title</th>
-          <th style="width:40px; text-align:center;">Type</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:55px;">Ticket</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Title</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:40px;">Type</th>
         </tr>
       </thead>
       <tbody>${recentClosureRows}</tbody>
@@ -386,15 +371,15 @@ serve(async (req) => {
   </div>` : ''}
 
   <!-- Environment Status -->
-  <div class="section">
-    <h2>🌐 Environment Status</h2>
-    <table>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🌐 Environment Status</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Environment</th>
-          <th>Domain</th>
-          <th>Branch</th>
-          <th style="text-align:center">Status</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Environment</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Domain</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Branch</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Status</th>
         </tr>
       </thead>
       <tbody>${envRows}</tbody>
@@ -403,8 +388,8 @@ serve(async (req) => {
   </div>
 
   <!-- Technology Stack -->
-  <div class="section">
-    <h2>🛠 Technology Stack</h2>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🛠 Technology Stack</h2>
     <div style="display:flex; flex-wrap:wrap; gap:6px;">
       ${['Next.js 15', 'React 18', 'TypeScript 5.9', 'Supabase', 'PostgreSQL 17', 'Deno Edge Functions', 'Tailwind CSS', 'GitHub Actions'].map(t =>
         `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">${t}</span>`
@@ -413,14 +398,14 @@ serve(async (req) => {
   </div>
 
   <!-- Risk Assessment -->
-  <div class="section">
-    <h2>⚠️ Risk Assessment</h2>
-    <table>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">⚠️ Risk Assessment</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Risk</th>
-          <th style="text-align:center; width:70px;">Severity</th>
-          <th>Mitigation</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Risk</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:70px;">Severity</th>
+          <th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Mitigation</th>
         </tr>
       </thead>
       <tbody>${riskRows}</tbody>
@@ -428,11 +413,11 @@ serve(async (req) => {
   </div>
 
   <!-- Infrastructure -->
-  <div class="section">
-    <h2>💰 Infrastructure Cost</h2>
-    <table>
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">💰 Infrastructure Cost</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
-        <tr><th>Service</th><th style="text-align:right; width:90px;">Monthly</th></tr>
+        <tr><th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Service</th><th style="background:#f3f4f6; padding:7px 10px; text-align:right; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:90px;">Monthly</th></tr>
       </thead>
       <tbody>
         <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Supabase Pro (×3 envs)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$120</td></tr>
@@ -445,8 +430,8 @@ serve(async (req) => {
   </div>
 
   <!-- Quick Links -->
-  <div class="section" style="padding-bottom:20px;">
-    <h2>🔗 Quick Links</h2>
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🔗 Quick Links</h2>
     <p style="font-size:13px;">
       <a href="https://sentinel.netneural.ai/dashboard" style="color:#2563eb; text-decoration:none;">📊 Production</a> &nbsp;|&nbsp;
       <a href="https://demo-stage.netneural.ai/dashboard" style="color:#2563eb; text-decoration:none;">🧪 Staging</a> &nbsp;|&nbsp;
@@ -456,7 +441,7 @@ serve(async (req) => {
   </div>
 
   <!-- Footer -->
-  <div class="footer">
+  <div style="background:#f9fafb; padding:18px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #e5e7eb;">
     <p>Executive Summary from <strong>NetNeural Sentinel Platform</strong> v${APP_VERSION}</p>
     <p>Generated at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</p>
     <p style="margin-top:6px; font-size:11px;">All metrics are live from Supabase and GitHub at time of generation.</p>

@@ -194,28 +194,13 @@ serve(async (req) => {
 <html>
 <head>
 <meta charset="utf-8">
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.5; color: #1f2937; margin: 0; padding: 0; background: #f3f4f6; }
-  .container { max-width: 780px; margin: 0 auto; background: white; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 35px; text-align: center; }
-  .header h1 { margin: 0 0 5px; font-size: 22px; letter-spacing: -0.5px; }
-  .header p { margin: 0; opacity: 0.8; font-size: 13px; }
-  .grade-circle { display: inline-block; width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 3px solid rgba(255,255,255,0.4); line-height: 80px; font-size: 32px; font-weight: 800; margin: 15px 0 5px; letter-spacing: -1px; }
-  .section { padding: 0 24px 20px; }
-  .section h2 { font-size: 15px; color: #1a1a2e; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin: 24px 0 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #f3f4f6; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
-  .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-  .callout { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
-  .callout-green { background: #d1fae5; border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
-</style>
 </head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>NetNeural Software Assessment & Roadmap</h1>
-    <p>Daily Executive Summary — ${today}</p>
-    <div class="grade-circle">${overallGrade}</div>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.5; color:#1f2937; margin:0; padding:0; background:#f3f4f6;">
+<div style="max-width:780px; margin:0 auto; background:white;">
+  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); color:white; padding:35px; text-align:center;">
+    <h1 style="margin:0 0 5px; font-size:22px; letter-spacing:-0.5px; color:white;">NetNeural Software Assessment & Roadmap</h1>
+    <p style="margin:0; opacity:0.8; font-size:13px;">Daily Executive Summary — ${today}</p>
+    <div style="display:inline-block; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.15); border:3px solid rgba(255,255,255,0.4); line-height:80px; font-size:32px; font-weight:800; margin:15px 0 5px; letter-spacing:-1px;">${overallGrade}</div>
     <p style="font-size:16px; font-weight:600; margin-top:4px;">${overallScore}/100</p>
     <p style="opacity:0.7; font-size:12px; margin-top:2px;">Estimated Value: $400K – $700K</p>
   </div>
@@ -224,16 +209,16 @@ serve(async (req) => {
     ${metricCards}
   </div>
 
-  <div class="section">
-    <h2>📊 10-Dimension Software Grade</h2>
-    <table>
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">📊 10-Dimension Software Grade</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Dimension</th>
-          <th style="text-align:center">Grade</th>
-          <th style="text-align:center">Score</th>
-          <th style="text-align:center; width:120px;">Progress</th>
-          <th>Notes</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Dimension</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Grade</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Score</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:120px;">Progress</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Notes</th>
         </tr>
       </thead>
       <tbody>
@@ -251,37 +236,37 @@ serve(async (req) => {
     </table>
   </div>
 
-  <div class="section">
-    <h2>💰 Platform Valuation</h2>
-    <table>
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">💰 Platform Valuation</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Valuation Method</th>
-          <th style="text-align:center">Estimate</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Valuation Method</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Estimate</th>
         </tr>
       </thead>
       <tbody>
         ${valuationRows}
       </tbody>
     </table>
-    <div class="callout-green">
+    <div style="background:#d1fae5; border-left:4px solid #10b981; padding:12px 16px; border-radius:0 8px 8px 0; margin:16px 0; font-size:13px;">
       <strong>With billing live + 1,000 devices:</strong> Platform reaches <strong>$1M – $2M+</strong> valuation at standard early-stage SaaS multiples.
     </div>
   </div>
 
-  <div class="section">
-    <h2>🚀 Top 25 Features — Ranked by ROI</h2>
-    <div class="callout">
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">🚀 Top 25 Features — Ranked by ROI</h2>
+    <div style="background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px; border-radius:0 8px 8px 0; margin:16px 0; font-size:13px;">
       <strong>⚡ #1 Priority:</strong> Stripe Integration (#51) — enables ALL revenue. Without it, $0 income. Every day without billing is revenue left on the table.
     </div>
-    <table>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th style="text-align:center; width:35px;">#</th>
-          <th style="text-align:center; width:55px;">Issue</th>
-          <th>Feature</th>
-          <th style="text-align:center; width:70px;">Effort</th>
-          <th>Impact / Tier</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:35px;">#</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:55px;">Issue</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Feature</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:70px;">Effort</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Impact / Tier</th>
         </tr>
       </thead>
       <tbody>
@@ -290,15 +275,15 @@ serve(async (req) => {
     </table>
   </div>
 
-  <div class="section">
-    <h2>📅 Strategic Execution Plan</h2>
-    <table>
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">📅 Strategic Execution Plan</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Phase</th>
-          <th>Timeline</th>
-          <th>Focus</th>
-          <th>Outcome</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Phase</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Timeline</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Focus</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Outcome</th>
         </tr>
       </thead>
       <tbody>
@@ -330,14 +315,14 @@ serve(async (req) => {
     </table>
   </div>
 
-  <div class="section">
-    <h2>⚠️ Key Risks</h2>
-    <table>
+  <div style="padding:0 24px 20px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">⚠️ Key Risks</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Risk</th>
-          <th style="text-align:center">Severity</th>
-          <th>Mitigation</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Risk</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Severity</th>
+          <th style="background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Mitigation</th>
         </tr>
       </thead>
       <tbody>
@@ -365,8 +350,8 @@ serve(async (req) => {
     </table>
   </div>
 
-  <div class="section" style="padding-bottom:24px;">
-    <h2>🔗 Quick Links</h2>
+  <div style="padding:0 24px 20px; padding-bottom:24px;">
+    <h2 style="font-size:15px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:24px 0 12px;">🔗 Quick Links</h2>
     <p style="font-size:14px;">
       <a href="https://demo-stage.netneural.ai/dashboard" style="color:#2563eb; text-decoration:none;">📊 Dashboard</a> &nbsp;|&nbsp;
       <a href="https://github.com/NetNeural/MonoRepo-Staging/issues" style="color:#2563eb; text-decoration:none;">🐛 Issues</a> &nbsp;|&nbsp;
@@ -375,7 +360,7 @@ serve(async (req) => {
     </p>
   </div>
 
-  <div class="footer">
+  <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #e5e7eb;">
     <p>Automated daily assessment from <strong>NetNeural Sentinel Platform</strong></p>
     <p>Generated at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</p>
     <p style="margin-top:8px; font-size:11px;">This report updates as features are completed. Overall grade and scores are recalculated periodically.</p>

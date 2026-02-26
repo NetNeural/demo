@@ -244,76 +244,57 @@ serve(async (req) => {
 <html>
 <head>
 <meta charset="utf-8">
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.5; color: #1f2937; margin: 0; padding: 0; background: #f3f4f6; }
-  .container { max-width: 700px; margin: 0 auto; background: white; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 30px; text-align: center; }
-  .header h1 { margin: 0 0 5px; font-size: 24px; }
-  .header p { margin: 0; opacity: 0.8; font-size: 14px; }
-  .health-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; margin-top: 12px; }
-  .stats-grid { display: flex; flex-wrap: wrap; padding: 20px; gap: 12px; }
-  .stat-card { flex: 1; min-width: 140px; background: #f9fafb; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid #e5e7eb; }
-  .stat-value { font-size: 28px; font-weight: 700; color: #1a1a2e; }
-  .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-  .stat-sub { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-  .section { padding: 0 20px 20px; }
-  .section h2 { font-size: 16px; color: #1a1a2e; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin: 20px 0 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
-  .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-  .trend-up { color: #ef4444; } .trend-down { color: #10b981; } .trend-flat { color: #6b7280; }
-</style>
 </head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>NetNeural Daily Platform Report</h1>
-    <p>${reportDateFormatted}</p>
-    <div class="health-badge" style="background:${healthColor}22; color:${healthColor}; border:1px solid ${healthColor}44;">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.5; color:#1f2937; margin:0; padding:0; background:#f3f4f6;">
+<div style="max-width:700px; margin:0 auto; background:white;">
+  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:white; padding:30px; text-align:center;">
+    <h1 style="margin:0 0 5px; font-size:24px; color:white;">NetNeural Daily Platform Report</h1>
+    <p style="margin:0; opacity:0.8; font-size:14px;">${reportDateFormatted}</p>
+    <div style="display:inline-block; padding:6px 16px; border-radius:20px; font-weight:600; font-size:14px; margin-top:12px; background:${healthColor}22; color:${healthColor}; border:1px solid ${healthColor}44;">
       ${healthStatus}
     </div>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value">${totalDevices}</div>
-      <div class="stat-label">Total Devices</div>
-      <div class="stat-sub">${uptimePct}% uptime</div>
+  <div style="display:flex; flex-wrap:wrap; padding:20px; gap:12px;">
+    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
+      <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalDevices}</div>
+      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Total Devices</div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uptimePct}% uptime</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:${onlineDevices === totalDevices ? '#10b981' : '#f59e0b'}">${onlineDevices}</div>
-      <div class="stat-label">Online</div>
-      <div class="stat-sub">${offlineDevices} offline</div>
+    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
+      <div style="font-size:28px; font-weight:700; color:${onlineDevices === totalDevices ? '#10b981' : '#f59e0b'};">${onlineDevices}</div>
+      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Online</div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${offlineDevices} offline</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:${totalUnresolved > 0 ? '#ef4444' : '#10b981'}">${totalUnresolved}</div>
-      <div class="stat-label">Active Alerts</div>
-      <div class="stat-sub">${totalCritical} critical, ${totalHigh} high</div>
+    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
+      <div style="font-size:28px; font-weight:700; color:${totalUnresolved > 0 ? '#ef4444' : '#10b981'};">${totalUnresolved}</div>
+      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Active Alerts</div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${totalCritical} critical, ${totalHigh} high</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value">${totalNew24h}</div>
-      <div class="stat-label">New (24h)</div>
-      <div class="stat-sub"><span class="${parseInt(alertTrend) > 0 ? 'trend-up' : parseInt(alertTrend) < 0 ? 'trend-down' : 'trend-flat'}">${parseInt(alertTrend) > 0 ? '↑' : parseInt(alertTrend) < 0 ? '↓' : '→'} ${Math.abs(parseInt(alertTrend))}% vs prev day</span></div>
+    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
+      <div style="font-size:28px; font-weight:700; color:#1a1a2e;">${totalNew24h}</div>
+      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">New (24h)</div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:2px;"><span style="color:${parseInt(alertTrend) > 0 ? '#ef4444' : parseInt(alertTrend) < 0 ? '#10b981' : '#6b7280'};">${parseInt(alertTrend) > 0 ? '↑' : parseInt(alertTrend) < 0 ? '↓' : '→'} ${Math.abs(parseInt(alertTrend))}% vs prev day</span></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#10b981">${totalResolved24h}</div>
-      <div class="stat-label">Resolved (24h)</div>
-      <div class="stat-sub">${uniqueUsers} active users</div>
+    <div style="flex:1; min-width:140px; background:#f9fafb; border-radius:8px; padding:16px; text-align:center; border:1px solid #e5e7eb;">
+      <div style="font-size:28px; font-weight:700; color:#10b981;">${totalResolved24h}</div>
+      <div style="font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">Resolved (24h)</div>
+      <div style="font-size:11px; color:#9ca3af; margin-top:2px;">${uniqueUsers} active users</div>
     </div>
   </div>
 
-  <div class="section">
-    <h2>Organization Breakdown</h2>
-    <table>
+  <div style="padding:0 20px 20px;">
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">Organization Breakdown</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th>Organization</th>
-          <th style="text-align:center">Devices</th>
-          <th style="text-align:center">Online</th>
-          <th style="text-align:center">Users</th>
-          <th style="text-align:center">Active Alerts</th>
-          <th style="text-align:center">New (24h)</th>
-          <th style="text-align:center">Resolved (24h)</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Organization</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Devices</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Online</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Users</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Active Alerts</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">New (24h)</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Resolved (24h)</th>
         </tr>
       </thead>
       <tbody>
@@ -323,15 +304,15 @@ serve(async (req) => {
   </div>
 
   ${recentWins.length > 0 ? `
-  <div class="section">
-    <h2>🎯 Recent Wins & Accomplishments (Last 7 Days)</h2>
-    <table>
+  <div style="padding:0 20px 20px;">
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🎯 Recent Wins & Accomplishments (Last 7 Days)</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th style="width:50px">Ticket</th>
-          <th>Accomplishment</th>
-          <th style="text-align:center; width:80px">Type</th>
-          <th style="text-align:center; width:90px">Closed</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:50px;">Ticket</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Accomplishment</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:80px;">Type</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:90px;">Closed</th>
         </tr>
       </thead>
       <tbody>
@@ -354,14 +335,14 @@ serve(async (req) => {
     <p style="font-size:12px; color:#9ca3af; margin-top:8px;">${recentWins.length} ticket${recentWins.length !== 1 ? 's' : ''} closed this week — <a href="https://github.com/NetNeural/MonoRepo-Staging/issues?q=is%3Aissue+is%3Aclosed+sort%3Aupdated-desc" style="color:#2563eb;">View all on GitHub →</a></p>
   </div>` : ''}
 
-  <div class="section">
-    <h2>🏆 Top 10 Key Features — Already Live</h2>
-    <table>
+  <div style="padding:0 20px 20px;">
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🏆 Top 10 Key Features — Already Live</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
-          <th style="width:30px">#</th>
-          <th>Feature</th>
-          <th style="text-align:center">Status</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:30px;">#</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Feature</th>
+          <th style="background:#f3f4f6; padding:10px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Status</th>
         </tr>
       </thead>
       <tbody>
@@ -419,8 +400,8 @@ serve(async (req) => {
     </table>
   </div>
 
-  <div class="section">
-    <h2>Quick Links</h2>
+  <div style="padding:0 20px 20px;">
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">Quick Links</h2>
     <p style="font-size:14px;">
       <a href="https://demo-stage.netneural.ai/dashboard" style="color:#2563eb; text-decoration:none;">📊 Dashboard</a> &nbsp;|&nbsp;
       <a href="https://demo-stage.netneural.ai/dashboard/alerts" style="color:#2563eb; text-decoration:none;">🔔 Alerts</a> &nbsp;|&nbsp;
@@ -429,7 +410,7 @@ serve(async (req) => {
     </p>
   </div>
 
-  <div class="footer">
+  <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #e5e7eb;">
     <p>Automated daily report from <strong>NetNeural Sentinel Platform</strong></p>
     <p>Generated at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</p>
     <p style="margin-top:8px; font-size:11px;">To modify recipients or schedule, update the <code>daily-report</code> edge function configuration.</p>
