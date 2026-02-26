@@ -37,10 +37,7 @@ BEGIN
                 AND OLD.location_id IS NOT DISTINCT FROM NEW.location_id
                 AND OLD.department_id IS NOT DISTINCT FROM NEW.department_id
                 AND OLD.device_type_id IS NOT DISTINCT FROM NEW.device_type_id
-                AND OLD.description IS NOT DISTINCT FROM NEW.description
-                AND OLD.firmware_version IS NOT DISTINCT FROM NEW.firmware_version
-                AND OLD.is_deleted IS NOT DISTINCT FROM NEW.is_deleted
-                AND OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at) THEN
+                AND OLD.firmware_version IS NOT DISTINCT FROM NEW.firmware_version) THEN
                 -- Only metadata/updated_at changed by system process — skip audit
                 RETURN NEW;
             END IF;
