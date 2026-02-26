@@ -83,6 +83,12 @@ CREATE POLICY "Authenticated users can insert report_runs"
   TO authenticated
   WITH CHECK (true);
 
+CREATE POLICY "Authenticated users can update report_runs"
+  ON report_runs FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
 -- Service role can do everything (for edge functions)
 CREATE POLICY "Service role full access to report_schedules"
   ON report_schedules FOR ALL
