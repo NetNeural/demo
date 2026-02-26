@@ -155,6 +155,10 @@ export default createEdgeFunction(
         parseInt(url.searchParams.get('limit') || '50'),
         500
       ) // Cap at 500
+      const offset = Math.max(
+        parseInt(url.searchParams.get('offset') || '0'),
+        0
+      ) // Issue #269: Pagination offset
       const requestedOrgId = url.searchParams.get('organization_id')
       const severityFilter = url.searchParams.get('severity') // Filter by severity
       const resolvedFilter = url.searchParams.get('resolved') // Filter by resolution status
@@ -170,16 +174,18 @@ export default createEdgeFunction(
       }
 
       // Build query - RLS will enforce access automatically
+      // Issue #269: Use .range() for offset-based pagination and count: 'exact' for total
       let query = supabase
         .from('alerts')
         .select(
           `
           *,
           devices!device_id(name, device_type)
-        `
+        `,
+          { count: 'exact' }
         )
         .order('created_at', { ascending: false })
-        .limit(limit)
+        .range(offset, offset + limit - 1)
 
       // Only filter by org if specified (super admins can query all orgs)
       if (organizationId) {
@@ -197,7 +203,7 @@ export default createEdgeFunction(
       }
 
       // Execute query - RLS ensures user can only see allowed alerts
-      const { data: alerts, error } = await query
+      const { data: alerts, error, count: totalCount } = await query
 
       if (error) {
         console.error('Database error:', error)
@@ -231,7 +237,9 @@ export default createEdgeFunction(
       return createSuccessResponse({
         alerts: transformedAlerts,
         count: transformedAlerts.length,
+        totalCount: totalCount ?? transformedAlerts.length, // Issue #269: Total matching records for pagination
         limit,
+        offset, // Issue #269: Current offset for pagination
         organizationId,
         filters: {
           severity: severityFilter,

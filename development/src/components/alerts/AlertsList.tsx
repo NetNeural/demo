@@ -15,13 +15,12 @@ import { AlertsSummaryBar } from './AlertsSummaryBar'
 import { AlertsFilters } from './AlertsFilters'
 import { AlertsBulkActions } from './AlertsBulkActions'
 import { AlertsTable, type Alert } from './AlertsTable'
-import { Table2, Grid3x3, Download, Bell, BellOff } from 'lucide-react'
+import { Table2, Grid3x3, Download, Bell, BellOff, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   Dialog,
@@ -134,6 +133,12 @@ export function AlertsList() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const prevAlertCountRef = useRef<number>(0)
 
+  // Issue #269: Pagination state
+  const PAGE_SIZE = 50
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
       setAlerts([])
@@ -144,8 +149,12 @@ export function AlertsList() {
     try {
       setLoading(true)
 
+      // Issue #269: Pass limit and offset for server-side pagination
+      const offset = (page - 1) * PAGE_SIZE
       const response = await edgeFunctions.alerts.list(currentOrganization.id, {
         resolved: false,
+        limit: PAGE_SIZE,
+        offset,
       })
 
       if (!response.success || !response.data) {
@@ -169,6 +178,10 @@ export function AlertsList() {
       }
 
       const data = response.data
+
+      // Issue #269: Track total count for pagination
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setTotalCount((data as any).totalCount ?? 0)
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transformedAlerts = ((data as any).alerts || []).map(
@@ -204,7 +217,7 @@ export function AlertsList() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrganization])
+  }, [currentOrganization, page])
 
   useEffect(() => {
     fetchAlerts()
@@ -843,7 +856,7 @@ export function AlertsList() {
                                 </span>
                               </CardTitle>
                               {isCollapsed ? (
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRightIcon className="h-5 w-5" />
                               ) : (
                                 <ChevronDown className="h-5 w-5" />
                               )}
@@ -947,6 +960,38 @@ export function AlertsList() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Issue #269: Pagination Controls */}
+      {totalCount > PAGE_SIZE && (
+        <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            Showing {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount} alerts
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-sm font-medium">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+              <ChevronRightIcon className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Alert Details Dialog */}
       <Dialog open={showDetails} onOpenChange={(open) => {

@@ -87,13 +87,9 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Form state
-  const [email, setEmail] = useState(
-    process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : ''
-  )
-  const [password, setPassword] = useState(
-    process.env.NODE_ENV === 'development' ? 'password123' : ''
-  )
+  // Form state — Issue #271: Removed hardcoded dev credentials
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

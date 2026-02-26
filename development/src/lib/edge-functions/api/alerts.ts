@@ -20,10 +20,11 @@ export interface AlertsAPI {
     organizationId: string,
     options?: {
       limit?: number
+      offset?: number // Issue #269: Pagination offset
       severity?: 'info' | 'warning' | 'error' | 'critical'
       resolved?: boolean
     }
-  ) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number }>>
+  ) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number; totalCount: number; offset: number; limit: number }>>
   create: (
     data: CreateAlertData
   ) => Promise<EdgeFunctionResponse<{ alert: unknown }>>
@@ -108,10 +109,11 @@ export function createAlertsAPI(
      * List alerts for an organization
      */
     list: (organizationId, options) =>
-      call<{ alerts: unknown[]; count: number }>('alerts', {
+      call<{ alerts: unknown[]; count: number; totalCount: number; offset: number; limit: number }>('alerts', {
         params: {
           organization_id: organizationId,
           ...(options?.limit && { limit: options.limit }),
+          ...(options?.offset !== undefined && { offset: options.offset }), // Issue #269
           ...(options?.severity && { severity: options.severity }),
           ...(options?.resolved !== undefined && {
             resolved: options.resolved,
