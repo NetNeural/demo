@@ -901,9 +901,7 @@ body {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -926,6 +924,9 @@ body {
   padding: var(--space-4);
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-item {
@@ -957,15 +958,11 @@ body {
 
 /* Navigation User Section */
 .nav-user {
-  margin-top: auto;
   padding: var(--space-4);
   padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--gray-200);
   background: white;
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
 }
 
 .user-info {

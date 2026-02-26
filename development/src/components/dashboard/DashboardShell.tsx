@@ -104,7 +104,7 @@ export default function DashboardShell({
       {/* Sidebar */}
       <nav
         className={cn(
-          'fixed left-0 top-0 z-[100] h-screen w-[280px] border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out',
+          'fixed left-0 top-0 z-[100] flex h-screen w-[280px] flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -126,7 +126,7 @@ export default function DashboardShell({
         </div>
 
         {/* Navigation Menu */}
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {navigation.map((item) => {
             const Icon = item.icon
             return (
@@ -148,7 +148,7 @@ export default function DashboardShell({
         </div>
 
         {/* User Section */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
+        <div className="shrink-0 border-t border-gray-200 bg-white p-4">
           <div className="mb-2">
             <p className="text-sm font-medium text-gray-900">
               {user?.email || 'Loading...'}

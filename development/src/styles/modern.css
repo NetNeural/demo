@@ -418,8 +418,7 @@ body {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -440,6 +439,11 @@ body {
 
 .nav-menu {
   padding: var(--space-4);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-item {
