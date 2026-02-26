@@ -119,8 +119,11 @@ function LoginForm() {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         const res = await fetch(
-          `${supabaseUrl}/functions/v1/org-branding?slug=${encodeURIComponent(slug)}`,
-          { headers: { 'Content-Type': 'application/json' } }
+          `${supabaseUrl}/functions/v1/org-branding?slug=${encodeURIComponent(slug)}&_t=${Date.now()}`,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+          }
         )
         if (res.ok) {
           const json = await res.json()
