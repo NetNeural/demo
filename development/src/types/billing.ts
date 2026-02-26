@@ -188,3 +188,93 @@ export function formatInvoiceStatus(status: InvoiceStatus): string {
 export function isSubscriptionActive(status: SubscriptionStatus): boolean {
   return status === 'active' || status === 'trialing'
 }
+
+// ============================================================================
+// Usage Metering (#244)
+// ============================================================================
+
+/** Metric types tracked by the usage metering system */
+export type UsageMetricType =
+  | 'device_count'
+  | 'user_count'
+  | 'api_calls'
+  | 'storage_bytes'
+  | 'edge_function_invocations'
+
+/** Database row from usage_metrics table */
+export interface UsageMetric {
+  id: string
+  organization_id: string
+  metric_type: UsageMetricType
+  current_value: number
+  period_start: string
+  period_end: string
+  created_at: string
+  updated_at: string
+}
+
+/** Result from the check_org_quota SQL function / usage-check edge function */
+export interface QuotaCheckResult {
+  current_usage: number
+  plan_limit: number
+  usage_percent: number
+  is_warning: boolean   // >= 80%
+  is_exceeded: boolean  // >= 100%
+  is_unlimited: boolean // plan_limit = -1
+  plan_name: string
+}
+
+/** Full usage-check API response */
+export interface UsageCheckResponse {
+  organization_id: string
+  subscription: {
+    id: string
+    status: SubscriptionStatus
+    plan: BillingPlan
+    current_period_end: string | null
+    cancel_at_period_end: boolean
+  } | null
+  quotas: Record<UsageMetricType, QuotaCheckResult>
+  summary: {
+    has_warning: boolean
+    has_exceeded: boolean
+  }
+  checked_at: string
+}
+
+/** Display metadata for usage metrics in the UI */
+export interface UsageMetricDisplay {
+  type: UsageMetricType
+  label: string
+  icon: string
+  unit: string
+}
+
+/** All displayable usage metrics */
+export const USAGE_METRIC_DISPLAY: UsageMetricDisplay[] = [
+  { type: 'device_count', label: 'Devices', icon: 'cpu', unit: 'devices' },
+  { type: 'user_count', label: 'Team Members', icon: 'users', unit: 'users' },
+  { type: 'api_calls', label: 'API Calls', icon: 'zap', unit: 'calls/mo' },
+  { type: 'storage_bytes', label: 'Storage', icon: 'hard-drive', unit: 'bytes' },
+  { type: 'edge_function_invocations', label: 'Edge Functions', icon: 'cloud', unit: 'invocations/mo' },
+]
+
+/**
+ * Format a quota percentage for display with color context
+ */
+export function getQuotaStatus(result: QuotaCheckResult): 'ok' | 'warning' | 'exceeded' | 'unlimited' {
+  if (result.is_unlimited) return 'unlimited'
+  if (result.is_exceeded) return 'exceeded'
+  if (result.is_warning) return 'warning'
+  return 'ok'
+}
+
+/**
+ * Format storage bytes for human-readable display
+ */
+export function formatStorageBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
+}

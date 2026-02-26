@@ -8,6 +8,7 @@ import {
   createServiceClient,
   getUserContext,
 } from '../_shared/auth.ts'
+import { enforceQuota, QuotaExceededError } from '../_shared/quota-check.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -482,6 +483,20 @@ export default createEdgeFunction(
 
       if (!targetOrgId) {
         throw new DatabaseError('User has no organization access', 403)
+      }
+
+      // Check device quota before creating
+      try {
+        const quota = await enforceQuota(targetOrgId, 'device_count', 'device')
+        if (quota.is_warning) {
+          console.warn(`⚠️ Org ${targetOrgId} approaching device limit: ${quota.current_usage}/${quota.plan_limit}`)
+        }
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          throw new DatabaseError(err.message, 403)
+        }
+        // Non-quota errors: log but don't block (fail-open)
+        console.error('Quota check error (allowing device creation):', err)
       }
 
       // Create new device - RLS will enforce access automatically
