@@ -6,9 +6,18 @@
 -- 1. CREATE TYPES
 -- ============================================================================
 
-CREATE TYPE feedback_type AS ENUM ('bug_report', 'feature_request');
-CREATE TYPE feedback_status AS ENUM ('submitted', 'acknowledged', 'in_progress', 'resolved', 'closed');
-CREATE TYPE feedback_severity AS ENUM ('critical', 'high', 'medium', 'low');
+DO $$ BEGIN
+  CREATE TYPE feedback_type AS ENUM ('bug_report', 'feature_request');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE feedback_status AS ENUM ('submitted', 'acknowledged', 'in_progress', 'resolved', 'closed');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE feedback_severity AS ENUM ('critical', 'high', 'medium', 'low');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- 2. CREATE FEEDBACK TABLE
@@ -45,11 +54,11 @@ CREATE TABLE IF NOT EXISTS feedback (
 -- 3. CREATE INDEXES
 -- ============================================================================
 
-CREATE INDEX idx_feedback_org ON feedback(organization_id);
-CREATE INDEX idx_feedback_user ON feedback(user_id);
-CREATE INDEX idx_feedback_status ON feedback(status);
-CREATE INDEX idx_feedback_type ON feedback(type);
-CREATE INDEX idx_feedback_created ON feedback(organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_feedback_org ON feedback(organization_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status);
+CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(type);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(organization_id, created_at DESC);
 
 -- ============================================================================
 -- 4. ENABLE RLS + POLICIES
@@ -58,6 +67,7 @@ CREATE INDEX idx_feedback_created ON feedback(organization_id, created_at DESC);
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 
 -- Users can view feedback from their organization
+DROP POLICY IF EXISTS "feedback_select_org_members" ON feedback;
 CREATE POLICY "feedback_select_org_members"
   ON feedback FOR SELECT TO authenticated
   USING (
@@ -67,6 +77,7 @@ CREATE POLICY "feedback_select_org_members"
   );
 
 -- Users can insert feedback for their organization
+DROP POLICY IF EXISTS "feedback_insert_org_members" ON feedback;
 CREATE POLICY "feedback_insert_org_members"
   ON feedback FOR INSERT TO authenticated
   WITH CHECK (
@@ -77,6 +88,7 @@ CREATE POLICY "feedback_insert_org_members"
   );
 
 -- Users can update their own feedback
+DROP POLICY IF EXISTS "feedback_update_own" ON feedback;
 CREATE POLICY "feedback_update_own"
   ON feedback FOR UPDATE TO authenticated
   USING (user_id = auth.uid());
@@ -100,6 +112,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS feedback_updated_at ON feedback;
 CREATE TRIGGER feedback_updated_at
   BEFORE UPDATE ON feedback
   FOR EACH ROW

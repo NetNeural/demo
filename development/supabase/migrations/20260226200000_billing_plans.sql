@@ -46,6 +46,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS billing_plans_updated_at ON public.billing_plans;
 CREATE TRIGGER billing_plans_updated_at
   BEFORE UPDATE ON public.billing_plans
   FOR EACH ROW
@@ -57,6 +58,7 @@ CREATE TRIGGER billing_plans_updated_at
 ALTER TABLE public.billing_plans ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated users can read active plans
+DROP POLICY IF EXISTS "Authenticated users can read active plans" ON public.billing_plans;
 CREATE POLICY "Authenticated users can read active plans"
   ON public.billing_plans
   FOR SELECT
@@ -64,6 +66,7 @@ CREATE POLICY "Authenticated users can read active plans"
   USING (is_active = true);
 
 -- Service role has full access (for admin CRUD and seeding)
+DROP POLICY IF EXISTS "Service role full access" ON public.billing_plans;
 CREATE POLICY "Service role full access"
   ON public.billing_plans
   FOR ALL

@@ -186,6 +186,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trigger_audit_organization_member_changes ON organization_members;
 CREATE TRIGGER trigger_audit_organization_member_changes
     AFTER INSERT OR UPDATE OR DELETE ON organization_members
     FOR EACH ROW EXECUTE FUNCTION audit_organization_member_changes();
@@ -236,6 +237,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trigger_audit_organization_changes ON organizations;
 CREATE TRIGGER trigger_audit_organization_changes
     AFTER UPDATE ON organizations
     FOR EACH ROW EXECUTE FUNCTION audit_organization_changes();
@@ -320,6 +322,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trigger_audit_alert_rule_changes ON alert_rules;
 CREATE TRIGGER trigger_audit_alert_rule_changes
     AFTER INSERT OR UPDATE OR DELETE ON alert_rules
     FOR EACH ROW EXECUTE FUNCTION audit_alert_rule_changes();

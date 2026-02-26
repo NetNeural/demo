@@ -5,13 +5,16 @@
 -- ============================================================================
 -- Enum: metric_type
 -- ============================================================================
-CREATE TYPE public.usage_metric_type AS ENUM (
-  'device_count',
-  'user_count',
-  'api_calls',
-  'storage_bytes',
-  'edge_function_invocations'
-);
+DO $$ BEGIN
+  CREATE TYPE public.usage_metric_type AS ENUM (
+    'device_count',
+    'user_count',
+    'api_calls',
+    'storage_bytes',
+    'edge_function_invocations'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- Table: usage_metrics
@@ -52,6 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS usage_metrics_updated_at ON public.usage_metrics;
 CREATE TRIGGER usage_metrics_updated_at
   BEFORE UPDATE ON public.usage_metrics
   FOR EACH ROW
@@ -63,6 +67,7 @@ CREATE TRIGGER usage_metrics_updated_at
 ALTER TABLE public.usage_metrics ENABLE ROW LEVEL SECURITY;
 
 -- Org members can read their own org's usage metrics
+DROP POLICY IF EXISTS "Org members can read own usage" ON public.usage_metrics;
 CREATE POLICY "Org members can read own usage"
   ON public.usage_metrics
   FOR SELECT
@@ -74,6 +79,7 @@ CREATE POLICY "Org members can read own usage"
   );
 
 -- Service role has full access (cron jobs and edge functions write)
+DROP POLICY IF EXISTS "Service role full access on usage_metrics" ON public.usage_metrics;
 CREATE POLICY "Service role full access on usage_metrics"
   ON public.usage_metrics
   FOR ALL
@@ -107,7 +113,6 @@ BEGIN
   LEFT JOIN (
     SELECT organization_id, count(*) AS cnt
     FROM public.devices
-    WHERE is_active = true
     GROUP BY organization_id
   ) d ON d.organization_id = o.id
   WHERE o.is_active = true
@@ -219,7 +224,7 @@ BEGIN
       WHEN 'device_count' THEN
         SELECT count(*) INTO _current
         FROM public.devices
-        WHERE organization_id = p_organization_id AND is_active = true;
+        WHERE organization_id = p_organization_id;
       WHEN 'user_count' THEN
         SELECT count(*) INTO _current
         FROM public.organization_members

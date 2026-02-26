@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS report_runs (
 );
 
 -- Indexes
-CREATE INDEX idx_report_runs_type_created ON report_runs (report_type, created_at DESC);
-CREATE INDEX idx_report_schedules_enabled ON report_schedules (is_enabled) WHERE is_enabled = true;
+CREATE INDEX IF NOT EXISTS idx_report_runs_type_created ON report_runs (report_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_report_schedules_enabled ON report_schedules (is_enabled) WHERE is_enabled = true;
 
 -- Seed default schedules (disabled by default)
 INSERT INTO report_schedules (report_type, frequency, time_utc, recipients, is_enabled)
@@ -57,32 +57,38 @@ ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_runs ENABLE ROW LEVEL SECURITY;
 
 -- Only authenticated users can read schedules/runs
+DROP POLICY IF EXISTS "Authenticated users can read report_schedules" ON report_schedules;
 CREATE POLICY "Authenticated users can read report_schedules"
   ON report_schedules FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update report_schedules" ON report_schedules;
 CREATE POLICY "Authenticated users can update report_schedules"
   ON report_schedules FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert report_schedules" ON report_schedules;
 CREATE POLICY "Authenticated users can insert report_schedules"
   ON report_schedules FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can read report_runs" ON report_runs;
 CREATE POLICY "Authenticated users can read report_runs"
   ON report_runs FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert report_runs" ON report_runs;
 CREATE POLICY "Authenticated users can insert report_runs"
   ON report_runs FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update report_runs" ON report_runs;
 CREATE POLICY "Authenticated users can update report_runs"
   ON report_runs FOR UPDATE
   TO authenticated
@@ -90,12 +96,14 @@ CREATE POLICY "Authenticated users can update report_runs"
   WITH CHECK (true);
 
 -- Service role can do everything (for edge functions)
+DROP POLICY IF EXISTS "Service role full access to report_schedules" ON report_schedules;
 CREATE POLICY "Service role full access to report_schedules"
   ON report_schedules FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role full access to report_runs" ON report_runs;
 CREATE POLICY "Service role full access to report_runs"
   ON report_runs FOR ALL
   TO service_role

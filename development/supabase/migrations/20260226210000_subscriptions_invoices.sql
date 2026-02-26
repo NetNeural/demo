@@ -5,21 +5,27 @@
 -- ============================================================================
 -- Enum Types
 -- ============================================================================
-CREATE TYPE public.subscription_status AS ENUM (
-  'active',
-  'past_due',
-  'canceled',
-  'trialing',
-  'incomplete'
-);
+DO $$ BEGIN
+  CREATE TYPE public.subscription_status AS ENUM (
+    'active',
+    'past_due',
+    'canceled',
+    'trialing',
+    'incomplete'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE public.invoice_status AS ENUM (
-  'draft',
-  'open',
-  'paid',
-  'void',
-  'uncollectible'
-);
+DO $$ BEGIN
+  CREATE TYPE public.invoice_status AS ENUM (
+    'draft',
+    'open',
+    'paid',
+    'void',
+    'uncollectible'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- Table: subscriptions
@@ -114,6 +120,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS subscriptions_updated_at ON public.subscriptions;
 CREATE TRIGGER subscriptions_updated_at
   BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW
@@ -125,6 +132,7 @@ CREATE TRIGGER subscriptions_updated_at
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Org members can read their own organization's subscription
+DROP POLICY IF EXISTS "Org members can read own subscription" ON public.subscriptions;
 CREATE POLICY "Org members can read own subscription"
   ON public.subscriptions
   FOR SELECT
@@ -136,6 +144,7 @@ CREATE POLICY "Org members can read own subscription"
   );
 
 -- Service role has full access (Stripe webhooks write via service_role)
+DROP POLICY IF EXISTS "Service role full access on subscriptions" ON public.subscriptions;
 CREATE POLICY "Service role full access on subscriptions"
   ON public.subscriptions
   FOR ALL
@@ -149,6 +158,7 @@ CREATE POLICY "Service role full access on subscriptions"
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
 -- Org members can read their own organization's invoices
+DROP POLICY IF EXISTS "Org members can read own invoices" ON public.invoices;
 CREATE POLICY "Org members can read own invoices"
   ON public.invoices
   FOR SELECT
@@ -160,6 +170,7 @@ CREATE POLICY "Org members can read own invoices"
   );
 
 -- Service role has full access (Stripe webhooks insert invoices)
+DROP POLICY IF EXISTS "Service role full access on invoices" ON public.invoices;
 CREATE POLICY "Service role full access on invoices"
   ON public.invoices
   FOR ALL

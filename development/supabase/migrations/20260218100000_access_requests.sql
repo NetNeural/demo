@@ -27,11 +27,11 @@ CREATE TABLE IF NOT EXISTS access_requests (
 );
 
 -- Indexes for common queries
-CREATE INDEX idx_access_requests_requester ON access_requests(requester_id);
-CREATE INDEX idx_access_requests_target_org ON access_requests(target_org_id);
-CREATE INDEX idx_access_requests_status ON access_requests(status);
-CREATE INDEX idx_access_requests_expires ON access_requests(expires_at) WHERE status = 'approved';
-CREATE INDEX idx_access_requests_pending ON access_requests(target_org_id, status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_access_requests_requester ON access_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_access_requests_target_org ON access_requests(target_org_id);
+CREATE INDEX IF NOT EXISTS idx_access_requests_status ON access_requests(status);
+CREATE INDEX IF NOT EXISTS idx_access_requests_expires ON access_requests(expires_at) WHERE status = 'approved';
+CREATE INDEX IF NOT EXISTS idx_access_requests_pending ON access_requests(target_org_id, status) WHERE status = 'pending';
 
 -- 2. Add expires_at column to organization_members for temporary memberships
 ALTER TABLE organization_members
@@ -50,6 +50,7 @@ ALTER TABLE organization_members
 ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 
 -- Super admins can see all requests
+DROP POLICY IF EXISTS "Super admins can manage all access requests" ON access_requests;
 CREATE POLICY "Super admins can manage all access requests"
   ON access_requests
   FOR ALL
@@ -62,12 +63,14 @@ CREATE POLICY "Super admins can manage all access requests"
   );
 
 -- Requesters can see their own requests
+DROP POLICY IF EXISTS "Users can view their own access requests" ON access_requests;
 CREATE POLICY "Users can view their own access requests"
   ON access_requests
   FOR SELECT
   USING (requester_id = auth.uid());
 
 -- Org owners/admins can see requests targeting their org
+DROP POLICY IF EXISTS "Org owners can view requests for their org" ON access_requests;
 CREATE POLICY "Org owners can view requests for their org"
   ON access_requests
   FOR SELECT
@@ -110,6 +113,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_access_requests_updated_at ON access_requests;
 CREATE TRIGGER trigger_access_requests_updated_at
   BEFORE UPDATE ON access_requests
   FOR EACH ROW
