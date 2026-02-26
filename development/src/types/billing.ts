@@ -96,3 +96,95 @@ export function isUnlimited(limit: number): boolean {
 export function formatLimit(limit: number): string {
   return isUnlimited(limit) ? 'Unlimited' : limit.toLocaleString()
 }
+
+// ============================================================================
+// Subscriptions & Invoices (#243)
+// ============================================================================
+
+/** Subscription status enum matching DB */
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing' | 'incomplete'
+
+/** Invoice status enum matching DB */
+export type InvoiceStatus = 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'
+
+/** Database row from subscriptions table */
+export interface Subscription {
+  id: string
+  organization_id: string
+  plan_id: string
+  stripe_subscription_id: string | null
+  stripe_customer_id: string | null
+  status: SubscriptionStatus
+  current_period_start: string | null
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  created_at: string
+  updated_at: string
+}
+
+/** Subscription with joined billing plan data */
+export interface SubscriptionWithPlan extends Subscription {
+  billing_plan: BillingPlan
+}
+
+/** Database row from invoices table */
+export interface Invoice {
+  id: string
+  organization_id: string
+  subscription_id: string | null
+  stripe_invoice_id: string | null
+  amount_cents: number
+  currency: string
+  status: InvoiceStatus
+  invoice_url: string | null
+  pdf_url: string | null
+  period_start: string | null
+  period_end: string | null
+  created_at: string
+}
+
+/**
+ * Format invoice amount from cents to display string
+ * e.g., 2900 → "$29.00"
+ */
+export function formatInvoiceAmount(amountCents: number, currency = 'usd'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(amountCents / 100)
+}
+
+/**
+ * Human-readable subscription status label
+ */
+export function formatSubscriptionStatus(status: SubscriptionStatus): string {
+  const labels: Record<SubscriptionStatus, string> = {
+    active: 'Active',
+    past_due: 'Past Due',
+    canceled: 'Canceled',
+    trialing: 'Trialing',
+    incomplete: 'Incomplete',
+  }
+  return labels[status]
+}
+
+/**
+ * Human-readable invoice status label
+ */
+export function formatInvoiceStatus(status: InvoiceStatus): string {
+  const labels: Record<InvoiceStatus, string> = {
+    draft: 'Draft',
+    open: 'Open',
+    paid: 'Paid',
+    void: 'Void',
+    uncollectible: 'Uncollectible',
+  }
+  return labels[status]
+}
+
+/**
+ * Check if a subscription is in a billable/active state
+ */
+export function isSubscriptionActive(status: SubscriptionStatus): boolean {
+  return status === 'active' || status === 'trialing'
+}
