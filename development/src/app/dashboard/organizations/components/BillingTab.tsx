@@ -205,8 +205,6 @@ export function BillingTab({ organizationId }: BillingTabProps) {
   }, [fetchBillingData])
 
   const handleManageSubscription = async () => {
-    // TODO: #241 — create Stripe portal session via edge function
-    // For now, show a placeholder
     setPortalLoading(true)
     try {
       const supabase = getSupabase()
@@ -224,14 +222,14 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           }
         )
         if (res.ok) {
-          const { url } = await res.json()
-          if (url) {
-            window.open(url, '_blank')
+          const result = await res.json()
+          const portalUrl = result?.data?.url || result?.url
+          if (portalUrl) {
+            window.open(portalUrl, '_blank')
             return
           }
         }
       }
-      // Fallback if portal not configured yet
       alert('Stripe Customer Portal is not yet configured. Contact support for billing changes.')
     } catch {
       alert('Unable to open billing portal. Please contact support.')

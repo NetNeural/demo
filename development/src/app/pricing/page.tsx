@@ -95,12 +95,50 @@ export default function PricingPage() {
     checkCurrentPlan()
   }, [])
 
-  const handleSelectPlan = (plan: BillingPlan) => {
-    // TODO: #241 Stripe Integration — create checkout session
-    // For now, scroll to a contact/signup CTA
-    const slug = plan.slug
-    console.log(`Selected plan: ${slug}`)
-    window.location.href = `/auth/login?plan=${slug}`
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+
+  const handleSelectPlan = async (plan: BillingPlan) => {
+    // If not logged in, redirect to login with plan preselected
+    const supabase = getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = `/auth/login?plan=${plan.slug}`
+      return
+    }
+
+    // Logged in → create Stripe Checkout session
+    setCheckoutLoading(plan.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/functions/v1/stripe-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planId: plan.id,
+            billingInterval,
+            sensorCount,
+          }),
+        }
+      )
+
+      const result = await res.json()
+      if (result?.data?.url) {
+        window.location.href = result.data.url
+      } else {
+        console.error('Checkout error:', result)
+        alert(result?.message || 'Unable to start checkout. Please try again.')
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err)
+      alert('Unable to start checkout. Please try again.')
+    } finally {
+      setCheckoutLoading(null)
+    }
   }
 
   const planIcons: Record<string, React.ReactNode> = {
@@ -188,6 +226,7 @@ export default function PricingPage() {
               plan={plan}
               isPopular={plan.slug === 'protect'}
               isCurrentPlan={plan.slug === currentPlanSlug}
+              isLoading={checkoutLoading === plan.id}
               billingInterval={billingInterval}
               sensorCount={sensorCount}
               onSelectPlan={handleSelectPlan}

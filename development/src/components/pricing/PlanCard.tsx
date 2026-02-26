@@ -10,6 +10,7 @@ interface PlanCardProps {
   plan: BillingPlan
   isPopular?: boolean
   isCurrentPlan?: boolean
+  isLoading?: boolean
   billingInterval: 'monthly' | 'annual'
   sensorCount: number
   onSelectPlan: (plan: BillingPlan) => void
@@ -49,6 +50,7 @@ export function PlanCard({
   plan,
   isPopular = false,
   isCurrentPlan = false,
+  isLoading = false,
   billingInterval,
   sensorCount,
   onSelectPlan,
@@ -128,10 +130,10 @@ export function PlanCard({
           className="w-full"
           variant={isPopular ? 'default' : 'outline'}
           size="lg"
-          disabled={isCurrentPlan}
+          disabled={isCurrentPlan || isLoading}
           onClick={() => onSelectPlan(plan)}
         >
-          {isCurrentPlan ? 'Current Plan' : 'Get Started'}
+          {isCurrentPlan ? 'Current Plan' : isLoading ? 'Redirecting...' : 'Get Started'}
         </Button>
       </div>
 
