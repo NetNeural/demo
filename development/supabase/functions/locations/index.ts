@@ -49,7 +49,12 @@ export default createEdgeFunction(
         throw new Error('organization_id parameter required')
       }
 
-      await verifyOrgAccess(supabaseAdmin, userContext.userId, organizationId, userContext.isSuperAdmin)
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        organizationId,
+        userContext.isSuperAdmin
+      )
 
       const { data: locations, error } = await supabaseAdmin
         .from('locations')
@@ -85,7 +90,12 @@ export default createEdgeFunction(
         throw new Error('organization_id and name are required')
       }
 
-      await verifyOrgAccess(supabaseAdmin, userContext.userId, organization_id, userContext.isSuperAdmin)
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        organization_id,
+        userContext.isSuperAdmin
+      )
 
       const { data: location, error } = await supabaseAdmin
         .from('locations')
@@ -130,7 +140,12 @@ export default createEdgeFunction(
         throw new DatabaseError('Location not found', 404)
       }
 
-      await verifyOrgAccess(supabaseAdmin, userContext.userId, existing.organization_id, userContext.isSuperAdmin)
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        existing.organization_id,
+        userContext.isSuperAdmin
+      )
 
       const body = await req.json()
       const {
@@ -191,7 +206,12 @@ export default createEdgeFunction(
         throw new DatabaseError('Location not found', 404)
       }
 
-      await verifyOrgAccess(supabaseAdmin, userContext.userId, existing.organization_id, userContext.isSuperAdmin)
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        existing.organization_id,
+        userContext.isSuperAdmin
+      )
 
       const { error } = await supabaseAdmin
         .from('locations')

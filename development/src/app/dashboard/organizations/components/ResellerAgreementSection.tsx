@@ -121,7 +121,7 @@ export function ResellerAgreementSection({
   })
 
   // Get NetNeural root org logo (branding) — auto-updates if logo changes
-  const rootOrg = userOrganizations.find(o => !o.parent_organization_id)
+  const rootOrg = userOrganizations.find((o) => !o.parent_organization_id)
   const netNeuralLogoUrl = rootOrg?.settings?.branding?.logo_url || '/icon.svg'
 
   const fetchStatus = useCallback(async () => {
@@ -549,7 +549,7 @@ export function ResellerAgreementSection({
             </div>
           </div>
 
-          {(user?.isSuperAdmin || isOwner) ? (
+          {user?.isSuperAdmin || isOwner ? (
             <Button
               onClick={() => setShowApplyDialog(true)}
               className="w-full sm:w-auto"
@@ -625,7 +625,11 @@ function ApplicationDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <img src={netNeuralLogoUrl} alt="NetNeural" className="h-6 w-6 object-contain" />
+            <img
+              src={netNeuralLogoUrl}
+              alt="NetNeural"
+              className="h-6 w-6 object-contain"
+            />
             Reseller Agreement Application
           </DialogTitle>
           <DialogDescription>

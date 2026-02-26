@@ -20,7 +20,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 const DEFAULT_RECIPIENTS = [
@@ -47,24 +48,84 @@ serve(async (req) => {
       const body = await req.json()
       if (body.recipients?.length > 0) recipients = body.recipients
       if (body.preview === true) isPreview = true
-    } catch { /* defaults */ }
+    } catch {
+      /* defaults */
+    }
 
     const today = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     })
 
     // ─── Score Data ────────────────────────────────────────────────
     const dimensions = [
-      { name: 'Architecture', grade: 'A-', score: 90, notes: 'Next.js 15 + Supabase. RLS, edge functions, real-time, multi-tenant.' },
-      { name: 'Core Functionality', grade: 'B+', score: 85, notes: 'Devices, alerts (escalation/snooze/timeline), telemetry, orgs, RBAC, feedback.' },
-      { name: 'Alert System', grade: 'A', score: 93, notes: 'Numbering, escalation, timeline, snooze, CSV, browser notifications, deep links.' },
-      { name: 'UI/UX', grade: 'B', score: 80, notes: '139 components, responsive, dark mode. Missing i18n, keyboard shortcuts.' },
-      { name: 'Integration Layer', grade: 'B-', score: 72, notes: 'Golioth, MQTT, Slack, Email, SMS. Hub architecture designed but incomplete.' },
-      { name: 'Security', grade: 'C+', score: 68, notes: 'Auth + RLS solid. No MFA, no CSP/HSTS, no SOC 2.' },
-      { name: 'Testing', grade: 'D+', score: 55, notes: '64 test files, ~21% coverage. CI has continue-on-error.' },
-      { name: 'Monetization', grade: 'F', score: 20, notes: 'Zero billing infrastructure. No Stripe, no plans.' },
-      { name: 'DevOps/CI', grade: 'C+', score: 68, notes: 'GitHub Actions, static deploy. No staging previews.' },
-      { name: 'Documentation', grade: 'B-', score: 72, notes: 'Extensive internal MD. No customer-facing API docs.' },
+      {
+        name: 'Architecture',
+        grade: 'A-',
+        score: 90,
+        notes:
+          'Next.js 15 + Supabase. RLS, edge functions, real-time, multi-tenant.',
+      },
+      {
+        name: 'Core Functionality',
+        grade: 'B+',
+        score: 85,
+        notes:
+          'Devices, alerts (escalation/snooze/timeline), telemetry, orgs, RBAC, feedback.',
+      },
+      {
+        name: 'Alert System',
+        grade: 'A',
+        score: 93,
+        notes:
+          'Numbering, escalation, timeline, snooze, CSV, browser notifications, deep links.',
+      },
+      {
+        name: 'UI/UX',
+        grade: 'B',
+        score: 80,
+        notes:
+          '139 components, responsive, dark mode. Missing i18n, keyboard shortcuts.',
+      },
+      {
+        name: 'Integration Layer',
+        grade: 'B-',
+        score: 72,
+        notes:
+          'Golioth, MQTT, Slack, Email, SMS. Hub architecture designed but incomplete.',
+      },
+      {
+        name: 'Security',
+        grade: 'C+',
+        score: 68,
+        notes: 'Auth + RLS solid. No MFA, no CSP/HSTS, no SOC 2.',
+      },
+      {
+        name: 'Testing',
+        grade: 'D+',
+        score: 55,
+        notes: '64 test files, ~21% coverage. CI has continue-on-error.',
+      },
+      {
+        name: 'Monetization',
+        grade: 'F',
+        score: 20,
+        notes: 'Zero billing infrastructure. No Stripe, no plans.',
+      },
+      {
+        name: 'DevOps/CI',
+        grade: 'C+',
+        score: 68,
+        notes: 'GitHub Actions, static deploy. No staging previews.',
+      },
+      {
+        name: 'Documentation',
+        grade: 'B-',
+        score: 72,
+        notes: 'Extensive internal MD. No customer-facing API docs.',
+      },
     ]
 
     const overallScore = 76
@@ -82,38 +143,204 @@ serve(async (req) => {
     ]
 
     const valuation = [
-      { method: 'Development Cost (85K LOC × $15-20/LOC)', low: '$1.3M', high: '$1.7M' },
-      { method: 'Hours Invested (~4,000-5,500 hrs @ $150/hr)', low: '$600K', high: '$825K' },
-      { method: 'SaaS Revenue Potential (500 devices)', low: '$600K', high: '$960K' },
-      { method: 'Realistic Fair Market Value (pre-revenue)', low: '$400K', high: '$700K' },
+      {
+        method: 'Development Cost (85K LOC × $15-20/LOC)',
+        low: '$1.3M',
+        high: '$1.7M',
+      },
+      {
+        method: 'Hours Invested (~4,000-5,500 hrs @ $150/hr)',
+        low: '$600K',
+        high: '$825K',
+      },
+      {
+        method: 'SaaS Revenue Potential (500 devices)',
+        low: '$600K',
+        high: '$960K',
+      },
+      {
+        method: 'Realistic Fair Market Value (pre-revenue)',
+        low: '$400K',
+        high: '$700K',
+      },
     ]
 
     const topFeatures = [
-      { rank: 1, issue: '#51', name: 'Stripe Integration', effort: '3-5 days', impact: 'Enables ALL revenue.' },
-      { rank: 2, issue: '#48', name: 'Billing Plans Table', effort: '1 day', impact: 'Foundation for pricing tiers.' },
-      { rank: 3, issue: '#49', name: 'Subscriptions & Invoices Tables', effort: '1 day', impact: 'DB layer for billing.' },
-      { rank: 4, issue: '#50', name: 'Usage Metering System', effort: '2-3 days', impact: 'Pay-per-device pricing.' },
-      { rank: 5, issue: '#52', name: 'Plan Comparison Page', effort: '2-3 days', impact: 'Sales conversion page.' },
-      { rank: 6, issue: '#53', name: 'Org Billing Dashboard', effort: '2-3 days', impact: 'Self-service billing (-40% support).' },
-      { rank: 7, issue: '#222', name: 'Fix Dashboard Display Bug', effort: '0.5 day', impact: 'Broken dashboard kills trust.' },
-      { rank: 8, issue: '#221', name: 'Fix Acknowledging Alerts Bug', effort: '0.5 day', impact: 'Core workflow must work.' },
-      { rank: 9, issue: '#76', name: 'Privacy Policy & Consent', effort: '0.5 day', impact: 'Legal requirement.' },
-      { rank: 10, issue: '#87', name: 'Cookie Consent (GDPR)', effort: '0.5 day', impact: 'Legal EU requirement.' },
-      { rank: 11, issue: '#83', name: 'Strengthen Password Policy', effort: '0.5 day', impact: 'Compliance checklist item.' },
-      { rank: 12, issue: '#89', name: 'Security Headers', effort: '1 day', impact: 'Blocks every security audit.' },
-      { rank: 13, issue: '#78', name: 'Remove continue-on-error CI', effort: '0.5 day', impact: 'Stop shipping broken code.' },
-      { rank: 14, issue: '#88', name: 'MFA Enforcement', effort: '2-3 days', impact: 'Unlocks enterprise contracts.' },
-      { rank: 15, issue: '#141', name: 'PDF Report Export', effort: '2-3 days', impact: 'Enterprise managers need PDFs.' },
-      { rank: 16, issue: '#82', name: 'Zod Validation', effort: '2-3 days', impact: 'Prevents data corruption.' },
-      { rank: 17, issue: '#182', name: 'Edit User Accounts', effort: '1-2 days', impact: 'Basic admin capability.' },
-      { rank: 18, issue: '#79', name: 'Incident Response Plan', effort: '1-2 days', impact: 'SOC 2 requirement.' },
-      { rank: 19, issue: '#151', name: 'Copy Device ID', effort: '2 hrs', impact: 'Reduces support tickets.' },
-      { rank: 20, issue: '#142', name: 'Smart Threshold AI', effort: '3-5 days', impact: 'Reduces alert fatigue.' },
-      { rank: 21, issue: '#144', name: 'Predictive Maintenance AI', effort: '5-7 days', impact: 'Premium feature worth $$$$.' },
-      { rank: 22, issue: '#146', name: 'Anomaly Detection Upgrade', effort: '3-5 days', impact: 'Competitive differentiator.' },
-      { rank: 23, issue: '#152', name: 'Export This View', effort: '0.5 day', impact: 'CSV/Excel export everywhere.' },
-      { rank: 24, issue: '#154', name: 'Keyboard Shortcuts', effort: '1 day', impact: 'Power user polish.' },
-      { rank: 25, issue: '#171-172', name: 'Assign Devices to Orgs', effort: '2-3 days', impact: 'Core multi-tenant workflow.' },
+      {
+        rank: 1,
+        issue: '#51',
+        name: 'Stripe Integration',
+        effort: '3-5 days',
+        impact: 'Enables ALL revenue.',
+      },
+      {
+        rank: 2,
+        issue: '#48',
+        name: 'Billing Plans Table',
+        effort: '1 day',
+        impact: 'Foundation for pricing tiers.',
+      },
+      {
+        rank: 3,
+        issue: '#49',
+        name: 'Subscriptions & Invoices Tables',
+        effort: '1 day',
+        impact: 'DB layer for billing.',
+      },
+      {
+        rank: 4,
+        issue: '#50',
+        name: 'Usage Metering System',
+        effort: '2-3 days',
+        impact: 'Pay-per-device pricing.',
+      },
+      {
+        rank: 5,
+        issue: '#52',
+        name: 'Plan Comparison Page',
+        effort: '2-3 days',
+        impact: 'Sales conversion page.',
+      },
+      {
+        rank: 6,
+        issue: '#53',
+        name: 'Org Billing Dashboard',
+        effort: '2-3 days',
+        impact: 'Self-service billing (-40% support).',
+      },
+      {
+        rank: 7,
+        issue: '#222',
+        name: 'Fix Dashboard Display Bug',
+        effort: '0.5 day',
+        impact: 'Broken dashboard kills trust.',
+      },
+      {
+        rank: 8,
+        issue: '#221',
+        name: 'Fix Acknowledging Alerts Bug',
+        effort: '0.5 day',
+        impact: 'Core workflow must work.',
+      },
+      {
+        rank: 9,
+        issue: '#76',
+        name: 'Privacy Policy & Consent',
+        effort: '0.5 day',
+        impact: 'Legal requirement.',
+      },
+      {
+        rank: 10,
+        issue: '#87',
+        name: 'Cookie Consent (GDPR)',
+        effort: '0.5 day',
+        impact: 'Legal EU requirement.',
+      },
+      {
+        rank: 11,
+        issue: '#83',
+        name: 'Strengthen Password Policy',
+        effort: '0.5 day',
+        impact: 'Compliance checklist item.',
+      },
+      {
+        rank: 12,
+        issue: '#89',
+        name: 'Security Headers',
+        effort: '1 day',
+        impact: 'Blocks every security audit.',
+      },
+      {
+        rank: 13,
+        issue: '#78',
+        name: 'Remove continue-on-error CI',
+        effort: '0.5 day',
+        impact: 'Stop shipping broken code.',
+      },
+      {
+        rank: 14,
+        issue: '#88',
+        name: 'MFA Enforcement',
+        effort: '2-3 days',
+        impact: 'Unlocks enterprise contracts.',
+      },
+      {
+        rank: 15,
+        issue: '#141',
+        name: 'PDF Report Export',
+        effort: '2-3 days',
+        impact: 'Enterprise managers need PDFs.',
+      },
+      {
+        rank: 16,
+        issue: '#82',
+        name: 'Zod Validation',
+        effort: '2-3 days',
+        impact: 'Prevents data corruption.',
+      },
+      {
+        rank: 17,
+        issue: '#182',
+        name: 'Edit User Accounts',
+        effort: '1-2 days',
+        impact: 'Basic admin capability.',
+      },
+      {
+        rank: 18,
+        issue: '#79',
+        name: 'Incident Response Plan',
+        effort: '1-2 days',
+        impact: 'SOC 2 requirement.',
+      },
+      {
+        rank: 19,
+        issue: '#151',
+        name: 'Copy Device ID',
+        effort: '2 hrs',
+        impact: 'Reduces support tickets.',
+      },
+      {
+        rank: 20,
+        issue: '#142',
+        name: 'Smart Threshold AI',
+        effort: '3-5 days',
+        impact: 'Reduces alert fatigue.',
+      },
+      {
+        rank: 21,
+        issue: '#144',
+        name: 'Predictive Maintenance AI',
+        effort: '5-7 days',
+        impact: 'Premium feature worth $$$$.',
+      },
+      {
+        rank: 22,
+        issue: '#146',
+        name: 'Anomaly Detection Upgrade',
+        effort: '3-5 days',
+        impact: 'Competitive differentiator.',
+      },
+      {
+        rank: 23,
+        issue: '#152',
+        name: 'Export This View',
+        effort: '0.5 day',
+        impact: 'CSV/Excel export everywhere.',
+      },
+      {
+        rank: 24,
+        issue: '#154',
+        name: 'Keyboard Shortcuts',
+        effort: '1 day',
+        impact: 'Power user polish.',
+      },
+      {
+        rank: 25,
+        issue: '#171-172',
+        name: 'Assign Devices to Orgs',
+        effort: '2-3 days',
+        impact: 'Core multi-tenant workflow.',
+      },
     ]
 
     // ─── Grade Color Helper ──────────────────────────────────────────
@@ -127,16 +354,23 @@ serve(async (req) => {
 
     function scoreBar(score: number): string {
       const pct = score
-      const color = score >= 85 ? '#10b981' : score >= 70 ? '#3b82f6' : score >= 55 ? '#f59e0b' : '#ef4444'
+      const color =
+        score >= 85
+          ? '#10b981'
+          : score >= 70
+            ? '#3b82f6'
+            : score >= 55
+              ? '#f59e0b'
+              : '#ef4444'
       return `<div style="background:#e5e7eb; border-radius:4px; height:8px; width:100%;"><div style="background:${color}; border-radius:4px; height:8px; width:${pct}%;"></div></div>`
     }
 
     function tierColor(rank: number): string {
-      if (rank <= 6) return '#ef4444'   // Tier 1 — Revenue
-      if (rank <= 13) return '#f59e0b'  // Tier 2 — Legal/Bugs
-      if (rank <= 19) return '#3b82f6'  // Tier 3 — Enterprise
-      if (rank <= 22) return '#8b5cf6'  // Tier 4 — AI
-      return '#6b7280'                  // Tier 5 — QoL
+      if (rank <= 6) return '#ef4444' // Tier 1 — Revenue
+      if (rank <= 13) return '#f59e0b' // Tier 2 — Legal/Bugs
+      if (rank <= 19) return '#3b82f6' // Tier 3 — Enterprise
+      if (rank <= 22) return '#8b5cf6' // Tier 4 — AI
+      return '#6b7280' // Tier 5 — QoL
     }
 
     function tierLabel(rank: number): string {
@@ -148,7 +382,9 @@ serve(async (req) => {
     }
 
     // ─── Build HTML ──────────────────────────────────────────────────
-    const dimensionRows = dimensions.map(d => `
+    const dimensionRows = dimensions
+      .map(
+        (d) => `
       <tr>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; font-weight:500;">${d.name}</td>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; text-align:center;">
@@ -158,9 +394,13 @@ serve(async (req) => {
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; width:120px;">${scoreBar(d.score)}</td>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; font-size:12px; color:#6b7280;">${d.notes}</td>
       </tr>
-    `).join('')
+    `
+      )
+      .join('')
 
-    const metricCards = metrics.map(m => `
+    const metricCards = metrics
+      .map(
+        (m) => `
       <td style="padding:5px; vertical-align:top;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
           <tr><td style="padding:12px; text-align:center;">
@@ -169,16 +409,24 @@ serve(async (req) => {
           </td></tr>
         </table>
       </td>
-    `).join('')
+    `
+      )
+      .join('')
 
-    const valuationRows = valuation.map(v => `
+    const valuationRows = valuation
+      .map(
+        (v) => `
       <tr>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb;">${v.method}</td>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600; color:#1a1a2e;">${v.low} – ${v.high}</td>
       </tr>
-    `).join('')
+    `
+      )
+      .join('')
 
-    const featureRows = topFeatures.map(f => `
+    const featureRows = topFeatures
+      .map(
+        (f) => `
       <tr>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:700; color:#1a1a2e;">${f.rank}</td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
@@ -191,7 +439,9 @@ serve(async (req) => {
           ${f.impact}
         </td>
       </tr>
-    `).join('')
+    `
+      )
+      .join('')
 
     const html = `
 <!DOCTYPE html>
@@ -387,7 +637,7 @@ serve(async (req) => {
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -401,11 +651,18 @@ serve(async (req) => {
     const emailResult = await emailResponse.json()
 
     if (!emailResponse.ok) {
-      console.error('[assessment-report] Resend error:', JSON.stringify(emailResult))
-      throw new Error(`Email send failed: ${emailResult.message || emailResponse.statusText}`)
+      console.error(
+        '[assessment-report] Resend error:',
+        JSON.stringify(emailResult)
+      )
+      throw new Error(
+        `Email send failed: ${emailResult.message || emailResponse.statusText}`
+      )
     }
 
-    console.log(`[assessment-report] Sent to ${recipients.length} recipients. Resend ID: ${emailResult.id}`)
+    console.log(
+      `[assessment-report] Sent to ${recipients.length} recipients. Resend ID: ${emailResult.id}`
+    )
 
     return new Response(
       JSON.stringify({

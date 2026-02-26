@@ -68,9 +68,7 @@ export function PlanCard({
     <div
       className={cn(
         'relative flex flex-col rounded-2xl border-2 bg-card p-6 shadow-sm transition-all hover:shadow-md',
-        isPopular
-          ? 'border-blue-500 shadow-blue-100'
-          : 'border-border',
+        isPopular ? 'border-blue-500 shadow-blue-100' : 'border-border',
         isCurrentPlan && 'ring-2 ring-green-500 ring-offset-2'
       )}
     >
@@ -96,9 +94,7 @@ export function PlanCard({
       <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
 
       {/* Plan description */}
-      <p className="mt-1 text-sm text-muted-foreground">
-        {plan.description}
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
 
       {/* Pricing */}
       <div className="mt-6">
@@ -109,17 +105,20 @@ export function PlanCard({
           <span className="text-sm text-muted-foreground">/sensor/mo</span>
         </div>
         {billingInterval === 'annual' && (
-          <p className="mt-1 text-xs text-green-600 font-medium">
+          <p className="mt-1 text-xs font-medium text-green-600">
             Save 17% with annual billing
           </p>
         )}
         <div className="mt-3 rounded-lg bg-muted/50 p-3">
           <p className="text-sm text-muted-foreground">
-            Est. monthly cost for {sensorCount} sensor{sensorCount !== 1 ? 's' : ''}
+            Est. monthly cost for {sensorCount} sensor
+            {sensorCount !== 1 ? 's' : ''}
           </p>
           <p className="text-2xl font-bold text-foreground">
             ${monthlyCost.toFixed(2)}
-            <span className="text-sm font-normal text-muted-foreground">/mo</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              /mo
+            </span>
           </p>
         </div>
       </div>
@@ -133,7 +132,11 @@ export function PlanCard({
           disabled={isCurrentPlan || isLoading}
           onClick={() => onSelectPlan(plan)}
         >
-          {isCurrentPlan ? 'Current Plan' : isLoading ? 'Redirecting...' : 'Get Started'}
+          {isCurrentPlan
+            ? 'Current Plan'
+            : isLoading
+              ? 'Redirecting...'
+              : 'Get Started'}
         </Button>
       </div>
 
@@ -142,7 +145,9 @@ export function PlanCard({
         {highlights.map((feature, i) => (
           <li key={i} className="flex items-start gap-2 text-sm">
             {i === 0 && (plan.slug === 'protect' || plan.slug === 'command') ? (
-              <span className="font-medium text-muted-foreground">{feature}</span>
+              <span className="font-medium text-muted-foreground">
+                {feature}
+              </span>
             ) : (
               <>
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />

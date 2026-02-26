@@ -114,7 +114,9 @@ const METRIC_LABELS: Record<UsageMetricType, string> = {
 export function BillingTab({ organizationId }: BillingTabProps) {
   const router = useRouter()
   const { fmt } = useDateFormatter()
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(
+    null
+  )
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
   const [usage, setUsage] = useState<UsageData[]>([])
   const [loading, setLoading] = useState(true)
@@ -129,7 +131,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
       // Fetch subscription + plan (cast: tables not in generated types yet)
       const { data: subData } = await (supabase as any)
         .from('subscriptions')
-        .select('id, status, current_period_start, current_period_end, cancel_at_period_end, plan:plan_id(*)')
+        .select(
+          'id, status, current_period_start, current_period_end, cancel_at_period_end, plan:plan_id(*)'
+        )
         .eq('organization_id', organizationId)
         .in('status', ['active', 'trialing', 'past_due'])
         .order('created_at', { ascending: false })
@@ -150,7 +154,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
       // Fetch invoices
       const { data: invData } = await (supabase as any)
         .from('invoices')
-        .select('id, amount_cents, currency, status, invoice_url, pdf_url, period_start, period_end, created_at')
+        .select(
+          'id, amount_cents, currency, status, invoice_url, pdf_url, period_start, period_end, created_at'
+        )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(12)
@@ -161,7 +167,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
 
       // Fetch usage via usage-check edge function
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
         if (session?.access_token) {
           const res = await fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/functions/v1/usage-check`,
@@ -175,17 +183,17 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           if (res.ok) {
             const usageResponse = await res.json()
             if (usageResponse?.quotas) {
-              const usageArr: UsageData[] = Object.entries(usageResponse.quotas).map(
-                ([key, val]: [string, any]) => ({
-                  metric_type: key as UsageMetricType,
-                  current_value: val.current_usage ?? 0,
-                  plan_limit: val.plan_limit ?? 0,
-                  usage_percent: val.usage_percent ?? 0,
-                  is_warning: val.is_warning ?? false,
-                  is_exceeded: val.is_exceeded ?? false,
-                  is_unlimited: val.is_unlimited ?? false,
-                })
-              )
+              const usageArr: UsageData[] = Object.entries(
+                usageResponse.quotas
+              ).map(([key, val]: [string, any]) => ({
+                metric_type: key as UsageMetricType,
+                current_value: val.current_usage ?? 0,
+                plan_limit: val.plan_limit ?? 0,
+                usage_percent: val.usage_percent ?? 0,
+                is_warning: val.is_warning ?? false,
+                is_exceeded: val.is_exceeded ?? false,
+                is_unlimited: val.is_unlimited ?? false,
+              }))
               setUsage(usageArr)
             }
           }
@@ -208,7 +216,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
     setPortalLoading(true)
     try {
       const supabase = getSupabase()
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (session?.access_token) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/functions/v1/create-portal-session`,
@@ -230,7 +240,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           }
         }
       }
-      alert('Stripe Customer Portal is not yet configured. Contact support for billing changes.')
+      alert(
+        'Stripe Customer Portal is not yet configured. Contact support for billing changes.'
+      )
     } catch {
       alert('Unable to open billing portal. Please contact support.')
     } finally {
@@ -243,7 +255,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
       <div className="flex items-center justify-center p-12">
         <div className="space-y-4 text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Loading billing info...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading billing info...
+          </p>
         </div>
       </div>
     )
@@ -261,7 +275,8 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Payment Past Due</AlertTitle>
           <AlertDescription>
-            Your last payment failed. Please update your payment method to avoid service interruption.
+            Your last payment failed. Please update your payment method to avoid
+            service interruption.
             <Button
               variant="outline"
               size="sm"
@@ -275,16 +290,18 @@ export function BillingTab({ organizationId }: BillingTabProps) {
       )}
 
       {/* Cancellation warning */}
-      {subscription?.cancel_at_period_end && subscription.current_period_end && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Subscription Canceling</AlertTitle>
-          <AlertDescription>
-            Your subscription will end on {fmt.longDate(subscription.current_period_end)}.
-            You will retain access until then.
-          </AlertDescription>
-        </Alert>
-      )}
+      {subscription?.cancel_at_period_end &&
+        subscription.current_period_end && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Subscription Canceling</AlertTitle>
+            <AlertDescription>
+              Your subscription will end on{' '}
+              {fmt.longDate(subscription.current_period_end)}. You will retain
+              access until then.
+            </AlertDescription>
+          </Alert>
+        )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Current Plan Card */}
@@ -296,9 +313,7 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                 {plan ? plan.description : 'No active subscription'}
               </CardDescription>
             </div>
-            {subscription && (
-              <StatusBadge status={subscription.status} />
-            )}
+            {subscription && <StatusBadge status={subscription.status} />}
           </CardHeader>
           <CardContent className="space-y-4">
             {plan ? (
@@ -339,7 +354,8 @@ export function BillingTab({ organizationId }: BillingTabProps) {
               <div className="space-y-3">
                 <p className="text-2xl font-bold">Free Tier</p>
                 <p className="text-sm text-muted-foreground">
-                  You are on the free tier. Upgrade to unlock more sensors, features, and support.
+                  You are on the free tier. Upgrade to unlock more sensors,
+                  features, and support.
                 </p>
                 <Button size="sm" onClick={() => router.push('/pricing')}>
                   <ArrowUpRight className="mr-2 h-4 w-4" />
@@ -364,10 +380,10 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           <CardContent className="space-y-4">
             {usage.length > 0 ? (
               usage
-                .filter((u) => ['device_count', 'user_count'].includes(u.metric_type))
-                .map((u) => (
-                  <UsageMeter key={u.metric_type} usage={u} />
-                ))
+                .filter((u) =>
+                  ['device_count', 'user_count'].includes(u.metric_type)
+                )
+                .map((u) => <UsageMeter key={u.metric_type} usage={u} />)
             ) : (
               <p className="text-sm text-muted-foreground">
                 No usage data available yet.
@@ -423,7 +439,9 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                         ? `${fmt.shortDate(inv.period_start)} – ${fmt.shortDate(inv.period_end)}`
                         : '—'}
                     </TableCell>
-                    <TableCell>{formatInvoiceAmount(inv.amount_cents, inv.currency)}</TableCell>
+                    <TableCell>
+                      {formatInvoiceAmount(inv.amount_cents, inv.currency)}
+                    </TableCell>
                     <TableCell>
                       <InvoiceStatusBadge status={inv.status} />
                     </TableCell>
@@ -431,7 +449,11 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                       <div className="flex justify-end gap-1">
                         {inv.invoice_url && (
                           <Button variant="ghost" size="sm" asChild>
-                            <a href={inv.invoice_url} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={inv.invoice_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               <ExternalLink className="mr-1 h-3 w-3" />
                               View
                             </a>
@@ -439,7 +461,11 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                         )}
                         {inv.pdf_url && (
                           <Button variant="ghost" size="sm" asChild>
-                            <a href={inv.pdf_url} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={inv.pdf_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               <FileText className="mr-1 h-3 w-3" />
                               PDF
                             </a>
@@ -501,7 +527,13 @@ function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
   )
 }
 
-function UsageMeter({ usage, showCard }: { usage: UsageData; showCard?: boolean }) {
+function UsageMeter({
+  usage,
+  showCard,
+}: {
+  usage: UsageData
+  showCard?: boolean
+}) {
   const percent = usage.is_unlimited ? 0 : Math.min(usage.usage_percent, 100)
   const color = usage.is_exceeded
     ? 'bg-red-500'
@@ -519,7 +551,9 @@ function UsageMeter({ usage, showCard }: { usage: UsageData; showCard?: boolean 
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           {METRIC_ICONS[usage.metric_type]}
-          <span className="font-medium">{METRIC_LABELS[usage.metric_type]}</span>
+          <span className="font-medium">
+            {METRIC_LABELS[usage.metric_type]}
+          </span>
         </div>
         <span className="text-muted-foreground">
           {formatValue(usage.metric_type, usage.current_value)}
@@ -542,11 +576,7 @@ function UsageMeter({ usage, showCard }: { usage: UsageData; showCard?: boolean 
   )
 
   if (showCard) {
-    return (
-      <div className="rounded-lg border p-4">
-        {content}
-      </div>
-    )
+    return <div className="rounded-lg border p-4">{content}</div>
   }
 
   return content

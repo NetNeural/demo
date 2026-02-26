@@ -22,10 +22,7 @@ import {
   createErrorResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-  getUserContext,
-} from '../_shared/auth.ts'
+import { createServiceClient, getUserContext } from '../_shared/auth.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {

@@ -83,7 +83,9 @@ export function useDeviceStatus({
         )
       }
 
-      const deviceData = response.data?.status as DeviceStatusApiData | undefined
+      const deviceData = response.data?.status as
+        | DeviceStatusApiData
+        | undefined
 
       if (!deviceData) {
         throw new Error('Device not found')

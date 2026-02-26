@@ -113,7 +113,10 @@ describe('Issue #23: Login Redirect Flow', () => {
       getSessionCallCount++
       // First call(s) are mount auth-check — return null
       // After signInWithPassword is called, return the session
-      if (mockSupabase.auth.signInWithPassword.mock.calls.length > 0 && getSessionCallCount > 1) {
+      if (
+        mockSupabase.auth.signInWithPassword.mock.calls.length > 0 &&
+        getSessionCallCount > 1
+      ) {
         return Promise.resolve({ data: { session: mockSession }, error: null })
       }
       return Promise.resolve({ data: { session: null }, error: null })
@@ -247,7 +250,10 @@ describe('Issue #23: Login Redirect Flow', () => {
     let tc5CallCount = 0
     mockSupabase.auth.getSession.mockImplementation(() => {
       tc5CallCount++
-      if (mockSupabase.auth.signInWithPassword.mock.calls.length > 0 && tc5CallCount > 1) {
+      if (
+        mockSupabase.auth.signInWithPassword.mock.calls.length > 0 &&
+        tc5CallCount > 1
+      ) {
         return Promise.resolve({ data: { session: mockSession }, error: null })
       }
       return Promise.resolve({ data: { session: null }, error: null })
@@ -264,9 +270,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.click(submitButton)
 
-    await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-    }, { timeout: 5000 })
+    await waitFor(
+      () => {
+        expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
+      },
+      { timeout: 5000 }
+    )
 
     // Verify login was attempted
     expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalled()
@@ -382,9 +391,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.click(submitButton)
 
-    await waitFor(() => {
-      // Should call setSession when remember me is NOT checked
-      expect(mockSupabase.auth.setSession).toHaveBeenCalled()
-    }, { timeout: 3000 })
+    await waitFor(
+      () => {
+        // Should call setSession when remember me is NOT checked
+        expect(mockSupabase.auth.setSession).toHaveBeenCalled()
+      },
+      { timeout: 3000 }
+    )
   })
 })

@@ -24,7 +24,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 const DEFAULT_RECIPIENTS = [
@@ -72,10 +73,15 @@ serve(async (req) => {
       const body = await req.json()
       if (body.recipients?.length > 0) recipients = body.recipients
       if (body.preview === true) isPreview = true
-    } catch { /* defaults */ }
+    } catch {
+      /* defaults */
+    }
 
     const today = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     })
 
     console.log(`[executive-summary] Generating for ${today}`)
@@ -123,12 +129,21 @@ serve(async (req) => {
     // Totals
     const totalOrgs = (orgs || []).length
     const totalDevices = (allDevices || []).length
-    const onlineDevices = (allDevices || []).filter((d: any) => d.status === 'online').length
+    const onlineDevices = (allDevices || []).filter(
+      (d: any) => d.status === 'online'
+    ).length
     const offlineDevices = totalDevices - onlineDevices
-    const uptimePct = totalDevices > 0 ? ((onlineDevices / totalDevices) * 100).toFixed(1) : '0.0'
+    const uptimePct =
+      totalDevices > 0
+        ? ((onlineDevices / totalDevices) * 100).toFixed(1)
+        : '0.0'
     const totalUnresolved = (unresolvedAlerts || []).length
-    const totalCritical = (unresolvedAlerts || []).filter((a: any) => a.severity === 'critical').length
-    const totalHigh = (unresolvedAlerts || []).filter((a: any) => a.severity === 'high').length
+    const totalCritical = (unresolvedAlerts || []).filter(
+      (a: any) => a.severity === 'critical'
+    ).length
+    const totalHigh = (unresolvedAlerts || []).filter(
+      (a: any) => a.severity === 'high'
+    ).length
     const newAlerts = (newAlerts24h || []).length
     const resolvedAlerts = (resolved24h || []).length
     const uniqueUsers = new Set((members || []).map((m: any) => m.user_id)).size
@@ -137,16 +152,27 @@ serve(async (req) => {
     let healthStatus = '🟢 Healthy'
     let healthColor = '#10b981'
     let healthBg = '#d1fae5'
-    if (totalCritical > 0) { healthStatus = '🔴 Critical'; healthColor = '#ef4444'; healthBg = '#fee2e2' }
-    else if (totalHigh > 3 || offlineDevices > totalDevices * 0.2) { healthStatus = '🟡 Warning'; healthColor = '#f59e0b'; healthBg = '#fef3c7' }
-    else if (offlineDevices > 0) { healthStatus = '🟡 Degraded'; healthColor = '#f59e0b'; healthBg = '#fef3c7' }
+    if (totalCritical > 0) {
+      healthStatus = '🔴 Critical'
+      healthColor = '#ef4444'
+      healthBg = '#fee2e2'
+    } else if (totalHigh > 3 || offlineDevices > totalDevices * 0.2) {
+      healthStatus = '🟡 Warning'
+      healthColor = '#f59e0b'
+      healthBg = '#fef3c7'
+    } else if (offlineDevices > 0) {
+      healthStatus = '🟡 Degraded'
+      healthColor = '#f59e0b'
+      healthBg = '#fef3c7'
+    }
 
     // ─── GitHub Issue Tracking ───────────────────────────────────────
 
     let totalOpen = 0
     let totalClosed = 0
     let openBugs = 0
-    let recentClosures: { number: number; title: string; labels: string[] }[] = []
+    let recentClosures: { number: number; title: string; labels: string[] }[] =
+      []
 
     const githubToken = Deno.env.get('GITHUB_TOKEN')
     if (githubToken) {
@@ -166,7 +192,9 @@ serve(async (req) => {
           // Parse total from Link header
           const linkHeader = openRes.headers.get('Link') || ''
           const lastMatch = linkHeader.match(/page=(\d+)>; rel="last"/)
-          totalOpen = lastMatch ? parseInt(lastMatch[1]) : (await openRes.json()).length
+          totalOpen = lastMatch
+            ? parseInt(lastMatch[1])
+            : (await openRes.json()).length
         }
 
         // Closed issues count
@@ -183,7 +211,9 @@ serve(async (req) => {
         if (closedRes.ok) {
           const linkHeader = closedRes.headers.get('Link') || ''
           const lastMatch = linkHeader.match(/page=(\d+)>; rel="last"/)
-          totalClosed = lastMatch ? parseInt(lastMatch[1]) : (await closedRes.json()).length
+          totalClosed = lastMatch
+            ? parseInt(lastMatch[1])
+            : (await closedRes.json()).length
         }
 
         // Open bugs
@@ -225,21 +255,32 @@ serve(async (req) => {
             }))
         }
       } catch (ghErr) {
-        console.warn('[executive-summary] GitHub API error:', (ghErr as Error).message)
+        console.warn(
+          '[executive-summary] GitHub API error:',
+          (ghErr as Error).message
+        )
       }
     } else {
-      console.warn('[executive-summary] GITHUB_TOKEN not configured — skipping issue tracking')
+      console.warn(
+        '[executive-summary] GITHUB_TOKEN not configured — skipping issue tracking'
+      )
     }
 
     const totalIssues = totalOpen + totalClosed
-    const closureRate = totalIssues > 0 ? ((totalClosed / totalIssues) * 100).toFixed(0) : '0'
+    const closureRate =
+      totalIssues > 0 ? ((totalClosed / totalIssues) * 100).toFixed(0) : '0'
 
     // MVP completion estimate
     const mvpPct = 99
 
     // ─── Build HTML ──────────────────────────────────────────────────
 
-    const statCard = (value: string, label: string, sub: string, color = '#1a1a2e') => `
+    const statCard = (
+      value: string,
+      label: string,
+      sub: string,
+      color = '#1a1a2e'
+    ) => `
       <td style="padding:4px; vertical-align:top;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
           <tr><td style="padding:14px 10px; text-align:center;">
@@ -250,11 +291,16 @@ serve(async (req) => {
         </table>
       </td>`
 
-    const recentClosureRows = recentClosures.map((c) => {
-      const isBug = c.labels.some((l) => l.toLowerCase().includes('bug'))
-      const isFeature = c.labels.some((l) => l.toLowerCase().includes('feature') || l.toLowerCase().includes('enhancement'))
-      const typeIcon = isBug ? '🐛' : isFeature ? '✨' : '📋'
-      return `
+    const recentClosureRows = recentClosures
+      .map((c) => {
+        const isBug = c.labels.some((l) => l.toLowerCase().includes('bug'))
+        const isFeature = c.labels.some(
+          (l) =>
+            l.toLowerCase().includes('feature') ||
+            l.toLowerCase().includes('enhancement')
+        )
+        const typeIcon = isBug ? '🐛' : isFeature ? '✨' : '📋'
+        return `
         <tr>
           <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
             <a href="https://github.com/NetNeural/MonoRepo-Staging/issues/${c.number}" style="color:#2563eb; text-decoration:none; font-weight:600;">#${c.number}</a>
@@ -262,15 +308,33 @@ serve(async (req) => {
           <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">${c.title}</td>
           <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">${typeIcon}</td>
         </tr>`
-    }).join('')
+      })
+      .join('')
 
     const environments = [
-      { name: 'Development', domain: 'demo.netneural.ai', branch: 'demo/main', status: '✅ Live' },
-      { name: 'Staging', domain: 'demo-stage.netneural.ai', branch: 'MonoRepo-Staging/staging', status: '✅ Live' },
-      { name: 'Production', domain: 'sentinel.netneural.ai', branch: 'MonoRepo/main', status: '✅ Live' },
+      {
+        name: 'Development',
+        domain: 'demo.netneural.ai',
+        branch: 'demo/main',
+        status: '✅ Live',
+      },
+      {
+        name: 'Staging',
+        domain: 'demo-stage.netneural.ai',
+        branch: 'MonoRepo-Staging/staging',
+        status: '✅ Live',
+      },
+      {
+        name: 'Production',
+        domain: 'sentinel.netneural.ai',
+        branch: 'MonoRepo/main',
+        status: '✅ Live',
+      },
     ]
 
-    const envRows = environments.map((e) => `
+    const envRows = environments
+      .map(
+        (e) => `
       <tr>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-weight:500;">${e.name}</td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb;">
@@ -278,21 +342,47 @@ serve(async (req) => {
         </td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:12px; color:#6b7280;">${e.branch}</td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">${e.status}</td>
-      </tr>`).join('')
+      </tr>`
+      )
+      .join('')
 
     const risks = [
-      { risk: 'Alert system reliability', severity: 'High', color: '#f59e0b', mitigation: '#282 under investigation — user-reported' },
-      { risk: 'Test coverage below target', severity: 'Medium', color: '#3b82f6', mitigation: 'Story 2.2 planned — target 70%' },
-      { risk: 'No billing infrastructure', severity: 'Critical', color: '#ef4444', mitigation: 'Stripe integration planned — Phase 1' },
-      { risk: 'Scope creep (145 open issues)', severity: 'Medium', color: '#3b82f6', mitigation: 'Issues triaged and prioritized' },
+      {
+        risk: 'Alert system reliability',
+        severity: 'High',
+        color: '#f59e0b',
+        mitigation: '#282 under investigation — user-reported',
+      },
+      {
+        risk: 'Test coverage below target',
+        severity: 'Medium',
+        color: '#3b82f6',
+        mitigation: 'Story 2.2 planned — target 70%',
+      },
+      {
+        risk: 'No billing infrastructure',
+        severity: 'Critical',
+        color: '#ef4444',
+        mitigation: 'Stripe integration planned — Phase 1',
+      },
+      {
+        risk: 'Scope creep (145 open issues)',
+        severity: 'Medium',
+        color: '#3b82f6',
+        mitigation: 'Issues triaged and prioritized',
+      },
     ]
 
-    const riskRows = risks.map((r) => `
+    const riskRows = risks
+      .map(
+        (r) => `
       <tr>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb;">${r.risk}</td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center; color:${r.color}; font-weight:600;">${r.severity}</td>
         <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:12px; color:#6b7280;">${r.mitigation}</td>
-      </tr>`).join('')
+      </tr>`
+      )
+      .join('')
 
     const html = `
 <!DOCTYPE html>
@@ -380,7 +470,9 @@ serve(async (req) => {
     <p style="font-size:12px; color:#6b7280;">Total: ${totalIssues} issues tracked · ${totalClosed} resolved · ${totalOpen} remaining</p>
   </div>
 
-  ${recentClosures.length > 0 ? `
+  ${
+    recentClosures.length > 0
+      ? `
   <!-- Recent Achievements -->
   <div style="padding:0 24px 16px;">
     <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🎯 Recent Achievements (Last 7 Days)</h2>
@@ -394,7 +486,9 @@ serve(async (req) => {
       </thead>
       <tbody>${recentClosureRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
   <!-- Environment Status -->
   <div style="padding:0 24px 16px;">
@@ -417,9 +511,21 @@ serve(async (req) => {
   <div style="padding:0 24px 16px;">
     <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🛠 Technology Stack</h2>
     <div>
-      ${['Next.js 15', 'React 18', 'TypeScript 5.9', 'Supabase', 'PostgreSQL 17', 'Deno Edge Functions', 'Tailwind CSS', 'GitHub Actions'].map(t =>
-        `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; background-color:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; margin:2px;">${t}</span>`
-      ).join('')}
+      ${[
+        'Next.js 15',
+        'React 18',
+        'TypeScript 5.9',
+        'Supabase',
+        'PostgreSQL 17',
+        'Deno Edge Functions',
+        'Tailwind CSS',
+        'GitHub Actions',
+      ]
+        .map(
+          (t) =>
+            `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; background-color:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; margin:2px;">${t}</span>`
+        )
+        .join('')}
     </div>
   </div>
 
@@ -489,7 +595,7 @@ serve(async (req) => {
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -503,12 +609,19 @@ serve(async (req) => {
     const emailResult = await emailResponse.json()
 
     if (!emailResponse.ok) {
-      console.error('[executive-summary] Resend error:', JSON.stringify(emailResult))
-      throw new Error(`Email send failed: ${emailResult.message || emailResponse.statusText}`)
+      console.error(
+        '[executive-summary] Resend error:',
+        JSON.stringify(emailResult)
+      )
+      throw new Error(
+        `Email send failed: ${emailResult.message || emailResponse.statusText}`
+      )
     }
 
     const duration = Date.now() - startTime
-    console.log(`[executive-summary] Sent in ${duration}ms to ${recipients.length} recipients. Resend ID: ${emailResult.id}`)
+    console.log(
+      `[executive-summary] Sent in ${duration}ms to ${recipients.length} recipients. Resend ID: ${emailResult.id}`
+    )
 
     return new Response(
       JSON.stringify({

@@ -110,21 +110,24 @@ export default createEdgeFunction(async ({ req }) => {
   }
 
   // Reset password in auth system to match the emailed temporary password
-  const resetResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${supabaseServiceKey}`,
-      'Content-Type': 'application/json',
-      apikey: supabaseServiceKey,
-    },
-    body: JSON.stringify({
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: targetUser.full_name,
+  const resetResponse = await fetch(
+    `${supabaseUrl}/auth/v1/admin/users/${userId}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        'Content-Type': 'application/json',
+        apikey: supabaseServiceKey,
       },
-    }),
-  })
+      body: JSON.stringify({
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: targetUser.full_name,
+        },
+      }),
+    }
+  )
 
   if (!resetResponse.ok) {
     const error = await resetResponse.json()

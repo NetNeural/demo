@@ -149,9 +149,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       const data = response.data as OrgListResponse
 
       // Transform API response to UserOrganization format
-      const organizations: UserOrganization[] = (
-        data.organizations || []
-      ).map((org: OrgApiItem): UserOrganization => ({
+      const organizations: UserOrganization[] = (data.organizations || []).map(
+        (org: OrgApiItem): UserOrganization => ({
           id: org.id,
           name: org.name,
           slug: org.slug,
@@ -161,7 +160,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           settings: (org.settings as OrganizationSettings) ?? undefined,
           parent_organization_id: org.parentOrganizationId || null,
           created_by: org.createdBy || null,
-          role: (org.memberRole || (data.isSuperAdmin ? 'owner' : 'admin')) as OrganizationRole,
+          role: (org.memberRole ||
+            (data.isSuperAdmin ? 'owner' : 'admin')) as OrganizationRole,
           membershipId: `mem-${org.id}`,
           joinedAt: org.createdAt,
           created_at: org.createdAt,

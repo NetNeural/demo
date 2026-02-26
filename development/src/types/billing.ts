@@ -45,15 +45,15 @@ export interface BillingPlan {
   name: string
   slug: string
   pricing_model: PricingModel
-  price_per_device: number   // per-sensor monthly price (e.g., $2, $4, $6)
+  price_per_device: number // per-sensor monthly price (e.g., $2, $4, $6)
   stripe_price_id_monthly: string | null
   stripe_price_id_annual: string | null
-  price_monthly: number      // base monthly price (0 for per-device plans)
-  price_annual: number       // base annual price (0 for per-device plans)
-  max_devices: number        // -1 = unlimited
-  max_users: number          // -1 = unlimited
-  max_integrations: number   // -1 = unlimited
-  telemetry_retention_days: number  // -1 = unlimited
+  price_monthly: number // base monthly price (0 for per-device plans)
+  price_annual: number // base annual price (0 for per-device plans)
+  max_devices: number // -1 = unlimited
+  max_users: number // -1 = unlimited
+  max_integrations: number // -1 = unlimited
+  telemetry_retention_days: number // -1 = unlimited
   features: BillingPlanFeatures
   is_active: boolean
   is_public: boolean
@@ -67,7 +67,11 @@ export interface BillingPlan {
 export type BillingPlanSlug = 'monitor' | 'protect' | 'command'
 
 /** Legacy slugs (deactivated, kept for historical subscription references) */
-export type LegacyBillingPlanSlug = 'free' | 'starter' | 'professional' | 'enterprise'
+export type LegacyBillingPlanSlug =
+  | 'free'
+  | 'starter'
+  | 'professional'
+  | 'enterprise'
 
 /** Feature display metadata for plan comparison UI */
 export interface PlanFeatureDisplay {
@@ -79,33 +83,133 @@ export interface PlanFeatureDisplay {
 /** All displayable features for the comparison table */
 export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
   // Monitor (all plans)
-  { key: 'dashboard', label: 'Real-time Monitoring', description: 'Live temperature and sensor dashboard' },
-  { key: 'compliance_logs', label: 'Compliance Logs', description: 'Automated HACCP-ready compliance logging' },
-  { key: 'haccp_export', label: 'HACCP Export', description: 'Export compliance data for auditors' },
-  { key: 'email_alerts', label: 'Email Alerts', description: 'Alert notifications via email' },
-  { key: 'sms_alerts', label: 'SMS Alerts', description: 'Alert notifications via SMS' },
-  { key: 'manual_report_export', label: 'Report Export', description: 'Manual data export and reporting' },
+  {
+    key: 'dashboard',
+    label: 'Real-time Monitoring',
+    description: 'Live temperature and sensor dashboard',
+  },
+  {
+    key: 'compliance_logs',
+    label: 'Compliance Logs',
+    description: 'Automated HACCP-ready compliance logging',
+  },
+  {
+    key: 'haccp_export',
+    label: 'HACCP Export',
+    description: 'Export compliance data for auditors',
+  },
+  {
+    key: 'email_alerts',
+    label: 'Email Alerts',
+    description: 'Alert notifications via email',
+  },
+  {
+    key: 'sms_alerts',
+    label: 'SMS Alerts',
+    description: 'Alert notifications via SMS',
+  },
+  {
+    key: 'manual_report_export',
+    label: 'Report Export',
+    description: 'Manual data export and reporting',
+  },
   // Protect+
-  { key: 'ai_analytics', label: 'AI Anomaly Detection', description: 'Detect anomalies like doors left open' },
-  { key: 'predictive_alerts', label: 'Predictive Alerts', description: 'Predict equipment failures before they happen' },
-  { key: 'multi_site_dashboard', label: 'Multi-site Dashboard', description: 'Monitor all locations from one view' },
-  { key: 'role_based_access', label: 'Role-based Access', description: 'Granular permissions per user' },
-  { key: 'api_access', label: 'API Access', description: 'Programmatic access via REST API' },
-  { key: 'automated_audit_reporting', label: 'Automated Audit Reports', description: 'Scheduled compliance reports' },
-  { key: 'pdf_export', label: 'PDF Export', description: 'Export reports as PDF' },
-  { key: 'mfa', label: 'Multi-Factor Auth', description: 'TOTP/authenticator app support' },
-  { key: 'audit_log', label: 'Audit Log', description: 'Track all user actions' },
-  { key: 'webhook_integrations', label: 'Webhook Integrations', description: 'Connect to external services' },
+  {
+    key: 'ai_analytics',
+    label: 'AI Anomaly Detection',
+    description: 'Detect anomalies like doors left open',
+  },
+  {
+    key: 'predictive_alerts',
+    label: 'Predictive Alerts',
+    description: 'Predict equipment failures before they happen',
+  },
+  {
+    key: 'multi_site_dashboard',
+    label: 'Multi-site Dashboard',
+    description: 'Monitor all locations from one view',
+  },
+  {
+    key: 'role_based_access',
+    label: 'Role-based Access',
+    description: 'Granular permissions per user',
+  },
+  {
+    key: 'api_access',
+    label: 'API Access',
+    description: 'Programmatic access via REST API',
+  },
+  {
+    key: 'automated_audit_reporting',
+    label: 'Automated Audit Reports',
+    description: 'Scheduled compliance reports',
+  },
+  {
+    key: 'pdf_export',
+    label: 'PDF Export',
+    description: 'Export reports as PDF',
+  },
+  {
+    key: 'mfa',
+    label: 'Multi-Factor Auth',
+    description: 'TOTP/authenticator app support',
+  },
+  {
+    key: 'audit_log',
+    label: 'Audit Log',
+    description: 'Track all user actions',
+  },
+  {
+    key: 'webhook_integrations',
+    label: 'Webhook Integrations',
+    description: 'Connect to external services',
+  },
   // Command
-  { key: 'ai_optimization', label: 'AI Optimization', description: 'Energy and equipment runtime optimization insights' },
-  { key: 'chain_benchmarking', label: 'Chain Benchmarking', description: 'Compare performance across all locations' },
-  { key: 'esg_reporting', label: 'ESG Reporting', description: 'Environmental, Social, and Governance dashboard' },
-  { key: 'carbon_analytics', label: 'Carbon Analytics', description: 'Carbon impact tracking and reporting' },
-  { key: 'custom_integrations', label: 'Custom Integrations', description: 'Custom API and system integrations' },
-  { key: 'dedicated_support', label: 'Dedicated Support', description: 'Named account manager and support engineer' },
-  { key: 'sla', label: 'SLA Guarantee', description: 'Uptime and response time guarantees' },
-  { key: 'custom_branding', label: 'Custom Branding', description: 'Logo, colors, and login page customization' },
-  { key: 'priority_support', label: 'Priority Support', description: 'Faster response times' },
+  {
+    key: 'ai_optimization',
+    label: 'AI Optimization',
+    description: 'Energy and equipment runtime optimization insights',
+  },
+  {
+    key: 'chain_benchmarking',
+    label: 'Chain Benchmarking',
+    description: 'Compare performance across all locations',
+  },
+  {
+    key: 'esg_reporting',
+    label: 'ESG Reporting',
+    description: 'Environmental, Social, and Governance dashboard',
+  },
+  {
+    key: 'carbon_analytics',
+    label: 'Carbon Analytics',
+    description: 'Carbon impact tracking and reporting',
+  },
+  {
+    key: 'custom_integrations',
+    label: 'Custom Integrations',
+    description: 'Custom API and system integrations',
+  },
+  {
+    key: 'dedicated_support',
+    label: 'Dedicated Support',
+    description: 'Named account manager and support engineer',
+  },
+  {
+    key: 'sla',
+    label: 'SLA Guarantee',
+    description: 'Uptime and response time guarantees',
+  },
+  {
+    key: 'custom_branding',
+    label: 'Custom Branding',
+    description: 'Logo, colors, and login page customization',
+  },
+  {
+    key: 'priority_support',
+    label: 'Priority Support',
+    description: 'Faster response times',
+  },
 ]
 
 /**
@@ -114,7 +218,10 @@ export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
  * Flat-rate plans show "$X/mo" or "$X/yr".
  * Custom plans show "Custom".
  */
-export function formatPlanPrice(plan: BillingPlan, interval: 'monthly' | 'annual' = 'monthly'): string {
+export function formatPlanPrice(
+  plan: BillingPlan,
+  interval: 'monthly' | 'annual' = 'monthly'
+): string {
   if (plan.pricing_model === 'custom') return 'Custom'
   if (plan.pricing_model === 'per_device') {
     return `$${plan.price_per_device}/sensor/mo`
@@ -129,7 +236,10 @@ export function formatPlanPrice(plan: BillingPlan, interval: 'monthly' | 'annual
 /**
  * Calculate monthly cost for a per-device plan given sensor count.
  */
-export function calculateMonthlyCost(plan: BillingPlan, deviceCount: number): number {
+export function calculateMonthlyCost(
+  plan: BillingPlan,
+  deviceCount: number
+): number {
   if (plan.pricing_model === 'per_device') {
     return plan.price_per_device * deviceCount + plan.price_monthly
   }
@@ -139,7 +249,10 @@ export function calculateMonthlyCost(plan: BillingPlan, deviceCount: number): nu
 /**
  * Format the calculated monthly cost for display.
  */
-export function formatMonthlyCost(plan: BillingPlan, deviceCount: number): string {
+export function formatMonthlyCost(
+  plan: BillingPlan,
+  deviceCount: number
+): string {
   if (plan.pricing_model === 'custom') return 'Custom'
   const cost = calculateMonthlyCost(plan, deviceCount)
   return `$${cost.toFixed(2)}/mo`
@@ -164,7 +277,12 @@ export function formatLimit(limit: number): string {
 // ============================================================================
 
 /** Subscription status enum matching DB */
-export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing' | 'incomplete'
+export type SubscriptionStatus =
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'trialing'
+  | 'incomplete'
 
 /** Invoice status enum matching DB */
 export type InvoiceStatus = 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'
@@ -209,7 +327,10 @@ export interface Invoice {
  * Format invoice amount from cents to display string
  * e.g., 2900 → "$29.00"
  */
-export function formatInvoiceAmount(amountCents: number, currency = 'usd'): string {
+export function formatInvoiceAmount(
+  amountCents: number,
+  currency = 'usd'
+): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase(),
@@ -280,8 +401,8 @@ export interface QuotaCheckResult {
   current_usage: number
   plan_limit: number
   usage_percent: number
-  is_warning: boolean   // >= 80%
-  is_exceeded: boolean  // >= 100%
+  is_warning: boolean // >= 80%
+  is_exceeded: boolean // >= 100%
   is_unlimited: boolean // plan_limit = -1
   plan_name: string
 }
@@ -317,14 +438,26 @@ export const USAGE_METRIC_DISPLAY: UsageMetricDisplay[] = [
   { type: 'device_count', label: 'Devices', icon: 'cpu', unit: 'devices' },
   { type: 'user_count', label: 'Team Members', icon: 'users', unit: 'users' },
   { type: 'api_calls', label: 'API Calls', icon: 'zap', unit: 'calls/mo' },
-  { type: 'storage_bytes', label: 'Storage', icon: 'hard-drive', unit: 'bytes' },
-  { type: 'edge_function_invocations', label: 'Edge Functions', icon: 'cloud', unit: 'invocations/mo' },
+  {
+    type: 'storage_bytes',
+    label: 'Storage',
+    icon: 'hard-drive',
+    unit: 'bytes',
+  },
+  {
+    type: 'edge_function_invocations',
+    label: 'Edge Functions',
+    icon: 'cloud',
+    unit: 'invocations/mo',
+  },
 ]
 
 /**
  * Format a quota percentage for display with color context
  */
-export function getQuotaStatus(result: QuotaCheckResult): 'ok' | 'warning' | 'exceeded' | 'unlimited' {
+export function getQuotaStatus(
+  result: QuotaCheckResult
+): 'ok' | 'warning' | 'exceeded' | 'unlimited' {
   if (result.is_unlimited) return 'unlimited'
   if (result.is_exceeded) return 'exceeded'
   if (result.is_warning) return 'warning'

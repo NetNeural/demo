@@ -296,7 +296,11 @@ export default createEdgeFunction(
           throw new Error('memberId is required')
         }
 
-        console.log('🔵 Updating member profile:', { memberId, fullName, email })
+        console.log('🔵 Updating member profile:', {
+          memberId,
+          fullName,
+          email,
+        })
 
         // Get the member being updated
         const { data: targetMember, error: targetError } = await supabaseAdmin
@@ -324,28 +328,33 @@ export default createEdgeFunction(
         // Update auth.users metadata (for Supabase Auth sync)
         if (email !== undefined && email.trim()) {
           // Update email via Supabase Auth Admin API
-          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-            targetMember.user_id,
-            {
-              email: email.trim(),
-              user_metadata: {
-                ...(fullName ? { full_name: fullName.trim() } : {}),
-              },
-            }
-          )
+          const { error: authError } =
+            await supabaseAdmin.auth.admin.updateUserById(
+              targetMember.user_id,
+              {
+                email: email.trim(),
+                user_metadata: {
+                  ...(fullName ? { full_name: fullName.trim() } : {}),
+                },
+              }
+            )
 
           if (authError) {
             console.error('❌ Auth update error:', authError)
-            throw new DatabaseError(`Failed to update email: ${authError.message}`, 500)
+            throw new DatabaseError(
+              `Failed to update email: ${authError.message}`,
+              500
+            )
           }
         } else if (fullName) {
           // Only update metadata (no email change)
-          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-            targetMember.user_id,
-            {
-              user_metadata: { full_name: fullName.trim() },
-            }
-          )
+          const { error: authError } =
+            await supabaseAdmin.auth.admin.updateUserById(
+              targetMember.user_id,
+              {
+                user_metadata: { full_name: fullName.trim() },
+              }
+            )
           if (authError) {
             console.error('❌ Auth metadata update error:', authError)
           }
@@ -360,14 +369,18 @@ export default createEdgeFunction(
 
           if (updateError) {
             console.error('❌ Users table update error:', updateError)
-            throw new DatabaseError(`Failed to update profile: ${updateError.message}`, 500)
+            throw new DatabaseError(
+              `Failed to update profile: ${updateError.message}`,
+              500
+            )
           }
         }
 
         // Fetch updated member data
         const { data: updatedMember, error: fetchError } = await supabaseAdmin
           .from('organization_members')
-          .select(`
+          .select(
+            `
             id,
             user_id,
             role,
@@ -377,7 +390,8 @@ export default createEdgeFunction(
               email,
               full_name
             )
-          `)
+          `
+          )
           .eq('user_id', memberId)
           .eq('organization_id', organizationId)
           .single()

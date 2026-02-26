@@ -55,11 +55,17 @@ export default function FeedbackPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left: Submit form */}
-        <FeedbackForm key={currentOrganization.id} onSubmitted={() => setRefreshKey((k) => k + 1)} />
+        <FeedbackForm
+          key={currentOrganization.id}
+          onSubmitted={() => setRefreshKey((k) => k + 1)}
+        />
 
         {/* Right: History */}
         <Suspense fallback={<LoadingSpinner />}>
-          <FeedbackHistory key={currentOrganization.id} refreshKey={refreshKey} />
+          <FeedbackHistory
+            key={currentOrganization.id}
+            refreshKey={refreshKey}
+          />
         </Suspense>
       </div>
     </div>

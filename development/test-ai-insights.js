@@ -6,8 +6,7 @@
  */
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
-const SUPABASE_ANON_KEY =
-  '<YOUR_SUPABASE_ANON_KEY>'
+const SUPABASE_ANON_KEY = '<YOUR_SUPABASE_ANON_KEY>'
 
 async function testAIInsights() {
   console.log('🧪 Testing AI Insights Edge Function...\n')

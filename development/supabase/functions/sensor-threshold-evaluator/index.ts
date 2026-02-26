@@ -224,7 +224,10 @@ serve(async (req) => {
           if (existingAlerts && existingAlerts.length > 0) {
             // Check if the existing alert is snoozed
             const existingAlert = existingAlerts[0] as any
-            if (existingAlert.snoozed_until && new Date(existingAlert.snoozed_until) > new Date()) {
+            if (
+              existingAlert.snoozed_until &&
+              new Date(existingAlert.snoozed_until) > new Date()
+            ) {
               console.log(
                 `[sensor-threshold-evaluator] Skipping — alert ${existingAlert.id} is snoozed until ${existingAlert.snoozed_until}`
               )

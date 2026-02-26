@@ -199,7 +199,7 @@ export function TestDeviceControls({
           received_at: string
         }>
   ) => {
-    const { error } = await testTelemetryFrom(supabase).insert(row as any)  // eslint-disable-line @typescript-eslint/no-explicit-any
+    const { error } = await testTelemetryFrom(supabase).insert(row as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     if (error) throw error
   }
 
@@ -458,7 +458,10 @@ export function TestDeviceControls({
     step: number
   ): number {
     const delta = (Math.random() - 0.5) * step * 4
-    return Math.min(max, Math.max(min, parseFloat((current + delta).toFixed(2))))
+    return Math.min(
+      max,
+      Math.max(min, parseFloat((current + delta).toFixed(2)))
+    )
   }
 
   // ── Generate a bulk batch of fake historical telemetry rows ─────────────────
@@ -493,8 +496,18 @@ export function TestDeviceControls({
       for (let i = totalPoints; i >= 0; i--) {
         const ts = new Date(nowMs - i * stepMs).toISOString()
         // Realistic drift each step
-        t = driftValue(t, SENSORS.temperature.min, SENSORS.temperature.max, SENSORS.temperature.step)
-        h = driftValue(h, SENSORS.humidity.min, SENSORS.humidity.max, SENSORS.humidity.step)
+        t = driftValue(
+          t,
+          SENSORS.temperature.min,
+          SENSORS.temperature.max,
+          SENSORS.temperature.step
+        )
+        h = driftValue(
+          h,
+          SENSORS.humidity.min,
+          SENSORS.humidity.max,
+          SENSORS.humidity.step
+        )
         c = driftValue(c, SENSORS.co2.min, SENSORS.co2.max, SENSORS.co2.step)
         b = Math.max(0, Math.min(100, b - Math.random() * 0.2)) // slow drain
         s = Math.max(-120, Math.min(-30, s + (Math.random() - 0.5) * 4))
@@ -586,7 +599,9 @@ export function TestDeviceControls({
         ),
         battery: Math.max(
           SENSORS.battery.min,
-          parseFloat((currentValues.battery - (Math.random() * 1.2 + 0.2)).toFixed(1))
+          parseFloat(
+            (currentValues.battery - (Math.random() * 1.2 + 0.2)).toFixed(1)
+          )
         ),
       }
 
@@ -595,7 +610,9 @@ export function TestDeviceControls({
 
       const nextBatteryDevice = Math.max(
         0,
-        parseFloat((batteryDeviceRef.current - (Math.random() * 0.8 + 0.1)).toFixed(1))
+        parseFloat(
+          (batteryDeviceRef.current - (Math.random() * 0.8 + 0.1)).toFixed(1)
+        )
       )
       batteryDeviceRef.current = nextBatteryDevice
       setBatteryDevice(nextBatteryDevice)
@@ -604,7 +621,9 @@ export function TestDeviceControls({
         -120,
         Math.min(
           -30,
-          parseFloat((signalStrengthRef.current + (Math.random() - 0.5) * 6).toFixed(0))
+          parseFloat(
+            (signalStrengthRef.current + (Math.random() - 0.5) * 6).toFixed(0)
+          )
         )
       )
       signalStrengthRef.current = nextSignalStrength
@@ -918,7 +937,7 @@ export function TestDeviceControls({
             </div>
 
             {/* ── Generate Historical Data ─────────────────────────────── */}
-            <div className="mt-4 rounded-md border border-dashed border-muted p-3 space-y-3">
+            <div className="mt-4 space-y-3 rounded-md border border-dashed border-muted p-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <BarChart2 className="h-4 w-4 text-muted-foreground" />
                 Generate Historical Data
@@ -958,9 +977,8 @@ export function TestDeviceControls({
                 />
               </div>
 
-              <div className="text-xs text-muted-foreground text-center">
-                ≈{' '}
-                {Math.floor((histSpanHours * 60) / histIntervalMins)} data
+              <div className="text-center text-xs text-muted-foreground">
+                ≈ {Math.floor((histSpanHours * 60) / histIntervalMins)} data
                 points
               </div>
 
@@ -980,18 +998,17 @@ export function TestDeviceControls({
                   <>
                     <BarChart2 className="mr-2 h-4 w-4" />
                     Generate{' '}
-                    {Math.floor((histSpanHours * 60) / histIntervalMins)}{' '}
-                    Points
+                    {Math.floor((histSpanHours * 60) / histIntervalMins)} Points
                   </>
                 )}
               </Button>
             </div>
 
             {/* ── Auto-Stream ──────────────────────────────────────────── */}
-            <div className="mt-2 rounded-md border border-dashed border-muted p-3 space-y-3">
+            <div className="mt-2 space-y-3 rounded-md border border-dashed border-muted p-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 {autoStreaming ? (
-                  <Play className="h-4 w-4 text-green-500 animate-pulse" />
+                  <Play className="h-4 w-4 animate-pulse text-green-500" />
                 ) : (
                   <Play className="h-4 w-4 text-muted-foreground" />
                 )}

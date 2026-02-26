@@ -47,8 +47,7 @@ async function checkDatabaseDirectly() {
 
       const headers = {
         Authorization: `Bearer ${token}`,
-        apikey:
-          '<YOUR_SUPABASE_KEY>',
+        apikey: '<YOUR_SUPABASE_KEY>',
         'Content-Type': 'application/json',
       }
 

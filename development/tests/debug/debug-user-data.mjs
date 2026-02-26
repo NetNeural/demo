@@ -51,8 +51,7 @@ async function debugUserData() {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              apikey:
-                '<YOUR_SUPABASE_KEY>',
+              apikey: '<YOUR_SUPABASE_KEY>',
             },
           }
         )
@@ -64,8 +63,7 @@ async function debugUserData() {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              apikey:
-                '<YOUR_SUPABASE_KEY>',
+              apikey: '<YOUR_SUPABASE_KEY>',
             },
           }
         )

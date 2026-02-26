@@ -77,9 +77,7 @@ export function UsersList() {
         email: u.email,
         role: (u.role as User['role']) ?? 'user',
         status: u.is_active ? 'active' : 'inactive',
-        lastLogin: u.last_login
-          ? formatRelativeTime(u.last_login)
-          : undefined,
+        lastLogin: u.last_login ? formatRelativeTime(u.last_login) : undefined,
       }))
 
       // Try to fetch secondary org members via organization_members table
@@ -101,7 +99,9 @@ export function UsersList() {
               .in('id', secondaryIds)
 
             if (secondaryUsers) {
-              const roleMap = new Map(secondaryMembers.map((m) => [m.user_id, m.role]))
+              const roleMap = new Map(
+                secondaryMembers.map((m) => [m.user_id, m.role])
+              )
               for (const u of secondaryUsers) {
                 mapped.push({
                   id: u.id,
@@ -123,7 +123,8 @@ export function UsersList() {
 
       setUsers(mapped)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load users'
+      const message =
+        err instanceof Error ? err.message : 'Failed to load users'
       console.error('Error fetching users:', err)
       setFetchError(message)
     } finally {

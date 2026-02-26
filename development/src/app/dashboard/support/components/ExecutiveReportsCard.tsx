@@ -113,21 +113,24 @@ const REPORT_TYPES = [
   {
     key: 'daily-report',
     label: 'Daily Platform Report',
-    description: 'Platform stats, device health, alerts summary, GitHub activity',
+    description:
+      'Platform stats, device health, alerts summary, GitHub activity',
     icon: BarChart3,
     color: 'text-blue-500',
   },
   {
     key: 'assessment-report',
     label: 'Software Assessment',
-    description: 'Architecture scorecard, feature roadmap, 10-dimension grading',
+    description:
+      'Architecture scorecard, feature roadmap, 10-dimension grading',
     icon: FileText,
     color: 'text-purple-500',
   },
   {
     key: 'executive-summary',
     label: 'Executive Summary',
-    description: 'MVP status, issue tracking, environment health, risk assessment, financials',
+    description:
+      'MVP status, issue tracking, environment health, risk assessment, financials',
     icon: ScrollText,
     color: 'text-emerald-500',
   },
@@ -256,9 +259,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
   const toggleRecipient = (email: string) => {
     setSelectedRecipients((prev) =>
-      prev.includes(email)
-        ? prev.filter((e) => e !== email)
-        : [...prev, email]
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
     )
   }
 
@@ -322,11 +323,11 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           .eq('id', runRow.id)
       }
 
-      const reportLabel = REPORT_TYPES.find(r => r.key === reportType)?.label ?? reportType
-      toast.success(
-        `${reportLabel} sent successfully`,
-        { description: `Completed in ${(durationMs / 1000).toFixed(1)}s` }
-      )
+      const reportLabel =
+        REPORT_TYPES.find((r) => r.key === reportType)?.label ?? reportType
+      toast.success(`${reportLabel} sent successfully`, {
+        description: `Completed in ${(durationMs / 1000).toFixed(1)}s`,
+      })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       const durationMs = Date.now() - startTime
@@ -379,7 +380,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
         html = `<pre>${JSON.stringify(data, null, 2)}</pre>`
       }
 
-      const label = REPORT_TYPES.find(r => r.key === reportType)?.label ?? reportType
+      const label =
+        REPORT_TYPES.find((r) => r.key === reportType)?.label ?? reportType
       setPreviewTitle(label)
       setPreviewHtml(html)
     } catch (err: unknown) {
@@ -467,10 +469,14 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
   const frequencyLabel = (freq: string) => {
     switch (freq) {
-      case 'daily': return 'Daily'
-      case 'weekly': return 'Weekly'
-      case 'monthly': return 'Monthly'
-      default: return 'Off'
+      case 'daily':
+        return 'Daily'
+      case 'weekly':
+        return 'Weekly'
+      case 'monthly':
+        return 'Monthly'
+      default:
+        return 'Off'
     }
   }
 
@@ -488,7 +494,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
             Executive Reports
           </CardTitle>
           <CardDescription>
-            Send executive email reports on demand or configure an automated schedule.
+            Send executive email reports on demand or configure an automated
+            schedule.
             {selectedRecipients.length > 0
               ? ` Sending to ${selectedRecipients.length} selected recipient${selectedRecipients.length > 1 ? 's' : ''}.`
               : ' Reports are sent to the default leadership distribution list.'}
@@ -499,7 +506,10 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">Recipients</Label>
-              <Popover open={recipientPopoverOpen} onOpenChange={setRecipientPopoverOpen}>
+              <Popover
+                open={recipientPopoverOpen}
+                onOpenChange={setRecipientPopoverOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8">
                     <Users className="mr-1 h-3.5 w-3.5" />
@@ -529,12 +539,22 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                             className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
                           >
                             <Checkbox
-                              checked={selectedRecipients.includes(member.email)}
-                              onCheckedChange={() => toggleRecipient(member.email)}
+                              checked={selectedRecipients.includes(
+                                member.email
+                              )}
+                              onCheckedChange={() =>
+                                toggleRecipient(member.email)
+                              }
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm">{member.full_name || member.name || member.email}</p>
-                              <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+                              <p className="truncate text-sm">
+                                {member.full_name ||
+                                  member.name ||
+                                  member.email}
+                              </p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {member.email}
+                              </p>
                             </div>
                           </label>
                         ))
@@ -563,7 +583,11 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                 {selectedRecipients.map((email) => {
                   const member = orgMembers.find((m) => m.email === email)
                   return (
-                    <Badge key={email} variant="secondary" className="gap-1 pr-1 text-xs">
+                    <Badge
+                      key={email}
+                      variant="secondary"
+                      className="gap-1 pr-1 text-xs"
+                    >
                       {member?.full_name || member?.name || email}
                       <button
                         onClick={() => removeRecipient(email)}
@@ -584,58 +608,62 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
           <Separator />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {REPORT_TYPES.map(({ key, label, description, icon: Icon, color }) => {
-              const schedule = getScheduleForType(key)
-              const isRunning = runningReport === key
-              const isPreviewing = previewingReport === key
+            {REPORT_TYPES.map(
+              ({ key, label, description, icon: Icon, color }) => {
+                const schedule = getScheduleForType(key)
+                const isRunning = runningReport === key
+                const isPreviewing = previewingReport === key
 
-              return (
-                <div
-                  key={key}
-                  className="flex flex-col gap-3 rounded-lg border p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${color}`} />
-                    <div>
-                      <p className="text-sm font-medium">{label}</p>
-                      <p className="text-xs text-muted-foreground">{description}</p>
-                      {schedule?.last_run_at && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Last sent: {formatTimestamp(schedule.last_run_at)}
+                return (
+                  <div
+                    key={key}
+                    className="flex flex-col gap-3 rounded-lg border p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${color}`} />
+                      <div>
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {description}
                         </p>
-                      )}
+                        {schedule?.last_run_at && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Last sent: {formatTimestamp(schedule.last_run_at)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-auto flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => previewReport(key)}
+                        disabled={isPreviewing || isRunning}
+                      >
+                        {isPreviewing ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Eye className="mr-1 h-4 w-4" />
+                        )}
+                        Preview
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setConfirmSendType(key)}
+                        disabled={isRunning || isPreviewing}
+                      >
+                        {isRunning ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="mr-1 h-4 w-4" />
+                        )}
+                        {isRunning ? 'Sending...' : 'Send Now'}
+                      </Button>
                     </div>
                   </div>
-                  <div className="mt-auto flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => previewReport(key)}
-                      disabled={isPreviewing || isRunning}
-                    >
-                      {isPreviewing ? (
-                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="mr-1 h-4 w-4" />
-                      )}
-                      Preview
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setConfirmSendType(key)}
-                      disabled={isRunning || isPreviewing}
-                    >
-                      {isRunning ? (
-                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="mr-1 h-4 w-4" />
-                      )}
-                      {isRunning ? 'Sending...' : 'Send Now'}
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
+                )
+              }
+            )}
           </div>
         </CardContent>
       </Card>
@@ -658,8 +686,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
             </div>
           ) : schedules.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Schedule configuration will be available after the database migration runs.
-              Use the &quot;Send Now&quot; buttons above for on-demand reports.
+              Schedule configuration will be available after the database
+              migration runs. Use the &quot;Send Now&quot; buttons above for
+              on-demand reports.
             </p>
           ) : (
             REPORT_TYPES.map(({ key, label, icon: Icon, color }) => {
@@ -676,7 +705,10 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       <span className="text-sm font-medium">{label}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor={`enable-${key}`} className="text-xs text-muted-foreground">
+                      <Label
+                        htmlFor={`enable-${key}`}
+                        className="text-xs text-muted-foreground"
+                      >
                         {schedule.is_enabled ? 'Enabled' : 'Disabled'}
                       </Label>
                       <Switch
@@ -695,7 +727,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       <Label className="text-xs">Frequency</Label>
                       <Select
                         value={schedule.frequency}
-                        onValueChange={(val) => updateSchedule(key, { frequency: val })}
+                        onValueChange={(val) =>
+                          updateSchedule(key, { frequency: val })
+                        }
                       >
                         <SelectTrigger className="w-[130px]">
                           <SelectValue />
@@ -716,7 +750,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                         <Select
                           value={String(schedule.day_of_week ?? 1)}
                           onValueChange={(val) =>
-                            updateSchedule(key, { day_of_week: parseInt(val) } as Partial<ReportSchedule>)
+                            updateSchedule(key, {
+                              day_of_week: parseInt(val),
+                            } as Partial<ReportSchedule>)
                           }
                         >
                           <SelectTrigger className="w-[140px]">
@@ -740,18 +776,22 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                         <Select
                           value={String(schedule.day_of_month ?? 1)}
                           onValueChange={(val) =>
-                            updateSchedule(key, { day_of_month: parseInt(val) } as Partial<ReportSchedule>)
+                            updateSchedule(key, {
+                              day_of_month: parseInt(val),
+                            } as Partial<ReportSchedule>)
                           }
                         >
                           <SelectTrigger className="w-[100px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                              <SelectItem key={d} value={String(d)}>
-                                {d}
-                              </SelectItem>
-                            ))}
+                            {Array.from({ length: 28 }, (_, i) => i + 1).map(
+                              (d) => (
+                                <SelectItem key={d} value={String(d)}>
+                                  {d}
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -766,7 +806,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                           className="w-[120px]"
                           value={schedule.time_utc?.slice(0, 5) || '12:00'}
                           onChange={(e) =>
-                            updateSchedule(key, { time_utc: e.target.value + ':00' } as Partial<ReportSchedule>)
+                            updateSchedule(key, {
+                              time_utc: e.target.value + ':00',
+                            } as Partial<ReportSchedule>)
                           }
                         />
                       </div>
@@ -789,7 +831,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
                   {isSaving && (
                     <p className="text-xs text-muted-foreground">
-                      <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> Saving...
+                      <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />{' '}
+                      Saving...
                     </p>
                   )}
                 </div>
@@ -810,11 +853,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
               </CardTitle>
               <CardDescription>Recent report executions</CardDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fetchRecentRuns()}
-            >
+            <Button variant="ghost" size="sm" onClick={() => fetchRecentRuns()}>
               <RefreshCw className="mr-1 h-4 w-4" />
               Refresh
             </Button>
@@ -823,7 +862,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
         <CardContent>
           {recentRuns.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No report runs yet. Use the &quot;Send Now&quot; buttons above to send your first report.
+              No report runs yet. Use the &quot;Send Now&quot; buttons above to
+              send your first report.
             </p>
           ) : (
             <div className="space-y-2">
@@ -835,13 +875,18 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   <div className="flex items-center gap-3">
                     {statusBadge(run.status)}
                     <span className="font-medium">
-                      {REPORT_TYPES.find(r => r.key === run.report_type)?.label ?? run.report_type}
+                      {REPORT_TYPES.find((r) => r.key === run.report_type)
+                        ?.label ?? run.report_type}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {run.triggered_by === 'scheduler' ? (
-                        <><Clock className="mr-0.5 inline h-3 w-3" /> Scheduled</>
+                        <>
+                          <Clock className="mr-0.5 inline h-3 w-3" /> Scheduled
+                        </>
                       ) : (
-                        <><Play className="mr-0.5 inline h-3 w-3" /> Manual</>
+                        <>
+                          <Play className="mr-0.5 inline h-3 w-3" /> Manual
+                        </>
                       )}
                     </span>
                   </div>
@@ -859,7 +904,12 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
       </Card>
 
       {/* Send Confirmation Dialog */}
-      <AlertDialog open={!!confirmSendType} onOpenChange={(open) => { if (!open) setConfirmSendType(null) }}>
+      <AlertDialog
+        open={!!confirmSendType}
+        onOpenChange={(open) => {
+          if (!open) setConfirmSendType(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Send Report</AlertDialogTitle>
@@ -868,11 +918,15 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                 <p>
                   You are about to send the{' '}
                   <strong>
-                    {REPORT_TYPES.find(r => r.key === confirmSendType)?.label ?? confirmSendType}
-                  </strong>.
+                    {REPORT_TYPES.find((r) => r.key === confirmSendType)
+                      ?.label ?? confirmSendType}
+                  </strong>
+                  .
                 </p>
                 <div>
-                  <p className="mb-1 font-medium text-foreground">Recipients:</p>
+                  <p className="mb-1 font-medium text-foreground">
+                    Recipients:
+                  </p>
                   <ul className="list-inside list-disc space-y-0.5 text-sm">
                     {(selectedRecipients.length > 0
                       ? selectedRecipients

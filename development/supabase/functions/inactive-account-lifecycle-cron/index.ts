@@ -156,17 +156,20 @@ export default createEdgeFunction(
             .eq('id', user.id)
 
           if (disableError) {
-            throw new Error(`Disable failed for ${user.email}: ${disableError.message}`)
+            throw new Error(
+              `Disable failed for ${user.email}: ${disableError.message}`
+            )
           }
 
           disabledCount += 1
 
-          const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
-            user.id
-          )
+          const { error: deleteError } =
+            await supabaseAdmin.auth.admin.deleteUser(user.id)
 
           if (deleteError) {
-            throw new Error(`Delete failed for ${user.email}: ${deleteError.message}`)
+            throw new Error(
+              `Delete failed for ${user.email}: ${deleteError.message}`
+            )
           }
 
           deletedCount += 1
@@ -188,7 +191,9 @@ export default createEdgeFunction(
         }
 
         if (!resendApiKey) {
-          errors.push(`Missing RESEND_API_KEY - reminder not sent to ${user.email}`)
+          errors.push(
+            `Missing RESEND_API_KEY - reminder not sent to ${user.email}`
+          )
           continue
         }
 
@@ -210,7 +215,9 @@ export default createEdgeFunction(
         remindersSent += 1
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : `Unknown error for user ${user.email}`
+          error instanceof Error
+            ? error.message
+            : `Unknown error for user ${user.email}`
         errors.push(message)
       }
     }

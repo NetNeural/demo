@@ -396,21 +396,29 @@ function LoginForm() {
     >
       {/* ───── Background image (if configured) ───── */}
       {bgUrl && (
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Desktop background */}
           <img
             src={bgUrl}
             alt=""
             className={`hidden h-full w-full md:block ${
-              bgFit === 'cover' ? 'object-cover' :
-              bgFit === 'contain' ? 'object-contain' :
-              bgFit === 'fill' ? 'object-fill' :
-              'object-none'
+              bgFit === 'cover'
+                ? 'object-cover'
+                : bgFit === 'contain'
+                  ? 'object-contain'
+                  : bgFit === 'fill'
+                    ? 'object-fill'
+                    : 'object-none'
             }`}
             style={{
               objectPosition: `${bgPosDesktop.x}% ${bgPosDesktop.y}%`,
-              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
+              ...(enhanceBg
+                ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' }
+                : {}),
               minHeight: '100vh',
               minWidth: '100vw',
             }}
@@ -420,14 +428,19 @@ function LoginForm() {
             src={bgUrl}
             alt=""
             className={`block h-full w-full md:hidden ${
-              bgFit === 'cover' ? 'object-cover' :
-              bgFit === 'contain' ? 'object-contain' :
-              bgFit === 'fill' ? 'object-fill' :
-              'object-none'
+              bgFit === 'cover'
+                ? 'object-cover'
+                : bgFit === 'contain'
+                  ? 'object-contain'
+                  : bgFit === 'fill'
+                    ? 'object-fill'
+                    : 'object-none'
             }`}
             style={{
               objectPosition: `${bgPosMobile.x}% ${bgPosMobile.y}%`,
-              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
+              ...(enhanceBg
+                ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' }
+                : {}),
               minHeight: '100vh',
               minWidth: '100vw',
             }}
@@ -438,121 +451,120 @@ function LoginForm() {
 
       {/* ───── Animated mesh background ───── */}
       {showAnimatedBg && (
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        aria-hidden="true"
-      >
-        {/* Gradient orbs */}
         <div
-          className="absolute h-[600px] w-[600px] animate-pulse rounded-full opacity-20 blur-[128px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.primary}, transparent)`,
-            top: '-10%',
-            left: '-10%',
-            animationDuration: '8s',
-          }}
-        />
-        <div
-          className="absolute h-[500px] w-[500px] animate-pulse rounded-full opacity-15 blur-[128px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.secondary}, transparent)`,
-            bottom: '-10%',
-            right: '-10%',
-            animationDuration: '10s',
-            animationDelay: '-3s',
-          }}
-        />
-        <div
-          className="absolute h-[400px] w-[400px] animate-pulse rounded-full opacity-10 blur-[100px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.accent}, transparent)`,
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            animationDuration: '12s',
-            animationDelay: '-6s',
-          }}
-        />
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          {/* Gradient orbs */}
+          <div
+            className="absolute h-[600px] w-[600px] animate-pulse rounded-full opacity-20 blur-[128px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.primary}, transparent)`,
+              top: '-10%',
+              left: '-10%',
+              animationDuration: '8s',
+            }}
+          />
+          <div
+            className="absolute h-[500px] w-[500px] animate-pulse rounded-full opacity-15 blur-[128px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.secondary}, transparent)`,
+              bottom: '-10%',
+              right: '-10%',
+              animationDuration: '10s',
+              animationDelay: '-3s',
+            }}
+          />
+          <div
+            className="absolute h-[400px] w-[400px] animate-pulse rounded-full opacity-10 blur-[100px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.accent}, transparent)`,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              animationDuration: '12s',
+              animationDelay: '-6s',
+            }}
+          />
 
-        {/* Grid lines */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(${colors.primary}40 1px, transparent 1px), linear-gradient(90deg, ${colors.primary}40 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
-          }}
-        />
+          {/* Grid lines */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(${colors.primary}40 1px, transparent 1px), linear-gradient(90deg, ${colors.primary}40 1px, transparent 1px)`,
+              backgroundSize: '60px 60px',
+            }}
+          />
 
-        {/* Floating IoT node icons */}
-        {nodes.map((node) => {
-          const IconComponent = NODE_ICONS[node.icon] as LucideIcon
-          return (
-            <div
-              key={node.id}
-              className="absolute"
-              style={{
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                opacity: 0.06,
-                animation: `nnFloat ${node.speed}s linear infinite`,
-                animationDelay: `${node.delay}s`,
-              }}
-            >
-              <IconComponent
+          {/* Floating IoT node icons */}
+          {nodes.map((node) => {
+            const IconComponent = NODE_ICONS[node.icon] as LucideIcon
+            return (
+              <div
+                key={node.id}
+                className="absolute"
                 style={{
-                  width: node.size,
-                  height: node.size,
-                  color: colors.primary,
+                  left: `${node.x}%`,
+                  top: `${node.y}%`,
+                  opacity: 0.06,
+                  animation: `nnFloat ${node.speed}s linear infinite`,
+                  animationDelay: `${node.delay}s`,
                 }}
-              />
-            </div>
-          )
-        })}
-      </div>
+              >
+                <IconComponent
+                  style={{
+                    width: node.size,
+                    height: node.size,
+                    color: colors.primary,
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {/* ───── Content ───── */}
       <div className="relative z-10 mx-4 w-full max-w-md sm:mx-auto">
         {/* Brand header */}
-        <div className="mb-6 sm:mb-8 text-center">
-          {showLogo && (
-            logoUrl ? (
-              <div className="mb-3 sm:mb-4 flex justify-center">
+        <div className="mb-6 text-center sm:mb-8">
+          {showLogo &&
+            (logoUrl ? (
+              <div className="mb-3 flex justify-center sm:mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
                   alt={`${orgName} logo`}
-                  className="h-12 sm:h-16 w-auto object-contain drop-shadow-lg"
+                  className="h-12 w-auto object-contain drop-shadow-lg sm:h-16"
                 />
               </div>
             ) : (
-              <div className="mb-3 sm:mb-4 flex justify-center">
+              <div className="mb-3 flex justify-center sm:mb-4">
                 <div
-                  className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl shadow-lg"
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg sm:h-16 sm:w-16"
                   style={{
                     background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                     boxShadow: `0 8px 32px ${colors.primary}30`,
                   }}
                 >
-                  <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                  <Activity className="h-6 w-6 text-white sm:h-8 sm:w-8" />
                 </div>
               </div>
-            )
-          )}
+            ))}
           <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            className="text-2xl font-bold tracking-tight sm:text-3xl"
             style={{ color: colors.primary }}
           >
             {headline || orgName}
           </h1>
-          <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-gray-300">
+          <p className="mt-1 text-2xl font-bold tracking-tight text-gray-300 sm:text-3xl">
             {subtitle || (branding ? 'Sentinel' : 'Sentinel by NetNeural')}
           </p>
         </div>
 
         {/* Glass card */}
         <div
-          className="rounded-2xl border p-6 sm:p-8 shadow-2xl backdrop-blur-xl"
+          className="rounded-2xl border p-6 shadow-2xl backdrop-blur-xl sm:p-8"
           style={{
             background: `rgba(15, 23, 42, ${cardOpacity / 100})`,
             borderColor: `${colors.primary}20`,

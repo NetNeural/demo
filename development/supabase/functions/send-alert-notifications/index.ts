@@ -556,7 +556,9 @@ serve(async (req) => {
       uniqueUserIds
     )
 
-    const uniquePhones = [...new Set([...recipientPhones, ...recipientPhonesFromUsers])]
+    const uniquePhones = [
+      ...new Set([...recipientPhones, ...recipientPhonesFromUsers]),
+    ]
 
     // 7. Dispatch to each channel
     const results: NotificationResult[] = []

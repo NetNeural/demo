@@ -366,7 +366,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        const editButtons = screen.getAllByRole('button', { name: /edit threshold/i })
+        const editButtons = screen.getAllByRole('button', {
+          name: /edit threshold/i,
+        })
         expect(editButtons.length).toBeGreaterThanOrEqual(1)
       })
     })
@@ -382,10 +384,14 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /edit threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /edit threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -408,10 +414,14 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /edit threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /edit threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -437,7 +447,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        const deleteButtons = screen.getAllByRole('button', { name: /delete threshold/i })
+        const deleteButtons = screen.getAllByRole('button', {
+          name: /delete threshold/i,
+        })
         expect(deleteButtons.length).toBeGreaterThanOrEqual(1)
       })
     })
@@ -453,10 +465,14 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('alertdialog')).toBeInTheDocument()
@@ -478,21 +494,29 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('alertdialog')).toBeInTheDocument()
       })
 
       // Find and click confirm/delete button in the alert dialog
-      const confirmButton = screen.getByRole('button', { name: /delete|confirm|yes/i })
+      const confirmButton = screen.getByRole('button', {
+        name: /delete|confirm|yes/i,
+      })
       await user.click(confirmButton)
 
       await waitFor(() => {
-        expect(edgeFunctions.thresholds.delete).toHaveBeenCalledWith('threshold-1')
+        expect(edgeFunctions.thresholds.delete).toHaveBeenCalledWith(
+          'threshold-1'
+        )
       })
     })
   })
@@ -515,10 +539,12 @@ describe('AlertsThresholdsCard Component', () => {
 
     it('displays celsius values when unit is celsius', async () => {
       // Create a threshold with celsius unit
-      const celsiusThresholds = [{
-        ...mockThresholds[0],
-        temperature_unit: 'celsius',
-      }]
+      const celsiusThresholds = [
+        {
+          ...mockThresholds[0],
+          temperature_unit: 'celsius',
+        },
+      ]
       ;(edgeFunctions.thresholds.list as jest.Mock).mockResolvedValue({
         success: true,
         data: { thresholds: celsiusThresholds },
@@ -611,7 +637,9 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        const testButtons = screen.getAllByRole('button', { name: /test alert/i })
+        const testButtons = screen.getAllByRole('button', {
+          name: /test alert/i,
+        })
         expect(testButtons.length).toBe(2) // One per threshold
       })
     })
@@ -736,10 +764,14 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /edit threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /edit threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /edit threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /edit threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -769,16 +801,22 @@ describe('AlertsThresholdsCard Component', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getAllByRole('button', { name: /delete threshold/i })[0]).toBeInTheDocument()
+        expect(
+          screen.getAllByRole('button', { name: /delete threshold/i })[0]
+        ).toBeInTheDocument()
       })
 
-      await user.click(screen.getAllByRole('button', { name: /delete threshold/i })[0])
+      await user.click(
+        screen.getAllByRole('button', { name: /delete threshold/i })[0]
+      )
 
       await waitFor(() => {
         expect(screen.getByRole('alertdialog')).toBeInTheDocument()
       })
 
-      const confirmButton = screen.getByRole('button', { name: /delete|confirm|yes/i })
+      const confirmButton = screen.getByRole('button', {
+        name: /delete|confirm|yes/i,
+      })
       await user.click(confirmButton)
 
       await waitFor(() => {

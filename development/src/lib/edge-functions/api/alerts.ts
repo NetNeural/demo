@@ -24,7 +24,15 @@ export interface AlertsAPI {
       severity?: 'info' | 'warning' | 'error' | 'critical'
       resolved?: boolean
     }
-  ) => Promise<EdgeFunctionResponse<{ alerts: unknown[]; count: number; totalCount: number; offset: number; limit: number }>>
+  ) => Promise<
+    EdgeFunctionResponse<{
+      alerts: unknown[]
+      count: number
+      totalCount: number
+      offset: number
+      limit: number
+    }>
+  >
   create: (
     data: CreateAlertData
   ) => Promise<EdgeFunctionResponse<{ alert: unknown }>>
@@ -46,9 +54,7 @@ export interface AlertsAPI {
   timeline: (
     alertId: string
   ) => Promise<EdgeFunctionResponse<{ events: AlertTimelineEvent[] }>>
-  stats: (
-    organizationId: string
-  ) => Promise<
+  stats: (organizationId: string) => Promise<
     EdgeFunctionResponse<{
       stats: AlertStats
       topDevices: AlertDeviceRanking[]
@@ -109,7 +115,13 @@ export function createAlertsAPI(
      * List alerts for an organization
      */
     list: (organizationId, options) =>
-      call<{ alerts: unknown[]; count: number; totalCount: number; offset: number; limit: number }>('alerts', {
+      call<{
+        alerts: unknown[]
+        count: number
+        totalCount: number
+        offset: number
+        limit: number
+      }>('alerts', {
         params: {
           organization_id: organizationId,
           ...(options?.limit && { limit: options.limit }),

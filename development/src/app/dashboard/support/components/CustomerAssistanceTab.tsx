@@ -226,7 +226,8 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   const availableRoles = (() => {
     const allRoles = ['viewer', 'user', 'billing', 'org_admin', 'org_owner']
     if (user?.isSuperAdmin) return allRoles
-    if (user?.role === 'org_owner') return ['viewer', 'user', 'billing', 'org_admin']
+    if (user?.role === 'org_owner')
+      return ['viewer', 'user', 'billing', 'org_admin']
     if (user?.role === 'org_admin') return ['viewer', 'user', 'billing']
     return []
   })()

@@ -21,7 +21,9 @@ function getSupabase() {
 export default function PricingPage() {
   const [plans, setPlans] = useState<BillingPlan[]>([])
   const [loading, setLoading] = useState(true)
-  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>(
+    'monthly'
+  )
   const [sensorCount, setSensorCount] = useState(10)
   const [showComparison, setShowComparison] = useState(false)
   const [currentPlanSlug, setCurrentPlanSlug] = useState<string | null>(null)
@@ -60,7 +62,9 @@ export default function PricingPage() {
     async function checkCurrentPlan() {
       try {
         const supabase = getSupabase()
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (!user) return
 
         // Get user's org subscription
@@ -100,7 +104,9 @@ export default function PricingPage() {
   const handleSelectPlan = async (plan: BillingPlan) => {
     // If not logged in, redirect to login with plan preselected
     const supabase = getSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       window.location.href = `/auth/login?plan=${plan.slug}`
       return
@@ -109,7 +115,9 @@ export default function PricingPage() {
     // Logged in → create Stripe Checkout session
     setCheckoutLoading(plan.id)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/functions/v1/stripe-checkout`,
         {

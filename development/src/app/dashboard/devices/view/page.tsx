@@ -44,7 +44,13 @@ import { toast } from 'sonner'
 
 export default function DeviceViewPage() {
   return (
-    <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
       <DeviceViewContent />
     </Suspense>
   )
@@ -176,10 +182,7 @@ function DeviceViewContent() {
         location_id: deviceData.location_id,
         location: deviceData.location,
         department_id: deviceData.department_id,
-        lastSeen:
-          deviceData.lastSeen ||
-          deviceData.last_seen ||
-          '',
+        lastSeen: deviceData.lastSeen || deviceData.last_seen || '',
         batteryLevel: deviceData.batteryLevel ?? deviceData.battery_level,
         signal_strength: deviceData.signal_strength,
         isExternallyManaged:
@@ -197,9 +200,7 @@ function DeviceViewContent() {
         updated_at: deviceData.updated_at,
         // Bug #279: add missing fields so device-view has full data
         is_gateway:
-          deviceData.is_gateway ??
-          deviceData.metadata?.is_gateway ??
-          false,
+          deviceData.is_gateway ?? deviceData.metadata?.is_gateway ?? false,
         hardware_ids: deviceData.hardware_ids || [],
         cohort_id: deviceData.cohort_id,
         parent_device_id: deviceData.parent_device_id,

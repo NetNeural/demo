@@ -9,11 +9,11 @@ const corsHeaders = {
 
 /**
  * Alert Escalation Checker
- * 
+ *
  * Runs on pg_cron (every 5 minutes). Checks for unacknowledged alerts
  * that have exceeded their escalation window and sends escalation
  * notifications to designated recipients.
- * 
+ *
  * Flow:
  * 1. Fetch all enabled escalation rules
  * 2. For each rule, find unacknowledged alerts matching severity
@@ -42,7 +42,10 @@ serve(async (req) => {
       .eq('enabled', true)
 
     if (rulesError) {
-      console.error('[alert-escalation-checker] Error fetching rules:', rulesError)
+      console.error(
+        '[alert-escalation-checker] Error fetching rules:',
+        rulesError
+      )
       return new Response(JSON.stringify({ error: rulesError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -50,13 +53,20 @@ serve(async (req) => {
     }
 
     if (!rules || rules.length === 0) {
-      console.log('[alert-escalation-checker] No enabled escalation rules found')
-      return new Response(JSON.stringify({ success: true, escalated: 0, message: 'No rules' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      console.log(
+        '[alert-escalation-checker] No enabled escalation rules found'
+      )
+      return new Response(
+        JSON.stringify({ success: true, escalated: 0, message: 'No rules' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    console.log(`[alert-escalation-checker] Found ${rules.length} enabled rules`)
+    console.log(
+      `[alert-escalation-checker] Found ${rules.length} enabled rules`
+    )
 
     const results = {
       checked: 0,
@@ -78,15 +88,22 @@ serve(async (req) => {
         // that were created before the cutoff AND are not snoozed
         const { data: alerts, error: alertsError } = await supabase
           .from('alerts')
-          .select('id, title, message, severity, device_id, created_at, alert_number, devices!device_id(name)')
+          .select(
+            'id, title, message, severity, device_id, created_at, alert_number, devices!device_id(name)'
+          )
           .eq('organization_id', rule.organization_id)
           .eq('severity', rule.severity)
           .eq('is_resolved', false)
           .lt('created_at', cutoffTime)
-          .or('snoozed_until.is.null,snoozed_until.lt.' + new Date().toISOString())
+          .or(
+            'snoozed_until.is.null,snoozed_until.lt.' + new Date().toISOString()
+          )
 
         if (alertsError) {
-          console.error(`[alert-escalation-checker] Error fetching alerts for rule ${rule.id}:`, alertsError)
+          console.error(
+            `[alert-escalation-checker] Error fetching alerts for rule ${rule.id}:`,
+            alertsError
+          )
           results.errors++
           continue
         }
@@ -123,18 +140,25 @@ serve(async (req) => {
               .eq('organization_id', rule.organization_id)
               .in('role', ['owner', 'admin'])
 
-            recipientUserIds = admins?.map((m: { user_id: string }) => m.user_id) || []
+            recipientUserIds =
+              admins?.map((m: { user_id: string }) => m.user_id) || []
           }
 
           if (recipientUserIds.length === 0 && recipientEmails.length === 0) {
-            console.log(`[alert-escalation-checker] No escalation recipients for rule ${rule.id}`)
+            console.log(
+              `[alert-escalation-checker] No escalation recipients for rule ${rule.id}`
+            )
             continue
           }
 
-          const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+          const alertNum = alert.alert_number
+            ? `ALT-${alert.alert_number}`
+            : alert.id.slice(0, 8)
           const device = (alert as any).devices as { name: string } | null
           const deviceName = device?.name || 'Unknown Device'
-          const minutesOpen = Math.round((Date.now() - new Date(alert.created_at).getTime()) / 60000)
+          const minutesOpen = Math.round(
+            (Date.now() - new Date(alert.created_at).getTime()) / 60000
+          )
 
           console.log(
             `[alert-escalation-checker] ESCALATING ${alertNum} — ${alert.severity} alert open ${minutesOpen}min (threshold: ${rule.escalation_delay_minutes}min)`
@@ -158,21 +182,27 @@ serve(async (req) => {
           const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
           try {
-            await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${serviceKey}`,
-              },
-              body: JSON.stringify({
-                alert_id: alert.id,
-                channels: rule.notification_channels || ['email'],
-                recipient_user_ids: recipientUserIds,
-                recipient_emails: recipientEmails,
-              }),
-            })
+            await fetch(
+              `${supabaseUrl}/functions/v1/send-alert-notifications`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${serviceKey}`,
+                },
+                body: JSON.stringify({
+                  alert_id: alert.id,
+                  channels: rule.notification_channels || ['email'],
+                  recipient_user_ids: recipientUserIds,
+                  recipient_emails: recipientEmails,
+                }),
+              }
+            )
           } catch (notifErr) {
-            console.error(`[alert-escalation-checker] Notification send failed:`, notifErr)
+            console.error(
+              `[alert-escalation-checker] Notification send failed:`,
+              notifErr
+            )
           }
 
           // Restore original alert fields
@@ -185,23 +215,24 @@ serve(async (req) => {
             .eq('id', alert.id)
 
           // Record 'escalated' event in timeline
-          await supabase
-            .from('alert_events')
-            .insert({
-              alert_id: alert.id,
-              event_type: 'escalated',
-              metadata: {
-                escalation_rule_id: rule.id,
-                delay_minutes: rule.escalation_delay_minutes,
-                minutes_open: minutesOpen,
-                recipient_count: recipientUserIds.length + recipientEmails.length,
-              },
-            })
+          await supabase.from('alert_events').insert({
+            alert_id: alert.id,
+            event_type: 'escalated',
+            metadata: {
+              escalation_rule_id: rule.id,
+              delay_minutes: rule.escalation_delay_minutes,
+              minutes_open: minutesOpen,
+              recipient_count: recipientUserIds.length + recipientEmails.length,
+            },
+          })
 
           results.escalated++
         }
       } catch (ruleError) {
-        console.error(`[alert-escalation-checker] Error processing rule ${rule.id}:`, ruleError)
+        console.error(
+          `[alert-escalation-checker] Error processing rule ${rule.id}:`,
+          ruleError
+        )
         results.errors++
       }
     }

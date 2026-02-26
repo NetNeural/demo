@@ -22,7 +22,9 @@ describe('IntegrationSyncOrchestrator', () => {
   let mockProvider: any
 
   // Helper to create a chainable Supabase mock
-  function createSupabaseMock(queryResults: Record<string, { data: any; error: any }>) {
+  function createSupabaseMock(
+    queryResults: Record<string, { data: any; error: any }>
+  ) {
     const createChain = (tableName: string) => {
       const result = queryResults[tableName] || { data: null, error: null }
       const chain: any = {

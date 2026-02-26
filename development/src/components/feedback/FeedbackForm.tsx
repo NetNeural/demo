@@ -180,7 +180,8 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
               type === 'bug_report' ? bugOccurredTime || undefined : undefined,
             bugTimezone:
               type === 'bug_report' ? bugTimezone || undefined : undefined,
-            screenshotUrls: screenshotUrls.length > 0 ? screenshotUrls : undefined,
+            screenshotUrls:
+              screenshotUrls.length > 0 ? screenshotUrls : undefined,
             browserInfo: navigator.userAgent,
             pageUrl: window.location.href,
           }),
@@ -381,7 +382,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                     <SelectItem value="Europe/London">Europe/London</SelectItem>
                     <SelectItem value="Europe/Berlin">Europe/Berlin</SelectItem>
                     <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
-                    <SelectItem value="Asia/Singapore">Asia/Singapore</SelectItem>
+                    <SelectItem value="Asia/Singapore">
+                      Asia/Singapore
+                    </SelectItem>
                     <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
                     <SelectItem value="Australia/Sydney">
                       Australia/Sydney
@@ -399,14 +402,18 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           <div className="space-y-2">
             <Label>Screenshots (optional)</Label>
             <p className="text-xs text-muted-foreground">
-              Attach up to {MAX_SCREENSHOTS} screenshots (max 5MB each). PNG, JPG, WebP, or GIF.
+              Attach up to {MAX_SCREENSHOTS} screenshots (max 5MB each). PNG,
+              JPG, WebP, or GIF.
             </p>
 
             {/* Preview grid */}
             {screenshotPreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {screenshotPreviews.map((preview, index) => (
-                  <div key={index} className="group relative rounded-md border overflow-hidden">
+                  <div
+                    key={index}
+                    className="group relative overflow-hidden rounded-md border"
+                  >
                     <img
                       src={preview}
                       alt={`Screenshot ${index + 1}`}
@@ -425,9 +432,14 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
             )}
 
             {screenshots.length < MAX_SCREENSHOTS && (
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary">
                 <ImagePlus className="h-4 w-4" />
-                <span>Add screenshot{screenshots.length > 0 ? ` (${screenshots.length}/${MAX_SCREENSHOTS})` : ''}</span>
+                <span>
+                  Add screenshot
+                  {screenshots.length > 0
+                    ? ` (${screenshots.length}/${MAX_SCREENSHOTS})`
+                    : ''}
+                </span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
@@ -453,13 +465,21 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
           {/* Submit */}
           <Button
             type="submit"
-            disabled={submitting || uploadingScreenshots || recentlySubmitted || !title.trim() || !description.trim()}
+            disabled={
+              submitting ||
+              uploadingScreenshots ||
+              recentlySubmitted ||
+              !title.trim() ||
+              !description.trim()
+            }
             className="w-full"
           >
             {submitting || uploadingScreenshots ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {uploadingScreenshots ? 'Uploading screenshots...' : 'Submitting...'}
+                {uploadingScreenshots
+                  ? 'Uploading screenshots...'
+                  : 'Submitting...'}
               </>
             ) : recentlySubmitted ? (
               <>

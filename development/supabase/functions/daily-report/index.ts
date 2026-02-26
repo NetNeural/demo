@@ -25,7 +25,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 // Default recipients — leadership distribution list
@@ -79,7 +80,9 @@ serve(async (req) => {
       if (body.recipients?.length > 0) recipients = body.recipients
       if (body.date) reportDate = body.date
       if (body.preview === true) isPreview = true
-    } catch { /* no body — use defaults */ }
+    } catch {
+      /* no body — use defaults */
+    }
 
     console.log(`[daily-report] Generating report for ${reportDate}`)
     console.log(`[daily-report] Recipients: ${recipients.join(', ')}`)
@@ -134,11 +137,18 @@ serve(async (req) => {
       .lt('created_at', last24h)
 
     // 8. Recent GitHub accomplishments (closed issues in last 7 days)
-    let recentWins: { title: string; number: number; labels: string[]; closed_at: string }[] = []
+    let recentWins: {
+      title: string
+      number: number
+      labels: string[]
+      closed_at: string
+    }[] = []
     const githubToken = Deno.env.get('GITHUB_TOKEN')
     if (githubToken) {
       try {
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const sevenDaysAgo = new Date(
+          Date.now() - 7 * 24 * 60 * 60 * 1000
+        ).toISOString()
         const ghResponse = await fetch(
           `https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=closed&since=${sevenDaysAgo}&sort=updated&direction=desc&per_page=50`,
           {
@@ -160,56 +170,92 @@ serve(async (req) => {
               closed_at: i.closed_at,
             }))
         } else {
-          console.warn('[daily-report] GitHub API error:', ghResponse.status, await ghResponse.text())
+          console.warn(
+            '[daily-report] GitHub API error:',
+            ghResponse.status,
+            await ghResponse.text()
+          )
         }
       } catch (ghErr) {
         console.warn('[daily-report] GitHub fetch failed:', ghErr.message)
       }
     } else {
-      console.warn('[daily-report] GITHUB_TOKEN not configured — skipping accomplishments')
+      console.warn(
+        '[daily-report] GITHUB_TOKEN not configured — skipping accomplishments'
+      )
     }
 
     // ─── Per-Organization Breakdown ──────────────────────────────────
 
-    const orgStats: OrgStats[] = (orgs || []).map((org: any) => {
-      const orgDevices = (allDevices || []).filter((d: any) => d.organization_id === org.id)
-      const orgUnresolved = (unresolvedAlerts || []).filter((a: any) => a.organization_id === org.id)
-      const orgNew = (newAlerts || []).filter((a: any) => a.organization_id === org.id)
-      const orgResolved = (resolvedAlerts || []).filter((a: any) => a.organization_id === org.id)
-      const orgMembers = (members || []).filter((m: any) => m.organization_id === org.id)
+    const orgStats: OrgStats[] = (orgs || [])
+      .map((org: any) => {
+        const orgDevices = (allDevices || []).filter(
+          (d: any) => d.organization_id === org.id
+        )
+        const orgUnresolved = (unresolvedAlerts || []).filter(
+          (a: any) => a.organization_id === org.id
+        )
+        const orgNew = (newAlerts || []).filter(
+          (a: any) => a.organization_id === org.id
+        )
+        const orgResolved = (resolvedAlerts || []).filter(
+          (a: any) => a.organization_id === org.id
+        )
+        const orgMembers = (members || []).filter(
+          (m: any) => m.organization_id === org.id
+        )
 
-      return {
-        id: org.id,
-        name: org.name,
-        totalDevices: orgDevices.length,
-        onlineDevices: orgDevices.filter((d: any) => d.status === 'online').length,
-        offlineDevices: orgDevices.filter((d: any) => d.status === 'offline').length,
-        totalUsers: orgMembers.length,
-        activeAlerts: orgUnresolved.length,
-        criticalAlerts: orgUnresolved.filter((a: any) => a.severity === 'critical').length,
-        highAlerts: orgUnresolved.filter((a: any) => a.severity === 'high').length,
-        resolvedLast24h: orgResolved.length,
-        newAlertsLast24h: orgNew.length,
-      }
-    }).filter((o: OrgStats) => o.totalDevices > 0 || o.totalUsers > 0 || o.activeAlerts > 0)
+        return {
+          id: org.id,
+          name: org.name,
+          totalDevices: orgDevices.length,
+          onlineDevices: orgDevices.filter((d: any) => d.status === 'online')
+            .length,
+          offlineDevices: orgDevices.filter((d: any) => d.status === 'offline')
+            .length,
+          totalUsers: orgMembers.length,
+          activeAlerts: orgUnresolved.length,
+          criticalAlerts: orgUnresolved.filter(
+            (a: any) => a.severity === 'critical'
+          ).length,
+          highAlerts: orgUnresolved.filter((a: any) => a.severity === 'high')
+            .length,
+          resolvedLast24h: orgResolved.length,
+          newAlertsLast24h: orgNew.length,
+        }
+      })
+      .filter(
+        (o: OrgStats) =>
+          o.totalDevices > 0 || o.totalUsers > 0 || o.activeAlerts > 0
+      )
 
     // ─── Platform Totals ─────────────────────────────────────────────
 
     const totalDevices = (allDevices || []).length
-    const onlineDevices = (allDevices || []).filter((d: any) => d.status === 'online').length
-    const offlineDevices = (allDevices || []).filter((d: any) => d.status === 'offline').length
+    const onlineDevices = (allDevices || []).filter(
+      (d: any) => d.status === 'online'
+    ).length
+    const offlineDevices = (allDevices || []).filter(
+      (d: any) => d.status === 'offline'
+    ).length
     const totalUnresolved = (unresolvedAlerts || []).length
-    const totalCritical = (unresolvedAlerts || []).filter((a: any) => a.severity === 'critical').length
-    const totalHigh = (unresolvedAlerts || []).filter((a: any) => a.severity === 'high').length
+    const totalCritical = (unresolvedAlerts || []).filter(
+      (a: any) => a.severity === 'critical'
+    ).length
+    const totalHigh = (unresolvedAlerts || []).filter(
+      (a: any) => a.severity === 'high'
+    ).length
     const totalNew24h = (newAlerts || []).length
     const totalResolved24h = (resolvedAlerts || []).length
     const prevDayCount = (prevDayAlerts || []).length
-    const alertTrend = prevDayCount > 0
-      ? (((totalNew24h - prevDayCount) / prevDayCount) * 100).toFixed(0)
-      : '0'
-    const uptimePct = totalDevices > 0
-      ? ((onlineDevices / totalDevices) * 100).toFixed(1)
-      : '0.0'
+    const alertTrend =
+      prevDayCount > 0
+        ? (((totalNew24h - prevDayCount) / prevDayCount) * 100).toFixed(0)
+        : '0'
+    const uptimePct =
+      totalDevices > 0
+        ? ((onlineDevices / totalDevices) * 100).toFixed(1)
+        : '0.0'
 
     // Unique user count
     const uniqueUsers = new Set((members || []).map((m: any) => m.user_id)).size
@@ -217,17 +263,31 @@ serve(async (req) => {
     // System health
     let healthStatus = '🟢 Healthy'
     let healthColor = '#10b981'
-    if (totalCritical > 0) { healthStatus = '🔴 Critical'; healthColor = '#ef4444' }
-    else if (totalHigh > 3 || offlineDevices > totalDevices * 0.2) { healthStatus = '🟡 Warning'; healthColor = '#f59e0b' }
-    else if (offlineDevices > 0) { healthStatus = '🟡 Degraded'; healthColor = '#f59e0b' }
+    if (totalCritical > 0) {
+      healthStatus = '🔴 Critical'
+      healthColor = '#ef4444'
+    } else if (totalHigh > 3 || offlineDevices > totalDevices * 0.2) {
+      healthStatus = '🟡 Warning'
+      healthColor = '#f59e0b'
+    } else if (offlineDevices > 0) {
+      healthStatus = '🟡 Degraded'
+      healthColor = '#f59e0b'
+    }
 
     // ─── Build HTML Email ────────────────────────────────────────────
 
-    const reportDateFormatted = new Date(reportDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    const reportDateFormatted = new Date(
+      reportDate + 'T12:00:00Z'
+    ).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     })
 
-    const orgRowsHtml = orgStats.map(org => `
+    const orgRowsHtml = orgStats
+      .map(
+        (org) => `
       <tr>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; font-weight:500;">${org.name}</td>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; text-align:center;">${org.totalDevices}</td>
@@ -237,7 +297,9 @@ serve(async (req) => {
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; text-align:center;">${org.newAlertsLast24h}</td>
         <td style="padding:8px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">${org.resolvedLast24h}</td>
       </tr>
-    `).join('')
+    `
+      )
+      .join('')
 
     const html = `
 <!DOCTYPE html>
@@ -325,7 +387,9 @@ serve(async (req) => {
     </table>
   </div>
 
-  ${recentWins.length > 0 ? `
+  ${
+    recentWins.length > 0
+      ? `
   <div style="padding:0 20px 20px;">
     <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🎯 Recent Wins & Accomplishments (Last 7 Days)</h2>
     <table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -338,24 +402,44 @@ serve(async (req) => {
         </tr>
       </thead>
       <tbody>
-        ${recentWins.slice(0, 15).map(w => {
-          const isBug = w.labels.some(l => l.toLowerCase().includes('bug'))
-          const isFeature = w.labels.some(l => l.toLowerCase().includes('feature') || l.toLowerCase().includes('enhancement'))
-          const typeIcon = isBug ? '🐛 Bug Fix' : isFeature ? '✨ Feature' : '📋 Task'
-          const typeColor = isBug ? '#ef4444' : isFeature ? '#8b5cf6' : '#6b7280'
-          const closedDate = new Date(w.closed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          return `
+        ${recentWins
+          .slice(0, 15)
+          .map((w) => {
+            const isBug = w.labels.some((l) => l.toLowerCase().includes('bug'))
+            const isFeature = w.labels.some(
+              (l) =>
+                l.toLowerCase().includes('feature') ||
+                l.toLowerCase().includes('enhancement')
+            )
+            const typeIcon = isBug
+              ? '🐛 Bug Fix'
+              : isFeature
+                ? '✨ Feature'
+                : '📋 Task'
+            const typeColor = isBug
+              ? '#ef4444'
+              : isFeature
+                ? '#8b5cf6'
+                : '#6b7280'
+            const closedDate = new Date(w.closed_at).toLocaleDateString(
+              'en-US',
+              { month: 'short', day: 'numeric' }
+            )
+            return `
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center;"><a href="https://github.com/NetNeural/MonoRepo-Staging/issues/${w.number}" style="color:#2563eb; text-decoration:none; font-weight:600;">#${w.number}</a></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;">${w.title}</td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-size:11px; color:${typeColor};">${typeIcon}</td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-size:12px; color:#6b7280;">${closedDate}</td>
         </tr>`
-        }).join('')}
+          })
+          .join('')}
       </tbody>
     </table>
     <p style="font-size:12px; color:#9ca3af; margin-top:8px;">${recentWins.length} ticket${recentWins.length !== 1 ? 's' : ''} closed this week — <a href="https://github.com/NetNeural/MonoRepo-Staging/issues?q=is%3Aissue+is%3Aclosed+sort%3Aupdated-desc" style="color:#2563eb;">View all on GitHub →</a></p>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
   <div style="padding:0 20px 20px;">
     <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🏆 Top 10 Key Features — Already Live</h2>
@@ -454,7 +538,7 @@ serve(async (req) => {
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -469,11 +553,15 @@ serve(async (req) => {
 
     if (!emailResponse.ok) {
       console.error('[daily-report] Resend error:', JSON.stringify(emailResult))
-      throw new Error(`Email send failed: ${emailResult.message || emailResponse.statusText}`)
+      throw new Error(
+        `Email send failed: ${emailResult.message || emailResponse.statusText}`
+      )
     }
 
     const duration = Date.now() - startTime
-    console.log(`[daily-report] Report sent in ${duration}ms to ${recipients.length} recipients. Resend ID: ${emailResult.id}`)
+    console.log(
+      `[daily-report] Report sent in ${duration}ms to ${recipients.length} recipients. Resend ID: ${emailResult.id}`
+    )
 
     return new Response(
       JSON.stringify({

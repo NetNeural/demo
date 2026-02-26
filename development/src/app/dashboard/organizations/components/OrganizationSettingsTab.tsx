@@ -71,9 +71,17 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   // Login page appearance state
   const [loginBgUrl, setLoginBgUrl] = useState('')
   const [loginBgColor, setLoginBgColor] = useState('#030712')
-  const [loginBgFit, setLoginBgFit] = useState<'cover' | 'contain' | 'fill' | 'center'>('cover')
-  const [loginBgPosition, setLoginBgPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 })
-  const [loginBgPositionMobile, setLoginBgPositionMobile] = useState<{ x: number; y: number }>({ x: 50, y: 50 })
+  const [loginBgFit, setLoginBgFit] = useState<
+    'cover' | 'contain' | 'fill' | 'center'
+  >('cover')
+  const [loginBgPosition, setLoginBgPosition] = useState<{
+    x: number
+    y: number
+  }>({ x: 50, y: 50 })
+  const [loginBgPositionMobile, setLoginBgPositionMobile] = useState<{
+    x: number
+    y: number
+  }>({ x: 50, y: 50 })
   const [loginHeadline, setLoginHeadline] = useState('')
   const [loginSubtitle, setLoginSubtitle] = useState('')
   const [loginCardOpacity, setLoginCardOpacity] = useState(70)
@@ -102,8 +110,13 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setLoginBgUrl(settings.login_page?.background_url || '')
       setLoginBgColor(settings.login_page?.background_color || '#030712')
       setLoginBgFit(settings.login_page?.background_fit || 'cover')
-      setLoginBgPosition(settings.login_page?.background_position || { x: 50, y: 50 })
-      setLoginBgPositionMobile(settings.login_page?.background_position_mobile || settings.login_page?.background_position || { x: 50, y: 50 })
+      setLoginBgPosition(
+        settings.login_page?.background_position || { x: 50, y: 50 }
+      )
+      setLoginBgPositionMobile(
+        settings.login_page?.background_position_mobile ||
+          settings.login_page?.background_position || { x: 50, y: 50 }
+      )
       setLoginHeadline(settings.login_page?.headline || '')
       setLoginSubtitle(settings.login_page?.subtitle || '')
       setLoginCardOpacity(settings.login_page?.card_opacity ?? 70)
@@ -366,9 +379,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }
 
-  const handleBgUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleBgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !currentOrganization) return
 
@@ -517,10 +528,11 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     if (!currentOrganization) return
 
     // Require user to type organization name to confirm (case-insensitive, trimmed)
-    if (deleteConfirmation.trim().toLowerCase() !== currentOrganization.name.trim().toLowerCase()) {
-      toast.error(
-        'Please type the organization name to confirm deletion'
-      )
+    if (
+      deleteConfirmation.trim().toLowerCase() !==
+      currentOrganization.name.trim().toLowerCase()
+    ) {
+      toast.error('Please type the organization name to confirm deletion')
       return
     }
 
@@ -888,15 +900,18 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </CardTitle>
           <CardDescription className="space-y-1">
             <span>
-              Customize how the login page looks for {currentOrganization?.name || 'your organization'}. Share this link with your users so they see your branded login:
+              Customize how the login page looks for{' '}
+              {currentOrganization?.name || 'your organization'}. Share this
+              link with your users so they see your branded login:
             </span>
             <a
               href={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org=${currentOrganization?.slug || 'your-slug'}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded bg-muted px-2 py-1 text-xs font-mono text-blue-600 hover:underline dark:text-blue-400 break-all"
+              className="block break-all rounded bg-muted px-2 py-1 font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
             >
-              {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
+              {typeof window !== 'undefined' ? window.location.origin : ''}
+              /auth/login?org={currentOrganization?.slug || 'your-slug'}
             </a>
           </CardDescription>
         </CardHeader>
@@ -939,8 +954,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {isUploadingBg ? 'Uploading...' : 'Upload Background'}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Recommended: 1920×1080 or larger. PNG, JPG, or WebP (max 10 MB).
-                  Auto-compressed to WebP — final size typically 200–500 KB.
+                  Recommended: 1920×1080 or larger. PNG, JPG, or WebP (max 10
+                  MB). Auto-compressed to WebP — final size typically 200–500
+                  KB.
                 </p>
                 {loginBgUrl && (
                   <Button
@@ -951,13 +967,20 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       // Delete file from storage
                       try {
                         const supabase = createClient()
-                        const oldPath = loginBgUrl.split('/').slice(-2).join('/')
-                        await supabase.storage.from('organization-assets').remove([oldPath])
+                        const oldPath = loginBgUrl
+                          .split('/')
+                          .slice(-2)
+                          .join('/')
+                        await supabase.storage
+                          .from('organization-assets')
+                          .remove([oldPath])
                       } catch (e) {
                         console.warn('Could not delete old background file:', e)
                       }
                       setLoginBgUrl('')
-                      toast.info('Background removed. Click "Save All Changes" to apply.')
+                      toast.info(
+                        'Background removed. Click "Save All Changes" to apply.'
+                      )
                     }}
                     className="text-red-600 hover:text-red-700"
                   >
@@ -981,10 +1004,18 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cover">Cover — fill window, may crop edges</SelectItem>
-                <SelectItem value="contain">Contain — fit inside, may show bars</SelectItem>
-                <SelectItem value="fill">Fill — stretch to fit exactly</SelectItem>
-                <SelectItem value="center">Center — original size, centered</SelectItem>
+                <SelectItem value="cover">
+                  Cover — fill window, may crop edges
+                </SelectItem>
+                <SelectItem value="contain">
+                  Contain — fit inside, may show bars
+                </SelectItem>
+                <SelectItem value="fill">
+                  Fill — stretch to fit exactly
+                </SelectItem>
+                <SelectItem value="center">
+                  Center — original size, centered
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
@@ -997,68 +1028,169 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             <div className="space-y-3">
               <Label>Image Focal Point</Label>
               <p className="text-xs text-muted-foreground">
-                Click or drag on each preview to set where the image focuses. This ensures the important part of your image stays visible on both screen sizes.
+                Click or drag on each preview to set where the image focuses.
+                This ensures the important part of your image stays visible on
+                both screen sizes.
               </p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Desktop preview */}
                 <div className="space-y-1.5">
                   <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <Monitor className="h-4 w-4" /> Desktop ({loginBgPosition.x}%, {loginBgPosition.y}%)
+                    <Monitor className="h-4 w-4" /> Desktop ({loginBgPosition.x}
+                    %, {loginBgPosition.y}%)
                   </span>
                   <div
                     className="relative h-32 w-full cursor-crosshair overflow-hidden rounded-lg border-2 border-gray-300 dark:border-gray-600"
                     style={{ aspectRatio: '16/9' }}
                     onMouseDown={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
-                      const setPos = (ev: { clientX: number; clientY: number }) => {
-                        const x = Math.max(0, Math.min(100, Math.round(((ev.clientX - rect.left) / rect.width) * 100)))
-                        const y = Math.max(0, Math.min(100, Math.round(((ev.clientY - rect.top) / rect.height) * 100)))
+                      const setPos = (ev: {
+                        clientX: number
+                        clientY: number
+                      }) => {
+                        const x = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round(
+                              ((ev.clientX - rect.left) / rect.width) * 100
+                            )
+                          )
+                        )
+                        const y = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round(
+                              ((ev.clientY - rect.top) / rect.height) * 100
+                            )
+                          )
+                        )
                         setLoginBgPosition({ x, y })
                       }
                       setPos(e)
                       const onMove = (ev: MouseEvent) => setPos(ev)
-                      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+                      const onUp = () => {
+                        document.removeEventListener('mousemove', onMove)
+                        document.removeEventListener('mouseup', onUp)
+                      }
                       document.addEventListener('mousemove', onMove)
                       document.addEventListener('mouseup', onUp)
                     }}
                   >
-                    <img src={loginBgUrl} alt="Desktop preview" className="h-full w-full object-cover" style={{ objectPosition: `${loginBgPosition.x}% ${loginBgPosition.y}%` }} />
-                    <div className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-lg" style={{ left: `${loginBgPosition.x}%`, top: `${loginBgPosition.y}%` }} />
+                    <img
+                      src={loginBgUrl}
+                      alt="Desktop preview"
+                      className="h-full w-full object-cover"
+                      style={{
+                        objectPosition: `${loginBgPosition.x}% ${loginBgPosition.y}%`,
+                      }}
+                    />
+                    <div
+                      className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-500 shadow-lg"
+                      style={{
+                        left: `${loginBgPosition.x}%`,
+                        top: `${loginBgPosition.y}%`,
+                      }}
+                    />
                   </div>
                 </div>
                 {/* Mobile preview */}
                 <div className="space-y-1.5">
                   <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-                    Mobile ({loginBgPositionMobile.x}%, {loginBgPositionMobile.y}%)
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                      <path d="M12 18h.01" />
+                    </svg>
+                    Mobile ({loginBgPositionMobile.x}%,{' '}
+                    {loginBgPositionMobile.y}%)
                   </span>
                   <div
                     className="relative mx-auto h-32 w-20 cursor-crosshair overflow-hidden rounded-lg border-2 border-gray-300 dark:border-gray-600"
                     style={{ aspectRatio: '9/16' }}
                     onMouseDown={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
-                      const setPos = (ev: { clientX: number; clientY: number }) => {
-                        const x = Math.max(0, Math.min(100, Math.round(((ev.clientX - rect.left) / rect.width) * 100)))
-                        const y = Math.max(0, Math.min(100, Math.round(((ev.clientY - rect.top) / rect.height) * 100)))
+                      const setPos = (ev: {
+                        clientX: number
+                        clientY: number
+                      }) => {
+                        const x = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round(
+                              ((ev.clientX - rect.left) / rect.width) * 100
+                            )
+                          )
+                        )
+                        const y = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round(
+                              ((ev.clientY - rect.top) / rect.height) * 100
+                            )
+                          )
+                        )
                         setLoginBgPositionMobile({ x, y })
                       }
                       setPos(e)
                       const onMove = (ev: MouseEvent) => setPos(ev)
-                      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+                      const onUp = () => {
+                        document.removeEventListener('mousemove', onMove)
+                        document.removeEventListener('mouseup', onUp)
+                      }
                       document.addEventListener('mousemove', onMove)
                       document.addEventListener('mouseup', onUp)
                     }}
                   >
-                    <img src={loginBgUrl} alt="Mobile preview" className="h-full w-full object-cover" style={{ objectPosition: `${loginBgPositionMobile.x}% ${loginBgPositionMobile.y}%` }} />
-                    <div className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-green-500 shadow-lg" style={{ left: `${loginBgPositionMobile.x}%`, top: `${loginBgPositionMobile.y}%` }} />
+                    <img
+                      src={loginBgUrl}
+                      alt="Mobile preview"
+                      className="h-full w-full object-cover"
+                      style={{
+                        objectPosition: `${loginBgPositionMobile.x}% ${loginBgPositionMobile.y}%`,
+                      }}
+                    />
+                    <div
+                      className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-green-500 shadow-lg"
+                      style={{
+                        left: `${loginBgPositionMobile.x}%`,
+                        top: `${loginBgPositionMobile.y}%`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setLoginBgPosition({ x: 50, y: 50 }); setLoginBgPositionMobile({ x: 50, y: 50 }) }}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setLoginBgPosition({ x: 50, y: 50 })
+                    setLoginBgPositionMobile({ x: 50, y: 50 })
+                  }}
+                >
                   Reset Both to Center
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setLoginBgPositionMobile({ ...loginBgPosition })}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setLoginBgPositionMobile({ ...loginBgPosition })
+                  }
+                >
                   Copy Desktop → Mobile
                 </Button>
               </div>
@@ -1085,7 +1217,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Base background color. Visible when no background image is set, or behind transparent areas.
+              Base background color. Visible when no background image is set, or
+              behind transparent areas.
             </p>
           </div>
 
@@ -1112,7 +1245,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 placeholder="Sentinel"
               />
               <p className="text-xs text-muted-foreground">
-                Smaller text below the headline. Defaults to &ldquo;Sentinel&rdquo;.
+                Smaller text below the headline. Defaults to
+                &ldquo;Sentinel&rdquo;.
               </p>
             </div>
           </div>
@@ -1132,7 +1266,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               className="w-full accent-blue-600"
             />
             <p className="text-xs text-muted-foreground">
-              Controls the transparency of the login card. Lower values show more of the background.
+              Controls the transparency of the login card. Lower values show
+              more of the background.
             </p>
           </div>
 
@@ -1166,7 +1301,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             <div className="space-y-0.5">
               <Label className="text-sm font-medium">Enhance Background</Label>
               <p className="text-xs text-muted-foreground">
-                Apply AI-style enhancement — boosts brightness, contrast, and color vibrancy
+                Apply AI-style enhancement — boosts brightness, contrast, and
+                color vibrancy
               </p>
             </div>
             <button
@@ -1215,11 +1351,11 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           <div className="space-y-2">
             <Label>Preview</Label>
             <div className="flex items-end justify-center gap-6 rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-
               {/* ── Desktop preview ── */}
               <div className="space-y-1">
                 <p className="text-center text-[10px] font-medium text-muted-foreground">
-                  <Monitor className="mr-1 inline h-3 w-3" />Desktop
+                  <Monitor className="mr-1 inline h-3 w-3" />
+                  Desktop
                 </p>
                 <div className="w-[320px] overflow-hidden rounded-md shadow-lg">
                   {/* Fake browser chrome */}
@@ -1227,31 +1363,47 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                     <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
                     <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
                     <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                    <span className="ml-2 flex-1 rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400 truncate">
-                      {typeof window !== 'undefined' ? window.location.origin : ''}/auth/login?org={currentOrganization?.slug || 'your-slug'}
+                    <span className="ml-2 flex-1 truncate rounded-sm bg-gray-600 px-2 py-0.5 text-[8px] text-gray-400">
+                      {typeof window !== 'undefined'
+                        ? window.location.origin
+                        : ''}
+                      /auth/login?org={currentOrganization?.slug || 'your-slug'}
                     </span>
                   </div>
                   {/* Page viewport (16:9) */}
                   <div
                     className="relative overflow-hidden"
-                    style={{ backgroundColor: loginBgColor, aspectRatio: '16 / 9' }}
+                    style={{
+                      backgroundColor: loginBgColor,
+                      aspectRatio: '16 / 9',
+                    }}
                   >
                     {loginBgUrl && (
                       <img
                         src={loginBgUrl}
                         alt="Background preview"
                         className={`absolute inset-0 h-full w-full ${
-                          loginBgFit === 'cover' ? 'object-cover' :
-                          loginBgFit === 'contain' ? 'object-contain' :
-                          loginBgFit === 'fill' ? 'object-fill' :
-                          'object-none'
+                          loginBgFit === 'cover'
+                            ? 'object-cover'
+                            : loginBgFit === 'contain'
+                              ? 'object-contain'
+                              : loginBgFit === 'fill'
+                                ? 'object-fill'
+                                : 'object-none'
                         }`}
-                        style={loginEnhanceBg ? {
-                          filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
-                        } : undefined}
+                        style={
+                          loginEnhanceBg
+                            ? {
+                                filter:
+                                  'brightness(1.08) contrast(1.12) saturate(1.25)',
+                              }
+                            : undefined
+                        }
                       />
                     )}
-                    {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
+                    {loginBgUrl && (
+                      <div className="absolute inset-0 bg-black/40" />
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div
                         className="rounded-lg border border-white/10 px-4 py-3 text-center backdrop-blur-xl"
@@ -1260,17 +1412,23 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         }}
                       >
                         {loginShowLogo && logoUrl && (
-                          <img src={logoUrl} alt="Logo" className="mx-auto mb-1 h-5 w-auto object-contain" />
+                          <img
+                            src={logoUrl}
+                            alt="Logo"
+                            className="mx-auto mb-1 h-5 w-auto object-contain"
+                          />
                         )}
                         <p className="text-[10px] font-bold text-white">
-                          {loginHeadline || currentOrganization?.name || 'Organization'}
+                          {loginHeadline ||
+                            currentOrganization?.name ||
+                            'Organization'}
                         </p>
                         <p className="text-[8px] text-gray-400">
                           {loginSubtitle || 'Sentinel'}
                         </p>
-                        <div className="mt-1 h-1 w-16 rounded bg-gray-600 mx-auto" />
-                        <div className="mt-0.5 h-1 w-16 rounded bg-gray-600 mx-auto" />
-                        <div className="mt-1 h-2 w-16 rounded bg-blue-600 mx-auto" />
+                        <div className="mx-auto mt-1 h-1 w-16 rounded bg-gray-600" />
+                        <div className="mx-auto mt-0.5 h-1 w-16 rounded bg-gray-600" />
+                        <div className="mx-auto mt-1 h-2 w-16 rounded bg-blue-600" />
                       </div>
                     </div>
                   </div>
@@ -1296,19 +1454,29 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {/* Phone viewport (9:19.5 mobile ratio ≈ iPhone) */}
                   <div
                     className="relative overflow-hidden"
-                    style={{ backgroundColor: loginBgColor, aspectRatio: '9 / 16' }}
+                    style={{
+                      backgroundColor: loginBgColor,
+                      aspectRatio: '9 / 16',
+                    }}
                   >
                     {loginBgUrl && (
                       <img
                         src={loginBgUrl}
                         alt="Mobile preview"
                         className="absolute inset-0 h-full w-full object-cover object-center"
-                        style={loginEnhanceBg ? {
-                          filter: 'brightness(1.08) contrast(1.12) saturate(1.25)',
-                        } : undefined}
+                        style={
+                          loginEnhanceBg
+                            ? {
+                                filter:
+                                  'brightness(1.08) contrast(1.12) saturate(1.25)',
+                              }
+                            : undefined
+                        }
                       />
                     )}
-                    {loginBgUrl && <div className="absolute inset-0 bg-black/40" />}
+                    {loginBgUrl && (
+                      <div className="absolute inset-0 bg-black/40" />
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center p-2">
                       <div
                         className="w-full rounded-md border border-white/10 px-2 py-2 text-center backdrop-blur-xl"
@@ -1317,17 +1485,23 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         }}
                       >
                         {loginShowLogo && logoUrl && (
-                          <img src={logoUrl} alt="Logo" className="mx-auto mb-0.5 h-3 w-auto object-contain" />
+                          <img
+                            src={logoUrl}
+                            alt="Logo"
+                            className="mx-auto mb-0.5 h-3 w-auto object-contain"
+                          />
                         )}
-                        <p className="text-[7px] font-bold text-white leading-tight">
-                          {loginHeadline || currentOrganization?.name || 'Organization'}
+                        <p className="text-[7px] font-bold leading-tight text-white">
+                          {loginHeadline ||
+                            currentOrganization?.name ||
+                            'Organization'}
                         </p>
                         <p className="text-[5px] text-gray-400">
                           {loginSubtitle || 'Sentinel'}
                         </p>
-                        <div className="mt-0.5 h-0.5 w-10 rounded bg-gray-600 mx-auto" />
-                        <div className="mt-0.5 h-0.5 w-10 rounded bg-gray-600 mx-auto" />
-                        <div className="mt-0.5 h-1.5 w-10 rounded bg-blue-600 mx-auto" />
+                        <div className="mx-auto mt-0.5 h-0.5 w-10 rounded bg-gray-600" />
+                        <div className="mx-auto mt-0.5 h-0.5 w-10 rounded bg-gray-600" />
+                        <div className="mx-auto mt-0.5 h-1.5 w-10 rounded bg-blue-600" />
                       </div>
                     </div>
                   </div>
@@ -1337,7 +1511,6 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </CardContent>
@@ -1366,50 +1539,52 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       {/* Only show delete for child organizations — root org (no parent) cannot be deleted */}
       {currentOrganization?.parent_organization_id && (
-      <Card className="border-red-200 bg-red-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-900">
-            <Trash2 className="h-5 w-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription className="text-red-800">
-            Irreversible actions that permanently affect this organization
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <p className="text-sm text-red-900">
-              Deleting this organization will permanently remove all associated
-              devices, members, locations, integrations, and data. This action
-              cannot be undone.
-            </p>
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-900">
+              <Trash2 className="h-5 w-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription className="text-red-800">
+              Irreversible actions that permanently affect this organization
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-red-900">
+                Deleting this organization will permanently remove all
+                associated devices, members, locations, integrations, and data.
+                This action cannot be undone.
+              </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="delete-confirm" className="text-red-900">
-                Type <strong>{currentOrganization?.name}</strong> to confirm
-                deletion:
-              </Label>
-              <Input
-                id="delete-confirm"
-                value={deleteConfirmation}
-                onChange={(e) => setDeleteConfirmation(e.target.value)}
-                placeholder="Type organization name"
-                className="border-red-300 focus:border-red-500"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirm" className="text-red-900">
+                  Type <strong>{currentOrganization?.name}</strong> to confirm
+                  deletion:
+                </Label>
+                <Input
+                  id="delete-confirm"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="Type organization name"
+                  className="border-red-300 focus:border-red-500"
+                />
+              </div>
+
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={
+                  isDeleting ||
+                  deleteConfirmation.trim().toLowerCase() !==
+                    currentOrganization?.name?.trim().toLowerCase()
+                }
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Organization'}
+              </Button>
             </div>
-
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={
-                isDeleting || deleteConfirmation.trim().toLowerCase() !== currentOrganization?.name?.trim().toLowerCase()
-              }
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Organization'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

@@ -81,7 +81,11 @@ Deno.serve(async (req: Request) => {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutComplete(event.data.object as Stripe.Checkout.Session, stripe, db)
+        await handleCheckoutComplete(
+          event.data.object as Stripe.Checkout.Session,
+          stripe,
+          db
+        )
         break
 
       case 'invoice.paid':
@@ -93,11 +97,17 @@ Deno.serve(async (req: Request) => {
         break
 
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, db)
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription,
+          db
+        )
         break
 
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, db)
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription,
+          db
+        )
         break
 
       default:
@@ -139,27 +149,28 @@ async function handleCheckoutComplete(
   // Retrieve the full subscription for period dates
   const stripeSubId = session.subscription as string
   const sub = await stripe.subscriptions.retrieve(stripeSubId)
-  const customerId = typeof session.customer === 'string'
-    ? session.customer
-    : (session.customer as Stripe.Customer)?.id
+  const customerId =
+    typeof session.customer === 'string'
+      ? session.customer
+      : (session.customer as Stripe.Customer)?.id
 
   // Upsert subscription
-  await db
-    .from('subscriptions')
-    .upsert(
-      {
-        organization_id: orgId,
-        plan_id: planId,
-        stripe_subscription_id: stripeSubId,
-        stripe_customer_id: customerId || null,
-        status: mapSubscriptionStatus(sub.status),
-        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: sub.cancel_at_period_end,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'organization_id' }
-    )
+  await db.from('subscriptions').upsert(
+    {
+      organization_id: orgId,
+      plan_id: planId,
+      stripe_subscription_id: stripeSubId,
+      stripe_customer_id: customerId || null,
+      status: mapSubscriptionStatus(sub.status),
+      current_period_start: new Date(
+        sub.current_period_start * 1000
+      ).toISOString(),
+      current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      cancel_at_period_end: sub.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'organization_id' }
+  )
 
   // Store customer ID on the org for portal use
   if (customerId) {
@@ -179,9 +190,10 @@ async function handleInvoicePaid(
   invoice: Stripe.Invoice,
   db: ReturnType<typeof createServiceClient>
 ) {
-  const stripeSubId = typeof invoice.subscription === 'string'
-    ? invoice.subscription
-    : (invoice.subscription as Stripe.Subscription)?.id
+  const stripeSubId =
+    typeof invoice.subscription === 'string'
+      ? invoice.subscription
+      : (invoice.subscription as Stripe.Subscription)?.id
 
   // Find our subscription row
   let orgId: string | null = null
@@ -232,7 +244,9 @@ async function handleInvoicePaid(
       .from('subscriptions')
       .update({
         status: 'active',
-        current_period_start: new Date(invoice.period_start * 1000).toISOString(),
+        current_period_start: new Date(
+          invoice.period_start * 1000
+        ).toISOString(),
         current_period_end: new Date(invoice.period_end * 1000).toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -249,9 +263,10 @@ async function handleInvoiceFailed(
   invoice: Stripe.Invoice,
   db: ReturnType<typeof createServiceClient>
 ) {
-  const stripeSubId = typeof invoice.subscription === 'string'
-    ? invoice.subscription
-    : (invoice.subscription as Stripe.Subscription)?.id
+  const stripeSubId =
+    typeof invoice.subscription === 'string'
+      ? invoice.subscription
+      : (invoice.subscription as Stripe.Subscription)?.id
 
   if (!stripeSubId) return
 
@@ -273,7 +288,9 @@ async function handleSubscriptionUpdated(
   const planIdFromMeta = sub.metadata?.plan_id
   const updatePayload: Record<string, unknown> = {
     status: mapSubscriptionStatus(sub.status),
-    current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+    current_period_start: new Date(
+      sub.current_period_start * 1000
+    ).toISOString(),
     current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     cancel_at_period_end: sub.cancel_at_period_end,
     updated_at: new Date().toISOString(),

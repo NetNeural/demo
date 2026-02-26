@@ -19,7 +19,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
@@ -48,7 +49,10 @@ serve(async (req) => {
     if (!schedules || schedules.length === 0) {
       return new Response(
         JSON.stringify({ message: 'No active schedules', ran: [] }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       )
     }
 
@@ -61,7 +65,8 @@ serve(async (req) => {
     }
 
     const dueReports: string[] = []
-    const results: Array<{ report: string; status: string; detail?: string }> = []
+    const results: Array<{ report: string; status: string; detail?: string }> =
+      []
 
     for (const schedule of schedules) {
       // Parse scheduled time
@@ -80,7 +85,8 @@ serve(async (req) => {
       // Check if already ran today (within last 23 hours to handle timezone edge cases)
       if (schedule.last_run_at) {
         const lastRun = new Date(schedule.last_run_at)
-        const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60)
+        const hoursSinceLastRun =
+          (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60)
         if (hoursSinceLastRun < 23) continue
       }
 
@@ -117,16 +123,22 @@ serve(async (req) => {
 
           try {
             // Invoke the report edge function
-            const resp = await fetch(`${supabaseUrl}/functions/v1/${schedule.report_type}`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${serviceKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                recipients: schedule.recipients?.length > 0 ? schedule.recipients : undefined,
-              }),
-            })
+            const resp = await fetch(
+              `${supabaseUrl}/functions/v1/${schedule.report_type}`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${serviceKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  recipients:
+                    schedule.recipients?.length > 0
+                      ? schedule.recipients
+                      : undefined,
+                }),
+              }
+            )
 
             const durationMs = Date.now() - startTime
 
@@ -149,7 +161,11 @@ serve(async (req) => {
               .update({ last_run_at: now.toISOString() })
               .eq('id', schedule.id)
 
-            results.push({ report: schedule.report_type, status: 'success', detail: `${durationMs}ms` })
+            results.push({
+              report: schedule.report_type,
+              status: 'success',
+              detail: `${durationMs}ms`,
+            })
           } catch (err) {
             const durationMs = Date.now() - startTime
             const msg = err instanceof Error ? err.message : String(err)
@@ -157,14 +173,25 @@ serve(async (req) => {
             if (runRow?.id) {
               await supabase
                 .from('report_runs')
-                .update({ status: 'error', duration_ms: durationMs, error_message: msg })
+                .update({
+                  status: 'error',
+                  duration_ms: durationMs,
+                  error_message: msg,
+                })
                 .eq('id', runRow.id)
             }
 
-            results.push({ report: schedule.report_type, status: 'error', detail: msg })
+            results.push({
+              report: schedule.report_type,
+              status: 'error',
+              detail: msg,
+            })
           }
         } else {
-          results.push({ report: schedule.report_type, status: 'would-run (dry)' })
+          results.push({
+            report: schedule.report_type,
+            status: 'would-run (dry)',
+          })
         }
       }
     }
@@ -177,13 +204,16 @@ serve(async (req) => {
         results,
         dry_run: isDryRun,
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     )
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    return new Response(
-      JSON.stringify({ error: msg }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

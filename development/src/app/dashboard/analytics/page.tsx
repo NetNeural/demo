@@ -43,7 +43,9 @@ function AnalyticsPageContent() {
     // Sanitize a value for safe CSV inclusion (prevent formula injection)
     const sanitize = (v: string) => {
       if (/^[=+\-@\t\r]/.test(v)) return `'${v}`
-      return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v
+      return v.includes(',') || v.includes('"')
+        ? `"${v.replace(/"/g, '""')}"`
+        : v
     }
 
     const csvRows = [
@@ -52,7 +54,14 @@ function AnalyticsPageContent() {
       ['Organization:', sanitize(currentOrganization?.name || '')],
       ['Time Range:', timeRange],
       [],
-      ['Device Name', 'Uptime %', 'Data Points', 'Avg Battery %', 'Avg RSSI', 'Last Error'],
+      [
+        'Device Name',
+        'Uptime %',
+        'Data Points',
+        'Avg Battery %',
+        'Avg RSSI',
+        'Last Error',
+      ],
       ...(data?.devicePerformance.map((d) => [
         sanitize(d.device_name),
         d.uptime_percentage.toFixed(2),

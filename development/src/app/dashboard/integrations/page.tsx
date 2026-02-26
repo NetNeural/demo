@@ -47,9 +47,7 @@ export default function IntegrationsPage() {
 
     setLoading(true)
     try {
-      const response = await edgeFunctions.integrations.list(
-        fetchOrgId
-      )
+      const response = await edgeFunctions.integrations.list(fetchOrgId)
 
       if (activeOrgRef.current !== fetchOrgId) return // org switched, discard stale data
 
@@ -88,9 +86,8 @@ export default function IntegrationsPage() {
     const fetchOrgId = currentOrganization.id
 
     try {
-      const conflicts = await integrationSyncService.getPendingConflicts(
-        fetchOrgId
-      )
+      const conflicts =
+        await integrationSyncService.getPendingConflicts(fetchOrgId)
       if (activeOrgRef.current !== fetchOrgId) return
       setPendingConflicts(conflicts.length)
     } catch (error) {

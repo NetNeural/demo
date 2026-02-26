@@ -37,7 +37,9 @@ export default createEdgeFunction(
       // initial org selection.
       if (!organizationId) {
         if (userContext.isSuperAdmin) {
-          console.warn('[dashboard-stats] Super admin request without organization_id — returning empty stats')
+          console.warn(
+            '[dashboard-stats] Super admin request without organization_id — returning empty stats'
+          )
           return createSuccessResponse({
             totalDevices: 0,
             onlineDevices: 0,

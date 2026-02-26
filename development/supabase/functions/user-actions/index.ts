@@ -1,7 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
-import { getUserContext, createAuthenticatedClient, createServiceClient } from '../_shared/auth.ts'
+import {
+  getUserContext,
+  createAuthenticatedClient,
+  createServiceClient,
+} from '../_shared/auth.ts'
 
 // ─── Resolution Notification Helper ─────────────────────────────────
 async function sendResolutionNotification(
@@ -25,9 +29,14 @@ async function sendResolutionNotification(
       .select('full_name, email')
       .eq('id', resolvedByUserId)
       .single()
-    const resolverName = resolver?.full_name || resolver?.email || resolvedByUserId
-    const resolvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
-    const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+    const resolverName =
+      resolver?.full_name || resolver?.email || resolvedByUserId
+    const resolvedAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+    })
+    const alertNum = alert.alert_number
+      ? `ALT-${alert.alert_number}`
+      : alert.id.slice(0, 8)
 
     const thresholdId = alert.metadata?.threshold_id
     let recipientUserIds: string[] = []
@@ -55,7 +64,8 @@ async function sendResolutionNotification(
           .select('user_id')
           .eq('organization_id', orgId)
           .in('role', ['owner', 'admin'])
-        recipientUserIds = members?.map((m: { user_id: string }) => m.user_id) || []
+        recipientUserIds =
+          members?.map((m: { user_id: string }) => m.user_id) || []
       }
     }
 
@@ -66,29 +76,45 @@ async function sendResolutionNotification(
     const originalTitle = alert.title
     const originalMessage = alert.message
 
-    await supabase.from('alerts').update({
-      title: `✅ RESOLVED: ${alertNum} — ${originalTitle}`,
-      message: `Resolved by ${resolverName} at ${resolvedAt}\nType: ${acknowledgementType}${notes ? `\nNotes: ${notes}` : ''}\n\nOriginal alert: ${originalMessage}`,
-      severity: 'low',
-    }).eq('id', alertId)
+    await supabase
+      .from('alerts')
+      .update({
+        title: `✅ RESOLVED: ${alertNum} — ${originalTitle}`,
+        message: `Resolved by ${resolverName} at ${resolvedAt}\nType: ${acknowledgementType}${notes ? `\nNotes: ${notes}` : ''}\n\nOriginal alert: ${originalMessage}`,
+        severity: 'low',
+      })
+      .eq('id', alertId)
 
     await fetch(`${supabaseUrl}/functions/v1/send-alert-notifications`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+      },
       body: JSON.stringify({
         alert_id: alertId,
         threshold_id: thresholdId || undefined,
-        channels, recipient_user_ids: recipientUserIds, recipient_emails: recipientEmails,
+        channels,
+        recipient_user_ids: recipientUserIds,
+        recipient_emails: recipientEmails,
       }),
     })
 
-    await supabase.from('alerts').update({
-      title: originalTitle, message: originalMessage, severity: alert.severity,
-    }).eq('id', alertId)
+    await supabase
+      .from('alerts')
+      .update({
+        title: originalTitle,
+        message: originalMessage,
+        severity: alert.severity,
+      })
+      .eq('id', alertId)
 
     console.log(`[user-actions] Resolution notification sent for ${alertNum}`)
   } catch (err) {
-    console.warn('[user-actions] Resolution notification failed (non-fatal):', err)
+    console.warn(
+      '[user-actions] Resolution notification failed (non-fatal):',
+      err
+    )
   }
 }
 
@@ -213,8 +239,11 @@ async function handleAcknowledgeAlert(
 
     // Send resolution notification to original recipients (fire-and-forget)
     sendResolutionNotification(
-      serviceClient, body.alert_id, userId,
-      body.acknowledgement_type || 'acknowledged', body.notes
+      serviceClient,
+      body.alert_id,
+      userId,
+      body.acknowledgement_type || 'acknowledged',
+      body.notes
     ).catch(() => {})
   } catch (resolveErr) {
     console.warn('[Acknowledge Alert] Fallback resolve failed:', resolveErr)

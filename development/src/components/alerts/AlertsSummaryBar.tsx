@@ -5,7 +5,10 @@ import { Badge } from '@/components/ui/badge'
 import { useState, useEffect } from 'react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
-import type { AlertStats, AlertDeviceRanking } from '@/lib/edge-functions/api/alerts'
+import type {
+  AlertStats,
+  AlertDeviceRanking,
+} from '@/lib/edge-functions/api/alerts'
 
 interface AlertsSummaryBarProps {
   alerts: Array<{
@@ -96,7 +99,9 @@ export function AlertsSummaryBar({
             <div className="flex items-center space-x-4">
               <div className="text-sm">
                 <span className="font-medium">{localStats.unacknowledged}</span>
-                <span className="ml-1 text-muted-foreground">Unacknowledged</span>
+                <span className="ml-1 text-muted-foreground">
+                  Unacknowledged
+                </span>
               </div>
               <div className="text-sm">
                 <span className="font-medium">{localStats.total}</span>
@@ -120,12 +125,16 @@ export function AlertsSummaryBar({
 
               <div className="flex items-center space-x-1 rounded-md bg-muted px-2.5 py-1">
                 <span className="text-xs text-muted-foreground">24h:</span>
-                <span className="text-xs font-semibold">{stats.alerts_last_24h}</span>
+                <span className="text-xs font-semibold">
+                  {stats.alerts_last_24h}
+                </span>
               </div>
 
               <div className="flex items-center space-x-1 rounded-md bg-muted px-2.5 py-1">
                 <span className="text-xs text-muted-foreground">7d:</span>
-                <span className="text-xs font-semibold">{stats.alerts_last_7d}</span>
+                <span className="text-xs font-semibold">
+                  {stats.alerts_last_7d}
+                </span>
               </div>
 
               {stats.snoozed_alerts > 0 && (
@@ -138,17 +147,27 @@ export function AlertsSummaryBar({
 
               <div className="flex items-center space-x-1 rounded-md bg-muted px-2.5 py-1">
                 <span className="text-xs text-muted-foreground">Resolved:</span>
-                <span className="text-xs font-semibold">{stats.resolved_alerts}</span>
+                <span className="text-xs font-semibold">
+                  {stats.resolved_alerts}
+                </span>
               </div>
 
               {topDevices.length > 0 && topDevices[0] && (
                 <div
                   className="flex items-center space-x-1 rounded-md bg-orange-50 px-2.5 py-1 dark:bg-orange-950"
-                  title={`Top Alerting Devices (30d)\n${topDevices.slice(0, 5).map((d, i) => `${i + 1}. ${d.device_name} — ${d.alert_count} alerts${d.critical_count > 0 ? ` (${d.critical_count} critical)` : ''}`).join('\n')}`}
+                  title={`Top Alerting Devices (30d)\n${topDevices
+                    .slice(0, 5)
+                    .map(
+                      (d, i) =>
+                        `${i + 1}. ${d.device_name} — ${d.alert_count} alerts${d.critical_count > 0 ? ` (${d.critical_count} critical)` : ''}`
+                    )
+                    .join('\n')}`}
                 >
                   <span className="text-xs text-orange-700 dark:text-orange-300">
                     🔥 Top: {topDevices[0].device_name}
-                    <span className="ml-1 font-semibold">({topDevices[0].alert_count})</span>
+                    <span className="ml-1 font-semibold">
+                      ({topDevices[0].alert_count})
+                    </span>
                   </span>
                 </div>
               )}

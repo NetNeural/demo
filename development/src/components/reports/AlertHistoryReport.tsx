@@ -225,12 +225,17 @@ export function AlertHistoryReport() {
           const batch = alertIds.slice(i, i + 200)
           const { data: ackData, error: ackError } = await supabase
             .from('alert_acknowledgements')
-            .select('id, alert_id, user_id, acknowledgement_type, acknowledged_at, notes')
+            .select(
+              'id, alert_id, user_id, acknowledgement_type, acknowledged_at, notes'
+            )
             .in('alert_id', batch)
             .order('acknowledged_at', { ascending: false })
 
           if (ackError) {
-            console.warn('[AlertHistoryReport] Error fetching acknowledgements:', ackError)
+            console.warn(
+              '[AlertHistoryReport] Error fetching acknowledgements:',
+              ackError
+            )
           } else if (ackData) {
             for (const ack of ackData) {
               // Keep only the latest acknowledgement per alert
@@ -239,7 +244,8 @@ export function AlertHistoryReport() {
                   id: ack.id,
                   alert_id: ack.alert_id,
                   user_id: ack.user_id,
-                  acknowledgement_type: ack.acknowledgement_type as AlertAcknowledgement['acknowledgement_type'],
+                  acknowledgement_type:
+                    ack.acknowledgement_type as AlertAcknowledgement['acknowledgement_type'],
                   acknowledged_at: ack.acknowledged_at,
                   notes: ack.notes ?? undefined,
                 })
@@ -280,7 +286,10 @@ export function AlertHistoryReport() {
           severity: alert.severity,
           alert_type: alert.alert_type,
           device_id: alert.device_id,
-          device_name: (alert.device_id && deviceNameMap.get(alert.device_id)) || alert.title || 'Unknown Device',
+          device_name:
+            (alert.device_id && deviceNameMap.get(alert.device_id)) ||
+            alert.title ||
+            'Unknown Device',
           created_at: alert.created_at,
           is_resolved: alert.is_resolved,
           resolved_at: alert.resolved_at,
@@ -471,7 +480,17 @@ export function AlertHistoryReport() {
   // Build payload for SendReportDialog
   const getReportPayload = (): ReportPayload => {
     const csv = [
-      ['Date', 'Alert Type', 'Severity', 'Device', 'Status', 'Response Time (min)', 'Acknowledged By', 'Title', 'Description'].join(','),
+      [
+        'Date',
+        'Alert Type',
+        'Severity',
+        'Device',
+        'Status',
+        'Response Time (min)',
+        'Acknowledged By',
+        'Title',
+        'Description',
+      ].join(','),
       ...alerts.map((alert) =>
         [
           format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm:ss'),
@@ -479,7 +498,9 @@ export function AlertHistoryReport() {
           alert.severity,
           alert.device_name || 'N/A',
           alert.is_resolved ? 'Resolved' : 'Unresolved',
-          alert.responseTimeMinutes ? alert.responseTimeMinutes.toFixed(2) : 'N/A',
+          alert.responseTimeMinutes
+            ? alert.responseTimeMinutes.toFixed(2)
+            : 'N/A',
           alert.acknowledgement?.user_email || 'N/A',
           `"${alert.title}"`,
           `"${alert.message}"`,
@@ -487,8 +508,8 @@ export function AlertHistoryReport() {
       ),
     ].join('\n')
 
-    const critical = alerts.filter(a => a.severity === 'critical').length
-    const unresolved = alerts.filter(a => !a.is_resolved).length
+    const critical = alerts.filter((a) => a.severity === 'critical').length
+    const unresolved = alerts.filter((a) => !a.is_resolved).length
     return {
       title: 'Alert History Report',
       csvContent: csv,

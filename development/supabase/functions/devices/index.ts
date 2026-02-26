@@ -108,11 +108,15 @@ export default createEdgeFunction(
         .maybeSingle()
 
       if (membership) {
-        console.log(`✅ User ${ctx.userId} is ${membership.role} of org ${requestedOrgId}`)
+        console.log(
+          `✅ User ${ctx.userId} is ${membership.role} of org ${requestedOrgId}`
+        )
         return requestedOrgId
       }
 
-      console.warn(`⚠️ User ${ctx.userId} is not a member of org ${requestedOrgId}, falling back to primary`)
+      console.warn(
+        `⚠️ User ${ctx.userId} is not a member of org ${requestedOrgId}, falling back to primary`
+      )
       return ctx.organizationId || null
     }
 
@@ -373,7 +377,10 @@ export default createEdgeFunction(
       if (model !== undefined) updates.model = model
 
       // Handle organization_id change (device transfer between orgs)
-      if (organization_id !== undefined && organization_id !== existingDevice.organization_id) {
+      if (
+        organization_id !== undefined &&
+        organization_id !== existingDevice.organization_id
+      ) {
         // Verify user has access to the TARGET organization too
         if (!userContext.isSuperAdmin) {
           const { data: targetMembership } = await supabase
@@ -479,7 +486,10 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this organization
-      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(
+        userContext,
+        organization_id
+      )
 
       if (!targetOrgId) {
         throw new DatabaseError('User has no organization access', 403)
@@ -489,7 +499,9 @@ export default createEdgeFunction(
       try {
         const quota = await enforceQuota(targetOrgId, 'device_count', 'device')
         if (quota.is_warning) {
-          console.warn(`⚠️ Org ${targetOrgId} approaching device limit: ${quota.current_usage}/${quota.plan_limit}`)
+          console.warn(
+            `⚠️ Org ${targetOrgId} approaching device limit: ${quota.current_usage}/${quota.plan_limit}`
+          )
         }
       } catch (err) {
         if (err instanceof QuotaExceededError) {
@@ -558,7 +570,10 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this device's organization
-      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(
+        userContext,
+        organization_id
+      )
 
       if (!targetOrgId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)

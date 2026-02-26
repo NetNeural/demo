@@ -13,10 +13,7 @@ import {
   createSuccessResponse,
   DatabaseError,
 } from '../_shared/request-handler.ts'
-import {
-  createServiceClient,
-  getUserContext,
-} from '../_shared/auth.ts'
+import { createServiceClient, getUserContext } from '../_shared/auth.ts'
 import {
   checkOrgQuota,
   refreshUsageCounts,
@@ -42,7 +39,9 @@ export default createEdgeFunction(
 
     // POST /usage-check/refresh — admin-only usage refresh
     if (req.method === 'POST' && url.pathname.endsWith('/refresh')) {
-      if (!['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
+      if (
+        !['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)
+      ) {
         throw new DatabaseError('Only admins can trigger usage refresh', 403)
       }
 

@@ -201,10 +201,9 @@ export default createEdgeFunction(
         const issueTitle = `${issueType} ${newTitle || feedback.title}`
 
         // Build updated issue body
-        const severityLine =
-          (updated as Record<string, unknown>).severity
-            ? `**Severity:** ${(updated as Record<string, unknown>).severity}\n`
-            : ''
+        const severityLine = (updated as Record<string, unknown>).severity
+          ? `**Severity:** ${(updated as Record<string, unknown>).severity}\n`
+          : ''
         const issueBody = `## User Feedback
 
 **Type:** ${(updated as Record<string, unknown>).type === 'bug_report' ? '🐛 Bug Report' : '💡 Feature Request'}

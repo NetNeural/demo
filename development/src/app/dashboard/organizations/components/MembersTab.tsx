@@ -36,7 +36,14 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization'
-import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2, Pencil } from 'lucide-react'
+import {
+  UserPlus,
+  Trash2,
+  KeyRound,
+  Copy,
+  CheckCircle2,
+  Pencil,
+} from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useToast } from '@/hooks/use-toast'
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog'
@@ -70,8 +77,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [loading, setLoading] = useState(true)
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false)
   const [showEditMemberDialog, setShowEditMemberDialog] = useState(false)
-  const [editingMember, setEditingMember] =
-    useState<OrganizationMember | null>(null)
+  const [editingMember, setEditingMember] = useState<OrganizationMember | null>(
+    null
+  )
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null)
@@ -380,14 +388,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   // 2. AND (target is not owner OR current user is owner - only owners can modify owners)
                   const canModifyThisMember =
                     canManageMembers &&
-                    (member.role !== 'owner' || userRole === 'owner' || isSuperAdmin)
+                    (member.role !== 'owner' ||
+                      userRole === 'owner' ||
+                      isSuperAdmin)
 
                   // Can delete if:
                   // 1. User has remove permissions (admin or owner)
                   // 2. AND (target is not owner OR current user is owner/super_admin)
                   const canDeleteThisMember =
                     canRemoveMembers &&
-                    (member.role !== 'owner' || userRole === 'owner' || isSuperAdmin)
+                    (member.role !== 'owner' ||
+                      userRole === 'owner' ||
+                      isSuperAdmin)
 
                   return (
                     <TableRow key={member.id}>

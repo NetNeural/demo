@@ -57,9 +57,7 @@ const FEATURE_GROUPS = [
 ]
 
 /** Build a lookup from feature key → display info */
-const featureDisplayMap = new Map(
-  PLAN_FEATURE_DISPLAY.map((f) => [f.key, f])
-)
+const featureDisplayMap = new Map(PLAN_FEATURE_DISPLAY.map((f) => [f.key, f]))
 
 export function FeatureComparisonTable({ plans }: FeatureComparisonTableProps) {
   return (
@@ -88,14 +86,26 @@ export function FeatureComparisonTable({ plans }: FeatureComparisonTableProps) {
           <tr>
             <td
               colSpan={plans.length + 1}
-              className="pt-6 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"
+              className="pb-2 pt-6 text-xs font-bold uppercase tracking-wider text-muted-foreground"
             >
               Plan Limits
             </td>
           </tr>
-          <LimitRow label="Team Members" plans={plans} getValue={(p) => formatLimit(p.max_users)} />
-          <LimitRow label="Integrations" plans={plans} getValue={(p) => formatLimit(p.max_integrations)} />
-          <LimitRow label="Data Retention" plans={plans} getValue={(p) => formatRetention(p.telemetry_retention_days)} />
+          <LimitRow
+            label="Team Members"
+            plans={plans}
+            getValue={(p) => formatLimit(p.max_users)}
+          />
+          <LimitRow
+            label="Integrations"
+            plans={plans}
+            getValue={(p) => formatLimit(p.max_integrations)}
+          />
+          <LimitRow
+            label="Data Retention"
+            plans={plans}
+            getValue={(p) => formatRetention(p.telemetry_retention_days)}
+          />
 
           {/* Feature groups */}
           {FEATURE_GROUPS.map((group) => (
@@ -127,10 +137,7 @@ function FeatureGroup({
   return (
     <>
       <tr>
-        <td
-          colSpan={plans.length + 1}
-          className="pt-6 pb-2"
-        >
+        <td colSpan={plans.length + 1} className="pb-2 pt-6">
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {title}
           </span>
@@ -140,7 +147,9 @@ function FeatureGroup({
         </td>
       </tr>
       {featureKeys.map((key) => {
-        const display = featureDisplayMap.get(key as keyof BillingPlan['features'])
+        const display = featureDisplayMap.get(
+          key as keyof BillingPlan['features']
+        )
         if (!display) return null
         return (
           <tr key={key} className="border-b border-border/50">
@@ -155,7 +164,8 @@ function FeatureGroup({
               )}
             </td>
             {plans.map((plan) => {
-              const hasFeature = plan.features[key as keyof BillingPlan['features']]
+              const hasFeature =
+                plan.features[key as keyof BillingPlan['features']]
               return (
                 <td key={plan.id} className="px-4 py-3 text-center">
                   {hasFeature ? (
@@ -186,7 +196,10 @@ function LimitRow({
     <tr className="border-b border-border/50">
       <td className="py-3 pr-4 text-sm font-medium text-foreground">{label}</td>
       {plans.map((plan) => (
-        <td key={plan.id} className="px-4 py-3 text-center text-sm font-medium text-foreground">
+        <td
+          key={plan.id}
+          className="px-4 py-3 text-center text-sm font-medium text-foreground"
+        >
           {getValue(plan)}
         </td>
       ))}
@@ -201,6 +214,7 @@ function formatLimit(limit: number): string {
 
 function formatRetention(days: number): string {
   if (days === -1) return 'Unlimited'
-  if (days >= 365) return `${Math.floor(days / 365)} year${days >= 730 ? 's' : ''}`
+  if (days >= 365)
+    return `${Math.floor(days / 365)} year${days >= 730 ? 's' : ''}`
   return `${days} days`
 }

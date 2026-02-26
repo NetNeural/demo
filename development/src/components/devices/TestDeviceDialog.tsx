@@ -94,22 +94,26 @@ export function TestDeviceDialog({
       if (createdDeviceId) {
         const supabase = createClient()
         const now = new Date().toISOString()
-        const { error: telemetryError } = await testTelemetryFrom(supabase)
-          .insert({
-            device_id: createdDeviceId,
-            organization_id: currentOrganization.id,
-            telemetry: {
-              temperature: 22,
-              humidity: 45,
-              co2: 600,
-              battery: 85,
-            },
-            device_timestamp: now,
-            received_at: now,
-          } as any)  // eslint-disable-line @typescript-eslint/no-explicit-any
+        const { error: telemetryError } = await testTelemetryFrom(
+          supabase
+        ).insert({
+          device_id: createdDeviceId,
+          organization_id: currentOrganization.id,
+          telemetry: {
+            temperature: 22,
+            humidity: 45,
+            co2: 600,
+            battery: 85,
+          },
+          device_timestamp: now,
+          received_at: now,
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         if (telemetryError) {
-          console.warn('Created test device, but failed to seed telemetry:', telemetryError)
+          console.warn(
+            'Created test device, but failed to seed telemetry:',
+            telemetryError
+          )
         }
       }
 

@@ -64,7 +64,8 @@ export async function logClientAction(entry: ClientAuditEntry): Promise<void> {
       p_status: entry.status || 'success',
       p_error_message: entry.errorMessage || null,
       p_ip_address: null,
-      p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      p_user_agent:
+        typeof navigator !== 'undefined' ? navigator.userAgent : null,
       p_session_id: null,
     })
   } catch (error) {
@@ -116,10 +117,7 @@ export function auditLogin(
 /**
  * Convenience: Log a failed login attempt
  */
-export function auditLoginFailed(
-  email: string,
-  errorMessage: string
-): void {
+export function auditLoginFailed(email: string, errorMessage: string): void {
   const supabase = createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(supabase as any)
@@ -154,10 +152,7 @@ export function auditLoginFailed(
 /**
  * Convenience: Log a logout
  */
-export function auditLogout(
-  userId: string,
-  email: string
-): void {
+export function auditLogout(userId: string, email: string): void {
   const supabase = createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(supabase as any)

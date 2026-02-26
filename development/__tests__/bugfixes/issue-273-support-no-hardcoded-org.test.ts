@@ -11,7 +11,11 @@
 describe('Bug #273 — Support page tab filtering (isSuperAdmin)', () => {
   // Mirror the tabs array from support/page.tsx (lines 31-70)
   const tabs = [
-    { id: 'customer-assistance', label: 'Customer Assistance', superAdminOnly: false },
+    {
+      id: 'customer-assistance',
+      label: 'Customer Assistance',
+      superAdminOnly: false,
+    },
     { id: 'admin-tools', label: 'Admin Tools', superAdminOnly: false },
     { id: 'documentation', label: 'Documentation', superAdminOnly: false },
     { id: 'troubleshooting', label: 'Troubleshooting', superAdminOnly: true },

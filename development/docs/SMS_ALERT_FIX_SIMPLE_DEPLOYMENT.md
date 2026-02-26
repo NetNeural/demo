@@ -1,6 +1,7 @@
 # SMS Alert Fix - Simplified Deployment (Credentials Already Set)
 
 ## Overview
+
 Your Twilio credentials are already configured in Supabase environment variables. The SMS fix just needs the updated Edge Function deployed.
 
 ---
@@ -21,6 +22,7 @@ The patched `send-alert-notifications` Edge Function adds:
 ### Step 1: Deploy the Patched Edge Function
 
 **Option A: Via Supabase Dashboard (Easiest)**
+
 1. Open Supabase Dashboard → **Functions** → **send-alert-notifications**
 2. Copy the entire code from `SMS_EDGE_FUNCTION_PATCH.ts`
 3. Select ALL code in the editor (Ctrl+A)
@@ -29,6 +31,7 @@ The patched `send-alert-notifications` Edge Function adds:
 6. Wait for status to show **"Active"**
 
 **Option B: Via Supabase CLI**
+
 ```bash
 cd development
 supabase functions deploy send-alert-notifications --project-ref YOUR-PROJECT-ID
@@ -45,6 +48,7 @@ Check the function logs to ensure it deployed successfully:
 ### Step 3: Test SMS Delivery
 
 #### Test via Dashboard
+
 1. Go to a **Device** → **Sensor Threshold**
 2. Enable **SMS** in Notification Channels
 3. Enter a test phone number in E.164 format: `+1234567890`
@@ -53,8 +57,10 @@ Check the function logs to ensure it deployed successfully:
 6. Trigger a test alert (if available)
 
 #### Check Results
+
 1. Open **Functions** → **send-alert-notifications** → **Logs**
 2. Look for success message:
+
    ```
    [send-alert-notifications] SMS result: { success: true, detail: "Sent X/X SMS" }
    ```
@@ -94,6 +100,7 @@ The Edge Function flow:
 ### SMS Not Sending
 
 **Check 1: Function Logs**
+
 - Go to **Supabase Dashboard** → **Functions** → **send-alert-notifications** → **Logs**
 - Look for error messages like:
   - `Twilio not configured` → Environment variables missing (unlikely since they're already set)
@@ -101,9 +108,10 @@ The Edge Function flow:
   - `Failed to resolve user phones` → Database query error
 
 **Check 2: Threshold Configuration**
+
 ```sql
 -- Verify threshold has SMS enabled and recipients configured
-SELECT 
+SELECT
   id,
   notification_channels,
   notify_user_ids,
@@ -113,13 +121,15 @@ WHERE id = 'your-threshold-id';
 ```
 
 Should show:
+
 - `notification_channels` contains `"sms"`
 - Either `notify_user_ids` is populated OR `notify_phone_numbers` has entries
 
 **Check 3: User Phone Data**
+
 ```sql
 -- Verify users have phone numbers with SMS enabled
-SELECT 
+SELECT
   id,
   email,
   phone_number,
@@ -135,6 +145,7 @@ Should show at least one user with a phone number.
 
 **Check 4: Phone Format**
 Phone must be E.164 format:
+
 - ✅ `+15551234567` (correct)
 - ✅ `+441234567890` (UK format, correct)
 - ❌ `555-123-4567` (invalid - will be normalized)
@@ -149,6 +160,7 @@ The function automatically normalizes phones, so `(555) 123-4567` becomes `+1555
 SMS sends are billed to your Twilio account at Twilio's standard rates (typically $0.0075 per SMS).
 
 To track SMS usage by customer:
+
 1. Check Twilio Dashboard → **Messages** for all sends
 2. Optional: Run `NOTIFICATION_LOGS_SETUP.sql` to create automatic cost tracking per organization
 
@@ -165,6 +177,7 @@ To track SMS usage by customer:
 ## What Changed in the Code
 
 ### Before:
+
 ```typescript
 // Only used manual phone numbers
 const phoneNumbers = threshold.notify_phone_numbers || []
@@ -172,14 +185,15 @@ await sendSmsNotification(alert, phoneNumbers, ...)
 ```
 
 ### After:
+
 ```typescript
 // Now resolves phone numbers from user IDs
 let phoneNumbers = threshold.notify_phone_numbers || []
 
 // NEW: Fetch user phones if user IDs specified
 const userPhones = await resolveUserSmsPhoneNumbers(
-  supabaseUrl, 
-  serviceKey, 
+  supabaseUrl,
+  serviceKey,
   threshold.notify_user_ids
 )
 phoneNumbers = [...phoneNumbers, ...userPhones]

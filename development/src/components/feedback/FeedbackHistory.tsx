@@ -574,9 +574,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
         }}
         onUpdate={(updatedItem) => {
           const item = updatedItem as FeedbackItem
-          setItems((prev) =>
-            prev.map((i) => (i.id === item.id ? item : i))
-          )
+          setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
           setSelectedItem(item)
         }}
       />

@@ -23,7 +23,13 @@ import type { Device } from '@/types/sensor-details'
 
 export default function DeviceDetailsPage() {
   return (
-    <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
       <DeviceDetailsContent />
     </Suspense>
   )
@@ -210,7 +216,10 @@ function DeviceDetailsContent() {
     () => (device ? isGatewayDevice(device) : false),
     [device]
   )
-  const testDevice = useMemo(() => (device ? isTestDevice(device) : false), [device])
+  const testDevice = useMemo(
+    () => (device ? isTestDevice(device) : false),
+    [device]
+  )
 
   const fetchDeviceData = useCallback(async () => {
     if (!currentOrganization || !deviceId) return
@@ -302,7 +311,8 @@ function DeviceDetailsContent() {
       )
         .sort(
           (a, b) =>
-            new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+            new Date(b.received_at).getTime() -
+            new Date(a.received_at).getTime()
         )
         .slice(0, 500)
 

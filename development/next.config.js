@@ -16,7 +16,10 @@ if (isStaticExport) {
   if (fs.existsSync(apiDir)) {
     // Move API routes aside during static build (restored by post-build or manually)
     fs.renameSync(apiDir, apiBackup)
-    console.log('\x1b[33m%s\x1b[0m', '⚠ Moved src/app/api → src/app/_api_backup (incompatible with static export)')
+    console.log(
+      '\x1b[33m%s\x1b[0m',
+      '⚠ Moved src/app/api → src/app/_api_backup (incompatible with static export)'
+    )
     // Restore on process exit (covers build success, failure, and SIGINT)
     const restore = () => {
       try {
@@ -24,11 +27,19 @@ if (isStaticExport) {
           fs.renameSync(apiBackup, apiDir)
           console.log('\x1b[32m%s\x1b[0m', '✓ Restored src/app/api from backup')
         }
-      } catch { /* ignore cleanup errors */ }
+      } catch {
+        /* ignore cleanup errors */
+      }
     }
     process.on('exit', restore)
-    process.on('SIGINT', () => { restore(); process.exit(1) })
-    process.on('SIGTERM', () => { restore(); process.exit(1) })
+    process.on('SIGINT', () => {
+      restore()
+      process.exit(1)
+    })
+    process.on('SIGTERM', () => {
+      restore()
+      process.exit(1)
+    })
   }
 }
 

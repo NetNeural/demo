@@ -17,9 +17,7 @@ describe('Bug #279 — Device field mapping with 4 new fields', () => {
     return {
       // Bug #279: add missing fields
       is_gateway:
-        deviceData.is_gateway ??
-        deviceData.metadata?.is_gateway ??
-        false,
+        deviceData.is_gateway ?? deviceData.metadata?.is_gateway ?? false,
       hardware_ids: deviceData.hardware_ids || [],
       cohort_id: deviceData.cohort_id,
       parent_device_id: deviceData.parent_device_id,

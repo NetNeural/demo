@@ -13,7 +13,14 @@ if (typeof globalThis.Response === 'undefined') {
     ok: boolean
     headers: Map<string, string>
 
-    constructor(body?: any, init?: { status?: number; statusText?: string; headers?: Record<string, string> }) {
+    constructor(
+      body?: any,
+      init?: {
+        status?: number
+        statusText?: string
+        headers?: Record<string, string>
+      }
+    ) {
       this.body = body
       this.status = init?.status ?? 200
       this.statusText = init?.statusText ?? ''
