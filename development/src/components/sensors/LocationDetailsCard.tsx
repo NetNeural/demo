@@ -46,7 +46,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
-  const [loadingLocations, setLoadingLocations] = useState(false)
+  const [loadingLocations, setLoadingLocations] = useState(true)
 
   // Form state
   const [selectedLocationId, setSelectedLocationId] = useState<string>(
@@ -59,6 +59,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const fetchLocations = useCallback(async () => {
     if (!device.organization_id) {
       toast.error('Organization ID not found')
+      setLoadingLocations(false)
       return
     }
 
@@ -86,6 +87,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   useEffect(() => {
     if (device.organization_id) {
       fetchLocations()
+    } else {
+      setLoadingLocations(false)
     }
   }, [device.organization_id, fetchLocations])
 
@@ -137,7 +140,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
     selectedLocation?.name || device.location || 'Not assigned'
 
   // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
-  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length >= 0 && !selectedLocation)
+  // Only check after locations have actually loaded (length > 0 or loading finished with empty list)
+  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length > 0 && !selectedLocation)
 
   // Auto-clear stale location_id so the UI isn't stuck
   useEffect(() => {
