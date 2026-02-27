@@ -401,10 +401,11 @@ export default createEdgeFunction(
         // Clear org-specific foreign keys — they reference entities in the OLD org
         updates.location_id = null
         updates.department_id = null
+        updates.integration_id = null
         console.log('🔵 Device transfer:', {
           from: existingDevice.organization_id,
           to: organization_id,
-          cleared: ['location_id', 'department_id'],
+          cleared: ['location_id', 'department_id', 'integration_id'],
         })
       }
 
