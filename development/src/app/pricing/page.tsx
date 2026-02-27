@@ -208,14 +208,14 @@ export default function PricingPage() {
             value={[sensorCount]}
             onValueChange={([val]) => setSensorCount(val ?? 10)}
             min={1}
-            max={200}
+            max={500}
             step={1}
           />
           <div className="mt-1 flex justify-between text-xs text-muted-foreground">
             <span>1</span>
-            <span>50</span>
             <span>100</span>
-            <span>200</span>
+            <span>250</span>
+            <span>500</span>
           </div>
         </div>
       </div>
