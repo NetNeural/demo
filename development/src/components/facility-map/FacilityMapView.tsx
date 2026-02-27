@@ -37,6 +37,12 @@ import {
   MousePointer2,
   MoreVertical,
   Building2,
+  ChevronLeft,
+  ChevronRight,
+  Grid2X2,
+  Image as ImageIcon,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -73,13 +79,17 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
   const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
+  const [viewMode, setViewMode] = useState<'single' | 'collage'>('collage')
+  const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
+  /** All placements across all maps, keyed by map id */
+  const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
 
   const router = useRouter()
+  const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
   const supabaseRef = useRef(createClient() as any)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) || null
 
@@ -184,6 +194,30 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [maps])
 
+  // Load all placements across all maps for collage view
+  const loadAllPlacements = useCallback(async () => {
+    if (maps.length === 0) return
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('device_map_placements')
+        .select(`
+          *,
+          device:devices(id, name, device_type, status, battery_level, signal_strength, last_seen)
+        `)
+        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
+
+      if (error) throw error
+      const grouped: Record<string, DeviceMapPlacement[]> = {}
+      for (const row of (data || []) as DeviceMapPlacement[]) {
+        if (!grouped[row.facility_map_id]) grouped[row.facility_map_id] = []
+        grouped[row.facility_map_id]!.push(row)
+      }
+      setAllPlacements(grouped)
+    } catch (err) {
+      console.error('Failed to load all placements:', err)
+    }
+  }, [maps])
+
   // Load latest telemetry for placed devices (shown in marker tooltips)
   const loadTelemetry = useCallback(async () => {
     if (placements.length === 0) {
@@ -229,10 +263,52 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     loadMapPlacementCounts()
   }, [loadMapPlacementCounts, placements])
 
+  // Load all placements for collage view
+  useEffect(() => {
+    loadAllPlacements()
+  }, [loadAllPlacements, placements])
+
   // Load telemetry when placements change
   useEffect(() => {
     loadTelemetry()
   }, [loadTelemetry])
+
+  // Collage fullscreen toggle
+  const toggleCollageFullscreen = useCallback(() => {
+    if (!collageFullscreenRef.current) return
+    if (!document.fullscreenElement) {
+      collageFullscreenRef.current.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    const handler = () => setIsCollageFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    return () => document.removeEventListener('fullscreenchange', handler)
+  }, [])
+
+  // Arrow navigation helpers
+  const selectedMapIndex = maps.findIndex((m) => m.id === selectedMapId)
+  const canGoPrev = selectedMapIndex > 0
+  const canGoNext = selectedMapIndex < maps.length - 1 && selectedMapIndex >= 0
+  const goToPrevMap = () => {
+    if (canGoPrev && maps[selectedMapIndex - 1]) {
+      setSelectedMapId(maps[selectedMapIndex - 1]!.id)
+      setMode('view')
+      setDeviceToPlace(null)
+      setSelectedPlacementId(null)
+    }
+  }
+  const goToNextMap = () => {
+    if (canGoNext && maps[selectedMapIndex + 1]) {
+      setSelectedMapId(maps[selectedMapIndex + 1]!.id)
+      setMode('view')
+      setDeviceToPlace(null)
+      setSelectedPlacementId(null)
+    }
+  }
 
   // Real-time device status subscription
   useEffect(() => {
@@ -503,89 +579,35 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
   return (
     <div className="space-y-4">
-      {/* Horizontal scrolling map thumbnails */}
-      <div className="flex items-center gap-3">
-        <div
-          ref={scrollContainerRef}
-          className="flex flex-1 gap-3 overflow-x-auto pb-2 scrollbar-thin"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          {maps.map((m) => (
-            <button
-              key={m.id}
-              className={`group relative flex-shrink-0 rounded-lg border-2 transition-all ${
-                selectedMapId === m.id
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-muted hover:border-primary/50'
-              }`}
-              onClick={() => {
-                setSelectedMapId(m.id)
-                setMode('view')
-                setDeviceToPlace(null)
-                setSelectedPlacementId(null)
-              }}
-              style={{ width: '140px' }}
-            >
-              {/* Thumbnail image */}
-              <div className="h-20 w-full overflow-hidden rounded-t-md bg-muted">
-                {m.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={m.image_url}
-                    alt={m.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <Map className="h-6 w-6 text-muted-foreground/50" />
-                  </div>
-                )}
-              </div>
-              {/* Label + device count */}
-              <div className="px-2 py-1.5">
-                <div className="flex items-center gap-1">
-                  <p className="truncate text-xs font-medium flex-1">{m.name}</p>
-                  {(mapPlacementCounts[m.id] || 0) > 0 && (
-                    <Badge variant="secondary" className="h-4 px-1 text-[9px] shrink-0">
-                      {mapPlacementCounts[m.id]}
-                    </Badge>
-                  )}
-                </div>
-                {m.floor_level !== 0 && (
-                  <p className="text-[10px] text-muted-foreground">Floor {m.floor_level}</p>
-                )}
-              </div>
-              {/* Delete button on hover */}
-              <button
-                className="absolute right-1 top-1 hidden rounded-full bg-destructive/90 p-1 text-white group-hover:block"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setDeleteMapId(m.id)
-                }}
-                title="Delete map"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </button>
-          ))}
-
-          {/* Add new map card */}
-          <button
-            className="flex h-[104px] w-[140px] flex-shrink-0 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+      {/* Top bar: View mode toggle + Mode toggle + actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Single / Collage toggle */}
+        <div className="flex items-center gap-1 rounded-lg border p-0.5">
+          <Button
+            variant={viewMode === 'single' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs"
             onClick={() => {
-              setEditingMap(null)
-              setDialogOpen(true)
+              setViewMode('single')
+              if (!selectedMapId && maps.length > 0) setSelectedMapId(maps[0]!.id)
             }}
           >
-            <Plus className="h-6 w-6" />
-            <span className="text-xs font-medium">Add Map</span>
-          </button>
+            <ImageIcon className="mr-1 h-3 w-3" />
+            Single
+          </Button>
+          <Button
+            variant={viewMode === 'collage' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setViewMode('collage')}
+          >
+            <Grid2X2 className="mr-1 h-3 w-3" />
+            Collage
+          </Button>
         </div>
-      </div>
 
-      {/* Mode toggle + actions bar */}
-      {selectedMap && (
-        <div className="flex flex-wrap items-center gap-3">
+        {/* View / Edit mode toggle (only in single view with a selected map) */}
+        {viewMode === 'single' && selectedMap && (
           <div className="flex items-center gap-1 rounded-lg border p-0.5">
             <Button
               variant={mode === 'view' ? 'default' : 'ghost'}
@@ -613,8 +635,28 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               Edit
             </Button>
           </div>
+        )}
 
+        {/* Collage fullscreen button */}
+        {viewMode === 'collage' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={toggleCollageFullscreen}
+          >
+            {isCollageFullscreen ? <Minimize2 className="mr-1 h-3 w-3" /> : <Maximize2 className="mr-1 h-3 w-3" />}
+            {isCollageFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          </Button>
+        )}
+
+        {/* Map title + actions (single view) */}
+        {viewMode === 'single' && selectedMap && (
           <div className="ml-auto flex items-center gap-2">
+            <span className="text-sm font-medium">{selectedMap.name}</span>
+            {selectedMap.floor_level !== 0 && (
+              <Badge variant="outline" className="text-[10px]">Floor {selectedMap.floor_level}</Badge>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -641,33 +683,82 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main content area */}
-      {selectedMap ? (
+        {/* Map counter (collage) */}
+        {viewMode === 'collage' && (
+          <span className="ml-auto text-sm text-muted-foreground">{maps.length} map{maps.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
+      {/* === SINGLE VIEW === */}
+      {viewMode === 'single' && selectedMap && (
         <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          {/* Map canvas */}
-          <Card className="overflow-hidden">
-            <FacilityMapCanvas
-              facilityMap={selectedMap}
-              placements={placements}
-              availableDevices={devices}
-              mode={mode === 'place' ? 'place' : mode}
-              selectedPlacementId={selectedPlacementId}
-              deviceToPlace={deviceToPlace}
-              onPlaceDevice={handlePlaceDevice}
-              onMovePlacement={handleMovePlacement}
-              onSelectPlacement={setSelectedPlacementId}
-              onRemovePlacement={handleRemovePlacement}
-              onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
-              telemetryMap={telemetryMap}
-            />
-          </Card>
+          {/* Map with left/right arrows */}
+          <div className="relative">
+            {/* Left arrow */}
+            {canGoPrev && (
+              <button
+                className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
+                onClick={goToPrevMap}
+                title={`Previous: ${maps[selectedMapIndex - 1]?.name}`}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            {/* Right arrow */}
+            {canGoNext && (
+              <button
+                className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
+                onClick={goToNextMap}
+                title={`Next: ${maps[selectedMapIndex + 1]?.name}`}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
+
+            <Card className="overflow-hidden">
+              <FacilityMapCanvas
+                facilityMap={selectedMap}
+                placements={placements}
+                availableDevices={devices}
+                mode={mode === 'place' ? 'place' : mode}
+                selectedPlacementId={selectedPlacementId}
+                deviceToPlace={deviceToPlace}
+                onPlaceDevice={handlePlaceDevice}
+                onMovePlacement={handleMovePlacement}
+                onSelectPlacement={setSelectedPlacementId}
+                onRemovePlacement={handleRemovePlacement}
+                onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+                telemetryMap={telemetryMap}
+              />
+            </Card>
+
+            {/* Map indicator dots */}
+            {maps.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-2">
+                {maps.map((m, i) => (
+                  <button
+                    key={m.id}
+                    className={`h-2 rounded-full transition-all ${
+                      m.id === selectedMapId ? 'w-6 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                    }`}
+                    onClick={() => {
+                      setSelectedMapId(m.id)
+                      setMode('view')
+                      setDeviceToPlace(null)
+                      setSelectedPlacementId(null)
+                    }}
+                    title={m.name}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Device palette (only in edit mode) */}
           {(mode === 'edit' || mode === 'place') && (
-            <div className="min-h-[300px] max-h-[500px]">
+            <div className="min-h-[300px] max-h-[520px]">
               <DevicePalette
                 devices={devices}
                 placements={placements}
@@ -682,14 +773,114 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {/* Single view no map selected */}
+      {viewMode === 'single' && !selectedMap && (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Building2 className="mx-auto mb-3 h-8 w-8 opacity-50" />
-            <p>Select a map from the thumbnails above</p>
+            <p>No map selected. Add a map below or switch to collage view.</p>
           </CardContent>
         </Card>
       )}
+
+      {/* === COLLAGE VIEW === */}
+      {viewMode === 'collage' && (
+        <div
+          ref={collageFullscreenRef}
+          className={`grid gap-4 ${
+            maps.length === 1
+              ? 'grid-cols-1'
+              : maps.length === 2
+              ? 'grid-cols-1 md:grid-cols-2'
+              : maps.length <= 4
+              ? 'grid-cols-1 md:grid-cols-2'
+              : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+          } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
+        >
+          {maps.map((m) => {
+            const mapPlacements = allPlacements[m.id] || []
+            return (
+              <Card key={m.id} className="overflow-hidden group relative">
+                {/* Map label overlay */}
+                <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
+                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
+                    {m.name}
+                    {(mapPlacementCounts[m.id] || 0) > 0 && (
+                      <span className="ml-1.5 text-muted-foreground">
+                        ({mapPlacementCounts[m.id]})
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+                {/* Quick actions overlay */}
+                <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
+                    onClick={() => {
+                      setSelectedMapId(m.id)
+                      setViewMode('single')
+                      setMode('view')
+                    }}
+                    title="Open in single view"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </button>
+                  <button
+                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
+                    onClick={() => {
+                      setEditingMap(m)
+                      setDialogOpen(true)
+                    }}
+                    title="Edit map"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </button>
+                  <button
+                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-destructive hover:text-white"
+                    onClick={() => setDeleteMapId(m.id)}
+                    title="Delete map"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+                <FacilityMapCanvas
+                  facilityMap={m}
+                  placements={mapPlacements}
+                  availableDevices={devices}
+                  mode="view"
+                  selectedPlacementId={null}
+                  deviceToPlace={null}
+                  onPlaceDevice={() => {}}
+                  onMovePlacement={() => {}}
+                  onSelectPlacement={() => {}}
+                  onRemovePlacement={() => {}}
+                  onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+                  telemetryMap={telemetryMap}
+                  compact
+                  hideFullscreen
+                />
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Map button — below the maps */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            setEditingMap(null)
+            setDialogOpen(true)
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Map
+        </Button>
+      </div>
 
       {/* Map creation / edit dialog */}
       <MapManagerDialog

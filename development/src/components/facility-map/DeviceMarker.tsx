@@ -187,6 +187,16 @@ export function DeviceMarker({
                 )}
               />
             )}
+            {/* Alert blink for warning/error */}
+            {(status === 'warning' || status === 'error') && !dragging && (
+              <span
+                className={cn(
+                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 animate-pulse',
+                  STATUS_COLORS[status],
+                  size.pulse
+                )}
+              />
+            )}
             {/* Main dot */}
             <span
               className={cn(
@@ -198,12 +208,12 @@ export function DeviceMarker({
             />
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[280px]">
+        <TooltipContent side="top" className="max-w-[280px] bg-gray-900 text-gray-100 border-gray-700 shadow-xl">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-sm">{displayName}</p>
+              <p className="font-medium text-sm text-white">{displayName}</p>
               {mode === 'view' && onNavigate && (
-                <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                <ExternalLink className="h-3 w-3 text-gray-400 shrink-0" />
               )}
             </div>
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -212,40 +222,40 @@ export function DeviceMarker({
                 variant="outline"
                 className={cn(
                   'text-[10px] px-1.5 py-0',
-                  status === 'online' && 'border-green-400 text-green-700',
-                  status === 'offline' && 'border-gray-300 text-gray-500',
-                  status === 'warning' && 'border-amber-400 text-amber-700',
-                  status === 'error' && 'border-red-400 text-red-700',
-                  status === 'maintenance' && 'border-blue-400 text-blue-700'
+                  status === 'online' && 'border-green-400 text-green-400',
+                  status === 'offline' && 'border-gray-400 text-gray-300',
+                  status === 'warning' && 'border-amber-400 text-amber-400',
+                  status === 'error' && 'border-red-400 text-red-400',
+                  status === 'maintenance' && 'border-blue-400 text-blue-400'
                 )}
               >
                 {status}
               </Badge>
               {device?.last_seen && (
-                <span className="flex items-center gap-1 text-muted-foreground">
+                <span className="flex items-center gap-1 text-gray-400">
                   <Clock className="h-3 w-3" />
                   {formatRelativeTime(device.last_seen)}
                 </span>
               )}
             </div>
             {device?.device_type && (
-              <p className="text-xs text-muted-foreground">{device.device_type}</p>
+              <p className="text-xs text-gray-400">{device.device_type}</p>
             )}
             {device?.battery_level != null && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1 text-xs text-gray-400">
                 <Battery className="h-3 w-3" />
                 {device.battery_level}%
               </div>
             )}
             {/* Telemetry readings */}
             {telemetry && Object.keys(telemetry).length > 0 && (
-              <div className="border-t pt-1.5 mt-0.5">
-                <p className="text-[10px] font-medium uppercase text-muted-foreground mb-1">Latest Readings</p>
+              <div className="border-t border-gray-700 pt-1.5 mt-0.5">
+                <p className="text-[10px] font-medium uppercase text-gray-500 mb-1">Latest Readings</p>
                 <div className="space-y-0.5">
                   {Object.entries(telemetry).slice(0, 6).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between text-xs gap-3">
-                      <span className="text-muted-foreground truncate">{formatTelemetryKey(key)}</span>
-                      <span className="font-mono text-foreground shrink-0">
+                      <span className="text-gray-400 truncate">{formatTelemetryKey(key)}</span>
+                      <span className="font-mono text-gray-100 shrink-0">
                         {typeof value === 'number' ? value.toFixed(1) : String(value ?? '')}
                       </span>
                     </div>
@@ -254,7 +264,7 @@ export function DeviceMarker({
               </div>
             )}
             {mode === 'view' && onNavigate && (
-              <p className="text-[10px] text-muted-foreground/70 italic pt-0.5">Click to view details</p>
+              <p className="text-[10px] text-gray-500 italic pt-0.5">Click to view details</p>
             )}
           </div>
         </TooltipContent>

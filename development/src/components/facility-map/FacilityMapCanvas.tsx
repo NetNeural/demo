@@ -39,6 +39,10 @@ interface FacilityMapCanvasProps {
   onRemovePlacement: (placementId: string) => void
   onDeviceNavigate?: (deviceId: string) => void
   telemetryMap?: Record<string, Record<string, unknown>>
+  /** Compact mode for collage grid — hides toolbar, shrinks canvas */
+  compact?: boolean
+  /** Hide fullscreen button (parent handles it) */
+  hideFullscreen?: boolean
 }
 
 export function FacilityMapCanvas({
@@ -53,6 +57,8 @@ export function FacilityMapCanvas({
   onRemovePlacement,
   onDeviceNavigate,
   telemetryMap,
+  compact = false,
+  hideFullscreen = false,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -178,7 +184,8 @@ export function FacilityMapCanvas({
 
   return (
     <div ref={fullscreenRef} className={cn('relative flex flex-col', isFullscreen && 'bg-background')}>
-      {/* Toolbar */}
+      {/* Toolbar — hidden in compact mode */}
+      {!compact && (
       <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
         <div className="flex items-center gap-2">
           {mode === 'place' && deviceToPlace && (
@@ -221,6 +228,7 @@ export function FacilityMapCanvas({
           >
             <Download className="h-3.5 w-3.5" />
           </Button>
+          {!hideFullscreen && (
           <Button
             variant="ghost"
             size="icon"
@@ -230,14 +238,16 @@ export function FacilityMapCanvas({
           >
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
+          )}
           <span className="text-xs text-muted-foreground ml-1">
             {placements.length} device{placements.length !== 1 ? 's' : ''} placed
           </span>
         </div>
       </div>
+      )}
 
-      {/* Status summary bar */}
-      {placements.length > 0 && (
+      {/* Status summary bar — hidden in compact mode */}
+      {!compact && placements.length > 0 && (
         <div className="flex items-center gap-4 border-b bg-muted/10 px-3 py-1.5">
           {Object.entries(statusSummary).map(([status, count]) => (
             <div key={status} className="flex items-center gap-1.5 text-xs">
@@ -258,10 +268,13 @@ export function FacilityMapCanvas({
       {/* Canvas area */}
       <div
         className={cn(
-          'relative overflow-auto bg-gray-100',
+          'relative bg-gray-100 overflow-hidden',
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}
-        style={{ maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '500px', minHeight: '300px' }}
+        style={compact
+          ? { height: '100%' }
+          : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px' }
+        }
       >
         {!facilityMap.image_url ? (
           <div className="flex h-[300px] items-center justify-center">
