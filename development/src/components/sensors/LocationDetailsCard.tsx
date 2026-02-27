@@ -113,22 +113,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
       })
 
       // Update device with new location and metadata
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('devices')
         .update(updatePayload)
         .eq('id', device.id)
-        .select('id, location_id')
-        .single()
 
       if (error) throw error
 
-      if (!data) {
-        console.error('❌ [LocationDetailsCard] Update returned no data - possible RLS block')
-        toast.error('Location update failed - no data returned')
-        return
-      }
-
-      console.log('✅ [LocationDetailsCard] Save result:', data)
+      console.log('✅ [LocationDetailsCard] Location saved for device:', device.id)
 
       toast.success('Location details updated successfully')
 
