@@ -94,6 +94,7 @@ interface ReportRun {
   triggered_by: string
   duration_ms: number | null
   error_message: string | null
+  summary: string | null
   created_at: string
 }
 
@@ -312,6 +313,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
       if (error) throw error
 
+      // Build a brief human-readable summary from the response
+      const summary = buildReportSummary(reportType, data)
+
       // Update the run log
       if (runRow?.id) {
         await untypedFrom(supabase, 'report_runs')
@@ -319,6 +323,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
             status: 'success',
             duration_ms: durationMs,
             details: data,
+            summary,
           })
           .eq('id', runRow.id)
       }
@@ -870,32 +875,44 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
               {recentRuns.map((run) => (
                 <div
                   key={run.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border px-3 py-2 text-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    {statusBadge(run.status)}
-                    <span className="font-medium">
-                      {REPORT_TYPES.find((r) => r.key === run.report_type)
-                        ?.label ?? run.report_type}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {run.triggered_by === 'scheduler' ? (
-                        <>
-                          <Clock className="mr-0.5 inline h-3 w-3" /> Scheduled
-                        </>
-                      ) : (
-                        <>
-                          <Play className="mr-0.5 inline h-3 w-3" /> Manual
-                        </>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {statusBadge(run.status)}
+                      <span className="font-medium">
+                        {REPORT_TYPES.find((r) => r.key === run.report_type)
+                          ?.label ?? run.report_type}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {run.triggered_by === 'scheduler' ? (
+                          <>
+                            <Clock className="mr-0.5 inline h-3 w-3" /> Scheduled
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-0.5 inline h-3 w-3" /> Manual
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {run.duration_ms && (
+                        <span>{(run.duration_ms / 1000).toFixed(1)}s</span>
                       )}
-                    </span>
+                      <span>{formatTimestamp(run.created_at)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {run.duration_ms && (
-                      <span>{(run.duration_ms / 1000).toFixed(1)}s</span>
-                    )}
-                    <span>{formatTimestamp(run.created_at)}</span>
-                  </div>
+                  {run.summary && (
+                    <p className="mt-1 pl-[70px] text-xs text-muted-foreground">
+                      {run.summary}
+                    </p>
+                  )}
+                  {run.status === 'error' && run.error_message && (
+                    <p className="mt-1 pl-[70px] text-xs text-destructive">
+                      {run.error_message}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -987,4 +1004,60 @@ function ordinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd']
   const v = n % 100
   return s[(v - 20) % 10] ?? s[v] ?? s[0] ?? 'th'
+}
+
+/**
+ * Build a brief one-line summary from edge function response data.
+ * Each report type returns different fields, so we handle them individually.
+ */
+function buildReportSummary(
+  reportType: string,
+  data: Record<string, unknown> | null | undefined
+): string {
+  if (!data) return 'Report sent'
+
+  try {
+    switch (reportType) {
+      case 'assessment-report': {
+        const grade = data.overallGrade ?? '?'
+        const score = data.overallScore ?? '?'
+        const roadmap = data.roadmapCompletion ?? ''
+        const dims = Array.isArray(data.dimensions) ? data.dimensions : []
+        const billing = dims.find(
+          (d: Record<string, unknown>) => d.name === 'Monetization'
+        )
+        const billingNote = billing
+          ? ` · Billing: ${billing.grade}`
+          : ''
+        return `Grade: ${grade} (${score}/100)${roadmap ? ` · Roadmap: ${roadmap}` : ''}${billingNote}`
+      }
+      case 'executive-summary': {
+        const stats = (data.stats ?? {}) as Record<string, unknown>
+        const devices = stats.totalDevices ?? '?'
+        const alerts = stats.totalUnresolved ?? 0
+        const health = stats.healthStatus ?? 'Unknown'
+        const mvp = stats.mvpPct ?? '?'
+        return `${health} · ${devices} devices · ${alerts} active alerts · MVP ${mvp}%`
+      }
+      case 'daily-report': {
+        const stats = (data.stats ?? {}) as Record<string, unknown>
+        const devices = stats.totalDevices ?? '?'
+        const online = stats.onlineDevices ?? '?'
+        const alerts = stats.totalUnresolved ?? 0
+        const orgs = stats.organizationCount ?? '?'
+        return `${online}/${devices} devices online · ${alerts} active alerts · ${orgs} orgs`
+      }
+      case 'generate-report-summary':
+      case 'ai-report-summary': {
+        const msg = typeof data.message === 'string' ? data.message : ''
+        return msg.slice(0, 120) || 'AI summary generated'
+      }
+      default: {
+        const msg = typeof data.message === 'string' ? data.message : ''
+        return msg.slice(0, 120) || 'Report sent'
+      }
+    }
+  } catch {
+    return 'Report sent'
+  }
 }
