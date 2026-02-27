@@ -2,13 +2,14 @@
 
 /**
  * FacilityMapUploader — Upload / manage floor plan images for a facility map.
- * Handles drag-and-drop, file validation, Supabase Storage upload, and preview.
+ * Handles drag-and-drop, file validation, Supabase Storage upload, preview,
+ * and phone camera capture.
  */
 
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Upload, X, ImageIcon, Loader2, Replace } from 'lucide-react'
+import { Upload, X, ImageIcon, Loader2, Replace, Camera } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -35,6 +36,7 @@ export function FacilityMapUploader({
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -106,7 +108,7 @@ export function FacilityMapUploader({
 
   if (compact && currentImageUrl) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -115,6 +117,15 @@ export function FacilityMapUploader({
         >
           {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Replace className="mr-2 h-4 w-4" />}
           Replace Image
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => cameraInputRef.current?.click()}
+          disabled={uploading}
+        >
+          <Camera className="mr-2 h-4 w-4" />
+          Take Photo
         </Button>
         {onRemove && (
           <Button variant="ghost" size="sm" onClick={onRemove}>
@@ -129,6 +140,19 @@ export function FacilityMapUploader({
           onChange={(e) => {
             const f = e.target.files?.[0]
             if (f) handleFile(f)
+            e.target.value = ''
+          }}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleFile(f)
+            e.target.value = ''
           }}
         />
       </div>
@@ -162,7 +186,7 @@ export function FacilityMapUploader({
           PNG, JPG, WebP, or SVG — up to 10 MB
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -171,6 +195,15 @@ export function FacilityMapUploader({
           >
             <Upload className="mr-2 h-4 w-4" />
             {currentImageUrl ? 'Replace' : 'Choose File'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            Take Photo
           </Button>
           {currentImageUrl && onRemove && (
             <Button variant="ghost" size="sm" onClick={onRemove}>
@@ -188,6 +221,19 @@ export function FacilityMapUploader({
           onChange={(e) => {
             const f = e.target.files?.[0]
             if (f) handleFile(f)
+            e.target.value = ''
+          }}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleFile(f)
+            e.target.value = ''
           }}
         />
       </CardContent>

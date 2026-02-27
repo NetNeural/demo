@@ -7,17 +7,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +34,6 @@ import {
   Eye,
   MousePointer2,
   MoreVertical,
-  Layers,
-  Loader2,
   Building2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -431,44 +421,87 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     )
   }
 
+  // Also need imports for scrolling
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
   return (
     <div className="space-y-4">
-      {/* Header bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Map selector */}
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={selectedMapId || ''}
-            onValueChange={(v) => {
-              setSelectedMapId(v)
-              setMode('view')
-              setDeviceToPlace(null)
-              setSelectedPlacementId(null)
+      {/* Horizontal scrolling map thumbnails */}
+      <div className="flex items-center gap-3">
+        <div
+          ref={scrollContainerRef}
+          className="flex flex-1 gap-3 overflow-x-auto pb-2 scrollbar-thin"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {maps.map((m) => (
+            <button
+              key={m.id}
+              className={`group relative flex-shrink-0 rounded-lg border-2 transition-all ${
+                selectedMapId === m.id
+                  ? 'border-primary ring-2 ring-primary/20'
+                  : 'border-muted hover:border-primary/50'
+              }`}
+              onClick={() => {
+                setSelectedMapId(m.id)
+                setMode('view')
+                setDeviceToPlace(null)
+                setSelectedPlacementId(null)
+              }}
+              style={{ width: '140px' }}
+            >
+              {/* Thumbnail image */}
+              <div className="h-20 w-full overflow-hidden rounded-t-md bg-muted">
+                {m.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.image_url}
+                    alt={m.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <Map className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                )}
+              </div>
+              {/* Label */}
+              <div className="px-2 py-1.5">
+                <p className="truncate text-xs font-medium">{m.name}</p>
+                {m.floor_level !== 0 && (
+                  <p className="text-[10px] text-muted-foreground">Floor {m.floor_level}</p>
+                )}
+              </div>
+              {/* Delete button on hover */}
+              <button
+                className="absolute right-1 top-1 hidden rounded-full bg-destructive/90 p-1 text-white group-hover:block"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDeleteMapId(m.id)
+                }}
+                title="Delete map"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </button>
+          ))}
+
+          {/* Add new map card */}
+          <button
+            className="flex h-[104px] w-[140px] flex-shrink-0 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            onClick={() => {
+              setEditingMap(null)
+              setDialogOpen(true)
             }}
           >
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Select a map" />
-            </SelectTrigger>
-            <SelectContent>
-              {maps.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  <div className="flex items-center gap-2">
-                    <span>{m.name}</span>
-                    {m.floor_level !== 0 && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Floor {m.floor_level}
-                      </Badge>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Plus className="h-6 w-6" />
+            <span className="text-xs font-medium">Add Map</span>
+          </button>
         </div>
+      </div>
 
-        {/* Mode toggle */}
-        {selectedMap && (
+      {/* Mode toggle + actions bar */}
+      {selectedMap && (
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1 rounded-lg border p-0.5">
             <Button
               variant={mode === 'view' ? 'default' : 'ghost'}
@@ -496,23 +529,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               Edit
             </Button>
           </div>
-        )}
 
-        {/* Actions */}
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditingMap(null)
-              setDialogOpen(true)
-            }}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            New Map
-          </Button>
-
-          {selectedMap && (
+          <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -538,9 +556,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main content area */}
       {selectedMap ? (
@@ -563,7 +581,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
           {/* Device palette (only in edit mode) */}
           {(mode === 'edit' || mode === 'place') && (
-            <div className="h-[calc(100vh-320px)] min-h-[400px]">
+            <div className="min-h-[300px] max-h-[500px]">
               <DevicePalette
                 devices={devices}
                 placements={placements}
@@ -582,7 +600,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Building2 className="mx-auto mb-3 h-8 w-8 opacity-50" />
-            <p>Select a map from the dropdown above</p>
+            <p>Select a map from the thumbnails above</p>
           </CardContent>
         </Card>
       )}
