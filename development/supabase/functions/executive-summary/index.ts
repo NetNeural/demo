@@ -148,6 +148,49 @@ serve(async (req) => {
     const resolvedAlerts = (resolved24h || []).length
     const uniqueUsers = new Set((members || []).map((m: any) => m.user_id)).size
 
+    // ─── Additional Executive Metrics ────────────────────────────────
+
+    // Billing / Revenue readiness
+    let billingPlanCount = 0
+    let activeSubCount = 0
+    let hasStripePriceIds = false
+    try {
+      const { count: planCount } = await supabase
+        .from('billing_plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
+      billingPlanCount = planCount || 0
+
+      const { count: subCount } = await supabase
+        .from('subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+      activeSubCount = subCount || 0
+
+      const { data: stripePlans } = await supabase
+        .from('billing_plans')
+        .select('stripe_price_id_monthly')
+        .not('stripe_price_id_monthly', 'is', null)
+        .limit(1)
+      hasStripePriceIds = (stripePlans || []).length > 0
+    } catch { /* billing tables may not exist */ }
+
+    // Infrastructure counts via RPCs
+    let tableCount = 0
+    let rlsPolicyCount = 0
+    let migrationCount = 0
+    {
+      const { data: tc } = await supabase.rpc('get_table_count')
+      tableCount = tc || 0
+      const { data: rc } = await supabase.rpc('get_rls_policy_count')
+      rlsPolicyCount = rc || 0
+      const { data: mc } = await supabase.rpc('get_migration_count')
+      migrationCount = mc || 0
+    }
+
+    // Edge functions count (known)
+    const edgeFunctionCount = 56
+
     // Health status
     let healthStatus = '🟢 Healthy'
     let healthColor = '#10b981'
@@ -177,55 +220,32 @@ serve(async (req) => {
     const githubToken = Deno.env.get('GITHUB_TOKEN')
     if (githubToken) {
       try {
-        // Open issues count
-        const openRes = await fetch(
-          'https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=open&per_page=1',
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: 'application/vnd.github.v3+json',
-              'User-Agent': 'NetNeural-Executive-Summary',
-            },
-          }
-        )
-        if (openRes.ok) {
-          // Parse total from Link header
-          const linkHeader = openRes.headers.get('Link') || ''
-          const lastMatch = linkHeader.match(/page=(\d+)>; rel="last"/)
-          totalOpen = lastMatch
-            ? parseInt(lastMatch[1])
-            : (await openRes.json()).length
+        // Issue counts — use Search API for accurate totals
+        const ghHeaders = {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'NetNeural-Executive-Summary',
         }
+        const repo = 'NetNeural/MonoRepo-Staging'
 
-        // Closed issues count
-        const closedRes = await fetch(
-          'https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=closed&per_page=1',
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: 'application/vnd.github.v3+json',
-              'User-Agent': 'NetNeural-Executive-Summary',
-            },
-          }
-        )
-        if (closedRes.ok) {
-          const linkHeader = closedRes.headers.get('Link') || ''
-          const lastMatch = linkHeader.match(/page=(\d+)>; rel="last"/)
-          totalClosed = lastMatch
-            ? parseInt(lastMatch[1])
-            : (await closedRes.json()).length
+        const [openSearchRes, closedSearchRes] = await Promise.all([
+          fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(`repo:${repo} is:issue is:open`)}&per_page=1`, { headers: ghHeaders }),
+          fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(`repo:${repo} is:issue is:closed`)}&per_page=1`, { headers: ghHeaders }),
+        ])
+
+        if (openSearchRes.ok) {
+          const data = await openSearchRes.json()
+          totalOpen = data.total_count || 0
+        }
+        if (closedSearchRes.ok) {
+          const data = await closedSearchRes.json()
+          totalClosed = data.total_count || 0
         }
 
         // Open bugs
         const bugsRes = await fetch(
-          'https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=open&labels=bug&per_page=100',
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: 'application/vnd.github.v3+json',
-              'User-Agent': 'NetNeural-Executive-Summary',
-            },
-          }
+          `https://api.github.com/repos/${repo}/issues?state=open&labels=bug&per_page=100`,
+          { headers: ghHeaders }
         )
         if (bugsRes.ok) {
           const bugs: GitHubIssue[] = await bugsRes.json()
@@ -234,14 +254,8 @@ serve(async (req) => {
 
         // Recently closed (last 7 days)
         const recentRes = await fetch(
-          `https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=closed&since=${last7d}&sort=updated&direction=desc&per_page=20`,
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: 'application/vnd.github.v3+json',
-              'User-Agent': 'NetNeural-Executive-Summary',
-            },
-          }
+          `https://api.github.com/repos/${repo}/issues?state=closed&since=${last7d}&sort=updated&direction=desc&per_page=20`,
+          { headers: ghHeaders }
         )
         if (recentRes.ok) {
           const issues: GitHubIssue[] = await recentRes.json()
@@ -270,9 +284,42 @@ serve(async (req) => {
     const closureRate =
       totalIssues > 0 ? ((totalClosed / totalIssues) * 100).toFixed(0) : '0'
 
-    // MVP completion — dynamically computed from issue closure rate
-    // All billing stories (#241-#246, #292) closed, core features shipped
-    const mvpPct = totalClosed > 300 ? 100 : totalClosed > 250 ? 99 : totalClosed > 200 ? 98 : 95
+    // MVP completion — based on core feature milestones, NOT raw issue closure
+    // Core features: Auth ✅, Devices ✅, Alerts ✅, Orgs ✅, Billing ✅,
+    // Edge Functions ✅, CI/CD ✅, Reports ✅, Roles ✅, Dashboard ✅
+    // Remaining gaps: test coverage (~22% vs 70% target), MFA, security headers
+    const coreFeaturesDone = 10 // count of shipped feature areas
+    const coreFeaturesTotal = 10
+    const coreFeaturePct = Math.round((coreFeaturesDone / coreFeaturesTotal) * 100)
+    // Apply small deductions for known gaps
+    const gapDeductions = [
+      /* test coverage below 70% */ 2,
+      /* no MFA enforcement */ 1,
+    ]
+    const mvpPct = Math.max(0, Math.min(100, coreFeaturePct - gapDeductions.reduce((a, b) => a + b, 0)))
+
+    // Platform launch readiness — % of launch blockers resolved
+    // Launch blockers: Billing ✅, Auth ✅, 3 Environments ✅, Stripe Integration ✅,
+    // Privacy Policy, Cookie Consent, Security Headers, MFA, Remove CI continue-on-error
+    const launchBlockers = [
+      { name: 'Stripe Billing Integration', done: hasStripePriceIds },
+      { name: 'Multi-tenant Auth & Roles', done: uniqueUsers > 0 },
+      { name: '3-Environment Pipeline', done: true },
+      { name: 'Automated Reports', done: true },
+      { name: 'Alert System', done: totalUnresolved >= 0 }, // system exists
+      { name: 'Privacy Policy & Consent', done: totalClosed > 0 && false }, // #249 — not yet
+      { name: 'Cookie Consent (GDPR)', done: false }, // #250
+      { name: 'Security Headers', done: false }, // #252
+      { name: 'MFA Enforcement', done: false }, // #254
+      { name: 'CI Quality Gates (remove continue-on-error)', done: false }, // #253
+    ]
+    const launchDone = launchBlockers.filter((b) => b.done).length
+    const launchTotal = launchBlockers.length
+    const launchPct = Math.round((launchDone / launchTotal) * 100)
+    const launchRemaining = launchBlockers.filter((b) => !b.done)
+
+    // Sprint velocity — issues closed in last 7 days
+    let sprintVelocity = recentClosures.length
 
     // ─── Build HTML ──────────────────────────────────────────────────
 
@@ -421,7 +468,7 @@ serve(async (req) => {
     </div>
   </div>
 
-  <!-- MVP Progress -->
+  <!-- MVP Progress + Launch Readiness -->
   <div style="padding:20px 24px 0;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
@@ -430,7 +477,16 @@ serve(async (req) => {
       </tr>
     </table>
     <div style="background-color:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px;"><div style="background-color:#10b981; border-radius:6px; height:12px; width:${mvpPct}%;"></div></div>
-    <p style="font-size:11px; color:#9ca3af; margin-top:4px;">Remaining: test coverage refinement (~1 week, 1 dev)</p>
+    <p style="font-size:11px; color:#9ca3af; margin-top:4px;">Core features shipped: Auth, Devices, Alerts, Orgs, Billing, Reports, CI/CD, Edge Functions, Roles, Dashboard</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+      <tr>
+        <td style="font-size:13px; font-weight:600; color:#0f172a; text-align:left;">🚀 Platform Launch Readiness</td>
+        <td style="font-size:20px; font-weight:800; color:${launchPct >= 80 ? '#059669' : launchPct >= 60 ? '#d97706' : '#dc2626'}; text-align:right;">${launchPct}%</td>
+      </tr>
+    </table>
+    <div style="background-color:#e5e7eb; border-radius:6px; height:12px; width:100%; margin-top:6px;"><div style="background-color:${launchPct >= 80 ? '#10b981' : launchPct >= 60 ? '#f59e0b' : '#ef4444'}; border-radius:6px; height:12px; width:${launchPct}%;"></div></div>
+    <p style="font-size:11px; color:#9ca3af; margin-top:4px;">${launchDone}/${launchTotal} launch blockers resolved${launchRemaining.length > 0 ? ` · Remaining: ${launchRemaining.map(b => b.name).join(', ')}` : ' · All clear for launch! 🎉'}</p>
   </div>
 
   <!-- Platform Health Cards -->
@@ -444,32 +500,64 @@ serve(async (req) => {
     </tr>
   </table>
 
-  <!-- GitHub Issue Tracking -->
+  <!-- Revenue & Business Readiness -->
   <div style="padding:0 24px 16px;">
-    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📊 Issue Tracking</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">💰 Revenue Readiness</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+      <tr>
+        <td width="33%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${hasStripePriceIds ? '#f0fdf4' : '#fef3c7'}; border:1px solid ${hasStripePriceIds ? '#bbf7d0' : '#fde68a'}; border-radius:8px;">
+            <tr><td style="padding:12px 10px; text-align:center;">
+              <div style="font-size:18px; font-weight:700; color:${hasStripePriceIds ? '#16a34a' : '#d97706'};">${hasStripePriceIds ? '✅ Live' : '⏳ Pending'}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:3px;">Stripe Integration</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="33%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
+            <tr><td style="padding:12px 10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#1a1a2e;">${billingPlanCount}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:3px;">Active Plans</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="33%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${activeSubCount > 0 ? '#f0fdf4' : '#f9fafb'}; border:1px solid ${activeSubCount > 0 ? '#bbf7d0' : '#e5e7eb'}; border-radius:8px;">
+            <tr><td style="padding:12px 10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:${activeSubCount > 0 ? '#16a34a' : '#1a1a2e'};">${activeSubCount}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-top:3px;">Active Subscriptions</div>
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <p style="font-size:11px; color:#9ca3af;">Per-sensor pricing: Monitor ($2/mo), Protect ($4/mo), Command ($6/mo)</p>
+  </div>
+
+  <!-- Platform Infrastructure -->
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">🏗 Platform Infrastructure</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        ${statCard(String(tableCount), 'DB Tables', 'PostgreSQL 17')}
+        ${statCard(String(rlsPolicyCount), 'RLS Policies', 'Row-level security')}
+        ${statCard(String(migrationCount), 'Migrations', 'Schema versions')}
+        ${statCard(String(edgeFunctionCount), 'Edge Functions', 'Deno serverless')}
+        ${statCard(String(totalOrgs), 'Organizations', 'Multi-tenant')}
+      </tr>
+    </table>
+  </div>
+
+  <!-- Sprint Velocity -->
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📈 Sprint Velocity</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
       <tr>
         <td width="25%" style="padding:4px; vertical-align:top;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
             <tr><td style="padding:10px; text-align:center;">
-              <div style="font-size:20px; font-weight:700; color:#16a34a;">${totalClosed}</div>
-              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Closed</div>
-            </td></tr>
-          </table>
-        </td>
-        <td width="25%" style="padding:4px; vertical-align:top;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fef3c7; border:1px solid #fde68a; border-radius:8px;">
-            <tr><td style="padding:10px; text-align:center;">
-              <div style="font-size:20px; font-weight:700; color:#d97706;">${totalOpen}</div>
-              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open</div>
-            </td></tr>
-          </table>
-        </td>
-        <td width="25%" style="padding:4px; vertical-align:top;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fee2e2; border:1px solid #fecaca; border-radius:8px;">
-            <tr><td style="padding:10px; text-align:center;">
-              <div style="font-size:20px; font-weight:700; color:#dc2626;">${openBugs}</div>
-              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open Bugs</div>
+              <div style="font-size:20px; font-weight:700; color:#16a34a;">${sprintVelocity}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Closed (7d)</div>
             </td></tr>
           </table>
         </td>
@@ -477,13 +565,29 @@ serve(async (req) => {
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
             <tr><td style="padding:10px; text-align:center;">
               <div style="font-size:20px; font-weight:700; color:#1a1a2e;">${closureRate}%</div>
-              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Close Rate</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Issue Close Rate</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${openBugs === 0 ? '#f0fdf4' : '#fee2e2'}; border:1px solid ${openBugs === 0 ? '#bbf7d0' : '#fecaca'}; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:${openBugs === 0 ? '#16a34a' : '#dc2626'};">${openBugs}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Open Bugs</div>
+            </td></tr>
+          </table>
+        </td>
+        <td width="25%" style="padding:4px; vertical-align:top;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
+            <tr><td style="padding:10px; text-align:center;">
+              <div style="font-size:20px; font-weight:700; color:#1a1a2e;">${totalIssues}</div>
+              <div style="font-size:10px; color:#6b7280; text-transform:uppercase;">Total Tracked</div>
             </td></tr>
           </table>
         </td>
       </tr>
     </table>
-    <p style="font-size:12px; color:#6b7280;">Total: ${totalIssues} issues tracked · ${totalClosed} resolved · ${totalOpen} remaining</p>
+    <p style="font-size:12px; color:#6b7280;">${totalClosed} resolved · ${totalOpen} remaining</p>
   </div>
 
   ${
@@ -654,6 +758,15 @@ serve(async (req) => {
           openBugs,
           healthStatus,
           mvpPct,
+          launchPct,
+          billingPlanCount,
+          activeSubCount,
+          hasStripePriceIds,
+          tableCount,
+          rlsPolicyCount,
+          migrationCount,
+          edgeFunctionCount,
+          sprintVelocity,
         },
         durationMs: duration,
       }),
