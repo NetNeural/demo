@@ -105,21 +105,35 @@ export function PlanCard({
           <span className="text-sm text-muted-foreground">/sensor/mo</span>
         </div>
         {billingInterval === 'annual' && (
-          <p className="mt-1 text-xs font-medium text-green-600">
-            Save 17% with annual billing
-          </p>
+          <>
+            <p className="mt-1 text-sm text-muted-foreground">
+              ${(effectivePrice * 12).toFixed(2)}{' '}
+              <span className="text-xs">/sensor/year</span>
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-green-600">
+              Save 17% vs monthly billing
+            </p>
+          </>
         )}
         <div className="mt-3 rounded-lg bg-muted/50 p-3">
           <p className="text-sm text-muted-foreground">
-            Est. monthly cost for {sensorCount} sensor
-            {sensorCount !== 1 ? 's' : ''}
+            Est. {billingInterval === 'annual' ? 'annual' : 'monthly'} cost for{' '}
+            {sensorCount} sensor{sensorCount !== 1 ? 's' : ''}
           </p>
           <p className="text-2xl font-bold text-foreground">
-            ${monthlyCost.toFixed(2)}
+            $
+            {billingInterval === 'annual'
+              ? (monthlyCost * 12).toFixed(2)
+              : monthlyCost.toFixed(2)}
             <span className="text-sm font-normal text-muted-foreground">
-              /mo
+              /{billingInterval === 'annual' ? 'yr' : 'mo'}
             </span>
           </p>
+          {billingInterval === 'annual' && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              (${monthlyCost.toFixed(2)}/mo equivalent)
+            </p>
+          )}
         </div>
       </div>
 
