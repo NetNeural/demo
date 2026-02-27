@@ -146,7 +146,9 @@ function OrganizationsPageContent() {
             {isReseller && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <Crown className="h-3 w-3" />
-                Reseller
+                {currentOrganization.parentOrganizationId
+                  ? 'Reseller'
+                  : 'Platform Owner'}
               </Badge>
             )}
             <Button size="sm" onClick={() => setShowCreateOrgDialog(true)}>
