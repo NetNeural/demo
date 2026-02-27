@@ -392,27 +392,42 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   // Empty state — no maps yet
   if (maps.length === 0 && !loading) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center py-16">
-          <div className="mb-4 rounded-full bg-muted p-4">
-            <Map className="h-12 w-12 text-muted-foreground" />
-          </div>
-          <h3 className="mb-2 text-lg font-semibold">No Facility Maps Yet</h3>
-          <p className="mb-6 max-w-sm text-center text-sm text-muted-foreground">
-            Upload a floor plan or site image, then drag and drop devices to see their
-            real-time status overlaid on your facility layout.
-          </p>
-          <Button
-            onClick={() => {
-              setEditingMap(null)
-              setDialogOpen(true)
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Your First Map
-          </Button>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardContent className="flex flex-col items-center py-16">
+            <div className="mb-4 rounded-full bg-muted p-4">
+              <Map className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="mb-2 text-lg font-semibold">No Facility Maps Yet</h3>
+            <p className="mb-6 max-w-sm text-center text-sm text-muted-foreground">
+              Upload a floor plan or site image, then drag and drop devices to see their
+              real-time status overlaid on your facility layout.
+            </p>
+            <Button
+              onClick={() => {
+                setEditingMap(null)
+                setDialogOpen(true)
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Map
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Dialog must render even in empty state so it can open */}
+        <MapManagerDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false)
+            setEditingMap(null)
+          }}
+          onSave={handleSaveMap}
+          map={editingMap}
+          locations={locations}
+          organizationId={organizationId}
+        />
+      </>
     )
   }
 

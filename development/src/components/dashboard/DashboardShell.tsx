@@ -22,7 +22,6 @@ import {
   Settings,
   Shield,
   SlidersHorizontal,
-  Map,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -67,7 +66,6 @@ export default function DashboardShell({
       icon: Building2,
     },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
-    { name: 'Facility Map', href: '/dashboard/facility-map', icon: Map },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Reports', href: '/dashboard/reports', icon: FileText },
     { name: 'Settings & Users', href: '/dashboard/settings', icon: Settings },
