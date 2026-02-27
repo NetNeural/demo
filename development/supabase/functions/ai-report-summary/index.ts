@@ -256,6 +256,9 @@ function prepareReportSummary(reportData: ReportData): string {
       )
 
       const unresolvedCount = alerts.filter((a) => !a.is_resolved).length
+      const resolvedRate = alerts.length > 0
+        ? ((1 - unresolvedCount / alerts.length) * 100).toFixed(1)
+        : '0.0'
 
       return `Alert Summary:
 - Critical: ${bySeverity.critical || 0}
@@ -263,7 +266,7 @@ function prepareReportSummary(reportData: ReportData): string {
 - Medium: ${bySeverity.medium || 0}
 - Low: ${bySeverity.low || 0}
 - Unresolved: ${unresolvedCount}
-- Resolution Rate: ${((1 - unresolvedCount / alerts.length) * 100).toFixed(1)}%`
+- Resolution Rate: ${resolvedRate}%`
     }
 
     case 'audit_log': {
@@ -279,11 +282,14 @@ function prepareReportSummary(reportData: ReportData): string {
       const failedCount = logs.filter(
         (l) => l.status === 'failed' || l.status === 'error'
       ).length
+      const successRate = logs.length > 0
+        ? ((1 - failedCount / logs.length) * 100).toFixed(1)
+        : '100.0'
 
       return `Audit Log Summary:
 - Total Actions: ${logs.length}
 - Failed: ${failedCount}
-- Success Rate: ${((1 - failedCount / logs.length) * 100).toFixed(1)}%
+- Success Rate: ${successRate}%
 - Top Categories: ${Object.entries(byCategory)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
@@ -291,11 +297,43 @@ function prepareReportSummary(reportData: ReportData): string {
         .join(', ')}`
     }
 
-    case 'telemetry_trends':
-      return `Telemetry data analyzed across multiple devices with statistical summaries and threshold comparisons.`
+    case 'telemetry_trends': {
+      const points = data as Array<Record<string, unknown>>
+      const deviceIds = new Set(points.map((p) => p.device_id)).size
+      // Extract numeric metric values for basic stats
+      const numericValues = points
+        .map((p) => Number(p.value ?? p.temperature ?? p.humidity ?? 0))
+        .filter((v) => !isNaN(v))
+      const avg = numericValues.length > 0
+        ? (numericValues.reduce((a, b) => a + b, 0) / numericValues.length).toFixed(1)
+        : 'N/A'
+      const min = numericValues.length > 0 ? Math.min(...numericValues).toFixed(1) : 'N/A'
+      const max = numericValues.length > 0 ? Math.max(...numericValues).toFixed(1) : 'N/A'
 
-    case 'device_health':
-      return `Device fleet health metrics including uptime, connectivity, and performance indicators.`
+      return `Telemetry Trends Summary:
+- Total Data Points: ${points.length}
+- Unique Devices: ${deviceIds}
+- Value Range: ${min} – ${max}
+- Average Value: ${avg}
+- Period: ${reportData.dateRange}`
+    }
+
+    case 'device_health': {
+      const devices = data as Array<{ status?: string; last_seen?: string; uptime?: number }>
+      const statusCounts = devices.reduce((acc, d) => {
+        const s = String(d.status || 'unknown')
+        acc[s] = (acc[s] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+      const onlineCount = statusCounts['online'] || 0
+      const uptimePct = devices.length > 0 ? ((onlineCount / devices.length) * 100).toFixed(1) : '0.0'
+
+      return `Device Health Summary:
+- Total Devices: ${devices.length}
+- Online: ${onlineCount} (${uptimePct}% uptime)
+- Offline: ${statusCounts['offline'] || 0}
+- Status Breakdown: ${Object.entries(statusCounts).map(([k, v]) => `${k}(${v})`).join(', ')}`
+    }
 
     default:
       return `Report data with ${data.length} records.`

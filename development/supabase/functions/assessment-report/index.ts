@@ -91,24 +91,6 @@ async function ghGet(path: string, token: string): Promise<any> {
   return res.json()
 }
 
-async function ghCount(path: string, token: string): Promise<number> {
-  // Try pagination-based count first (per_page=1, read last page number)
-  const res = await fetch(`https://api.github.com${path}&per_page=1`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'NetNeural-Assessment-Report',
-    },
-  })
-  if (!res.ok) return 0
-  const link = res.headers.get('Link') || ''
-  const m = link.match(/page=(\d+)>; rel="last"/)
-  if (m) return parseInt(m[1])
-  // No Link header — could be 0 or 1 result, read the body
-  const data = await res.json()
-  return Array.isArray(data) ? data.length : 0
-}
-
 /** Use GitHub search API for accurate issue counts (handles large numbers) */
 async function ghSearchCount(
   repo: string,
@@ -571,7 +553,7 @@ serve(async (req) => {
       { label: 'Total Devices', value: String(deviceCount) },
       { label: 'Issues Closed', value: `${ghClosedIssues}+` },
       { label: 'Open Bugs', value: String(ghOpenBugs) },
-      { label: 'Total Commits', value: `${ghTotalCommits || '850'}+` },
+      { label: 'Total Commits', value: `${ghTotalCommits || 'N/A'}` },
     ]
 
     // ─── Dynamic Valuation ───────────────────────────────────────────

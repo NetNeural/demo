@@ -136,7 +136,32 @@ serve(async (req) => {
       .gte('created_at', last48h)
       .lt('created_at', last24h)
 
-    // 8. Recent GitHub accomplishments (closed issues in last 7 days)
+    // 8. Billing / subscription stats
+    let billingPlanCount = 0
+    let activeSubCount = 0
+    let hasStripePriceIds = false
+    try {
+      const { count: planCount } = await supabase
+        .from('billing_plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
+      billingPlanCount = planCount || 0
+
+      const { count: subCount } = await supabase
+        .from('subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+      activeSubCount = subCount || 0
+
+      const { data: stripePlans } = await supabase
+        .from('billing_plans')
+        .select('stripe_price_id_monthly')
+        .not('stripe_price_id_monthly', 'is', null)
+        .limit(1)
+      hasStripePriceIds = (stripePlans || []).length > 0
+    } catch { /* billing tables may not exist */ }
+
+    // 9. Recent GitHub accomplishments (closed issues in last 7 days)
     let recentWins: {
       title: string
       number: number
@@ -149,8 +174,9 @@ serve(async (req) => {
         const sevenDaysAgo = new Date(
           Date.now() - 7 * 24 * 60 * 60 * 1000
         ).toISOString()
+        // Fetch up to 100 recently closed issues (handles high-velocity weeks)
         const ghResponse = await fetch(
-          `https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=closed&since=${sevenDaysAgo}&sort=updated&direction=desc&per_page=50`,
+          `https://api.github.com/repos/NetNeural/MonoRepo-Staging/issues?state=closed&since=${sevenDaysAgo}&sort=updated&direction=desc&per_page=100`,
           {
             headers: {
               Authorization: `Bearer ${githubToken}`,
@@ -516,6 +542,27 @@ serve(async (req) => {
     </table>
   </div>
 
+  <!-- Billing & Revenue -->
+  <div style="padding:0 20px 20px;">
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">💰 Billing & Revenue</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <tr>
+        <td style="padding:8px 12px; text-align:center; width:33%;">
+          <div style="font-size:22px; font-weight:700; color:${hasStripePriceIds ? '#10b981' : '#f59e0b'};">${hasStripePriceIds ? '✅ Live' : '⏳ Pending'}</div>
+          <div style="font-size:11px; color:#6b7280; text-transform:uppercase; margin-top:4px;">Stripe</div>
+        </td>
+        <td style="padding:8px 12px; text-align:center; width:33%;">
+          <div style="font-size:22px; font-weight:700; color:#1a1a2e;">${billingPlanCount}</div>
+          <div style="font-size:11px; color:#6b7280; text-transform:uppercase; margin-top:4px;">Active Plans</div>
+        </td>
+        <td style="padding:8px 12px; text-align:center; width:33%;">
+          <div style="font-size:22px; font-weight:700; color:${activeSubCount > 0 ? '#10b981' : '#1a1a2e'};">${activeSubCount}</div>
+          <div style="font-size:11px; color:#6b7280; text-transform:uppercase; margin-top:4px;">Subscriptions</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
   <div style="padding:0 20px 20px;">
     <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">Quick Links</h2>
     <p style="font-size:14px;">
@@ -573,6 +620,35 @@ serve(async (req) => {
       `[daily-report] Report sent in ${duration}ms to ${recipients.length} recipients. Resend ID: ${emailResult.id}`
     )
 
+    // Log to report_runs for history tracking
+    try {
+      await supabase.from('report_runs').insert({
+        report_type: 'daily-report',
+        status: 'success',
+        triggered_by: 'system',
+        recipients,
+        duration_ms: duration,
+        summary: `${healthStatus} — ${totalDevices} devices (${uptimePct}% uptime), ${totalUnresolved} active alerts (${totalCritical} critical), ${totalResolved24h} resolved in 24h`,
+        details: {
+          totalDevices,
+          onlineDevices,
+          offlineDevices,
+          totalUnresolved,
+          totalCritical,
+          totalNew24h,
+          totalResolved24h,
+          organizationCount: orgStats.length,
+          healthStatus,
+          uniqueUsers,
+          billingPlanCount,
+          activeSubCount,
+          recentWinsCount: recentWins.length,
+        },
+      })
+    } catch (logErr) {
+      console.warn('[daily-report] Failed to log report_run:', (logErr as Error).message)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -598,6 +674,25 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('[daily-report] Error:', error.message)
+
+    // Log failure to report_runs
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      if (supabaseUrl && serviceKey) {
+        const sb = createClient(supabaseUrl, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+        await sb.from('report_runs').insert({
+          report_type: 'daily-report',
+          status: 'error',
+          triggered_by: 'system',
+          error_message: error.message,
+          duration_ms: Date.now() - startTime,
+        })
+      }
+    } catch { /* best effort */ }
+
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {

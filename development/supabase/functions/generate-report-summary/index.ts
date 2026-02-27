@@ -67,8 +67,7 @@ serve(async (req) => {
     const { data: cached } = await supabase
       .from('ai_report_summaries_cache')
       .select('*')
-      .eq('report_type', reportType)
-      .eq('organization_id', organizationId)
+      .eq('cache_key', cacheKey)
       .gte('expires_at', new Date().toISOString())
       .order('generated_at', { ascending: false })
       .limit(1)
@@ -152,11 +151,13 @@ Be specific, actionable, and data-driven.`,
       }
     }
 
-    // Cache the result
+    // Cache the result (upsert by cache_key to avoid duplicates)
     const expiresAt = new Date(
       Date.now() + CACHE_DURATION_MINUTES * 60 * 1000
     ).toISOString()
-    await supabase.from('ai_report_summaries_cache').insert({
+    await supabase.from('ai_report_summaries_cache').upsert({
+      cache_key: cacheKey,
+      cache_key: cacheKey,
       report_type: reportType,
       organization_id: organizationId,
       summary: summary,
