@@ -53,7 +53,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
     device.location_id || ''
   )
   const [installedAt, setInstalledAt] = useState<string>(
-    device.metadata?.installed_at || ''
+    (device.metadata?.installed_at as string) || ''
   )
 
   const fetchLocations = useCallback(async () => {
@@ -125,7 +125,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
 
   const handleCancel = () => {
     setSelectedLocationId(device.location_id || '')
-    setInstalledAt(device.metadata?.installed_at || '')
+    setInstalledAt((device.metadata?.installed_at as string) || '')
     setIsEditing(false)
   }
 
@@ -279,7 +279,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             {device.metadata?.placement && (
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="font-medium">{device.metadata.placement}</p>
+                <p className="font-medium">{String(device.metadata.placement)}</p>
               </div>
             )}
 

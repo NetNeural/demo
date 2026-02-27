@@ -1,46 +1,27 @@
-'use client'
+﻿'use client'
 
-import { Suspense, useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import {
-  ArrowLeft,
-  Save,
-  Trash2,
-  Loader2,
-  Activity,
-  Calendar,
-  Info,
-  Network,
-} from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
 import { PageHeader } from '@/components/ui/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { edgeFunctions } from '@/lib/edge-functions'
+import { createClient } from '@/lib/supabase/client'
+import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
-import { Switch } from '@/components/ui/switch'
-import { DeviceTypeSelector } from '@/components/device-types/DeviceTypeSelector'
-import { InheritedConfigCard } from '@/components/device-types/InheritedConfigCard'
-import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { mapDeviceData, isGatewayDevice, isTestDevice, normalizeTelemetryReadings } from '@/lib/device-utils'
+import { DeviceOverviewTab } from '@/components/devices/detail/DeviceOverviewTab'
+import { DeviceTelemetryTab } from '@/components/devices/detail/DeviceTelemetryTab'
+import { DeviceConfigTab } from '@/components/devices/detail/DeviceConfigTab'
+import { DeviceAlertsTab } from '@/components/devices/detail/DeviceAlertsTab'
+import { DeviceSystemInfoTab } from '@/components/devices/detail/DeviceSystemInfoTab'
+import type { Device, TelemetryReading } from '@/types/sensor-details'
 import { toast } from 'sonner'
+
+// Story #270: Consolidated device detail page
+// Replaces both /dashboard/devices/view and /dashboard/device-details
 
 export default function DeviceViewPage() {
   return (
@@ -56,93 +37,48 @@ export default function DeviceViewPage() {
   )
 }
 
-interface Device {
-  id: string
-  name: string
-  device_type: string
-  type?: string
-  model?: string
-  serial_number?: string
-  status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
-  firmware_version?: string
-  location_id?: string
-  location?: string
-  department_id?: string
-  lastSeen: string
-  last_seen?: string
-  last_seen_online?: string
-  last_seen_offline?: string
-  batteryLevel?: number
-  battery_level?: number
-  signal_strength?: number
-  isExternallyManaged?: boolean
-  externalDeviceId?: string | null
-  external_device_id?: string | null
-  integration_id?: string | null
-  integrationName?: string | null
-  integrationType?: string | null
-  device_type_id?: string | null
-  description?: string
-  metadata?: Record<string, unknown>
-  hardware_ids?: string[]
-  cohort_id?: string
-  parent_device_id?: string | null
-  is_gateway?: boolean
-  organization_id: string
-  created_at?: string
-  updated_at?: string
-}
-
 function DeviceViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const deviceId = searchParams.get('id')
+  const { currentOrganization } = useOrganization()
 
+  // Core state
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [device, setDevice] = useState<Device | null>(null)
-
-  // Initialize activeTab from URL parameter or default
-  const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get('tab') || 'details'
+  const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
+  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
+  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('temperatureUnit')
+      if (stored === 'C') return 'celsius'
+    }
+    return 'fahrenheit'
   })
 
-  const [locations, setLocations] = useState<
-    Array<{ id: string; name: string }>
-  >([])
+  // Tab routing via URL
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview')
 
-  // Update activeTab when URL parameter changes
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam)
-    }
+    if (tabParam && tabParam !== activeTab) setActiveTab(tabParam)
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle tab change - update both state and URL
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab)
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', newTab)
     router.push(`?${params.toString()}`, { scroll: false })
   }
-  const { currentOrganization } = useOrganization()
-  const { fmt } = useDateFormatter()
 
-  // Form state
-  const [name, setName] = useState('')
-  const [deviceType, setDeviceType] = useState('')
-  const [deviceTypeId, setDeviceTypeId] = useState<string | null>(null)
-  const [model, setModel] = useState('')
-  const [serialNumber, setSerialNumber] = useState('')
-  const [firmwareVersion, setFirmwareVersion] = useState('')
-  const [isGateway, setIsGateway] = useState(false)
-  const [locationId, setLocationId] = useState('')
-  const [departmentId, setDepartmentId] = useState('')
-  const [status, setStatus] = useState<
-    'online' | 'offline' | 'warning' | 'error' | 'maintenance'
-  >('offline')
+  // Derived state
+  const isGateway = useMemo(() => (device ? isGatewayDevice(device) : false), [device])
+  const testDevice = useMemo(() => (device ? isTestDevice(device) : false), [device])
+
+  // -- Data Loading --
 
   const loadDevice = useCallback(async () => {
     if (!deviceId) {
@@ -153,70 +89,62 @@ function DeviceViewContent() {
 
     try {
       setLoading(true)
-      const response = await edgeFunctions.devices.get(deviceId)
 
+      // Fetch device via edge function
+      const response = await edgeFunctions.devices.get(deviceId)
       if (!response.success || !response.data) {
         toast.error('Device not found')
         router.push('/dashboard/devices')
         return
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const responseData = response.data as any // Use any to handle snake_case or camelCase from API
+      const mapped = mapDeviceData(response.data as Record<string, unknown>)
+      setDevice(mapped)
 
-      // Extract the device object (edge function wraps it in { device: {...} })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const deviceData = responseData.device || (responseData as any)
+      // Fetch telemetry readings (48 hours from both primary + test tables)
+      const supabase = createClient()
+      const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
 
-      // Map the data properly - the API might use different field names (snake_case vs camelCase)
-      const mappedDevice: Device = {
-        id: deviceData.id || '',
-        name: deviceData.name || '',
-        device_type: deviceData.device_type || deviceData.type || '',
-        device_type_id: deviceData.device_type_id || null,
-        type: deviceData.type || deviceData.device_type || '',
-        status: deviceData.status || 'offline',
-        model: deviceData.model,
-        serial_number: deviceData.serial_number,
-        firmware_version: deviceData.firmware_version,
-        location_id: deviceData.location_id,
-        location: deviceData.location,
-        department_id: deviceData.department_id,
-        lastSeen: deviceData.lastSeen || deviceData.last_seen || '',
-        batteryLevel: deviceData.batteryLevel ?? deviceData.battery_level,
-        signal_strength: deviceData.signal_strength,
-        isExternallyManaged:
-          deviceData.isExternallyManaged ??
-          deviceData.is_externally_managed ??
-          false,
-        externalDeviceId:
-          deviceData.externalDeviceId ?? deviceData.external_device_id,
-        integrationName:
-          deviceData.integrationName ?? deviceData.integration_name,
-        description: deviceData.description,
-        metadata: deviceData.metadata,
-        organization_id: deviceData.organization_id || '',
-        created_at: deviceData.created_at,
-        updated_at: deviceData.updated_at,
-        // Bug #279: add missing fields so device-view has full data
-        is_gateway:
-          deviceData.is_gateway ?? deviceData.metadata?.is_gateway ?? false,
-        hardware_ids: deviceData.hardware_ids || [],
-        cohort_id: deviceData.cohort_id,
-        parent_device_id: deviceData.parent_device_id,
+      const [primaryResult, testResult] = await Promise.all([
+        supabase
+          .from('device_telemetry_history')
+          .select('device_id, telemetry, device_timestamp, received_at')
+          .eq('device_id', deviceId)
+          .gte('received_at', fortyEightHoursAgo)
+          .order('received_at', { ascending: false })
+          .limit(500),
+        mapped.is_test_device
+          ? testTelemetryFrom(supabase)
+              .select('device_id, telemetry, device_timestamp, received_at')
+              .eq('device_id', deviceId)
+              .gte('received_at', fortyEightHoursAgo)
+              .order('received_at', { ascending: false })
+              .limit(500)
+          : Promise.resolve({ data: [], error: null }),
+      ])
+
+      if (primaryResult.error) throw primaryResult.error
+      if (testResult.error) throw testResult.error
+
+      const combined = (
+        [...(primaryResult.data || []), ...((testResult.data as TelemetryReading[] | null) || [])] as TelemetryReading[]
+      )
+        .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())
+        .slice(0, 500)
+
+      setTelemetryReadings(normalizeTelemetryReadings(combined))
+
+      // Fetch temperature unit preference from thresholds
+      const { data: thresholds } = await supabase
+        .from('sensor_thresholds')
+        .select('temperature_unit')
+        .eq('device_id', deviceId)
+        .limit(1)
+
+      const firstThreshold = (thresholds as Array<{ temperature_unit?: string }> | null)?.[0]
+      if (firstThreshold?.temperature_unit) {
+        setTemperatureUnit(firstThreshold.temperature_unit as 'celsius' | 'fahrenheit')
       }
-
-      setDevice(mappedDevice)
-      setName(mappedDevice.name || '')
-      setDeviceType(mappedDevice.device_type || mappedDevice.type || '')
-      setDeviceTypeId(mappedDevice.device_type_id || null)
-      setModel(mappedDevice.model || '')
-      setSerialNumber(mappedDevice.serial_number || '')
-      setFirmwareVersion(mappedDevice.firmware_version || '')
-      setLocationId(mappedDevice.location_id || '')
-      setDepartmentId(mappedDevice.department_id || '')
-      setIsGateway(mappedDevice.metadata?.is_gateway === true)
-      setStatus(mappedDevice.status || 'offline')
     } catch (error) {
       console.error('Error loading device:', error)
       toast.error('Failed to load device')
@@ -228,16 +156,11 @@ function DeviceViewContent() {
 
   const loadLocations = useCallback(async () => {
     if (!currentOrganization?.id) return
-
     try {
-      const response = await edgeFunctions.locations.list(
-        currentOrganization.id
-      )
+      const response = await edgeFunctions.locations.list(currentOrganization.id)
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setLocations(
-          response.data.map((loc: any) => ({ id: loc.id, name: loc.name }))
-        )
+        setLocations(response.data.map((loc: any) => ({ id: loc.id, name: loc.name })))
       }
     } catch (error) {
       console.error('Error loading locations:', error)
@@ -249,42 +172,17 @@ function DeviceViewContent() {
     loadLocations()
   }, [loadDevice, loadLocations])
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error('Name is required')
-      return
-    }
+  // -- CRUD Handlers --
 
-    if (!deviceTypeId && !deviceType.trim()) {
-      toast.error('Device type is required')
-      return
-    }
-
+  const handleSave = async (updates: Record<string, unknown>) => {
     if (!deviceId) return
-
     try {
       setSaving(true)
-      const response = await edgeFunctions.devices.update(deviceId, {
-        name: name.trim(),
-        device_type: isGateway ? 'gateway' : deviceType.trim(),
-        device_type_id: isGateway ? null : deviceTypeId,
-        model: model.trim() || undefined,
-        serial_number: serialNumber.trim() || undefined,
-        firmware_version: firmwareVersion.trim() || undefined,
-        location_id: locationId || undefined,
-        department_id: departmentId || undefined,
-        status,
-        metadata: {
-          ...(device?.metadata || {}),
-          is_gateway: isGateway,
-        },
-      })
-
+      const response = await edgeFunctions.devices.update(deviceId, updates)
       if (!response.success) {
-        toast.error(response.error?.message || 'Failed to update device')
+        toast.error((response.error as { message?: string })?.message || 'Failed to update device')
         return
       }
-
       toast.success('Device updated successfully')
       await loadDevice()
     } catch (error) {
@@ -297,24 +195,14 @@ function DeviceViewContent() {
 
   const handleDelete = async () => {
     if (!deviceId) return
-
-    if (
-      !confirm(
-        `Are you sure you want to delete "${name}"? This action cannot be undone.`
-      )
-    ) {
-      return
-    }
-
+    if (!confirm(`Are you sure you want to delete "${device?.name}"? This action cannot be undone.`)) return
     try {
       setDeleting(true)
       const response = await edgeFunctions.devices.delete(deviceId)
-
       if (!response.success) {
-        toast.error(response.error?.message || 'Failed to delete device')
+        toast.error((response.error as { message?: string })?.message || 'Failed to delete device')
         return
       }
-
       toast.success('Device deleted successfully')
       router.push('/dashboard/devices')
     } catch (error) {
@@ -324,6 +212,13 @@ function DeviceViewContent() {
       setDeleting(false)
     }
   }
+
+  const handleDataSent = () => {
+    loadDevice()
+    setHistoryRefreshKey((prev) => prev + 1)
+  }
+
+  // -- Render --
 
   if (loading) {
     return (
@@ -349,14 +244,11 @@ function DeviceViewContent() {
     <div className="space-y-6 pb-8">
       <PageHeader
         title={device.name}
-        description={`${device.device_type || device.type || 'Unknown'} • ID: ${device.id?.substring(0, 8) || 'N/A'}`}
+        description={`${device.device_type || 'Unknown'} \u2022 ID: ${device.id?.substring(0, 8) || 'N/A'}`}
         icon={(() => {
-          const typeName = device.device_type || device.type || ''
-          const settings = currentOrganization?.settings as
-            | Record<string, unknown>
-            | undefined
-          const rawImages =
-            (settings?.device_type_images as Record<string, string>) || {}
+          const typeName = device.device_type || ''
+          const settings = currentOrganization?.settings as Record<string, unknown> | undefined
+          const rawImages = (settings?.device_type_images as Record<string, string>) || {}
           const imgUrl = Object.entries(rawImages).find(
             ([k]) => k.toLowerCase() === typeName.toLowerCase()
           )?.[1]
@@ -386,10 +278,7 @@ function DeviceViewContent() {
                 onTransferComplete={() => router.push('/dashboard/devices')}
               />
             )}
-            <Button
-              variant="ghost"
-              onClick={() => router.push('/dashboard/devices')}
-            >
+            <Button variant="ghost" onClick={() => router.push('/dashboard/devices')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Devices
             </Button>
@@ -397,719 +286,48 @@ function DeviceViewContent() {
         }
       />
 
-      {/* Tabs for different sections */}
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="space-y-4"
-      >
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          {device.metadata && Object.keys(device.metadata).length > 0 && (
-            <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          )}
-          <TabsTrigger value="info">System Info</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
+          <TabsTrigger value="config">Configuration</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+          <TabsTrigger value="system">System Info</TabsTrigger>
         </TabsList>
 
-        {/* Details Tab - Read-only view */}
-        <TabsContent value="details" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Device Information</CardTitle>
-              <CardDescription>
-                Comprehensive device details and specifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Basic Information */}
-              <div>
-                <h3 className="mb-3 text-lg font-semibold">
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {device.name && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Device Name
-                      </p>
-                      <p className="font-medium">{device.name}</p>
-                    </div>
-                  )}
-                  {(device.device_type || device.type) && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Device Type
-                      </p>
-                      <p className="font-medium">
-                        {device.device_type || device.type}
-                      </p>
-                    </div>
-                  )}
-                  {device.model && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Model</p>
-                      <p className="font-medium">{device.model}</p>
-                    </div>
-                  )}
-                  {device.serial_number && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Serial Number
-                      </p>
-                      <p className="font-mono text-sm">
-                        {device.serial_number}
-                      </p>
-                    </div>
-                  )}
-                  {device.firmware_version && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Firmware Version
-                      </p>
-                      <p className="font-medium">{device.firmware_version}</p>
-                    </div>
-                  )}
-                  {device.location && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Location</p>
-                      <p className="font-medium">{device.location}</p>
-                    </div>
-                  )}
-                  {device.cohort_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cohort ID</p>
-                      <p className="font-mono text-sm">{device.cohort_id}</p>
-                    </div>
-                  )}
-                  {device.hardware_ids && device.hardware_ids.length > 0 && (
-                    <div className="md:col-span-2">
-                      <p className="text-sm text-muted-foreground">
-                        Hardware IDs
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {device.hardware_ids.map((id, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="font-mono text-xs"
-                          >
-                            {id}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Inherited Device Type Config */}
-              {device.device_type_id && (
-                <>
-                  <Separator />
-                  <InheritedConfigCard deviceTypeId={device.device_type_id} />
-                </>
-              )}
-
-              <Separator />
-
-              {/* Connection & Activity */}
-              <div>
-                <h3 className="mb-3 text-lg font-semibold">
-                  Connection & Activity
-                </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {device.status && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Current Status
-                      </p>
-                      <Badge
-                        variant={
-                          device.status === 'online'
-                            ? 'default'
-                            : device.status === 'warning'
-                              ? 'secondary'
-                              : device.status === 'error'
-                                ? 'destructive'
-                                : 'outline'
-                        }
-                        className="mt-1"
-                      >
-                        {device.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                  )}
-                  {(device.last_seen || device.lastSeen) && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Last Seen</p>
-                      <p className="font-medium">
-                        {device.last_seen
-                          ? fmt.dateTime(device.last_seen)
-                          : fmt.dateTime(device.lastSeen)}
-                      </p>
-                    </div>
-                  )}
-                  {device.last_seen_online && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Last Seen Online
-                      </p>
-                      <p className="font-medium">
-                        {fmt.dateTime(device.last_seen_online)}
-                      </p>
-                    </div>
-                  )}
-                  {device.last_seen_offline && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Last Seen Offline
-                      </p>
-                      <p className="font-medium">
-                        {fmt.dateTime(device.last_seen_offline)}
-                      </p>
-                    </div>
-                  )}
-                  {(device.batteryLevel != null ||
-                    device.battery_level != null) && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Battery Level
-                      </p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <div
-                          className="h-2 flex-1 overflow-hidden rounded-full bg-secondary"
-                          role="progressbar"
-                          aria-label={`Battery level ${device.batteryLevel ?? device.battery_level ?? 0}%`}
-                        >
-                          <div
-                            className={`h-full transition-all ${
-                              (device.batteryLevel ??
-                                device.battery_level ??
-                                0) > 50
-                                ? 'bg-green-500'
-                                : (device.batteryLevel ??
-                                      device.battery_level ??
-                                      0) > 20
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
-                            }`}
-                            style={{
-                              width: `${device.batteryLevel ?? device.battery_level ?? 0}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium">
-                          {device.batteryLevel ?? device.battery_level}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {device.signal_strength != null && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Signal Strength
-                      </p>
-                      <p className="font-medium">
-                        {device.signal_strength} dBm
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Integration Information */}
-              {(device.isExternallyManaged || device.integration_id) && (
-                <>
-                  <div>
-                    <h3 className="mb-3 text-lg font-semibold">Integration</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {device.integrationName && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Integration Name
-                          </p>
-                          <p className="font-medium">
-                            {device.integrationName}
-                          </p>
-                        </div>
-                      )}
-                      {device.integrationType && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Integration Type
-                          </p>
-                          <p className="font-medium">
-                            {device.integrationType}
-                          </p>
-                        </div>
-                      )}
-                      {device.integration_id && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Integration ID
-                          </p>
-                          <p className="font-mono text-xs">
-                            {device.integration_id}
-                          </p>
-                        </div>
-                      )}
-                      {device.externalDeviceId && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            External Device ID
-                          </p>
-                          <p className="font-mono text-xs">
-                            {device.externalDeviceId}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {device.isExternallyManaged && (
-                      <div className="mt-4 rounded-lg bg-muted p-3">
-                        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                          This device is managed by an external integration.
-                          Some fields may be read-only or synced automatically.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <Separator />
-                </>
-              )}
-
-              {device.description && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="mb-3 text-lg font-semibold">Description</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {device.description}
-                    </p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="overview">
+          <DeviceOverviewTab device={device} telemetryReadings={telemetryReadings} isGateway={isGateway} />
         </TabsContent>
 
-        {/* Edit Tab - Editable form */}
-        <TabsContent value="edit" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Edit Device</CardTitle>
-              <CardDescription>
-                Update device information and configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Device Name *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter device name"
-                  />
-                </div>
-
-                {/* Gateway Toggle */}
-                <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
-                  <div className="flex items-center gap-2">
-                    <Network className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <Label
-                        htmlFor="edit-is-gateway"
-                        className="cursor-pointer font-medium"
-                      >
-                        Gateway Device
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Hub that relays data from child sensors
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    id="edit-is-gateway"
-                    checked={isGateway}
-                    onCheckedChange={setIsGateway}
-                    disabled={saving || deleting}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="type">Device Type *</Label>
-                  <DeviceTypeSelector
-                    value={deviceTypeId}
-                    onValueChange={(typeId, dt) => {
-                      setDeviceTypeId(typeId)
-                      if (dt) setDeviceType(dt.name)
-                      else if (!typeId) setDeviceType('')
-                    }}
-                    allowNone={true}
-                    placeholder="Select or assign a device type..."
-                  />
-                  {!deviceTypeId && deviceType && (
-                    <p className="text-xs text-muted-foreground">
-                      Legacy type: {deviceType}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <select
-                    id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as typeof status)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label="Device status"
-                  >
-                    <option value="online">Online</option>
-                    <option value="offline">Offline</option>
-                    <option value="warning">Warning</option>
-                    <option value="error">Error</option>
-                    <option value="maintenance">Maintenance</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="model">Model</Label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="Enter device model"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="serialNumber">Serial Number</Label>
-                  <Input
-                    id="serialNumber"
-                    value={serialNumber}
-                    onChange={(e) => setSerialNumber(e.target.value)}
-                    placeholder="Enter serial number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="firmwareVersion">Firmware Version</Label>
-                  <Input
-                    id="firmwareVersion"
-                    value={firmwareVersion}
-                    onChange={(e) => setFirmwareVersion(e.target.value)}
-                    placeholder="e.g., 1.0.0"
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Select
-                    value={locationId || '__none__'}
-                    onValueChange={(value) =>
-                      setLocationId(value === '__none__' ? '' : value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="No location assigned" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">No location</SelectItem>
-                      {locations.map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {locationId && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setLocationId('')}
-                      className="h-8 text-xs"
-                    >
-                      Clear location
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between gap-4 pt-4">
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={saving || deleting || device.isExternallyManaged}
-                >
-                  {deleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Device
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={handleSave}
-                  disabled={saving || deleting || !name.trim()}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {device.isExternallyManaged && (
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950">
-                  <p className="flex items-start gap-2 text-sm text-yellow-800 dark:text-yellow-200">
-                    <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <span>
-                      This device is managed by{' '}
-                      <strong>
-                        {device.integrationName || 'an external integration'}
-                      </strong>
-                      . Deletion is disabled. Device properties (except
-                      location) may be overwritten by the integration.
-                    </span>
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="telemetry">
+          <DeviceTelemetryTab
+            device={device}
+            telemetryReadings={telemetryReadings}
+            isGateway={isGateway}
+            isTestDevice={testDevice}
+            temperatureUnit={temperatureUnit}
+            historyRefreshKey={historyRefreshKey}
+            onDataSent={handleDataSent}
+          />
         </TabsContent>
 
-        {/* Metadata Tab */}
-        {device.metadata && Object.keys(device.metadata).length > 0 && (
-          <TabsContent value="metadata" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Metadata</CardTitle>
-                <CardDescription>
-                  Additional device properties and custom fields
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
-                    {JSON.stringify(device.metadata, null, 2)}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
+        <TabsContent value="config">
+          <DeviceConfigTab
+            device={device}
+            locations={locations}
+            saving={saving}
+            deleting={deleting}
+            onSave={handleSave}
+            onDelete={handleDelete}
+          />
+        </TabsContent>
 
-        {/* System Info Tab */}
-        <TabsContent value="info" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Information</CardTitle>
-              <CardDescription>
-                Internal identifiers and timestamps
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Primary Identifiers */}
-              <div>
-                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-                  Primary Identifiers
-                </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Device ID</p>
-                    <p className="break-all font-mono text-sm">{device.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Organization ID
-                    </p>
-                    <p className="break-all font-mono text-sm">
-                      {device.organization_id}
-                    </p>
-                  </div>
-                </div>
-              </div>
+        <TabsContent value="alerts">
+          <DeviceAlertsTab device={device} isGateway={isGateway} />
+        </TabsContent>
 
-              <Separator />
-
-              {/* Related Entity IDs */}
-              <div>
-                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-                  Related Entities
-                </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {device.location_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Location ID
-                      </p>
-                      <p className="break-all font-mono text-sm">
-                        {device.location_id}
-                      </p>
-                    </div>
-                  )}
-                  {device.department_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Department ID
-                      </p>
-                      <p className="break-all font-mono text-sm">
-                        {device.department_id}
-                      </p>
-                    </div>
-                  )}
-                  {device.integration_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Integration ID
-                      </p>
-                      <p className="break-all font-mono text-sm">
-                        {device.integration_id}
-                      </p>
-                    </div>
-                  )}
-                  {device.external_device_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        External Device ID
-                      </p>
-                      <p className="break-all font-mono text-sm">
-                        {device.external_device_id}
-                      </p>
-                    </div>
-                  )}
-                  {device.cohort_id && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cohort ID</p>
-                      <p className="font-mono text-sm">{device.cohort_id}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Timestamps */}
-              <div>
-                <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-                  Timestamps
-                </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {device.created_at && (
-                    <div>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        Created At
-                      </p>
-                      <p className="text-sm font-medium">
-                        {fmt.dateTime(device.created_at)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {device.created_at}
-                      </p>
-                    </div>
-                  )}
-                  {device.updated_at && (
-                    <div>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        Updated At
-                      </p>
-                      <p className="text-sm font-medium">
-                        {fmt.dateTime(device.updated_at)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {device.updated_at}
-                      </p>
-                    </div>
-                  )}
-                  {device.last_seen && (
-                    <div>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Activity className="h-3 w-3" />
-                        Last Seen
-                      </p>
-                      <p className="text-sm font-medium">
-                        {fmt.dateTime(device.last_seen)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {device.last_seen}
-                      </p>
-                    </div>
-                  )}
-                  {device.last_seen_online && (
-                    <div>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Activity className="h-3 w-3" />
-                        Last Seen Online
-                      </p>
-                      <p className="text-sm font-medium">
-                        {fmt.dateTime(device.last_seen_online)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {device.last_seen_online}
-                      </p>
-                    </div>
-                  )}
-                  {device.last_seen_offline && (
-                    <div>
-                      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Activity className="h-3 w-3" />
-                        Last Seen Offline
-                      </p>
-                      <p className="text-sm font-medium">
-                        {fmt.dateTime(device.last_seen_offline)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {device.last_seen_offline}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {device.hardware_ids && device.hardware_ids.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-                      Hardware Identifiers
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {device.hardware_ids.map((id, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="outline"
-                          className="font-mono text-xs"
-                        >
-                          {id}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="system">
+          <DeviceSystemInfoTab device={device} />
         </TabsContent>
       </Tabs>
     </div>
