@@ -442,7 +442,7 @@ serve(async (req) => {
   }
 
   <div style="padding:0 20px 20px;">
-    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🏆 Top 10 Key Features — Already Live</h2>
+    <h2 style="font-size:16px; color:#1a1a2e; border-bottom:2px solid #e5e7eb; padding-bottom:8px; margin:20px 0 12px;">🏆 Top 12 Key Features — Already Live</h2>
     <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
         <tr>
@@ -459,7 +459,7 @@ serve(async (req) => {
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">2</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Multi-Org Management & RBAC</strong><br><span style="font-size:11px; color:#6b7280;">Role-based access (super_admin, admin, member), org switching, Row-Level Security</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Multi-Org Management &amp; RBAC</strong><br><span style="font-size:11px; color:#6b7280;">Role-based access (super_admin, admin, member), org switching, Row-Level Security</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
@@ -474,32 +474,42 @@ serve(async (req) => {
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">5</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>44 Serverless Edge Functions</strong><br><span style="font-size:11px; color:#6b7280;">Deno-based compute for auth, CRUD, analytics, integrations, cron jobs</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>56 Serverless Edge Functions</strong><br><span style="font-size:11px; color:#6b7280;">Deno-based compute for auth, CRUD, analytics, billing, integrations, cron jobs</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">6</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Feedback System with GitHub Sync</strong><br><span style="font-size:11px; color:#6b7280;">User feedback → auto-creates GitHub issues, bidirectional sync, edit/reply</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Stripe Billing &amp; Subscriptions</strong><br><span style="font-size:11px; color:#6b7280;">3-tier pricing (Monitor/Protect/Command), Stripe Checkout, webhooks, customer portal, usage metering</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">7</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Automated Daily Platform Reports</strong><br><span style="font-size:11px; color:#6b7280;">Cron-driven daily email digest to leadership with health, stats, trends</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Feedback System with GitHub Sync</strong><br><span style="font-size:11px; color:#6b7280;">User feedback → auto-creates GitHub issues, bidirectional sync, edit/reply</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">8</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Golioth IoT Cloud Integration</strong><br><span style="font-size:11px; color:#6b7280;">Device provisioning, LightDB state/stream, OTA updates, fleet management</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Automated Daily Platform Reports</strong><br><span style="font-size:11px; color:#6b7280;">Cron-driven daily email digest to leadership with health, stats, trends</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">9</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Device Transfer Between Orgs</strong><br><span style="font-size:11px; color:#6b7280;">Drag-and-drop device reassignment with full audit trail and data migration</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Golioth IoT Cloud Integration</strong><br><span style="font-size:11px; color:#6b7280;">Device provisioning, LightDB state/stream, OTA updates, fleet management</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
         <tr>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">10</td>
-          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Screenshot Upload & Evidence Capture</strong><br><span style="font-size:11px; color:#6b7280;">Attach screenshots to feedback with Supabase Storage, auto-linked to issues</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Device Transfer Between Orgs</strong><br><span style="font-size:11px; color:#6b7280;">Drag-and-drop device reassignment with full audit trail and data migration</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">11</td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>Screenshot Upload &amp; Evidence Capture</strong><br><span style="font-size:11px; color:#6b7280;">Attach screenshots to feedback with Supabase Storage, auto-linked to issues</span></td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:600;">12</td>
+          <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb;"><strong>3-Environment Deployment Pipeline</strong><br><span style="font-size:11px; color:#6b7280;">Dev → Staging → Production with GitHub Actions, branch protection, 22 managed secrets</span></td>
           <td style="padding:6px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#10b981;">✅ Live</td>
         </tr>
       </tbody>
