@@ -97,27 +97,45 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
       setIsSaving(true)
       const supabase = createClient()
 
+      const updatePayload = {
+        location_id: selectedLocationId || null,
+        metadata: {
+          ...device.metadata,
+          installed_at: installedAt || null,
+        },
+        updated_at: new Date().toISOString(),
+      }
+
+      console.log('💾 [LocationDetailsCard] Saving location update:', {
+        deviceId: device.id,
+        selectedLocationId,
+        updatePayload,
+      })
+
       // Update device with new location and metadata
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('devices')
-        .update({
-          location_id: selectedLocationId || null,
-          metadata: {
-            ...device.metadata,
-            installed_at: installedAt || null,
-          },
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', device.id)
+        .select('id, location_id')
+        .single()
 
       if (error) throw error
+
+      if (!data) {
+        console.error('❌ [LocationDetailsCard] Update returned no data - possible RLS block')
+        toast.error('Location update failed - no data returned')
+        return
+      }
+
+      console.log('✅ [LocationDetailsCard] Save result:', data)
 
       toast.success('Location details updated successfully')
 
       setIsEditing(false)
 
-      // Reload page to show updated data
-      window.location.reload()
+      // Brief delay so user sees the success toast before reload
+      setTimeout(() => window.location.reload(), 1000)
     } catch (error) {
       console.error('Error updating location:', error)
       toast.error('Failed to update location details')
