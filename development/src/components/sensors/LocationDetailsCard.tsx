@@ -136,14 +136,18 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const selectedLocation = locations.find(
     (loc) => loc.id === selectedLocationId
   )
-  const displayLocationName =
-    selectedLocation?.name || device.location || 'Not assigned'
 
   // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
   // Only check after locations have actually loaded (length > 0 or loading finished with empty list)
   const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length > 0 && !selectedLocation)
 
+  // If the location_id is stale (cross-org), don't show the old location name
+  const displayLocationName = isStaleLocation
+    ? 'Not assigned'
+    : selectedLocation?.name || (selectedLocationId ? device.location : null) || 'Not assigned'
+
   // Auto-clear stale location_id so the UI isn't stuck
+  // Also persist the null to the database so it doesn't keep showing the old location
   useEffect(() => {
     if (isStaleLocation && !isEditing) {
       console.warn(
@@ -151,8 +155,31 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
         selectedLocationId
       )
       setSelectedLocationId('')
+
+      // Persist the null location_id to the database
+      const clearStaleLocation = async () => {
+        try {
+          const supabase = createClient()
+          const { error } = await supabase
+            .from('devices')
+            .update({
+              location_id: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', device.id)
+
+          if (error) {
+            console.error('Failed to clear stale location_id:', error)
+          } else {
+            console.log('✅ [LocationDetailsCard] Cleared stale location_id from database for device:', device.id)
+          }
+        } catch (err) {
+          console.error('Error clearing stale location_id:', err)
+        }
+      }
+      clearStaleLocation()
     }
-  }, [isStaleLocation, isEditing, selectedLocationId])
+  }, [isStaleLocation, isEditing, selectedLocationId, device.id])
 
   // Debug logging for map display
   useEffect(() => {
