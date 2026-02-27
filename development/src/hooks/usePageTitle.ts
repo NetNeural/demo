@@ -22,6 +22,7 @@ const ROUTE_TITLES: [string, string][] = [
   ['/dashboard/integrations/view', 'Integration Details'],
   ['/dashboard/integrations', 'Integrations'],
   ['/dashboard/organizations', 'Organization'],
+  ['/dashboard/facility-map', 'Facility Map'],
   ['/dashboard/reports/audit-log', 'Audit Log'],
   ['/dashboard/reports/alerts', 'Alert History'],
   ['/dashboard/reports/telemetry', 'Telemetry Trends'],
