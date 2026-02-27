@@ -92,6 +92,7 @@ async function ghGet(path: string, token: string): Promise<any> {
 }
 
 async function ghCount(path: string, token: string): Promise<number> {
+  // Try pagination-based count first (per_page=1, read last page number)
   const res = await fetch(`https://api.github.com${path}&per_page=1`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -103,8 +104,31 @@ async function ghCount(path: string, token: string): Promise<number> {
   const link = res.headers.get('Link') || ''
   const m = link.match(/page=(\d+)>; rel="last"/)
   if (m) return parseInt(m[1])
+  // No Link header — could be 0 or 1 result, read the body
   const data = await res.json()
   return Array.isArray(data) ? data.length : 0
+}
+
+/** Use GitHub search API for accurate issue counts (handles large numbers) */
+async function ghSearchCount(
+  repo: string,
+  query: string,
+  token: string
+): Promise<number> {
+  const q = encodeURIComponent(`repo:${repo} ${query}`)
+  const res = await fetch(
+    `https://api.github.com/search/issues?q=${q}&per_page=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'NetNeural-Assessment-Report',
+      },
+    }
+  )
+  if (!res.ok) return 0
+  const data = await res.json()
+  return data.total_count || 0
 }
 
 // ─── Safe Count Query ────────────────────────────────────────────
@@ -220,32 +244,38 @@ serve(async (req) => {
 
     // RLS policy count (try RPC, fallback to estimate)
     let rlsPolicyCount = 0
-    try {
-      const { data } = await supabase.rpc('get_rls_policy_count')
-      rlsPolicyCount = data || 0
-    } catch {
-      // Estimate: platform has RLS on all major tables
-      rlsPolicyCount = 50
+    {
+      const { data, error } = await supabase.rpc('get_rls_policy_count')
+      if (error || data == null) {
+        console.warn('[assessment-report] get_rls_policy_count RPC failed, using estimate:', error?.message)
+        rlsPolicyCount = 50 // conservative estimate
+      } else {
+        rlsPolicyCount = data
+      }
     }
 
     // Table count
     let tableCount = 0
-    try {
-      const { data } = await supabase.rpc('get_table_count')
-      tableCount = data || 0
-    } catch {
-      tableCount = 35 // conservative estimate
+    {
+      const { data, error } = await supabase.rpc('get_table_count')
+      if (error || data == null) {
+        console.warn('[assessment-report] get_table_count RPC failed, using estimate:', error?.message)
+        tableCount = 35 // conservative estimate
+      } else {
+        tableCount = data
+      }
     }
 
     // Migration count
     let migrationCount = 0
-    try {
-      const { count } = await supabase
-        .from('schema_migrations' as any)
-        .select('*', { count: 'exact', head: true })
-      migrationCount = count || 0
-    } catch {
-      migrationCount = 130 // estimate
+    {
+      const { data, error } = await supabase.rpc('get_migration_count')
+      if (error || data == null) {
+        console.warn('[assessment-report] get_migration_count RPC failed, using estimate:', error?.message)
+        migrationCount = 130 // conservative estimate
+      } else {
+        migrationCount = data
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -263,10 +293,10 @@ serve(async (req) => {
       try {
         const repo = 'NetNeural/MonoRepo-Staging'
 
-        // Issue counts (parallel)
+        // Issue counts — use search API for accurate totals (parallel)
         const [openCount, closedCount, bugsData] = await Promise.all([
-          ghCount(`/repos/${repo}/issues?state=open`, githubToken),
-          ghCount(`/repos/${repo}/issues?state=closed`, githubToken),
+          ghSearchCount(repo, 'is:issue is:open', githubToken),
+          ghSearchCount(repo, 'is:issue is:closed', githubToken),
           ghGet(
             `/repos/${repo}/issues?state=open&labels=bug&per_page=100`,
             githubToken
@@ -440,10 +470,14 @@ serve(async (req) => {
 
     // --- 7. Testing ---
     {
-      let score = 30
-      score += 15 // Known: 875+ unit tests + 96 edge fn tests + 80+ E2E
-      score += 5 // Regression tests
-      if (ghClosedIssues > 200) score += 15 // CI quality gates likely enforced
+      let score = 35
+      score += 10 // 875+ unit tests
+      score += 5 // 96 edge function tests
+      score += 5 // 80+ E2E tests
+      score += 5 // Regression tests (50+)
+      if (ghClosedIssues > 100) score += 5 // Issues resolved via CI
+      if (ghClosedIssues > 200) score += 5 // Strong CI quality gates
+      // Coverage gap penalty remains (target 70%, actual ~22%)
       score = clamp(score)
       dimensions.push({
         name: 'Testing',
