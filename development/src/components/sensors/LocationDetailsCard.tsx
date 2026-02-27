@@ -12,8 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import dynamic from 'next/dynamic'
@@ -47,6 +48,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [loadingLocations, setLoadingLocations] = useState(true)
+  const staleClearedRef = useRef(false) // Prevent repeated auto-clear
 
   // Form state
   const [selectedLocationId, setSelectedLocationId] = useState<string>(
@@ -95,36 +97,34 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      const supabase = createClient()
 
-      const updatePayload = {
+      const updates = {
         location_id: selectedLocationId || null,
         metadata: {
           ...device.metadata,
           installed_at: installedAt || null,
         },
-        updated_at: new Date().toISOString(),
       }
 
-      console.log('💾 [LocationDetailsCard] Saving location update:', {
+      console.log('💾 [LocationDetailsCard] Saving via edge function:', {
         deviceId: device.id,
         selectedLocationId,
-        updatePayload,
+        updates,
       })
 
-      // Update device with new location and metadata
-      const { error } = await supabase
-        .from('devices')
-        .update(updatePayload)
-        .eq('id', device.id)
+      // Use edge function (service role) to bypass RLS
+      const response = await edgeFunctions.devices.update(device.id, updates)
 
-      if (error) throw error
+      if (!response.success) {
+        throw new Error((response.error as { message?: string })?.message || 'Failed to update location')
+      }
 
       console.log('✅ [LocationDetailsCard] Location saved for device:', device.id)
 
       toast.success('Location details updated successfully')
 
       setIsEditing(false)
+      staleClearedRef.current = true // Prevent auto-clear from wiping this save
 
       // Brief delay so user sees the success toast before reload
       setTimeout(() => window.location.reload(), 1000)
@@ -159,27 +159,23 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   // Auto-clear stale location_id so the UI isn't stuck
   // Also persist the null to the database so it doesn't keep showing the old location
   useEffect(() => {
-    if (isStaleLocation && !isEditing) {
+    if (isStaleLocation && !isEditing && !staleClearedRef.current) {
       console.warn(
         '⚠️ [LocationDetailsCard] Stale location_id detected (likely from org transfer), clearing:',
         selectedLocationId
       )
+      staleClearedRef.current = true // Only clear once per mount
       setSelectedLocationId('')
 
-      // Persist the null location_id to the database
+      // Persist the null location_id via edge function (service role bypasses RLS)
       const clearStaleLocation = async () => {
         try {
-          const supabase = createClient()
-          const { error } = await supabase
-            .from('devices')
-            .update({
-              location_id: null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', device.id)
+          const response = await edgeFunctions.devices.update(device.id, {
+            location_id: null,
+          })
 
-          if (error) {
-            console.error('Failed to clear stale location_id:', error)
+          if (!response.success) {
+            console.error('Failed to clear stale location_id:', response.error)
           } else {
             console.log('✅ [LocationDetailsCard] Cleared stale location_id from database for device:', device.id)
           }
