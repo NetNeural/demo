@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
-import { Wifi, WifiOff, AlertTriangle, Battery, Wrench } from 'lucide-react'
+import { Wifi, WifiOff, AlertTriangle, Battery, Wrench, ExternalLink, Clock } from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
   online: 'bg-green-500 shadow-green-500/50',
@@ -39,6 +39,22 @@ const SIZE_MAP = {
   large: { dot: 'h-5 w-5', pulse: 'h-7 w-7' },
 }
 
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return 'Never'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+function formatTelemetryKey(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'online':
@@ -60,8 +76,10 @@ interface DeviceMarkerProps {
   mode: PlacementMode
   selected?: boolean
   onClick?: () => void
+  onNavigate?: (deviceId: string) => void
   onDragEnd?: (xPercent: number, yPercent: number) => void
   containerRef: React.RefObject<HTMLDivElement | null>
+  telemetry?: Record<string, unknown> | null
 }
 
 export function DeviceMarker({
@@ -69,8 +87,10 @@ export function DeviceMarker({
   mode,
   selected = false,
   onClick,
+  onNavigate,
   onDragEnd,
   containerRef,
+  telemetry,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -138,6 +158,7 @@ export function DeviceMarker({
           <div
             className={cn(
               'absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-shadow',
+              mode === 'view' && onNavigate && 'cursor-pointer',
               mode === 'edit' && 'cursor-grab',
               dragging && 'cursor-grabbing z-50',
               selected && 'z-40'
@@ -148,7 +169,11 @@ export function DeviceMarker({
             }}
             onClick={(e) => {
               e.stopPropagation()
-              onClick?.()
+              if (mode === 'view' && onNavigate && placement.device_id) {
+                onNavigate(placement.device_id)
+              } else {
+                onClick?.()
+              }
             }}
             onMouseDown={handleMouseDown}
           >
@@ -173,10 +198,15 @@ export function DeviceMarker({
             />
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[220px]">
-          <div className="space-y-1">
-            <p className="font-medium text-sm">{displayName}</p>
-            <div className="flex items-center gap-1.5 text-xs">
+        <TooltipContent side="top" className="max-w-[280px]">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-sm">{displayName}</p>
+              {mode === 'view' && onNavigate && (
+                <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <StatusIcon status={status} />
               <Badge
                 variant="outline"
@@ -191,6 +221,12 @@ export function DeviceMarker({
               >
                 {status}
               </Badge>
+              {device?.last_seen && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {formatRelativeTime(device.last_seen)}
+                </span>
+              )}
             </div>
             {device?.device_type && (
               <p className="text-xs text-muted-foreground">{device.device_type}</p>
@@ -200,6 +236,25 @@ export function DeviceMarker({
                 <Battery className="h-3 w-3" />
                 {device.battery_level}%
               </div>
+            )}
+            {/* Telemetry readings */}
+            {telemetry && Object.keys(telemetry).length > 0 && (
+              <div className="border-t pt-1.5 mt-0.5">
+                <p className="text-[10px] font-medium uppercase text-muted-foreground mb-1">Latest Readings</p>
+                <div className="space-y-0.5">
+                  {Object.entries(telemetry).slice(0, 6).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between text-xs gap-3">
+                      <span className="text-muted-foreground truncate">{formatTelemetryKey(key)}</span>
+                      <span className="font-mono text-foreground shrink-0">
+                        {typeof value === 'number' ? value.toFixed(1) : String(value ?? '')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {mode === 'view' && onNavigate && (
+              <p className="text-[10px] text-muted-foreground/70 italic pt-0.5">Click to view details</p>
             )}
           </div>
         </TooltipContent>

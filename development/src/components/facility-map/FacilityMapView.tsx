@@ -7,8 +7,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
@@ -69,10 +71,15 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingMap, setEditingMap] = useState<FacilityMap | null>(null)
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
+  const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
+  const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
+
+  const router = useRouter()
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
   const supabaseRef = useRef(createClient() as any)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const selectedMap = maps.find((m) => m.id === selectedMapId) || null
 
@@ -157,6 +164,54 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [organizationId])
 
+  // Load device counts per map for thumbnail badges
+  const loadMapPlacementCounts = useCallback(async () => {
+    if (maps.length === 0) return
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('device_map_placements')
+        .select('facility_map_id')
+        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
+
+      if (error) throw error
+      const counts: Record<string, number> = {}
+      for (const row of data || []) {
+        counts[row.facility_map_id] = (counts[row.facility_map_id] || 0) + 1
+      }
+      setMapPlacementCounts(counts)
+    } catch (err) {
+      console.error('Failed to load placement counts:', err)
+    }
+  }, [maps])
+
+  // Load latest telemetry for placed devices (shown in marker tooltips)
+  const loadTelemetry = useCallback(async () => {
+    if (placements.length === 0) {
+      setTelemetryMap({})
+      return
+    }
+    const deviceIds = [...new Set(placements.map((p) => p.device_id))]
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('device_telemetry_history')
+        .select('device_id, telemetry, received_at')
+        .in('device_id', deviceIds)
+        .order('received_at', { ascending: false })
+        .limit(deviceIds.length * 2)
+
+      if (error) throw error
+      const map: Record<string, Record<string, unknown>> = {}
+      for (const row of data || []) {
+        if (!map[row.device_id]) {
+          map[row.device_id] = row.telemetry as Record<string, unknown>
+        }
+      }
+      setTelemetryMap(map)
+    } catch (err) {
+      console.error('Failed to load telemetry:', err)
+    }
+  }, [placements])
+
   // Initial load
   useEffect(() => {
     loadMaps()
@@ -168,6 +223,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   useEffect(() => {
     loadPlacements()
   }, [loadPlacements])
+
+  // Load placement counts when maps or placements change
+  useEffect(() => {
+    loadMapPlacementCounts()
+  }, [loadMapPlacementCounts, placements])
+
+  // Load telemetry when placements change
+  useEffect(() => {
+    loadTelemetry()
+  }, [loadTelemetry])
 
   // Real-time device status subscription
   useEffect(() => {
@@ -314,15 +379,30 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         if (error) throw error
 
         setPlacements((prev) => [...prev, data as DeviceMapPlacement])
-        setDeviceToPlace(null)
-        setMode('edit')
-        toast.success('Device placed on map')
+
+        // Bulk placement: auto-select next unplaced device
+        const allPlacedIds = new Set([...placements.map((p) => p.device_id), deviceId])
+        const nextUnplaced = devices.find((d) => !allPlacedIds.has(d.id))
+        if (nextUnplaced) {
+          setDeviceToPlace(nextUnplaced.id)
+          // Stay in 'place' mode
+          const remaining = devices.filter((d) => !allPlacedIds.has(d.id)).length - 1
+          toast.success(
+            remaining > 0
+              ? `Device placed! ${remaining} more available to place`
+              : 'Device placed! Last device ready to place'
+          )
+        } else {
+          setDeviceToPlace(null)
+          setMode('edit')
+          toast.success('All devices placed on map!')
+        }
       } catch (err) {
         console.error('Place device error:', err)
         toast.error('Failed to place device')
       }
     },
-    [selectedMapId]
+    [selectedMapId, devices, placements]
   )
 
   const handleMovePlacement = useCallback(
@@ -421,9 +501,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     )
   }
 
-  // Also need imports for scrolling
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-
   return (
     <div className="space-y-4">
       {/* Horizontal scrolling map thumbnails */}
@@ -464,9 +541,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   </div>
                 )}
               </div>
-              {/* Label */}
+              {/* Label + device count */}
               <div className="px-2 py-1.5">
-                <p className="truncate text-xs font-medium">{m.name}</p>
+                <div className="flex items-center gap-1">
+                  <p className="truncate text-xs font-medium flex-1">{m.name}</p>
+                  {(mapPlacementCounts[m.id] || 0) > 0 && (
+                    <Badge variant="secondary" className="h-4 px-1 text-[9px] shrink-0">
+                      {mapPlacementCounts[m.id]}
+                    </Badge>
+                  )}
+                </div>
                 {m.floor_level !== 0 && (
                   <p className="text-[10px] text-muted-foreground">Floor {m.floor_level}</p>
                 )}
@@ -576,6 +660,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               onMovePlacement={handleMovePlacement}
               onSelectPlacement={setSelectedPlacementId}
               onRemovePlacement={handleRemovePlacement}
+              onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+              telemetryMap={telemetryMap}
             />
           </Card>
 

@@ -48,6 +48,7 @@ export interface PlacedDevice {
   battery_level: number | null
   signal_strength: number | null
   last_seen: string | null
+  latestTelemetry?: Record<string, unknown> | null
 }
 
 export interface MapViewport {
