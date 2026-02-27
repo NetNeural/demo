@@ -31,7 +31,6 @@ import {
   FileSpreadsheet,
 } from 'lucide-react'
 import ExecutiveReportsCard from './ExecutiveReportsCard'
-import FacilityMapReportCard from './FacilityMapReportCard'
 
 interface Props {
   organizationId: string
@@ -183,11 +182,8 @@ export default function AdminToolsTab({ organizationId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Executive Reports */}
+      {/* Executive Reports + Feature Reports */}
       <ExecutiveReportsCard organizationId={organizationId} />
-
-      {/* Feature Reports */}
-      <FacilityMapReportCard />
 
       {/* Data Export */}
       <Card>

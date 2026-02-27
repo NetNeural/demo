@@ -1,0 +1,113 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e13]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 15.5.12 (outdated) Turbopack" [ref=e17] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "An outdated version detected (latest is 16.1.6), upgrade is highly recommended!" [ref=e20]: Next.js 15.5.12 (outdated)
+            - generic [ref=e21]: Turbopack
+          - img
+      - dialog "Runtime Error" [ref=e23]:
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e30]: Runtime Error
+              - generic [ref=e31]:
+                - button "Copy Error Info" [ref=e32] [cursor=pointer]:
+                  - img [ref=e33]
+                - button "No related documentation found" [disabled] [ref=e35]:
+                  - img [ref=e36]
+                - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e38] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                  - img [ref=e39]
+            - paragraph [ref=e48]: NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - paragraph [ref=e52]:
+                - img [ref=e54]
+                - generic [ref=e58]: src/lib/supabase/config.ts (32:11) @ getSupabaseAnonKey
+                - button "Open in editor" [ref=e59] [cursor=pointer]:
+                  - img [ref=e61]
+              - generic [ref=e64]:
+                - generic [ref=e65]: 30 | const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+                - generic [ref=e66]: "31 | if (!key) {"
+                - generic [ref=e67]: "> 32 | throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined')"
+                - generic [ref=e68]: "| ^"
+                - generic [ref=e69]: "33 | }"
+                - generic [ref=e70]: 34 | return key
+                - generic [ref=e71]: "35 | }"
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - paragraph [ref=e74]:
+                  - text: Call Stack
+                  - generic [ref=e75]: "23"
+                - button "Show 17 ignore-listed frame(s)" [ref=e76] [cursor=pointer]:
+                  - text: Show 17 ignore-listed frame(s)
+                  - img [ref=e77]
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - text: getSupabaseAnonKey
+                  - button "Open getSupabaseAnonKey in editor" [ref=e81] [cursor=pointer]:
+                    - img [ref=e82]
+                - text: src/lib/supabase/config.ts (32:11)
+              - generic [ref=e84]:
+                - generic [ref=e85]:
+                  - text: createClient
+                  - button "Open createClient in editor" [ref=e86] [cursor=pointer]:
+                    - img [ref=e87]
+                - text: src/lib/supabase/client.ts (6:76)
+              - generic [ref=e89]:
+                - generic [ref=e90]:
+                  - text: new EdgeFunctionClient
+                  - button "Open new EdgeFunctionClient in editor" [ref=e91] [cursor=pointer]:
+                    - img [ref=e92]
+                - text: src/lib/edge-functions/client.ts (53:34)
+              - generic [ref=e94]:
+                - generic [ref=e95]:
+                  - generic [ref=e96]: "{module evaluation}"
+                  - button "Open __TURBOPACK__module__evaluation__ in editor" [ref=e97] [cursor=pointer]:
+                    - img [ref=e98]
+                - text: src/lib/edge-functions/client.ts (251:30)
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - generic [ref=e102]: "{module evaluation}"
+                  - button "Open __TURBOPACK__module__evaluation__ in editor" [ref=e103] [cursor=pointer]:
+                    - img [ref=e104]
+                - text: src/contexts/OrganizationContext.tsx (13:1)
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - generic [ref=e108]: "{module evaluation}"
+                  - button "Open __TURBOPACK__module__evaluation__ in editor" [ref=e109] [cursor=pointer]:
+                    - img [ref=e110]
+                - text: src/app/dashboard/layout.tsx (8:1)
+        - generic [ref=e112]:
+          - generic [ref=e113]: "1"
+          - generic [ref=e114]: "2"
+    - generic [ref=e119] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e120]:
+        - img [ref=e121]
+      - generic [ref=e124]:
+        - button "Open issues overlay" [ref=e125]:
+          - generic [ref=e126]:
+            - generic [ref=e127]: "0"
+            - generic [ref=e128]: "1"
+          - generic [ref=e129]: Issue
+        - button "Collapse issues badge" [ref=e130]:
+          - img [ref=e131]
+  - 'heading "Application error: a client-side exception has occurred while loading localhost (see the browser console for more information)." [level=2] [ref=e135]'
+```

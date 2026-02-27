@@ -4,9 +4,9 @@ const { defineConfig } = require('@playwright/test')
  * @see https://playwright.dev/docs/test-configuration
  */
 module.exports = defineConfig({
-  testDir: './tests/playwright',
-  /* Also include e2e tests */
-  testMatch: ['**/tests/playwright/**/*.spec.ts', '**/e2e/**/*.spec.ts'],
+  testDir: '.',
+  /* Match tests in e2e/, tests/playwright/, and root-level spec files */
+  testMatch: ['e2e/**/*.spec.ts', 'tests/playwright/**/*.spec.ts', 'test-app.spec.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -106,10 +106,5 @@ module.exports = defineConfig({
   globalSetup: require.resolve('./tests/global-setup'),
   globalTeardown: require.resolve('./tests/global-teardown'),
 
-  /* Test match patterns */
-  testMatch: [
-    '**/__tests__/**/*.{test,spec}.ts',
-    '**/tests/**/*.{test,spec}.ts',
-    '**/*.{test,spec}.ts',
-  ],
+  /* Test match patterns are defined at the top of this config */
 })

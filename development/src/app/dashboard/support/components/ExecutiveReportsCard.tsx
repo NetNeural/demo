@@ -70,6 +70,25 @@ import {
   X,
   Bot,
   Sparkles,
+  Map,
+  Layers,
+  Activity,
+  Shield,
+  ChevronUp,
+  Zap,
+  Bell,
+  Cpu,
+  Globe,
+  MessageSquare,
+  Building2,
+  LineChart,
+  UserCog,
+  HeadphonesIcon,
+  Lock,
+  Palette,
+  Radio,
+  Gauge,
+  type LucideIcon,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -155,6 +174,295 @@ const REPORT_TYPES = [
   },
 ] as const
 
+// ---------------------------------------------------------------------------
+// Platform Feature Report Data — Comprehensive inventory for tier planning
+// ---------------------------------------------------------------------------
+
+interface FeatureSection {
+  category: string
+  icon: LucideIcon
+  color: string
+  features: string[]
+}
+
+const PLATFORM_FEATURES: FeatureSection[] = [
+  {
+    category: 'Authentication & Security',
+    icon: Lock,
+    color: 'text-red-500',
+    features: [
+      'Email/password login with Supabase Auth',
+      'Multi-factor authentication (MFA/TOTP)',
+      'Organization-branded login page',
+      'Password change & reset flows',
+      'Phone number setup & verification',
+      'Session management & token refresh',
+      'Role-based access control (5 roles: viewer, operator, technician, admin, owner)',
+      'Row-Level Security on all tables',
+    ],
+  },
+  {
+    category: 'Dashboard & Navigation',
+    icon: Gauge,
+    color: 'text-blue-500',
+    features: [
+      'Stat cards (devices, alerts, uptime, telemetry)',
+      'Locations overview with device counts',
+      'System health status panel',
+      'Recent alerts feed',
+      'Organization info card',
+      'Quick-nav grid to all sections',
+      'Collapsible sidebar navigation',
+      'Organization switcher (multi-org)',
+      'Quick actions menu (add device, create alert rule, invite user, submit feedback)',
+      'Keyboard shortcuts (Ctrl+K search, Ctrl+/ help, N/A/R/S/D quick-nav)',
+      'Theme toggle (light/dark/system)',
+      'Custom branding (logo, colors, org name)',
+      'Mobile-responsive layout',
+    ],
+  },
+  {
+    category: 'Device Management',
+    icon: Cpu,
+    color: 'text-cyan-500',
+    features: [
+      'Add device dialog with metadata fields',
+      'Device list with card & table view toggle',
+      'Filter by status, type, location',
+      'Sort by name, status, last seen, created',
+      'Search by name/ID',
+      'Pagination with configurable page size',
+      'Temperature unit toggle (°C/°F)',
+      'Auto-refresh with data-freshness indicator',
+      'Export devices to CSV',
+      'Bulk delete devices',
+      'Device detail: Overview tab (status, metadata, location, uptime)',
+      'Device detail: Telemetry tab (live readings, history chart, date range)',
+      'Device detail: Configuration tab (settings, firmware, thresholds)',
+      'Device detail: Alerts tab (device-specific alerts, create rules)',
+      'Device detail: System Info tab (hardware, network, diagnostics)',
+      'Transfer device between organizations',
+      'Real-time status updates via Supabase subscriptions',
+    ],
+  },
+  {
+    category: 'Device Types',
+    icon: Layers,
+    color: 'text-violet-500',
+    features: [
+      'Create/edit/delete device types',
+      'Visual range bars for normal/alert thresholds',
+      'Measurement metadata (unit, min, max, precision)',
+      'Assign types to devices',
+      'Type-based threshold defaults',
+      'Color-coded type badges',
+      'Type usage count tracking',
+    ],
+  },
+  {
+    category: 'Alerts & Notifications',
+    icon: Bell,
+    color: 'text-orange-500',
+    features: [
+      'Alert list with card & table view toggle',
+      'Tabs: Active, Acknowledged, Resolved, All',
+      'Search alerts by text',
+      'Filter by severity (critical, warning, info)',
+      'Filter by category (threshold, connectivity, system)',
+      'Group alerts by device',
+      'Acknowledge / snooze / clear actions',
+      'Bulk select & bulk actions',
+      'Alert timeline visualization',
+      'Browser push notifications',
+      'Deep linking to alert detail',
+      'Alert history with date range filtering',
+      'Severity-based color coding & icons',
+    ],
+  },
+  {
+    category: 'Alert Rules',
+    icon: Shield,
+    color: 'text-amber-500',
+    features: [
+      'Create/edit/delete alert rules',
+      'Multi-step wizard (condition, threshold, notification, schedule)',
+      'Toggle enable/disable per rule',
+      'Duplicate existing rules',
+      'Filter rules by type',
+      'Rule evaluation on telemetry ingestion',
+      'Notification channels (email, in-app, webhook)',
+      'Cooldown period configuration',
+    ],
+  },
+  {
+    category: 'AI Analytics',
+    icon: Sparkles,
+    color: 'text-purple-500',
+    features: [
+      'Configurable time range (24h, 7d, 30d, custom)',
+      'Device health score cards',
+      'Predictive forecasting with confidence intervals',
+      'Interactive charts (line, bar, area)',
+      'Device performance analytics tab',
+      'Alert analytics tab (trends, patterns)',
+      'AI-powered summary generation (GPT)',
+      'Export analytics reports',
+      'Send analytics via email',
+      'Cached AI summaries for performance',
+    ],
+  },
+  {
+    category: 'Facility Maps',
+    icon: Map,
+    color: 'text-teal-500',
+    features: [
+      'Create/edit/delete facility maps with metadata',
+      'Image upload (drag-drop, file picker, camera capture)',
+      'Click-to-place devices on floor plan',
+      'Drag-to-reposition device markers',
+      'Real-time device status on map (Supabase subscriptions)',
+      'Responsive percentage-based coordinates',
+      'Touch support for mobile/tablet',
+      'Multiple maps with thumbnail strip',
+      'View / Place / Edit mode switching',
+      'Device count badges per map',
+      'Click device marker to navigate to detail',
+      'Status summary bar (online/offline/warning/error)',
+      'Search & filter devices in side palette',
+      'Export map as PNG image',
+      'Telemetry tooltips on hover (up to 6 values)',
+      'Fullscreen toggle via Browser Fullscreen API',
+      'Collage / Single view toggle with arrow navigation',
+    ],
+  },
+  {
+    category: 'Feedback System',
+    icon: MessageSquare,
+    color: 'text-green-500',
+    features: [
+      'Submit bug reports with severity',
+      'Submit feature requests with priority',
+      'Attach screenshots',
+      'Auto-create GitHub Issues',
+      'Feedback history list',
+      'Edit/delete submitted feedback',
+      'Status tracking (open, in-progress, resolved)',
+      'Admin review & response',
+      'Category tagging',
+      'Search & filter feedback',
+    ],
+  },
+  {
+    category: 'Integrations',
+    icon: Globe,
+    color: 'text-indigo-500',
+    features: [
+      '9 integration types (MQTT, Golioth, AWS IoT, Azure IoT, Email, Slack, Webhook, NetNeural Hub, Google IoT)',
+      'Create/edit/delete integration configs',
+      'Per-device sync triggers',
+      'Auto-sync scheduling',
+      'Status toggle (enable/disable)',
+      'Copy/clone integration configs',
+      'Sync history log',
+      'Activity log with timestamps',
+      'Connection testing & validation',
+      'Credential management (encrypted)',
+    ],
+  },
+  {
+    category: 'Organization Management',
+    icon: Building2,
+    color: 'text-sky-500',
+    features: [
+      'Organization overview dashboard',
+      'Member management (invite, remove, role change)',
+      'Location management (CRUD, assign devices)',
+      'Organization-level integrations',
+      'Billing overview (plan, usage, invoices)',
+      'Billing admin (manage subscriptions, payment methods)',
+      'Access request review & approval',
+      'Customer org management (for MSPs)',
+      'Settings: branding (logo, colors, custom login page)',
+    ],
+  },
+  {
+    category: 'Reports',
+    icon: LineChart,
+    color: 'text-emerald-500',
+    features: [
+      'Report hub with 3 report types',
+      'Alert History report (filters, charts, export, AI summary)',
+      'Telemetry Trends report (device selection, date range, charts, export)',
+      'Audit Log report (user actions, filters, export)',
+      'Date range picker for all reports',
+      'Export to CSV/PDF',
+      'Send report via email',
+      'AI-generated report summaries',
+      'Chart visualizations (bar, line, pie)',
+    ],
+  },
+  {
+    category: 'Personal Settings',
+    icon: UserCog,
+    color: 'text-pink-500',
+    features: [
+      'Profile tab (name, email, avatar)',
+      'Preferences (theme, language, timezone, notification preferences)',
+      'Security (password change, MFA setup, active sessions, API key management)',
+      'Organization list & switching',
+      'Auto-save on changes',
+      'Temperature unit preference (°C/°F)',
+    ],
+  },
+  {
+    category: 'User Management',
+    icon: Users,
+    color: 'text-slate-500',
+    features: [
+      'User list with role badges',
+      'View/edit user details',
+      'Import users (bulk)',
+      'Role assignment & changes',
+      'User activity tracking',
+    ],
+  },
+  {
+    category: 'Support & Administration',
+    icon: HeadphonesIcon,
+    color: 'text-rose-500',
+    features: [
+      'Customer Assistance tab (org-level help)',
+      'Admin Tools (reports, export, bulk ops)',
+      'Documentation hub',
+      'Troubleshooting tools (super-admin)',
+      'System Health monitoring (super-admin)',
+      'Tests & Validation suite (super-admin)',
+    ],
+  },
+  {
+    category: 'Cross-Cutting Capabilities',
+    icon: Radio,
+    color: 'text-yellow-600',
+    features: [
+      'Multi-organization support with org switching',
+      'Real-time updates via Supabase subscriptions',
+      'Audit logging for all user actions',
+      'Custom branding per organization',
+      'Temperature unit conversion (global preference)',
+      'Data freshness indicators & auto-refresh',
+      'CSV export across all data views',
+      'Email delivery for reports & alerts',
+      'AI summaries (GPT-powered) for analytics & reports',
+      'Mobile-responsive across all pages',
+      'Browser push notifications',
+      'Keyboard accessibility & shortcuts',
+      'Dark/light/system theme support',
+    ],
+  },
+]
+
+const TOTAL_FEATURE_COUNT = PLATFORM_FEATURES.reduce((sum, s) => sum + s.features.length, 0)
+
 const DAYS_OF_WEEK = [
   { value: '0', label: 'Sunday' },
   { value: '1', label: 'Monday' },
@@ -206,6 +514,7 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   const [previewTitle, setPreviewTitle] = useState('')
   const [previewingReport, setPreviewingReport] = useState<string | null>(null)
   const [savingSchedule, setSavingSchedule] = useState<string | null>(null)
+  const [featureReportExpanded, setFeatureReportExpanded] = useState(false)
 
   // Members & recipient state
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([])
@@ -752,6 +1061,53 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   </div>
                 )
               }
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Platform Feature Report */}
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-teal-500" />
+                  Platform Feature Report
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Complete platform inventory — {TOTAL_FEATURE_COUNT} features across {PLATFORM_FEATURES.length} categories — for tier planning
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px]">
+                  {TOTAL_FEATURE_COUNT} features
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={() => setFeatureReportExpanded(!featureReportExpanded)}>
+                  {featureReportExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {featureReportExpanded && (
+              <div className="mt-4 space-y-3">
+                {PLATFORM_FEATURES.map((section) => (
+                  <div key={section.category} className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <section.icon className={`h-4 w-4 shrink-0 ${section.color}`} />
+                      <h4 className="text-xs font-semibold uppercase tracking-wide">{section.category}</h4>
+                      <Badge variant="secondary" className="text-[10px] ml-auto">{section.features.length}</Badge>
+                    </div>
+                    <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {section.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-tight py-0.5">
+                          <Zap className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </CardContent>
