@@ -146,7 +146,7 @@ function OrganizationsPageContent() {
             {isReseller && (
               <Badge variant="outline" className="flex items-center gap-1">
                 <Crown className="h-3 w-3" />
-                {currentOrganization.parentOrganizationId
+                {currentOrganization.parent_organization_id
                   ? 'Reseller'
                   : 'Platform Owner'}
               </Badge>
