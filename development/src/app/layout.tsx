@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   keywords: ['IoT', 'device management', 'monitoring', 'sensors', 'Golioth'],
   authors: [{ name: 'NetNeural Team' }],
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.svg',
   },
 }
 

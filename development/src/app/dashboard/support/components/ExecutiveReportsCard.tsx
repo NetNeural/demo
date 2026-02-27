@@ -399,7 +399,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
       const reportLabel =
         REPORT_TYPES.find((r) => r.key === reportType)?.label ?? reportType
-      toast.success(`${reportLabel} sent successfully`, {
+      const isAIReport = reportType === 'generate-report-summary' || reportType === 'ai-report-summary'
+      toast.success(`${reportLabel} ${isAIReport ? 'generated' : 'sent'} successfully`, {
         description: `Completed in ${(durationMs / 1000).toFixed(1)}s`,
       })
     } catch (err: unknown) {

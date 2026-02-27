@@ -192,15 +192,18 @@ Provide executive summary as JSON:
     const expiresAt = new Date(
       Date.now() + CACHE_DURATION_MINUTES * 60 * 1000
     ).toISOString()
-    await supabase.from('ai_insights_cache').upsert({
-      cache_key: cacheKey,
-      device_id: null,
-      organization_id: organizationId,
-      insights: summary,
-      generated_at: new Date().toISOString(),
-      expires_at: expiresAt,
-      token_usage: openaiData.usage?.total_tokens || 0,
-    })
+    await supabase.from('ai_insights_cache').upsert(
+      {
+        cache_key: cacheKey,
+        device_id: null,
+        organization_id: organizationId,
+        insights: summary,
+        generated_at: new Date().toISOString(),
+        expires_at: expiresAt,
+        token_usage: openaiData.usage?.total_tokens || 0,
+      },
+      { onConflict: 'cache_key' }
+    )
 
     console.log(
       `📊 OpenAI usage: ${openaiData.usage?.total_tokens || 0} tokens`
