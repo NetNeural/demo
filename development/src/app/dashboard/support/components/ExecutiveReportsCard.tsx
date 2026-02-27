@@ -68,6 +68,8 @@ import {
   Users,
   ChevronDown,
   X,
+  Bot,
+  Sparkles,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -134,6 +136,22 @@ const REPORT_TYPES = [
       'MVP status, issue tracking, environment health, risk assessment, financials',
     icon: ScrollText,
     color: 'text-emerald-500',
+  },
+  {
+    key: 'generate-report-summary',
+    label: 'AI Report Summary',
+    description:
+      'GPT-powered analysis of alert, telemetry, and audit reports with caching',
+    icon: Sparkles,
+    color: 'text-amber-500',
+  },
+  {
+    key: 'ai-report-summary',
+    label: 'AI Insights Summary',
+    description:
+      'Executive-level AI analysis with key findings, red flags, and recommendations',
+    icon: Bot,
+    color: 'text-rose-500',
   },
 ] as const
 
@@ -279,6 +297,51 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   })
 
   // -------------------------------------------------------------------------
+  // Build request body for AI report functions
+  // -------------------------------------------------------------------------
+
+  const buildAIReportBody = async (reportType: string): Promise<Record<string, unknown>> => {
+    // For AI functions, fetch live alert data to generate a real summary
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const dateRange = `${sevenDaysAgo.split('T')[0]} to ${now.toISOString().split('T')[0]}`
+
+    // Fetch alerts for context
+    const { data: alerts } = await supabase
+      .from('alerts')
+      .select('id, severity, is_resolved, alert_type, created_at')
+      .gte('created_at', sevenDaysAgo)
+      .limit(200)
+
+    const alertData = (alerts || []).map((a: Record<string, unknown>) => ({
+      severity: a.severity,
+      is_resolved: a.is_resolved,
+      alert_type: a.alert_type,
+    }))
+
+    if (reportType === 'generate-report-summary') {
+      return {
+        reportType: 'alert-history',
+        reportData: {
+          dateRange,
+          totalRecords: alertData.length,
+          criticalCount: alertData.filter((a: Record<string, unknown>) => a.severity === 'critical').length,
+        },
+        organizationId,
+      }
+    }
+
+    // ai-report-summary
+    return {
+      reportType: 'alert_history',
+      dateRange,
+      totalRecords: alertData.length,
+      data: alertData,
+      organizationId,
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Run report on demand
   // -------------------------------------------------------------------------
 
@@ -299,9 +362,15 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
       .single()
 
     try {
-      const body: Record<string, unknown> = {}
-      if (selectedRecipients.length > 0) {
-        body.recipients = selectedRecipients
+      let body: Record<string, unknown> = {}
+
+      // AI report functions need structured input data
+      if (reportType === 'generate-report-summary' || reportType === 'ai-report-summary') {
+        body = await buildAIReportBody(reportType)
+      } else {
+        if (selectedRecipients.length > 0) {
+          body.recipients = selectedRecipients
+        }
       }
 
       const { data, error } = await supabase.functions.invoke(reportType, {
@@ -365,10 +434,18 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
     previewingRef.current = true
     setPreviewingReport(reportType)
     try {
+      // AI report functions need structured input, not { preview: true }
+      let body: Record<string, unknown>
+      if (reportType === 'generate-report-summary' || reportType === 'ai-report-summary') {
+        body = await buildAIReportBody(reportType)
+      } else {
+        body = { preview: true }
+      }
+
       const { data, error } = await supabase.functions.invoke(reportType, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { preview: true },
+        body,
       })
 
       if (error) throw error
@@ -659,10 +736,16 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       >
                         {isRunning ? (
                           <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : key === 'generate-report-summary' || key === 'ai-report-summary' ? (
+                          <Sparkles className="mr-1 h-4 w-4" />
                         ) : (
                           <Send className="mr-1 h-4 w-4" />
                         )}
-                        {isRunning ? 'Sending...' : 'Send Now'}
+                        {isRunning
+                          ? 'Running...'
+                          : key === 'generate-report-summary' || key === 'ai-report-summary'
+                            ? 'Generate'
+                            : 'Send Now'}
                       </Button>
                     </div>
                   </div>
@@ -929,35 +1012,49 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Send Report</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary'
+                ? 'Generate AI Summary'
+                : 'Send Report'}
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  You are about to send the{' '}
+                  You are about to{' '}
+                  {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary'
+                    ? 'generate'
+                    : 'send'}{' '}
+                  the{' '}
                   <strong>
                     {REPORT_TYPES.find((r) => r.key === confirmSendType)
                       ?.label ?? confirmSendType}
                   </strong>
                   .
                 </p>
-                <div>
-                  <p className="mb-1 font-medium text-foreground">
-                    Recipients:
+                {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary' ? (
+                  <p className="text-sm text-muted-foreground">
+                    This will use OpenAI to analyze recent alert data and generate an AI-powered summary with key findings, red flags, and recommendations.
                   </p>
-                  <ul className="list-inside list-disc space-y-0.5 text-sm">
-                    {(selectedRecipients.length > 0
-                      ? selectedRecipients
-                      : DEFAULT_LEADERSHIP_RECIPIENTS
-                    ).map((email) => (
-                      <li key={email}>{email}</li>
-                    ))}
-                  </ul>
-                  {selectedRecipients.length === 0 && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      No recipients selected — using default leadership list
+                ) : (
+                  <div>
+                    <p className="mb-1 font-medium text-foreground">
+                      Recipients:
                     </p>
-                  )}
-                </div>
+                    <ul className="list-inside list-disc space-y-0.5 text-sm">
+                      {(selectedRecipients.length > 0
+                        ? selectedRecipients
+                        : DEFAULT_LEADERSHIP_RECIPIENTS
+                      ).map((email) => (
+                        <li key={email}>{email}</li>
+                      ))}
+                    </ul>
+                    {selectedRecipients.length === 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        No recipients selected — using default leadership list
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -971,8 +1068,11 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                 }
               }}
             >
-              <Send className="mr-1 h-4 w-4" />
-              Send Now
+              {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary' ? (
+                <><Sparkles className="mr-1 h-4 w-4" /> Generate</>
+              ) : (
+                <><Send className="mr-1 h-4 w-4" /> Send Now</>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
