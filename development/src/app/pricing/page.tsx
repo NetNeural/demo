@@ -6,7 +6,6 @@ import { PlanCard } from '@/components/pricing/PlanCard'
 import { FeatureComparisonTable } from '@/components/pricing/FeatureComparisonTable'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Thermometer, Shield, Zap, ChevronDown } from 'lucide-react'
 import type { BillingPlan } from '@/types/billing'
@@ -196,11 +195,7 @@ export default function PricingPage() {
           >
             Annual
           </span>
-          {billingInterval === 'annual' && (
-            <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-200">
-              Save 17%
-            </Badge>
-          )}
+
         </div>
 
         {/* Sensor count slider */}

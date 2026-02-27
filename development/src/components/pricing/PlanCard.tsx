@@ -56,11 +56,7 @@ export function PlanCard({
   onSelectPlan,
 }: PlanCardProps) {
   const pricePerSensor = plan.price_per_device
-  const annualDiscount = 0.17
-  const effectivePrice =
-    billingInterval === 'annual'
-      ? pricePerSensor * (1 - annualDiscount)
-      : pricePerSensor
+  const effectivePrice = pricePerSensor
   const monthlyCost = effectivePrice * sensorCount
   const highlights = PLAN_HIGHLIGHTS[plan.slug] || []
 
@@ -105,15 +101,10 @@ export function PlanCard({
           <span className="text-sm text-muted-foreground">/sensor/mo</span>
         </div>
         {billingInterval === 'annual' && (
-          <>
-            <p className="mt-1 text-sm text-muted-foreground">
-              ${(effectivePrice * 12).toFixed(2)}{' '}
-              <span className="text-xs">/sensor/year</span>
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-green-600">
-              Save 17% vs monthly billing
-            </p>
-          </>
+          <p className="mt-1 text-sm text-muted-foreground">
+            ${(effectivePrice * 12).toFixed(2)}{' '}
+            <span className="text-xs">/sensor/year</span>
+          </p>
         )}
         <div className="mt-3 rounded-lg bg-muted/50 p-3">
           <p className="text-sm text-muted-foreground">
