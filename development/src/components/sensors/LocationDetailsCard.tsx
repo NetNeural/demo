@@ -136,6 +136,20 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const displayLocationName =
     selectedLocation?.name || device.location || 'Not assigned'
 
+  // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
+  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length >= 0 && !selectedLocation)
+
+  // Auto-clear stale location_id so the UI isn't stuck
+  useEffect(() => {
+    if (isStaleLocation && !isEditing) {
+      console.warn(
+        '⚠️ [LocationDetailsCard] Stale location_id detected (likely from org transfer), clearing:',
+        selectedLocationId
+      )
+      setSelectedLocationId('')
+    }
+  }, [isStaleLocation, isEditing, selectedLocationId])
+
   // Debug logging for map display
   useEffect(() => {
     if (selectedLocation) {
@@ -149,13 +163,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
           selectedLocation.latitude && selectedLocation.longitude
         ),
       })
-    } else if (selectedLocationId) {
-      console.log(
-        '⚠️ [LocationDetailsCard] Location ID set but not found:',
-        selectedLocationId
-      )
     }
-  }, [selectedLocation, selectedLocationId])
+  }, [selectedLocation])
 
   return (
     <Card>
