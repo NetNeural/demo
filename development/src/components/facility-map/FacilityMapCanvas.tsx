@@ -472,12 +472,11 @@ export function FacilityMapCanvas({
       {/* Canvas area */}
       <div
         className={cn(
-          'relative bg-gray-100',
-          !compact && 'overflow-hidden',
+          'relative bg-gray-100 overflow-hidden',
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}
         style={compact
-          ? { maxHeight: '220px', overflow: 'hidden' }
+          ? undefined
           : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px', overflow: 'hidden' }
         }
       >
@@ -488,7 +487,7 @@ export function FacilityMapCanvas({
         ) : (
           <div
             ref={containerRef}
-            className="relative inline-block w-full"
+            className={cn('relative inline-block', !compact && 'w-full')}
             onClick={handleCanvasClick}
             onTouchEnd={handleTouchEnd}
             onDrop={handleDrop}
@@ -499,7 +498,8 @@ export function FacilityMapCanvas({
               src={facilityMap.image_url}
               alt={facilityMap.name}
               className={cn(
-                'w-full transition-opacity',
+                'transition-opacity',
+                compact ? 'max-w-full max-h-[220px]' : 'w-full',
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               )}
               onLoad={() => setImageLoaded(true)}
