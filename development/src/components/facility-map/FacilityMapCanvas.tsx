@@ -304,7 +304,7 @@ export function FacilityMapCanvas({
           )}
           {mode === 'view' && placements.length > 0 && (
             <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-              Hover over icon to view details
+              Click icon to see full device details
             </Badge>
           )}
           <span className="text-xs text-muted-foreground">

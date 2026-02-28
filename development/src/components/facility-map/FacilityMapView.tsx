@@ -100,6 +100,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [hiddenLocations, setHiddenLocations] = useState<Set<string>>(new Set())
   /** Collage: show only maps with issues (warning/error/offline) */
   const [issuesOnly, setIssuesOnly] = useState(false)
+  /** Collage: show map name labels on cards */
+  const [showCollageName, setShowCollageName] = useState(true)
+  /** Collage: show device count labels on cards */
+  const [showCollageCount, setShowCollageCount] = useState(true)
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -1121,6 +1125,39 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 Issues Only
               </label>
 
+              {/* Show Name toggle */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showCollageName}
+                  onChange={(e) => setShowCollageName(e.target.checked)}
+                  className="h-3 w-3 rounded accent-primary cursor-pointer"
+                />
+                Show Name
+              </label>
+
+              {/* Show Count toggle */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showCollageCount}
+                  onChange={(e) => setShowCollageCount(e.target.checked)}
+                  className="h-3 w-3 rounded accent-primary cursor-pointer"
+                />
+                Show Count
+              </label>
+
+              {/* Show device names on markers */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showLabels}
+                  onChange={(e) => setShowLabels(e.target.checked)}
+                  className="h-3 w-3 rounded accent-primary cursor-pointer"
+                />
+                Show Names
+              </label>
+
               {/* Heatmap selector */}
               {getAvailableMetrics(telemetryMap).length > 0 && (
                 <>
@@ -1160,16 +1197,20 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             return (
               <Card key={m.id} className="overflow-hidden group relative">
                 {/* Map label overlay */}
+                {(showCollageName || showCollageCount) && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
+                  {showCollageName && (
                   <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
                     {m.name}
-                    {(mapPlacementCounts[m.id] || 0) > 0 && (
-                      <span className="ml-1.5 text-muted-foreground">
-                        ({mapPlacementCounts[m.id]})
-                      </span>
-                    )}
                   </Badge>
+                  )}
+                  {showCollageCount && (mapPlacementCounts[m.id] || 0) > 0 && (
+                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
+                    {issuesOnly ? 'Issues' : 'Device Count'} ({mapPlacementCounts[m.id]})
+                  </Badge>
+                  )}
                 </div>
+                )}
                 {/* Quick actions overlay */}
                 <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
