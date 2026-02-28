@@ -1113,12 +1113,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                         </div>
                       )}
 
-                      {/* Heatmap + Zone controls box — right-aligned, two rows */}
+                      {/* Heatmap + Zone controls box — right-aligned, grid for vertical alignment */}
                       {(availableMetrics.length > 0 || zones.length > 0 || mode === 'edit' || mode === 'place') && (
-                        <div className="ml-auto flex flex-col items-end gap-0.5 rounded border bg-muted/20 px-2 py-1">
+                        <div className="ml-auto grid grid-cols-[auto_auto_auto] items-center gap-x-1.5 gap-y-0.5 rounded border bg-muted/20 px-2 py-1">
                           {/* Row 1: Heatmap */}
                           {availableMetrics.length > 0 && (
-                            <div className="flex items-center gap-1.5">
+                            <>
                               <Button
                                 variant={heatmapMetric ? 'default' : 'outline'}
                                 size="sm"
@@ -1128,17 +1128,19 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                 <Flame className="mr-1 h-3 w-3" />
                                 Heatmap
                               </Button>
-                              {heatmapMetric && (
-                                <select
-                                  value={heatmapMetric}
-                                  onChange={(e) => setHeatmapMetric(e.target.value)}
-                                  className="h-6 rounded border bg-background px-1 text-[10px]"
-                                >
-                                  {availableMetrics.map((m) => (
-                                    <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
-                                  ))}
-                                </select>
-                              )}
+                              <div className="flex items-center gap-1.5">
+                                {heatmapMetric && (
+                                  <select
+                                    value={heatmapMetric}
+                                    onChange={(e) => setHeatmapMetric(e.target.value)}
+                                    className="h-6 rounded border bg-background px-1 text-[10px]"
+                                  >
+                                    {availableMetrics.map((m) => (
+                                      <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
@@ -1165,12 +1167,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                   </ul>
                                 </PopoverContent>
                               </Popover>
-                            </div>
+                            </>
                           )}
 
                           {/* Row 2: Zone */}
-                          <div className="flex items-center gap-1.5">
-                            {(mode === 'edit' || mode === 'place') && (
+                          {(mode === 'edit' || mode === 'place') && (
+                            <>
                               <Button
                                 variant={zoneDrawing ? 'default' : 'outline'}
                                 size="sm"
@@ -1180,39 +1182,39 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                 <PenTool className="mr-1 h-3 w-3" />
                                 {zoneDrawing ? 'Cancel' : 'Draw Zone'}
                               </Button>
-                            )}
-                            {zones.length > 0 && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
-                                    <Layers className="h-3 w-3" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent side="left" className="w-56 p-2">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold">Zones</span>
-                                  </div>
-                                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                                    {zones.map((z) => (
-                                      <div key={z.id} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-muted/50 group">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                          <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: z.color }} />
-                                          <span className="text-[11px] truncate">{z.name}</span>
-                                        </div>
-                                        <button
-                                          onClick={() => handleDeleteZoneById(z.id)}
-                                          className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
-                                          title={`Delete ${z.name}`}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
+                              <div className="flex items-center gap-1.5">
+                                {zones.length > 0 && (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                                        <Layers className="h-3 w-3" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent side="left" className="w-56 p-2">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-semibold">Zones</span>
                                       </div>
-                                    ))}
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                            {(mode === 'edit' || mode === 'place') && (
+                                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                                        {zones.map((z) => (
+                                          <div key={z.id} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-muted/50 group">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: z.color }} />
+                                              <span className="text-[11px] truncate">{z.name}</span>
+                                            </div>
+                                            <button
+                                              onClick={() => handleDeleteZoneById(z.id)}
+                                              className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                                              title={`Delete ${z.name}`}
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                )}
+                              </div>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
@@ -1230,8 +1232,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                   <p className="text-muted-foreground">Click a zone to select it. Use the zone list to manage or delete zones.</p>
                                 </PopoverContent>
                               </Popover>
-                            )}
-                          </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </>
