@@ -27,6 +27,9 @@ import {
   Palette,
   Monitor,
   LogIn,
+  Shield,
+  Key,
+  ExternalLink,
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -37,6 +40,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import type { OrganizationSettings } from '@/types/organization'
 import { DeviceTypeImageManager } from '@/components/organizations/DeviceTypeImageManager'
+import { FeatureGate } from '@/components/FeatureGate'
 
 interface OrganizationSettingsTabProps {
   organizationId: string
@@ -1536,6 +1540,75 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </Button>
         </CardContent>
       </Card>
+
+      {/* SSO Configuration — Enterprise only */}
+      <FeatureGate feature="sso" showUpgradePrompt>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Single Sign-On (SSO)
+            </CardTitle>
+            <CardDescription>
+              Configure SAML 2.0 SSO for your organization. Members can sign in
+              using your corporate identity provider.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-start gap-3">
+                <Shield className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">SAML 2.0 Integration</p>
+                  <p className="text-sm text-muted-foreground">
+                    SSO setup requires coordination with your IT team. Contact
+                    support to begin the configuration process for your identity
+                    provider (Okta, Azure AD, Google Workspace, etc.).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>SSO Status</Label>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                  <span className="text-sm text-muted-foreground">
+                    Not configured
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Provider</Label>
+                <p className="text-sm text-muted-foreground">—</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" disabled>
+                <Key className="mr-2 h-4 w-4" />
+                Configure SSO
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a
+                  href="https://docs.netneural.ai/sso"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  SSO Documentation
+                </a>
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Enterprise feature — supports SAML 2.0 with Okta, Azure AD, Google
+              Workspace, OneLogin, and other IdPs.
+            </p>
+          </CardContent>
+        </Card>
+      </FeatureGate>
 
       {/* Only show delete for child organizations — root org (no parent) cannot be deleted */}
       {currentOrganization?.parent_organization_id && (
