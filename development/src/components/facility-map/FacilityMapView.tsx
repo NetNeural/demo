@@ -452,13 +452,18 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
   // --- Heatmap available metrics ---
   // Detect which semantic metrics have numeric values across placed devices.
-  // Handles both flat-key telemetry ({temperature: 23.5}) and Golioth format
-  // ({type: "1", value: 23.5, sensor: "temp"}) via extractMetricValue.
+  // Telemetry formats vary by integration:
+  //   Golioth:  { type: "1", value: 23.5, sensor: "temp", units: 1 }
+  //   MQTT:     { temperature: 23.5, humidity: 45.2 }
+  //   Nested:   { env: { temp: 23.5 } }
+  // Step 1 uses extractMetricValue to find known metrics in any format.
+  // Step 2 picks up unknown flat numeric keys (e.g. custom MQTT fields).
   const availableMetrics = useMemo(() => {
     const allTelemetry = Object.values(telemetryMap)
     if (allTelemetry.length === 0) return []
 
     // 1. Check all known semantic metrics (temperature, humidity, etc.)
+    //    extractMetricValue handles Golioth, MQTT flat-key, sensor-name, and nested env
     const knownMetrics = Object.keys(METRIC_TO_SENSOR_TYPE)
     const found = new Set<string>()
     for (const metric of knownMetrics) {
@@ -468,11 +473,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       }
     }
 
-    // 2. Also check any flat numeric keys that aren't Golioth metadata fields
-    const GOLIOTH_META = new Set(['type', 'units', 'sensor', 'ts', 'timestamp', 'received_at'])
+    // 2. Also include any flat numeric keys that aren't transport/envelope metadata.
+    //    These are common in MQTT or custom integrations with arbitrary field names.
+    const TRANSPORT_META = new Set([
+      'type', 'units', 'sensor', 'value',      // Golioth envelope fields
+      'ts', 'timestamp', 'received_at', 'time', // Timestamp fields
+      'device_id', 'id', 'seq', 'version',      // Identity/sequencing
+    ])
     for (const tele of allTelemetry) {
       for (const [key, val] of Object.entries(tele)) {
-        if (typeof val === 'number' && !GOLIOTH_META.has(key) && !found.has(key)) {
+        if (typeof val === 'number' && !TRANSPORT_META.has(key) && !found.has(key)) {
           found.add(key)
         }
       }
