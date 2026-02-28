@@ -94,6 +94,9 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const hasCheckedAuth = useRef(false)
   // Issue #275: Prevent state updates on unmounted component
   const isMounted = useRef(true)
@@ -378,6 +381,43 @@ function LoginForm() {
       }
     },
     [mfaFactorId, mfaCode, router]
+  )
+
+  // ── Forgot password handler ──────────────────────────────────────────
+  const handleForgotPassword = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      const trimmedEmail = email.trim()
+      if (!trimmedEmail) {
+        setError('Please enter your email address')
+        return
+      }
+      setResetLoading(true)
+      setError('')
+      try {
+        const supabase = createClient()
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          trimmedEmail,
+          {
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+          }
+        )
+        if (resetError) {
+          if (!isMounted.current) return
+          setError(resetError.message)
+          setResetLoading(false)
+          return
+        }
+        if (!isMounted.current) return
+        setResetSent(true)
+      } catch {
+        if (!isMounted.current) return
+        setError('An unexpected error occurred. Please try again.')
+      } finally {
+        if (isMounted.current) setResetLoading(false)
+      }
+    },
+    [email]
   )
 
   // Don't render until branding is resolved (prevents flash)
@@ -694,6 +734,97 @@ function LoginForm() {
                 ← Back to sign in
               </button>
             </form>
+          ) : forgotMode ? (
+            /* ── Forgot Password Form ── */
+            resetSent ? (
+              <div className="text-center py-4">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
+                  <Lock className="h-6 w-6 text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-100">Check your email</h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  We sent a password reset link to{' '}
+                  <span className="font-medium text-gray-200">{email}</span>.
+                  Click the link in the email to reset your password.
+                </p>
+                <p className="mt-3 text-xs text-gray-500">
+                  Didn&apos;t receive it? Check your spam folder or try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(false)
+                    setResetSent(false)
+                    setError('')
+                  }}
+                  className="mt-6 text-sm transition-colors hover:text-gray-300"
+                  style={{ color: colors.primary }}
+                >
+                  ← Back to sign in
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword}>
+                <p className="mb-4 text-sm text-gray-400">
+                  Enter your email address and we&apos;ll send you a link to reset your password.
+                </p>
+
+                {/* Email */}
+                <div className="mb-6">
+                  <label
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                    htmlFor="reset-email"
+                  >
+                    Email address
+                  </label>
+                  <input
+                    id="reset-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    autoFocus
+                    className="w-full rounded-lg border border-gray-700/60 bg-gray-800/60 px-4 py-3 text-gray-100 transition-all placeholder:text-gray-500 focus:outline-none focus:ring-2"
+                    style={{
+                      ['--tw-ring-color' as string]: `${colors.primary}80`,
+                    }}
+                  />
+                </div>
+
+                {/* Submit */}
+                <Button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="h-12 w-full rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                    boxShadow: `0 4px 20px ${colors.primary}30`,
+                  }}
+                >
+                  {resetLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send reset link'
+                  )}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(false)
+                    setError('')
+                  }}
+                  className="mt-4 w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-300"
+                >
+                  ← Back to sign in
+                </button>
+              </form>
+            )
           ) : (
             /* ── Normal Login Form ── */
             <form onSubmit={handleSubmit}>
@@ -799,9 +930,20 @@ function LoginForm() {
           )}
 
           {/* Footer */}
-          <p className="mt-6 text-center text-xs text-gray-500">
-            Forgot your password? Contact your system administrator
-          </p>
+          {!forgotMode && !mfaRequired && (
+            <p className="mt-6 text-center text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotMode(true)
+                  setError('')
+                }}
+                className="text-gray-500 transition-colors hover:text-gray-300 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Security badge */}
