@@ -49,6 +49,7 @@ import {
   PenTool,
   Flame,
   Layers,
+  Info,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -846,62 +847,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           </Button>
         )}
 
-        {/* Zone controls (single view, edit mode) */}
-        {viewMode === 'single' && selectedMap && (mode === 'edit' || mode === 'place') && (
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={zoneDrawing ? 'default' : 'outline'}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setZoneDrawing(!zoneDrawing)}
-            >
-              <PenTool className="mr-1 h-3 w-3" />
-              {zoneDrawing ? 'Cancel Draw' : 'Draw Zone'}
-            </Button>
-            {selectedZoneId && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleDeleteZone}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Delete Zone
-              </Button>
-            )}
-            {zones.length > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                <Layers className="inline h-3 w-3 mr-0.5" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-        )}
 
-        {/* Heatmap toggle (single view with placements) */}
-        {viewMode === 'single' && selectedMap && availableMetrics.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={heatmapMetric ? 'default' : 'outline'}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setHeatmapMetric(heatmapMetric ? null : availableMetrics[0]!)}
-            >
-              <Flame className="mr-1 h-3 w-3" />
-              Heatmap
-            </Button>
-            {heatmapMetric && (
-              <select
-                value={heatmapMetric}
-                onChange={(e) => setHeatmapMetric(e.target.value)}
-                className="h-7 rounded border bg-background px-1.5 text-xs"
-              >
-                {availableMetrics.map((m) => (
-                  <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
 
         {/* Show device name labels checkbox (single view) */}
         {viewMode === 'single' && selectedMap && (
@@ -964,50 +910,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           </Button>
         )}
 
-        {/* Device type filter chips (#304) */}
-        {deviceTypeChips.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Filter className="h-3 w-3 text-muted-foreground" />
-            {deviceTypeChips.map(([type, count]) => {
-              const isHidden = hiddenDeviceTypes.has(type)
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggleDeviceType(type)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all ${
-                    isHidden
-                      ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
-                      : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
-                  }`}
-                >
-                  {type} ({count})
-                  {isHidden && <X className="h-2.5 w-2.5" />}
-                </button>
-              )
-            })}
-            {hiddenDeviceTypes.size > 0 && (
-              <button
-                onClick={showAllDeviceTypes}
-                className="text-[10px] text-primary underline hover:no-underline"
-              >
-                Show All
-              </button>
-            )}
-            {hiddenDeviceTypes.size === 0 && deviceTypeChips.length > 2 && (
-              <button
-                onClick={hideAllDeviceTypes}
-                className="text-[10px] text-muted-foreground underline hover:no-underline"
-              >
-                Hide All
-              </button>
-            )}
-            {hiddenDeviceTypes.size > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                {hiddenDeviceTypes.size} hidden
-              </span>
-            )}
-          </div>
-        )}
+
 
         {/* Map title + actions (single view) */}
         {viewMode === 'single' && selectedMap && (
@@ -1103,6 +1006,101 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onCreateZone={handleCreateZone}
                   zoneDrawing={zoneDrawing}
                   heatmapMetric={heatmapMetric}
+                  statusBarExtra={
+                    <>
+                      {/* Device type filter chips */}
+                      {deviceTypeChips.length > 1 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Filter className="h-3 w-3 text-muted-foreground" />
+                          {deviceTypeChips.map(([type, count]) => {
+                            const isHidden = hiddenDeviceTypes.has(type)
+                            return (
+                              <button
+                                key={type}
+                                onClick={() => toggleDeviceType(type)}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all ${
+                                  isHidden
+                                    ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
+                                    : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                                }`}
+                              >
+                                {type} ({count})
+                                {isHidden && <X className="h-2.5 w-2.5" />}
+                              </button>
+                            )
+                          })}
+                          {hiddenDeviceTypes.size > 0 && (
+                            <button onClick={showAllDeviceTypes} className="text-[10px] text-primary underline hover:no-underline">Show All</button>
+                          )}
+                          {hiddenDeviceTypes.size === 0 && deviceTypeChips.length > 2 && (
+                            <button onClick={hideAllDeviceTypes} className="text-[10px] text-muted-foreground underline hover:no-underline">Hide All</button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Separator before zone/heatmap controls */}
+                      {(deviceTypeChips.length > 1) && <span className="h-4 w-px bg-border" />}
+
+                      {/* Draw Zone button (always visible in single view) */}
+                      <Button
+                        variant={zoneDrawing ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-6 text-[10px] px-2"
+                        onClick={() => setZoneDrawing(!zoneDrawing)}
+                      >
+                        <PenTool className="mr-1 h-3 w-3" />
+                        {zoneDrawing ? 'Cancel' : 'Draw Zone'}
+                      </Button>
+                      {selectedZoneId && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          onClick={handleDeleteZone}
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Delete Zone
+                        </Button>
+                      )}
+                      {zones.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          <Layers className="inline h-3 w-3 mr-0.5" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+
+                      {/* Heatmap toggle */}
+                      {availableMetrics.length > 0 && (
+                        <>
+                          <span className="h-4 w-px bg-border" />
+                          <Button
+                            variant={heatmapMetric ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => setHeatmapMetric(heatmapMetric ? null : availableMetrics[0]!)}
+                          >
+                            <Flame className="mr-1 h-3 w-3" />
+                            Heatmap
+                          </Button>
+                          {heatmapMetric && (
+                            <select
+                              value={heatmapMetric}
+                              onChange={(e) => setHeatmapMetric(e.target.value)}
+                              className="h-6 rounded border bg-background px-1 text-[10px]"
+                            >
+                              {availableMetrics.map((m) => (
+                                <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                              ))}
+                            </select>
+                          )}
+                          {heatmapMetric && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5" title="Heatmap uses Inverse Distance Weighting to interpolate values between device positions. Colors range from blue (low) to red (high). Place 2+ devices with numeric telemetry data for best results.">
+                              <Info className="h-3 w-3" /> How it works
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </>
+                  }
                 />
               </Card>
 
