@@ -216,15 +216,20 @@ export function DeviceMarker({
                 selected && `ring-4 ${STATUS_RING[status]}`
               )}
             />
-            {/* Device name label */}
+            {/* Device name / type pill labels — stacked */}
             {(showLabel || showDeviceType) && (
-              <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium leading-tight text-white pointer-events-none">
-                {showLabel && displayName}
-                {showLabel && showDeviceType && device?.device_type && ' · '}
-                {showDeviceType && device?.device_type && (
-                  <span className="font-normal text-gray-300">{device.device_type}</span>
+              <div className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 flex flex-col items-center gap-px pointer-events-none">
+                {showLabel && (
+                  <span className="whitespace-nowrap rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium leading-tight text-white">
+                    {displayName}
+                  </span>
                 )}
-              </span>
+                {showDeviceType && device?.device_type && (
+                  <span className="whitespace-nowrap rounded bg-black/50 px-1 py-0.5 text-[9px] font-normal leading-tight text-gray-200">
+                    {device.device_type}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </TooltipTrigger>
