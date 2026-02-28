@@ -6,7 +6,7 @@
  * and map CRUD. Supports real-time device status via Supabase subscriptions.
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,14 +48,11 @@ import { toast } from 'sonner'
 import { FacilityMapCanvas } from './FacilityMapCanvas'
 import { DevicePalette } from './DevicePalette'
 import { MapManagerDialog } from './MapManagerDialog'
-import { ZoneDrawer } from './ZoneDrawer'
-import { getAvailableMetrics, formatMetricLabel } from './HeatmapOverlay'
 import type {
   FacilityMap,
   DeviceMapPlacement,
   PlacedDevice,
   PlacementMode,
-  FacilityMapZone,
 } from '@/types/facility-map'
 
 interface FacilityMapViewProps {
@@ -81,63 +78,14 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
   const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
-  const [viewMode, setViewMode] = useState<'single' | 'collage'>(() => {
-    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_viewMode'); if (v === 'collage') return 'collage' } catch {} } return 'single'
-  })
+  const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
-  const [showLabels, setShowLabels] = useState(() => {
-    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_showLabels') === 'true' } catch {} } return false
-  })
-  const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(new Set())
-  /** Zones */
-  const [zones, setZones] = useState<FacilityMapZone[]>([])
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
-  const [drawingZone, setDrawingZone] = useState(false)
-  const [zonePoints, setZonePoints] = useState<Array<{ x: number; y: number }>>([])
-  /** All zones across all maps, keyed by map id */
-  const [allZones, setAllZones] = useState<Record<string, FacilityMapZone[]>>({})
-  /** Heatmap metric selection (empty = off) */
-  const [heatmapMetric, setHeatmapMetric] = useState('')
+  const [showLabels, setShowLabels] = useState(false)
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
-  /** Collage: hidden locations */
-  const [hiddenLocations, setHiddenLocations] = useState<Set<string>>(new Set())
-  /** Collage: show only maps with issues (warning/error/offline) */
-  const [issuesOnly, setIssuesOnly] = useState(() => {
-    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_issuesOnly') === 'true' } catch {} } return false
-  })
-  /** Collage: show map name labels on cards */
-  const [showCollageName, setShowCollageName] = useState(() => {
-    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_showCollageName'); return v === null ? true : v === 'true' } catch {} } return true
-  })
-  /** Collage: show device count labels on cards */
-  const [showCollageCount, setShowCollageCount] = useState(() => {
-    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_showCollageCount'); return v === null ? true : v === 'true' } catch {} } return true
-  })
-  /** Show device type labels on markers */
-  const [showDeviceTypes, setShowDeviceTypes] = useState(() => {
-    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_showDeviceTypes') === 'true' } catch {} } return false
-  })
-
-  // Persist checkbox preferences to localStorage
-  useEffect(() => { try { localStorage.setItem('fm_showLabels', String(showLabels)) } catch {} }, [showLabels])
-  useEffect(() => { try { localStorage.setItem('fm_issuesOnly', String(issuesOnly)) } catch {} }, [issuesOnly])
-  useEffect(() => { try { localStorage.setItem('fm_showCollageName', String(showCollageName)) } catch {} }, [showCollageName])
-  useEffect(() => { try { localStorage.setItem('fm_showCollageCount', String(showCollageCount)) } catch {} }, [showCollageCount])
-  useEffect(() => { try { localStorage.setItem('fm_showDeviceTypes', String(showDeviceTypes)) } catch {} }, [showDeviceTypes])
-  useEffect(() => { try { localStorage.setItem('fm_viewMode', viewMode) } catch {} }, [viewMode])
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
-
-  // Set of all device IDs placed on ANY map (prevents duplicates across maps)
-  const globallyPlacedDeviceIds = useMemo(() => {
-    const ids = new Set<string>()
-    for (const arr of Object.values(allPlacements)) {
-      for (const p of arr) ids.add(p.device_id)
-    }
-    return ids
-  }, [allPlacements])
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
@@ -298,86 +246,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [placements])
 
-  // --- Zone Loading ---
-  const loadZones = useCallback(async () => {
-    if (!selectedMapId) { setZones([]); return }
-    try {
-      const { data, error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .select('*')
-        .eq('facility_map_id', selectedMapId)
-        .order('z_order', { ascending: true })
-      if (error) throw error
-      setZones((data || []) as FacilityMapZone[])
-    } catch {
-      // Table may not exist yet — silently ignore
-      setZones([])
-    }
-  }, [selectedMapId])
-
-  const loadAllZones = useCallback(async () => {
-    if (maps.length === 0) return
-    try {
-      const { data, error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .select('*')
-        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
-      if (error) throw error
-      const grouped: Record<string, FacilityMapZone[]> = {}
-      for (const row of (data || []) as FacilityMapZone[]) {
-        if (!grouped[row.facility_map_id]) grouped[row.facility_map_id] = []
-        grouped[row.facility_map_id]!.push(row)
-      }
-      setAllZones(grouped)
-    } catch {
-      setAllZones({})
-    }
-  }, [maps])
-
-  const handleSaveZone = useCallback(async (
-    name: string, color: string, opacity: number, points: Array<{ x: number; y: number }>
-  ) => {
-    if (!selectedMapId) return
-    try {
-      const { data, error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .insert({
-          facility_map_id: selectedMapId,
-          name,
-          color,
-          opacity,
-          points,
-          z_order: zones.length,
-        })
-        .select()
-        .single()
-      if (error) throw error
-      setZones((prev) => [...prev, data as FacilityMapZone])
-      setDrawingZone(false)
-      setZonePoints([])
-      toast.success(`Zone "${name}" created`)
-    } catch (err) {
-      console.error('Save zone error:', err)
-      toast.error('Failed to save zone')
-    }
-  }, [selectedMapId, zones.length])
-
-  const handleDeleteZone = useCallback(async (zoneId: string) => {
-    try {
-      const { error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .delete()
-        .eq('id', zoneId)
-      if (error) throw error
-      setZones((prev) => prev.filter((z) => z.id !== zoneId))
-      setSelectedZoneId(null)
-      toast.success('Zone deleted')
-    } catch (err) {
-      console.error('Delete zone error:', err)
-      toast.error('Failed to delete zone')
-    }
-  }, [])
-
   // Initial load
   useEffect(() => {
     loadMaps()
@@ -404,16 +272,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   useEffect(() => {
     loadTelemetry()
   }, [loadTelemetry])
-
-  // Load zones when map changes
-  useEffect(() => {
-    loadZones()
-  }, [loadZones])
-
-  // Load all zones for collage view
-  useEffect(() => {
-    loadAllZones()
-  }, [loadAllZones, zones])
 
   // Collage fullscreen toggle
   const toggleCollageFullscreen = useCallback(() => {
@@ -834,43 +692,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               />
               Show Names
             </label>
-
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showDeviceTypes}
-                onChange={(e) => setShowDeviceTypes(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-muted-foreground/50 accent-primary cursor-pointer"
-              />
-              Show Device Type
-            </label>
-
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={issuesOnly}
-                onChange={(e) => setIssuesOnly(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-muted-foreground/50 accent-amber-500 cursor-pointer"
-              />
-              Issues Only
-            </label>
-
-            {getAvailableMetrics(telemetryMap).length > 0 && (
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                Heatmap
-                <select
-                  value={heatmapMetric}
-                  onChange={(e) => setHeatmapMetric(e.target.value)}
-                  className="rounded border bg-background px-1.5 py-0.5 text-xs"
-                >
-                  <option value="">Off</option>
-                  {getAvailableMetrics(telemetryMap).map((m) => (
-                    <option key={m} value={m}>{formatMetricLabel(m)}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-
           </div>
         )}
 
@@ -931,22 +752,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
       {/* === SINGLE VIEW === */}
       {viewMode === 'single' && selectedMap && (
-        <div className={`mx-auto ${drawingZone ? 'max-w-5xl' : 'max-w-4xl'} transition-all`}>
-          <div className={`grid gap-4 ${drawingZone ? 'lg:grid-cols-[240px_1fr_280px]' : 'lg:grid-cols-[1fr_280px]'}`}>
-            {/* Zone drawer panel (left of map when drawing zones) */}
-            {drawingZone && (
-              <div className="self-start">
-                <ZoneDrawer
-                  points={zonePoints}
-                  onCancel={() => {
-                    setDrawingZone(false)
-                    setZonePoints([])
-                  }}
-                  onSave={handleSaveZone}
-                  onUndo={() => setZonePoints((prev) => prev.slice(0, -1))}
-                />
-              </div>
-            )}
+        <div className="mx-auto max-w-4xl">
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
             {/* Map with left/right arrows */}
             <div className="relative">
               {/* Left arrow */}
@@ -970,35 +777,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </button>
               )}
 
-              <Card className="overflow-hidden group relative">
-                {/* Quick actions overlay — below toolbar to avoid covering Export/Fullscreen */}
-                <div className="absolute top-12 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
-                    onClick={() => {
-                      setEditingMap(selectedMap)
-                      setDialogOpen(true)
-                    }}
-                    title="Edit map"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-destructive hover:text-white"
-                    onClick={() => setDeleteMapId(selectedMap.id)}
-                    title="Delete map"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+              <Card className="overflow-hidden">
                 <FacilityMapCanvas
                   facilityMap={selectedMap}
-                  placements={(() => {
-                    let filtered = placements
-                    if (issuesOnly) filtered = filtered.filter((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline'))
-                    if (hiddenDeviceTypes.size > 0) filtered = filtered.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown'))
-                    return filtered
-                  })()}
+                  placements={placements}
                   availableDevices={devices}
                   mode={mode === 'place' ? 'place' : mode}
                   selectedPlacementId={selectedPlacementId}
@@ -1010,37 +792,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
-                  onShowLabelsChange={setShowLabels}
-                  showDeviceTypes={showDeviceTypes}
-                  onShowDeviceTypesChange={setShowDeviceTypes}
-                  heatmapMetric={heatmapMetric}
-                  onHeatmapMetricChange={setHeatmapMetric}
-                  availableHeatmapMetrics={getAvailableMetrics(telemetryMap)}
-                  hiddenDeviceTypes={hiddenDeviceTypes}
-                  onToggleDeviceType={(dt) => setHiddenDeviceTypes((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(dt)) next.delete(dt)
-                    else next.add(dt)
-                    return next
-                  })}
-                  onShowAllTypes={() => setHiddenDeviceTypes(new Set())}
-                  zones={zones}
-                  selectedZoneId={selectedZoneId}
-                  onSelectZone={setSelectedZoneId}
-                  zoneDrawing={drawingZone}
-                  zonePointCount={zonePoints.length}
-                  onZonePointAdd={(x, y) => setZonePoints((prev) => [...prev, { x, y }])}
-                  onToggleZoneDrawing={() => {
-                    if (drawingZone) {
-                      setDrawingZone(false)
-                      setZonePoints([])
-                    } else {
-                      setDrawingZone(true)
-                      setMode('edit')
-                      setDeviceToPlace(null)
-                    }
-                  }}
-                  onDeleteZone={handleDeleteZone}
                 />
               </Card>
 
@@ -1072,7 +823,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 <DevicePalette
                   devices={devices}
                   placements={placements}
-                  globallyPlacedDeviceIds={globallyPlacedDeviceIds}
                   deviceToPlace={deviceToPlace}
                   onSelectToPlace={(id) => {
                     setDeviceToPlace(id)
@@ -1098,196 +848,34 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       )}
 
       {/* === COLLAGE VIEW === */}
-      {viewMode === 'collage' && (() => {
-        // Compute totals for collage
-        const allPlacementsFlat = Object.values(allPlacements).flat()
-        const totalDevices = allPlacementsFlat.length
-        const totalOnline = allPlacementsFlat.filter((p) => p.device?.status === 'online').length
-        const totalOffline = allPlacementsFlat.filter((p) => p.device?.status === 'offline').length
-        const totalIssues = allPlacementsFlat.filter((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline')).length
-
-        // Unique locations from maps
-        const locLookup: Record<string, string> = {}
-        for (const m of maps) {
-          const locName = m.location?.name || 'No Location'
-          const locId = m.location_id || 'none'
-          locLookup[locId] = locName
-        }
-        const uniqueLocations = Object.entries(locLookup)
-
-        // Filter maps
-        const filteredMaps = maps.filter((m) => {
-          const locId = m.location_id || 'none'
-          if (hiddenLocations.size > 0 && hiddenLocations.has(locId)) return false
-          if (issuesOnly) {
-            const mp = allPlacements[m.id] || []
-            const hasIssue = mp.some((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline'))
-            if (!hasIssue) return false
-          }
-          return true
-        })
-
-        return (
-          <>
-            {/* Collage toolbar: totals + location toggles + issues filter */}
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
-              {/* Totals */}
-              <div className="flex items-center gap-3 text-xs">
-                <span className="font-medium">{totalDevices} device{totalDevices !== 1 ? 's' : ''}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />{totalOnline} online</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-400" />{totalOffline} offline</span>
-                {totalIssues > 0 && (
-                  <span className="flex items-center gap-1 text-amber-600"><span className="h-2 w-2 rounded-full bg-amber-500" />{totalIssues} issues</span>
-                )}
-              </div>
-
-              {/* Separator */}
-              {uniqueLocations.length > 1 && <span className="text-muted-foreground/40">|</span>}
-
-              {/* Location toggles */}
-              {uniqueLocations.length > 1 && (
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="h-3 w-3 text-muted-foreground" />
-                  {uniqueLocations.map(([locId, locName]) => {
-                    const isHidden = hiddenLocations.has(locId)
-                    return (
-                      <button
-                        key={locId}
-                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                          isHidden
-                            ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
-                            : 'border-primary/30 bg-primary/5 text-foreground'
-                        }`}
-                        onClick={() => setHiddenLocations((prev) => {
-                          const next = new Set(prev)
-                          if (next.has(locId)) next.delete(locId)
-                          else next.add(locId)
-                          return next
-                        })}
-                      >
-                        {locName}
-                      </button>
-                    )
-                  })}
-                  {hiddenLocations.size > 0 && (
-                    <button className="text-[11px] text-primary hover:underline" onClick={() => setHiddenLocations(new Set())}>
-                      All Locations
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Separator */}
-              <span className="text-muted-foreground/40">|</span>
-
-              {/* Issues only toggle */}
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={issuesOnly}
-                  onChange={(e) => setIssuesOnly(e.target.checked)}
-                  className="h-3 w-3 rounded accent-amber-500 cursor-pointer"
-                />
-                Issues Only
-              </label>
-
-              {/* Show Name toggle */}
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showCollageName}
-                  onChange={(e) => setShowCollageName(e.target.checked)}
-                  className="h-3 w-3 rounded accent-primary cursor-pointer"
-                />
-                Show Name
-              </label>
-
-              {/* Show Count toggle */}
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showCollageCount}
-                  onChange={(e) => setShowCollageCount(e.target.checked)}
-                  className="h-3 w-3 rounded accent-primary cursor-pointer"
-                />
-                Show Count
-              </label>
-
-              {/* Show device names on markers */}
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showLabels}
-                  onChange={(e) => setShowLabels(e.target.checked)}
-                  className="h-3 w-3 rounded accent-primary cursor-pointer"
-                />
-                Show Names
-              </label>
-
-              {/* Show device type on markers */}
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showDeviceTypes}
-                  onChange={(e) => setShowDeviceTypes(e.target.checked)}
-                  className="h-3 w-3 rounded accent-primary cursor-pointer"
-                />
-                Show Device Type
-              </label>
-
-              {/* Heatmap selector */}
-              {getAvailableMetrics(telemetryMap).length > 0 && (
-                <>
-                  <span className="text-muted-foreground/40">|</span>
-                  <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                    Heatmap
-                    <select
-                      value={heatmapMetric}
-                      onChange={(e) => setHeatmapMetric(e.target.value)}
-                      className="rounded border bg-background px-1.5 py-0.5 text-[11px]"
-                    >
-                      <option value="">Off</option>
-                      {getAvailableMetrics(telemetryMap).map((m) => (
-                        <option key={m} value={m}>{formatMetricLabel(m)}</option>
-                      ))}
-                    </select>
-                  </label>
-                </>
-              )}
-            </div>
-
-            {/* Collage grid */}
-            <div
-              ref={collageFullscreenRef}
-              className={`grid gap-4 ${
-                filteredMaps.length === 1
-                  ? 'grid-cols-1'
-                  : filteredMaps.length === 2
-                  ? 'grid-cols-1 md:grid-cols-2'
-                  : filteredMaps.length <= 4
-                  ? 'grid-cols-1 md:grid-cols-2'
-                  : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-              } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
-            >
-              {filteredMaps.map((m) => {
-                const mapPlacements = allPlacements[m.id] || []
+      {viewMode === 'collage' && (
+        <div
+          ref={collageFullscreenRef}
+          className={`grid gap-4 ${
+            maps.length === 1
+              ? 'grid-cols-1'
+              : maps.length === 2
+              ? 'grid-cols-1 md:grid-cols-2'
+              : maps.length <= 4
+              ? 'grid-cols-1 md:grid-cols-2'
+              : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+          } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
+        >
+          {maps.map((m) => {
+            const mapPlacements = allPlacements[m.id] || []
             return (
               <Card key={m.id} className="overflow-hidden group relative">
                 {/* Map label overlay */}
-                {(showCollageName || showCollageCount) && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
-                  {showCollageName && (
                   <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
                     {m.name}
+                    {(mapPlacementCounts[m.id] || 0) > 0 && (
+                      <span className="ml-1.5 text-muted-foreground">
+                        ({mapPlacementCounts[m.id]})
+                      </span>
+                    )}
                   </Badge>
-                  )}
-                  {showCollageCount && (mapPlacementCounts[m.id] || 0) > 0 && (
-                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
-                    {issuesOnly ? 'Issues' : 'Device Count'} ({mapPlacementCounts[m.id]})
-                  </Badge>
-                  )}
                 </div>
-                )}
                 {/* Quick actions overlay */}
                 <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -1321,7 +909,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </div>
                 <FacilityMapCanvas
                   facilityMap={m}
-                  placements={hiddenDeviceTypes.size > 0 ? mapPlacements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown')) : mapPlacements}
+                  placements={mapPlacements}
                   availableDevices={devices}
                   mode="view"
                   selectedPlacementId={null}
@@ -1333,19 +921,14 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
-                  showDeviceTypes={showDeviceTypes}
-                  heatmapMetric={heatmapMetric}
-                  zones={allZones[m.id] || []}
                   compact
                   hideFullscreen
                 />
               </Card>
             )
           })}
-            </div>
-          </>
-        )
-      })()}
+        </div>
+      )}
 
       {/* Map creation / edit dialog */}
       <MapManagerDialog

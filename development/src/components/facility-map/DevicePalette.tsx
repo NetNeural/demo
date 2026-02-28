@@ -34,28 +34,9 @@ const STATUS_DOT: Record<string, string> = {
   maintenance: 'bg-blue-500',
 }
 
-const STATUS_BLINK: Record<string, string> = {
-  online: 'animate-pulse bg-green-500',
-  offline: 'animate-[pulse_3s_ease-in-out_infinite] bg-red-500',
-  warning: 'animate-pulse bg-amber-500',
-  error: 'animate-pulse bg-red-500',
-  maintenance: 'bg-blue-500',
-}
-
-/** Sort priority: online first, then warning/error/maintenance, offline last */
-const STATUS_SORT_ORDER: Record<string, number> = {
-  online: 0,
-  warning: 1,
-  error: 2,
-  maintenance: 3,
-  offline: 4,
-}
-
 interface DevicePaletteProps {
   devices: PlacedDevice[]
   placements: DeviceMapPlacement[]
-  /** Device IDs placed on ANY map (global uniqueness) */
-  globallyPlacedDeviceIds?: Set<string>
   deviceToPlace: string | null
   onSelectToPlace: (deviceId: string | null) => void
   onRemovePlacement: (placementId: string) => void
@@ -65,7 +46,6 @@ interface DevicePaletteProps {
 export function DevicePalette({
   devices,
   placements,
-  globallyPlacedDeviceIds,
   deviceToPlace,
   onSelectToPlace,
   onRemovePlacement,
@@ -87,12 +67,8 @@ export function DevicePalette({
     )
   }, [devices, search])
 
-  const unplaced = filtered
-    .filter((d) => !placedDeviceIds.has(d.id) && !(globallyPlacedDeviceIds?.has(d.id)))
-    .sort((a, b) => (STATUS_SORT_ORDER[a.status] ?? 9) - (STATUS_SORT_ORDER[b.status] ?? 9))
-  const placed = filtered
-    .filter((d) => placedDeviceIds.has(d.id))
-    .sort((a, b) => (STATUS_SORT_ORDER[a.status] ?? 9) - (STATUS_SORT_ORDER[b.status] ?? 9))
+  const unplaced = filtered.filter((d) => !placedDeviceIds.has(d.id))
+  const placed = filtered.filter((d) => placedDeviceIds.has(d.id))
 
   return (
     <Card className="flex h-full flex-col">
@@ -137,19 +113,14 @@ export function DevicePalette({
                         key={device.id}
                         className={cn(
                           'flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors',
-                          'hover:bg-accent cursor-grab active:cursor-grabbing',
+                          'hover:bg-accent',
                           deviceToPlace === device.id && 'bg-primary/10 ring-1 ring-primary'
                         )}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('application/x-device-id', device.id)
-                          e.dataTransfer.effectAllowed = 'copy'
-                        }}
                         onClick={() =>
                           onSelectToPlace(deviceToPlace === device.id ? null : device.id)
                         }
                       >
-                        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_BLINK[device.status] || STATUS_DOT[device.status])} />
+                        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_DOT[device.status])} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{device.name}</p>
                           <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>
@@ -180,7 +151,7 @@ export function DevicePalette({
                           className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-accent"
                         >
                           <span
-                            className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_BLINK[device.status] || STATUS_DOT[device.status])}
+                            className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_DOT[device.status])}
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{device.name}</p>

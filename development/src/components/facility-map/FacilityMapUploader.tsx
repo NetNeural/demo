@@ -123,7 +123,6 @@ export function FacilityMapUploader({
           size="sm"
           onClick={() => cameraInputRef.current?.click()}
           disabled={uploading}
-          className="md:hidden"
         >
           <Camera className="mr-2 h-4 w-4" />
           Take Photo
@@ -202,7 +201,6 @@ export function FacilityMapUploader({
             size="sm"
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
-            className="md:hidden"
           >
             <Camera className="mr-2 h-4 w-4" />
             Take Photo

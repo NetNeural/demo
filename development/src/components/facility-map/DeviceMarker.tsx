@@ -82,10 +82,6 @@ interface DeviceMarkerProps {
   telemetry?: Record<string, unknown> | null
   /** Show device name label next to the marker dot */
   showLabel?: boolean
-  /** Show device type label below the name label */
-  showDeviceType?: boolean
-  /** Active heatmap metric key — when set, show the metric value badge on the marker */
-  heatmapMetric?: string
 }
 
 export function DeviceMarker({
@@ -98,8 +94,6 @@ export function DeviceMarker({
   containerRef,
   telemetry,
   showLabel = false,
-  showDeviceType = false,
-  heatmapMetric,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -221,28 +215,6 @@ export function DeviceMarker({
                 {displayName}
               </span>
             )}
-            {/* Device type label */}
-            {showDeviceType && device?.device_type && (
-              <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-[9px] text-gray-300 shadow-sm pointer-events-none" style={{ top: showLabel ? 'calc(50% + 10px)' : '50%', transform: showLabel ? 'none' : 'translateY(-50%)' }}>
-                {device.device_type}
-              </span>
-            )}
-            {/* Heatmap metric value badge */}
-            {heatmapMetric && telemetry && (() => {
-              const raw = telemetry[heatmapMetric]
-              const num = typeof raw === 'number' ? raw : parseFloat(String(raw))
-              if (isNaN(num)) return null
-              const topOffset = showLabel && showDeviceType ? 'calc(50% + 24px)' : (showLabel || showDeviceType) ? 'calc(50% + 10px)' : '50%'
-              const transform = (!showLabel && !showDeviceType) ? 'translateY(-50%)' : 'none'
-              return (
-                <span
-                  className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-blue-600/80 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-white shadow-sm pointer-events-none"
-                  style={{ top: topOffset, transform }}
-                >
-                  {num.toFixed(1)}
-                </span>
-              )
-            })()}
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[280px] bg-gray-900 text-gray-100 border-gray-700 shadow-xl">
@@ -301,7 +273,7 @@ export function DeviceMarker({
               </div>
             )}
             {mode === 'view' && onNavigate && (
-              <p className="text-[10px] text-gray-500 italic pt-0.5">Hover over icon to view details</p>
+              <p className="text-[10px] text-gray-500 italic pt-0.5">Click icon to view details</p>
             )}
           </div>
         </TooltipContent>
