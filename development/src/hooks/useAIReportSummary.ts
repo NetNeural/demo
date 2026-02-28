@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getSupabaseUrl } from '@/lib/supabase/config'
 
 interface ReportData {
   reportType:
@@ -29,7 +30,8 @@ const CACHE_DURATION_MS = 30 * 60 * 1000 // 30 minutes
 export function useAIReportSummary() {
   const [loading, setLoading] = useState(false)
   const [summary, setSummary] = useState<AIReportSummary | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+  const supabaseUrl = useMemo(() => getSupabaseUrl(), [])
 
   const generateSummary = useCallback(
     async (reportData: ReportData): Promise<AIReportSummary | null> => {
@@ -62,7 +64,7 @@ export function useAIReportSummary() {
         // Generate new summary via Edge Function
         const session = await supabase.auth.getSession()
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ai-report-summary`,
+          `${supabaseUrl}/functions/v1/ai-report-summary`,
           {
             method: 'POST',
             headers: {
@@ -108,7 +110,7 @@ export function useAIReportSummary() {
         setLoading(false)
       }
     },
-    [supabase]
+    [supabase, supabaseUrl]
   )
 
   const clearSummary = useCallback(() => {

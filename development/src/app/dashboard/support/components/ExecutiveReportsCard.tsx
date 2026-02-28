@@ -198,6 +198,7 @@ const PLATFORM_FEATURES: FeatureSection[] = [
     color: 'text-red-500',
     features: [
       'Email/password login with Supabase Auth',
+      'User registration with 3-step signup flow (plan → account → confirmation)',
       'Multi-factor authentication (MFA/TOTP)',
       'Organization-branded login page',
       'Password change & reset flows',
@@ -205,6 +206,8 @@ const PLATFORM_FEATURES: FeatureSection[] = [
       'Session management & token refresh',
       'Role-based access control (5 roles: viewer, operator, technician, admin, owner)',
       'Row-Level Security on all tables',
+      'Content Security Policy (CSP) meta headers',
+      'Privacy policy page (/privacy)',
     ],
   },
   {
@@ -386,6 +389,7 @@ const PLATFORM_FEATURES: FeatureSection[] = [
       'Organization-level integrations',
       'Billing overview (plan, usage, invoices)',
       'Billing admin (manage subscriptions, payment methods)',
+      'Plans & Pricing admin (owner-only: CRUD plans, adjust pricing, feature matrix, change log)',
       'Access request review & approval',
       'Customer org management (for MSPs)',
       'Settings: branding (logo, colors, custom login page)',
@@ -850,7 +854,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
       } else if (data?.html) {
         html = data.html
       } else {
-        html = `<pre>${JSON.stringify(data, null, 2)}</pre>`
+        // Format AI summary responses as readable HTML
+        html = formatAISummaryAsHtml(reportType, data)
       }
 
       const label =
@@ -1492,6 +1497,64 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
+
+/**
+ * Format AI summary JSON response as readable styled HTML for the preview dialog.
+ */
+function formatAISummaryAsHtml(
+  reportType: string,
+  data: Record<string, unknown> | null | undefined
+): string {
+  if (!data) return '<p style="color:#6b7280;">No data returned.</p>'
+
+  const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const title = reportType === 'generate-report-summary' ? 'AI Report Summary' : 'AI Insights Summary'
+
+  // Extract summary — might be at top level or nested under 'summary'
+  const summary = (data.summary ?? data) as Record<string, unknown>
+  const keyFindings = Array.isArray(summary.keyFindings) ? summary.keyFindings : []
+  const redFlags = Array.isArray(summary.redFlags) ? summary.redFlags : []
+  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : []
+  const trendAnalysis = typeof summary.trendAnalysis === 'string' ? summary.trendAnalysis : ''
+  const confidence = typeof summary.confidence === 'number' ? summary.confidence : null
+  const cached = data.cached === true
+
+  const section = (icon: string, heading: string, items: string[], color: string) => {
+    if (items.length === 0) return ''
+    const list = items.map((item) => `<li style="padding:3px 0;color:#374151;font-size:13px;">${item}</li>`).join('')
+    return `
+      <div style="margin-bottom:16px;">
+        <h3 style="font-size:13px;font-weight:600;color:${color};margin:0 0 6px;">${icon} ${heading}</h3>
+        <ul style="margin:0;padding:0 0 0 18px;">${list}</ul>
+      </div>`
+  }
+
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:700px;margin:0 auto;padding:24px;">
+      <div style="border-bottom:3px solid #8b5cf6;padding-bottom:12px;margin-bottom:20px;">
+        <h1 style="margin:0;font-size:20px;color:#111827;">🤖 ${title}</h1>
+        <p style="margin:4px 0 0;color:#6b7280;font-size:13px;">
+          Generated ${now}${cached ? ' · <span style="color:#8b5cf6;">Cached</span>' : ''}${confidence != null ? ` · Confidence: ${Math.round(confidence * 100)}%` : ''}
+        </p>
+      </div>
+      ${trendAnalysis ? `
+        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:14px;margin-bottom:16px;">
+          <div style="font-size:13px;color:#4c1d95;font-weight:500;">✨ Trend Analysis</div>
+          <p style="margin:6px 0 0;font-size:13px;color:#374151;">${trendAnalysis}</p>
+        </div>` : ''}
+      ${section('✅', 'Key Findings', keyFindings, '#059669')}
+      ${section('🚩', 'Red Flags', redFlags, '#dc2626')}
+      ${section('💡', 'Recommendations', recommendations, '#2563eb')}
+      ${keyFindings.length === 0 && redFlags.length === 0 && recommendations.length === 0 ? `
+        <div style="text-align:center;padding:24px;color:#9ca3af;">
+          <p style="font-size:14px;">No AI insights available.</p>
+          <p style="font-size:12px;">The AI service may not be configured. Rule-based summaries are shown in reports.</p>
+        </div>` : ''}
+      <div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:16px;text-align:center;color:#9ca3af;font-size:11px;">
+        AI insights are suggestions only. Always verify critical findings with your data.
+      </div>
+    </div>`
+}
 
 function ordinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd']

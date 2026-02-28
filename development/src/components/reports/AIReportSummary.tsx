@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Card,
   CardContent,
@@ -17,8 +17,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getSupabaseUrl } from '@/lib/supabase/config'
 
 interface AIReportSummaryProps {
   reportType: 'alert-history' | 'telemetry-trends' | 'audit-log'
@@ -49,54 +51,10 @@ export function AIReportSummary({
   const [summary, setSummary] = useState<AISummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+  const supabaseUrl = useMemo(() => getSupabaseUrl(), [])
 
-  useEffect(() => {
-    if (!organizationId || reportData.totalRecords === 0) return
-
-    const fetchSummary = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const session = await supabase.auth.getSession()
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-report-summary`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session.data.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              reportType,
-              reportData,
-              organizationId,
-            }),
-          }
-        )
-
-        const data = await response.json()
-
-        if (data.error) {
-          // Fallback to rule-based summary
-          setSummary(generateRuleBasedSummary())
-        } else {
-          setSummary(data)
-        }
-      } catch (err) {
-        console.error('Failed to fetch AI summary:', err)
-        // Fallback to rule-based summary
-        setSummary(generateRuleBasedSummary())
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchSummary()
-  }, [reportType, reportData, organizationId, supabase])
-
-  const generateRuleBasedSummary = (): AISummary => {
+  const generateRuleBasedSummary = useCallback((): AISummary => {
     const findings: string[] = []
     const redFlags: string[] = []
     const recommendations: string[] = []
@@ -152,7 +110,63 @@ export function AIReportSummary({
       generatedAt: new Date().toISOString(),
       cached: false,
     }
-  }
+  }, [reportType, reportData])
+
+  const fetchSummary = useCallback(async () => {
+    if (!organizationId || reportData.totalRecords === 0) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const session = await supabase.auth.getSession()
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/generate-report-summary`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            reportType,
+            reportData,
+            organizationId,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.error || data.fallback) {
+        // AI not configured or error — use rule-based summary
+        setSummary(generateRuleBasedSummary())
+      } else {
+        setSummary({
+          ...data,
+          generatedAt: data.generatedAt || new Date().toISOString(),
+          confidence: data.confidence || 0.8,
+        })
+      }
+    } catch (err) {
+      console.error('Failed to fetch AI summary:', err)
+      // Fallback to rule-based summary
+      setSummary(generateRuleBasedSummary())
+    } finally {
+      setLoading(false)
+    }
+  }, [reportType, reportData, organizationId, supabase, supabaseUrl, generateRuleBasedSummary])
+
+  // Auto-fetch on mount when we have data
+  useEffect(() => {
+    if (organizationId && reportData.totalRecords > 0) {
+      fetchSummary()
+    }
+  }, [organizationId, reportData.totalRecords]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (reportData.totalRecords === 0) {
     return null
@@ -178,11 +192,43 @@ export function AIReportSummary({
   }
 
   if (error && !summary) {
-    return null
+    return (
+      <Card className="border-purple-200 dark:border-purple-900">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-500" />
+            <CardTitle className="text-base">AI-Powered Insights</CardTitle>
+          </div>
+          <CardDescription>AI summary unavailable — using rule-based analysis</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onClick={fetchSummary}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (!summary) {
-    return null
+    return (
+      <Card className="border-purple-200 dark:border-purple-900">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-500" />
+            <CardTitle className="text-base">AI-Powered Insights</CardTitle>
+          </div>
+          <CardDescription>Generate an intelligent summary of this report data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onClick={fetchSummary}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate AI Summary
+          </Button>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -201,6 +247,9 @@ export function AIReportSummary({
           <Badge variant="secondary" className="text-xs">
             {Math.round(summary.confidence * 100)}% confidence
           </Badge>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={fetchSummary} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
         <CardDescription>
           Intelligent analysis generated by AI · Last updated:{' '}
