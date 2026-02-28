@@ -289,16 +289,26 @@ export function FacilityMapCanvas({
       <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
         <div className="flex items-center gap-2">
           {mode === 'place' && deviceToPlace && (
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <Plus className="h-3 w-3" />
-              Tap on the map to place device
-            </Badge>
+            <div className="flex flex-col gap-0.5">
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <Plus className="h-3 w-3" />
+                Tap on map or drag device to place
+              </Badge>
+              <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+                Drag icon back to device list to remove
+              </Badge>
+            </div>
           )}
           {mode === 'edit' && (
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <MousePointer2 className="h-3 w-3" />
-              Drag devices to reposition
-            </Badge>
+            <div className="flex flex-col gap-0.5">
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <MousePointer2 className="h-3 w-3" />
+                Drag devices to reposition
+              </Badge>
+              <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+                Drag icon off map to remove
+              </Badge>
+            </div>
           )}
           {mode === 'view' && placements.length > 0 && (
             <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
@@ -457,6 +467,7 @@ export function FacilityMapCanvas({
                   onClick={() => onSelectPlacement(p.id === selectedPlacementId ? null : p.id)}
                   onNavigate={onDeviceNavigate}
                   onDragEnd={(x, y) => onMovePlacement(p.id, x, y)}
+                  onDragRemove={() => onRemovePlacement(p.id)}
                   containerRef={containerRef}
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}

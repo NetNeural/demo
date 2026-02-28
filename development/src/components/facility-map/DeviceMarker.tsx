@@ -88,6 +88,8 @@ interface DeviceMarkerProps {
   showReadings?: boolean
   /** Scale factor for the marker (1 = full, <1 for compact views) */
   scale?: number
+  /** Called when the marker is dragged outside the map container (remove from map) */
+  onDragRemove?: () => void
 }
 
 export function DeviceMarker({
@@ -103,6 +105,7 @@ export function DeviceMarker({
   showDeviceType = false,
   showReadings = false,
   scale = 1,
+  onDragRemove,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -144,12 +147,21 @@ export function DeviceMarker({
         setDragging(false)
         if (dragStartRef.current && containerRef.current) {
           const r = containerRef.current.getBoundingClientRect()
-          const dx = ((ev.clientX - dragStartRef.current.startX) / r.width) * 100
-          const dy = ((ev.clientY - dragStartRef.current.startY) / r.height) * 100
-          const nx = Math.max(0, Math.min(100, dragStartRef.current.origX + dx))
-          const ny = Math.max(0, Math.min(100, dragStartRef.current.origY + dy))
-          setDragPos(null)
-          onDragEnd?.(nx, ny)
+          // Check if dropped outside the container
+          const isOutside =
+            ev.clientX < r.left || ev.clientX > r.right ||
+            ev.clientY < r.top || ev.clientY > r.bottom
+          if (isOutside && onDragRemove) {
+            setDragPos(null)
+            onDragRemove()
+          } else {
+            const dx = ((ev.clientX - dragStartRef.current.startX) / r.width) * 100
+            const dy = ((ev.clientY - dragStartRef.current.startY) / r.height) * 100
+            const nx = Math.max(0, Math.min(100, dragStartRef.current.origX + dx))
+            const ny = Math.max(0, Math.min(100, dragStartRef.current.origY + dy))
+            setDragPos(null)
+            onDragEnd?.(nx, ny)
+          }
         }
         dragStartRef.current = null
       }
@@ -157,7 +169,7 @@ export function DeviceMarker({
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [mode, containerRef, placement.x_percent, placement.y_percent, onDragEnd]
+    [mode, containerRef, placement.x_percent, placement.y_percent, onDragEnd, onDragRemove]
   )
 
   const posX = dragPos ? dragPos.x : placement.x_percent
