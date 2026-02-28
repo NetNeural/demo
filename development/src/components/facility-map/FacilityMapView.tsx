@@ -68,6 +68,7 @@ import type {
   PlacementMode,
   MapZone,
 } from '@/types/facility-map'
+import { extractMetricValue, METRIC_TO_SENSOR_TYPE } from '@/lib/telemetry-utils'
 
 interface FacilityMapViewProps {
   organizationId: string
@@ -450,14 +451,34 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   }, [selectedZoneId, loadZones])
 
   // --- Heatmap available metrics ---
+  // Detect which semantic metrics have numeric values across placed devices.
+  // Handles both flat-key telemetry ({temperature: 23.5}) and Golioth format
+  // ({type: "1", value: 23.5, sensor: "temp"}) via extractMetricValue.
   const availableMetrics = useMemo(() => {
-    const metrics = new Set<string>()
-    for (const tele of Object.values(telemetryMap)) {
-      for (const [key, val] of Object.entries(tele)) {
-        if (typeof val === 'number') metrics.add(key)
+    const allTelemetry = Object.values(telemetryMap)
+    if (allTelemetry.length === 0) return []
+
+    // 1. Check all known semantic metrics (temperature, humidity, etc.)
+    const knownMetrics = Object.keys(METRIC_TO_SENSOR_TYPE)
+    const found = new Set<string>()
+    for (const metric of knownMetrics) {
+      for (const tele of allTelemetry) {
+        const val = extractMetricValue(tele, metric)
+        if (val !== null) { found.add(metric); break }
       }
     }
-    return [...metrics].sort()
+
+    // 2. Also check any flat numeric keys that aren't Golioth metadata fields
+    const GOLIOTH_META = new Set(['type', 'units', 'sensor', 'ts', 'timestamp', 'received_at'])
+    for (const tele of allTelemetry) {
+      for (const [key, val] of Object.entries(tele)) {
+        if (typeof val === 'number' && !GOLIOTH_META.has(key) && !found.has(key)) {
+          found.add(key)
+        }
+      }
+    }
+
+    return [...found].sort()
   }, [telemetryMap])
 
   // Collage fullscreen toggle

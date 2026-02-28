@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useMemo } from 'react'
 import type { DeviceMapPlacement } from '@/types/facility-map'
+import { extractMetricValue } from '@/lib/telemetry-utils'
 
 interface HeatmapOverlayProps {
   placements: DeviceMapPlacement[]
@@ -67,15 +68,15 @@ export function HeatmapOverlay({
 }: HeatmapOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Extract device positions and values for the chosen metric
+  // Extract device positions and values for the chosen metric.
+  // Uses extractMetricValue to support both flat keys and Golioth sensor format.
   const dataPoints = useMemo(() => {
     const pts: { x: number; y: number; value: number }[] = []
     for (const p of placements) {
       const tele = telemetryMap[p.device_id]
       if (!tele) continue
-      const raw = tele[metricKey]
-      const val = typeof raw === 'number' ? raw : parseFloat(String(raw))
-      if (isNaN(val)) continue
+      const val = extractMetricValue(tele, metricKey)
+      if (val === null) continue
       pts.push({
         x: (p.x_percent / 100) * width,
         y: (p.y_percent / 100) * height,
