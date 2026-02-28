@@ -57,4 +57,18 @@ export interface MapViewport {
   offsetY: number
 }
 
+export interface MapZone {
+  id: string
+  facility_map_id: string
+  name: string
+  description: string | null
+  zone_type: string | null
+  color: string
+  points: { x: number; y: number }[]
+  z_order: number
+  settings: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
 export type PlacementMode = 'view' | 'place' | 'edit'

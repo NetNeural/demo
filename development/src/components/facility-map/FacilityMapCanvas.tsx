@@ -9,6 +9,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { DeviceMarker } from './DeviceMarker'
+import { MapZoneOverlay } from './MapZoneOverlay'
+import { HeatmapOverlay } from './HeatmapOverlay'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +26,7 @@ import type {
   DeviceMapPlacement,
   PlacementMode,
   PlacedDevice,
+  MapZone,
 } from '@/types/facility-map'
 
 interface FacilityMapCanvasProps {
@@ -53,6 +56,19 @@ interface FacilityMapCanvasProps {
   showDeviceCount?: boolean
   /** Show location overlay */
   showLocation?: boolean
+  /** Zones to render on the map */
+  zones?: MapZone[]
+  /** Whether zone editing is active */
+  zoneEditMode?: boolean
+  /** Currently selected zone id */
+  selectedZoneId?: string | null
+  onSelectZone?: (zoneId: string | null) => void
+  /** Callback when a zone polygon is finished drawing */
+  onCreateZone?: (points: { x: number; y: number }[]) => void
+  /** Whether zone drawing mode is active */
+  zoneDrawing?: boolean
+  /** Heatmap: telemetry metric key to visualize (null = off) */
+  heatmapMetric?: string | null
 }
 
 export function FacilityMapCanvas({
@@ -74,6 +90,13 @@ export function FacilityMapCanvas({
   showMapName = false,
   showDeviceCount = false,
   showLocation = false,
+  zones = [],
+  zoneEditMode = false,
+  selectedZoneId,
+  onSelectZone,
+  onCreateZone,
+  zoneDrawing = false,
+  heatmapMetric = null,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -390,6 +413,31 @@ export function FacilityMapCanvas({
                   top: imgRect.oy,
                 }}
               >
+              {/* Heatmap overlay (behind zones and markers) */}
+              {heatmapMetric && telemetryMap && (
+                <HeatmapOverlay
+                  placements={placements}
+                  telemetryMap={telemetryMap}
+                  metricKey={heatmapMetric}
+                  width={imgRect.w}
+                  height={imgRect.h}
+                />
+              )}
+
+              {/* Zone overlays */}
+              {zones.length > 0 || zoneDrawing ? (
+                <MapZoneOverlay
+                  zones={zones}
+                  width={imgRect.w}
+                  height={imgRect.h}
+                  editMode={zoneEditMode}
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={onSelectZone}
+                  onCreateZone={onCreateZone}
+                  drawing={zoneDrawing}
+                />
+              ) : null}
+
               {placements.map((p) => (
                 <DeviceMarker
                   key={p.id}

@@ -6,7 +6,7 @@
  * and map CRUD. Supports real-time device status via Supabase subscriptions.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,7 +31,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
-  Map,
+  Map as MapIcon,
   Plus,
   Edit2,
   Trash2,
@@ -44,6 +44,11 @@ import {
   Image as ImageIcon,
   Maximize2,
   Minimize2,
+  Filter,
+  X,
+  PenTool,
+  Flame,
+  Layers,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -55,6 +60,7 @@ import type {
   DeviceMapPlacement,
   PlacedDevice,
   PlacementMode,
+  MapZone,
 } from '@/types/facility-map'
 
 interface FacilityMapViewProps {
@@ -104,6 +110,22 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   })
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
+  /** Device type filter — hidden device types */
+  const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const saved = localStorage.getItem('facility-map-hidden-types')
+      if (saved) return new Set(JSON.parse(saved) as string[])
+    } catch { /* ignore */ }
+    return new Set()
+  })
+
+  /** Zones for the current map */
+  const [zones, setZones] = useState<MapZone[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
+  const [zoneDrawing, setZoneDrawing] = useState(false)
+  /** Heatmap metric (null = off) */
+  const [heatmapMetric, setHeatmapMetric] = useState<string | null>(null)
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -116,6 +138,45 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       return next
     })
   }, [])
+
+  // Device type filter helpers
+  const toggleDeviceType = useCallback((deviceType: string) => {
+    setHiddenDeviceTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(deviceType)) next.delete(deviceType)
+      else next.add(deviceType)
+      try { localStorage.setItem('facility-map-hidden-types', JSON.stringify([...next])) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
+  const showAllDeviceTypes = useCallback(() => {
+    setHiddenDeviceTypes(new Set())
+    try { localStorage.setItem('facility-map-hidden-types', '[]') } catch { /* ignore */ }
+  }, [])
+
+  const hideAllDeviceTypes = useCallback(() => {
+    const allTypes = new Set(devices.map((d) => d.device_type).filter(Boolean))
+    setHiddenDeviceTypes(allTypes)
+    try { localStorage.setItem('facility-map-hidden-types', JSON.stringify([...allTypes])) } catch { /* ignore */ }
+  }, [devices])
+
+  // Compute device types with counts from currently placed devices
+  const deviceTypeChips = useMemo(() => {
+    const typeCounts: Record<string, number> = {}
+    const allPlacedDevices = placements.map((p) => p.device).filter(Boolean)
+    for (const d of allPlacedDevices) {
+      const t = d?.device_type || 'Unknown'
+      typeCounts[t] = (typeCounts[t] || 0) + 1
+    }
+    return Object.entries(typeCounts).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [placements])
+
+  // Filtered placements (respects device type filter)
+  const filteredPlacements = useMemo(() =>
+    placements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'Unknown')),
+    [placements, hiddenDeviceTypes]
+  )
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
@@ -302,6 +363,78 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   useEffect(() => {
     loadTelemetry()
   }, [loadTelemetry])
+
+  // --- Zones ---
+  const loadZones = useCallback(async () => {
+    if (!selectedMapId) { setZones([]); return }
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .select('*')
+        .eq('facility_map_id', selectedMapId)
+        .order('z_order', { ascending: true })
+
+      if (error) throw error
+      setZones((data || []) as MapZone[])
+    } catch (err) {
+      console.error('Failed to load zones:', err)
+    }
+  }, [selectedMapId])
+
+  useEffect(() => { loadZones() }, [loadZones])
+
+  const handleCreateZone = useCallback(async (points: { x: number; y: number }[]) => {
+    if (!selectedMapId || points.length < 3) return
+    setZoneDrawing(false)
+    const name = prompt('Zone name:')
+    if (!name) return
+    const color = prompt('Zone color (hex, e.g. #3B82F6):', '#3B82F6') || '#3B82F6'
+    try {
+      const { error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .insert({
+          facility_map_id: selectedMapId,
+          name,
+          color,
+          points,
+          z_order: zones.length,
+        })
+      if (error) throw error
+      toast.success(`Zone "${name}" created`)
+      await loadZones()
+    } catch (err) {
+      console.error('Create zone error:', err)
+      toast.error('Failed to create zone')
+    }
+  }, [selectedMapId, zones.length, loadZones])
+
+  const handleDeleteZone = useCallback(async () => {
+    if (!selectedZoneId) return
+    try {
+      const { error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .delete()
+        .eq('id', selectedZoneId)
+      if (error) throw error
+      setSelectedZoneId(null)
+      toast.success('Zone deleted')
+      await loadZones()
+    } catch (err) {
+      console.error('Delete zone error:', err)
+      toast.error('Failed to delete zone')
+    }
+  }, [selectedZoneId, loadZones])
+
+  // --- Heatmap available metrics ---
+  const availableMetrics = useMemo(() => {
+    const metrics = new Set<string>()
+    for (const tele of Object.values(telemetryMap)) {
+      for (const [key, val] of Object.entries(tele)) {
+        if (typeof val === 'number') metrics.add(key)
+      }
+    }
+    return [...metrics].sort()
+  }, [telemetryMap])
 
   // Collage fullscreen toggle
   const toggleCollageFullscreen = useCallback(() => {
@@ -572,7 +705,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         <Card>
           <CardContent className="flex flex-col items-center py-16">
             <div className="mb-4 rounded-full bg-muted p-4">
-              <Map className="h-12 w-12 text-muted-foreground" />
+              <MapIcon className="h-12 w-12 text-muted-foreground" />
             </div>
             <h3 className="mb-2 text-lg font-semibold">No Facility Maps Yet</h3>
             <p className="mb-6 max-w-sm text-center text-sm text-muted-foreground">
@@ -666,7 +799,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <Map className="h-3 w-3 text-muted-foreground" />
+                    <MapIcon className="h-3 w-3 text-muted-foreground" />
                   </div>
                 )}
                 {(mapPlacementCounts[m.id] || 0) > 0 && (
@@ -711,6 +844,63 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               <><Plus className="mr-1 h-3 w-3" />Add Devices to Map</>            ) : (
               <><Eye className="mr-1 h-3 w-3" />Done Editing</>            )}
           </Button>
+        )}
+
+        {/* Zone controls (single view, edit mode) */}
+        {viewMode === 'single' && selectedMap && (mode === 'edit' || mode === 'place') && (
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant={zoneDrawing ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setZoneDrawing(!zoneDrawing)}
+            >
+              <PenTool className="mr-1 h-3 w-3" />
+              {zoneDrawing ? 'Cancel Draw' : 'Draw Zone'}
+            </Button>
+            {selectedZoneId && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleDeleteZone}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Delete Zone
+              </Button>
+            )}
+            {zones.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                <Layers className="inline h-3 w-3 mr-0.5" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Heatmap toggle (single view with placements) */}
+        {viewMode === 'single' && selectedMap && availableMetrics.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant={heatmapMetric ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setHeatmapMetric(heatmapMetric ? null : availableMetrics[0]!)}
+            >
+              <Flame className="mr-1 h-3 w-3" />
+              Heatmap
+            </Button>
+            {heatmapMetric && (
+              <select
+                value={heatmapMetric}
+                onChange={(e) => setHeatmapMetric(e.target.value)}
+                className="h-7 rounded border bg-background px-1.5 text-xs"
+              >
+                {availableMetrics.map((m) => (
+                  <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                ))}
+              </select>
+            )}
+          </div>
         )}
 
         {/* Show device name labels checkbox (single view) */}
@@ -772,6 +962,51 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             {isCollageFullscreen ? <Minimize2 className="mr-1 h-3 w-3" /> : <Maximize2 className="mr-1 h-3 w-3" />}
             {isCollageFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </Button>
+        )}
+
+        {/* Device type filter chips (#304) */}
+        {deviceTypeChips.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Filter className="h-3 w-3 text-muted-foreground" />
+            {deviceTypeChips.map(([type, count]) => {
+              const isHidden = hiddenDeviceTypes.has(type)
+              return (
+                <button
+                  key={type}
+                  onClick={() => toggleDeviceType(type)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all ${
+                    isHidden
+                      ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
+                      : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}
+                >
+                  {type} ({count})
+                  {isHidden && <X className="h-2.5 w-2.5" />}
+                </button>
+              )
+            })}
+            {hiddenDeviceTypes.size > 0 && (
+              <button
+                onClick={showAllDeviceTypes}
+                className="text-[10px] text-primary underline hover:no-underline"
+              >
+                Show All
+              </button>
+            )}
+            {hiddenDeviceTypes.size === 0 && deviceTypeChips.length > 2 && (
+              <button
+                onClick={hideAllDeviceTypes}
+                className="text-[10px] text-muted-foreground underline hover:no-underline"
+              >
+                Hide All
+              </button>
+            )}
+            {hiddenDeviceTypes.size > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {hiddenDeviceTypes.size} hidden
+              </span>
+            )}
+          </div>
         )}
 
         {/* Map title + actions (single view) */}
@@ -846,7 +1081,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               <Card className="overflow-hidden">
                 <FacilityMapCanvas
                   facilityMap={selectedMap}
-                  placements={placements}
+                  placements={filteredPlacements}
                   availableDevices={devices}
                   mode={mode === 'place' ? 'place' : mode}
                   selectedPlacementId={selectedPlacementId}
@@ -861,6 +1096,13 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   showDeviceType={mapDisplayOpts.deviceType}
                   showDeviceCount={mapDisplayOpts.deviceCount}
                   showLocation={mapDisplayOpts.location}
+                  zones={zones}
+                  zoneEditMode={mode === 'edit' || mode === 'place'}
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={setSelectedZoneId}
+                  onCreateZone={handleCreateZone}
+                  zoneDrawing={zoneDrawing}
+                  heatmapMetric={heatmapMetric}
                 />
               </Card>
 
@@ -931,7 +1173,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
         >
           {maps.map((m) => {
-            const mapPlacements = allPlacements[m.id] || []
+            const mapPlacements = (allPlacements[m.id] || []).filter(
+              (p) => !hiddenDeviceTypes.has(p.device?.device_type || 'Unknown')
+            )
             return (
               <Card key={m.id} className="overflow-hidden relative">
                 {/* Map label overlay — location only */}
