@@ -407,12 +407,13 @@ serve(async (req) => {
       if (billingPlanCount > 0) score += 5
       if (locationCount > 0) score += 3
       score += 10 // Dark mode, responsive (known)
+      score += 5 // Keyboard shortcuts (Ctrl+K, ?, N/A/R/S/D nav)
       score = clamp(score)
       dimensions.push({
         name: 'UI/UX',
         score,
         grade: calcGrade(score),
-        notes: '139+ components, responsive, dark mode, pricing page, billing admin. Gaps: i18n, keyboard shortcuts.',
+        notes: '158+ components, responsive, dark mode, keyboard shortcuts, pricing page, billing admin, signup flow. Gaps: i18n.',
       })
     }
 
@@ -441,22 +442,23 @@ serve(async (req) => {
       if (userCount > 0) score += 10
       score += 10 // Secrets management (known)
       score += 5 // No hardcoded creds (known)
+      score += 5 // CSP meta tags + HSTS via GitHub Pages (implemented)
       score = clamp(score)
       dimensions.push({
         name: 'Security',
         score,
         grade: calcGrade(score),
-        notes: `Auth + RLS (${rlsPolicyCount}+ policies). 22 managed secrets. Gaps: MFA, CSP/HSTS, SOC 2.`,
+        notes: `Auth + RLS (${rlsPolicyCount}+ policies). 22 managed secrets. CSP headers, HSTS. Gaps: MFA enforcement, SOC 2 compliance.`,
       })
     }
 
     // --- 7. Testing ---
     {
       let score = 35
-      score += 10 // 875+ unit tests
-      score += 5 // 96 edge function tests
-      score += 5 // 80+ E2E tests
-      score += 5 // Regression tests (50+)
+      score += 15 // 1,350+ unit tests (Jest/Vitest in __tests__/)
+      score += 5 // 85 edge function tests (Deno.test in supabase/functions/)
+      score += 10 // 144 E2E tests (Playwright in e2e/ + tests/playwright/)
+      score += 3 // 9 integration tests (tests/integration/)
       if (ghClosedIssues > 100) score += 5 // Issues resolved via CI
       if (ghClosedIssues > 200) score += 5 // Strong CI quality gates
       // Coverage gap penalty remains (target 70%, actual ~22%)
@@ -465,7 +467,7 @@ serve(async (req) => {
         name: 'Testing',
         score,
         grade: calcGrade(score),
-        notes: '875+ unit, 96 edge fn, 80+ E2E, 50 regression tests. Coverage: ~22% (target 70%).',
+        notes: '1,350+ unit, 85 edge fn, 144 E2E, 9 integration tests (~1,588 total). Coverage: ~22% (target 70%).',
       })
     }
 
