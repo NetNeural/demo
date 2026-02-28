@@ -80,7 +80,7 @@ interface DeviceMarkerProps {
   onDragEnd?: (xPercent: number, yPercent: number) => void
   containerRef: React.RefObject<HTMLDivElement | null>
   telemetry?: Record<string, unknown> | null
-  /** Show device name label next to the marker dot */
+  /** Show device name label below the marker dot */
   showLabel?: boolean
 }
 
@@ -211,7 +211,7 @@ export function DeviceMarker({
             />
             {/* Device name label */}
             {showLabel && (
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm pointer-events-none">
+              <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium leading-tight text-white pointer-events-none">
                 {displayName}
               </span>
             )}

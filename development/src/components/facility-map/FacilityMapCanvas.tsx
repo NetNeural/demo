@@ -39,12 +39,12 @@ interface FacilityMapCanvasProps {
   onRemovePlacement: (placementId: string) => void
   onDeviceNavigate?: (deviceId: string) => void
   telemetryMap?: Record<string, Record<string, unknown>>
-  /** Show device name labels next to sensor pins */
-  showLabels?: boolean
   /** Compact mode for collage grid — hides toolbar, shrinks canvas */
   compact?: boolean
   /** Hide fullscreen button (parent handles it) */
   hideFullscreen?: boolean
+  /** Show device name labels on markers */
+  showLabels?: boolean
 }
 
 export function FacilityMapCanvas({
@@ -59,9 +59,9 @@ export function FacilityMapCanvas({
   onRemovePlacement,
   onDeviceNavigate,
   telemetryMap,
-  showLabels = false,
   compact = false,
   hideFullscreen = false,
+  showLabels = false,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -205,7 +205,7 @@ export function FacilityMapCanvas({
           )}
           {mode === 'view' && placements.length > 0 && (
             <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-              Click icon to view details
+              Click a device to view details
             </Badge>
           )}
         </div>
