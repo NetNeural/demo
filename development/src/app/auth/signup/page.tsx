@@ -41,7 +41,7 @@ interface PlanTier {
 const PLANS: PlanTier[] = [
   {
     slug: 'starter',
-    name: 'Monitor',
+    name: 'Starter',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
     icon: BarChart3,
@@ -57,14 +57,14 @@ const PLANS: PlanTier[] = [
   },
   {
     slug: 'professional',
-    name: 'Protect+',
+    name: 'Professional',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
     icon: Brain,
     color: '#8b5cf6', // violet
     popular: true,
     features: [
-      'Everything in Monitor, plus:',
+      'Everything in Starter, plus:',
       'AI anomaly detection',
       'Predictive alerts',
       'Multi-site dashboard',
@@ -77,13 +77,13 @@ const PLANS: PlanTier[] = [
   },
   {
     slug: 'enterprise',
-    name: 'Command',
+    name: 'Enterprise',
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,
     icon: Building2,
     color: '#10b981', // emerald
     features: [
-      'Everything in Protect+, plus:',
+      'Everything in Professional, plus:',
       'AI optimization insights',
       'Chain benchmarking',
       'ESG & carbon reporting',

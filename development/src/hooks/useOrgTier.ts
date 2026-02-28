@@ -73,19 +73,19 @@ const TIER_DISPLAY: Record<string, TierDisplayInfo> = {
     description: 'Basic monitoring only',
   },
   starter: {
-    label: 'Monitor',
+    label: 'Starter',
     color: 'blue',
     badge: 'bg-blue-100 text-blue-700',
     description: 'Essential IoT monitoring',
   },
   professional: {
-    label: 'Protect+',
+    label: 'Professional',
     color: 'purple',
     badge: 'bg-purple-100 text-purple-700',
     description: 'Advanced protection & analytics',
   },
   enterprise: {
-    label: 'Command',
+    label: 'Enterprise',
     color: 'amber',
     badge: 'bg-amber-100 text-amber-700',
     description: 'Full platform control',
