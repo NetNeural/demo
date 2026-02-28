@@ -1041,17 +1041,19 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                       {/* Separator before zone/heatmap controls */}
                       {(deviceTypeChips.length > 1) && <span className="h-4 w-px bg-border" />}
 
-                      {/* Draw Zone button (always visible in single view) */}
-                      <Button
-                        variant={zoneDrawing ? 'default' : 'outline'}
-                        size="sm"
-                        className="h-6 text-[10px] px-2"
-                        onClick={() => setZoneDrawing(!zoneDrawing)}
-                      >
-                        <PenTool className="mr-1 h-3 w-3" />
-                        {zoneDrawing ? 'Cancel' : 'Draw Zone'}
-                      </Button>
-                      {selectedZoneId && (
+                      {/* Draw Zone button (edit mode only) */}
+                      {(mode === 'edit' || mode === 'place') && (
+                        <Button
+                          variant={zoneDrawing ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          onClick={() => setZoneDrawing(!zoneDrawing)}
+                        >
+                          <PenTool className="mr-1 h-3 w-3" />
+                          {zoneDrawing ? 'Cancel' : 'Draw Zone'}
+                        </Button>
+                      )}
+                      {selectedZoneId && (mode === 'edit' || mode === 'place') && (
                         <Button
                           variant="destructive"
                           size="sm"
