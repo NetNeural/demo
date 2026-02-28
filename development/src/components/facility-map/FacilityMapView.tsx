@@ -1176,7 +1176,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                           <Popover>
                             <PopoverTrigger asChild>
                               <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
-                                <Info className="h-3 w-3" /> How it works
+                                <Info className="h-3 w-3" /> Heatmap Help
                               </button>
                             </PopoverTrigger>
                             <PopoverContent side="left" className="w-72 text-xs space-y-2">
