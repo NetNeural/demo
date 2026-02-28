@@ -835,6 +835,42 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               Show Names
             </label>
 
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showDeviceTypes}
+                onChange={(e) => setShowDeviceTypes(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-muted-foreground/50 accent-primary cursor-pointer"
+              />
+              Show Device Type
+            </label>
+
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={issuesOnly}
+                onChange={(e) => setIssuesOnly(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-muted-foreground/50 accent-amber-500 cursor-pointer"
+              />
+              Issues Only
+            </label>
+
+            {getAvailableMetrics(telemetryMap).length > 0 && (
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                Heatmap
+                <select
+                  value={heatmapMetric}
+                  onChange={(e) => setHeatmapMetric(e.target.value)}
+                  className="rounded border bg-background px-1.5 py-0.5 text-xs"
+                >
+                  <option value="">Off</option>
+                  {getAvailableMetrics(telemetryMap).map((m) => (
+                    <option key={m} value={m}>{formatMetricLabel(m)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
           </div>
         )}
 
@@ -957,7 +993,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </div>
                 <FacilityMapCanvas
                   facilityMap={selectedMap}
-                  placements={hiddenDeviceTypes.size > 0 ? placements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown')) : placements}
+                  placements={(() => {
+                    let filtered = placements
+                    if (issuesOnly) filtered = filtered.filter((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline'))
+                    if (hiddenDeviceTypes.size > 0) filtered = filtered.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown'))
+                    return filtered
+                  })()}
                   availableDevices={devices}
                   mode={mode === 'place' ? 'place' : mode}
                   selectedPlacementId={selectedPlacementId}
