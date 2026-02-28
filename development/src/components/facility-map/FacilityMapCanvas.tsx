@@ -522,7 +522,7 @@ export function FacilityMapCanvas({
         ) : (
           <div
             ref={containerRef}
-            className={cn('relative inline-block', !compact && 'w-full')}
+            className={cn('relative', compact ? 'w-full' : 'inline-block w-full')}
             onClick={handleCanvasClick}
             onTouchEnd={handleTouchEnd}
             onDrop={handleDrop}
@@ -533,8 +533,7 @@ export function FacilityMapCanvas({
               src={facilityMap.image_url}
               alt={facilityMap.name}
               className={cn(
-                'block transition-opacity',
-                compact ? 'max-w-full max-h-[280px]' : 'w-full',
+                'block transition-opacity w-full',
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               )}
               onLoad={() => setImageLoaded(true)}
