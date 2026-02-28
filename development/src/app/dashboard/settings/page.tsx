@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { User, Settings, Shield, Building2 } from 'lucide-react'
+import { User, Settings, Shield, Building2, CreditCard } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProfileTab } from './components/ProfileTab'
@@ -95,6 +95,13 @@ function SettingsPageContent() {
             <Building2 className="h-4 w-4" />
             <span>Organizations</span>
           </TabsTrigger>
+          <TabsTrigger
+            value="subscription"
+            className="flex items-center gap-2"
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>Subscription</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -115,6 +122,29 @@ function SettingsPageContent() {
         {/* Organizations Tab */}
         <TabsContent value="organizations">
           <UserOrganizationsTab />
+        </TabsContent>
+
+        {/* Subscription Tab */}
+        <TabsContent value="subscription">
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-card p-6">
+              <h3 className="text-lg font-semibold">Current Plan</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {currentOrganization?.subscription_tier
+                  ? `Your organization is on the ${currentOrganization.subscription_tier.charAt(0).toUpperCase() + currentOrganization.subscription_tier.slice(1)} plan.`
+                  : 'No active subscription found.'}
+              </p>
+              <div className="mt-4 flex gap-3">
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  View Plans & Pricing
+                </a>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

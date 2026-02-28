@@ -101,6 +101,12 @@ export default function PricingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
 
   const handleSelectPlan = async (plan: BillingPlan) => {
+    // Enterprise → contact sales
+    if (plan.slug === 'enterprise') {
+      window.location.href = 'mailto:sales@netneural.ai?subject=Enterprise%20Plan%20Inquiry'
+      return
+    }
+
     // If not logged in, redirect to login with plan preselected
     const supabase = getSupabase()
     const {

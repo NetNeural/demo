@@ -141,7 +141,9 @@ export function PlanCard({
             ? 'Current Plan'
             : isLoading
               ? 'Redirecting...'
-              : 'Get Started'}
+              : plan.slug === 'enterprise'
+                ? 'Contact Sales'
+                : 'Get Started'}
         </Button>
       </div>
 
