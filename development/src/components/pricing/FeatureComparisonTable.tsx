@@ -73,7 +73,7 @@ export function FeatureComparisonTable({ plans }: FeatureComparisonTableProps) {
                 key={plan.id}
                 className={cn(
                   'px-4 py-4 text-center text-sm font-semibold',
-                  plan.slug === 'protect' && 'text-blue-600'
+                  plan.slug === 'professional' && 'text-blue-600'
                 )}
               >
                 {plan.name}

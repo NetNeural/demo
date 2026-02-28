@@ -27,7 +27,7 @@ import {
 
 // ─── Plan definitions (matches billing_plans seed data) ───────────────
 interface PlanTier {
-  slug: 'monitor' | 'protect' | 'command'
+  slug: 'starter' | 'professional' | 'enterprise'
   name: string
   tagline: string
   pricePerSensor: number
@@ -40,7 +40,7 @@ interface PlanTier {
 
 const PLANS: PlanTier[] = [
   {
-    slug: 'monitor',
+    slug: 'starter',
     name: 'Monitor',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
@@ -56,7 +56,7 @@ const PLANS: PlanTier[] = [
     limits: { users: '5 users', integrations: '1 integration', retention: '30-day retention' },
   },
   {
-    slug: 'protect',
+    slug: 'professional',
     name: 'Protect+',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
@@ -76,7 +76,7 @@ const PLANS: PlanTier[] = [
     limits: { users: '25 users', integrations: '5 integrations', retention: '1-year retention' },
   },
   {
-    slug: 'command',
+    slug: 'enterprise',
     name: 'Command',
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,

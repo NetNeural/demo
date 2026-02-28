@@ -227,7 +227,7 @@ export default function PricingPage() {
             <PlanCard
               key={plan.id}
               plan={plan}
-              isPopular={plan.slug === 'protect'}
+              isPopular={plan.slug === 'professional'}
               isCurrentPlan={plan.slug === currentPlanSlug}
               isLoading={checkoutLoading === plan.id}
               billingInterval={billingInterval}

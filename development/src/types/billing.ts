@@ -64,14 +64,14 @@ export interface BillingPlan {
 }
 
 /** Slugs matching the active seed data (per-sensor pricing model) */
-export type BillingPlanSlug = 'monitor' | 'protect' | 'command'
+export type BillingPlanSlug = 'starter' | 'professional' | 'enterprise'
 
 /** Legacy slugs (deactivated, kept for historical subscription references) */
 export type LegacyBillingPlanSlug =
   | 'free'
-  | 'starter'
-  | 'professional'
-  | 'enterprise'
+  | 'monitor'
+  | 'protect'
+  | 'command'
 
 /** Feature display metadata for plan comparison UI */
 export interface PlanFeatureDisplay {

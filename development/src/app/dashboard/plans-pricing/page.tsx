@@ -82,11 +82,11 @@ function useAdminGuard() {
 // ─── Plan icon helper ─────────────────────────────────────────────────
 function getPlanIcon(slug: string) {
   switch (slug) {
-    case 'monitor':
+    case 'starter':
       return BarChart3
-    case 'protect':
+    case 'professional':
       return Brain
-    case 'command':
+    case 'enterprise':
       return Building2
     default:
       return DollarSign
@@ -95,11 +95,11 @@ function getPlanIcon(slug: string) {
 
 function getPlanColor(slug: string) {
   switch (slug) {
-    case 'monitor':
+    case 'starter':
       return '#06b6d4'
-    case 'protect':
+    case 'professional':
       return '#8b5cf6'
-    case 'command':
+    case 'enterprise':
       return '#10b981'
     default:
       return '#6b7280'

@@ -149,7 +149,7 @@ export function PlanCard({
       <ul className="mt-6 flex-1 space-y-3">
         {highlights.map((feature, i) => (
           <li key={i} className="flex items-start gap-2 text-sm">
-            {i === 0 && (plan.slug === 'protect' || plan.slug === 'command') ? (
+            {i === 0 && (plan.slug === 'professional' || plan.slug === 'enterprise') ? (
               <span className="font-medium text-muted-foreground">
                 {feature}
               </span>
