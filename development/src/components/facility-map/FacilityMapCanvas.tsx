@@ -10,7 +10,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { DeviceMarker } from './DeviceMarker'
 import { ZoneOverlay } from './ZoneOverlay'
-import { HeatmapOverlay, formatMetricLabel } from './HeatmapOverlay'
+import { HeatmapOverlay, HeatmapLegend, formatMetricLabel } from './HeatmapOverlay'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -543,8 +543,29 @@ export function FacilityMapCanvas({
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
                   showDeviceType={showDeviceTypes}
+                  heatmapMetric={heatmapMetric}
                 />
               ))}
+
+            {/* Heatmap legend */}
+            {imageLoaded && heatmapMetric && telemetryMap && !compact && (() => {
+              const pts = placements.filter((p) => {
+                const raw = telemetryMap[p.device_id]?.[heatmapMetric]
+                const n = typeof raw === 'number' ? raw : parseFloat(String(raw))
+                return !isNaN(n)
+              }).map((p) => {
+                const raw = telemetryMap[p.device_id]![heatmapMetric]
+                return typeof raw === 'number' ? raw : parseFloat(String(raw))
+              })
+              if (pts.length < 2) return null
+              const min = Math.min(...pts)
+              const max = Math.max(...pts)
+              return (
+                <div className="absolute bottom-2 left-2 rounded-lg bg-black/70 px-3 py-1.5 backdrop-blur-sm" style={{ zIndex: 20 }}>
+                  <HeatmapLegend min={min} max={max} metric={heatmapMetric} />
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
