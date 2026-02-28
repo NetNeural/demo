@@ -895,8 +895,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               )}
 
               <Card className="overflow-hidden group relative">
-                {/* Quick actions overlay (same as collage view) */}
-                <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* Quick actions overlay — below toolbar to avoid covering Export/Fullscreen */}
+                <div className="absolute top-12 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
                     className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
                     onClick={() => {

@@ -485,8 +485,7 @@ export function FacilityMapCanvas({
               src={facilityMap.image_url}
               alt={facilityMap.name}
               className={cn(
-                'w-full object-contain transition-opacity',
-                compact && 'max-h-[220px]',
+                'w-full transition-opacity',
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               )}
               onLoad={() => setImageLoaded(true)}
