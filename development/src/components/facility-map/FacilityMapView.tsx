@@ -869,8 +869,22 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
       {/* === SINGLE VIEW === */}
       {viewMode === 'single' && selectedMap && (
-        <div className="mx-auto max-w-4xl">
-          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className={`mx-auto ${drawingZone ? 'max-w-5xl' : 'max-w-4xl'} transition-all`}>
+          <div className={`grid gap-4 ${drawingZone ? 'lg:grid-cols-[240px_1fr_280px]' : 'lg:grid-cols-[1fr_280px]'}`}>
+            {/* Zone drawer panel (left of map when drawing zones) */}
+            {drawingZone && (
+              <div className="self-start">
+                <ZoneDrawer
+                  points={zonePoints}
+                  onCancel={() => {
+                    setDrawingZone(false)
+                    setZonePoints([])
+                  }}
+                  onSave={handleSaveZone}
+                  onUndo={() => setZonePoints((prev) => prev.slice(0, -1))}
+                />
+              </div>
+            )}
             {/* Map with left/right arrows */}
             <div className="relative">
               {/* Left arrow */}
@@ -981,21 +995,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </div>
               )}
             </div>
-
-            {/* Zone drawer panel (when drawing zones) */}
-            {drawingZone && (
-              <div className="mb-4">
-                <ZoneDrawer
-                  points={zonePoints}
-                  onCancel={() => {
-                    setDrawingZone(false)
-                    setZonePoints([])
-                  }}
-                  onSave={handleSaveZone}
-                  onUndo={() => setZonePoints((prev) => prev.slice(0, -1))}
-                />
-              </div>
-            )}
 
             {/* Device palette (only in edit mode) */}
             {(mode === 'edit' || mode === 'place') && (
