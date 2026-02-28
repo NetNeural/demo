@@ -81,7 +81,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
   const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
-  const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
+  const [viewMode, setViewMode] = useState<'single' | 'collage'>(() => {
+    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_viewMode'); if (v === 'collage') return 'collage' } catch {} } return 'single'
+  })
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   const [showLabels, setShowLabels] = useState(() => {
     if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_showLabels') === 'true' } catch {} } return false
@@ -123,6 +125,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   useEffect(() => { try { localStorage.setItem('fm_showCollageName', String(showCollageName)) } catch {} }, [showCollageName])
   useEffect(() => { try { localStorage.setItem('fm_showCollageCount', String(showCollageCount)) } catch {} }, [showCollageCount])
   useEffect(() => { try { localStorage.setItem('fm_showDeviceTypes', String(showDeviceTypes)) } catch {} }, [showDeviceTypes])
+  useEffect(() => { try { localStorage.setItem('fm_viewMode', viewMode) } catch {} }, [viewMode])
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -966,7 +969,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
+                  onShowLabelsChange={setShowLabels}
                   showDeviceTypes={showDeviceTypes}
+                  onShowDeviceTypesChange={setShowDeviceTypes}
                   heatmapMetric={heatmapMetric}
                   onHeatmapMetricChange={setHeatmapMetric}
                   availableHeatmapMetrics={getAvailableMetrics(telemetryMap)}

@@ -54,8 +54,12 @@ interface FacilityMapCanvasProps {
   zoneDrawing?: boolean
   /** Show device name labels next to sensor pins */
   showLabels?: boolean
+  /** Callback when show labels toggle changes */
+  onShowLabelsChange?: (show: boolean) => void
   /** Show device type labels next to sensor pins */
   showDeviceTypes?: boolean
+  /** Callback when show device types toggle changes */
+  onShowDeviceTypesChange?: (show: boolean) => void
   /** Currently selected heatmap metric (empty string = off) */
   heatmapMetric?: string
   /** Callback when heatmap metric changes */
@@ -98,7 +102,9 @@ export function FacilityMapCanvas({
   onZonePointAdd,
   zoneDrawing = false,
   showLabels = false,
+  onShowLabelsChange,
   showDeviceTypes = false,
+  onShowDeviceTypesChange,
   heatmapMetric = '',
   onHeatmapMetricChange,
   availableHeatmapMetrics = [],
@@ -409,6 +415,32 @@ export function FacilityMapCanvas({
           {/* Separator before heatmap */}
           {availableHeatmapMetrics.length > 0 && (
             <span className="text-muted-foreground/40">|</span>
+          )}
+
+          {/* Show device names checkbox */}
+          {onShowLabelsChange && (
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showLabels}
+                onChange={(e) => onShowLabelsChange(e.target.checked)}
+                className="h-3 w-3 rounded accent-primary cursor-pointer"
+              />
+              Show Device Names
+            </label>
+          )}
+
+          {/* Show device type checkbox */}
+          {onShowDeviceTypesChange && (
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showDeviceTypes}
+                onChange={(e) => onShowDeviceTypesChange(e.target.checked)}
+                className="h-3 w-3 rounded accent-primary cursor-pointer"
+              />
+              Show Device Type
+            </label>
           )}
 
           {/* Heatmap selector */}
