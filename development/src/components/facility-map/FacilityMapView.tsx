@@ -82,13 +82,29 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
   const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
-  /** Show device name labels on map markers */
-  const [showLabels, setShowLabels] = useState(false)
+  /** Persistent display options (stored in localStorage) */
+  const [mapDisplayOpts, setMapDisplayOpts] = useState(() => {
+    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false, mapName: false, deviceCount: false }
+    try {
+      const saved = localStorage.getItem('facility-map-display')
+      if (saved) return JSON.parse(saved) as Record<string, boolean>
+    } catch { /* ignore */ }
+    return { deviceName: false, deviceType: false, location: false, mapName: false, deviceCount: false }
+  })
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
+
+  // Helper to toggle a display option and persist to localStorage
+  const toggleDisplayOpt = useCallback((key: string) => {
+    setMapDisplayOpts((prev) => {
+      const next = { ...prev, [key]: !prev[key as keyof typeof prev] }
+      try { localStorage.setItem('facility-map-display', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
@@ -688,16 +704,51 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
         {/* Show device name labels checkbox (single view) */}
         {viewMode === 'single' && selectedMap && (
-          <div className="flex items-center gap-1.5">
-            <Checkbox
-              id="show-labels"
-              checked={showLabels}
-              onCheckedChange={(v) => setShowLabels(v === true)}
-              className="h-3.5 w-3.5"
-            />
-            <Label htmlFor="show-labels" className="text-xs cursor-pointer select-none">
-              Show Device Names
-            </Label>
+          <div className="flex flex-wrap items-center gap-3">
+            {([
+              ['deviceName', 'Device Name'],
+              ['deviceType', 'Device Type'],
+              ['location', 'Location'],
+              ['mapName', 'Map Name'],
+              ['deviceCount', 'Device Count'],
+            ] as const).map(([key, label]) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <Checkbox
+                  id={`opt-${key}`}
+                  checked={!!mapDisplayOpts[key as keyof typeof mapDisplayOpts]}
+                  onCheckedChange={() => toggleDisplayOpt(key)}
+                  className="h-3.5 w-3.5"
+                />
+                <Label htmlFor={`opt-${key}`} className="text-xs cursor-pointer select-none">
+                  {label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Collage display options */}
+        {viewMode === 'collage' && (
+          <div className="flex flex-wrap items-center gap-3">
+            {([
+              ['deviceName', 'Device Name'],
+              ['deviceType', 'Device Type'],
+              ['location', 'Location'],
+              ['mapName', 'Map Name'],
+              ['deviceCount', 'Device Count'],
+            ] as const).map(([key, label]) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <Checkbox
+                  id={`opt-col-${key}`}
+                  checked={!!mapDisplayOpts[key as keyof typeof mapDisplayOpts]}
+                  onCheckedChange={() => toggleDisplayOpt(key)}
+                  className="h-3.5 w-3.5"
+                />
+                <Label htmlFor={`opt-col-${key}`} className="text-xs cursor-pointer select-none">
+                  {label}
+                </Label>
+              </div>
+            ))}
           </div>
         )}
 
@@ -797,7 +848,11 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onRemovePlacement={handleRemovePlacement}
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
-                  showLabels={showLabels}
+                  showLabels={mapDisplayOpts.deviceName}
+                  showDeviceType={mapDisplayOpts.deviceType}
+                  showMapName={mapDisplayOpts.mapName}
+                  showDeviceCount={mapDisplayOpts.deviceCount}
+                  showLocation={mapDisplayOpts.location}
                 />
               </Card>
 
@@ -871,17 +926,26 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             const mapPlacements = allPlacements[m.id] || []
             return (
               <Card key={m.id} className="overflow-hidden group relative">
-                {/* Map label overlay */}
+                {/* Map label overlay — respects display options */}
+                {(mapDisplayOpts.mapName || mapDisplayOpts.deviceCount || mapDisplayOpts.location) && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
+                  {mapDisplayOpts.mapName && (
                   <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
                     {m.name}
-                    {(mapPlacementCounts[m.id] || 0) > 0 && (
-                      <span className="ml-1.5 text-muted-foreground">
-                        ({mapPlacementCounts[m.id]})
-                      </span>
-                    )}
                   </Badge>
+                  )}
+                  {mapDisplayOpts.location && m.location?.name && (
+                  <Badge variant="outline" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
+                    {m.location.name}
+                  </Badge>
+                  )}
+                  {mapDisplayOpts.deviceCount && (mapPlacementCounts[m.id] || 0) > 0 && (
+                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
+                    {mapPlacementCounts[m.id]} device{(mapPlacementCounts[m.id] || 0) !== 1 ? 's' : ''}
+                  </Badge>
+                  )}
                 </div>
+                )}
                 {/* Quick actions overlay */}
                 <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -926,7 +990,11 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onRemovePlacement={() => {}}
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
-                  showLabels={showLabels}
+                  showLabels={mapDisplayOpts.deviceName}
+                  showDeviceType={mapDisplayOpts.deviceType}
+                  showMapName={mapDisplayOpts.mapName}
+                  showDeviceCount={mapDisplayOpts.deviceCount}
+                  showLocation={mapDisplayOpts.location}
                   compact
                   hideFullscreen
                 />

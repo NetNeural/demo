@@ -3,7 +3,8 @@
 /**
  * DevicePalette — Side panel listing all devices in the org.
  * Devices already placed on the current map are shown with a badge.
- * Un-placed devices can be clicked to enter "place" mode.
+ * Un-placed devices can be clicked or dragged to the map to place them.
+ * Sorted: online first, then offline, then others.
  */
 
 import { useState, useMemo } from 'react'
@@ -23,15 +24,32 @@ import {
   AlertTriangle,
   Wrench,
   X,
+  GripVertical,
 } from 'lucide-react'
 import type { PlacedDevice, DeviceMapPlacement } from '@/types/facility-map'
 
-const STATUS_DOT: Record<string, string> = {
-  online: 'bg-green-500',
-  offline: 'bg-gray-400',
-  warning: 'bg-amber-500',
-  error: 'bg-red-500',
-  maintenance: 'bg-blue-500',
+const STATUS_ORDER: Record<string, number> = {
+  online: 0,
+  warning: 1,
+  error: 2,
+  maintenance: 3,
+  offline: 4,
+}
+
+function StatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case 'online':
+      return <Wifi className="h-3.5 w-3.5 text-green-500 shrink-0" />
+    case 'offline':
+      return <WifiOff className="h-3.5 w-3.5 text-red-500 shrink-0" />
+    case 'warning':
+    case 'error':
+      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+    case 'maintenance':
+      return <Wrench className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+    default:
+      return <WifiOff className="h-3.5 w-3.5 text-red-500 shrink-0" />
+  }
 }
 
 interface DevicePaletteProps {
@@ -60,11 +78,13 @@ export function DevicePalette({
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return devices.filter(
+    const list = devices.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         d.device_type.toLowerCase().includes(q)
     )
+    // Sort: online first, then warning/error, then maintenance, then offline
+    return list.sort((a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4))
   }, [devices, search])
 
   const unplaced = filtered.filter((d) => !placedDeviceIds.has(d.id))
@@ -112,15 +132,21 @@ export function DevicePalette({
                       <button
                         key={device.id}
                         className={cn(
-                          'flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors',
+                          'flex w-full items-center gap-2 rounded-lg p-2.5 text-left transition-colors',
                           'hover:bg-accent',
                           deviceToPlace === device.id && 'bg-primary/10 ring-1 ring-primary'
                         )}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('application/x-device-id', device.id)
+                          e.dataTransfer.effectAllowed = 'copy'
+                        }}
                         onClick={() =>
                           onSelectToPlace(deviceToPlace === device.id ? null : device.id)
                         }
                       >
-                        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_DOT[device.status])} />
+                        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/50" />
+                        <StatusIcon status={device.status} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{device.name}</p>
                           <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>
@@ -148,11 +174,9 @@ export function DevicePalette({
                       return (
                         <div
                           key={device.id}
-                          className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-accent"
+                          className="flex items-center gap-2 rounded-lg p-2.5 hover:bg-accent"
                         >
-                          <span
-                            className={cn('h-2.5 w-2.5 shrink-0 rounded-full', STATUS_DOT[device.status])}
-                          />
+                          <StatusIcon status={device.status} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{device.name}</p>
                             <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>

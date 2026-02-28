@@ -45,6 +45,14 @@ interface FacilityMapCanvasProps {
   hideFullscreen?: boolean
   /** Show device name labels on markers */
   showLabels?: boolean
+  /** Show device type labels */
+  showDeviceType?: boolean
+  /** Show map name overlay */
+  showMapName?: boolean
+  /** Show device count overlay */
+  showDeviceCount?: boolean
+  /** Show location overlay */
+  showLocation?: boolean
 }
 
 export function FacilityMapCanvas({
@@ -62,6 +70,10 @@ export function FacilityMapCanvas({
   compact = false,
   hideFullscreen = false,
   showLabels = false,
+  showDeviceType = false,
+  showMapName = false,
+  showDeviceCount = false,
+  showLocation = false,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -106,6 +118,29 @@ export function FacilityMapCanvas({
       }
     },
     [mode, deviceToPlace, onPlaceDevice]
+  )
+
+  // Drag-and-drop from device palette
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/x-device-id')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      const deviceId = e.dataTransfer.getData('application/x-device-id')
+      if (!deviceId || !containerRef.current) return
+      e.preventDefault()
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+        onPlaceDevice(deviceId, x, y)
+      }
+    },
+    [onPlaceDevice]
   )
 
   // Fullscreen toggle
@@ -290,6 +325,8 @@ export function FacilityMapCanvas({
             className="relative inline-block w-full"
             onClick={handleCanvasClick}
             onTouchEnd={handleTouchEnd}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -318,8 +355,30 @@ export function FacilityMapCanvas({
                   containerRef={containerRef}
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
+                  showDeviceType={showDeviceType}
                 />
               ))}
+
+            {/* Overlay badges */}
+            {imageLoaded && (showMapName || showDeviceCount || showLocation) && (
+              <div className="absolute bottom-1 left-1 z-20 flex flex-wrap items-center gap-1">
+                {showMapName && (
+                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                    {facilityMap.name}
+                  </Badge>
+                )}
+                {showLocation && facilityMap.location?.name && (
+                  <Badge variant="outline" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                    {facilityMap.location.name}
+                  </Badge>
+                )}
+                {showDeviceCount && placements.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                    {placements.length} device{placements.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
