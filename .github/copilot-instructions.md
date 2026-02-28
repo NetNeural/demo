@@ -112,29 +112,76 @@ curl http://127.0.0.1:54321/health
 
 ## Deployment
 
-### 3-Environment Architecture ✅ IMPLEMENTED (February 24, 2026)
+### ⚠️ CRITICAL: 3-Repo / 3-Domain Architecture ⚠️
 
-| Environment | Name | Domain | Branch | Supabase Ref | Workflow |
+**Each environment is served by a DIFFERENT GitHub repository's GitHub Pages.**  
+**Code changes in MonoRepo-Staging do NOT automatically appear on dev or prod.**  
+**You MUST push to ALL THREE repos when deploying.**
+
+| Environment | Domain | **GitHub Repo** | Branch | Supabase Ref | Deploy Workflow |
 |---|---|---|---|---|---|
-| **Production** | Sentinel | sentinel.netneural.ai | `main` | `bldojxpockljyivldxwf` | `deploy-production.yml` |
-| **Staging** | Demo-Stage | demo-stage.netneural.ai | `staging` | `atgbmxicqikmapfqouco` | `deploy-staging.yml` |
-| **Development** | Demo | demo.netneural.ai | `develop` | `tsomafkalaoarnuwgdyu` | `deploy-dev.yml` |
+| **Production** | sentinel.netneural.ai | **`NetNeural/MonoRepo`** | `main` | `bldojxpockljyivldxwf` | `deploy.yml` |
+| **Staging** | demo-stage.netneural.ai | **`NetNeural/MonoRepo-Staging`** | `staging` | `atgbmxicqikmapfqouco` | `deploy-staging.yml` |
+| **Development** | demo.netneural.ai | **`NetNeural/demo`** | `main` | `tsomafkalaoarnuwgdyu` | `deploy.yml` |
 
-**Promotion Flow:** `develop` → `staging` → `main`  
-**Branching:** Feature branches → `develop` → `staging` → `main`
+### Deployment Process (ALL steps required)
 
-### GitHub Secrets (22 total, grouped by prefix)
-- **PROD_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID
-- **STAGING_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID, SUPABASE_DB_PASSWORD, SUPABASE_ACCESS_TOKEN, GOLIOTH_API_KEY
-- **DEV_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID
-- **Shared**: SUPABASE_ACCESS_TOKEN, OPENAI_API_KEY, TWILIO_* (3), NEXT_PUBLIC_SUPABASE_* (2 legacy)
+```bash
+# 1. Develop and commit on staging branch (MonoRepo-Staging)
+git add . && git commit -m "feat: your changes"
+git push origin staging   # → auto-deploys demo-stage.netneural.ai
+
+# 2. Push to demo repo (dev environment)
+git remote add demo https://github.com/NetNeural/demo.git   # one-time setup
+git push demo staging:main --force   # → auto-deploys demo.netneural.ai
+
+# 3. Push to MonoRepo (production environment)
+git remote add monorepo https://github.com/NetNeural/MonoRepo.git   # one-time setup
+git push monorepo staging:main --force   # → auto-deploys sentinel.netneural.ai
+```
+
+### ❌ Common Mistake (DO NOT DO THIS)
+- Pushing only to `origin` (MonoRepo-Staging) and assuming dev/prod will update
+- The `deploy-dev.yml` and `deploy-production.yml` in MonoRepo-Staging deploy to  
+  MonoRepo-Staging's OWN GitHub Pages (demo-stage.netneural.ai) — NOT to the other repos
+- Only the deploy workflow **inside each repo** can update that repo's GitHub Pages
+
+### Database Migrations (separate from code deploy)
+Supabase migrations must be pushed to each project independently:
+```bash
+# Staging
+npx supabase link --project-ref atgbmxicqikmapfqouco
+echo "y" | npx supabase db push --linked
+
+# Dev
+npx supabase link --project-ref tsomafkalaoarnuwgdyu
+echo "y" | npx supabase db push --linked
+
+# Prod
+npx supabase link --project-ref bldojxpockljyivldxwf
+echo "y" | npx supabase db push --linked
+```
+
+### GitHub Secrets (per-repo)
+Each repo has its OWN GitHub Secrets. When updating secrets, update in ALL repos.
+
+**MonoRepo-Staging** (staging): STAGING_* prefixed secrets  
+**demo** (dev): DEV_* prefixed secrets  
+**MonoRepo** (prod): PROD_* prefixed secrets  
+**All repos**: SUPABASE_ACCESS_TOKEN (shared)
+
+### Supabase Projects
+- **Dev:** `tsomafkalaoarnuwgdyu` — demo.netneural.ai
+- **Staging:** `atgbmxicqikmapfqouco` — demo-stage.netneural.ai
+- **Prod:** `bldojxpockljyivldxwf` — sentinel.netneural.ai
 
 ### Guidelines for AI Assistants
 - `npm run build` must succeed before deploy
 - Static export only (no server-side runtime)
 - All dynamic features use Supabase/Edge Functions
-- **DO** target the correct environment for changes
-- **DO** use the correct branch for the target environment
+- **DO** push code to ALL THREE repos when deploying
+- **DO** push DB migrations to ALL THREE Supabase projects
+- **DO NOT** assume pushing to MonoRepo-Staging deploys to dev or prod
 - **DO NOT** mix environment configurations (e.g., staging keys in prod)
 
 ---
@@ -348,6 +395,15 @@ npm run build
 ---
 
 ## Version History
+- **2026-02-28:** Documented 3-repo deployment architecture
+  - CRITICAL FIX: Each domain served by a different GitHub repo
+  - MonoRepo-Staging → demo-stage.netneural.ai (staging)
+  - NetNeural/demo → demo.netneural.ai (dev)
+  - NetNeural/MonoRepo → sentinel.netneural.ai (prod)
+  - Must push to all 3 repos when deploying code changes
+  - Must push DB migrations to all 3 Supabase projects separately
+  - Fixed admin user roles across all environments (super_admin + org owner)
+  - All GitHub secrets verified and updated for all 3 repos
 - **2026-02-24:** 3-environment setup implemented (Dev/Staging/Prod)
   - 3 Supabase projects: tsomafkalaoarnuwgdyu (dev), atgbmxicqikmapfqouco (staging), bldojxpockljyivldxwf (prod)
   - 3 GitHub Actions workflows: deploy-dev.yml, deploy-staging.yml, deploy-production.yml
