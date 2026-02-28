@@ -74,14 +74,81 @@ serve(async (req) => {
     let reportDate = new Date().toISOString().split('T')[0]
     const url = new URL(req.url)
     let isPreview = url.searchParams.get('preview') === 'true'
+    let passthroughHtml: string | null = null
+    let passthroughSubject: string | null = null
 
     try {
       const body = await req.json()
       if (body.recipients?.length > 0) recipients = body.recipients
       if (body.date) reportDate = body.date
       if (body.preview === true) isPreview = true
+      // Pass-through mode: caller provides pre-built HTML + subject
+      if (typeof body.html === 'string' && body.html.length > 0) {
+        passthroughHtml = body.html
+        passthroughSubject = body.subject || 'NetNeural Report'
+      }
     } catch {
       /* no body — use defaults */
+    }
+
+    // ─── Pass-Through Mode ───────────────────────────────────────────
+    // If the caller provides pre-built HTML, skip report generation and
+    // send it directly via Resend. Used by Platform Feature Report, etc.
+    if (passthroughHtml) {
+      console.log(`[daily-report] Pass-through mode: sending caller-provided HTML to ${recipients.length} recipients`)
+
+      if (isPreview) {
+        return new Response(passthroughHtml, {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+        })
+      }
+
+      const emailResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'NetNeural Reports <noreply@netneural.ai>',
+          to: recipients,
+          subject: passthroughSubject,
+          html: passthroughHtml,
+        }),
+      })
+
+      const emailResult = await emailResponse.json()
+      if (!emailResponse.ok) {
+        console.error('[daily-report] Resend error:', JSON.stringify(emailResult))
+        throw new Error(`Email send failed: ${emailResult.message || emailResponse.statusText}`)
+      }
+
+      const duration = Date.now() - startTime
+      console.log(`[daily-report] Pass-through email sent in ${duration}ms. Resend ID: ${emailResult.id}`)
+
+      try {
+        await supabase.from('report_runs').insert({
+          report_type: 'platform-feature-report',
+          status: 'success',
+          triggered_by: 'system',
+          recipients,
+          duration_ms: duration,
+          summary: passthroughSubject,
+        })
+      } catch (logErr) {
+        console.warn('[daily-report] Failed to log report_run:', (logErr as Error).message)
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Report sent to ${recipients.length} recipients`,
+          emailId: emailResult.id,
+          recipients,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     console.log(`[daily-report] Generating report for ${reportDate}`)
