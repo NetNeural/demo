@@ -960,7 +960,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   telemetryMap={telemetryMap}
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
-                  showDeviceCount={mapDisplayOpts.deviceCount}
                   showLocation={mapDisplayOpts.location}
                   showReadings={mapDisplayOpts.readings}
                   compact
