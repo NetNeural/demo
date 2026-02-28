@@ -53,8 +53,6 @@ interface FacilityMapCanvasProps {
   showDeviceCount?: boolean
   /** Show location overlay */
   showLocation?: boolean
-  /** Show telemetry readings on markers */
-  showReadings?: boolean
 }
 
 export function FacilityMapCanvas({
@@ -76,7 +74,6 @@ export function FacilityMapCanvas({
   showMapName = false,
   showDeviceCount = false,
   showLocation = false,
-  showReadings = false,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -406,7 +403,6 @@ export function FacilityMapCanvas({
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
                   showDeviceType={showDeviceType}
-                  showReadings={showReadings}
                   scale={markerScale}
                 />
               ))}
@@ -417,17 +413,17 @@ export function FacilityMapCanvas({
             {imageLoaded && (showMapName || showDeviceCount || showLocation) && (
               <div className="absolute bottom-1 left-1 z-20 flex flex-wrap items-center gap-1">
                 {showMapName && (
-                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                  <Badge variant="secondary" className="text-[10px] bg-black/60 text-white backdrop-blur-sm shadow-sm">
                     {facilityMap.name}
                   </Badge>
                 )}
                 {showLocation && facilityMap.location?.name && (
-                  <Badge variant="outline" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                  <Badge variant="outline" className="text-[10px] bg-black/60 text-white border-transparent backdrop-blur-sm shadow-sm">
                     {facilityMap.location.name}
                   </Badge>
                 )}
                 {showDeviceCount && placements.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                  <Badge variant="secondary" className="text-[10px] bg-black/60 text-white backdrop-blur-sm shadow-sm">
                     {placements.length} device{placements.length !== 1 ? 's' : ''}
                   </Badge>
                 )}

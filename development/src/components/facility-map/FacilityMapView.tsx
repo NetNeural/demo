@@ -95,12 +95,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   /** Persistent display options (stored in localStorage) */
   const [mapDisplayOpts, setMapDisplayOpts] = useState(() => {
-    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false, deviceCount: false, readings: false }
+    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false, deviceCount: false }
     try {
       const saved = localStorage.getItem('facility-map-display')
       if (saved) return JSON.parse(saved) as Record<string, boolean>
     } catch { /* ignore */ }
-    return { deviceName: false, deviceType: false, location: false, deviceCount: false, readings: false }
+    return { deviceName: false, deviceType: false, location: false, deviceCount: false }
   })
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
@@ -721,7 +721,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               ['deviceType', 'Device Type'],
               ['location', 'Location'],
               ['deviceCount', 'Device Count'],
-              ['readings', 'Readings'],
             ] as const).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
@@ -746,7 +745,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               ['deviceType', 'Device Type'],
               ['location', 'Location'],
               ['deviceCount', 'Device Count'],
-              ['readings', 'Readings'],
             ] as const).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
@@ -863,7 +861,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   showDeviceType={mapDisplayOpts.deviceType}
                   showDeviceCount={mapDisplayOpts.deviceCount}
                   showLocation={mapDisplayOpts.location}
-                  showReadings={mapDisplayOpts.readings}
                 />
               </Card>
 
@@ -961,7 +958,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
                   showLocation={mapDisplayOpts.location}
-                  showReadings={mapDisplayOpts.readings}
                   compact
                   hideFullscreen
                 />
