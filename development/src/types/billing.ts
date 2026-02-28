@@ -473,3 +473,77 @@ export function formatStorageBytes(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
 }
+
+// ============================================================================
+// Plans & Pricing Administration (#314)
+// ============================================================================
+
+/** Price change application scope */
+export type PriceChangeScope = 'all' | 'new_only'
+
+/** Price change record for audit trail */
+export interface PriceChangeRecord {
+  id: string
+  plan_id: string
+  plan_slug: string
+  field_changed: 'price_per_device' | 'price_monthly' | 'price_annual'
+  old_value: number
+  new_value: number
+  scope: PriceChangeScope
+  reason: string
+  effective_date: string
+  notification_sent: boolean
+  notification_message: string | null
+  changed_by: string
+  created_at: string
+}
+
+/** Draft plan edit (in-memory before save) */
+export interface PlanDraft {
+  id: string | null // null = new plan
+  name: string
+  slug: string
+  pricing_model: PricingModel
+  price_per_device: number
+  price_monthly: number
+  price_annual: number
+  max_devices: number
+  max_users: number
+  max_integrations: number
+  telemetry_retention_days: number
+  features: BillingPlanFeatures
+  is_active: boolean
+  is_public: boolean
+  sort_order: number
+  description: string
+}
+
+/** Empty feature set (all off) */
+export const EMPTY_FEATURES: BillingPlanFeatures = {
+  dashboard: false,
+  telemetry_charts: false,
+  email_alerts: false,
+  sms_alerts: false,
+  compliance_logs: false,
+  haccp_export: false,
+  manual_report_export: false,
+  ai_analytics: false,
+  predictive_alerts: false,
+  multi_site_dashboard: false,
+  role_based_access: false,
+  api_access: false,
+  automated_audit_reporting: false,
+  pdf_export: false,
+  mfa: false,
+  audit_log: false,
+  webhook_integrations: false,
+  ai_optimization: false,
+  chain_benchmarking: false,
+  esg_reporting: false,
+  carbon_analytics: false,
+  custom_integrations: false,
+  dedicated_support: false,
+  sla: false,
+  custom_branding: false,
+  priority_support: false,
+}

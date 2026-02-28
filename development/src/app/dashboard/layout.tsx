@@ -29,6 +29,7 @@ import {
   MessageSquarePlus,
   LifeBuoy,
   SlidersHorizontal,
+  DollarSign,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -85,6 +86,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       label: 'Organization',
       icon: Building2,
     },
+    ...(isSuperAdmin || userRole === 'owner'
+      ? [
+          {
+            href: '/dashboard/plans-pricing',
+            label: 'Plans & Pricing',
+            icon: DollarSign,
+          },
+        ]
+      : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]
