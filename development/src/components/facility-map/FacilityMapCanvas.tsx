@@ -272,7 +272,7 @@ export function FacilityMapCanvas({
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}
         style={compact
-          ? { height: '100%' }
+          ? { maxHeight: '280px' }
           : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px' }
         }
       >

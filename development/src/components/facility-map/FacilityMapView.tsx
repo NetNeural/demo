@@ -78,7 +78,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
   const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
-  const [viewMode, setViewMode] = useState<'single' | 'collage'>('collage')
+  const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
@@ -605,6 +605,61 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           </Button>
         </div>
 
+        {/* Map thumbnails + Add Map */}
+        {maps.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {maps.map((m) => (
+              <button
+                key={m.id}
+                className={`relative h-9 w-14 shrink-0 overflow-hidden rounded border transition-all ${
+                  m.id === selectedMapId && viewMode === 'single'
+                    ? 'ring-2 ring-primary border-primary'
+                    : 'border-muted hover:border-foreground/30'
+                }`}
+                onClick={() => {
+                  setSelectedMapId(m.id)
+                  setViewMode('single')
+                  setMode('view')
+                  setDeviceToPlace(null)
+                  setSelectedPlacementId(null)
+                }}
+                title={m.name}
+              >
+                {m.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.image_url}
+                    alt={m.name}
+                    className="h-full w-full object-cover"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <Map className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                )}
+                {(mapPlacementCounts[m.id] || 0) > 0 && (
+                  <span className="absolute bottom-0 right-0 rounded-tl bg-black/60 px-1 text-[8px] font-medium text-white">
+                    {mapPlacementCounts[m.id]}
+                  </span>
+                )}
+              </button>
+            ))}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 border border-dashed"
+              onClick={() => {
+                setEditingMap(null)
+                setDialogOpen(true)
+              }}
+              title="Add Map"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Edit mode toggle (only in single view with a selected map) */}
         {viewMode === 'single' && selectedMap && (
           <Button
@@ -623,8 +678,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             }}
           >
             {mode === 'view' ? (
-              <><Edit2 className="mr-1 h-3 w-3" />Edit</>            ) : (
-              <><Eye className="mr-1 h-3 w-3" />Done</>            )}
+              <><Plus className="mr-1 h-3 w-3" />Add Devices to Map</>            ) : (
+              <><Eye className="mr-1 h-3 w-3" />Done Editing</>            )}
           </Button>
         )}
 
@@ -860,21 +915,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           })}
         </div>
       )}
-
-      {/* Add Map button — below the maps */}
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => {
-            setEditingMap(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Add Map
-        </Button>
-      </div>
 
       {/* Map creation / edit dialog */}
       <MapManagerDialog
