@@ -80,7 +80,18 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
   const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
-  const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
+  const [viewMode, _setViewMode] = useState<'single' | 'collage'>(() => {
+    if (typeof window === 'undefined') return 'single'
+    try {
+      const saved = localStorage.getItem('facility-map-view-mode')
+      if (saved === 'collage') return 'collage'
+    } catch { /* ignore */ }
+    return 'single'
+  })
+  const setViewMode = useCallback((m: 'single' | 'collage') => {
+    _setViewMode(m)
+    try { localStorage.setItem('facility-map-view-mode', m) } catch { /* ignore */ }
+  }, [])
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   /** Persistent display options (stored in localStorage) */
   const [mapDisplayOpts, setMapDisplayOpts] = useState(() => {
