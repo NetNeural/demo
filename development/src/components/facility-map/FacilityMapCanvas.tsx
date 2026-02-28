@@ -268,12 +268,13 @@ export function FacilityMapCanvas({
       {/* Canvas area */}
       <div
         className={cn(
-          'relative bg-gray-100 overflow-hidden',
+          'relative bg-gray-100',
+          !compact && 'overflow-hidden',
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}
         style={compact
-          ? { maxHeight: '280px' }
-          : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px' }
+          ? {}
+          : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px', overflow: 'hidden' }
         }
       >
         {!facilityMap.image_url ? (
