@@ -2,13 +2,15 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { User, Settings, Shield, Building2, CreditCard } from 'lucide-react'
+import { User, Settings, Shield, Building2, CreditCard, ArrowUpRight } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProfileTab } from './components/ProfileTab'
 import { PreferencesTab } from './components/PreferencesTab'
 import { SecurityTab } from './components/SecurityTab'
 import { UserOrganizationsTab } from './components/UserOrganizationsTab'
+import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -35,6 +37,7 @@ function SettingsPageContent() {
 
   const { currentOrganization } = useOrganization()
   const { user } = useUser()
+  const [changePlanOpen, setChangePlanOpen] = useState(false)
 
   // Update activeTab when URL parameter changes
   useEffect(() => {
@@ -135,16 +138,25 @@ function SettingsPageContent() {
                   : 'No active subscription found.'}
               </p>
               <div className="mt-4 flex gap-3">
-                <a
-                  href="/pricing"
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  View Plans & Pricing
-                </a>
+                <Button onClick={() => setChangePlanOpen(true)}>
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  Change Plan
+                </Button>
+                <Button variant="outline" asChild>
+                  <a href="/pricing">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    View Plans & Pricing
+                  </a>
+                </Button>
               </div>
             </div>
           </div>
+          <ChangePlanModal
+            open={changePlanOpen}
+            onOpenChange={setChangePlanOpen}
+            currentPlanSlug={currentOrganization?.subscription_tier || null}
+            organizationId={currentOrganization?.id || ''}
+          />
         </TabsContent>
       </Tabs>
     </div>

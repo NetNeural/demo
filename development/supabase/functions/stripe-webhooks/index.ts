@@ -172,15 +172,35 @@ async function handleCheckoutComplete(
     { onConflict: 'organization_id' }
   )
 
-  // Store customer ID on the org for portal use
-  if (customerId) {
-    await db
-      .from('organizations')
-      .update({ stripe_customer_id: customerId })
-      .eq('id', orgId)
+  // Look up plan slug so we can sync subscription_tier on the org
+  const { data: planRow } = await db
+    .from('billing_plans')
+    .select('slug, name')
+    .eq('id', planId)
+    .single()
+
+  // Update org: customer ID + subscription_tier
+  const orgUpdate: Record<string, unknown> = {}
+  if (customerId) orgUpdate.stripe_customer_id = customerId
+  if (planRow?.slug) orgUpdate.subscription_tier = planRow.slug
+
+  if (Object.keys(orgUpdate).length > 0) {
+    await db.from('organizations').update(orgUpdate).eq('id', orgId)
   }
 
-  console.log(`✓ Subscription created for org ${orgId}, plan ${planId}`)
+  // Audit log
+  await db.from('user_audit_log').insert({
+    organization_id: orgId,
+    action_category: 'organization_management',
+    action_type: 'plan_change',
+    resource_type: 'subscription',
+    resource_id: null,
+    resource_name: planRow?.name || planId,
+    changes: { new_plan: planRow?.slug, plan_id: planId, source: 'stripe_checkout' },
+    status: 'success',
+  })
+
+  console.log(`✓ Subscription created for org ${orgId}, plan ${planRow?.slug || planId}`)
 }
 
 /**
@@ -296,7 +316,7 @@ async function handleSubscriptionUpdated(
     updated_at: new Date().toISOString(),
   }
 
-  // If plan changed via Stripe dashboard, update plan_id
+  // If plan changed via Stripe dashboard / portal, update plan_id + org tier
   if (planIdFromMeta) {
     updatePayload.plan_id = planIdFromMeta
   }
@@ -305,6 +325,39 @@ async function handleSubscriptionUpdated(
     .from('subscriptions')
     .update(updatePayload)
     .eq('stripe_subscription_id', sub.id)
+
+  // Sync subscription_tier on the org record
+  if (planIdFromMeta) {
+    const { data: subRow } = await db
+      .from('subscriptions')
+      .select('organization_id')
+      .eq('stripe_subscription_id', sub.id)
+      .maybeSingle()
+
+    const { data: planRow } = await db
+      .from('billing_plans')
+      .select('slug, name')
+      .eq('id', planIdFromMeta)
+      .single()
+
+    if (subRow?.organization_id && planRow?.slug) {
+      await db
+        .from('organizations')
+        .update({ subscription_tier: planRow.slug })
+        .eq('id', subRow.organization_id)
+
+      // Audit log
+      await db.from('user_audit_log').insert({
+        organization_id: subRow.organization_id,
+        action_category: 'organization_management',
+        action_type: 'plan_change',
+        resource_type: 'subscription',
+        resource_name: planRow.name,
+        changes: { new_plan: planRow.slug, plan_id: planIdFromMeta, source: 'stripe_portal' },
+        status: 'success',
+      })
+    }
+  }
 
   console.log(`✓ Subscription ${sub.id} synced — status=${sub.status}`)
 }

@@ -37,6 +37,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
 import type {
   BillingPlan,
   SubscriptionStatus,
@@ -121,6 +122,7 @@ export function BillingTab({ organizationId }: BillingTabProps) {
   const [usage, setUsage] = useState<UsageData[]>([])
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [changePlanOpen, setChangePlanOpen] = useState(false)
 
   const fetchBillingData = useCallback(async () => {
     if (!organizationId) return
@@ -341,12 +343,12 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                     {portalLoading ? 'Opening...' : 'Manage Subscription'}
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="sm"
-                    onClick={() => router.push('/pricing')}
+                    onClick={() => setChangePlanOpen(true)}
                   >
                     <ArrowUpRight className="mr-2 h-4 w-4" />
-                    Compare Plans
+                    Change Plan
                   </Button>
                 </div>
               </>
@@ -409,6 +411,18 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Change Plan Modal */}
+      <ChangePlanModal
+        open={changePlanOpen}
+        onOpenChange={setChangePlanOpen}
+        currentPlanSlug={plan?.slug || null}
+        organizationId={organizationId}
+        onPlanChanged={() => {
+          setChangePlanOpen(false)
+          fetchBillingData()
+        }}
+      />
 
       {/* Invoice History */}
       <Card>
