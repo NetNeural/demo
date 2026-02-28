@@ -10,7 +10,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { DeviceMarker } from './DeviceMarker'
 import { ZoneOverlay } from './ZoneOverlay'
-import { HeatmapOverlay } from './HeatmapOverlay'
+import { HeatmapOverlay, formatMetricLabel } from './HeatmapOverlay'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +20,7 @@ import {
   Download,
   Maximize2,
   Minimize2,
+  Filter,
 } from 'lucide-react'
 import type {
   FacilityMap,
@@ -54,6 +55,16 @@ interface FacilityMapCanvasProps {
   showLabels?: boolean
   /** Currently selected heatmap metric (empty string = off) */
   heatmapMetric?: string
+  /** Callback when heatmap metric changes */
+  onHeatmapMetricChange?: (metric: string) => void
+  /** Available heatmap metric keys */
+  availableHeatmapMetrics?: string[]
+  /** Hidden device types set */
+  hiddenDeviceTypes?: Set<string>
+  /** Callback to toggle a device type */
+  onToggleDeviceType?: (type: string) => void
+  /** Callback to show all device types */
+  onShowAllTypes?: () => void
   /** Compact mode for collage grid — hides toolbar, shrinks canvas */
   compact?: boolean
   /** Hide fullscreen button (parent handles it) */
@@ -79,6 +90,11 @@ export function FacilityMapCanvas({
   zoneDrawing = false,
   showLabels = false,
   heatmapMetric = '',
+  onHeatmapMetricChange,
+  availableHeatmapMetrics = [],
+  hiddenDeviceTypes,
+  onToggleDeviceType,
+  onShowAllTypes,
   compact = false,
   hideFullscreen = false,
 }: FacilityMapCanvasProps) {
@@ -222,6 +238,17 @@ export function FacilityMapCanvas({
     return counts
   }, [placements])
 
+  // Device type counts
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const p of placements) {
+      const dt = p.device?.device_type || 'unknown'
+      counts[dt] = (counts[dt] || 0) + 1
+    }
+    return counts
+  }, [placements])
+  const deviceTypes = useMemo(() => Object.keys(typeCounts).sort(), [typeCounts])
+
   return (
     <div ref={fullscreenRef} className={cn('relative flex flex-col', isFullscreen && 'bg-background')}>
       {/* Toolbar — hidden in compact mode */}
@@ -286,9 +313,10 @@ export function FacilityMapCanvas({
       </div>
       )}
 
-      {/* Status summary bar — hidden in compact mode */}
+      {/* Status + type + heatmap bar — hidden in compact mode */}
       {!compact && placements.length > 0 && (
-        <div className="flex items-center gap-4 border-b bg-muted/10 px-3 py-1.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/10 px-3 py-1.5">
+          {/* Status counts */}
           {Object.entries(statusSummary).map(([status, count]) => (
             <div key={status} className="flex items-center gap-1.5 text-xs">
               <span className={cn(
@@ -302,6 +330,65 @@ export function FacilityMapCanvas({
               <span className="text-muted-foreground capitalize">{count} {status}</span>
             </div>
           ))}
+
+          {/* Separator */}
+          {deviceTypes.length > 1 && (
+            <span className="text-muted-foreground/40">|</span>
+          )}
+
+          {/* Device type filter chips */}
+          {deviceTypes.length > 1 && (
+            <>
+              <Filter className="h-3 w-3 text-muted-foreground" />
+              {deviceTypes.map((dt) => {
+                const isHidden = hiddenDeviceTypes?.has(dt)
+                return (
+                  <button
+                    key={dt}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                      isHidden
+                        ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
+                        : 'border-primary/30 bg-primary/5 text-foreground'
+                    }`}
+                    onClick={() => onToggleDeviceType?.(dt)}
+                  >
+                    {dt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    <span className="text-muted-foreground">({typeCounts[dt]})</span>
+                  </button>
+                )
+              })}
+              {hiddenDeviceTypes && hiddenDeviceTypes.size > 0 && (
+                <button
+                  className="text-[11px] text-primary hover:underline"
+                  onClick={onShowAllTypes}
+                >
+                  Show All
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Separator before heatmap */}
+          {availableHeatmapMetrics.length > 0 && (
+            <span className="text-muted-foreground/40">|</span>
+          )}
+
+          {/* Heatmap selector */}
+          {availableHeatmapMetrics.length > 0 && (
+            <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+              Heatmap
+              <select
+                value={heatmapMetric}
+                onChange={(e) => onHeatmapMetricChange?.(e.target.value)}
+                className="rounded border bg-background px-1.5 py-0.5 text-[11px]"
+              >
+                <option value="">Off</option>
+                {availableHeatmapMetrics.map((m) => (
+                  <option key={m} value={m}>{formatMetricLabel(m)}</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       )}
 

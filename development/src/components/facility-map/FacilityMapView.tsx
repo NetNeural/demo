@@ -42,7 +42,6 @@ import {
   Image as ImageIcon,
   Maximize2,
   Minimize2,
-  Filter,
   Hexagon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -51,7 +50,7 @@ import { FacilityMapCanvas } from './FacilityMapCanvas'
 import { DevicePalette } from './DevicePalette'
 import { MapManagerDialog } from './MapManagerDialog'
 import { ZoneDrawer } from './ZoneDrawer'
-import { getAvailableMetrics, formatMetricLabel, HeatmapLegend } from './HeatmapOverlay'
+import { getAvailableMetrics, formatMetricLabel } from './HeatmapOverlay'
 import type {
   FacilityMap,
   DeviceMapPlacement,
@@ -98,6 +97,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [heatmapMetric, setHeatmapMetric] = useState('')
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
+  /** Collage: hidden locations */
+  const [hiddenLocations, setHiddenLocations] = useState<Set<string>>(new Set())
+  /** Collage: show only maps with issues (warning/error/offline) */
+  const [issuesOnly, setIssuesOnly] = useState(false)
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -884,95 +887,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         )}
       </div>
 
-      {/* Device type filter bar */}
-      {(() => {
-        // Collect device types from current placements (single) or all (collage)
-        const activePlacements = viewMode === 'single' ? placements : Object.values(allPlacements).flat()
-        const typeCounts: Record<string, number> = {}
-        for (const p of activePlacements) {
-          const dt = p.device?.device_type || 'unknown'
-          typeCounts[dt] = (typeCounts[dt] || 0) + 1
-        }
-        const deviceTypes = Object.keys(typeCounts).sort()
-        if (deviceTypes.length <= 1) return null
-        const hiddenCount = activePlacements.filter((p) => hiddenDeviceTypes.has(p.device?.device_type || 'unknown')).length
-        return (
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            {deviceTypes.map((dt) => {
-              const isHidden = hiddenDeviceTypes.has(dt)
-              return (
-                <button
-                  key={dt}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    isHidden
-                      ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
-                      : 'border-primary/30 bg-primary/5 text-foreground'
-                  }`}
-                  onClick={() => {
-                    setHiddenDeviceTypes((prev) => {
-                      const next = new Set(prev)
-                      if (next.has(dt)) next.delete(dt)
-                      else next.add(dt)
-                      return next
-                    })
-                  }}
-                >
-                  {dt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                  <span className="text-muted-foreground">({typeCounts[dt]})</span>
-                </button>
-              )
-            })}
-            {hiddenDeviceTypes.size > 0 && (
-              <button
-                className="text-xs text-primary hover:underline"
-                onClick={() => setHiddenDeviceTypes(new Set())}
-              >
-                Show All {hiddenCount > 0 && `(${hiddenCount} hidden)`}
-              </button>
-            )}
-          </div>
-        )
-      })()}
-
-      {/* Heatmap controls */}
-      {(() => {
-        const metrics = getAvailableMetrics(telemetryMap)
-        if (metrics.length === 0) return null
-        return (
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              Heatmap
-              <select
-                value={heatmapMetric}
-                onChange={(e) => setHeatmapMetric(e.target.value)}
-                className="rounded border bg-background px-2 py-1 text-xs"
-              >
-                <option value="">Off</option>
-                {metrics.map((m) => (
-                  <option key={m} value={m}>{formatMetricLabel(m)}</option>
-                ))}
-              </select>
-            </label>
-            {heatmapMetric && (() => {
-              const activePl = viewMode === 'single' ? placements : Object.values(allPlacements).flat()
-              const vals = activePl
-                .map((p) => {
-                  const t = telemetryMap[p.device_id]
-                  if (!t) return null
-                  const raw = t[heatmapMetric]
-                  return typeof raw === 'number' ? raw : parseFloat(String(raw))
-                })
-                .filter((v): v is number => v !== null && !isNaN(v))
-              if (vals.length < 2) return <span className="text-xs text-muted-foreground italic">Need 2+ devices with data</span>
-              const min = Math.min(...vals)
-              const max = Math.min === Math.max ? 0 : Math.max(...vals)
-              return <HeatmapLegend min={min} max={max} metric={heatmapMetric} />
-            })()}
-          </div>
-        )
-      })()}
-
       {/* === SINGLE VIEW === */}
       {viewMode === 'single' && selectedMap && (
         <div className="mx-auto max-w-4xl">
@@ -1036,6 +950,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
                   heatmapMetric={heatmapMetric}
+                  onHeatmapMetricChange={setHeatmapMetric}
+                  availableHeatmapMetrics={getAvailableMetrics(telemetryMap)}
+                  hiddenDeviceTypes={hiddenDeviceTypes}
+                  onToggleDeviceType={(dt) => setHiddenDeviceTypes((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(dt)) next.delete(dt)
+                    else next.add(dt)
+                    return next
+                  })}
+                  onShowAllTypes={() => setHiddenDeviceTypes(new Set())}
                   zones={zones}
                   selectedZoneId={selectedZoneId}
                   onSelectZone={setSelectedZoneId}
@@ -1112,21 +1036,135 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       )}
 
       {/* === COLLAGE VIEW === */}
-      {viewMode === 'collage' && (
-        <div
-          ref={collageFullscreenRef}
-          className={`grid gap-4 ${
-            maps.length === 1
-              ? 'grid-cols-1'
-              : maps.length === 2
-              ? 'grid-cols-1 md:grid-cols-2'
-              : maps.length <= 4
-              ? 'grid-cols-1 md:grid-cols-2'
-              : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-          } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
-        >
-          {maps.map((m) => {
-            const mapPlacements = allPlacements[m.id] || []
+      {viewMode === 'collage' && (() => {
+        // Compute totals for collage
+        const allPlacementsFlat = Object.values(allPlacements).flat()
+        const totalDevices = allPlacementsFlat.length
+        const totalOnline = allPlacementsFlat.filter((p) => p.device?.status === 'online').length
+        const totalOffline = allPlacementsFlat.filter((p) => p.device?.status === 'offline').length
+        const totalIssues = allPlacementsFlat.filter((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline')).length
+
+        // Unique locations from maps
+        const locLookup: Record<string, string> = {}
+        for (const m of maps) {
+          const locName = m.location?.name || 'No Location'
+          const locId = m.location_id || 'none'
+          locLookup[locId] = locName
+        }
+        const uniqueLocations = Object.entries(locLookup)
+
+        // Filter maps
+        const filteredMaps = maps.filter((m) => {
+          const locId = m.location_id || 'none'
+          if (hiddenLocations.size > 0 && hiddenLocations.has(locId)) return false
+          if (issuesOnly) {
+            const mp = allPlacements[m.id] || []
+            const hasIssue = mp.some((p) => ['warning', 'error', 'offline'].includes(p.device?.status || 'offline'))
+            if (!hasIssue) return false
+          }
+          return true
+        })
+
+        return (
+          <>
+            {/* Collage toolbar: totals + location toggles + issues filter */}
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+              {/* Totals */}
+              <div className="flex items-center gap-3 text-xs">
+                <span className="font-medium">{totalDevices} device{totalDevices !== 1 ? 's' : ''}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />{totalOnline} online</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-400" />{totalOffline} offline</span>
+                {totalIssues > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600"><span className="h-2 w-2 rounded-full bg-amber-500" />{totalIssues} issues</span>
+                )}
+              </div>
+
+              {/* Separator */}
+              {uniqueLocations.length > 1 && <span className="text-muted-foreground/40">|</span>}
+
+              {/* Location toggles */}
+              {uniqueLocations.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-3 w-3 text-muted-foreground" />
+                  {uniqueLocations.map(([locId, locName]) => {
+                    const isHidden = hiddenLocations.has(locId)
+                    return (
+                      <button
+                        key={locId}
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                          isHidden
+                            ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
+                            : 'border-primary/30 bg-primary/5 text-foreground'
+                        }`}
+                        onClick={() => setHiddenLocations((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(locId)) next.delete(locId)
+                          else next.add(locId)
+                          return next
+                        })}
+                      >
+                        {locName}
+                      </button>
+                    )
+                  })}
+                  {hiddenLocations.size > 0 && (
+                    <button className="text-[11px] text-primary hover:underline" onClick={() => setHiddenLocations(new Set())}>
+                      All Locations
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Separator */}
+              <span className="text-muted-foreground/40">|</span>
+
+              {/* Issues only toggle */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={issuesOnly}
+                  onChange={(e) => setIssuesOnly(e.target.checked)}
+                  className="h-3 w-3 rounded accent-amber-500 cursor-pointer"
+                />
+                Issues Only
+              </label>
+
+              {/* Heatmap selector */}
+              {getAvailableMetrics(telemetryMap).length > 0 && (
+                <>
+                  <span className="text-muted-foreground/40">|</span>
+                  <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                    Heatmap
+                    <select
+                      value={heatmapMetric}
+                      onChange={(e) => setHeatmapMetric(e.target.value)}
+                      className="rounded border bg-background px-1.5 py-0.5 text-[11px]"
+                    >
+                      <option value="">Off</option>
+                      {getAvailableMetrics(telemetryMap).map((m) => (
+                        <option key={m} value={m}>{formatMetricLabel(m)}</option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
+            </div>
+
+            {/* Collage grid */}
+            <div
+              ref={collageFullscreenRef}
+              className={`grid gap-4 ${
+                filteredMaps.length === 1
+                  ? 'grid-cols-1'
+                  : filteredMaps.length === 2
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : filteredMaps.length <= 4
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+              } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
+            >
+              {filteredMaps.map((m) => {
+                const mapPlacements = allPlacements[m.id] || []
             return (
               <Card key={m.id} className="overflow-hidden group relative">
                 {/* Map label overlay */}
@@ -1193,8 +1231,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               </Card>
             )
           })}
-        </div>
-      )}
+            </div>
+          </>
+        )
+      })()}
 
       {/* Map creation / edit dialog */}
       <MapManagerDialog
