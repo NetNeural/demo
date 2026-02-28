@@ -1221,12 +1221,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   : filteredMaps.length <= 4
                   ? 'grid-cols-1 md:grid-cols-2'
                   : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-              } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
+              } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''} place-items-center`}
             >
               {filteredMaps.map((m) => {
                 const mapPlacements = allPlacements[m.id] || []
             return (
-              <Card key={m.id} className="overflow-hidden group relative">
+              <Card key={m.id} className="overflow-hidden group relative w-fit">
                 {/* Map label overlay */}
                 {(showCollageName || showCollageCount) && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
