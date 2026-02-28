@@ -80,6 +80,8 @@ interface DeviceMarkerProps {
   onDragEnd?: (xPercent: number, yPercent: number) => void
   containerRef: React.RefObject<HTMLDivElement | null>
   telemetry?: Record<string, unknown> | null
+  /** Show device name label next to the marker dot */
+  showLabel?: boolean
 }
 
 export function DeviceMarker({
@@ -91,6 +93,7 @@ export function DeviceMarker({
   onDragEnd,
   containerRef,
   telemetry,
+  showLabel = false,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -206,6 +209,12 @@ export function DeviceMarker({
                 selected && `ring-4 ${STATUS_RING[status]}`
               )}
             />
+            {/* Device name label */}
+            {showLabel && (
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm pointer-events-none">
+                {displayName}
+              </span>
+            )}
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[280px] bg-gray-900 text-gray-100 border-gray-700 shadow-xl">
@@ -264,7 +273,7 @@ export function DeviceMarker({
               </div>
             )}
             {mode === 'view' && onNavigate && (
-              <p className="text-[10px] text-gray-500 italic pt-0.5">Click to view details</p>
+              <p className="text-[10px] text-gray-500 italic pt-0.5">Click icon to view details</p>
             )}
           </div>
         </TooltipContent>

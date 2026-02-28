@@ -80,6 +80,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
   const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
+  const [showLabels, setShowLabels] = useState(false)
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
 
@@ -647,40 +648,51 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             ))}
             <Button
               variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0 border border-dashed"
+              size="sm"
+              className="h-9 shrink-0 border border-dashed text-xs"
               onClick={() => {
                 setEditingMap(null)
                 setDialogOpen(true)
               }}
-              title="Add Map"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="mr-1 h-3 w-3" />
+              Add New Map
             </Button>
           </div>
         )}
 
         {/* Edit mode toggle (only in single view with a selected map) */}
         {viewMode === 'single' && selectedMap && (
-          <Button
-            variant={mode === 'view' ? 'outline' : 'default'}
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => {
-              if (mode === 'view') {
-                setMode('edit')
-                setDeviceToPlace(null)
-              } else {
-                setMode('view')
-                setDeviceToPlace(null)
-                setSelectedPlacementId(null)
-              }
-            }}
-          >
-            {mode === 'view' ? (
-              <><Plus className="mr-1 h-3 w-3" />Add Devices to Map</>            ) : (
-              <><Eye className="mr-1 h-3 w-3" />Done Editing</>            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={mode === 'view' ? 'outline' : 'default'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                if (mode === 'view') {
+                  setMode('edit')
+                  setDeviceToPlace(null)
+                } else {
+                  setMode('view')
+                  setDeviceToPlace(null)
+                  setSelectedPlacementId(null)
+                }
+              }}
+            >
+              {mode === 'view' ? (
+                <><Plus className="mr-1 h-3 w-3" />Add Devices to Map</>            ) : (
+                <><Eye className="mr-1 h-3 w-3" />Done Editing</>            )}
+            </Button>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showLabels}
+                onChange={(e) => setShowLabels(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-muted-foreground/50 accent-primary cursor-pointer"
+              />
+              Show Names
+            </label>
+          </div>
         )}
 
         {/* Collage fullscreen button */}
@@ -779,6 +791,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onRemovePlacement={handleRemovePlacement}
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
+                  showLabels={showLabels}
                 />
               </Card>
 
@@ -907,6 +920,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onRemovePlacement={() => {}}
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
+                  showLabels={showLabels}
                   compact
                   hideFullscreen
                 />
