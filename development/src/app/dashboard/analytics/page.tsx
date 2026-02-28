@@ -21,6 +21,7 @@ import {
 } from '@/components/reports/SendReportDialog'
 import type { TimeRange } from './types/analytics.types'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { FeatureGate } from '@/components/FeatureGate'
 
 export default function AnalyticsPage() {
   return (
@@ -201,10 +202,12 @@ function AnalyticsPageContent() {
 
       <ProblematicDevicesCard devices={data.devicePerformance} />
 
-      <AIForecastingSection
-        organizationId={currentOrganization.id}
-        timeRange={timeRange}
-      />
+      <FeatureGate feature="ai_analytics" showUpgradePrompt>
+        <AIForecastingSection
+          organizationId={currentOrganization.id}
+          timeRange={timeRange}
+        />
+      </FeatureGate>
 
       <TelemetryChartsSection
         organizationId={currentOrganization.id}

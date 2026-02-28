@@ -36,6 +36,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { SettingsSection } from './shared/SettingsSection'
+import { FeatureGate } from '@/components/FeatureGate'
 
 // Integration type definitions with descriptions
 const INTEGRATION_TYPES = [

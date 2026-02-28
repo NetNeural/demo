@@ -23,7 +23,8 @@
 
 import React from 'react'
 import { useOrgTier, getTierDisplayInfo, type FeatureKey } from '@/hooks/useOrgTier'
-import { getFeatureDisplayName } from '@/lib/tier-features'
+import { getFeatureDisplayName, getStaticTierFeatures } from '@/lib/tier-features'
+import { Lock, ArrowUpRight } from 'lucide-react'
 
 // ============================================================================
 // FeatureGate Component
@@ -81,7 +82,6 @@ function DefaultUpgradePrompt({
 
   // Determine which tier unlocks this feature
   const tierOrder = ['free', 'starter', 'professional', 'enterprise']
-  const { getStaticTierFeatures } = require('@/lib/tier-features')
   let requiredTier = 'enterprise'
   for (const t of tierOrder) {
     const features = getStaticTierFeatures(t)
@@ -93,40 +93,34 @@ function DefaultUpgradePrompt({
   const requiredTierInfo = getTierDisplayInfo(requiredTier)
 
   return (
-    <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-6 text-center">
-      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-        <svg
-          className="h-6 w-6 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-          />
-        </svg>
+    <div className="relative rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6 text-center">
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+        <Lock className="h-5 w-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+      <h3 className="text-sm font-semibold">
         {featureName}
       </h3>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        This feature requires the{' '}
+      <p className="mt-1 text-sm text-muted-foreground">
+        Available on the{' '}
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${requiredTierInfo.badge}`}>
           {requiredTierInfo.label}
         </span>{' '}
-        plan. You&apos;re currently on{' '}
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tierInfo.badge}`}>
-          {tierInfo.label}
-        </span>.
+        plan.{' '}
+        {currentTier !== requiredTier && (
+          <>
+            You&apos;re on{' '}
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tierInfo.badge}`}>
+              {tierInfo.label}
+            </span>.
+          </>
+        )}
       </p>
       <a
-        href="/dashboard/plans-pricing"
-        className="mt-4 inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        href="/dashboard/settings?tab=subscription"
+        className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
       >
-        View Plans & Upgrade
+        <ArrowUpRight className="h-4 w-4" />
+        Upgrade Plan
       </a>
     </div>
   )
