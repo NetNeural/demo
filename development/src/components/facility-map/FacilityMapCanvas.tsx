@@ -53,6 +53,8 @@ interface FacilityMapCanvasProps {
   showDeviceCount?: boolean
   /** Show location overlay */
   showLocation?: boolean
+  /** Show telemetry readings on markers */
+  showReadings?: boolean
 }
 
 export function FacilityMapCanvas({
@@ -74,6 +76,7 @@ export function FacilityMapCanvas({
   showMapName = false,
   showDeviceCount = false,
   showLocation = false,
+  showReadings = false,
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -403,6 +406,7 @@ export function FacilityMapCanvas({
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
                   showDeviceType={showDeviceType}
+                  showReadings={showReadings}
                   scale={markerScale}
                 />
               ))}

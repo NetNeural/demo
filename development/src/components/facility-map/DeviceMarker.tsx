@@ -84,6 +84,8 @@ interface DeviceMarkerProps {
   showLabel?: boolean
   /** Show device type below the name label */
   showDeviceType?: boolean
+  /** Show telemetry readings below the marker */
+  showReadings?: boolean
   /** Scale factor for the marker (1 = full, <1 for compact views) */
   scale?: number
 }
@@ -99,6 +101,7 @@ export function DeviceMarker({
   telemetry,
   showLabel = false,
   showDeviceType = false,
+  showReadings = false,
   scale = 1,
 }: DeviceMarkerProps) {
   const device = placement.device
@@ -227,6 +230,13 @@ export function DeviceMarker({
                 {showDeviceType && device?.device_type && (
                   <span className="whitespace-nowrap rounded bg-black/50 px-1 py-0.5 text-[9px] font-normal leading-tight text-gray-200">
                     {device.device_type}
+                  </span>
+                )}
+                {showReadings && telemetry && Object.keys(telemetry).length > 0 && (
+                  <span className="whitespace-nowrap rounded bg-black/60 px-1 py-0.5 text-[8px] font-mono leading-tight text-green-300">
+                    {Object.entries(telemetry).slice(0, 3).map(([k, v]) =>
+                      `${formatTelemetryKey(k)}: ${typeof v === 'number' ? v.toFixed(1) : String(v ?? '')}`
+                    ).join(' | ')}
                   </span>
                 )}
               </div>
