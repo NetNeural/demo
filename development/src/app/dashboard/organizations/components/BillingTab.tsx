@@ -35,6 +35,8 @@ import {
   HardDrive,
   Cloud,
   CheckCircle2,
+  Clock,
+  Download,
 } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
@@ -407,6 +409,81 @@ export function BillingTab({ organizationId }: BillingTabProps) {
               {usage.map((u) => (
                 <UsageMeter key={u.metric_type} usage={u} showCard />
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Data Retention Policy Card (#319) */}
+      {plan && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-lg">Data Retention</CardTitle>
+              <CardDescription>
+                Telemetry data retention policy for your plan
+              </CardDescription>
+            </div>
+            <Clock className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <HardDrive className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {plan.telemetry_retention_days === -1
+                    ? 'Unlimited Retention'
+                    : `${plan.telemetry_retention_days}-Day Retention`}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {plan.telemetry_retention_days === -1
+                    ? 'Your telemetry data is retained indefinitely'
+                    : `Telemetry data older than ${plan.telemetry_retention_days} days is automatically purged`}
+                </p>
+              </div>
+            </div>
+
+            {/* Retention warning for limited plans */}
+            {plan.telemetry_retention_days > 0 && plan.telemetry_retention_days <= 90 && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Limited Retention</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>
+                    Data older than {plan.telemetry_retention_days} days is removed daily.
+                    Export important data before it expires.
+                  </span>
+                  <Button variant="outline" size="sm" className="ml-3 shrink-0" asChild>
+                    <a href="/dashboard/reports">
+                      <Download className="mr-1.5 h-3.5 w-3.5" />
+                      Export
+                    </a>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Retention tiers comparison */}
+            <div className="rounded-lg border p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Retention by Plan
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className={`rounded-md p-2 ${plan.slug === 'starter' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                  <p>Starter</p>
+                  <p className="mt-0.5 text-muted-foreground">90 days</p>
+                </div>
+                <div className={`rounded-md p-2 ${plan.slug === 'professional' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                  <p>Professional</p>
+                  <p className="mt-0.5 text-muted-foreground">1 year</p>
+                </div>
+                <div className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                  <p>Enterprise</p>
+                  <p className="mt-0.5 text-muted-foreground">Unlimited</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

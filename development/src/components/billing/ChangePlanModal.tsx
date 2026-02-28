@@ -42,8 +42,8 @@ const TIER_HIGHLIGHTS: Record<string, string[]> = {
     'Real-time monitoring',
     'HACCP compliance logs',
     'Email & SMS alerts',
-    'Up to 5 team members',
-    '30-day data retention',
+    'Up to 3 team members',
+    '90-day data retention',
   ],
   professional: [
     'AI anomaly detection',

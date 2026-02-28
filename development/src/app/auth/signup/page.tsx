@@ -53,7 +53,7 @@ const PLANS: PlanTier[] = [
       'Email & SMS alerts',
       'Manual report export',
     ],
-    limits: { users: '5 users', integrations: '1 integration', retention: '30-day retention' },
+    limits: { users: '3 users', integrations: '1 integration', retention: '90-day retention' },
   },
   {
     slug: 'professional',

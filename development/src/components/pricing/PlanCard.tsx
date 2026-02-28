@@ -23,7 +23,7 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     'HACCP compliance logging',
     'Email & SMS alerts',
     'Manual report export',
-    '30-day data retention',
+    '90-day data retention',
     'Up to 3 team members',
   ],
   professional: [
