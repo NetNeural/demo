@@ -70,6 +70,8 @@ interface FacilityMapCanvasProps {
   onToggleZoneDrawing?: () => void
   /** Callback to delete the selected zone */
   onDeleteZone?: (zoneId: string) => void
+  /** Number of zone points placed so far (for step instructions) */
+  zonePointCount?: number
   /** Compact mode for collage grid — hides toolbar, shrinks canvas */
   compact?: boolean
   /** Hide fullscreen button (parent handles it) */
@@ -102,6 +104,7 @@ export function FacilityMapCanvas({
   onShowAllTypes,
   onToggleZoneDrawing,
   onDeleteZone,
+  zonePointCount = 0,
   compact = false,
   hideFullscreen = false,
 }: FacilityMapCanvasProps) {
@@ -441,6 +444,17 @@ export function FacilityMapCanvas({
                 <Hexagon className="h-3 w-3" />
                 {zoneDrawing ? 'Cancel Zone' : 'Draw Zone'}
               </button>
+              {zoneDrawing && (
+                <span className="text-[11px] text-muted-foreground italic">
+                  {zonePointCount === 0
+                    ? 'Click on map to place 1st point'
+                    : zonePointCount === 1
+                    ? 'Click to place 2nd point'
+                    : zonePointCount === 2
+                    ? 'Click to place 3rd point (minimum)'
+                    : `${zonePointCount} points — click to add more or save`}
+                </span>
+              )}
               {selectedZoneId && mode === 'edit' && onDeleteZone && (
                 <button
                   className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors"

@@ -944,6 +944,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   selectedZoneId={selectedZoneId}
                   onSelectZone={setSelectedZoneId}
                   zoneDrawing={drawingZone}
+                  zonePointCount={zonePoints.length}
                   onZonePointAdd={(x, y) => setZonePoints((prev) => [...prev, { x, y }])}
                   onToggleZoneDrawing={() => {
                     if (drawingZone) {
