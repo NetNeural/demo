@@ -202,7 +202,7 @@ function AnalyticsPageContent() {
 
       <ProblematicDevicesCard devices={data.devicePerformance} />
 
-      <FeatureGate feature="ai_analytics" showUpgradePrompt>
+      <FeatureGate feature="ai_detection" showUpgradePrompt>
         <AIForecastingSection
           organizationId={currentOrganization.id}
           timeRange={timeRange}

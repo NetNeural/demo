@@ -26,6 +26,7 @@ import {
 import type { TimeRange } from '../types/analytics.types'
 import { getTimeRangeHours } from '../types/analytics.types'
 import { extractMetricValue } from '@/lib/telemetry-utils'
+import { FeatureGate } from '@/components/FeatureGate'
 
 interface AIForecastingSectionProps {
   organizationId: string
@@ -464,7 +465,8 @@ export function AIForecastingSection({
           </CardContent>
         </Card>
 
-        {/* Battery Depletion Forecast */}
+        {/* Battery Depletion Forecast — Enterprise only (predictive_ai) */}
+        <FeatureGate feature="predictive_ai" showUpgradePrompt>
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -530,6 +532,7 @@ export function AIForecastingSection({
             )}
           </CardContent>
         </Card>
+        </FeatureGate>
       </div>
     </div>
   )
