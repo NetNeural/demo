@@ -363,6 +363,19 @@ export function SecurityTab() {
       try {
         setEnrolling(true)
         const supabase = createClient()
+
+        // Clean up any stale unverified factors before enrolling a new one.
+        // This prevents 422 errors when re-enrolling after disabling 2FA.
+        const { data: existingFactors } =
+          await supabase.auth.mfa.listFactors()
+        if (existingFactors?.totp) {
+          for (const factor of existingFactors.totp) {
+            if (factor.status === 'unverified') {
+              await supabase.auth.mfa.unenroll({ factorId: factor.id })
+            }
+          }
+        }
+
         const { data, error } = await supabase.auth.mfa.enroll({
           factorType: 'totp',
           friendlyName: 'Authenticator App',
@@ -460,10 +473,15 @@ export function SecurityTab() {
         code: verifyCode,
       })
       if (verifyError) {
+        const isCodeError =
+          verifyError.status === 422 ||
+          verifyError.message?.toLowerCase().includes('invalid') ||
+          verifyError.message?.toLowerCase().includes('code')
         toast({
-          title: 'Invalid Code',
-          description:
-            'The verification code was incorrect. Please check your authenticator app and try again.',
+          title: isCodeError ? 'Invalid Code' : 'Verification Failed',
+          description: isCodeError
+            ? 'The code was incorrect. Make sure you scanned the NEW QR code above (not an old entry) and that the code hasn\'t expired. Codes refresh every 30 seconds.'
+            : `Verification failed: ${verifyError.message}`,
           variant: 'destructive',
         })
         return
