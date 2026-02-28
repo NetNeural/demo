@@ -131,7 +131,7 @@ describe('Progress Component', () => {
   })
 
   test('handles 0 value', () => {
-    const { container} = render(<Progress value={0} />)
+    const { container } = render(<Progress value={0} />)
     const progressBar = container.querySelector('div > div')
     expect(progressBar).toBeInTheDocument()
   })
@@ -200,7 +200,11 @@ describe('Tabs Component', () => {
 
 describe('Table Component', () => {
   test('renders table element', () => {
-    const { container } = render(<Table><tbody></tbody></Table>)
+    const { container } = render(
+      <Table>
+        <tbody></tbody>
+      </Table>
+    )
     expect(container.querySelector('table')).toBeInTheDocument()
   })
 
@@ -235,13 +239,21 @@ describe('Table Component', () => {
   })
 
   test('accepts custom className on Table', () => {
-    const { container } = render(<Table className="custom"><tbody></tbody></Table>)
+    const { container } = render(
+      <Table className="custom">
+        <tbody></tbody>
+      </Table>
+    )
     expect(container.querySelector('table')).toHaveClass('custom')
   })
 
   test('forwards ref on Table', () => {
     const ref = React.createRef<HTMLTableElement>()
-    render(<Table ref={ref}><tbody></tbody></Table>)
+    render(
+      <Table ref={ref}>
+        <tbody></tbody>
+      </Table>
+    )
     expect(ref.current).toBeInstanceOf(HTMLTableElement)
   })
 })

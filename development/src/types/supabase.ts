@@ -7,13 +7,197 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          denial_reason: string | null
+          denied_at: string | null
+          denied_by: string | null
+          expires_at: string | null
+          granted_membership_id: string | null
+          id: string
+          reason: string
+          requested_duration: string
+          requester_id: string
+          requester_org_id: string
+          status: string
+          target_org_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
+          expires_at?: string | null
+          granted_membership_id?: string | null
+          id?: string
+          reason: string
+          requested_duration?: string
+          requester_id: string
+          requester_org_id: string
+          status?: string
+          target_org_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          denial_reason?: string | null
+          denied_at?: string | null
+          denied_by?: string | null
+          expires_at?: string | null
+          granted_membership_id?: string | null
+          id?: string
+          reason?: string
+          requested_duration?: string
+          requester_id?: string
+          requester_org_id?: string
+          status?: string
+          target_org_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'access_requests_requester_org_id_fkey'
+            columns: ['requester_org_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'access_requests_target_org_id_fkey'
+            columns: ['target_org_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_insights_cache: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          expires_at: string
+          generated_at: string
+          id: string
+          insights: Json
+          organization_id: string
+          token_usage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          expires_at: string
+          generated_at?: string
+          id?: string
+          insights?: Json
+          organization_id: string
+          token_usage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          insights?: Json
+          organization_id?: string
+          token_usage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_insights_cache_device_id_fkey'
+            columns: ['device_id']
+            isOneToOne: false
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_insights_cache_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_report_summaries_cache: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          generated_at: string
+          id: string
+          organization_id: string
+          report_type: string
+          summary: Json
+          token_usage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          generated_at?: string
+          id?: string
+          organization_id: string
+          report_type: string
+          summary: Json
+          token_usage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          organization_id?: string
+          report_type?: string
+          summary?: Json
+          token_usage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_report_summaries_cache_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       alert_acknowledgements: {
         Row: {
           acknowledged_at: string
@@ -47,18 +231,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "alert_acknowledgements_alert_id_fkey"
-            columns: ["alert_id"]
+            foreignKeyName: 'alert_acknowledgements_alert_id_fkey'
+            columns: ['alert_id']
             isOneToOne: false
-            referencedRelation: "alerts"
-            referencedColumns: ["id"]
+            referencedRelation: 'alerts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "alert_acknowledgements_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'alert_acknowledgements_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -116,18 +300,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "alert_rules_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'alert_rules_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "alert_rules_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'alert_rules_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -144,7 +328,7 @@ export type Database = {
           organization_id: string
           resolved_at: string | null
           resolved_by: string | null
-          severity: Database["public"]["Enums"]["alert_severity"]
+          severity: Database['public']['Enums']['alert_severity']
           title: string
           updated_at: string | null
         }
@@ -160,7 +344,7 @@ export type Database = {
           organization_id: string
           resolved_at?: string | null
           resolved_by?: string | null
-          severity: Database["public"]["Enums"]["alert_severity"]
+          severity: Database['public']['Enums']['alert_severity']
           title: string
           updated_at?: string | null
         }
@@ -176,31 +360,31 @@ export type Database = {
           organization_id?: string
           resolved_at?: string | null
           resolved_by?: string | null
-          severity?: Database["public"]["Enums"]["alert_severity"]
+          severity?: Database['public']['Enums']['alert_severity']
           title?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "alerts_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'alerts_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "alerts_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'alerts_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "alerts_resolved_by_fkey"
-            columns: ["resolved_by"]
+            foreignKeyName: 'alerts_resolved_by_fkey'
+            columns: ['resolved_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -249,18 +433,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "audit_logs_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'audit_logs_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "audit_logs_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'audit_logs_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -336,18 +520,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "auto_sync_schedules_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'auto_sync_schedules_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: true
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "auto_sync_schedules_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'auto_sync_schedules_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -387,11 +571,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "departments_location_id_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'departments_location_id_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -479,11 +663,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_conflicts_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_conflicts_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -514,11 +698,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_credential_access_log_credential_id_fkey"
-            columns: ["credential_id"]
+            foreignKeyName: 'device_credential_access_log_credential_id_fkey'
+            columns: ['credential_id']
             isOneToOne: false
-            referencedRelation: "device_credentials"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_credentials'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -558,11 +742,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_credentials_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_credentials_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -602,11 +786,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_data_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_data_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -643,11 +827,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_firmware_history_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_firmware_history_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -726,11 +910,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_integrations_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'device_integrations_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -788,18 +972,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_service_assignments_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_service_assignments_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "device_service_assignments_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'device_service_assignments_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -839,32 +1023,111 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "device_telemetry_history_activity_log_id_fkey"
-            columns: ["activity_log_id"]
+            foreignKeyName: 'device_telemetry_history_activity_log_id_fkey'
+            columns: ['activity_log_id']
             isOneToOne: false
-            referencedRelation: "integration_activity_log"
-            referencedColumns: ["id"]
+            referencedRelation: 'integration_activity_log'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "device_telemetry_history_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'device_telemetry_history_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "device_telemetry_history_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'device_telemetry_history_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "device_telemetry_history_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'device_telemetry_history_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      device_types: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          device_class: string | null
+          icon: string | null
+          id: string
+          lower_alert: number | null
+          lower_normal: number
+          name: string
+          organization_id: string
+          precision_digits: number | null
+          unit: string | null
+          updated_at: string | null
+          updated_by: string | null
+          upper_alert: number | null
+          upper_normal: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          device_class?: string | null
+          icon?: string | null
+          id?: string
+          lower_alert?: number | null
+          lower_normal: number
+          name: string
+          organization_id: string
+          precision_digits?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          upper_alert?: number | null
+          upper_normal: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          device_class?: string | null
+          icon?: string | null
+          id?: string
+          lower_alert?: number | null
+          lower_normal?: number
+          name?: string
+          organization_id?: string
+          precision_digits?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          upper_alert?: number | null
+          upper_normal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'device_types_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'device_types_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'device_types_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -876,15 +1139,18 @@ export type Database = {
           deleted_at: string | null
           department_id: string | null
           device_type: string
+          device_type_id: string | null
           external_device_id: string | null
           firmware_version: string | null
           golioth_status: string | null
           hardware_ids: string[] | null
           id: string
           integration_id: string | null
+          is_test_device: boolean
           last_seen: string | null
           last_seen_offline: string | null
           last_seen_online: string | null
+          location: string | null
           location_id: string | null
           metadata: Json | null
           model: string | null
@@ -892,7 +1158,7 @@ export type Database = {
           organization_id: string
           serial_number: string | null
           signal_strength: number | null
-          status: Database["public"]["Enums"]["device_status"] | null
+          status: Database['public']['Enums']['device_status'] | null
           updated_at: string | null
         }
         Insert: {
@@ -902,15 +1168,18 @@ export type Database = {
           deleted_at?: string | null
           department_id?: string | null
           device_type: string
+          device_type_id?: string | null
           external_device_id?: string | null
           firmware_version?: string | null
           golioth_status?: string | null
           hardware_ids?: string[] | null
           id?: string
           integration_id?: string | null
+          is_test_device?: boolean
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
+          location?: string | null
           location_id?: string | null
           metadata?: Json | null
           model?: string | null
@@ -918,7 +1187,7 @@ export type Database = {
           organization_id: string
           serial_number?: string | null
           signal_strength?: number | null
-          status?: Database["public"]["Enums"]["device_status"] | null
+          status?: Database['public']['Enums']['device_status'] | null
           updated_at?: string | null
         }
         Update: {
@@ -928,15 +1197,18 @@ export type Database = {
           deleted_at?: string | null
           department_id?: string | null
           device_type?: string
+          device_type_id?: string | null
           external_device_id?: string | null
           firmware_version?: string | null
           golioth_status?: string | null
           hardware_ids?: string[] | null
           id?: string
           integration_id?: string | null
+          is_test_device?: boolean
           last_seen?: string | null
           last_seen_offline?: string | null
           last_seen_online?: string | null
+          location?: string | null
           location_id?: string | null
           metadata?: Json | null
           model?: string | null
@@ -944,37 +1216,113 @@ export type Database = {
           organization_id?: string
           serial_number?: string | null
           signal_strength?: number | null
-          status?: Database["public"]["Enums"]["device_status"] | null
+          status?: Database['public']['Enums']['device_status'] | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "devices_department_id_fkey"
-            columns: ["department_id"]
+            foreignKeyName: 'devices_department_id_fkey'
+            columns: ['department_id']
             isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
+            referencedRelation: 'departments'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "devices_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'devices_device_type_id_fkey'
+            columns: ['device_type_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_types'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "devices_location_id_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'devices_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "devices_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'devices_location_id_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'devices_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          browser_info: string | null
+          created_at: string
+          description: string
+          github_issue_number: number | null
+          github_issue_url: string | null
+          github_resolution: string | null
+          id: string
+          organization_id: string
+          page_url: string | null
+          severity: Database['public']['Enums']['feedback_severity'] | null
+          status: Database['public']['Enums']['feedback_status']
+          title: string
+          type: Database['public']['Enums']['feedback_type']
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser_info?: string | null
+          created_at?: string
+          description: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_resolution?: string | null
+          id?: string
+          organization_id: string
+          page_url?: string | null
+          severity?: Database['public']['Enums']['feedback_severity'] | null
+          status?: Database['public']['Enums']['feedback_status']
+          title: string
+          type: Database['public']['Enums']['feedback_type']
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser_info?: string | null
+          created_at?: string
+          description?: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_resolution?: string | null
+          id?: string
+          organization_id?: string
+          page_url?: string | null
+          severity?: Database['public']['Enums']['feedback_severity'] | null
+          status?: Database['public']['Enums']['feedback_status']
+          title?: string
+          type?: Database['public']['Enums']['feedback_type']
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'feedback_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'feedback_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1026,18 +1374,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "firmware_artifacts_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'firmware_artifacts_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "firmware_artifacts_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'firmware_artifacts_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1310,6 +1658,9 @@ export type Database = {
           activity_type: string
           completed_at: string | null
           created_at: string
+          devices_failed: number | null
+          devices_processed: number | null
+          devices_succeeded: number | null
           direction: string
           endpoint: string | null
           error_code: string | null
@@ -1333,6 +1684,9 @@ export type Database = {
           activity_type: string
           completed_at?: string | null
           created_at?: string
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
           direction: string
           endpoint?: string | null
           error_code?: string | null
@@ -1356,6 +1710,9 @@ export type Database = {
           activity_type?: string
           completed_at?: string | null
           created_at?: string
+          devices_failed?: number | null
+          devices_processed?: number | null
+          devices_succeeded?: number | null
           direction?: string
           endpoint?: string | null
           error_code?: string | null
@@ -1377,18 +1734,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "integration_activity_log_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'integration_activity_log_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "integration_activity_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'integration_activity_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1458,25 +1815,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "golioth_sync_log_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'golioth_sync_log_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "golioth_sync_log_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'golioth_sync_log_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "golioth_sync_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'golioth_sync_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1531,11 +1888,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "locations_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'locations_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1587,18 +1944,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mqtt_credentials_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'mqtt_credentials_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "mqtt_credentials_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'mqtt_credentials_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1644,18 +2001,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mqtt_message_archive_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'mqtt_message_archive_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "mqtt_message_archive_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'mqtt_message_archive_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1710,18 +2067,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mqtt_message_queue_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'mqtt_message_queue_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "mqtt_message_queue_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'mqtt_message_queue_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1758,18 +2115,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mqtt_messages_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'mqtt_messages_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "mqtt_messages_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'mqtt_messages_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1812,18 +2169,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mqtt_subscriptions_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'mqtt_subscriptions_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: true
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "mqtt_subscriptions_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'mqtt_subscriptions_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1860,11 +2217,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "netneural_hub_endpoints_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'netneural_hub_endpoints_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1919,18 +2276,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "notification_log_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'notification_log_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notification_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'notification_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1941,11 +2298,11 @@ export type Database = {
           delivered_at: string | null
           id: string
           metadata: Json | null
-          method: Database["public"]["Enums"]["notification_method"]
+          method: Database['public']['Enums']['notification_method']
           organization_id: string
           recipient_id: string
           sent_at: string | null
-          status: Database["public"]["Enums"]["notification_status"] | null
+          status: Database['public']['Enums']['notification_status'] | null
         }
         Insert: {
           alert_id?: string | null
@@ -1953,11 +2310,11 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           metadata?: Json | null
-          method: Database["public"]["Enums"]["notification_method"]
+          method: Database['public']['Enums']['notification_method']
           organization_id: string
           recipient_id: string
           sent_at?: string | null
-          status?: Database["public"]["Enums"]["notification_status"] | null
+          status?: Database['public']['Enums']['notification_status'] | null
         }
         Update: {
           alert_id?: string | null
@@ -1965,41 +2322,43 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           metadata?: Json | null
-          method?: Database["public"]["Enums"]["notification_method"]
+          method?: Database['public']['Enums']['notification_method']
           organization_id?: string
           recipient_id?: string
           sent_at?: string | null
-          status?: Database["public"]["Enums"]["notification_status"] | null
+          status?: Database['public']['Enums']['notification_status'] | null
         }
         Relationships: [
           {
-            foreignKeyName: "notifications_alert_id_fkey"
-            columns: ["alert_id"]
+            foreignKeyName: 'notifications_alert_id_fkey'
+            columns: ['alert_id']
             isOneToOne: false
-            referencedRelation: "alerts"
-            referencedColumns: ["id"]
+            referencedRelation: 'alerts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'notifications_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_recipient_id_fkey"
-            columns: ["recipient_id"]
+            foreignKeyName: 'notifications_recipient_id_fkey'
+            columns: ['recipient_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
       organization_members: {
         Row: {
           created_at: string | null
+          expires_at: string | null
           id: string
           invited_by: string | null
+          is_temporary: boolean | null
           joined_at: string | null
           organization_id: string
           permissions: Json | null
@@ -2009,8 +2368,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
+          is_temporary?: boolean | null
           joined_at?: string | null
           organization_id: string
           permissions?: Json | null
@@ -2020,8 +2381,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
+          is_temporary?: boolean | null
           joined_at?: string | null
           organization_id?: string
           permissions?: Json | null
@@ -2031,36 +2394,38 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organization_members_invited_by_fkey"
-            columns: ["invited_by"]
+            foreignKeyName: 'organization_members_invited_by_fkey'
+            columns: ['invited_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "organization_members_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'organization_members_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "organization_members_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'organization_members_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
       organizations: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           id: string
           is_active: boolean | null
           name: string
           owner_id: string | null
+          parent_organization_id: string | null
           settings: Json | null
           slug: string
           subscription_tier: string | null
@@ -2068,11 +2433,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name: string
           owner_id?: string | null
+          parent_organization_id?: string | null
           settings?: Json | null
           slug: string
           subscription_tier?: string | null
@@ -2080,11 +2447,13 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           owner_id?: string | null
+          parent_organization_id?: string | null
           settings?: Json | null
           slug?: string
           subscription_tier?: string | null
@@ -2092,34 +2461,174 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organizations_owner_id_fkey"
-            columns: ["owner_id"]
+            foreignKeyName: 'organizations_owner_id_fkey'
+            columns: ['owner_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'organizations_parent_organization_id_fkey'
+            columns: ['parent_organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
-      pg_cron_secrets: {
+      reseller_agreement_applications: {
         Row: {
+          additional_notes: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string | null
+          applicant_title: string | null
+          applicant_user_id: string
+          business_model: string | null
+          company_address: string
+          company_legal_name: string
+          company_tax_id: string | null
+          company_website: string | null
           created_at: string | null
-          name: string
-          secret: string
+          estimated_customers: number
+          github_issue_number: number | null
+          github_issue_url: string | null
+          id: string
+          organization_id: string
+          preferred_billing: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_market: string | null
           updated_at: string | null
         }
         Insert: {
+          additional_notes?: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone?: string | null
+          applicant_title?: string | null
+          applicant_user_id: string
+          business_model?: string | null
+          company_address: string
+          company_legal_name: string
+          company_tax_id?: string | null
+          company_website?: string | null
           created_at?: string | null
-          name: string
-          secret: string
+          estimated_customers?: number
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          id?: string
+          organization_id: string
+          preferred_billing?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_market?: string | null
           updated_at?: string | null
         }
         Update: {
+          additional_notes?: string | null
+          applicant_email?: string
+          applicant_name?: string
+          applicant_phone?: string | null
+          applicant_title?: string | null
+          applicant_user_id?: string
+          business_model?: string | null
+          company_address?: string
+          company_legal_name?: string
+          company_tax_id?: string | null
+          company_website?: string | null
           created_at?: string | null
-          name?: string
-          secret?: string
+          estimated_customers?: number
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          id?: string
+          organization_id?: string
+          preferred_billing?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_market?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'reseller_agreement_applications_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      reseller_agreements: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          agreement_type: string
+          agreement_version: string | null
+          billing_model: string | null
+          created_at: string | null
+          custom_terms: Json | null
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          max_child_organizations: number | null
+          notes: string | null
+          organization_id: string
+          revenue_share_percent: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agreement_type?: string
+          agreement_version?: string | null
+          billing_model?: string | null
+          created_at?: string | null
+          custom_terms?: Json | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_child_organizations?: number | null
+          notes?: string | null
+          organization_id: string
+          revenue_share_percent?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agreement_type?: string
+          agreement_version?: string | null
+          billing_model?: string | null
+          created_at?: string | null
+          custom_terms?: Json | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_child_organizations?: number | null
+          notes?: string | null
+          organization_id?: string
+          revenue_share_percent?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reseller_agreements_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
       }
       sensor_activity: {
         Row: {
@@ -2172,25 +2681,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sensor_activity_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'sensor_activity_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sensor_activity_performed_by_fkey"
-            columns: ["performed_by"]
+            foreignKeyName: 'sensor_activity_performed_by_fkey'
+            columns: ['performed_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sensor_activity_related_alert_id_fkey"
-            columns: ["related_alert_id"]
+            foreignKeyName: 'sensor_activity_related_alert_id_fkey'
+            columns: ['related_alert_id']
             isOneToOne: false
-            referencedRelation: "alerts"
-            referencedColumns: ["id"]
+            referencedRelation: 'alerts'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2208,9 +2717,14 @@ export type Database = {
           last_notification_at: string | null
           max_value: number | null
           min_value: number | null
+          notification_channels: string[] | null
           notification_cooldown_minutes: number | null
+          notify_emails: string[] | null
           notify_on_breach: boolean | null
+          notify_phone_numbers: string[] | null
+          notify_user_ids: string[] | null
           sensor_type: string
+          temperature_unit: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -2227,9 +2741,14 @@ export type Database = {
           last_notification_at?: string | null
           max_value?: number | null
           min_value?: number | null
+          notification_channels?: string[] | null
           notification_cooldown_minutes?: number | null
+          notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_phone_numbers?: string[] | null
+          notify_user_ids?: string[] | null
           sensor_type: string
+          temperature_unit?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -2246,33 +2765,38 @@ export type Database = {
           last_notification_at?: string | null
           max_value?: number | null
           min_value?: number | null
+          notification_channels?: string[] | null
           notification_cooldown_minutes?: number | null
+          notify_emails?: string[] | null
           notify_on_breach?: boolean | null
+          notify_phone_numbers?: string[] | null
+          notify_user_ids?: string[] | null
           sensor_type?: string
+          temperature_unit?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "sensor_thresholds_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'sensor_thresholds_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sensor_thresholds_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'sensor_thresholds_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sensor_thresholds_updated_by_fkey"
-            columns: ["updated_by"]
+            foreignKeyName: 'sensor_thresholds_updated_by_fkey'
+            columns: ['updated_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2315,11 +2839,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sync_conflicts_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'sync_conflicts_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2377,18 +2901,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sync_queue_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'sync_queue_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "sync_queue_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'sync_queue_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2449,32 +2973,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_actions_alert_id_fkey"
-            columns: ["alert_id"]
+            foreignKeyName: 'user_actions_alert_id_fkey'
+            columns: ['alert_id']
             isOneToOne: false
-            referencedRelation: "alerts"
-            referencedColumns: ["id"]
+            referencedRelation: 'alerts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "user_actions_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'user_actions_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "user_actions_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'user_actions_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "user_actions_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'user_actions_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2544,11 +3068,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_audit_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'user_audit_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2563,7 +3087,11 @@ export type Database = {
           last_login: string | null
           organization_id: string | null
           password_change_required: boolean | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          phone_number: string | null
+          phone_number_secondary: string | null
+          phone_secondary_sms_enabled: boolean | null
+          phone_sms_enabled: boolean | null
+          role: Database['public']['Enums']['user_role'] | null
           updated_at: string | null
         }
         Insert: {
@@ -2576,7 +3104,11 @@ export type Database = {
           last_login?: string | null
           organization_id?: string | null
           password_change_required?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          phone_number?: string | null
+          phone_number_secondary?: string | null
+          phone_secondary_sms_enabled?: boolean | null
+          phone_sms_enabled?: boolean | null
+          role?: Database['public']['Enums']['user_role'] | null
           updated_at?: string | null
         }
         Update: {
@@ -2589,23 +3121,27 @@ export type Database = {
           last_login?: string | null
           organization_id?: string | null
           password_change_required?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          phone_number?: string | null
+          phone_number_secondary?: string | null
+          phone_secondary_sms_enabled?: boolean | null
+          phone_sms_enabled?: boolean | null
+          role?: Database['public']['Enums']['user_role'] | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "users_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'users_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "users_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'users_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2620,16 +3156,16 @@ export type Database = {
           false_positive_alerts: number | null
           organization_id: string | null
           resolved_alerts: number | null
-          severity: Database["public"]["Enums"]["alert_severity"] | null
+          severity: Database['public']['Enums']['alert_severity'] | null
           total_alerts: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "alerts_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'alerts_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2647,11 +3183,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_actions_device_id_fkey"
-            columns: ["device_id"]
+            foreignKeyName: 'user_actions_device_id_fkey'
+            columns: ['device_id']
             isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
+            referencedRelation: 'devices'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2671,18 +3207,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "integration_activity_log_integration_id_fkey"
-            columns: ["integration_id"]
+            foreignKeyName: 'integration_activity_log_integration_id_fkey'
+            columns: ['integration_id']
             isOneToOne: false
-            referencedRelation: "device_integrations"
-            referencedColumns: ["id"]
+            referencedRelation: 'device_integrations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "integration_activity_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'integration_activity_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2705,11 +3241,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_audit_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'user_audit_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2755,11 +3291,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_audit_log_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'user_audit_log_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2775,11 +3311,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_actions_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: 'user_actions_organization_id_fkey'
+            columns: ['organization_id']
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2803,6 +3339,9 @@ export type Database = {
         }
         Returns: string
       }
+      cleanup_expired_access: { Args: never; Returns: undefined }
+      cleanup_expired_ai_cache: { Args: never; Returns: undefined }
+      cleanup_expired_ai_insights_cache: { Args: never; Returns: undefined }
       cleanup_mqtt_queue: { Args: never; Returns: number }
       cleanup_old_integration_logs: { Args: never; Returns: number }
       cleanup_old_telemetry: {
@@ -2825,8 +3364,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      decrypt_api_key: {
+        Args: { encrypted_key: string; p_key_id?: string }
+        Returns: string
+      }
       decrypt_device_credential: {
         Args: { credential_id: string }
+        Returns: string
+      }
+      encrypt_api_key: {
+        Args: { p_key_id?: string; plaintext_key: string }
         Returns: string
       }
       enqueue_mqtt_message: {
@@ -2859,11 +3406,28 @@ export type Database = {
         Args: { integration_id: string; integration_type: string }
         Returns: string
       }
+      get_all_descendant_organizations: {
+        Args: { parent_org_id: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          depth: number
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          parent_organization_id: string
+          settings: Json
+          slug: string
+          subscription_tier: string
+          updated_at: string
+        }[]
+      }
       get_current_supabase_url: { Args: never; Returns: string }
       get_mqtt_queue_stats: {
         Args: { p_organization_id?: string }
         Returns: {
-          avg_processing_time: unknown
+          avg_processing_time: string
           completed_count: number
           failed_count: number
           pending_count: number
@@ -2890,6 +3454,12 @@ export type Database = {
           pending_conflicts: number
           successful_syncs: number
           total_syncs: number
+        }[]
+      }
+      get_user_emails: {
+        Args: { user_ids: string[] }
+        Returns: {
+          email: string
         }[]
       }
       get_webhook_url: { Args: { integration_id: string }; Returns: string }
@@ -2942,6 +3512,14 @@ export type Database = {
         }
         Returns: string
       }
+      migrate_api_keys_to_encryption: {
+        Args: never
+        Returns: {
+          error_message: string
+          failed_count: number
+          migrated_count: number
+        }[]
+      }
       process_mqtt_queue_message: {
         Args: { p_message_id: string }
         Returns: boolean
@@ -2986,18 +3564,30 @@ export type Database = {
         }
         Returns: string
       }
+      seed_organization_device_types: {
+        Args: { org_id: string }
+        Returns: undefined
+      }
       update_mqtt_connection_stats: {
         Args: { p_username: string }
         Returns: undefined
       }
     }
     Enums: {
-      alert_severity: "low" | "medium" | "high" | "critical"
-      device_status: "online" | "offline" | "warning" | "error"
-      integration_broker_type: "hosted" | "external"
-      notification_method: "email" | "sms" | "webhook" | "in_app"
-      notification_status: "pending" | "sent" | "delivered" | "failed"
-      user_role: "super_admin" | "org_admin" | "org_owner" | "user" | "viewer"
+      alert_severity: 'low' | 'medium' | 'high' | 'critical'
+      device_status: 'online' | 'offline' | 'warning' | 'error'
+      feedback_severity: 'critical' | 'high' | 'medium' | 'low'
+      feedback_status:
+        | 'submitted'
+        | 'acknowledged'
+        | 'in_progress'
+        | 'resolved'
+        | 'closed'
+      feedback_type: 'bug_report' | 'feature_request'
+      integration_broker_type: 'hosted' | 'external'
+      notification_method: 'email' | 'sms' | 'webhook' | 'in_app'
+      notification_status: 'pending' | 'sent' | 'delivered' | 'failed'
+      user_role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3005,33 +3595,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -3040,23 +3630,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -3065,23 +3655,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -3090,47 +3680,59 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
-      alert_severity: ["low", "medium", "high", "critical"],
-      device_status: ["online", "offline", "warning", "error"],
-      integration_broker_type: ["hosted", "external"],
-      notification_method: ["email", "sms", "webhook", "in_app"],
-      notification_status: ["pending", "sent", "delivered", "failed"],
-      user_role: ["super_admin", "org_admin", "org_owner", "user", "viewer"],
+      alert_severity: ['low', 'medium', 'high', 'critical'],
+      device_status: ['online', 'offline', 'warning', 'error'],
+      feedback_severity: ['critical', 'high', 'medium', 'low'],
+      feedback_status: [
+        'submitted',
+        'acknowledged',
+        'in_progress',
+        'resolved',
+        'closed',
+      ],
+      feedback_type: ['bug_report', 'feature_request'],
+      integration_broker_type: ['hosted', 'external'],
+      notification_method: ['email', 'sms', 'webhook', 'in_app'],
+      notification_status: ['pending', 'sent', 'delivered', 'failed'],
+      user_role: ['super_admin', 'org_admin', 'org_owner', 'user', 'viewer'],
     },
   },
 } as const

@@ -34,22 +34,27 @@ interface SyncResult {
 serve(async (req) => {
   try {
     // Environment variables are automatically available in Supabase Edge Functions
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://bldojxpockljyivldxwf.supabase.co'
+    const supabaseUrl =
+      Deno.env.get('SUPABASE_URL') || 'https://bldojxpockljyivldxwf.supabase.co'
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
+
     if (!supabaseServiceKey) {
       console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Configuration error: SUPABASE_SERVICE_ROLE_KEY not set',
-          message: 'Please set the SUPABASE_SERVICE_ROLE_KEY environment variable'
+          message:
+            'Please set the SUPABASE_SERVICE_ROLE_KEY environment variable',
         }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    
-    console.log('Auto-sync cron triggered', { url: supabaseUrl, time: new Date().toISOString() })
-    
+
+    console.log('Auto-sync cron triggered', {
+      url: supabaseUrl,
+      time: new Date().toISOString(),
+    })
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get all enabled schedules that are due to run
@@ -80,12 +85,14 @@ serve(async (req) => {
           if (schedule.time_window_enabled) {
             const now = new Date()
             const currentTime = now.toTimeString().slice(0, 5) // HH:MM
-            
+
             if (
               currentTime < schedule.time_window_start ||
               currentTime > schedule.time_window_end
             ) {
-              console.log(`Skipping schedule ${schedule.id} - outside time window`)
+              console.log(
+                `Skipping schedule ${schedule.id} - outside time window`
+              )
               return {
                 schedule_id: schedule.id,
                 integration_id: schedule.integration_id,
@@ -114,24 +121,33 @@ serve(async (req) => {
             .eq('id', schedule.id)
 
           if (updateError) {
-            console.error(`Failed to update schedule ${schedule.id}:`, updateError)
+            console.error(
+              `Failed to update schedule ${schedule.id}:`,
+              updateError
+            )
           }
 
           // Log to integration_activity_log (don't await, fire and forget)
-          supabase.from('integration_activity_log').insert({
-            integration_id: schedule.integration_id,
-            organization_id: schedule.organization_id,
-            type: 'device_sync',
-            direction: schedule.direction === 'export' ? 'outgoing' : 'incoming',
-            status: syncResult.success ? 'success' : 'error',
-            message: `Auto-sync completed: ${syncResult.summary.synced} device(s) synced`,
-            metadata: {
-              trigger: 'auto_sync',
-              schedule_id: schedule.id,
-              direction: schedule.direction,
-              summary: syncResult.summary,
-            },
-          }).catch(err => console.error(`Failed to log activity for ${schedule.id}:`, err))
+          supabase
+            .from('integration_activity_log')
+            .insert({
+              integration_id: schedule.integration_id,
+              organization_id: schedule.organization_id,
+              type: 'device_sync',
+              direction:
+                schedule.direction === 'export' ? 'outgoing' : 'incoming',
+              status: syncResult.success ? 'success' : 'error',
+              message: `Auto-sync completed: ${syncResult.summary.synced} device(s) synced`,
+              metadata: {
+                trigger: 'auto_sync',
+                schedule_id: schedule.id,
+                direction: schedule.direction,
+                summary: syncResult.summary,
+              },
+            })
+            .catch((err) =>
+              console.error(`Failed to log activity for ${schedule.id}:`, err)
+            )
 
           return {
             schedule_id: schedule.id,
@@ -151,14 +167,21 @@ serve(async (req) => {
       })
     )
 
-    const successCount = results.filter(r => r.status === 'success').length
-    const failedCount = results.filter(r => r.status === 'failed' || r.status === 'error').length
-    const skippedCount = results.filter(r => r.status === 'skipped').length
+    const successCount = results.filter((r) => r.status === 'success').length
+    const failedCount = results.filter(
+      (r) => r.status === 'failed' || r.status === 'error'
+    ).length
+    const skippedCount = results.filter((r) => r.status === 'skipped').length
 
     return new Response(
       JSON.stringify({
         message: `Processed ${results.length} schedule(s): ${successCount} succeeded, ${failedCount} failed, ${skippedCount} skipped`,
-        summary: { total: results.length, success: successCount, failed: failedCount, skipped: skippedCount },
+        summary: {
+          total: results.length,
+          success: successCount,
+          failed: failedCount,
+          skipped: skippedCount,
+        },
         results,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -170,12 +193,15 @@ serve(async (req) => {
       stack: error.stack,
       cause: error.cause,
     }
-    console.error('Auto-sync cron error:', JSON.stringify(errorDetails, null, 2))
+    console.error(
+      'Auto-sync cron error:',
+      JSON.stringify(errorDetails, null, 2)
+    )
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
         type: error.name,
-        details: errorDetails
+        details: errorDetails,
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
@@ -195,9 +221,12 @@ async function executeSync(
       updateExisting: true,
       conflictResolution: schedule.conflict_resolution,
       onlyOnline: schedule.only_online,
-      deviceFilter: schedule.device_filter === 'tagged' ? {
-        tags: schedule.device_tags || [],
-      } : undefined,
+      deviceFilter:
+        schedule.device_filter === 'tagged'
+          ? {
+              tags: schedule.device_tags || [],
+            }
+          : undefined,
     },
   }
 
@@ -207,7 +236,7 @@ async function executeSync(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
     },
     body: JSON.stringify({
       integration_id: schedule.integration_id,

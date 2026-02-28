@@ -3,6 +3,7 @@
 ## 🎯 Goal: Same Look & Feel, Better Code
 
 We will refactor the CSS implementation WITHOUT changing:
+
 - ❌ Colors
 - ❌ Spacing
 - ❌ Typography
@@ -12,6 +13,7 @@ We will refactor the CSS implementation WITHOUT changing:
 - ❌ User experience
 
 We're ONLY changing:
+
 - ✅ CSS classes → Tailwind utilities
 - ✅ Custom CSS → Component-based styling
 - ✅ `<style jsx>` → Tailwind classes
@@ -22,6 +24,7 @@ We're ONLY changing:
 ### Phase 1: Document Current Visuals (FIRST!)
 
 Before touching ANY code, we'll:
+
 1. Take screenshots of every page
 2. Document all colors, spacing, shadows used
 3. Create a visual regression test baseline
@@ -32,6 +35,7 @@ Before touching ANY code, we'll:
 Map your custom styles to exact Tailwind matches:
 
 #### Color Mapping
+
 ```
 Custom CSS → Tailwind
 --primary-500: #3b82f6 → bg-blue-500
@@ -41,6 +45,7 @@ Custom CSS → Tailwind
 ```
 
 #### Spacing Mapping
+
 ```
 Custom CSS → Tailwind
 --space-1: 0.25rem → space-1 (4px)
@@ -49,6 +54,7 @@ Custom CSS → Tailwind
 ```
 
 #### Component Mapping
+
 ```
 Custom Class → Tailwind Equivalent
 .btn → Button component with matching styles
@@ -59,10 +65,13 @@ Custom Class → Tailwind Equivalent
 ### Phase 3: Refactor Strategy
 
 #### Rule #1: One Component at a Time
+
 Refactor → Test visually → Commit → Next component
 
 #### Rule #2: Exact Visual Match
+
 Use browser DevTools to compare:
+
 - Element dimensions (width, height, padding)
 - Colors (exact hex values)
 - Shadows (must match perfectly)
@@ -70,7 +79,9 @@ Use browser DevTools to compare:
 - Font sizes and weights
 
 #### Rule #3: Responsive Behavior
+
 Test on all breakpoints:
+
 - Mobile (< 640px)
 - Tablet (640px - 1024px)
 - Desktop (> 1024px)
@@ -82,6 +93,7 @@ Test on all breakpoints:
 Let me extract exact values from your current CSS:
 
 **From globals.css:**
+
 - All color values
 - All spacing values
 - All shadow definitions
@@ -90,6 +102,7 @@ Let me extract exact values from your current CSS:
 - All breakpoints
 
 **From components:**
+
 - Button styles (.btn, .btn-primary, etc.)
 - Card styles (.card, .card-content)
 - Navigation styles (.nav-sidebar, .nav-item)
@@ -98,6 +111,7 @@ Let me extract exact values from your current CSS:
 ### Step 2: Create Visual Reference Components
 
 I'll create reference components that:
+
 1. Use current custom CSS (before)
 2. Use Tailwind equivalent (after)
 3. Show side-by-side comparison
@@ -106,6 +120,7 @@ I'll create reference components that:
 ### Step 3: Update tailwind.config.js
 
 Extend Tailwind with your exact custom values:
+
 ```javascript
 module.exports = {
   theme: {
@@ -119,16 +134,16 @@ module.exports = {
       },
       spacing: {
         // Your exact spacing
-        '18': '4.5rem',
+        18: '4.5rem',
         // ... match your --space-* variables
       },
       boxShadow: {
         // Your exact shadows
         'custom-sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         // ... match your --shadow-* variables
-      }
-    }
-  }
+      },
+    },
+  },
 }
 ```
 
@@ -143,6 +158,7 @@ We'll refactor in this order (least risky → most risky):
 5. **Settings Page** (forms, most complex)
 
 After each step:
+
 - ✅ Visual comparison (before/after screenshots)
 - ✅ Test all interactions (hover, click, etc.)
 - ✅ Test responsive behavior
@@ -152,6 +168,7 @@ After each step:
 ## 🎨 Example: Button Refactor (Visual Preservation)
 
 ### Current Custom CSS:
+
 ```css
 .btn {
   display: inline-flex;
@@ -177,27 +194,29 @@ After each step:
 ```
 
 ### Tailwind Equivalent (EXACT SAME LOOK):
+
 ```tsx
-<Button 
+<Button
   variant="default"
-  className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium rounded-lg border border-transparent cursor-pointer transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700"
+  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-700"
 >
   Click Me
 </Button>
 ```
 
 **OR use the Button component with matching variants:**
+
 ```tsx
 // Update buttonVariants in src/components/ui/button.tsx
 const buttonVariants = cva(
-  "inline-flex items-center justify-center px-4 py-3 text-sm font-medium rounded-lg border border-transparent cursor-pointer transition-all duration-200",
+  'inline-flex items-center justify-center px-4 py-3 text-sm font-medium rounded-lg border border-transparent cursor-pointer transition-all duration-200',
   {
     variants: {
       variant: {
-        default: "bg-blue-600 text-white hover:bg-blue-700",
+        default: 'bg-blue-600 text-white hover:bg-blue-700',
         // ... match your other button styles exactly
-      }
-    }
+      },
+    },
   }
 )
 ```
@@ -207,6 +226,7 @@ const buttonVariants = cva(
 For each refactored component, verify:
 
 ### Desktop (1920x1080)
+
 - [ ] Layout matches exactly
 - [ ] Colors match (use color picker)
 - [ ] Spacing matches (measure with DevTools)
@@ -218,11 +238,13 @@ For each refactored component, verify:
 - [ ] Focus states match
 
 ### Tablet (768x1024)
+
 - [ ] Responsive behavior same
 - [ ] No layout shifts
 - [ ] Touch targets same size
 
 ### Mobile (375x667)
+
 - [ ] Mobile menu same
 - [ ] Stacking order same
 - [ ] Scrolling same
@@ -231,6 +253,7 @@ For each refactored component, verify:
 ## 🛠️ Tools for Visual Comparison
 
 ### 1. Browser DevTools
+
 ```
 Right-click → Inspect
 - Check computed styles
@@ -240,6 +263,7 @@ Right-click → Inspect
 ```
 
 ### 2. Take Screenshots
+
 ```
 Before refactor: screenshot-before-login.png
 After refactor: screenshot-after-login.png
@@ -247,6 +271,7 @@ Compare side-by-side
 ```
 
 ### 3. Browser Extensions
+
 - **WhatFont** - Verify font families and sizes
 - **ColorZilla** - Pick and compare colors
 - **Dimensions** - Measure element dimensions
@@ -288,7 +313,9 @@ Compare side-by-side
 ## 🚨 Safety Measures
 
 ### Rollback Strategy
+
 Each commit is isolated, so we can:
+
 ```bash
 # If something looks wrong
 git revert HEAD
@@ -298,6 +325,7 @@ git reset --hard <commit-hash>
 ```
 
 ### Branch Strategy
+
 ```bash
 # Create refactor branch
 git checkout -b refactor/tailwind-migration
@@ -311,7 +339,9 @@ git merge refactor/tailwind-migration
 ```
 
 ### Component Backup
+
 Before refactoring a component, I'll:
+
 1. Copy it to `.backup/` folder
 2. Keep original for visual comparison
 3. Delete backups only after verification
@@ -319,6 +349,7 @@ Before refactoring a component, I'll:
 ## ✅ Success Criteria
 
 We'll consider refactor successful when:
+
 - ✅ All pages look IDENTICAL to current
 - ✅ All interactions work the same
 - ✅ All responsive breakpoints work
@@ -329,6 +360,7 @@ We'll consider refactor successful when:
 ## 🎯 Timeline
 
 **Conservative Estimate (with thorough testing):**
+
 - Day 1: Audit + Setup (extract all current styles)
 - Day 2-3: Login page + Dashboard cards
 - Day 4-5: Navigation + Dashboard pages
@@ -340,16 +372,19 @@ We'll consider refactor successful when:
 ## 🤝 How We'll Work Together
 
 ### Before I Make Changes:
+
 1. I'll show you the refactoring plan for that component
 2. I'll explain what will change (code) and what won't (visuals)
 3. You approve before I proceed
 
 ### After Each Component:
+
 1. I'll tell you what to test
 2. You verify it looks the same
 3. We commit and move to next
 
 ### If Something Looks Different:
+
 1. Stop immediately
 2. Identify what changed
 3. Fix before moving forward
@@ -361,12 +396,14 @@ I'm ready to begin with a **very small, safe change** to prove the concept.
 
 **Proposed First Step:**
 Refactor just the **Button component** - it's:
+
 - Self-contained
 - Easy to verify
 - Used everywhere (so we'll see immediate benefit)
 - Low risk (doesn't affect layout)
 
 **Would you like me to:**
+
 1. Show you the current button styles extraction?
 2. Create the Tailwind equivalent?
 3. Do a side-by-side visual comparison?

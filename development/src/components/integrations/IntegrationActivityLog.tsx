@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -23,13 +29,14 @@ import {
   ExternalLink,
   Info,
   Filter,
-  Download
+  Download,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
 import type { Database } from '@/types/supabase'
 
-type ActivityLog = Database['public']['Tables']['integration_activity_log']['Row']
+type ActivityLog =
+  Database['public']['Tables']['integration_activity_log']['Row']
 
 interface Props {
   integrationId: string
@@ -44,19 +51,28 @@ export function IntegrationActivityLog({
   limit = 100,
   autoRefresh = false,
 }: Props) {
+  const { fmt } = useDateFormatter()
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [filterDirection, setFilterDirection] = useState<'all' | 'outgoing' | 'incoming'>('all')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all')
+  const [filterDirection, setFilterDirection] = useState<
+    'all' | 'outgoing' | 'incoming'
+  >('all')
+  const [filterStatus, setFilterStatus] = useState<
+    'all' | 'success' | 'failed'
+  >('all')
 
   const loadLogs = useCallback(async () => {
     setLoading(true)
     try {
       console.log('[ActivityLog] Loading logs for integration:', integrationId)
-      console.log('[ActivityLog] Filters:', { filterDirection, filterStatus, limit })
-      
+      console.log('[ActivityLog] Filters:', {
+        filterDirection,
+        filterStatus,
+        limit,
+      })
+
       // Query database directly using Supabase client
       const supabase = createClient()
       let query = supabase
@@ -120,7 +136,7 @@ export function IntegrationActivityLog({
       case 'timeout':
         return <AlertCircle className="h-4 w-4 text-amber-600" />
       case 'started':
-        return <Clock className="h-4 w-4 text-blue-600 animate-pulse" />
+        return <Clock className="h-4 w-4 animate-pulse text-blue-600" />
       default:
         return <Info className="h-4 w-4 text-muted-foreground" />
     }
@@ -135,7 +151,10 @@ export function IntegrationActivityLog({
   }
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'destructive' | 'secondary' | 'outline'> = {
+    const variants: Record<
+      string,
+      'default' | 'destructive' | 'secondary' | 'outline'
+    > = {
       success: 'default',
       failed: 'destructive',
       error: 'destructive',
@@ -164,8 +183,17 @@ export function IntegrationActivityLog({
 
   const exportLogs = () => {
     const csv = [
-      ['Timestamp', 'Direction', 'Type', 'Method', 'Endpoint', 'Status', 'Response Time (ms)', 'Error'],
-      ...logs.map(log => [
+      [
+        'Timestamp',
+        'Direction',
+        'Type',
+        'Method',
+        'Endpoint',
+        'Status',
+        'Response Time (ms)',
+        'Error',
+      ],
+      ...logs.map((log) => [
         new Date(log.created_at).toISOString(),
         log.direction,
         log.activity_type,
@@ -173,9 +201,11 @@ export function IntegrationActivityLog({
         log.endpoint || '',
         log.status,
         log.response_time_ms?.toString() || '',
-        log.error_message || ''
-      ])
-    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
+        log.error_message || '',
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -211,7 +241,7 @@ export function IntegrationActivityLog({
                 size="sm"
                 onClick={() => setFilterDirection('outgoing')}
               >
-                <ArrowUpFromLine className="h-4 w-4 mr-1" />
+                <ArrowUpFromLine className="mr-1 h-4 w-4" />
                 Outgoing
               </Button>
               <Button
@@ -219,10 +249,10 @@ export function IntegrationActivityLog({
                 size="sm"
                 onClick={() => setFilterDirection('incoming')}
               >
-                <ArrowDownToLine className="h-4 w-4 mr-1" />
+                <ArrowDownToLine className="mr-1 h-4 w-4" />
                 Incoming
               </Button>
-              
+
               {/* Export */}
               <Button
                 variant="ghost"
@@ -240,13 +270,15 @@ export function IntegrationActivityLog({
                 onClick={loadLogs}
                 disabled={loading}
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                />
               </Button>
             </div>
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-2 mt-4">
+          <div className="mt-4 flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Button
               variant={filterStatus === 'all' ? 'default' : 'outline'}
@@ -275,7 +307,7 @@ export function IntegrationActivityLog({
           <ScrollArea className="h-[500px] pr-4">
             {logs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Clock className="h-12 w-12 mb-4 opacity-50" />
+                <Clock className="mb-4 h-12 w-12 opacity-50" />
                 <p className="text-lg font-medium">No activity logs yet</p>
                 <p className="text-sm">Integration activity will appear here</p>
               </div>
@@ -284,7 +316,7 @@ export function IntegrationActivityLog({
                 {logs.map((log) => (
                   <div
                     key={log.id}
-                    className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
                     onClick={() => handleViewDetails(log)}
                   >
                     {/* Direction Icon */}
@@ -293,10 +325,10 @@ export function IntegrationActivityLog({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 space-y-1 min-w-0">
+                    <div className="min-w-0 flex-1 space-y-1">
                       {/* Header */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium">
                           {getActivityTypeLabel(log.activity_type)}
                         </span>
                         {getStatusBadge(log.status)}
@@ -314,7 +346,7 @@ export function IntegrationActivityLog({
 
                       {/* Endpoint */}
                       {log.endpoint && (
-                        <p className="text-xs text-muted-foreground truncate font-mono">
+                        <p className="truncate font-mono text-xs text-muted-foreground">
                           {log.endpoint}
                         </p>
                       )}
@@ -322,13 +354,16 @@ export function IntegrationActivityLog({
                       {/* Response Status */}
                       {log.response_status && (
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-mono ${
-                            log.response_status >= 200 && log.response_status < 300
-                              ? 'text-green-600'
-                              : log.response_status >= 400
-                              ? 'text-red-600'
-                              : 'text-muted-foreground'
-                          }`}>
+                          <span
+                            className={`font-mono text-xs ${
+                              log.response_status >= 200 &&
+                              log.response_status < 300
+                                ? 'text-green-600'
+                                : log.response_status >= 400
+                                  ? 'text-red-600'
+                                  : 'text-muted-foreground'
+                            }`}
+                          >
                             HTTP {log.response_status}
                           </span>
                         </div>
@@ -336,23 +371,21 @@ export function IntegrationActivityLog({
 
                       {/* Error Message */}
                       {log.error_message && (
-                        <p className="text-xs text-red-600 bg-red-50 dark:bg-red-950 p-2 rounded">
+                        <p className="rounded bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950">
                           {log.error_message}
                         </p>
                       )}
 
                       {/* Timestamp */}
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                        {fmt.timeAgo(log.created_at)}
                         {' • '}
-                        {new Date(log.created_at).toLocaleString()}
+                        {fmt.dateTime(log.created_at)}
                       </p>
                     </div>
 
                     {/* Status Icon */}
-                    <div className="mt-1">
-                      {getStatusIcon(log.status)}
-                    </div>
+                    <div className="mt-1">{getStatusIcon(log.status)}</div>
 
                     {/* Details Link */}
                     <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
@@ -366,7 +399,7 @@ export function IntegrationActivityLog({
 
       {/* Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-h-[80vh] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Activity Details</DialogTitle>
             <DialogDescription>
@@ -380,23 +413,39 @@ export function IntegrationActivityLog({
                 {/* Overview */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Direction</label>
-                    <div className="flex items-center gap-2 mt-1">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Direction
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
                       {getDirectionIcon(selectedLog.direction)}
-                      <span className="capitalize">{selectedLog.direction}</span>
+                      <span className="capitalize">
+                        {selectedLog.direction}
+                      </span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Status</label>
-                    <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <div className="mt-1">
+                      {getStatusBadge(selectedLog.status)}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Type</label>
-                    <p className="mt-1">{getActivityTypeLabel(selectedLog.activity_type)}</p>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Type
+                    </label>
+                    <p className="mt-1">
+                      {getActivityTypeLabel(selectedLog.activity_type)}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Timestamp</label>
-                    <p className="mt-1 text-sm">{new Date(selectedLog.created_at).toLocaleString()}</p>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Timestamp
+                    </label>
+                    <p className="mt-1 text-sm">
+                      {fmt.dateTime(selectedLog.created_at)}
+                    </p>
                   </div>
                 </div>
 
@@ -406,20 +455,30 @@ export function IntegrationActivityLog({
                     <h4 className="font-medium">Request</h4>
                     {selectedLog.method && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Method</label>
-                        <p className="font-mono text-sm">{selectedLog.method}</p>
+                        <label className="text-sm text-muted-foreground">
+                          Method
+                        </label>
+                        <p className="font-mono text-sm">
+                          {selectedLog.method}
+                        </p>
                       </div>
                     )}
                     {selectedLog.endpoint && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Endpoint</label>
-                        <p className="font-mono text-sm break-all">{selectedLog.endpoint}</p>
+                        <label className="text-sm text-muted-foreground">
+                          Endpoint
+                        </label>
+                        <p className="break-all font-mono text-sm">
+                          {selectedLog.endpoint}
+                        </p>
                       </div>
                     )}
                     {selectedLog.request_body && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Request Body</label>
-                        <pre className="mt-1 p-3 bg-muted rounded-lg text-xs overflow-auto max-h-40">
+                        <label className="text-sm text-muted-foreground">
+                          Request Body
+                        </label>
+                        <pre className="mt-1 max-h-40 overflow-auto rounded-lg bg-muted p-3 text-xs">
                           {JSON.stringify(selectedLog.request_body, null, 2)}
                         </pre>
                       </div>
@@ -433,20 +492,30 @@ export function IntegrationActivityLog({
                     <h4 className="font-medium">Response</h4>
                     {selectedLog.response_status && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Status Code</label>
-                        <p className="font-mono text-sm">HTTP {selectedLog.response_status}</p>
+                        <label className="text-sm text-muted-foreground">
+                          Status Code
+                        </label>
+                        <p className="font-mono text-sm">
+                          HTTP {selectedLog.response_status}
+                        </p>
                       </div>
                     )}
                     {selectedLog.response_time_ms && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Response Time</label>
-                        <p className="text-sm">{selectedLog.response_time_ms}ms</p>
+                        <label className="text-sm text-muted-foreground">
+                          Response Time
+                        </label>
+                        <p className="text-sm">
+                          {selectedLog.response_time_ms}ms
+                        </p>
                       </div>
                     )}
                     {selectedLog.response_body && (
                       <div>
-                        <label className="text-sm text-muted-foreground">Response Body</label>
-                        <pre className="mt-1 p-3 bg-muted rounded-lg text-xs overflow-auto max-h-40">
+                        <label className="text-sm text-muted-foreground">
+                          Response Body
+                        </label>
+                        <pre className="mt-1 max-h-40 overflow-auto rounded-lg bg-muted p-3 text-xs">
                           {JSON.stringify(selectedLog.response_body, null, 2)}
                         </pre>
                       </div>
@@ -456,51 +525,74 @@ export function IntegrationActivityLog({
 
                 {/* Error Info */}
                 {(selectedLog.error_message || selectedLog.error_code) && (
-                  <div className="space-y-2 p-3 bg-red-50 dark:bg-red-950 rounded-lg">
+                  <div className="space-y-2 rounded-lg bg-red-50 p-3 dark:bg-red-950">
                     <h4 className="font-medium text-red-600">Error Details</h4>
                     {selectedLog.error_code && (
                       <div>
-                        <label className="text-sm text-red-600/80">Error Code</label>
-                        <p className="font-mono text-sm text-red-600">{selectedLog.error_code}</p>
+                        <label className="text-sm text-red-600/80">
+                          Error Code
+                        </label>
+                        <p className="font-mono text-sm text-red-600">
+                          {selectedLog.error_code}
+                        </p>
                       </div>
                     )}
                     {selectedLog.error_message && (
                       <div>
-                        <label className="text-sm text-red-600/80">Message</label>
-                        <p className="text-sm text-red-600">{selectedLog.error_message}</p>
+                        <label className="text-sm text-red-600/80">
+                          Message
+                        </label>
+                        <p className="text-sm text-red-600">
+                          {selectedLog.error_message}
+                        </p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Metadata */}
-                {selectedLog.metadata && Object.keys(selectedLog.metadata as object).length > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Metadata</label>
-                    <pre className="mt-1 p-3 bg-muted rounded-lg text-xs overflow-auto max-h-40">
-                      {JSON.stringify(selectedLog.metadata, null, 2)}
-                    </pre>
-                  </div>
-                )}
+                {selectedLog.metadata &&
+                  Object.keys(selectedLog.metadata as object).length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Metadata
+                      </label>
+                      <pre className="mt-1 max-h-40 overflow-auto rounded-lg bg-muted p-3 text-xs">
+                        {JSON.stringify(selectedLog.metadata, null, 2)}
+                      </pre>
+                    </div>
+                  )}
 
                 {/* Additional Info */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
                   {selectedLog.ip_address && (
                     <div>
-                      <label className="text-sm text-muted-foreground">IP Address</label>
-                      <p className="text-sm font-mono">{selectedLog.ip_address}</p>
+                      <label className="text-sm text-muted-foreground">
+                        IP Address
+                      </label>
+                      <p className="font-mono text-sm">
+                        {selectedLog.ip_address}
+                      </p>
                     </div>
                   )}
                   {selectedLog.user_agent && (
                     <div>
-                      <label className="text-sm text-muted-foreground">User Agent</label>
-                      <p className="text-sm font-mono truncate">{selectedLog.user_agent}</p>
+                      <label className="text-sm text-muted-foreground">
+                        User Agent
+                      </label>
+                      <p className="truncate font-mono text-sm">
+                        {selectedLog.user_agent}
+                      </p>
                     </div>
                   )}
                   {selectedLog.completed_at && (
                     <div>
-                      <label className="text-sm text-muted-foreground">Completed At</label>
-                      <p className="text-sm">{new Date(selectedLog.completed_at).toLocaleString()}</p>
+                      <label className="text-sm text-muted-foreground">
+                        Completed At
+                      </label>
+                      <p className="text-sm">
+                        {fmt.dateTime(selectedLog.completed_at)}
+                      </p>
                     </div>
                   )}
                 </div>

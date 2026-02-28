@@ -42,6 +42,7 @@ The universal telemetry recording system provides the **data foundation** for bo
 ### How Alerts Work with Telemetry
 
 **Alert Flow:**
+
 ```
 1. Telemetry Data Arrives
    ↓
@@ -65,30 +66,32 @@ The universal telemetry recording system provides the **data foundation** for bo
 **Database Table:** `alert_rules`
 
 **Rule Structure:**
+
 ```typescript
 interface AlertRule {
   id: string
   organization_id: string
-  name: string                    // "High Temperature Alert"
+  name: string // "High Temperature Alert"
   condition: {
-    metric: string                // "temperature"
-    operator: string              // "greater_than"
-    value: number                 // 80
-    duration?: number             // Optional: sustained for N minutes
+    metric: string // "temperature"
+    operator: string // "greater_than"
+    value: number // 80
+    duration?: number // Optional: sustained for N minutes
   }
   severity: 'info' | 'warning' | 'critical'
   enabled: boolean
   device_filter?: {
-    device_ids?: string[]         // Specific devices
-    tags?: string[]               // Devices with specific tags
-    all_devices?: boolean         // Apply to all devices
+    device_ids?: string[] // Specific devices
+    tags?: string[] // Devices with specific tags
+    all_devices?: boolean // Apply to all devices
   }
   notification_channels: string[] // ['email', 'slack', 'sms']
-  cooldown_period: number         // Seconds before re-triggering
+  cooldown_period: number // Seconds before re-triggering
 }
 ```
 
 **Example Rules:**
+
 ```typescript
 // Rule 1: Critical Temperature
 {
@@ -135,11 +138,18 @@ interface AlertRule {
 **Implementation:** `supabase/functions/mqtt-listener/index.ts`
 
 **When MQTT Message Arrives:**
+
 ```typescript
-async function handleMqttMessage(topic, payload, config, integration, supabase) {
+async function handleMqttMessage(
+  topic,
+  payload,
+  config,
+  integration,
+  supabase
+) {
   // 1. Parse telemetry from payload
   const parsed = parsePayload(payload, config.payload_parser)
-  
+
   // 2. Record telemetry to database
   await supabase.rpc('record_device_telemetry', {
     p_device_id: deviceId,
@@ -147,20 +157,21 @@ async function handleMqttMessage(topic, payload, config, integration, supabase) 
     p_telemetry: parsed.telemetry,
     p_device_timestamp: parsed.timestamp,
     p_activity_log_id: activityLogId,
-    p_integration_id: integration.id
+    p_integration_id: integration.id,
   })
-  
+
   // 3. ✅ CHECK ALERT RULES (Real-time evaluation)
   await checkTelemetryAlerts(
-    deviceId, 
-    parsed.telemetry, 
-    integration.organization_id, 
+    deviceId,
+    parsed.telemetry,
+    integration.organization_id,
     supabase
   )
 }
 ```
 
 **Alert Rule Evaluation:**
+
 ```typescript
 async function checkTelemetryAlerts(
   deviceId: string,
@@ -175,13 +186,13 @@ async function checkTelemetryAlerts(
     .eq('organization_id', organizationId)
     .eq('enabled', true)
     .or(`device_id.eq.${deviceId},device_id.is.null`) // Device-specific or org-wide
-  
+
   if (!rules || rules.length === 0) return
-  
+
   // 2. Evaluate each rule against incoming telemetry
   for (const rule of rules) {
     const triggered = evaluateAlertRule(rule, telemetry)
-    
+
     if (triggered) {
       // 3. Create alert instance
       await supabase.from('alerts').insert({
@@ -195,22 +206,25 @@ async function checkTelemetryAlerts(
         metadata: {
           telemetry,
           rule_condition: rule.condition,
-          triggered_at: new Date().toISOString()
-        }
+          triggered_at: new Date().toISOString(),
+        },
       })
-      
+
       // 4. Trigger notifications (handled by separate notification service)
       // Notifications sent based on user preferences (see below)
     }
   }
 }
 
-function evaluateAlertRule(rule: any, telemetry: Record<string, unknown>): boolean {
+function evaluateAlertRule(
+  rule: any,
+  telemetry: Record<string, unknown>
+): boolean {
   const { metric, operator, value } = rule.condition
   const telemetryValue = telemetry[metric]
-  
+
   if (telemetryValue === undefined) return false
-  
+
   switch (operator) {
     case 'greater_than':
       return Number(telemetryValue) > value
@@ -238,14 +252,14 @@ public async import(): Promise<SyncResult> {
   for (const device of devices) {
     // 1. Record telemetry (already implemented)
     await this.recordTelemetry(localDeviceId, telemetry, timestamp)
-    
+
     // 2. ✅ TRIGGER ALERT EVALUATION
     await this.evaluateAlertsForDevice(localDeviceId, telemetry)
   }
 }
 
 protected async evaluateAlertsForDevice(
-  deviceId: string, 
+  deviceId: string,
   telemetry: Record<string, unknown>
 ) {
   // Call edge function to evaluate alerts
@@ -256,7 +270,7 @@ protected async evaluateAlertsForDevice(
       telemetry
     }
   })
-  
+
   if (error) {
     console.error('Alert evaluation failed:', error)
   }
@@ -274,38 +288,40 @@ protected async evaluateAlertsForDevice(
 **Database Table:** `alerts`
 
 **Alert Instance Structure:**
+
 ```typescript
 interface Alert {
   id: string
   organization_id: string
   device_id: string
   rule_id: string
-  
+
   // Alert Details
   severity: 'info' | 'warning' | 'critical'
-  title: string                   // "High Temperature Alert"
-  message: string                 // "Temperature exceeded 85°C"
-  category: string                // "temperature", "battery", "connectivity"
+  title: string // "High Temperature Alert"
+  message: string // "Temperature exceeded 85°C"
+  category: string // "temperature", "battery", "connectivity"
   status: 'active' | 'acknowledged' | 'resolved'
-  
+
   // Context
   metadata: {
-    telemetry: Record<string, unknown>  // Telemetry that triggered alert
-    rule_condition: any                 // Rule condition that was violated
-    triggered_at: string                // ISO timestamp
+    telemetry: Record<string, unknown> // Telemetry that triggered alert
+    rule_condition: any // Rule condition that was violated
+    triggered_at: string // ISO timestamp
   }
-  
+
   // Resolution Tracking
   acknowledged_by?: string
   acknowledged_at?: string
   resolved_by?: string
   resolved_at?: string
-  
+
   created_at: string
 }
 ```
 
 **UI Components:**
+
 - `src/components/alerts/AlertsList.tsx` - Display active alerts
 - `src/components/alerts/AlertCard.tsx` - Individual alert cards
 - `src/app/dashboard/alerts/page.tsx` - Main alerts page
@@ -319,32 +335,34 @@ interface Alert {
 **Database Table:** `user_notification_preferences`
 
 **Preference Structure:**
+
 ```typescript
 interface NotificationPreferences {
   user_id: string
   organization_id: string
-  
+
   // Channel Toggles
   email_enabled: boolean
   sms_enabled: boolean
   push_enabled: boolean
   slack_enabled: boolean
-  
+
   // Filtering
-  minimum_severity: 'info' | 'warning' | 'critical'  // Only notify for critical alerts
-  
+  minimum_severity: 'info' | 'warning' | 'critical' // Only notify for critical alerts
+
   // Quiet Hours
   quiet_hours_enabled: boolean
-  quiet_hours_start: string       // "22:00"
-  quiet_hours_end: string         // "07:00"
+  quiet_hours_start: string // "22:00"
+  quiet_hours_end: string // "07:00"
   quiet_hours_timezone: string
-  
+
   // Weekend Muting
   mute_weekends: boolean
 }
 ```
 
 **Notification Decision Flow:**
+
 ```
 Alert Created → Check User Preferences
   ↓
@@ -447,7 +465,7 @@ Alert Created → Check User Preferences
 
 ```sql
 -- Query telemetry from ALL integration sources
-SELECT 
+SELECT
   dth.device_timestamp AS time,
   (dth.telemetry->>'temperature')::numeric AS temperature,
   i.type AS source,
@@ -461,6 +479,7 @@ ORDER BY dth.device_timestamp ASC;
 ```
 
 **Result:**
+
 ```
 time                      | temperature | source   | integration_name
 --------------------------|-------------|----------|------------------
@@ -471,6 +490,7 @@ time                      | temperature | source   | integration_name
 ```
 
 **Chart Rendering:**
+
 ```typescript
 // Frontend code
 const temperatureData = await fetchTelemetry(deviceId, 'temperature', '24h')
@@ -512,6 +532,7 @@ ORDER BY dth.device_id, dth.received_at DESC;
 ```
 
 **Result:**
+
 ```
 device_name    | battery_level | source   | battery_status
 ---------------|---------------|----------|----------------
@@ -522,6 +543,7 @@ Gateway 1      | 92            | azure_iot| healthy
 ```
 
 **UI Visualization:**
+
 ```typescript
 <BatteryHealthOverview>
   <MetricCard
@@ -546,7 +568,7 @@ Gateway 1      | 92            | azure_iot| healthy
 
 ```sql
 -- Get latest telemetry across all metrics
-SELECT 
+SELECT
   dth.telemetry,
   dth.device_timestamp,
   i.type AS source
@@ -558,6 +580,7 @@ LIMIT 1;
 ```
 
 **Result:**
+
 ```json
 {
   "telemetry": {
@@ -574,6 +597,7 @@ LIMIT 1;
 ```
 
 **UI Rendering:**
+
 ```typescript
 <DeviceMetrics>
   <MetricCard
@@ -613,7 +637,7 @@ LIMIT 1;
 
 ```sql
 -- Compare telemetry volume by integration type
-SELECT 
+SELECT
   i.type AS integration_type,
   i.name AS integration_name,
   COUNT(*) AS telemetry_points,
@@ -629,6 +653,7 @@ ORDER BY telemetry_points DESC;
 ```
 
 **Result:**
+
 ```
 integration_type | integration_name  | telemetry_points | devices | first_data           | last_data
 -----------------|-------------------|------------------|---------|----------------------|----------------------
@@ -639,6 +664,7 @@ azure_iot        | Azure Hub         | 600              | 3       | 2025-01-08 1
 ```
 
 **Chart:**
+
 ```typescript
 <BarChart
   data={integrationStats}
@@ -658,7 +684,7 @@ azure_iot        | Azure Hub         | 600              | 3       | 2025-01-08 1
 ```sql
 -- Create materialized view for hourly aggregates
 CREATE MATERIALIZED VIEW device_telemetry_hourly AS
-SELECT 
+SELECT
   device_id,
   date_trunc('hour', device_timestamp) AS hour,
   AVG((telemetry->>'temperature')::numeric) AS avg_temperature,
@@ -680,8 +706,9 @@ SELECT cron.schedule(
 ```
 
 **Query aggregates for fast chart rendering:**
+
 ```sql
-SELECT 
+SELECT
   hour,
   avg_temperature,
   min_battery,
@@ -697,12 +724,14 @@ ORDER BY hour ASC;
 ### Analytics UI Components
 
 **Locations:**
+
 - `/dashboard/analytics` - Main analytics page
 - `/dashboard/devices/[id]` - Device detail with telemetry charts
 - `/dashboard/organizations` - Organization overview with aggregated metrics
 - `/dashboard` - Main dashboard with key metrics
 
 **Key Components:**
+
 ```
 src/components/charts/
 ├── LineChart.tsx           # Time-series telemetry
@@ -735,18 +764,21 @@ const telemetrySubscription = supabase
       event: 'INSERT',
       schema: 'public',
       table: 'device_telemetry_history',
-      filter: `device_id=eq.${deviceId}`
+      filter: `device_id=eq.${deviceId}`,
     },
     (payload) => {
       const newTelemetry = payload.new
-      
+
       // Update chart in real-time
-      updateChart(prevData => [...prevData, {
-        time: newTelemetry.device_timestamp,
-        temperature: newTelemetry.telemetry.temperature,
-        battery: newTelemetry.telemetry.battery
-      }])
-      
+      updateChart((prevData) => [
+        ...prevData,
+        {
+          time: newTelemetry.device_timestamp,
+          temperature: newTelemetry.telemetry.temperature,
+          battery: newTelemetry.telemetry.battery,
+        },
+      ])
+
       // Update latest metrics
       setLatestMetrics(newTelemetry.telemetry)
     }
@@ -767,49 +799,54 @@ return () => {
 
 ### Before Universal Telemetry Recording
 
-| Feature | MQTT | Golioth | AWS IoT | Azure IoT | Impact |
-|---------|------|---------|---------|-----------|--------|
-| **Alerts** | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Alerts only work for MQTT |
-| **Charts** | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Empty charts for synced devices |
+| Feature       | MQTT     | Golioth    | AWS IoT    | Azure IoT  | Impact                          |
+| ------------- | -------- | ---------- | ---------- | ---------- | ------------------------------- |
+| **Alerts**    | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Alerts only work for MQTT       |
+| **Charts**    | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Empty charts for synced devices |
 | **Analytics** | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Incomplete organization metrics |
-| **Trends** | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Can't analyze historical data |
+| **Trends**    | ✅ Works | ❌ No data | ❌ No data | ❌ No data | Can't analyze historical data   |
 
 ---
 
 ### After Universal Telemetry Recording
 
-| Feature | MQTT | Golioth | AWS IoT | Azure IoT | Impact |
-|---------|------|---------|---------|-----------|--------|
-| **Alerts** | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Universal alerting** |
-| **Charts** | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Complete visualizations** |
-| **Analytics** | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Accurate org metrics** |
-| **Trends** | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Full historical analysis** |
+| Feature       | MQTT     | Golioth      | AWS IoT      | Azure IoT    | Impact                          |
+| ------------- | -------- | ------------ | ------------ | ------------ | ------------------------------- |
+| **Alerts**    | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Universal alerting**       |
+| **Charts**    | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Complete visualizations**  |
+| **Analytics** | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Accurate org metrics**     |
+| **Trends**    | ✅ Works | ✅ **Works** | ✅ **Works** | ✅ **Works** | ✅ **Full historical analysis** |
 
 ---
 
 ## 🎯 Key Benefits
 
 ### 1. **Universal Alerting**
+
 - Alert rule: "Battery < 20%" works for ANY device (MQTT, Golioth, AWS IoT, Azure IoT)
 - No need to create separate rules per integration type
 - Consistent alert evaluation logic
 
 ### 2. **Complete Analytics**
+
 - Temperature charts show data from ALL integration sources
 - Battery health dashboard includes ALL devices
 - Organization-wide metrics are accurate
 
 ### 3. **Integration-Agnostic**
+
 - Users don't care if data came from MQTT or Golioth
 - Charts seamlessly combine data from multiple sources
 - Same query patterns work for all integrations
 
 ### 4. **Real-Time + Historical**
+
 - MQTT provides real-time telemetry stream
 - Sync operations backfill historical telemetry
 - Combined view gives complete picture
 
 ### 5. **Consistent UX**
+
 - Same chart components work for all device types
 - Same alert UI for all integration sources
 - Same export/download functionality
@@ -835,7 +872,7 @@ protected async evaluateAlertsForDevice(
       telemetry
     }
   })
-  
+
   if (error) {
     console.error('[Alert Evaluation] Failed:', error)
   }
@@ -843,10 +880,11 @@ protected async evaluateAlertsForDevice(
 ```
 
 **Call from sync operations:**
+
 ```typescript
 // In golioth-client.ts, aws-iot-client.ts, azure-iot-client.ts
 await this.recordTelemetry(deviceId, telemetry, timestamp)
-await this.evaluateAlertsForDevice(deviceId, telemetry)  // NEW
+await this.evaluateAlertsForDevice(deviceId, telemetry) // NEW
 ```
 
 ---
@@ -858,17 +896,17 @@ await this.evaluateAlertsForDevice(deviceId, telemetry)  // NEW
 ```typescript
 serve(async (req) => {
   const { type, device_id, timeframe, metrics } = await req.json()
-  
+
   switch (type) {
     case 'device-metrics':
       return getDeviceMetrics(device_id, timeframe, metrics)
-    
+
     case 'organization-summary':
       return getOrganizationSummary(org_id, timeframe)
-    
+
     case 'battery-health':
       return getBatteryHealthReport(org_id)
-    
+
     case 'telemetry-export':
       return exportTelemetryCSV(device_id, timeframe)
   }
@@ -880,18 +918,19 @@ serve(async (req) => {
 ### 3. Enhance UI Components
 
 **Add telemetry charts to device detail pages:**
+
 ```typescript
 // src/app/dashboard/devices/[id]/page.tsx
 <DeviceDetailPage deviceId={params.id}>
   <DeviceHeader device={device} />
-  
+
   {/* NEW: Telemetry charts */}
   <TelemetryCharts deviceId={params.id}>
     <LineChart metric="temperature" timeframe="24h" />
     <LineChart metric="battery" timeframe="7d" />
     <LineChart metric="rssi" timeframe="24h" />
   </TelemetryCharts>
-  
+
   <MetricsGrid>
     <MetricCard label="Temperature" value={latest.temperature} />
     <MetricCard label="Battery" value={latest.battery} />

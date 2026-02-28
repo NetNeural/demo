@@ -7,30 +7,35 @@ This guide provides step-by-step instructions for setting up the NetNeural IoT P
 ## Technology Stack (Latest Versions)
 
 ### Core Framework
+
 - **Next.js**: 15.0.x with Turbopack bundler
 - **React**: 18.3.x with concurrent features
 - **TypeScript**: 5.6.x with enhanced type inference
 - **Node.js**: 20.x LTS (recommended)
 
 ### Backend & Database
+
 - **Supabase**: Latest platform with PostgreSQL 15
 - **Edge Functions**: Deno 2.0 runtime
 - **Real-time**: WebSocket and Server-Sent Events
 - **Auth**: Multi-provider authentication
 
 ### Styling & UI
+
 - **Tailwind CSS**: 3.4.x with latest utilities
 - **Radix UI**: Latest component primitives
 - **Lucide React**: Modern icon library
 - **CSS Custom Properties**: Design tokens
 
 ### Development Tools
+
 - **Turbopack**: Next.js 15 native bundler
 - **ESLint**: 9.x with TypeScript integration
 - **Prettier**: 3.x with enhanced formatting
 - **Husky**: Git hooks automation
 
 ### Testing
+
 - **Playwright**: Latest E2E testing framework
 - **Jest**: 29.x with React Testing Library
 - **MSW**: API mocking for tests
@@ -41,23 +46,26 @@ This guide provides step-by-step instructions for setting up the NetNeural IoT P
 ### Required Software
 
 1. **Node.js 20.x LTS**
+
    ```bash
    # Install via Node Version Manager (recommended)
    nvm install 20
    nvm use 20
-   
+
    # Verify installation
    node --version  # Should show v20.x.x
    npm --version   # Should show 10.x.x
    ```
 
 2. **Git**
+
    ```bash
    # Verify installation
    git --version
    ```
 
 3. **Docker Desktop** (for Supabase local development)
+
    ```bash
    # Verify installation
    docker --version
@@ -65,10 +73,11 @@ This guide provides step-by-step instructions for setting up the NetNeural IoT P
    ```
 
 4. **Supabase CLI** (latest)
+
    ```bash
    # Install via npm
    npm install -g supabase@latest
-   
+
    # Verify installation
    supabase --version
    ```

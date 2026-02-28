@@ -2,13 +2,13 @@
 
 /**
  * Create Test Users for NetNeural Development
- * 
+ *
  * This script creates test users in Supabase Auth that match the seed data.
  * Run this after resetting the database to set up authentication.
- * 
+ *
  * Usage:
  *   node create-test-users.js
- * 
+ *
  * Or add to package.json:
  *   "scripts": {
  *     "setup:users": "node scripts/create-test-users.js"
@@ -35,8 +35,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 })
 
 const testUsers = [
@@ -45,29 +45,29 @@ const testUsers = [
     email: 'superadmin@netneural.ai',
     password: 'SuperSecure123!',
     full_name: 'Super Administrator',
-    role: 'super_admin'
+    role: 'super_admin',
   },
   {
     id: '00000000-0000-0000-0000-000000000001',
     email: 'admin@netneural.ai',
     password: 'password123',
     full_name: 'Admin User',
-    role: 'org_owner'
+    role: 'org_owner',
   },
   {
     id: '00000000-0000-0000-0000-000000000002',
     email: 'user@netneural.ai',
     password: 'password123',
     full_name: 'Regular User',
-    role: 'user'
+    role: 'user',
   },
   {
     id: '00000000-0000-0000-0000-000000000003',
     email: 'viewer@netneural.ai',
     password: 'password123',
     full_name: 'Viewer User',
-    role: 'viewer'
-  }
+    role: 'viewer',
+  },
 ]
 
 async function createTestUsers() {
@@ -76,8 +76,10 @@ async function createTestUsers() {
   for (const userData of testUsers) {
     try {
       // Check if user already exists
-      const { data: existingUser } = await supabase.auth.admin.getUserById(userData.id)
-      
+      const { data: existingUser } = await supabase.auth.admin.getUserById(
+        userData.id
+      )
+
       if (existingUser && existingUser.user) {
         console.log(`ℹ️  User ${userData.email} already exists (skipping)`)
         continue
@@ -90,8 +92,8 @@ async function createTestUsers() {
         password: userData.password,
         email_confirm: true,
         user_metadata: {
-          full_name: userData.full_name
-        }
+          full_name: userData.full_name,
+        },
       })
 
       if (error) {
@@ -105,28 +107,36 @@ async function createTestUsers() {
       console.log(`   Password: ${userData.password}`)
 
       // Create corresponding users table entry
-      const { error: usersError } = await supabase
-        .from('users')
-        .insert({
-          id: userData.id,
-          email: userData.email,
-          full_name: userData.full_name,
-          role: userData.role,
-          organization_id: userData.role === 'super_admin' ? null : '00000000-0000-0000-0000-000000000001',
-          is_active: true
-        })
+      const { error: usersError } = await supabase.from('users').insert({
+        id: userData.id,
+        email: userData.email,
+        full_name: userData.full_name,
+        role: userData.role,
+        organization_id:
+          userData.role === 'super_admin'
+            ? null
+            : '00000000-0000-0000-0000-000000000001',
+        is_active: true,
+      })
 
       if (usersError) {
-        console.error(`   ⚠️  Failed to create users table entry:`, usersError.message)
+        console.error(
+          `   ⚠️  Failed to create users table entry:`,
+          usersError.message
+        )
       } else {
         console.log(`   ✅ Created users table entry`)
       }
 
       // Create organization membership for non-super-admin users
       if (userData.role !== 'super_admin') {
-        const memberRole = userData.role === 'org_owner' ? 'owner' : 
-                          userData.role === 'org_admin' ? 'admin' : 'member'
-        
+        const memberRole =
+          userData.role === 'org_owner'
+            ? 'owner'
+            : userData.role === 'org_admin'
+              ? 'admin'
+              : 'member'
+
         const { error: memberError } = await supabase
           .from('organization_members')
           .insert({
@@ -136,19 +146,23 @@ async function createTestUsers() {
             permissions: {
               canManageMembers: ['owner', 'admin'].includes(memberRole),
               canManageDevices: ['owner', 'admin'].includes(memberRole),
-              canManageAlerts: true
-            }
+              canManageAlerts: true,
+            },
           })
 
         if (memberError) {
-          console.error(`   ⚠️  Failed to create organization membership:`, memberError.message)
+          console.error(
+            `   ⚠️  Failed to create organization membership:`,
+            memberError.message
+          )
         } else {
-          console.log(`   ✅ Created organization membership (role: ${memberRole})`)
+          console.log(
+            `   ✅ Created organization membership (role: ${memberRole})`
+          )
         }
       }
 
       console.log('')
-
     } catch (err) {
       console.error(`❌ Error creating ${userData.email}:`, err.message)
     }

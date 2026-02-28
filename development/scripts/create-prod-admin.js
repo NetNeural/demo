@@ -2,10 +2,10 @@
 
 /**
  * Create Admin User in Production Supabase
- * 
+ *
  * This script creates a super admin user in your production Supabase instance.
  * Run this once to set up initial admin access.
- * 
+ *
  * Requires: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
  */
 
@@ -44,10 +44,10 @@ async function createAdminUser() {
       password: password,
       options: {
         data: {
-          full_name: 'Production Admin'
+          full_name: 'Production Admin',
         },
-        emailRedirectTo: undefined
-      }
+        emailRedirectTo: undefined,
+      },
     })
 
     if (error) {
@@ -56,14 +56,18 @@ async function createAdminUser() {
         console.log(`   Email: ${email}`)
         console.log(`   Password: ${password}`)
         console.log('')
-        console.log('If you forgot the password, you need to reset it via Supabase Dashboard.')
+        console.log(
+          'If you forgot the password, you need to reset it via Supabase Dashboard.'
+        )
         return
       }
       console.error('❌ Error creating user:', error.message)
       console.log('')
       console.log('⚠️  You may need to use the SERVICE ROLE KEY instead.')
       console.log('   Check your Supabase dashboard at:')
-      console.log('   https://supabase.com/dashboard/project/bldojxpockljyivldxwf')
+      console.log(
+        '   https://supabase.com/dashboard/project/bldojxpockljyivldxwf'
+      )
       return
     }
 
@@ -75,8 +79,12 @@ async function createAdminUser() {
       console.log(`   Password: ${password}`)
       console.log('')
       console.log('⚠️  Note: You may need to verify the email first.')
-      console.log('   Check your email or disable email confirmation in Supabase Dashboard:')
-      console.log('   Authentication → Providers → Email → Disable "Confirm Email"')
+      console.log(
+        '   Check your email or disable email confirmation in Supabase Dashboard:'
+      )
+      console.log(
+        '   Authentication → Providers → Email → Disable "Confirm Email"'
+      )
     } else {
       console.log('⚠️  User creation status unclear. Check Supabase dashboard.')
     }
@@ -84,7 +92,9 @@ async function createAdminUser() {
     console.error('❌ Unexpected error:', err.message)
     console.log('')
     console.log('💡 Alternative: Create user manually via Supabase Dashboard:')
-    console.log('   1. Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf')
+    console.log(
+      '   1. Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf'
+    )
     console.log('   2. Navigate to: Authentication → Users')
     console.log('   3. Click "Add user" → "Create new user"')
     console.log(`   4. Email: ${email}`)

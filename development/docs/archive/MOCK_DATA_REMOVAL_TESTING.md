@@ -5,6 +5,7 @@
 **ALL mock data has been removed from the entire application.**
 
 Components now either:
+
 - ✅ Load real data from Supabase edge functions
 - ✅ Show empty states when no data available
 - ✅ Show errors when API calls fail (no fake data fallbacks)
@@ -30,53 +31,63 @@ npm run dev
 ### 2. Login Credentials
 
 **Super Admin User:**
+
 - Email: `superadmin@netneural.ai`
 - Password: `SuperAdmin123!`
 
 ### 3. What to Check on Each Page
 
 #### Dashboard Page (`/dashboard`)
+
 - [x] **Alerts Card** - Should show real alerts from database (or empty state)
 - [x] **System Stats Cards** - Should show real device counts, alert counts
 - [x] **Data Points Card** - Should show "N/A" (not yet implemented)
 - [x] **Recent Activity** - Should show empty state with disabled button
 
 **What You Should SEE:**
+
 - Real device count from your local database
 - Real alerts if any exist in database
 - Empty states if no data (NOT mock data)
 
 **What You Should NOT SEE:**
+
 - "Temperature Sensor - Floor 1" (was mock data)
 - "Pressure Monitor - Tank A" (was mock data)
 - "145 devices" (was mock data)
 
 #### Devices Page (`/dashboard/devices`)
+
 - [x] Devices list loads from edge function
 - [x] Shows real devices from database
 - [x] Shows empty state if no devices (NOT mock devices)
 
 **What You Should NOT SEE:**
+
 - Mock devices with IDs '1', '2', '3'
 - "Temperature Sensor - Floor 1", "Pressure Monitor - Tank A", "Vibration Detector - Motor 3"
 
 #### Settings → Integrations (`/dashboard/settings`)
+
 - [x] Integrations tab loads from edge function
 - [x] Shows real integrations from database
 - [x] Shows empty state if no integrations
 
 **What You Should NOT SEE:**
+
 - Mock Golioth integration
 - Mock Email Service integration
 - Mock Slack integration
 - Mock Webhook integration
 
 #### Analytics Page (`/dashboard/analytics`)
+
 - [x] Shows empty state (analytics not yet implemented)
 - [x] All metrics show 0 or "No data"
 - [x] Console message: "Analytics not yet implemented"
 
 **What You Should NOT SEE:**
+
 - Mock device performance data
 - Mock chart data
 - Any fake metrics
@@ -88,6 +99,7 @@ npm run dev
 ### Open Browser DevTools (F12) → Console Tab
 
 **✅ GOOD - Should See:**
+
 ```
 Activity tracking not yet implemented. Need to create audit-logs edge function.
 Analytics not yet implemented. Need to create analytics edge function.
@@ -95,6 +107,7 @@ Golioth API not configured. Set GOLIOTH_API_KEY and GOLIOTH_PROJECT_ID to enable
 ```
 
 **❌ BAD - Should NOT See:**
+
 ```
 Golioth API not configured - using mock data
 Fallback to mock data
@@ -106,6 +119,7 @@ Using mock data
 **Filter by: XHR**
 
 **✅ GOOD - Should See API Calls To:**
+
 ```
 /functions/v1/organizations
 /functions/v1/dashboard-stats
@@ -115,11 +129,13 @@ Using mock data
 ```
 
 **✅ Check Each API Call:**
+
 - Status: 200 OK (or 401/403 if auth issue)
 - Headers: `Authorization: Bearer <jwt_token>`
 - Response: Real JSON data (or empty arrays)
 
 **❌ BAD - Should NOT See:**
+
 - Any API calls to localhost:3000 (should be Supabase URLs)
 - Missing Authorization headers
 - Mock data in responses
@@ -129,6 +145,7 @@ Using mock data
 ## 🧩 Testing Error States
 
 ### Test 1: Disconnect Supabase
+
 ```bash
 # Stop Supabase
 supabase stop
@@ -140,6 +157,7 @@ supabase stop
 ```
 
 ### Test 2: Invalid JWT Token
+
 ```bash
 # In browser console, clear session:
 localStorage.clear()
@@ -150,6 +168,7 @@ localStorage.clear()
 ```
 
 ### Test 3: Empty Organization
+
 ```sql
 -- In Supabase dashboard, run SQL:
 DELETE FROM devices WHERE organization_id = 'your-org-id';
@@ -167,6 +186,7 @@ DELETE FROM device_integrations WHERE organization_id = 'your-org-id';
 ## 📋 Testing Checklist
 
 ### Dashboard Page
+
 - [ ] Alerts card shows real data or empty state (not mock)
 - [ ] System stats show real counts or zeros (not mock)
 - [ ] Recent activity shows empty state with disabled button
@@ -174,29 +194,34 @@ DELETE FROM device_integrations WHERE organization_id = 'your-org-id';
 - [ ] No console warnings about mock data
 
 ### Devices Page
+
 - [ ] Devices list shows real data or empty state (not mock)
 - [ ] No mock devices visible
 - [ ] API calls to /functions/v1/devices visible in network tab
 - [ ] Loading states work correctly
 
 ### Settings → Integrations
+
 - [ ] Integrations list shows real data or empty state (not mock)
 - [ ] No mock integrations visible
 - [ ] API calls to /functions/v1/integrations visible in network tab
 - [ ] Loading states work correctly
 
 ### Analytics Page
+
 - [ ] Shows empty state (not implemented yet)
 - [ ] All metrics show 0 or "No data"
 - [ ] Console message about analytics not implemented
 - [ ] No mock chart data visible
 
 ### Error States
+
 - [ ] With Supabase stopped: Empty states, not mock data
 - [ ] With invalid auth: Redirects or shows auth errors
 - [ ] With empty org: Empty states everywhere, not mock data
 
 ### Network/Console
+
 - [ ] All API calls go to /functions/v1/ endpoints
 - [ ] All API calls include Authorization header
 - [ ] No mock data warnings in console
@@ -207,28 +232,37 @@ DELETE FROM device_integrations WHERE organization_id = 'your-org-id';
 ## 🐛 Common Issues & Solutions
 
 ### Issue: "Cannot find name 'createClient'"
+
 **Solution:** Import missing: `import { createClient } from '@/lib/supabase/client'`
 
 ### Issue: "Cannot find name 'formatTimestamp'"
+
 **Solution:** Already fixed - function added to AlertsCard.tsx
 
 ### Issue: Still seeing mock data
+
 **Solution:** Hard refresh browser (Ctrl+F5) to clear cache
 
 ### Issue: API calls returning 401 Unauthorized
-**Solution:** 
+
+**Solution:**
+
 1. Check if logged in
 2. Check if session is valid
 3. Re-login if needed
 
 ### Issue: API calls returning empty arrays
+
 **Solution:** This is CORRECT behavior now! Check if:
+
 1. Database has data for your organization
 2. RLS policies allow your user to see the data
 3. Organization is correctly selected in switcher
 
 ### Issue: Supabase not starting
+
 **Solution:**
+
 ```bash
 supabase stop
 supabase start
@@ -257,16 +291,19 @@ supabase start
 Based on your `seed.sql`:
 
 ### NetNeural Industries (org-1)
+
 - **Devices:** Temperature sensors, pressure monitors, etc. (from seed data)
 - **Alerts:** Various alerts based on device states
 - **Integrations:** Golioth integration (if configured)
 
 ### Acme Manufacturing (org-2)
+
 - **Devices:** Their own devices from seed data
 - **Alerts:** Their own alerts
 - **Integrations:** Their own integrations
 
 **If you see exactly these values, it's likely still using mock data:**
+
 - 145 devices, 132 active, 13 offline
 - Temperature Sensor - Floor 1
 - Pressure Monitor - Tank A
@@ -287,6 +324,7 @@ Based on your `seed.sql`:
 ## 📝 Reporting Issues
 
 If you find any remaining mock data, please note:
+
 1. Which page/component
 2. What mock data you see
 3. Expected behavior

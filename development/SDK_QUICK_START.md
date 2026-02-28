@@ -3,18 +3,21 @@
 ## For Frontend Developers
 
 ### Before (Old Way ❌)
+
 ```typescript
 // Manual fetch with boilerplate
 const supabase = createClient()
-const { data: { session } } = await supabase.auth.getSession()
+const {
+  data: { session },
+} = await supabase.auth.getSession()
 
 const response = await fetch(
   `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/devices?organization_id=${orgId}`,
   {
     headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
   }
 )
 
@@ -26,6 +29,7 @@ const data = await response.json()
 ```
 
 ### After (New Way ✅)
+
 ```typescript
 // Simple SDK call
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -45,6 +49,7 @@ const devices = response.data?.devices
 ## Available SDK Methods
 
 ### Devices
+
 ```typescript
 // List devices
 const response = await edgeFunctions.devices.list(organizationId)
@@ -53,7 +58,7 @@ const response = await edgeFunctions.devices.list(organizationId)
 await edgeFunctions.devices.create({
   organization_id: orgId,
   name: 'Device Name',
-  device_type: 'sensor'
+  device_type: 'sensor',
 })
 
 // Update device
@@ -64,6 +69,7 @@ await edgeFunctions.devices.delete(deviceId)
 ```
 
 ### Locations
+
 ```typescript
 // List locations
 const response = await edgeFunctions.locations.list(organizationId)
@@ -73,12 +79,12 @@ await edgeFunctions.locations.create({
   organization_id: orgId,
   name: 'Office',
   city: 'San Francisco',
-  state: 'CA'
+  state: 'CA',
 })
 
 // Update location
 await edgeFunctions.locations.update(locationId, {
-  name: 'Updated Office'
+  name: 'Updated Office',
 })
 
 // Delete location
@@ -86,6 +92,7 @@ await edgeFunctions.locations.delete(locationId)
 ```
 
 ### Alerts
+
 ```typescript
 // List all alerts
 const response = await edgeFunctions.alerts.list(organizationId)
@@ -94,7 +101,7 @@ const response = await edgeFunctions.alerts.list(organizationId)
 const critical = await edgeFunctions.alerts.list(organizationId, {
   severity: 'critical',
   resolved: false,
-  limit: 50
+  limit: 50,
 })
 
 // Acknowledge alert
@@ -105,6 +112,7 @@ await edgeFunctions.alerts.resolve(alertId)
 ```
 
 ### Integrations
+
 ```typescript
 // Test integration
 const response = await edgeFunctions.integrations.test(integrationId)
@@ -114,11 +122,12 @@ await edgeFunctions.integrations.sync({
   integrationId,
   organizationId,
   operation: 'bidirectional',
-  deviceIds: ['device-1', 'device-2']
+  deviceIds: ['device-1', 'device-2'],
 })
 ```
 
 ### Dashboard Stats
+
 ```typescript
 // Get statistics
 const response = await edgeFunctions.dashboardStats.get(organizationId)
@@ -132,6 +141,7 @@ if (response.success) {
 ```
 
 ### Members
+
 ```typescript
 // List members
 const response = await edgeFunctions.members.list(organizationId)
@@ -139,7 +149,7 @@ const response = await edgeFunctions.members.list(organizationId)
 // Add member
 await edgeFunctions.members.add(organizationId, {
   user_id: userId,
-  role: 'member'
+  role: 'member',
 })
 
 // Update role
@@ -150,13 +160,14 @@ await edgeFunctions.members.remove(organizationId, userId)
 ```
 
 ### Notifications
+
 ```typescript
 // Send notification
 await edgeFunctions.notifications.send({
   organization_id: orgId,
   integration_id: integrationId,
   message: 'Alert: Device offline',
-  severity: 'warning'
+  severity: 'warning',
 })
 
 // Test notification config
@@ -164,12 +175,13 @@ await edgeFunctions.notifications.test(integrationId)
 ```
 
 ### MQTT Broker
+
 ```typescript
 // Connect to broker
 await edgeFunctions.mqttBroker.connect({
   organization_id: orgId,
   integration_id: integrationId,
-  action: 'connect'
+  action: 'connect',
 })
 
 // Publish message
@@ -178,7 +190,7 @@ await edgeFunctions.mqttBroker.connect({
   integration_id: integrationId,
   action: 'publish',
   topic: 'devices/status',
-  message: JSON.stringify({ status: 'online' })
+  message: JSON.stringify({ status: 'online' }),
 })
 ```
 
@@ -203,6 +215,7 @@ interface EdgeFunctionResponse<T> {
 ```
 
 ### Success Response
+
 ```typescript
 {
   success: true,
@@ -212,6 +225,7 @@ interface EdgeFunctionResponse<T> {
 ```
 
 ### Error Response
+
 ```typescript
 {
   success: false,
@@ -228,6 +242,7 @@ interface EdgeFunctionResponse<T> {
 ## Error Handling Pattern
 
 ### Recommended Pattern
+
 ```typescript
 const response = await edgeFunctions.devices.list(orgId)
 
@@ -242,14 +257,15 @@ const devices = response.data?.devices || []
 ```
 
 ### With Try-Catch (Optional)
+
 ```typescript
 try {
   const response = await edgeFunctions.devices.list(orgId)
-  
+
   if (!response.success) {
     throw new Error(response.error?.message)
   }
-  
+
   return response.data?.devices
 } catch (error) {
   console.error('Failed to load devices:', error)
@@ -270,9 +286,9 @@ const response = await edgeFunctions.devices.list(orgId)
 if (response.success) {
   // ✅ TypeScript knows `data` exists
   const devices = response.data?.devices
-  
+
   // ✅ Autocomplete for device properties
-  devices.forEach(device => {
+  devices.forEach((device) => {
     console.log(device.name)
     console.log(device.status)
   })
@@ -302,7 +318,7 @@ const metrics = JSON.parse(sessionStorage.getItem('edge-function-metrics'))
 console.table(metrics)
 
 // Filter slow requests
-const slow = metrics.filter(m => m.duration > 1000)
+const slow = metrics.filter((m) => m.duration > 1000)
 console.table(slow)
 ```
 
@@ -320,11 +336,13 @@ X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
 ## Migration Guide
 
 ### Step 1: Import SDK
+
 ```typescript
 import { edgeFunctions } from '@/lib/edge-functions/client'
 ```
 
 ### Step 2: Replace Manual Fetch
+
 ```diff
 - const response = await fetch(`${url}/functions/v1/devices`, {
 -   headers: {
@@ -339,6 +357,7 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 ```
 
 ### Step 3: Update Error Handling
+
 ```diff
 - if (!response.ok) {
 -   throw new Error('Failed')
@@ -351,6 +370,7 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 ```
 
 ### Step 4: Remove Auth Boilerplate
+
 ```diff
 - const supabase = createClient()
 - const { data: { session } } = await supabase.auth.getSession()
@@ -362,6 +382,7 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 ## Common Patterns
 
 ### Loading State
+
 ```typescript
 const [loading, setLoading] = useState(false)
 
@@ -381,15 +402,16 @@ const loadDevices = async () => {
 ```
 
 ### Form Submission
+
 ```typescript
 const handleSubmit = async (formData) => {
   setSaving(true)
-  
+
   const response = await edgeFunctions.devices.create({
     organization_id: orgId,
-    ...formData
+    ...formData,
   })
-  
+
   if (response.success) {
     toast.success('Device created')
     closeDialog()
@@ -397,21 +419,21 @@ const handleSubmit = async (formData) => {
   } else {
     toast.error(response.error?.message)
   }
-  
+
   setSaving(false)
 }
 ```
 
 ### Conditional Fetching
+
 ```typescript
 useEffect(() => {
   if (currentOrganization) {
-    edgeFunctions.devices.list(currentOrganization.id)
-      .then(response => {
-        if (response.success) {
-          setDevices(response.data?.devices || [])
-        }
-      })
+    edgeFunctions.devices.list(currentOrganization.id).then((response) => {
+      if (response.success) {
+        setDevices(response.data?.devices || [])
+      }
+    })
   }
 }, [currentOrganization])
 ```
@@ -421,6 +443,7 @@ useEffect(() => {
 ## Best Practices
 
 ### ✅ DO
+
 - Always check `response.success` before using data
 - Use SDK for all API calls (consistent interface)
 - Handle errors gracefully with user-friendly messages
@@ -428,6 +451,7 @@ useEffect(() => {
 - Use optional chaining: `response.data?.devices`
 
 ### ❌ DON'T
+
 - Don't use manual fetch for edge functions
 - Don't manage auth tokens manually
 - Don't construct URLs manually
@@ -439,15 +463,17 @@ useEffect(() => {
 ## Performance Tips
 
 1. **Batch Requests**: Use Promise.all for parallel calls
+
 ```typescript
 const [devices, alerts, stats] = await Promise.all([
   edgeFunctions.devices.list(orgId),
   edgeFunctions.alerts.list(orgId),
-  edgeFunctions.dashboardStats.get(orgId)
+  edgeFunctions.dashboardStats.get(orgId),
 ])
 ```
 
 2. **Cancel Pending Requests**: Use AbortController
+
 ```typescript
 const controller = new AbortController()
 
@@ -458,12 +484,12 @@ useEffect(() => {
 ```
 
 3. **Cache Results**: Use React Query or SWR
+
 ```typescript
 import useSWR from 'swr'
 
-const { data, error } = useSWR(
-  `devices-${orgId}`,
-  () => edgeFunctions.devices.list(orgId)
+const { data, error } = useSWR(`devices-${orgId}`, () =>
+  edgeFunctions.devices.list(orgId)
 )
 ```
 

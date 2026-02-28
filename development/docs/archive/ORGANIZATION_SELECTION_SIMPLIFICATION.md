@@ -5,16 +5,19 @@
 ### Current State (REDUNDANT):
 
 #### 1. Sidebar Organization Switcher
+
 - Dropdown in sidebar
 - Select any organization
 - Persists across pages
 
 #### 2. Organization Management Page
+
 - Another org switcher at top of page
 - Select organization to manage
 - Same functionality as sidebar
 
 #### 3. Personal Settings > Organizations Tab
+
 - List of all organizations
 - "Manage" button for each
 - Switches org and navigates to Organization page
@@ -27,7 +30,8 @@
 
 > "The organization link in the sidebar does that already, so we don't need both because we select the organization in the sidebar. Also there's a select in the organization page to select organization or create. Maybe we only have a create button in the organization tab or a create option in the left side dropdown if the user has access to create organizations."
 
-**Translation:** 
+**Translation:**
+
 - Sidebar already handles org selection
 - Don't duplicate it in Personal Settings
 - Create Organization should be in ONE place
@@ -39,6 +43,7 @@
 ### Option 1: Remove Organizations Tab Entirely (RECOMMENDED) ✅
 
 **Personal Settings:**
+
 ```
 /dashboard/settings
 ├── Profile (name, email, avatar)
@@ -49,6 +54,7 @@
 **NO Organizations tab** - sidebar handles all org selection
 
 **Create Organization:**
+
 - Add "Create Organization" option in sidebar dropdown
 - OR add "Create Organization" button on Organization Management page
 
@@ -66,6 +72,7 @@ If you want users to see their memberships:
 ```
 
 **Remove:**
+
 - ❌ "Manage" buttons (use sidebar instead)
 - ❌ Device/member stats (not needed here)
 - ❌ Organization switcher functionality
@@ -86,6 +93,7 @@ If you want users to see their memberships:
 ```
 
 **Features:**
+
 - Select organization → context switches
 - "Create Organization" option at bottom (if user has permission)
 - Shows user's role with each org
@@ -95,13 +103,14 @@ If you want users to see their memberships:
 
 ```
 Organization Management
-Configure members, devices, integrations, alert rules, and 
+Configure members, devices, integrations, alert rules, and
 organization settings. Switch organizations using the sidebar.
 
 [Overview] [Members] [Devices] ...
 ```
 
 **Remove:**
+
 - ❌ Organization switcher at top (use sidebar instead)
 - Page just shows current org from context
 
@@ -115,6 +124,7 @@ organization settings. Switch organizations using the sidebar.
 ```
 
 **Remove:**
+
 - ❌ Organizations tab entirely
 
 ---
@@ -130,13 +140,13 @@ Add to organization switcher dropdown:
 
 <DropdownMenuContent>
   <DropdownMenuLabel>Your Organizations</DropdownMenuLabel>
-  
+
   {/* List of organizations */}
   {userOrganizations.map(org => (...))}
-  
+
   {/* Separator */}
   <DropdownMenuSeparator />
-  
+
   {/* Create Organization */}
   <DropdownMenuItem onClick={handleCreateOrganization}>
     <Plus className="w-4 h-4 mr-2" />
@@ -146,6 +156,7 @@ Add to organization switcher dropdown:
 ```
 
 **Benefits:**
+
 - ✅ Natural place (you're already in org context)
 - ✅ Always accessible
 - ✅ Consistent with other apps (Slack, GitHub)
@@ -161,13 +172,14 @@ Add button when no org selected:
 <div className="text-center">
   <p>Select an organization from the sidebar</p>
   <Button onClick={handleCreateOrganization}>
-    <Plus className="w-4 h-4 mr-2" />
+    <Plus className="mr-2 h-4 w-4" />
     Create Organization
   </Button>
 </div>
 ```
 
 **Benefits:**
+
 - ✅ Visible when user needs it
 - ✅ Clear call-to-action
 
@@ -176,18 +188,21 @@ Add button when no org selected:
 ## Permission Check for Create Organization
 
 ```tsx
-const { canCreateOrganizations } = useUser();
+const { canCreateOrganizations } = useUser()
 
 // In OrganizationSwitcher
-{canCreateOrganizations && (
-  <DropdownMenuItem onClick={handleCreateOrganization}>
-    <Plus className="w-4 h-4 mr-2" />
-    Create Organization
-  </DropdownMenuItem>
-)}
+{
+  canCreateOrganizations && (
+    <DropdownMenuItem onClick={handleCreateOrganization}>
+      <Plus className="mr-2 h-4 w-4" />
+      Create Organization
+    </DropdownMenuItem>
+  )
+}
 ```
 
 **Permission Logic:**
+
 - All users can create organizations? → Always show
 - Only certain users? → Check permission
 - Subscription-based? → Check plan limits
@@ -222,6 +237,7 @@ Add "Create Organization" option to dropdown:
 **File:** `src/app/dashboard/organizations/page.tsx`
 
 **Before:**
+
 ```tsx
 <div className="flex items-start justify-between">
   <PageHeader ... />
@@ -232,6 +248,7 @@ Add "Create Organization" option to dropdown:
 ```
 
 **After:**
+
 ```tsx
 <PageHeader
   title="Organization Management"
@@ -246,12 +263,14 @@ Add "Create Organization" option to dropdown:
 **File:** `src/app/dashboard/settings/page.tsx`
 
 **Remove:**
+
 - ❌ Organizations tab trigger
 - ❌ Organizations tab content
 - ❌ Building2 icon import (if not used elsewhere)
 - ❌ UserOrganizationsTab component import
 
 **Keep:**
+
 - ✅ Profile tab
 - ✅ Preferences tab (with notification preferences)
 - ✅ Security tab
@@ -265,10 +284,9 @@ If users ask "How do I see my organizations?":
 **Answer:** "Click the organization dropdown in the sidebar"
 
 **Documentation:** Add tooltip or help text:
+
 ```tsx
-<OrganizationSwitcher 
-  tooltip="View and switch between your organizations"
-/>
+<OrganizationSwitcher tooltip="View and switch between your organizations" />
 ```
 
 ---
@@ -309,11 +327,13 @@ User clarity: "Oh, it's all in the sidebar!"
 ### Flow 1: Switch to Different Organization
 
 **Before (3 options):**
+
 1. Option A: Sidebar dropdown
 2. Option B: Organization page switcher
 3. Option C: Personal Settings > "Manage" button
 
 **After (1 option):**
+
 1. Sidebar dropdown ✅
 
 ---
@@ -321,10 +341,12 @@ User clarity: "Oh, it's all in the sidebar!"
 ### Flow 2: Create New Organization
 
 **Before (unclear):**
+
 - Personal Settings > Organizations > "Create Organization" button
 - Maybe other places?
 
 **After (clear):**
+
 1. Sidebar dropdown > "+ Create Organization" ✅
 
 ---
@@ -332,9 +354,11 @@ User clarity: "Oh, it's all in the sidebar!"
 ### Flow 3: See What Organizations I Belong To
 
 **Before:**
+
 - Personal Settings > Organizations tab
 
 **After:**
+
 - Sidebar dropdown (see full list when opened) ✅
 - OR create dedicated "My Organizations" page if needed
 
@@ -370,16 +394,19 @@ But this is overkill for most users!
 ## Industry Comparison
 
 ### Slack
+
 - **Switching:** Sidebar dropdown
 - **Creating:** Sidebar dropdown > "Create workspace"
 - **No separate** "My Workspaces" settings page
 
 ### GitHub
+
 - **Switching:** Top-left dropdown
 - **Creating:** Dropdown > "New organization"
 - **Separate "Your organizations"** page exists but rarely used
 
 ### Discord
+
 - **Switching:** Server list on left
 - **Creating:** "+" button at bottom of server list
 - **No separate** "My Servers" settings page
@@ -393,7 +420,7 @@ But this is overkill for most users!
 ### ✅ DO THIS:
 
 1. **Remove Organizations tab** from Personal Settings
-2. **Remove org switcher** from Organization Management page  
+2. **Remove org switcher** from Organization Management page
 3. **Add "Create Organization"** to sidebar dropdown
 4. **Update descriptions** to mention "use sidebar to switch"
 
@@ -409,15 +436,18 @@ But this is overkill for most users!
 ### User Mental Model:
 
 **Sidebar = Organization Context**
+
 - Current org always visible
 - One click to switch
 - One click to create
 
 **Organization Management = Configuration**
+
 - Deep dive into current org
 - No need to switch here (use sidebar)
 
 **Personal Settings = User Preferences**
+
 - Theme, language, notifications
 - Password, 2FA, API keys
 - No org-specific content
@@ -427,15 +457,18 @@ But this is overkill for most users!
 ## Implementation Priority
 
 ### High Priority (Do First):
+
 1. ✅ Add "Create Organization" to sidebar dropdown
 2. ✅ Remove org switcher from Organization Management page
 3. ✅ Update Organization Management description
 
 ### Medium Priority (Do Soon):
+
 4. ✅ Remove Organizations tab from Personal Settings
 5. ✅ Clean up unused imports
 
 ### Low Priority (Nice to Have):
+
 6. Add tooltips explaining sidebar is for org switching
 7. Add help documentation
 8. Create "My Organizations" page if users need it later
@@ -461,14 +494,17 @@ But this is overkill for most users!
 ### Final Architecture:
 
 **Sidebar:**
+
 - Organization dropdown (select org)
 - "+ Create Organization" option
 
 **Organization Management Page:**
+
 - Shows current org only
 - No switcher needed
 
 **Personal Settings:**
+
 - Profile, Preferences, Security
 - NO Organizations tab
 

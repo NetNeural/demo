@@ -1,6 +1,7 @@
 # Storage Upload Error 42P17 - SOLUTION
 
 ## 🔴 Problem
+
 ```
 StorageApiError: database error, code: 42P17
 POST /storage/v1/object/organization-assets/...logo.webp 500
@@ -61,11 +62,12 @@ curl -X GET https://atgbmxicqikmapfqouco.supabase.co/storage/v1/bucket/organizat
 ```
 
 Or check in SQL Editor:
+
 ```sql
 SELECT * FROM storage.buckets WHERE id = 'organization-assets';
-SELECT COUNT(*) FROM pg_policies 
-WHERE schemaname = 'storage' 
-  AND tablename = 'objects' 
+SELECT COUNT(*) FROM pg_policies
+WHERE schemaname = 'storage'
+  AND tablename = 'objects'
   AND policyname LIKE '%organization%';
 -- Should show: 4 policies
 ```
@@ -80,6 +82,7 @@ WHERE schemaname = 'storage'
 ## 🎯 Next Steps
 
 After fix is applied:
+
 1. Test logo upload in app
 2. Verify no more 42P17 errors in console
 3. Check favicon.ico 404 error (minor - just add favicon to `public/`)

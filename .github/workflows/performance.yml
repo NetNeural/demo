@@ -1,0 +1,232 @@
+name: Nightly Performance Tests
+
+# DISABLED nightly schedule: Save Actions minutes. Run manually when needed.
+on:
+  # schedule:
+  #   - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+  issues: write  # To post performance results
+
+jobs:
+  performance-tests:
+    name: Performance Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    defaults:
+      run:
+        working-directory: ./development
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './development/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Start Supabase
+        run: npx supabase start
+        
+      - name: Seed test data
+        run: |
+          echo "Seeding test data for performance tests..."
+          # TODO: Add SQL script to seed 200 devices, 100 alerts, etc.
+          
+      - name: Start Next.js dev server
+        run: npm run dev &
+        env:
+          NODE_ENV: development
+          
+      - name: Wait for server
+        run: |
+          timeout 120 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+          echo "✅ Server is ready"
+
+      - name: Run Dashboard Load Test
+        run: k6 run performance/load-tests/dashboard.js --out json=dashboard-results.json
+        env:
+          BASE_URL: http://localhost:3000
+        continue-on-error: true
+        
+      - name: Run Device List Load Test
+        run: k6 run performance/load-tests/devices.js --out json=devices-results.json
+        env:
+          SUPABASE_URL: http://localhost:54321
+          AUTH_TOKEN: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        continue-on-error: true
+        
+      - name: Run Alert List Load Test
+        run: k6 run performance/load-tests/alerts.js --out json=alerts-results.json
+        env:
+          SUPABASE_URL: http://localhost:54321
+          AUTH_TOKEN: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        continue-on-error: true
+        
+      - name: Run API Stress Test
+        run: k6 run performance/load-tests/api-stress.js --out json=api-stress-results.json
+        env:
+          SUPABASE_URL: http://localhost:54321
+          AUTH_TOKEN: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        continue-on-error: true
+
+      - name: Analyze results
+        id: analyze
+        run: |
+          echo "Analyzing performance test results..."
+          
+          # Parse k6 results (simplified - can be enhanced)
+          DASHBOARD_P95=$(jq '.metrics.http_req_duration.values.["p(95)"]' dashboard-results.json 2>/dev/null || echo "0")
+          DEVICES_P95=$(jq '.metrics.http_req_duration.values.["p(95)"]' devices-results.json 2>/dev/null || echo "0")
+          ALERTS_P95=$(jq '.metrics.http_req_duration.values.["p(95)"]' alerts-results.json 2>/dev/null || echo "0")
+          API_P95=$(jq '.metrics.http_req_duration.values.["p(95)"]' api-stress-results.json 2>/dev/null || echo "0")
+          
+          echo "DASHBOARD_P95=$DASHBOARD_P95" >> $GITHUB_OUTPUT
+          echo "DEVICES_P95=$DEVICES_P95" >> $GITHUB_OUTPUT
+          echo "ALERTS_P95=$ALERTS_P95" >> $GITHUB_OUTPUT
+          echo "API_P95=$API_P95" >> $GITHUB_OUTPUT
+          
+          # Check thresholds
+          FAILED=0
+          if (( $(echo "$DASHBOARD_P95 > 3000" | bc -l) )); then
+            echo "⚠️ Dashboard load time exceeded 3s: ${DASHBOARD_P95}ms"
+            FAILED=1
+          fi
+          if (( $(echo "$DEVICES_P95 > 2000" | bc -l) )); then
+            echo "⚠️ Device list load time exceeded 2s: ${DEVICES_P95}ms"
+            FAILED=1
+          fi
+          if (( $(echo "$ALERTS_P95 > 2000" | bc -l) )); then
+            echo "⚠️ Alert list load time exceeded 2s: ${ALERTS_P95}ms"
+            FAILED=1
+          fi
+          if (( $(echo "$API_P95 > 500" | bc -l) )); then
+            echo "⚠️ API response time exceeded 500ms: ${API_P95}ms"
+            FAILED=1
+          fi
+          
+          if [ $FAILED -eq 0 ]; then
+            echo "✅ All performance thresholds met"
+          fi
+          
+          echo "FAILED=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: development/*.json
+          retention-days: 90
+
+      - name: Create issue if performance degraded
+        if: steps.analyze.outputs.FAILED == '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const dashboardP95 = '${{ steps.analyze.outputs.DASHBOARD_P95 }}';
+            const devicesP95 = '${{ steps.analyze.outputs.DEVICES_P95 }}';
+            const alertsP95 = '${{ steps.analyze.outputs.ALERTS_P95 }}';
+            const apiP95 = '${{ steps.analyze.outputs.API_P95 }}';
+            
+            const body = `## ⚠️ Performance Regression Detected (${date})
+            
+            The nightly performance tests have detected one or more metrics exceeding target thresholds.
+            
+            ### Performance Results
+            
+            | Metric | Result | Target | Status |
+            |--------|--------|--------|--------|
+            | **Dashboard Load (P95)** | ${dashboardP95}ms | < 3000ms | ${parseFloat(dashboardP95) > 3000 ? '❌' : '✅'} |
+            | **Device List (P95)** | ${devicesP95}ms | < 2000ms | ${parseFloat(devicesP95) > 2000 ? '❌' : '✅'} |
+            | **Alert List (P95)** | ${alertsP95}ms | < 2000ms | ${parseFloat(alertsP95) > 2000 ? '❌' : '✅'} |
+            | **API Response (P95)** | ${apiP95}ms | < 500ms | ${parseFloat(apiP95) > 500 ? '❌' : '✅'} |
+            
+            ### Recommended Actions
+            
+            1. Review recent code changes that may impact performance
+            2. Check database query performance (run \`performance/db-profiling/profile_queries.sql\`)
+            3. Profile slow API endpoints
+            4. Verify database indexes are properly applied
+            5. Check for memory leaks or unnecessary re-renders
+            
+            ### Resources
+            
+            - [PERFORMANCE.md](../blob/main/development/PERFORMANCE.md)
+            - [Performance artifacts](../actions/runs/${context.runId})
+            - [k6 load test scripts](../tree/main/development/performance/load-tests)
+            
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Performance Regression - ${date}`,
+              body: body,
+              labels: ['performance', 'needs-investigation']
+            });
+
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    defaults:
+      run:
+        working-directory: ./development
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './development/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:3000
+            http://localhost:3000/dashboard
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          runs: 3
+
+      - name: Check Lighthouse scores
+        run: |
+          echo "Lighthouse CI complete - check artifacts for detailed results"
+          # Lighthouse CI action will fail automatically if scores don't meet budget

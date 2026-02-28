@@ -1,7 +1,8 @@
 # Supabase Best Practices Audit Report
+
 **Date:** January 13, 2025  
 **Project:** NetNeural IoT Platform  
-**Auditor:** GitHub Copilot  
+**Auditor:** GitHub Copilot
 
 ---
 
@@ -16,6 +17,7 @@ This audit evaluates the Supabase implementation against official best practices
 ## ✅ Strengths
 
 ### 1. **Row Level Security (RLS) Implementation**
+
 - ✅ All tables have RLS enabled
 - ✅ Comprehensive policies for multi-tenant isolation
 - ✅ Super admin role with platform-wide access
@@ -25,6 +27,7 @@ This audit evaluates the Supabase implementation against official best practices
 **Best Practice Alignment:** ✅ Excellent
 
 ### 2. **Authentication Architecture**
+
 - ✅ Using `@supabase/ssr` for Next.js 15 App Router
 - ✅ Separate client and server Supabase instances
 - ✅ Proper cookie handling in server components
@@ -34,6 +37,7 @@ This audit evaluates the Supabase implementation against official best practices
 **Best Practice Alignment:** ✅ Excellent
 
 ### 3. **Database Schema Design**
+
 - ✅ Proper foreign key constraints with CASCADE/SET NULL
 - ✅ UUID primary keys with `uuid_generate_v4()`
 - ✅ Timestamps with `TIMESTAMP WITH TIME ZONE`
@@ -44,6 +48,7 @@ This audit evaluates the Supabase implementation against official best practices
 **Best Practice Alignment:** ✅ Excellent
 
 ### 4. **Edge Functions Structure**
+
 - ✅ Using Deno standard library
 - ✅ Proper CORS headers
 - ✅ Shared utilities in `_shared/` directory
@@ -59,9 +64,11 @@ This audit evaluates the Supabase implementation against official best practices
 ### **CRITICAL Issues** 🔴
 
 #### 1. **Edge Functions Using Outdated Supabase Client**
+
 **Location:** All edge functions (`devices/`, `alerts/`, `organizations/`, etc.)
 
 **Current Code:**
+
 ```typescript
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -70,13 +77,14 @@ const supabaseClient = createClient(
   Deno.env.get('SUPABASE_ANON_KEY') ?? '',
   {
     global: {
-      headers: authHeader ? { Authorization: authHeader } : {}
-    }
+      headers: authHeader ? { Authorization: authHeader } : {},
+    },
   }
 )
 ```
 
 **Issues:**
+
 - Not using the shared `createClientWithAuth()` helper from `_shared/database.ts`
 - Bypassing RLS by not properly forwarding user context
 - Inconsistent authentication patterns across functions
@@ -85,6 +93,7 @@ const supabaseClient = createClient(
 **Impact:** HIGH - May bypass RLS policies if auth token isn't properly forwarded
 
 **Recommended Fix:**
+
 ```typescript
 import { createClientWithAuth, extractAuthToken } from '../_shared/database.ts'
 
@@ -93,7 +102,7 @@ serve(async (req) => {
   if (!authToken) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: corsHeaders
+      headers: corsHeaders,
     })
   }
 
@@ -103,6 +112,7 @@ serve(async (req) => {
 ```
 
 **Files Affected:**
+
 - `supabase/functions/devices/index.ts`
 - `supabase/functions/alerts/index.ts`
 - `supabase/functions/organizations/index.ts`
@@ -112,14 +122,19 @@ serve(async (req) => {
 ---
 
 #### 2. **Hardcoded Organization ID in Edge Functions**
+
 **Location:** `supabase/functions/devices/index.ts` (line 30)
 
 **Current Code:**
+
 ```typescript
-const organizationId = url.searchParams.get('organization_id') || '00000000-0000-0000-0000-000000000001'
+const organizationId =
+  url.searchParams.get('organization_id') ||
+  '00000000-0000-0000-0000-000000000001'
 ```
 
 **Issues:**
+
 - Falls back to hardcoded demo organization ID
 - Security risk: allows accessing data without proper authorization
 - Violates zero-trust security model
@@ -127,6 +142,7 @@ const organizationId = url.searchParams.get('organization_id') || '00000000-0000
 **Impact:** HIGH - Security vulnerability allowing unauthorized data access
 
 **Recommended Fix:**
+
 ```typescript
 // Get user's organization from their profile (enforced by RLS)
 const { data: userProfile } = await supabase
@@ -137,14 +153,15 @@ const { data: userProfile } = await supabase
 
 // For super admins, allow filtering by organization
 const orgIdParam = url.searchParams.get('organization_id')
-const organizationId = userProfile.role === 'super_admin' && orgIdParam 
-  ? orgIdParam 
-  : userProfile.organization_id
+const organizationId =
+  userProfile.role === 'super_admin' && orgIdParam
+    ? orgIdParam
+    : userProfile.organization_id
 
 if (!organizationId) {
   return new Response(JSON.stringify({ error: 'No organization access' }), {
     status: 403,
-    headers: corsHeaders
+    headers: corsHeaders,
   })
 }
 ```
@@ -152,9 +169,11 @@ if (!organizationId) {
 ---
 
 #### 3. **Missing Index on High-Traffic Columns**
+
 **Location:** Database migrations
 
 **Missing Indexes:**
+
 ```sql
 -- Time-series queries on device_data
 CREATE INDEX idx_device_data_device_timestamp ON device_data(device_id, timestamp DESC);
@@ -179,11 +198,13 @@ CREATE INDEX idx_notifications_recipient ON notifications(recipient_id, created_
 ### **HIGH Priority Issues** 🟠
 
 #### 4. **No Rate Limiting on Edge Functions**
+
 **Location:** All public edge functions
 
 **Issue:** Edge functions lack rate limiting, making them vulnerable to abuse
 
 **Recommended Solution:**
+
 ```typescript
 import { rateLimit } from '../_shared/rate-limit.ts'
 
@@ -191,11 +212,11 @@ serve(async (req) => {
   // Rate limit by IP or auth token
   const identifier = extractAuthToken(req) || req.headers.get('x-forwarded-for')
   const isAllowed = await rateLimit(identifier, { max: 100, window: 60000 })
-  
+
   if (!isAllowed) {
     return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
       status: 429,
-      headers: corsHeaders
+      headers: corsHeaders,
     })
   }
   // ... rest of function
@@ -205,9 +226,11 @@ serve(async (req) => {
 ---
 
 #### 5. **Missing Connection Pooling Configuration**
+
 **Location:** `supabase/config.toml`
 
 **Current:**
+
 ```toml
 [db.pooler]
 enabled = true
@@ -219,6 +242,7 @@ max_client_conn = 100
 **Issue:** Default settings may not be optimal for production load
 
 **Recommended for Production:**
+
 ```toml
 [db.pooler]
 enabled = true
@@ -230,34 +254,42 @@ max_client_conn = 500   # Allow more concurrent connections
 ---
 
 #### 6. **No Realtime Subscription Management**
+
 **Location:** Realtime is enabled but not utilized
 
-**Observation:** 
+**Observation:**
+
 - Realtime is enabled in `config.toml`
 - No realtime subscriptions in client code
 - Polling-based updates instead of real-time
 
 **Recommendation:**
 Consider implementing realtime subscriptions for:
+
 - Device status updates
 - Alert notifications
 - Dashboard statistics
 
 **Example Implementation:**
+
 ```typescript
 // In a React component
 useEffect(() => {
   const channel = supabase
     .channel('devices-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'devices',
-      filter: `organization_id=eq.${user.organizationId}`
-    }, (payload) => {
-      // Update UI with real-time data
-      updateDevicesList(payload)
-    })
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'devices',
+        filter: `organization_id=eq.${user.organizationId}`,
+      },
+      (payload) => {
+        // Update UI with real-time data
+        updateDevicesList(payload)
+      }
+    )
     .subscribe()
 
   return () => {
@@ -269,18 +301,22 @@ useEffect(() => {
 ---
 
 #### 7. **Encryption Key Management**
+
 **Location:** `.env.local`, `.env.example`
 
 **Current:**
+
 ```env
 ENCRYPTION_KEY=your-encryption-key-for-device-api-keys-32-chars
 ```
 
 **Issues:**
+
 - Key stored in plain text in `.env.local`
 - Not using Supabase Vault for sensitive data
 
 **Recommended Approach:**
+
 ```sql
 -- Use Supabase Vault for encryption keys
 INSERT INTO vault.secrets (name, secret)
@@ -297,47 +333,48 @@ const { data: secret } = await supabase.rpc('vault_get_secret', {
 ### **MEDIUM Priority Issues** 🟡
 
 #### 8. **No Database Connection Pool in Edge Functions**
+
 **Location:** `_shared/database.ts`
 
 **Current:**
+
 ```typescript
 export function createSupabaseClient() {
   return createClient<Database>(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
+    auth: { autoRefreshToken: false, persistSession: false },
   })
 }
 ```
 
 **Recommendation:**
+
 ```typescript
 // Consider using connection pooling
 export function createSupabaseClient() {
-  return createClient<Database>(
-    supabaseUrl, 
-    supabaseServiceKey, 
-    {
-      auth: { autoRefreshToken: false, persistSession: false },
-      db: {
-        schema: 'public'
+  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        'x-application-name': 'netneural-edge-function',
       },
-      global: {
-        headers: {
-          'x-application-name': 'netneural-edge-function'
-        }
-      }
-    }
-  )
+    },
+  })
 }
 ```
 
 ---
 
 #### 9. **No Prepared Statements for Repeated Queries**
+
 **Location:** Edge functions with repeated queries
 
 **Recommendation:** Use Supabase's `.rpc()` for complex, repeated queries
 
 **Example:**
+
 ```sql
 -- Create a stored procedure for better performance
 CREATE OR REPLACE FUNCTION get_organization_devices(org_id UUID)
@@ -366,11 +403,13 @@ const { data } = await supabase.rpc('get_organization_devices', {
 ---
 
 #### 10. **Missing Database Triggers for Timestamps**
+
 **Location:** Database schema
 
 **Current:** Relying on application layer for `updated_at`
 
 **Recommended:**
+
 ```sql
 -- Create trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -397,6 +436,7 @@ CREATE TRIGGER update_devices_updated_at
 ---
 
 #### 11. **No Request Logging/Audit Trail**
+
 **Location:** Edge functions
 
 **Recommendation:** Add structured logging
@@ -408,23 +448,23 @@ const logger = createLogger('devices-function')
 
 serve(async (req) => {
   const startTime = Date.now()
-  
+
   try {
     logger.info('Request received', {
       method: req.method,
-      path: new URL(req.url).pathname
+      path: new URL(req.url).pathname,
     })
-    
+
     // ... function logic
-    
+
     logger.info('Request completed', {
       duration: Date.now() - startTime,
-      status: 200
+      status: 200,
     })
   } catch (error) {
     logger.error('Request failed', {
       error: error.message,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     })
   }
 })
@@ -433,19 +473,22 @@ serve(async (req) => {
 ---
 
 #### 12. **Storage Bucket Not Configured**
+
 **Location:** Supabase configuration
 
 **Observation:** No storage buckets defined for:
+
 - Device firmware files
 - User profile images
 - Export files
 - Attachment storage
 
 **Recommendation:**
+
 ```sql
 -- Create storage buckets
 INSERT INTO storage.buckets (id, name, public)
-VALUES 
+VALUES
   ('device-firmware', 'device-firmware', false),
   ('user-avatars', 'user-avatars', true),
   ('exports', 'exports', false);
@@ -464,9 +507,11 @@ WITH CHECK (
 ### **LOW Priority Issues** 🟢
 
 #### 13. **No Edge Function Timeout Configuration**
+
 **Issue:** Default timeout may not be suitable for long-running operations
 
 **Recommendation:** Configure in `config.toml`:
+
 ```toml
 [edge_runtime]
 enabled = true
@@ -479,9 +524,11 @@ request_timeout = 30000  # 30 seconds
 ---
 
 #### 14. **Missing OpenAPI/Swagger Documentation**
+
 **Recommendation:** Document edge functions with OpenAPI specs
 
 **Example:**
+
 ```typescript
 /**
  * @openapi
@@ -502,32 +549,39 @@ request_timeout = 30000  # 30 seconds
 ---
 
 #### 15. **No Health Check Endpoint**
+
 **Recommendation:** Add a health check function
 
 ```typescript
 // supabase/functions/health/index.ts
 serve(async (req) => {
   const supabase = createSupabaseClient()
-  
+
   try {
     // Test database connection
     const { error } = await supabase.from('organizations').select('id').limit(1)
-    
-    return new Response(JSON.stringify({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      database: error ? 'down' : 'up'
-    }), {
-      headers: { 'Content-Type': 'application/json' }
-    })
+
+    return new Response(
+      JSON.stringify({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database: error ? 'down' : 'up',
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
-    return new Response(JSON.stringify({
-      status: 'unhealthy',
-      error: error.message
-    }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return new Response(
+      JSON.stringify({
+        status: 'unhealthy',
+        error: error.message,
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
   }
 })
 ```
@@ -536,40 +590,44 @@ serve(async (req) => {
 
 ## 📊 Detailed Scorecard
 
-| Category | Score | Max | Notes |
-|----------|-------|-----|-------|
-| **Security** | 15/20 | 20 | RLS excellent, but edge functions need auth improvements |
-| **Performance** | 12/20 | 20 | Missing indexes, no connection pooling optimization |
-| **Architecture** | 18/20 | 20 | Excellent multi-tenant design, good separation of concerns |
-| **Maintainability** | 17/20 | 20 | Good code organization, needs more documentation |
-| **Scalability** | 12/15 | 15 | Good foundation, needs optimization for high traffic |
-| **Monitoring** | 5/10 | 10 | No logging, metrics, or health checks |
-| **Best Practices** | 16/20 | 20 | Following most Supabase patterns, some gaps |
-| **TOTAL** | **85/100** | 100 | **Grade: B+** |
+| Category            | Score      | Max | Notes                                                      |
+| ------------------- | ---------- | --- | ---------------------------------------------------------- |
+| **Security**        | 15/20      | 20  | RLS excellent, but edge functions need auth improvements   |
+| **Performance**     | 12/20      | 20  | Missing indexes, no connection pooling optimization        |
+| **Architecture**    | 18/20      | 20  | Excellent multi-tenant design, good separation of concerns |
+| **Maintainability** | 17/20      | 20  | Good code organization, needs more documentation           |
+| **Scalability**     | 12/15      | 15  | Good foundation, needs optimization for high traffic       |
+| **Monitoring**      | 5/10       | 10  | No logging, metrics, or health checks                      |
+| **Best Practices**  | 16/20      | 20  | Following most Supabase patterns, some gaps                |
+| **TOTAL**           | **85/100** | 100 | **Grade: B+**                                              |
 
 ---
 
 ## 🎯 Priority Action Plan
 
 ### **Week 1: Critical Security Fixes**
+
 1. ✅ Refactor all edge functions to use shared auth helper
 2. ✅ Remove hardcoded organization IDs
 3. ✅ Implement proper authorization checks
 4. ✅ Add rate limiting middleware
 
 ### **Week 2: Performance Optimization**
+
 1. ✅ Add database indexes for high-traffic queries
 2. ✅ Implement database triggers for timestamps
 3. ✅ Optimize connection pooling settings
 4. ✅ Create stored procedures for complex queries
 
 ### **Week 3: Production Readiness**
+
 1. ✅ Move encryption keys to Supabase Vault
 2. ✅ Implement structured logging
 3. ✅ Add health check endpoints
 4. ✅ Configure realtime subscriptions for critical updates
 
 ### **Week 4: Enhancement**
+
 1. ✅ Set up storage buckets with RLS policies
 2. ✅ Create OpenAPI documentation
 3. ✅ Add monitoring and alerting
@@ -582,12 +640,13 @@ serve(async (req) => {
 ### 1. Create Shared Auth Helper (High Priority)
 
 **File:** `supabase/functions/_shared/auth.ts`
+
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
 export function createAuthenticatedClient(req: Request) {
   const authHeader = req.headers.get('Authorization')
-  
+
   if (!authHeader) {
     throw new Error('Missing authorization header')
   }
@@ -597,19 +656,22 @@ export function createAuthenticatedClient(req: Request) {
     Deno.env.get('SUPABASE_ANON_KEY')!,
     {
       global: {
-        headers: { Authorization: authHeader }
+        headers: { Authorization: authHeader },
       },
       auth: {
         autoRefreshToken: false,
-        persistSession: false
-      }
+        persistSession: false,
+      },
     }
   )
 }
 
 export async function getUserContext(supabase: any) {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
   if (error || !user) {
     throw new Error('Unauthorized')
   }
@@ -624,7 +686,7 @@ export async function getUserContext(supabase: any) {
     userId: user.id,
     organizationId: profile?.organization_id,
     role: profile?.role,
-    isSuperAdmin: profile?.role === 'super_admin'
+    isSuperAdmin: profile?.role === 'super_admin',
   }
 }
 ```
@@ -632,28 +694,29 @@ export async function getUserContext(supabase: any) {
 ### 2. Add Performance Indexes Migration
 
 **File:** `supabase/migrations/20250113000001_performance_indexes.sql`
+
 ```sql
 -- Performance indexes for common queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_device_data_device_timestamp 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_device_data_device_timestamp
   ON device_data(device_id, timestamp DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_org_status 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_org_status
   ON devices(organization_id, status) WHERE is_active = true;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_alerts_org_created 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_alerts_org_created
   ON alerts(organization_id, created_at DESC) WHERE is_resolved = false;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_org_role 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_org_role
   ON users(organization_id, role) WHERE is_active = true;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_notifications_recipient 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_notifications_recipient
   ON notifications(recipient_id, created_at DESC) WHERE status = 'pending';
 
 -- Partial indexes for NULL checks
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_integration 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_integration
   ON devices(integration_id) WHERE integration_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_location 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_location
   ON devices(location_id) WHERE location_id IS NOT NULL;
 
 -- Analyze tables after index creation
@@ -666,6 +729,7 @@ ANALYZE notifications;
 ### 3. Add Timestamp Triggers Migration
 
 **File:** `supabase/migrations/20250113000002_timestamp_triggers.sql`
+
 ```sql
 -- Create trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()

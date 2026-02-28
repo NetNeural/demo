@@ -7,11 +7,13 @@
 ## Problem
 
 The `SensorOverviewCard` component was only displaying device-level fields from the `devices` table:
+
 - `device.battery_level`
 - `device.signal_strength`
 - `device.firmware_version`
 
 However, the database was collecting additional health metrics in `device_telemetry_history.telemetry` JSONB:
+
 - `telemetry.battery` - Real-time battery readings
 - `telemetry.rssi` - Real-time signal strength
 - `telemetry.uptime` - Device uptime in seconds
@@ -28,13 +30,16 @@ Created a `useMemo` hook to extract health metrics from the latest telemetry rea
 ```typescript
 const telemetryHealthMetrics = useMemo(() => {
   if (!telemetryReadings.length) return null
-  
+
   const latest = telemetryReadings[0].telemetry
   return {
     battery: typeof latest.battery === 'number' ? latest.battery : null,
     rssi: typeof latest.rssi === 'number' ? latest.rssi : null,
     uptime: typeof latest.uptime === 'number' ? latest.uptime : null,
-    firmware: typeof latest.firmware_version === 'string' ? latest.firmware_version : null,
+    firmware:
+      typeof latest.firmware_version === 'string'
+        ? latest.firmware_version
+        : null,
   }
 }, [telemetryReadings])
 ```
@@ -48,12 +53,12 @@ const formatUptime = (seconds: number): string => {
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
-  
+
   const parts = []
   if (days > 0) parts.push(`${days}d`)
   if (hours > 0) parts.push(`${hours}h`)
   if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`)
-  
+
   return parts.join(' ')
 }
 ```
@@ -63,20 +68,24 @@ const formatUptime = (seconds: number): string => {
 Updated the UI to display both device-level and telemetry-level metrics:
 
 **Battery:**
+
 - Shows device profile battery (`device.battery_level`) labeled as "(Profile)"
 - Shows live telemetry battery (`telemetry.battery`) labeled as "(Live)"
 - If only one source has data, displays it without label
 
 **Signal Strength:**
+
 - Shows device profile signal (`device.signal_strength`) labeled as "(Profile)"
 - Shows live telemetry RSSI (`telemetry.rssi`) labeled as "(Live)"
 - If only one source has data, displays it without label
 
 **Uptime:**
+
 - NEW: Displays device uptime from telemetry
 - Formatted as "3d 14h 23m" for readability
 
 **Firmware Version:**
+
 - Shows device profile firmware (`device.firmware_version`)
 - Shows live telemetry firmware (`telemetry.firmware_version`) if different
 - Distinguishes between "(Profile)" and "(Live)" versions
@@ -95,6 +104,7 @@ Updated the UI to display both device-level and telemetry-level metrics:
 **Environment:** Staging (demo-stage.netneural.ai)
 
 To verify the enhancement:
+
 1. Navigate to device details page
 2. Check "Sensor Overview" card
 3. Verify battery, signal, uptime, and firmware fields display
@@ -109,11 +119,13 @@ To verify the enhancement:
 ## Database Schema
 
 ### devices table (Profile Data)
+
 - `battery_level` - Last known battery percentage
 - `signal_strength` - Last known signal in dBm
 - `firmware_version` - Last known firmware version
 
 ### device_telemetry_history.telemetry JSONB (Live Data)
+
 - `battery` - Real-time battery reading (from `battery_level` metadata)
 - `rssi` - Real-time signal strength (from `rssi` or `signal_strength` metadata)
 - `uptime` - Device uptime in seconds (from `uptime` or `uptime_seconds` metadata)

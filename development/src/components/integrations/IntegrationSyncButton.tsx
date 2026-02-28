@@ -10,11 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { RefreshCw, Download, Upload, ArrowLeftRight, Loader2 } from 'lucide-react'
+import {
+  RefreshCw,
+  Download,
+  Upload,
+  ArrowLeftRight,
+  Loader2,
+} from 'lucide-react'
 import { integrationService } from '@/services/integration.service'
 import { toast } from 'sonner'
 
-type IntegrationType = 'golioth' | 'aws_iot' | 'aws-iot' | 'azure_iot' | 'azure-iot' | 'mqtt' | 'netneural_hub'
+type IntegrationType =
+  | 'golioth'
+  | 'aws_iot'
+  | 'aws-iot'
+  | 'azure_iot'
+  | 'azure-iot'
+  | 'mqtt'
+  | 'netneural_hub'
 type SyncOperation = 'import' | 'export' | 'bidirectional'
 
 interface Props {
@@ -25,31 +38,40 @@ interface Props {
   onSyncComplete?: () => void
 }
 
-export function IntegrationSyncButton({ 
-  integrationType, 
-  integrationId, 
+export function IntegrationSyncButton({
+  integrationType,
+  integrationId,
   organizationId,
   platformName,
-  onSyncComplete 
+  onSyncComplete,
 }: Props) {
   const [syncing, setSyncing] = useState(false)
   const [operation, setOperation] = useState<string | null>(null)
 
   // Normalize integration type for service calls
-  const normalizedType = integrationType.replace('-', '_') as 'aws_iot' | 'azure_iot'
-  
+  const normalizedType = integrationType.replace('-', '_') as
+    | 'aws_iot'
+    | 'azure_iot'
+
   // Get display name for platform
-  const displayName = platformName || (() => {
-    switch (integrationType) {
-      case 'golioth': return 'Golioth'
-      case 'aws_iot':
-      case 'aws-iot': return 'AWS IoT Core'
-      case 'azure_iot':
-      case 'azure-iot': return 'Azure IoT Hub'
-      case 'mqtt': return 'MQTT Broker'
-      default: return 'Platform'
-    }
-  })()
+  const displayName =
+    platformName ||
+    (() => {
+      switch (integrationType) {
+        case 'golioth':
+          return 'Golioth'
+        case 'aws_iot':
+        case 'aws-iot':
+          return 'AWS IoT Core'
+        case 'azure_iot':
+        case 'azure-iot':
+          return 'Azure IoT Hub'
+        case 'mqtt':
+          return 'MQTT Broker'
+        default:
+          return 'Platform'
+      }
+    })()
 
   const handleSync = async (op: SyncOperation) => {
     setSyncing(true)
@@ -71,14 +93,20 @@ export function IntegrationSyncButton({
       // Call appropriate service method based on integration type
       switch (normalizedType) {
         case 'aws_iot':
-          result = await integrationService.syncAwsIot(options) as typeof result
+          result = (await integrationService.syncAwsIot(
+            options
+          )) as typeof result
           break
         case 'azure_iot':
-          result = await integrationService.syncAzureIot(options) as typeof result
+          result = (await integrationService.syncAzureIot(
+            options
+          )) as typeof result
           break
         default:
           // For Golioth and MQTT, use the unified device-sync endpoint
-          result = await integrationService.syncGolioth(options) as typeof result
+          result = (await integrationService.syncGolioth(
+            options
+          )) as typeof result
       }
 
       if (result.status === 'completed') {
@@ -95,7 +123,8 @@ export function IntegrationSyncButton({
 
       onSyncComplete?.()
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Sync failed: ${errorMessage}`)
       console.error('Sync error:', error)
     } finally {
@@ -106,10 +135,14 @@ export function IntegrationSyncButton({
 
   const getOperationLabel = () => {
     switch (operation) {
-      case 'import': return 'Importing...'
-      case 'export': return 'Exporting...'
-      case 'bidirectional': return 'Syncing...'
-      default: return 'Syncing...'
+      case 'import':
+        return 'Importing...'
+      case 'export':
+        return 'Exporting...'
+      case 'bidirectional':
+        return 'Syncing...'
+      default:
+        return 'Syncing...'
     }
   }
 
@@ -133,21 +166,21 @@ export function IntegrationSyncButton({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Sync Direction</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={() => handleSync('import')}>
           <Download className="mr-2 h-4 w-4" />
           Import from {displayName}
           <span className="ml-auto text-xs text-muted-foreground">→</span>
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={() => handleSync('export')}>
           <Upload className="mr-2 h-4 w-4" />
           Export to {displayName}
           <span className="ml-auto text-xs text-muted-foreground">←</span>
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={() => handleSync('bidirectional')}>
           <ArrowLeftRight className="mr-2 h-4 w-4" />
           Bidirectional Sync

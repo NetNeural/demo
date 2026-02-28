@@ -1,25 +1,36 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface CreateUserDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUserCreated: (email: string) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onUserCreated: (email: string) => void
 }
 
-export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUserDialogProps) {
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const { toast } = useToast();
+export function CreateUserDialog({
+  open,
+  onOpenChange,
+  onUserCreated,
+}: CreateUserDialogProps) {
+  const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [password, setPassword] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const { toast } = useToast()
 
   const handleCreate = async () => {
     if (!email || !fullName || !password) {
@@ -27,8 +38,8 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
         title: 'Error',
         description: 'Please fill in all fields',
         variant: 'destructive',
-      });
-      return;
+      })
+      return
     }
 
     if (password.length < 6) {
@@ -36,61 +47,62 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
         title: 'Error',
         description: 'Password must be at least 6 characters',
         variant: 'destructive',
-      });
-      return;
+      })
+      return
     }
 
     try {
-      setIsCreating(true);
-      
+      setIsCreating(true)
+
       const response = await edgeFunctions.users.create({
         email,
         fullName,
         password,
         role: 'user',
-      });
+      })
 
       if (!response.success) {
         throw new Error(
           typeof response.error === 'string'
             ? response.error
             : 'Failed to create user'
-        );
+        )
       }
 
       toast({
         title: 'Success',
         description: `User ${email} created successfully`,
-      });
-      
+      })
+
       // Clear form
-      setEmail('');
-      setFullName('');
-      setPassword('');
-      
+      setEmail('')
+      setFullName('')
+      setPassword('')
+
       // Close dialog
-      onOpenChange(false);
-      
+      onOpenChange(false)
+
       // Notify parent with the email
-      onUserCreated(email);
+      onUserCreated(email)
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error creating user:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create user',
+        description:
+          error instanceof Error ? error.message : 'Failed to create user',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   const handleCancel = () => {
-    setEmail('');
-    setFullName('');
-    setPassword('');
-    onOpenChange(false);
-  };
+    setEmail('')
+    setFullName('')
+    setPassword('')
+    onOpenChange(false)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,7 +152,11 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isCreating}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isCreating}
+          >
             Cancel
           </Button>
           <Button onClick={handleCreate} disabled={isCreating}>
@@ -149,5 +165,5 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

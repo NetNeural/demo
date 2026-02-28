@@ -4,7 +4,8 @@
 
 describe('Integration Component Utilities', () => {
   test('DeviceIntegrationManager exists', async () => {
-    const module1 = await import('@/components/devices/DeviceIntegrationManager')
+    const module1 =
+      await import('@/components/devices/DeviceIntegrationManager')
     expect(module1.DeviceIntegrationManager).toBeDefined()
   })
 

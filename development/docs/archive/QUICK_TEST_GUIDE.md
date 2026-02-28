@@ -22,6 +22,7 @@ npm run dev
 ## 🧪 Quick Test Checklist
 
 ### ✅ Database Migrations
+
 ```bash
 # Check indexes were created (should see 30+ new indexes)
 npm run supabase:status
@@ -30,6 +31,7 @@ npm run supabase:status
 ### ✅ Test User Roles
 
 **Test Credentials:**
+
 - **Super Admin:** superadmin@netneural.ai / SuperSecure123!
 - **Org Owner:** admin@netneural.ai / password123
 - **Regular User:** user@netneural.ai / password123
@@ -64,6 +66,7 @@ npm run supabase:status
 ## 🔍 Edge Function Tests
 
 Get auth tokens from browser:
+
 ```javascript
 // In browser console after login:
 const { data } = await supabase.auth.getSession()
@@ -71,6 +74,7 @@ console.log(data.session.access_token)
 ```
 
 ### Test Devices Function
+
 ```bash
 TOKEN="your_token_here"
 
@@ -83,6 +87,7 @@ curl -X GET 'http://localhost:54321/functions/v1/devices'
 ```
 
 ### Test Alerts Function
+
 ```bash
 # Get all alerts
 curl -X GET 'http://localhost:54321/functions/v1/alerts' \
@@ -98,6 +103,7 @@ curl -X GET 'http://localhost:54321/functions/v1/alerts?resolved=false' \
 ```
 
 ### Test Dashboard Stats
+
 ```bash
 curl -X GET 'http://localhost:54321/functions/v1/dashboard-stats' \
   -H "Authorization: Bearer $TOKEN"
@@ -108,6 +114,7 @@ curl -X GET 'http://localhost:54321/functions/v1/dashboard-stats' \
 ## 🐛 Common Issues & Quick Fixes
 
 ### Issue: "Failed to fetch user profile"
+
 ```bash
 # Check user exists in database
 npm run supabase:status
@@ -119,16 +126,18 @@ npm run setup:users
 ```
 
 ### Issue: "Unauthorized" errors
+
 ```bash
 # Get fresh token
 # 1. Login again in browser
 # 2. Open DevTools Console
-# 3. Run: 
+# 3. Run:
 const { data } = await supabase.auth.getSession()
 console.log(data.session.access_token)
 ```
 
 ### Issue: Edge functions not working
+
 ```bash
 # Restart edge functions
 # Ctrl+C to stop, then:
@@ -136,6 +145,7 @@ npm run supabase:functions:serve
 ```
 
 ### Issue: Migrations not applied
+
 ```bash
 # Check migration status
 npm run supabase:status
@@ -149,18 +159,21 @@ npm run supabase:reset
 ## ✨ What to Look For
 
 ### 🎯 Security Tests
+
 - ❌ Users should NOT see other organizations' data
 - ❌ Regular users should NOT access super admin features
 - ✅ Super admins CAN see all organizations
 - ✅ All API calls require authentication
 
 ### ⚡ Performance Tests
+
 - ✅ Dashboard loads in < 2 seconds
 - ✅ Device list loads in < 1 second
 - ✅ Alert list loads in < 1 second
 - ✅ No "slow query" warnings in console
 
 ### 🔐 Authorization Tests
+
 - ✅ Super admin badge shows for superadmin@netneural.ai
 - ✅ Organization name shows for regular users
 - ✅ Edge functions return metadata (organizationId, queriedBy)
@@ -201,6 +214,7 @@ All of these should be TRUE:
 ## 🎉 If Everything Works
 
 You should see:
+
 - ✅ Fast page loads
 - ✅ Proper role-based access control
 - ✅ No security errors
@@ -210,6 +224,7 @@ You should see:
 - ✅ Regular user restrictions working
 
 **Next Steps:**
+
 1. Mark all tests as passing
 2. Deploy to staging
 3. Run full test suite

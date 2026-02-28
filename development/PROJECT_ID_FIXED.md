@@ -27,6 +27,7 @@ bash scripts/quick-fix-rls.sh
 ```
 
 This script:
+
 - ✅ Already has the correct project ID: `atgbmxicqikmapfqouco`
 - ✅ Links to your production project automatically
 - ✅ Applies the RLS fix migration
@@ -58,6 +59,7 @@ node scripts/fix-production-user.js
 ```
 
 This will check:
+
 - ✅ If user exists in auth.users
 - ✅ If organization exists
 - ✅ If user profile exists in public.users

@@ -1,0 +1,81 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e7]
+        - heading "NetNeural" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Sentinel by NetNeural
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - heading "Welcome back" [level=2] [ref=e13]
+          - paragraph [ref=e14]: Sign in to continue
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - generic [ref=e17]: Email address
+            - textbox "Email address" [ref=e18]:
+              - /placeholder: you@company.com
+          - generic [ref=e19]:
+            - generic [ref=e20]: Password
+            - generic [ref=e21]:
+              - textbox "Password" [ref=e22]:
+                - /placeholder: Enter your password
+              - button [ref=e23] [cursor=pointer]:
+                - img [ref=e24]
+          - generic [ref=e27]:
+            - checkbox "Keep me signed in" [ref=e28] [cursor=pointer]
+            - checkbox
+            - generic [ref=e29] [cursor=pointer]: Keep me signed in
+          - button "Sign in" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - img [ref=e32]
+              - text: Sign in
+        - paragraph [ref=e35]: Forgot your password? Contact your system administrator
+      - generic [ref=e36]:
+        - img [ref=e37]
+        - generic [ref=e39]: Enterprise-grade security
+        - generic [ref=e40]: •
+        - generic [ref=e41]: 256-bit encryption
+      - generic [ref=e42]:
+        - strong [ref=e43]: Dev Mode
+        - text: "— Test accounts:"
+        - generic [ref=e44]:
+          - generic [ref=e45]: superadmin@netneural.ai / admin@netneural.ai
+          - generic [ref=e46]: user@netneural.ai / viewer@netneural.ai
+          - generic [ref=e47]: "Password: password123"
+  - region "Notifications alt+T"
+  - generic [ref=e48]:
+    - img [ref=e50]
+    - button "Open Tanstack query devtools" [ref=e98] [cursor=pointer]:
+      - img [ref=e99]
+  - button "Open Next.js Dev Tools" [ref=e152] [cursor=pointer]:
+    - img [ref=e153]
+  - alert [ref=e156]
+```

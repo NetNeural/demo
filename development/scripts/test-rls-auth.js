@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js')
 const PROJECT_REF = 'atgbmxicqikmapfqouco'
 const PROD_URL = `https://${PROJECT_REF}.supabase.co`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 const TARGET_EMAIL = 'admin@netneural.ai'
 
@@ -19,7 +19,7 @@ if (!SERVICE_KEY) {
 }
 
 const supabase = createClient(PROD_URL, SERVICE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
+  auth: { autoRefreshToken: false, persistSession: false },
 })
 
 async function diagnose() {
@@ -28,8 +28,8 @@ async function diagnose() {
 
   // Get auth user
   const { data: authUsers } = await supabase.auth.admin.listUsers()
-  const authUser = authUsers.users.find(u => u.email === TARGET_EMAIL)
-  
+  const authUser = authUsers.users.find((u) => u.email === TARGET_EMAIL)
+
   if (!authUser) {
     console.log('❌ Auth user not found')
     return
@@ -58,14 +58,15 @@ async function diagnose() {
 
   // Now test with ANON key (simulates client query with RLS)
   console.log('📋 Testing with ANON KEY (simulates real login with RLS)...')
-  
+
   // First authenticate
   const clientSupabase = createClient(PROD_URL, ANON_KEY)
-  
-  const { data: signInData, error: signInError } = await clientSupabase.auth.signInWithPassword({
-    email: TARGET_EMAIL,
-    password: 'Admin123!'
-  })
+
+  const { data: signInData, error: signInError } =
+    await clientSupabase.auth.signInWithPassword({
+      email: TARGET_EMAIL,
+      password: 'Admin123!',
+    })
 
   if (signInError) {
     console.log('❌ Sign in failed:', signInError.message)
@@ -91,7 +92,7 @@ async function diagnose() {
     console.log('')
     console.log('THIS IS THE PROBLEM! RLS is blocking the query.')
     console.log('')
-    
+
     // Try without .single() to see if data exists but query is wrong
     const { data: allProfiles, error: allError } = await clientSupabase
       .from('users')
@@ -101,7 +102,9 @@ async function diagnose() {
     if (allError) {
       console.log('❌ Even without .single():', allError.message)
     } else {
-      console.log(`Found ${allProfiles?.length || 0} profiles without .single()`)
+      console.log(
+        `Found ${allProfiles?.length || 0} profiles without .single()`
+      )
       if (allProfiles && allProfiles.length > 0) {
         console.log('Profile data:', allProfiles[0])
       }

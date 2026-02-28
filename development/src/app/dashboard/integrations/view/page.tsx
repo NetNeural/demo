@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,8 +12,17 @@ import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog'
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog'
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog'
 import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function IntegrationViewPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <IntegrationViewContent />
+    </Suspense>
+  )
+}
+
+function IntegrationViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const integrationId = searchParams.get('id')
@@ -25,10 +35,10 @@ export default function IntegrationViewPage() {
 
   if (!organizationId) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Missing organization ID</p>
         <Button onClick={handleClose}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Integrations
         </Button>
       </div>
@@ -37,10 +47,10 @@ export default function IntegrationViewPage() {
 
   if (!integrationType) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Missing integration type</p>
         <Button onClick={handleClose}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Integrations
         </Button>
       </div>
@@ -54,7 +64,8 @@ export default function IntegrationViewPage() {
     onOpenChange: (open: boolean) => {
       if (!open) handleClose()
     },
-    integrationId: integrationId === 'new' ? undefined : integrationId || undefined,
+    integrationId:
+      integrationId === 'new' ? undefined : integrationId || undefined,
     organizationId,
     onSaved: handleClose,
     mode: 'page' as const,
@@ -63,36 +74,45 @@ export default function IntegrationViewPage() {
   switch (integrationType) {
     case 'golioth':
       return <GoliothConfigDialog {...commonProps} />
-    
+
     case 'mqtt':
     case 'mqtt_hosted':
     case 'mqtt_external':
-      return <MqttConfigDialog {...commonProps} />
-    
+      return (
+        <MqttConfigDialog
+          {...commonProps}
+          initialBrokerType={
+            integrationType === 'mqtt_external' ? 'external' : 'hosted'
+          }
+        />
+      )
+
     case 'aws_iot':
       return <AwsIotConfigDialog {...commonProps} />
-    
+
     case 'azure_iot':
       return <AzureIotConfigDialog {...commonProps} />
-    
+
     case 'email':
       return <EmailConfigDialog {...commonProps} />
-    
+
     case 'slack':
       return <SlackConfigDialog {...commonProps} />
-    
+
     case 'webhook':
       return <WebhookConfigDialog {...commonProps} />
-    
+
     case 'netneural_hub':
       return <NetNeuralHubConfigDialog {...commonProps} />
-    
+
     default:
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-          <p className="text-muted-foreground">Integration type &quot;{integrationType}&quot; is not yet supported</p>
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+          <p className="text-muted-foreground">
+            Integration type &quot;{integrationType}&quot; is not yet supported
+          </p>
           <Button onClick={handleClose}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Integrations
           </Button>
         </div>

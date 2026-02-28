@@ -17,7 +17,10 @@ interface AlertsThresholdsCardProps {
   telemetryReadings: TelemetryReading[]
 }
 
-export function AlertsThresholdsCard({ device, telemetryReadings }: AlertsThresholdsCardProps) {
+export function AlertsThresholdsCard({
+  device,
+  telemetryReadings,
+}: AlertsThresholdsCardProps) {
   // Placeholder thresholds - will be configurable
   const activeAlerts = 0
   const totalAlerts = 3
@@ -38,7 +41,7 @@ export function AlertsThresholdsCard({ device, telemetryReadings }: AlertsThresh
           </Badge>
         </div>
 
-        <div className="space-y-3 pt-3 border-t">
+        <div className="space-y-3 border-t pt-3">
           <p className="text-sm font-medium">Threshold Settings</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -52,7 +55,7 @@ export function AlertsThresholdsCard({ device, telemetryReadings }: AlertsThresh
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground pt-3 border-t">
+        <p className="border-t pt-3 text-xs text-muted-foreground">
           Configure alert thresholds in device settings
         </p>
       </CardContent>

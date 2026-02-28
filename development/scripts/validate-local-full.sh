@@ -18,7 +18,7 @@ echo -e "========================================${NC}\n"
 
 # Get local Supabase info
 LOCAL_API_URL="http://127.0.0.1:54321"
-LOCAL_ANON_KEY="YOUR_LOCAL_SUPABASE_ANON_KEY"
+LOCAL_ANON_KEY="<YOUR_SUPABASE_ANON_KEY>"
 
 PASSED=0
 FAILED=0

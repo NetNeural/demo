@@ -16,7 +16,7 @@ echo "Local RLS Validation (Quick Test)"
 echo -e "========================================${NC}\n"
 
 LOCAL_API="http://127.0.0.1:54321"
-LOCAL_ANON_KEY="YOUR_LOCAL_SUPABASE_ANON_KEY"
+LOCAL_ANON_KEY="<YOUR_SUPABASE_ANON_KEY>"
 
 PASSED=0
 FAILED=0

@@ -22,4 +22,4 @@ export {
   WifiOff,
   Zap,
   ZapOff,
-} from "lucide-react"
+} from 'lucide-react'

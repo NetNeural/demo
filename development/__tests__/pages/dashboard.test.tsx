@@ -44,7 +44,9 @@ jest.mock('@/lib/supabase/client', () => ({
       })),
     })),
     auth: {
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+      getSession: jest.fn(() =>
+        Promise.resolve({ data: { session: null }, error: null })
+      ),
     },
   }),
 }))
@@ -52,7 +54,7 @@ jest.mock('@/lib/supabase/client', () => ({
 describe('Dashboard Page', () => {
   test('renders dashboard page', async () => {
     const { container } = render(<DashboardPage />)
-    
+
     await waitFor(() => {
       expect(container).toBeInTheDocument()
     })
@@ -60,7 +62,7 @@ describe('Dashboard Page', () => {
 
   test('dashboard page has content', async () => {
     render(<DashboardPage />)
-    
+
     await waitFor(() => {
       const content = document.body.textContent
       expect(content).toBeTruthy()

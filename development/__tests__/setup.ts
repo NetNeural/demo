@@ -1,6 +1,6 @@
 /**
  * Test Environment Setup (TypeScript)
- * 
+ *
  * This file provides additional test setup and utilities in TypeScript.
  * It complements jest.setup.js with type-safe helpers and configuration.
  */
@@ -21,9 +21,10 @@ declare global {
  */
 expect.extend({
   toBeValidUUID(received: string) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     const pass = uuidRegex.test(received)
-    
+
     return {
       pass,
       message: () =>
@@ -41,7 +42,7 @@ expect.extend({
   toBeValidDate(received: string) {
     const date = new Date(received)
     const pass = !isNaN(date.getTime())
-    
+
     return {
       pass,
       message: () =>
@@ -59,7 +60,7 @@ expect.extend({
   toBeValidEmail(received: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     const pass = emailRegex.test(received)
-    
+
     return {
       pass,
       message: () =>
@@ -73,7 +74,7 @@ expect.extend({
 /**
  * Utility: Wait for async operations to complete
  */
-export const waitForAsync = () => 
+export const waitForAsync = () =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
 /**
@@ -81,7 +82,7 @@ export const waitForAsync = () =>
  */
 export const mockConsole = () => {
   const originalConsole = { ...console }
-  
+
   beforeEach(() => {
     global.console = {
       ...console,
@@ -90,7 +91,7 @@ export const mockConsole = () => {
       log: jest.fn(),
     }
   })
-  
+
   afterEach(() => {
     global.console = originalConsole
   })
@@ -99,7 +100,7 @@ export const mockConsole = () => {
 /**
  * Utility: Create mock file for upload testing
  */
-export const createMockFile= (
+export const createMockFile = (
   name: string = 'test.txt',
   size: number = 1024,
   type: string = 'text/plain'
@@ -111,7 +112,9 @@ export const createMockFile= (
 /**
  * Utility: Create mock FormData
  */
-export const createMockFormData = (data: Record<string, string | File>): FormData => {
+export const createMockFormData = (
+  data: Record<string, string | File>
+): FormData => {
   const formData = new FormData()
   Object.entries(data).forEach(([key, value]) => {
     formData.append(key, value)

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+.DS_Store
+logs/
+
+# npm pack artifacts
+*.tgz
+netneural-mqtt-subscriber@*
+
+# OS/runtime artifacts
+node
+
+# Webhook secrets
+.restart-token.secret

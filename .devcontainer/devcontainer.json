@@ -139,9 +139,7 @@
     "source=netneural-supabase-data,target=${containerWorkspaceFolder}/development/.supabase,type=volume"
   ],
 
-  "runArgs": [
-    "--network=host"
-  ],
+  "runArgs": [],
 
   "workspaceFolder": "/workspaces/MonoRepo",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/MonoRepo,type=bind,consistency=cached"

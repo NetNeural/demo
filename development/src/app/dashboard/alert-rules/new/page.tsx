@@ -5,6 +5,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { RuleWizard } from '@/components/alerts/RuleWizard'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 
 export default function NewAlertRulePage() {
   const router = useRouter()
@@ -27,11 +28,18 @@ export default function NewAlertRulePage() {
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Create Alert Rule</h1>
-        <p className="text-muted-foreground mt-1">
-          Set up automated monitoring and alerts for your devices
-        </p>
+      <div className="flex items-center gap-3">
+        <OrganizationLogo
+          settings={currentOrganization?.settings}
+          name={currentOrganization?.name || 'NetNeural'}
+          size="xl"
+        />
+        <div>
+          <h1 className="text-3xl font-bold">Create Alert Rule</h1>
+          <p className="mt-1 text-muted-foreground">
+            Set up automated monitoring and alerts for your devices
+          </p>
+        </div>
       </div>
 
       <RuleWizard

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   'https://atgbmxicqikmapfqouco.supabase.co',
-  'YOUR_SUPABASE_ANON_KEY'
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const { data, error } = await supabase.from('alerts').select('*').limit(5);

@@ -67,7 +67,7 @@ export interface Database {
 export function createServiceClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  
+
   return createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
@@ -83,7 +83,7 @@ export function createServiceClient() {
 export function createClientWithAuth(authToken: string) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-  
+
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
@@ -117,7 +117,7 @@ export function validateEnvironment() {
     'SUPABASE_SERVICE_ROLE_KEY',
     'SUPABASE_ANON_KEY',
   ]
-  
+
   for (const env of required) {
     if (!Deno.env.get(env)) {
       throw new Error(`Missing required environment variable: ${env}`)

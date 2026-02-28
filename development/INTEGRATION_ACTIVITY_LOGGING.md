@@ -18,6 +18,7 @@ Comprehensive activity logging system that tracks **ALL integration activity** -
 **Migration:** `supabase/migrations/20251103000001_integration_activity_log.sql`
 
 **Tracks:**
+
 - ✅ **Outgoing calls:** Test connections, syncs, notifications, API calls
 - ✅ **Incoming calls:** Webhooks, external API requests
 - ✅ **Request/Response data:** Full HTTP details, headers, bodies
@@ -26,6 +27,7 @@ Comprehensive activity logging system that tracks **ALL integration activity** -
 - ✅ **User context:** IP addresses, user agents, authenticated users
 
 **Features:**
+
 - Comprehensive indexing for fast queries
 - RLS policies for security
 - Helper functions for easy logging
@@ -39,6 +41,7 @@ Comprehensive activity logging system that tracks **ALL integration activity** -
 **File:** `src/components/integrations/IntegrationActivityLog.tsx`
 
 **Features:**
+
 - ✅ Real-time updates (auto-refresh with Supabase Realtime)
 - ✅ Direction filtering (Outgoing vs Incoming)
 - ✅ Status filtering (Success vs Failed)
@@ -49,6 +52,7 @@ Comprehensive activity logging system that tracks **ALL integration activity** -
 - ✅ Error message display
 
 **UI Elements:**
+
 - Direction icons (⬆️ Outgoing, ⬇️ Incoming)
 - Status badges (Success, Failed, Timeout, Error)
 - HTTP status codes with color coding
@@ -62,6 +66,7 @@ Comprehensive activity logging system that tracks **ALL integration activity** -
 **File:** `supabase/functions/_shared/activity-logger.ts`
 
 **Functions:**
+
 ```typescript
 // Log activity start (returns log ID for updates)
 logActivityStart(supabase, params)
@@ -73,8 +78,8 @@ logActivityComplete(supabase, logId, update)
 logActivityCompleteFull(supabase, params)
 
 // Utility functions
-getIpAddress(req)          // Extract IP from request
-sanitizeHeaders(headers)   // Remove sensitive data
+getIpAddress(req) // Extract IP from request
+sanitizeHeaders(headers) // Remove sensitive data
 ```
 
 ---
@@ -84,6 +89,7 @@ sanitizeHeaders(headers)   // Remove sensitive data
 **Updated:** `src/components/integrations/GoliothConfigDialog.tsx`
 
 **Added:**
+
 - ✅ New "Activity Log" tab (5th tab)
 - ✅ Shows last 50 activities for this integration
 - ✅ Auto-refreshing live view
@@ -96,6 +102,7 @@ sanitizeHeaders(headers)   // Remove sensitive data
 **Updated:** `supabase/functions/integration-test/index.ts`
 
 **Now Logs:**
+
 - ✅ Test connection attempts
 - ✅ External API calls to Golioth
 - ✅ Response times and status codes
@@ -106,21 +113,21 @@ sanitizeHeaders(headers)   // Remove sensitive data
 
 ## 📊 Activity Types Tracked
 
-| Activity Type | Direction | Description |
-|--------------|-----------|-------------|
-| `test_connection` | Outgoing | Integration connection tests |
-| `sync_import` | Outgoing | Importing data from external system |
-| `sync_export` | Outgoing | Exporting data to external system |
-| `sync_bidirectional` | Outgoing | Two-way sync operation |
-| `webhook_received` | Incoming | Webhook events from external systems |
-| `notification_email` | Outgoing | Email notifications sent |
-| `notification_slack` | Outgoing | Slack messages sent |
-| `notification_webhook` | Outgoing | Webhook calls made |
-| `api_call` | Both | General API interactions |
-| `device_create` | Both | Device creation via integration |
-| `device_update` | Both | Device updates via integration |
-| `device_delete` | Both | Device deletions via integration |
-| `other` | Both | Miscellaneous activities |
+| Activity Type          | Direction | Description                          |
+| ---------------------- | --------- | ------------------------------------ |
+| `test_connection`      | Outgoing  | Integration connection tests         |
+| `sync_import`          | Outgoing  | Importing data from external system  |
+| `sync_export`          | Outgoing  | Exporting data to external system    |
+| `sync_bidirectional`   | Outgoing  | Two-way sync operation               |
+| `webhook_received`     | Incoming  | Webhook events from external systems |
+| `notification_email`   | Outgoing  | Email notifications sent             |
+| `notification_slack`   | Outgoing  | Slack messages sent                  |
+| `notification_webhook` | Outgoing  | Webhook calls made                   |
+| `api_call`             | Both      | General API interactions             |
+| `device_create`        | Both      | Device creation via integration      |
+| `device_update`        | Both      | Device updates via integration       |
+| `device_delete`        | Both      | Device deletions via integration     |
+| `other`                | Both      | Miscellaneous activities             |
 
 ---
 
@@ -129,6 +136,7 @@ sanitizeHeaders(headers)   // Remove sensitive data
 ### **View Activity Logs:**
 
 1. **Go to Integrations Page:**
+
    ```
    http://localhost:3000/dashboard/integrations
    ```
@@ -168,7 +176,7 @@ const logId = await logActivityStart(supabase, {
 try {
   // Make API call
   const response = await fetch(...)
-  
+
   // Log success
   if (logId) {
     await logActivityComplete(supabase, logId, {
@@ -218,6 +226,7 @@ await logActivityStart(supabase, {
 ## 🔒 Security Features
 
 ### **Data Protection:**
+
 - ✅ Authorization headers automatically redacted
 - ✅ API keys removed from logged headers
 - ✅ Sensitive fields marked as `[REDACTED]`
@@ -225,6 +234,7 @@ await logActivityStart(supabase, {
 - ✅ Service role required for cross-org access
 
 ### **Privacy:**
+
 - IP addresses stored for audit (optional)
 - User agents logged (optional)
 - Request/response bodies can be filtered
@@ -243,7 +253,7 @@ WHERE integration_id = 'your-integration-id'
 AND activity_date >= NOW() - INTERVAL '7 days';
 
 -- Failed activities report
-SELECT 
+SELECT
   activity_type,
   COUNT(*) as failure_count,
   AVG(response_time_ms) as avg_response_time
@@ -261,6 +271,7 @@ ORDER BY failure_count DESC;
 ### **Phase 1: Update Remaining Edge Functions** ⏳
 
 Add logging to:
+
 - ✅ `integration-test` - DONE
 - ⏳ `integration-webhook` - Incoming webhooks (unified for all providers)
 - ⏳ `device-sync` - Sync operations
@@ -272,6 +283,7 @@ Add logging to:
 ### **Phase 2: Add to Other Integration Dialogs** ⏳
 
 Add Activity Log tab to:
+
 - ⏳ `AwsIotConfigDialog.tsx`
 - ⏳ `AzureIotConfigDialog.tsx`
 - ⏳ `GoogleIotConfigDialog.tsx`
@@ -281,6 +293,7 @@ Add Activity Log tab to:
 ### **Phase 3: Analytics Dashboard** (Optional) ⏳
 
 Create:
+
 - Integration health dashboard
 - Response time charts
 - Error rate trends
@@ -298,11 +311,11 @@ CREATE TABLE integration_activity_log (
     id UUID PRIMARY KEY,
     organization_id UUID,
     integration_id UUID,
-    
+
     -- Classification
     direction VARCHAR(20),        -- 'outgoing' | 'incoming'
     activity_type VARCHAR(50),    -- See activity types above
-    
+
     -- HTTP Details
     method VARCHAR(10),           -- GET, POST, PUT, DELETE
     endpoint TEXT,                -- Full URL
@@ -311,18 +324,18 @@ CREATE TABLE integration_activity_log (
     response_status INTEGER,      -- HTTP status code
     response_body JSONB,         -- Response data
     response_time_ms INTEGER,     -- Performance metric
-    
+
     -- Status
     status VARCHAR(50),           -- started, success, failed, error, timeout
     error_message TEXT,
     error_code VARCHAR(50),
-    
+
     -- Context
     user_id UUID,
     ip_address INET,
     user_agent TEXT,
     metadata JSONB,
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ
@@ -330,6 +343,7 @@ CREATE TABLE integration_activity_log (
 ```
 
 ### **Indexes:**
+
 - organization_id + created_at (DESC)
 - integration_id + created_at (DESC)
 - activity_type + status
@@ -342,18 +356,21 @@ CREATE TABLE integration_activity_log (
 ## ✨ Benefits
 
 ### **For Developers:**
+
 - ✅ Debug integration issues quickly
 - ✅ Track down failed API calls
 - ✅ Monitor performance bottlenecks
 - ✅ Audit trail for compliance
 
 ### **For Operations:**
+
 - ✅ Monitor integration health
 - ✅ Identify problematic integrations
 - ✅ Track usage patterns
 - ✅ Capacity planning
 
 ### **For Support:**
+
 - ✅ Troubleshoot customer issues
 - ✅ Verify webhook deliveries
 - ✅ Check API call history
@@ -364,6 +381,7 @@ CREATE TABLE integration_activity_log (
 ## 🎉 Summary
 
 **You now have:**
+
 - ✅ Complete database schema for activity logging
 - ✅ Beautiful UI component with real-time updates
 - ✅ Easy-to-use helper functions
@@ -374,6 +392,7 @@ CREATE TABLE integration_activity_log (
 - ✅ Export capabilities
 
 **Every integration can now:**
+
 - Track all outgoing API calls
 - Log incoming webhooks
 - Monitor test connections

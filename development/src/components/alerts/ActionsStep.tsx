@@ -5,8 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Plus, Trash2, Mail, MessageSquare, Webhook } from 'lucide-react'
 import type { AlertRuleAction } from '@/lib/edge-functions/api/alert-rules'
 
@@ -19,7 +31,8 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
   const [newAction, setNewAction] = useState<Partial<AlertRuleAction>>({
     type: 'email',
     recipients: [],
-    message_template: 'Alert triggered: {{rule_name}} for device {{device_name}}',
+    message_template:
+      'Alert triggered: {{rule_name}} for device {{device_name}}',
   })
 
   const addAction = () => {
@@ -40,7 +53,8 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
     setNewAction({
       type: 'email',
       recipients: [],
-      message_template: 'Alert triggered: {{rule_name}} for device {{device_name}}',
+      message_template:
+        'Alert triggered: {{rule_name}} for device {{device_name}}',
     })
   }
 
@@ -57,7 +71,7 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Configured Actions</h3>
+        <h3 className="mb-4 text-lg font-semibold">Configured Actions</h3>
         {state.actions.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
@@ -71,9 +85,15 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      {action.type === 'email' && <Mail className="h-5 w-5 mt-1 text-primary" />}
-                      {action.type === 'sms' && <MessageSquare className="h-5 w-5 mt-1 text-primary" />}
-                      {action.type === 'webhook' && <Webhook className="h-5 w-5 mt-1 text-primary" />}
+                      {action.type === 'email' && (
+                        <Mail className="mt-1 h-5 w-5 text-primary" />
+                      )}
+                      {action.type === 'sms' && (
+                        <MessageSquare className="mt-1 h-5 w-5 text-primary" />
+                      )}
+                      {action.type === 'webhook' && (
+                        <Webhook className="mt-1 h-5 w-5 text-primary" />
+                      )}
                       <div>
                         <p className="font-medium capitalize">{action.type}</p>
                         {(action.type === 'email' || action.type === 'sms') && (
@@ -82,7 +102,7 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
                           </p>
                         )}
                         {action.type === 'webhook' && (
-                          <p className="text-sm text-muted-foreground break-all">
+                          <p className="break-all text-sm text-muted-foreground">
                             {action.webhook_url}
                           </p>
                         )}
@@ -106,7 +126,9 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
       <Card>
         <CardHeader>
           <CardTitle>Add Action</CardTitle>
-          <CardDescription>Configure how you want to be notified</CardDescription>
+          <CardDescription>
+            Configure how you want to be notified
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -114,7 +136,10 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
             <Select
               value={newAction.type}
               onValueChange={(value) =>
-                setNewAction({ ...newAction, type: value as 'email' | 'sms' | 'webhook' })
+                setNewAction({
+                  ...newAction,
+                  type: value as 'email' | 'sms' | 'webhook',
+                })
               }
             >
               <SelectTrigger id="action-type">
@@ -132,7 +157,11 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
             <>
               <div className="space-y-2">
                 <Label htmlFor="recipients">
-                  Recipients ({newAction.type === 'email' ? 'Email addresses' : 'Phone numbers'})
+                  Recipients (
+                  {newAction.type === 'email'
+                    ? 'Email addresses'
+                    : 'Phone numbers'}
+                  )
                 </Label>
                 <Input
                   id="recipients"
@@ -142,7 +171,10 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
                       : '+1234567890, +0987654321'
                   }
                   onChange={(e) => {
-                    const recipients = e.target.value.split(',').map((r) => r.trim()).filter(Boolean)
+                    const recipients = e.target.value
+                      .split(',')
+                      .map((r) => r.trim())
+                      .filter(Boolean)
                     setNewAction({ ...newAction, recipients })
                   }}
                 />
@@ -153,12 +185,16 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
                   id="message"
                   value={newAction.message_template}
                   onChange={(e) =>
-                    setNewAction({ ...newAction, message_template: e.target.value })
+                    setNewAction({
+                      ...newAction,
+                      message_template: e.target.value,
+                    })
                   }
                   rows={3}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Available variables: {'{{'} rule_name {'}}'},  {'{{'} device_name {'}}'}
+                  Available variables: {'{{'} rule_name {'}}'}, {'{{'}{' '}
+                  device_name {'}}'}
                 </p>
               </div>
             </>
@@ -172,7 +208,9 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
                 type="url"
                 placeholder="https://api.example.com/webhooks/alerts"
                 value={newAction.webhook_url}
-                onChange={(e) => setNewAction({ ...newAction, webhook_url: e.target.value })}
+                onChange={(e) =>
+                  setNewAction({ ...newAction, webhook_url: e.target.value })
+                }
               />
               <p className="text-xs text-muted-foreground">
                 POST request with JSON payload will be sent to this URL
@@ -197,7 +235,8 @@ export function ActionsStep({ state, updateState }: ActionsStepProps) {
           onChange={(e) => updateCooldown(parseInt(e.target.value))}
         />
         <p className="text-sm text-muted-foreground">
-          Minimum time between consecutive alerts for the same rule (prevents spam)
+          Minimum time between consecutive alerts for the same rule (prevents
+          spam)
         </p>
       </div>
     </div>

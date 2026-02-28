@@ -18,21 +18,29 @@ export interface LocationsAPI {
     latitude?: number | null
     longitude?: number | null
   }) => Promise<EdgeFunctionResponse<unknown>>
-  update: (locationId: string, data: {
-    name?: string
-    description?: string
-    address?: string
-    city?: string
-    state?: string
-    country?: string
-    postal_code?: string
-    latitude?: number | null
-    longitude?: number | null
-  }) => Promise<EdgeFunctionResponse<unknown>>
+  update: (
+    locationId: string,
+    data: {
+      name?: string
+      description?: string
+      address?: string
+      city?: string
+      state?: string
+      country?: string
+      postal_code?: string
+      latitude?: number | null
+      longitude?: number | null
+    }
+  ) => Promise<EdgeFunctionResponse<unknown>>
   delete: (locationId: string) => Promise<EdgeFunctionResponse<unknown>>
 }
 
-export function createLocationsAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): LocationsAPI {
+export function createLocationsAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): LocationsAPI {
   return {
     /**
      * List all locations for an organization
@@ -41,7 +49,7 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
       call<unknown[]>('locations', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Create a new location
      */
@@ -50,7 +58,7 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an existing location
      */
@@ -60,7 +68,7 @@ export function createLocationsAPI(call: <T>(functionName: string, options?: Edg
         params: { id: locationId },
         body: data,
       }),
-    
+
     /**
      * Delete a location
      */

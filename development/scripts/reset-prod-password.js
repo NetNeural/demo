@@ -3,7 +3,7 @@
 /**
  * Trigger password reset for production user
  * This will also confirm the email as a side effect
- * 
+ *
  * Requires: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
  */
 
@@ -28,7 +28,7 @@ async function resetPassword() {
   const email = 'admin@netneural.ai'
 
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://netneural.github.io/MonoRepo/auth/callback'
+    redirectTo: 'https://netneural.github.io/MonoRepo/auth/callback',
   })
 
   if (error) {

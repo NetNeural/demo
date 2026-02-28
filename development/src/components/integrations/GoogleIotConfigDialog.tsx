@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,17 +37,20 @@ interface Props {
   onSaved?: () => void
 }
 
-export function GoogleIotConfigDialog({ 
-  open, 
-  onOpenChange, 
-  integrationId, 
+export function GoogleIotConfigDialog({
+  open,
+  onOpenChange,
+  integrationId,
   organizationId,
-  onSaved 
+  onSaved,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
-  
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
+
   const [config, setConfig] = useState<GoogleIotConfig>({
     name: 'Google Cloud IoT Integration',
     project_id: '',
@@ -64,14 +73,18 @@ export function GoogleIotConfigDialog({
     setLoading(true)
     try {
       const response = await edgeFunctions.integrations.list(organizationId)
-      
+
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to load integrations'
+        )
       }
 
       const integrations = (response.data as any)?.integrations || []
       const integration = integrations.find((i: any) => i.id === integrationId)
-      
+
       if (integration?.config) {
         const cfg = integration.config as any
         setConfig({
@@ -102,19 +115,23 @@ export function GoogleIotConfigDialog({
     setTestResult(null)
 
     try {
-      const result: any = await integrationService.testIntegration(integrationId, 'google_iot')
+      const result: any = await integrationService.testIntegration(
+        integrationId,
+        'google_iot'
+      )
       setTestResult({
         success: result.success,
-        message: result.message || 'Connection test completed'
+        message: result.message || 'Connection test completed',
       })
-      
+
       if (result.success) {
         toast.success('Google Cloud IoT connection successful!')
       } else {
         toast.error(result.message || 'Connection test failed')
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Connection test failed'
+      const message =
+        error instanceof Error ? error.message : 'Connection test failed'
       setTestResult({ success: false, message })
       toast.error(message)
     } finally {
@@ -123,7 +140,13 @@ export function GoogleIotConfigDialog({
   }
 
   const handleSave = async () => {
-    if (!config.name || !config.project_id || !config.region || !config.registry_id || !config.service_account_key) {
+    if (
+      !config.name ||
+      !config.project_id ||
+      !config.region ||
+      !config.registry_id ||
+      !config.service_account_key
+    ) {
       toast.error('Please fill in all required fields')
       return
     }
@@ -154,12 +177,18 @@ export function GoogleIotConfigDialog({
       }
 
       if (!response.success) {
-        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
-        
-        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+        let errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to save integration'
+
+        if (
+          errorMsg.includes('duplicate key') ||
+          errorMsg.includes('unique constraint')
+        ) {
           errorMsg = `A Google IoT integration with the name "${config.name}" already exists. Please choose a different name.`
         }
-        
+
         throw new Error(errorMsg)
       }
 
@@ -199,7 +228,9 @@ export function GoogleIotConfigDialog({
             <Input
               id="project-id"
               value={config.project_id}
-              onChange={(e) => setConfig({ ...config, project_id: e.target.value })}
+              onChange={(e) =>
+                setConfig({ ...config, project_id: e.target.value })
+              }
               placeholder="my-gcp-project"
             />
             <p className="text-sm text-muted-foreground">
@@ -213,7 +244,9 @@ export function GoogleIotConfigDialog({
               <Input
                 id="region"
                 value={config.region}
-                onChange={(e) => setConfig({ ...config, region: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, region: e.target.value })
+                }
                 placeholder="us-central1"
               />
             </div>
@@ -223,23 +256,30 @@ export function GoogleIotConfigDialog({
               <Input
                 id="registry-id"
                 value={config.registry_id}
-                onChange={(e) => setConfig({ ...config, registry_id: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, registry_id: e.target.value })
+                }
                 placeholder="my-device-registry"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service-account">Service Account Key (JSON) *</Label>
+            <Label htmlFor="service-account">
+              Service Account Key (JSON) *
+            </Label>
             <textarea
               id="service-account"
               value={config.service_account_key}
-              onChange={(e) => setConfig({ ...config, service_account_key: e.target.value })}
+              onChange={(e) =>
+                setConfig({ ...config, service_account_key: e.target.value })
+              }
               placeholder='{"type": "service_account", "project_id": "...", ...}'
-              className="w-full min-h-[120px] p-3 border rounded-md font-mono text-sm"
+              className="min-h-[120px] w-full rounded-md border p-3 font-mono text-sm"
             />
             <p className="text-sm text-muted-foreground">
-              Paste the entire JSON key file content from your Google Cloud service account
+              Paste the entire JSON key file content from your Google Cloud
+              service account
             </p>
           </div>
         </div>
@@ -247,18 +287,26 @@ export function GoogleIotConfigDialog({
         <IntegrationStatusToggle
           status={config.status}
           onStatusChange={(status) => setConfig({ ...config, status })}
-          disabled={!config.project_id || !config.registry_id || !config.service_account_key}
+          disabled={
+            !config.project_id ||
+            !config.registry_id ||
+            !config.service_account_key
+          }
           disabledMessage="Configure project ID, registry ID, and service account key to enable"
         />
 
         {testResult && (
-          <div className={`p-3 rounded-md flex items-start gap-2 ${
-            testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
+          <div
+            className={`flex items-start gap-2 rounded-md p-3 ${
+              testResult.success
+                ? 'bg-green-50 text-green-800'
+                : 'bg-red-50 text-red-800'
+            }`}
+          >
             {testResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             ) : (
-              <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             )}
             <div className="text-sm">{testResult.message}</div>
           </div>
@@ -266,9 +314,9 @@ export function GoogleIotConfigDialog({
 
         <DialogFooter>
           {integrationId && (
-            <Button 
-              variant="secondary" 
-              onClick={handleTest} 
+            <Button
+              variant="secondary"
+              onClick={handleTest}
               disabled={testing || loading}
             >
               {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

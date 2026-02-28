@@ -1,188 +1,202 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { User, Bell, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { User, Send, Phone, Plus, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/hooks/use-toast'
+import { useAutoSave } from '@/hooks/useAutoSave'
+import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { SettingsSection } from './shared/SettingsSection';
-import { SettingsFormGroup } from './shared/SettingsFormGroup';
-import { createClient } from '@/lib/supabase/client';
+} from '@/components/ui/select'
+import { SettingsSection } from './shared/SettingsSection'
+import { SettingsFormGroup } from './shared/SettingsFormGroup'
+import { createClient } from '@/lib/supabase/client'
 
-interface ProfileTabProps {
-  initialName?: string;
-  initialEmail?: string;
-  initialNotifications?: boolean;
-}
-
-export function ProfileTab({
-  initialName = 'NetNeural Admin',
-  initialEmail = 'admin@netneural.ai',
-  initialNotifications = true
-}: ProfileTabProps) {
-  const { toast } = useToast();
-  const [profileName, setProfileName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
-  const [jobTitle, setJobTitle] = useState('');
-  const [department, setDepartment] = useState('');
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const [marketing, setMarketing] = useState(false);
-  const [notificationEmail, setNotificationEmail] = useState(initialEmail);
-  const [notificationPhone, setNotificationPhone] = useState('');
-  const [alertSeverity, setAlertSeverity] = useState('all');
-  const [quietHoursStart, setQuietHoursStart] = useState('22:00');
-  const [quietHoursEnd, setQuietHoursEnd] = useState('08:00');
-  const [isLoading, setIsLoading] = useState(false);
+export function ProfileTab() {
+  const { toast } = useToast()
+  const [profileName, setProfileName] = useState('')
+  const [email, setEmail] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [department, setDepartment] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneNumberSecondary, setPhoneNumberSecondary] = useState('')
+  const [phoneSmsEnabled, setPhoneSmsEnabled] = useState(false)
+  const [phoneSecondarySmsEnabled, setPhoneSecondarySmsEnabled] =
+    useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   // Load profile from Supabase on mount
   useEffect(() => {
     const loadProfile = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-      // Load from users table for full_name
+      if (!user) return
+
+      // Load from users table for full_name and phone numbers
       const { data: userRecord } = await supabase
         .from('users')
-        .select('full_name')
+        .select(
+          'full_name, phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled'
+        )
         .eq('id', user.id)
-        .single();
+        .single()
 
-      if (userRecord?.full_name) {
-        setProfileName(userRecord.full_name);
+      if (userRecord) {
+        if (userRecord.full_name) setProfileName(userRecord.full_name)
+        if (userRecord.phone_number) setPhoneNumber(userRecord.phone_number)
+        if (userRecord.phone_number_secondary)
+          setPhoneNumberSecondary(userRecord.phone_number_secondary)
+        setPhoneSmsEnabled(userRecord.phone_sms_enabled || false)
+        setPhoneSecondarySmsEnabled(
+          userRecord.phone_secondary_sms_enabled || false
+        )
       }
 
       // Load other profile fields from user_metadata
-      const metadata = user.user_metadata;
+      const metadata = user.user_metadata
       if (metadata) {
-        if (metadata.job_title) setJobTitle(metadata.job_title);
-        if (metadata.department) setDepartment(metadata.department);
-        if (typeof metadata.email_notifications === 'boolean') setNotifications(metadata.email_notifications);
-        if (typeof metadata.marketing_emails === 'boolean') setMarketing(metadata.marketing_emails);
+        if (metadata.job_title) setJobTitle(metadata.job_title)
+        if (metadata.department) setDepartment(metadata.department)
       }
-      
-      // Email comes from auth
-      if (user.email) setEmail(user.email);
-    };
-    
-    loadProfile();
-  }, []);
 
-  const handleSave = async () => {
-    setIsLoading(true);
+      // Email comes from auth
+      if (user.email) setEmail(user.email)
+
+      // Mark loaded so auto-save starts watching
+      setLoaded(true)
+    }
+
+    loadProfile()
+  }, [])
+
+  // Data object for auto-save — includes all profile fields except email
+  const profileData = useMemo(
+    () => ({
+      profileName,
+      jobTitle,
+      department,
+      phoneNumber,
+      phoneNumberSecondary,
+      phoneSmsEnabled,
+      phoneSecondarySmsEnabled,
+    }),
+    [
+      profileName,
+      jobTitle,
+      department,
+      phoneNumber,
+      phoneNumberSecondary,
+      phoneSmsEnabled,
+      phoneSecondarySmsEnabled,
+    ]
+  )
+
+  const saveProfile = useCallback(async (data: typeof profileData) => {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not logged in')
+
+    // Update full_name and phone numbers in users table
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        full_name: data.profileName,
+        phone_number: data.phoneNumber || null,
+        phone_number_secondary: data.phoneNumberSecondary || null,
+        phone_sms_enabled: data.phoneSmsEnabled,
+        phone_secondary_sms_enabled: data.phoneSecondarySmsEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+
+    if (userError) throw userError
+
+    // Store other profile fields in user_metadata
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: {
+        job_title: data.jobTitle,
+        department: data.department,
+      },
+    })
+
+    if (metadataError) throw metadataError
+  }, [])
+
+  const { status: autoSaveStatus } = useAutoSave({
+    data: profileData,
+    onSave: saveProfile,
+    delay: 1200,
+    enabled: loaded,
+  })
+
+  // Manual email update (requires confirmation flow)
+  const handleEmailChange = async () => {
+    setIsLoading(true)
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         toast({
-          title: "Error",
-          description: "You must be logged in to save profile",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Update full_name in users table
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          full_name: profileName,
-          updated_at: new Date().toISOString()
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
         })
-        .eq('id', user.id);
-
-      if (userError) {
-        toast({
-          title: "Error",
-          description: "Failed to save profile: " + userError.message,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        return
       }
 
-      // Store other profile fields in user_metadata
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          job_title: jobTitle,
-          department: department,
-          email_notifications: notifications,
-          marketing_emails: marketing
-        }
-      });
+      if (email === user.email) return
 
-      if (metadataError) {
+      const { error } = await supabase.auth.updateUser({ email })
+      if (error) {
         toast({
-          title: "Partial Success",
-          description: "Profile saved partially. Metadata update failed: " + metadataError.message,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // If email changed, update auth user
-      if (email !== user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: email
-        });
-        
-        if (emailError) {
-          toast({
-            title: "Partial Success",
-            description: "Profile saved but email update failed: " + emailError.message,
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
+          title: 'Error',
+          description: 'Failed to update email: ' + error.message,
+          variant: 'destructive',
+        })
+        return
       }
 
       toast({
-        title: "Success",
-        description: "Profile saved successfully!",
-      });
+        title: 'Confirmation sent',
+        description: 'Check your new email to confirm the change.',
+      })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save profile: " + (error as Error).message,
-        variant: "destructive",
-      });
+        title: 'Error',
+        description: 'Failed to update email: ' + (error as Error).message,
+        variant: 'destructive',
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
-
-  const handleReset = () => {
-    setProfileName(initialName);
-    setEmail(initialEmail);
-    setJobTitle('');
-    setDepartment('');
-    setNotifications(initialNotifications);
-    setMarketing(false);
-  };
+  }
 
   return (
     <div className="space-y-6">
       {/* Personal Information */}
       <SettingsSection
-        icon={<User className="w-5 h-5" />}
+        icon={<User className="h-5 w-5" />}
         title="Personal Information"
         description="Manage your personal details and contact information"
+        actions={<AutoSaveIndicator status={autoSaveStatus} />}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <SettingsFormGroup label="Full Name" required>
             <Input
               value={profileName}
@@ -192,12 +206,27 @@ export function ProfileTab({
           </SettingsFormGroup>
 
           <SettingsFormGroup label="Email Address" required>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@company.com"
-            />
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@company.com"
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleEmailChange}
+                disabled={isLoading}
+              >
+                <Send className="mr-1 h-3 w-3" />
+                Update
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Email changes require confirmation via email.
+            </p>
           </SettingsFormGroup>
 
           <SettingsFormGroup label="Job Title">
@@ -226,152 +255,108 @@ export function ProfileTab({
         </div>
       </SettingsSection>
 
-      {/* Notification Preferences */}
+      {/* Contact Information */}
       <SettingsSection
-        icon={<Bell className="w-5 h-5" />}
-        title="Notification Preferences"
-        description="Control how you receive updates and communications"
+        icon={<Phone className="h-5 w-5" />}
+        title="Contact Information"
+        description="Manage your phone numbers and SMS notification preferences"
+        actions={<AutoSaveIndicator status={autoSaveStatus} />}
       >
         <div className="space-y-6">
-          <div className="flex items-center justify-between py-3 border-b">
-            <div className="space-y-0.5">
-              <Label htmlFor="email-notifications" className="text-base font-medium">
-                Email Notifications
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email notifications for account updates and alerts
+          {/* Primary Phone Number */}
+          <div className="space-y-3">
+            <SettingsFormGroup label="Primary Phone Number">
+              <Input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+1 (555) 123-4567"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                E.164 format preferred (e.g., +15551234567)
               </p>
+            </SettingsFormGroup>
+
+            <div className="flex items-center space-x-2 pl-1">
+              <Checkbox
+                id="sms-primary"
+                checked={phoneSmsEnabled}
+                onCheckedChange={(checked) =>
+                  setPhoneSmsEnabled(checked as boolean)
+                }
+                disabled={!phoneNumber}
+              />
+              <label
+                htmlFor="sms-primary"
+                className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Enable SMS notifications for alerts and system messages
+              </label>
             </div>
-            <Switch
-              id="email-notifications"
-              checked={notifications}
-              onCheckedChange={setNotifications}
-            />
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b">
-            <div className="space-y-0.5">
-              <Label htmlFor="marketing" className="text-base font-medium">
-                Product Updates
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive product updates, newsletters, and feature announcements
+          {/* Secondary Phone Number */}
+          <div className="space-y-3">
+            <SettingsFormGroup label="Secondary Phone Number">
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  value={phoneNumberSecondary}
+                  onChange={(e) => setPhoneNumberSecondary(e.target.value)}
+                  placeholder="+1 (555) 987-6543"
+                  className="flex-1"
+                />
+                {phoneNumberSecondary && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setPhoneNumberSecondary('')
+                      setPhoneSecondarySmsEnabled(false)
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Optional backup contact number
               </p>
-            </div>
-            <Switch
-              id="marketing"
-              checked={marketing}
-              onCheckedChange={setMarketing}
-            />
-          </div>
+            </SettingsFormGroup>
 
-          {/* Email Configuration */}
-          <div className="space-y-2 py-3 border-b">
-            <Label htmlFor="notification-email" className="text-base font-medium">
-              Notification Email
-            </Label>
-            <Input
-              id="notification-email"
-              type="email"
-              placeholder="notifications@example.com"
-              value={notificationEmail}
-              onChange={(e) => setNotificationEmail(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Email address for receiving system notifications
-            </p>
-          </div>
-
-          {/* Phone Number */}
-          <div className="space-y-2 py-3 border-b">
-            <Label htmlFor="notification-phone" className="text-base font-medium">
-              Phone Number (SMS Alerts)
-            </Label>
-            <Input
-              id="notification-phone"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
-              value={notificationPhone}
-              onChange={(e) => setNotificationPhone(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Phone number for critical alert SMS notifications
-            </p>
-          </div>
-
-          {/* Alert Severity Filter */}
-          <div className="space-y-2 py-3 border-b">
-            <Label htmlFor="alert-severity" className="text-base font-medium">
-              Alert Severity Level
-            </Label>
-            <Select value={alertSeverity} onValueChange={setAlertSeverity}>
-              <SelectTrigger id="alert-severity">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Alerts</SelectItem>
-                <SelectItem value="high-critical">High & Critical Only</SelectItem>
-                <SelectItem value="critical">Critical Only</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Minimum severity level for notifications
-            </p>
-          </div>
-
-          {/* Quiet Hours */}
-          <div className="space-y-2 py-3">
-            <Label className="text-base font-medium">Quiet Hours</Label>
-            <div className="flex gap-4 items-center">
-              <div className="flex-1">
-                <Label htmlFor="quiet-start" className="text-xs text-muted-foreground">
-                  From
-                </Label>
-                <Input
-                  id="quiet-start"
-                  type="time"
-                  value={quietHoursStart}
-                  onChange={(e) => setQuietHoursStart(e.target.value)}
+            {phoneNumberSecondary && (
+              <div className="flex items-center space-x-2 pl-1">
+                <Checkbox
+                  id="sms-secondary"
+                  checked={phoneSecondarySmsEnabled}
+                  onCheckedChange={(checked) =>
+                    setPhoneSecondarySmsEnabled(checked as boolean)
+                  }
                 />
+                <label
+                  htmlFor="sms-secondary"
+                  className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Enable SMS notifications on secondary number
+                </label>
               </div>
-              <div className="flex-1">
-                <Label htmlFor="quiet-end" className="text-xs text-muted-foreground">
-                  To
-                </Label>
-                <Input
-                  id="quiet-end"
-                  type="time"
-                  value={quietHoursEnd}
-                  onChange={(e) => setQuietHoursEnd(e.target.value)}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              No non-critical notifications during these hours
+            )}
+          </div>
+
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>SMS Notifications:</strong> When enabled, you&apos;ll
+              receive critical alerts and system notifications via SMS. Standard
+              message and data rates may apply. Your phone numbers are used
+              solely for notifications and are never shared.
             </p>
           </div>
         </div>
       </SettingsSection>
 
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        <Button onClick={handleSave} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Send className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
-        <Button variant="outline" onClick={handleReset} disabled={isLoading}>
-          Reset Changes
-        </Button>
-      </div>
+      <p className="text-center text-xs text-muted-foreground">
+        Changes are saved automatically.
+      </p>
     </div>
-  );
+  )
 }

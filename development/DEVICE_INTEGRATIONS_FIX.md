@@ -12,10 +12,10 @@ Application was throwing PostgreSQL error when querying device integrations:
 
 ```json
 {
-    "code": "42703",
-    "details": null,
-    "hint": null,
-    "message": "column device_integrations.is_active does not exist"
+  "code": "42703",
+  "details": null,
+  "hint": null,
+  "message": "column device_integrations.is_active does not exist"
 }
 ```
 
@@ -32,7 +32,7 @@ const { data } = await supabase
   .select('id')
   .eq('organization_id', currentOrganization.id)
   .eq('integration_type', 'golioth')
-  .eq('is_active', true)  // ❌ This column doesn't exist
+  .eq('is_active', true) // ❌ This column doesn't exist
   .maybeSingle()
 ```
 
@@ -67,7 +67,7 @@ const { data } = await supabase
   .select('id')
   .eq('organization_id', currentOrganization.id)
   .eq('integration_type', 'golioth')
-  .eq('status', 'active')  // ✅ Correct column name
+  .eq('status', 'active') // ✅ Correct column name
   .maybeSingle()
 ```
 
@@ -76,6 +76,7 @@ const { data } = await supabase
 ## Files Modified
 
 ### `src/components/devices/DevicesHeader.tsx`
+
 **Line 38:** Changed `.eq('is_active', true)` → `.eq('status', 'active')`
 
 ---
@@ -85,10 +86,11 @@ const { data } = await supabase
 ### ✅ **Type Definitions Already Correct**
 
 **`src/types/supabase.ts`** - Already correctly defines:
+
 ```typescript
 device_integrations: {
   Row: {
-    status: string | null  // ✅ Correct
+    status: string | null // ✅ Correct
     // ... other fields
   }
 }
@@ -97,6 +99,7 @@ device_integrations: {
 ### ✅ **Other Services Already Correct**
 
 **`src/lib/integrations/organization-integrations.ts`** - Already uses correct column:
+
 ```typescript
 // ✅ Line 28 - getIntegrations()
 .eq('status', 'active')
@@ -110,10 +113,12 @@ device_integrations: {
 ## Schema Consistency Check
 
 ### Tables with `is_active` Column (Boolean):
+
 - ✅ `organizations` - Has `is_active BOOLEAN DEFAULT true`
 - ✅ `users` - Has `is_active BOOLEAN DEFAULT true`
 
 ### Tables with `status` Column (VARCHAR):
+
 - ✅ `device_integrations` - Has `status VARCHAR(50) DEFAULT 'active'`
 - ✅ `devices` - Has `status device_status DEFAULT 'offline'` (ENUM)
 - ✅ `alerts` - Has different status management
@@ -123,6 +128,7 @@ device_integrations: {
 ## Status Values for device_integrations
 
 Based on the codebase, the `status` column accepts these values:
+
 - `'active'` - Integration is active and working
 - `'inactive'` - Integration is disabled
 - `'error'` - Integration has errors
@@ -133,6 +139,7 @@ Based on the codebase, the `status` column accepts these values:
 ## Testing Recommendations
 
 ### 1. **Test Device Integration Queries:**
+
 ```bash
 # Navigate to dashboard
 http://localhost:3000/dashboard/devices
@@ -142,6 +149,7 @@ http://localhost:3000/dashboard/devices
 ```
 
 ### 2. **Test Golioth Integration:**
+
 ```bash
 # Create/edit Golioth integration
 http://localhost:3000/dashboard/integrations
@@ -151,15 +159,16 @@ http://localhost:3000/dashboard/integrations
 ```
 
 ### 3. **Verify Database Queries:**
+
 ```sql
 -- Should return active integrations
-SELECT id, name, integration_type, status 
-FROM device_integrations 
+SELECT id, name, integration_type, status
+FROM device_integrations
 WHERE status = 'active';
 
 -- Should fail (column doesn't exist)
-SELECT id, name, integration_type, is_active 
-FROM device_integrations 
+SELECT id, name, integration_type, is_active
+FROM device_integrations
 WHERE is_active = true;
 ```
 
@@ -169,15 +178,16 @@ WHERE is_active = true;
 
 ### **Database Column Naming Convention:**
 
-| Table | Active/Status Column | Type | Values |
-|-------|---------------------|------|--------|
-| `users` | `is_active` | BOOLEAN | true/false |
-| `organizations` | `is_active` | BOOLEAN | true/false |
-| `device_integrations` | `status` | VARCHAR(50) | 'active', 'inactive', 'error', 'pending' |
-| `devices` | `status` | ENUM | 'online', 'offline', 'warning', 'error' |
-| `alerts` | `is_resolved` | BOOLEAN | true/false |
+| Table                 | Active/Status Column | Type        | Values                                   |
+| --------------------- | -------------------- | ----------- | ---------------------------------------- |
+| `users`               | `is_active`          | BOOLEAN     | true/false                               |
+| `organizations`       | `is_active`          | BOOLEAN     | true/false                               |
+| `device_integrations` | `status`             | VARCHAR(50) | 'active', 'inactive', 'error', 'pending' |
+| `devices`             | `status`             | ENUM        | 'online', 'offline', 'warning', 'error'  |
+| `alerts`              | `is_resolved`        | BOOLEAN     | true/false                               |
 
 ### **Best Practices:**
+
 1. ✅ Always check TypeScript types before querying
 2. ✅ Use IDE autocomplete for column names
 3. ✅ Review schema migrations before querying new tables
@@ -191,12 +201,14 @@ WHERE is_active = true;
 ## Impact Assessment
 
 ### **Before Fix:**
+
 - ❌ Device page failed to load Golioth integrations
 - ❌ "Add Device" button wouldn't show Golioth option
 - ❌ PostgreSQL error 42703 in browser console
 - ❌ Users couldn't add devices via UI
 
 ### **After Fix:**
+
 - ✅ Device page loads successfully
 - ✅ Golioth integrations query correctly
 - ✅ "Add Device" button works properly
@@ -208,6 +220,7 @@ WHERE is_active = true;
 ## Related Files (No Changes Needed)
 
 These files already use the correct `status` column:
+
 - ✅ `src/lib/integrations/organization-integrations.ts`
 - ✅ `src/app/dashboard/integrations/page.tsx`
 - ✅ `src/components/integrations/GoliothConfigDialog.tsx`
@@ -222,6 +235,7 @@ These files already use the correct `status` column:
 **✅ Issue Resolved**
 
 The error was caused by a single incorrect column name in `DevicesHeader.tsx`. The fix was straightforward:
+
 - Changed `is_active` → `status`
 - Changed `true` → `'active'`
 

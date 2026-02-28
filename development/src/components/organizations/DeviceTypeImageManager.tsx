@@ -1,0 +1,452 @@
+'use client'
+
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { toast } from 'sonner'
+
+interface DeviceTypeImageManagerProps {
+  organizationId: string
+  /** Current device type → image URL mapping */
+  deviceTypeImages: Record<string, string>
+  /** Called when the mapping changes (caller should persist via save) */
+  onChange: (images: Record<string, string>) => void
+}
+
+/**
+ * Compress and resize a device type image before upload.
+ * Max 200x200px, WebP at 85% quality.
+ */
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (file.type === 'image/svg+xml') {
+      resolve(file)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target?.result as string
+
+      img.onload = () => {
+        const MAX_SIZE = 200
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = (height * MAX_SIZE) / width
+            width = MAX_SIZE
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = (width * MAX_SIZE) / height
+            height = MAX_SIZE
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob)
+            } else {
+              reject(new Error('Failed to compress image'))
+            }
+          },
+          'image/webp',
+          0.85
+        )
+      }
+
+      img.onerror = () => reject(new Error('Failed to load image'))
+    }
+
+    reader.onerror = () => reject(new Error('Failed to read file'))
+  })
+}
+
+/** Slugify a device type name for use as a storage path segment */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+const VALID_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/svg+xml',
+]
+
+export function DeviceTypeImageManager({
+  organizationId,
+  deviceTypeImages,
+  onChange,
+}: DeviceTypeImageManagerProps) {
+  const [uploadingType, setUploadingType] = useState<string | null>(null)
+  const [newTypeName, setNewTypeName] = useState('')
+  const [detectedTypes, setDetectedTypes] = useState<string[]>([])
+  const [loadingTypes, setLoadingTypes] = useState(false)
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const newFileInputRef = useRef<HTMLInputElement>(null)
+  const { currentOrganization, refreshOrganizations } = useOrganization()
+
+  /**
+   * Auto-persist device_type_images to the organization settings.
+   * Merges with existing settings so other fields (branding, theme, etc.) are preserved.
+   */
+  const persistImages = async (updatedImages: Record<string, string>) => {
+    try {
+      // Merge with existing settings to avoid overwriting branding/theme/etc.
+      const existingSettings =
+        (currentOrganization?.settings as Record<string, unknown>) || {}
+      const mergedSettings = {
+        ...existingSettings,
+        device_type_images: updatedImages,
+      }
+
+      const response = await edgeFunctions.organizations.update(
+        organizationId,
+        {
+          settings: mergedSettings as never,
+        }
+      )
+      if (!response.success) {
+        console.error('Failed to save device type images:', response.error)
+        toast.error(
+          'Image uploaded but failed to save to settings. Try clicking "Save All Changes".'
+        )
+        return false
+      }
+      // Refresh the organization context so other pages pick up the change
+      await refreshOrganizations()
+      return true
+    } catch (err) {
+      console.error('Error persisting device type images:', err)
+      toast.error('Image uploaded but failed to save to settings.')
+      return false
+    }
+  }
+
+  // Auto-detect device types from the organization's actual devices
+  const fetchDeviceTypes = useCallback(async () => {
+    if (!organizationId) return
+    try {
+      setLoadingTypes(true)
+      const response = await edgeFunctions.devices.list(organizationId)
+      if (response.success && response.data?.devices) {
+        const devices = response.data.devices as Array<{
+          device_type?: string
+          type?: string
+        }>
+        const types = new Set<string>()
+        for (const d of devices) {
+          const t = d.device_type || d.type
+          if (t && t !== 'unknown') types.add(t)
+        }
+        setDetectedTypes(Array.from(types).sort())
+      }
+    } catch (err) {
+      console.error('Failed to fetch device types:', err)
+    } finally {
+      setLoadingTypes(false)
+    }
+  }, [organizationId])
+
+  useEffect(() => {
+    fetchDeviceTypes()
+  }, [fetchDeviceTypes])
+
+  const handleUpload = async (deviceType: string, file: File) => {
+    if (!VALID_TYPES.includes(file.type)) {
+      toast.error('Please upload a valid image (PNG, JPG, WebP, or SVG)')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File must be less than 10MB')
+      return
+    }
+
+    try {
+      setUploadingType(deviceType)
+      const supabase = createClient()
+
+      toast.info('Compressing image...')
+      const compressed = await compressImage(file)
+
+      const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
+      const slug = slugify(deviceType)
+      const fileName = `${organizationId}/device-types/${slug}-${Date.now()}.${fileExt}`
+
+      // Remove old image if exists
+      const oldUrl = deviceTypeImages[deviceType]
+      if (oldUrl) {
+        try {
+          // Extract path after the bucket name
+          const urlParts = oldUrl.split('/organization-assets/')
+          if (urlParts[1]) {
+            await supabase.storage
+              .from('organization-assets')
+              .remove([urlParts[1]])
+          }
+        } catch {
+          // Best-effort removal
+        }
+      }
+
+      const { data, error } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, compressed, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType:
+            file.type === 'image/svg+xml' ? 'image/svg+xml' : 'image/webp',
+        })
+
+      if (error) throw error
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('organization-assets').getPublicUrl(data.path)
+
+      const updated = { ...deviceTypeImages, [deviceType]: publicUrl }
+      onChange(updated)
+      const saved = await persistImages(updated)
+      if (saved) {
+        toast.success(`Image uploaded and saved for "${deviceType}".`)
+      } else {
+        toast.success(
+          `Image uploaded for "${deviceType}". Click "Save All Changes" to apply.`
+        )
+      }
+    } catch (error: unknown) {
+      console.error('Error uploading device type image:', error)
+      const message =
+        error instanceof Error ? error.message : 'Failed to upload image'
+      toast.error(message)
+    } finally {
+      setUploadingType(null)
+    }
+  }
+
+  const handleRemove = async (deviceType: string) => {
+    const updated = { ...deviceTypeImages }
+    delete updated[deviceType]
+    onChange(updated)
+    const saved = await persistImages(updated)
+    if (saved) {
+      toast.success(`Image removed for "${deviceType}".`)
+    } else {
+      toast.success(
+        `Image removed for "${deviceType}". Click "Save All Changes" to apply.`
+      )
+    }
+  }
+
+  const handleAddNewType = () => {
+    const name = newTypeName.trim()
+    if (!name) {
+      toast.error('Enter a device type name first')
+      return
+    }
+    if (deviceTypeImages[name]) {
+      toast.error(`"${name}" already has an image`)
+      return
+    }
+    // Trigger file input for the new type
+    setNewTypeName('')
+    // Store name temporarily so we can reference it in the file handler
+    const input = newFileInputRef.current
+    if (input) {
+      input.dataset.deviceType = name
+      input.click()
+    }
+  }
+
+  const handleNewFileSelected = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    const deviceType = event.target.dataset.deviceType
+    if (file && deviceType) {
+      handleUpload(deviceType, file)
+    }
+    // Reset input so same file can be re-selected
+    event.target.value = ''
+  }
+
+  const existingTypes = Object.keys(deviceTypeImages)
+
+  // Device types that don't yet have an image assigned
+  const availableTypes = detectedTypes.filter(
+    (t) => !existingTypes.some((e) => e.toLowerCase() === t.toLowerCase())
+  )
+
+  return (
+    <div className="space-y-4">
+      {/* Existing device type images */}
+      {existingTypes.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {existingTypes.map((deviceType) => (
+            <div
+              key={deviceType}
+              className="flex items-center gap-3 rounded-lg border bg-card p-3"
+            >
+              {/* Thumbnail */}
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
+                {deviceTypeImages[deviceType] ? (
+                  <img
+                    src={deviceTypeImages[deviceType]}
+                    alt={deviceType}
+                    className="h-full w-full object-contain p-0.5"
+                  />
+                ) : (
+                  <ImageIcon className="h-4 w-4 text-gray-400" />
+                )}
+              </div>
+
+              {/* Label + actions */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{deviceType}</p>
+                <div className="mt-1 flex items-center gap-1">
+                  <input
+                    ref={(el) => {
+                      fileInputRefs.current[deviceType] = el
+                    }}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) handleUpload(deviceType, f)
+                      e.target.value = ''
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    disabled={uploadingType === deviceType}
+                    onClick={() => fileInputRefs.current[deviceType]?.click()}
+                  >
+                    <Upload className="mr-1 h-3 w-3" />
+                    {uploadingType === deviceType ? 'Uploading...' : 'Replace'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                    onClick={() => handleRemove(deviceType)}
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {existingTypes.length === 0 &&
+        !loadingTypes &&
+        availableTypes.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No device types found. Add devices to your organization first, then
+            come back to assign images.
+          </p>
+        )}
+
+      {existingTypes.length === 0 &&
+        !loadingTypes &&
+        availableTypes.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            No device type images configured yet. Select a device type below to
+            add an image.
+          </p>
+        )}
+
+      {/* Add image for a device type — dropdown of org's actual types */}
+      {availableTypes.length > 0 && (
+        <div className="flex items-end gap-2">
+          <div className="w-48 space-y-1">
+            <Label className="text-xs">Select Device Type</Label>
+            <Select value={newTypeName} onValueChange={setNewTypeName}>
+              <SelectTrigger className="w-48">
+                <SelectValue
+                  placeholder={loadingTypes ? 'Loading...' : 'Choose type'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddNewType}
+            disabled={!!uploadingType || !newTypeName}
+          >
+            <Upload className="mr-1 h-4 w-4" />
+            Add Image
+          </Button>
+        </div>
+      )}
+
+      {/* Hidden file input for new type uploads */}
+      <input
+        ref={newFileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+        onChange={handleNewFileSelected}
+        className="hidden"
+      />
+
+      <p className="text-xs text-muted-foreground">
+        Select a device type from your organization&apos;s devices and upload an
+        image. Images are compressed to 200×200px WebP (~50KB). These appear on
+        device cards across the dashboard.
+      </p>
+    </div>
+  )
+}

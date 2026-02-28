@@ -39,10 +39,15 @@ interface WizardState {
   cooldownMinutes: number
 }
 
-export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }: RuleWizardProps) {
+export function RuleWizard({
+  organizationId,
+  initialData,
+  onSuccess,
+  onCancel,
+}: RuleWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const [state, setState] = useState<WizardState>({
     name: initialData?.name || '',
     description: initialData?.description || '',
@@ -58,10 +63,17 @@ export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }:
     { id: 'type', title: 'Rule Type', description: 'Choose what to monitor' },
     {
       id: 'condition',
-      title: state.ruleType === 'telemetry' ? 'Telemetry Conditions' : 'Offline Detection',
+      title:
+        state.ruleType === 'telemetry'
+          ? 'Telemetry Conditions'
+          : 'Offline Detection',
       description: 'Define when to trigger',
     },
-    { id: 'scope', title: 'Device Scope', description: 'Select devices to monitor' },
+    {
+      id: 'scope',
+      title: 'Device Scope',
+      description: 'Select devices to monitor',
+    },
     { id: 'actions', title: 'Actions', description: 'Configure notifications' },
     { id: 'review', title: 'Review', description: 'Verify and create' },
   ]
@@ -118,7 +130,9 @@ export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }:
       }
 
       if (response.success) {
-        toast.success(`Rule ${initialData ? 'updated' : 'created'} successfully`)
+        toast.success(
+          `Rule ${initialData ? 'updated' : 'created'} successfully`
+        )
         onSuccess()
       } else {
         toast.error(`Failed to ${initialData ? 'update' : 'create'} rule`)
@@ -160,23 +174,23 @@ export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }:
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-8">
         <Progress value={progress} className="h-2" />
-        <div className="flex justify-between mt-4">
+        <div className="mt-4 flex justify-between">
           {steps.map((step, index) => (
             <div
               key={step.id}
               className={`flex-1 text-center ${
                 index === currentStep
-                  ? 'text-primary font-semibold'
+                  ? 'font-semibold text-primary'
                   : index < currentStep
-                  ? 'text-muted-foreground'
-                  : 'text-muted-foreground/50'
+                    ? 'text-muted-foreground'
+                    : 'text-muted-foreground/50'
               }`}
             >
               <div className="text-sm">{step.title}</div>
-              <div className="text-xs mt-1">{step.description}</div>
+              <div className="mt-1 text-xs">{step.description}</div>
             </div>
           ))}
         </div>
@@ -200,10 +214,12 @@ export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }:
               updateState={updateState}
             />
           )}
-          {currentStep === 3 && <ActionsStep state={state} updateState={updateState} />}
+          {currentStep === 3 && (
+            <ActionsStep state={state} updateState={updateState} />
+          )}
           {currentStep === 4 && <ReviewStep state={state} />}
 
-          <div className="flex justify-between mt-8">
+          <div className="mt-8 flex justify-between">
             <div className="space-x-2">
               <Button variant="outline" onClick={onCancel}>
                 Cancel
@@ -223,13 +239,16 @@ export function RuleWizard({ organizationId, initialData, onSuccess, onCancel }:
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting}>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!canProceed() || isSubmitting}
+                >
                   <Check className="mr-2 h-4 w-4" />
                   {isSubmitting
                     ? 'Saving...'
                     : initialData
-                    ? 'Update Rule'
-                    : 'Create Rule'}
+                      ? 'Update Rule'
+                      : 'Create Rule'}
                 </Button>
               )}
             </div>

@@ -35,13 +35,13 @@ export interface LogEntry {
 
 /**
  * Structured Logger
- * 
+ *
  * Outputs JSON-formatted logs that can be:
  * - Searched by field (integrationId, requestId, etc.)
  * - Filtered by level (error, warn, info)
  * - Aggregated in monitoring tools (DataDog, Sentry, CloudWatch)
  * - Parsed by log shippers
- * 
+ *
  * Usage:
  * ```typescript
  * const logger = new StructuredLogger({
@@ -49,7 +49,7 @@ export interface LogEntry {
  *   integrationId: '123',
  *   requestId: crypto.randomUUID()
  * })
- * 
+ *
  * logger.info('sync_started', { deviceCount: 10 })
  * logger.error('sync_failed', error, { deviceId: 'abc' })
  * ```
@@ -86,10 +86,12 @@ export class StructuredLogger {
   /**
    * Log errors (recoverable failures)
    */
-  error(event: string, error: Error | string, data?: Record<string, unknown>): void {
-    const errorObj = typeof error === 'string' 
-      ? new Error(error)
-      : error
+  error(
+    event: string,
+    error: Error | string,
+    data?: Record<string, unknown>
+  ): void {
+    const errorObj = typeof error === 'string' ? new Error(error) : error
 
     this.log('error', event, errorObj.message, data, {
       message: errorObj.message,
@@ -102,10 +104,12 @@ export class StructuredLogger {
   /**
    * Log fatal errors (unrecoverable failures)
    */
-  fatal(event: string, error: Error | string, data?: Record<string, unknown>): void {
-    const errorObj = typeof error === 'string' 
-      ? new Error(error)
-      : error
+  fatal(
+    event: string,
+    error: Error | string,
+    data?: Record<string, unknown>
+  ): void {
+    const errorObj = typeof error === 'string' ? new Error(error) : error
 
     this.log('fatal', event, errorObj.message, data, {
       message: errorObj.message,
@@ -195,7 +199,7 @@ export function createEdgeFunctionLogger(
   additionalContext?: Partial<LogContext>
 ): StructuredLogger {
   const url = new URL(req.url)
-  
+
   return new StructuredLogger({
     service: functionName,
     requestId: req.headers.get('x-request-id') || crypto.randomUUID(),
@@ -225,7 +229,9 @@ export function createIntegrationLogger(
  * Sanitize sensitive data from logs
  * Removes API keys, passwords, tokens, etc.
  */
-export function sanitizeLogData(data: Record<string, unknown>): Record<string, unknown> {
+export function sanitizeLogData(
+  data: Record<string, unknown>
+): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {}
   const sensitiveKeys = [
     'apiKey',
@@ -242,10 +248,14 @@ export function sanitizeLogData(data: Record<string, unknown>): Record<string, u
 
   for (const [key, value] of Object.entries(data)) {
     const lowerKey = key.toLowerCase()
-    
-    if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
+
+    if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
       sanitized[key] = '[REDACTED]'
-    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    } else if (
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value)
+    ) {
       sanitized[key] = sanitizeLogData(value as Record<string, unknown>)
     } else {
       sanitized[key] = value
@@ -296,7 +306,10 @@ export function formatError(error: unknown): {
 export class PerformanceTimer {
   private startTime: number
 
-  constructor(private logger: StructuredLogger, private operation: string) {
+  constructor(
+    private logger: StructuredLogger,
+    private operation: string
+  ) {
     this.startTime = Date.now()
     this.logger.debug(`${operation}_started`, { startTime: this.startTime })
   }

@@ -2,14 +2,23 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface TelemetryRuleStepProps {
   state: any
   updateState: (updates: any) => void
 }
 
-export function TelemetryRuleStep({ state, updateState }: TelemetryRuleStepProps) {
+export function TelemetryRuleStep({
+  state,
+  updateState,
+}: TelemetryRuleStepProps) {
   const updateCondition = (field: string, value: any) => {
     updateState({
       condition: {
@@ -62,7 +71,9 @@ export function TelemetryRuleStep({ state, updateState }: TelemetryRuleStepProps
             type="number"
             step="0.01"
             value={state.condition.value ?? ''}
-            onChange={(e) => updateCondition('value', parseFloat(e.target.value))}
+            onChange={(e) =>
+              updateCondition('value', parseFloat(e.target.value))
+            }
             placeholder="e.g., 80"
           />
         </div>
@@ -75,19 +86,23 @@ export function TelemetryRuleStep({ state, updateState }: TelemetryRuleStepProps
           type="number"
           min="1"
           value={state.condition.duration_minutes || 5}
-          onChange={(e) => updateCondition('duration_minutes', parseInt(e.target.value))}
+          onChange={(e) =>
+            updateCondition('duration_minutes', parseInt(e.target.value))
+          }
         />
         <p className="text-sm text-muted-foreground">
           Check if condition is met within this time window (default: 5 minutes)
         </p>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h4 className="font-medium mb-2">Example Rule:</h4>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
+        <h4 className="mb-2 font-medium">Example Rule:</h4>
         <p className="text-sm text-muted-foreground">
-          If <strong>temperature</strong> is <strong>{state.condition.operator || '>'}</strong>{' '}
+          If <strong>temperature</strong> is{' '}
+          <strong>{state.condition.operator || '>'}</strong>{' '}
           <strong>{state.condition.value || 'X'}</strong> within the last{' '}
-          <strong>{state.condition.duration_minutes || 5} minutes</strong>, trigger alert
+          <strong>{state.condition.duration_minutes || 5} minutes</strong>,
+          trigger alert
         </p>
       </div>
     </div>

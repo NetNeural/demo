@@ -22,20 +22,24 @@
 // ===========================================================================
 
 import { logActivityStart, logActivityComplete } from './activity-logger.ts'
-import { createIntegrationLogger, StructuredLogger, PerformanceTimer } from './structured-logger.ts'
+import {
+  createIntegrationLogger,
+  StructuredLogger,
+  PerformanceTimer,
+} from './structured-logger.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // ===========================================================================
 // Core Types
 // ===========================================================================
 
-export type IntegrationType = 
-  | 'golioth' 
-  | 'aws-iot' 
-  | 'azure-iot' 
-  | 'google-iot' 
-  | 'mqtt' 
-  | 'slack' 
+export type IntegrationType =
+  | 'golioth'
+  | 'aws-iot'
+  | 'azure-iot'
+  | 'google-iot'
+  | 'mqtt'
+  | 'slack'
   | 'webhook'
 
 export interface IntegrationConfig {
@@ -125,7 +129,7 @@ export abstract class BaseIntegrationClient {
   constructor(config: IntegrationConfig) {
     this.config = config
     this.requestId = crypto.randomUUID()
-    
+
     // Initialize structured logger
     this.logger = createIntegrationLogger(
       config.type,
@@ -133,12 +137,12 @@ export abstract class BaseIntegrationClient {
       config.organizationId,
       { requestId: this.requestId }
     )
-    
+
     this.logger.info('client_initialized', {
       type: config.type,
       hasSettings: !!config.settings,
     })
-    
+
     this.validateConfig()
   }
 
@@ -182,10 +186,12 @@ export abstract class BaseIntegrationClient {
   public async bidirectionalSync(devices: Device[]): Promise<SyncResult> {
     const importResult = await this.import()
     const exportResult = await this.export(devices)
-    
+
     return {
-      devices_processed: importResult.devices_processed + exportResult.devices_processed,
-      devices_succeeded: importResult.devices_succeeded + exportResult.devices_succeeded,
+      devices_processed:
+        importResult.devices_processed + exportResult.devices_processed,
+      devices_succeeded:
+        importResult.devices_succeeded + exportResult.devices_succeeded,
       devices_failed: importResult.devices_failed + exportResult.devices_failed,
       errors: [...importResult.errors, ...exportResult.errors],
       details: {
@@ -202,7 +208,7 @@ export abstract class BaseIntegrationClient {
   /**
    * Retry a function with exponential backoff
    * Useful for handling transient network errors
-   * 
+   *
    * @param fn - Function to retry
    * @param maxRetries - Maximum number of retry attempts (default: 3)
    * @param baseDelay - Base delay in milliseconds (default: 1000)
@@ -215,41 +221,46 @@ export abstract class BaseIntegrationClient {
     baseDelay: number = 1000
   ): Promise<T> {
     let lastError: Error | null = null
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         this.logger.debug('retry_attempt', {
           attempt: attempt + 1,
           maxRetries,
         })
-        
+
         return await fn()
       } catch (error) {
         lastError = error as Error
-        
+
         this.logger.warn('retry_failed', {
           attempt: attempt + 1,
           maxRetries,
           error: (error as Error).message,
         })
-        
+
         // Don't retry on authentication errors (4xx)
-        if (error instanceof IntegrationError && error.status && error.status >= 400 && error.status < 500) {
+        if (
+          error instanceof IntegrationError &&
+          error.status &&
+          error.status >= 400 &&
+          error.status < 500
+        ) {
           this.logger.error('retry_aborted_auth_error', error as Error, {
             status: error.status,
           })
           throw error
         }
-        
+
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries - 1) {
           const delay = baseDelay * Math.pow(2, attempt)
           this.logger.debug('retry_backoff', { delay_ms: delay })
-          await new Promise(resolve => setTimeout(resolve, delay))
+          await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
     }
-    
+
     this.logger.error('retry_exhausted', lastError!, {
       maxRetries,
     })
@@ -260,7 +271,7 @@ export abstract class BaseIntegrationClient {
    * Wrap an async operation with activity logging
    * Automatically logs start, success, and failure to integration_activity_log
    * ALSO logs structured logs for debugging and monitoring
-   * 
+   *
    * @param action - Action name (e.g., 'test', 'import', 'export')
    * @param fn - Async function to execute
    * @returns Result of the function
@@ -270,98 +281,105 @@ export abstract class BaseIntegrationClient {
     fn: () => Promise<T>
   ): Promise<T> {
     const supabase = this.config.supabase
-    const activityType = action === 'test' ? 'test_connection' :
-      action === 'import' ? 'sync_import' :
-      action === 'export' ? 'sync_export' :
-      action === 'bidirectionalSync' ? 'sync_bidirectional' : 'other'
-    
+    const activityType =
+      action === 'test'
+        ? 'test_connection'
+        : action === 'import'
+          ? 'sync_import'
+          : action === 'export'
+            ? 'sync_export'
+            : action === 'bidirectionalSync'
+              ? 'sync_bidirectional'
+              : 'other'
+
     // Start performance timer
     const timer = new PerformanceTimer(this.logger, action)
-    
+
     // Log to activity log table
-    const logId = await logActivityStart(
-      supabase,
-      {
-        organizationId: this.config.organizationId,
-        integrationId: this.config.integrationId,
-        direction: 'outgoing',
-        activityType,
-        metadata: { 
-          type: this.config.type,
-          timestamp: new Date().toISOString(),
-          requestId: this.requestId,
-        }
-      }
-    )
-    
+    const logId = await logActivityStart(supabase, {
+      organizationId: this.config.organizationId,
+      integrationId: this.config.integrationId,
+      direction: 'outgoing',
+      activityType,
+      metadata: {
+        type: this.config.type,
+        timestamp: new Date().toISOString(),
+        requestId: this.requestId,
+      },
+    })
+
     this.activityLogId = logId || undefined
-    
+
     // Log structured event
     this.logger.info(`${action}_started`, {
       activityType,
       activityLogId: this.activityLogId,
     })
-    
+
     const startTime = Date.now()
     try {
       const result = await fn()
       const responseTimeMs = Date.now() - startTime
-      
+
       // Complete activity log
       if (this.activityLogId) {
         const updateData: any = {
           status: 'success',
           responseTimeMs,
-          responseBody: typeof result === 'object' ? result as Record<string, unknown> : { value: result },
+          responseBody:
+            typeof result === 'object'
+              ? (result as Record<string, unknown>)
+              : { value: result },
         }
-        
+
         // Add device count fields for sync operations
-        if (typeof result === 'object' && result !== null && 'devices_processed' in result) {
-          const syncResult = result as { devices_processed?: number; devices_succeeded?: number; devices_failed?: number }
+        if (
+          typeof result === 'object' &&
+          result !== null &&
+          'devices_processed' in result
+        ) {
+          const syncResult = result as {
+            devices_processed?: number
+            devices_succeeded?: number
+            devices_failed?: number
+          }
           updateData.devicesProcessed = syncResult.devices_processed
           updateData.devicesSucceeded = syncResult.devices_succeeded
           updateData.devicesFailed = syncResult.devices_failed
         }
-        
-        await logActivityComplete(
-          supabase,
-          this.activityLogId, 
-          updateData
-        )
+
+        await logActivityComplete(supabase, this.activityLogId, updateData)
       }
-      
+
       // Log structured success
       this.logger.info(`${action}_completed`, {
         duration_ms: timer.end(),
         activityLogId: this.activityLogId,
       })
-      
+
       return result
     } catch (error) {
       const responseTimeMs = Date.now() - startTime
-      const errorData = error instanceof IntegrationError 
-        ? error.toJSON()
-        : { message: (error as Error).message }
-      
+      const errorData =
+        error instanceof IntegrationError
+          ? error.toJSON()
+          : { message: (error as Error).message }
+
       // Complete activity log
       if (this.activityLogId) {
-        await logActivityComplete(
-          supabase,
-          this.activityLogId, 
-          { 
-            status: 'failed',
-            responseTimeMs,
-            errorMessage: errorData.message,
-          }
-        )
+        await logActivityComplete(supabase, this.activityLogId, {
+          status: 'failed',
+          responseTimeMs,
+          errorMessage: errorData.message,
+        })
       }
-      
+
       // Log structured error
       this.logger.error(`${action}_failed`, error as Error, {
         duration_ms: timer.endWithError(error as Error),
         activityLogId: this.activityLogId,
       })
-      
+
       throw error
     }
   }
@@ -370,7 +388,7 @@ export abstract class BaseIntegrationClient {
    * Make HTTP request with standardized error handling
    * Automatically converts HTTP errors to IntegrationError
    * Adds correlation headers and structured logging
-   * 
+   *
    * @param url - Request URL
    * @param options - Fetch options
    * @returns Parsed JSON response
@@ -385,9 +403,9 @@ export abstract class BaseIntegrationClient {
     headers.set('X-Request-ID', this.requestId)
     headers.set('X-Integration-ID', this.config.integrationId)
     headers.set('X-Organization-ID', this.config.organizationId)
-    
+
     const method = (options.method || 'GET').toUpperCase()
-    
+
     // Log request
     this.logger.info('http_request', {
       requestId: this.requestId,
@@ -395,50 +413,54 @@ export abstract class BaseIntegrationClient {
       url,
       hasBody: !!options.body,
     })
-    
+
     try {
       const response = await fetch(url, { ...options, headers })
-      
+
       // Log response
       this.logger.info('http_response', {
         requestId: this.requestId,
         status: response.status,
         statusText: response.statusText,
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-          message: response.statusText
+          message: response.statusText,
         }))
-        
+
         const error = new IntegrationError(
-          errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+          errorData.message ||
+            `HTTP ${response.status}: ${response.statusText}`,
           errorData.code || 'HTTP_ERROR',
           response.status,
           errorData
         )
-        
+
         this.logger.error('http_error', error, {
           requestId: this.requestId,
           url,
           method,
           status: response.status,
         })
-        
+
         throw error
       }
-      
+
       // Some endpoints return empty responses (204 No Content)
-      if (response.status === 204 || response.headers.get('content-length') === '0') {
+      if (
+        response.status === 204 ||
+        response.headers.get('content-length') === '0'
+      ) {
         return {} as T
       }
-      
+
       return await response.json()
     } catch (error) {
       if (error instanceof IntegrationError) {
         throw error
       }
-      
+
       // Network errors, timeout errors, etc.
       const networkError = new IntegrationError(
         `Request failed: ${(error as Error).message}`,
@@ -446,13 +468,13 @@ export abstract class BaseIntegrationClient {
         undefined,
         { url, error: (error as Error).message }
       )
-      
+
       this.logger.error('network_error', networkError, {
         requestId: this.requestId,
         url,
         method,
       })
-      
+
       throw networkError
     }
   }
@@ -460,16 +482,16 @@ export abstract class BaseIntegrationClient {
   /**
    * Validate required settings exist
    * Helper for validateConfig() implementation
-   * 
+   *
    * @param requiredFields - Array of required field names
    * @throws Error if any required field is missing
    */
   protected validateRequiredSettings(requiredFields: string[]): void {
-    const missing = requiredFields.filter(field => {
+    const missing = requiredFields.filter((field) => {
       const value = this.config.settings[field]
       return value === undefined || value === null || value === ''
     })
-    
+
     if (missing.length > 0) {
       throw new Error(
         `${this.config.type} integration requires the following settings: ${missing.join(', ')}`
@@ -480,7 +502,7 @@ export abstract class BaseIntegrationClient {
   /**
    * Get typed settings (cast settings to specific type)
    * Useful for accessing integration-specific settings with type safety
-   * 
+   *
    * @returns Settings cast to type T
    */
   protected getSettings<T>(): T {
@@ -491,11 +513,14 @@ export abstract class BaseIntegrationClient {
    * Create a standardized error result
    * Helper for consistent error responses in test(), import(), export()
    */
-  protected createErrorResult(message: string, details?: Record<string, unknown>): TestResult {
+  protected createErrorResult(
+    message: string,
+    details?: Record<string, unknown>
+  ): TestResult {
     return {
       success: false,
       message,
-      details: details || {}
+      details: details || {},
     }
   }
 
@@ -503,11 +528,14 @@ export abstract class BaseIntegrationClient {
    * Create a standardized success result
    * Helper for consistent success responses in test(), import(), export()
    */
-  protected createSuccessResult(message: string, details?: Record<string, unknown>): TestResult {
+  protected createSuccessResult(
+    message: string,
+    details?: Record<string, unknown>
+  ): TestResult {
     return {
       success: true,
       message,
-      details: details || {}
+      details: details || {},
     }
   }
 
@@ -532,20 +560,20 @@ export abstract class BaseIntegrationClient {
    * Record telemetry data during sync operations
    * This ensures ALL integrations (Golioth, AWS IoT, Azure IoT, MQTT, etc.)
    * consistently record telemetry to device_telemetry_history
-   * 
+   *
    * Use this whenever you sync devices that have telemetry data (temperature,
    * battery, signal strength, custom sensor data, etc.)
-   * 
+   *
    * @param deviceId - NetNeural device UUID
    * @param telemetry - Telemetry data as JSON object
    * @param deviceTimestamp - Optional device-reported timestamp
    * @returns UUID of created telemetry record, or null if failed
-   * 
+   *
    * @example
    * // In Golioth sync:
    * const goliothTelemetry = await this.getDeviceTelemetry(goliothDeviceId)
    * await this.recordTelemetry(localDeviceId, goliothTelemetry, goliothTelemetry.timestamp)
-   * 
+   *
    * @example
    * // In AWS IoT sync:
    * const shadow = await this.getThingShadow(thingName)
@@ -564,17 +592,23 @@ export abstract class BaseIntegrationClient {
         return null
       }
 
-      const { data, error } = await this.config.supabase.rpc('record_device_telemetry', {
-        p_device_id: deviceId,
-        p_organization_id: this.config.organizationId,
-        p_telemetry: telemetry,
-        p_device_timestamp: deviceTimestamp || new Date().toISOString(),
-        p_activity_log_id: this.activityLogId || null,
-        p_integration_id: this.config.integrationId,
-      })
+      const { data, error } = await this.config.supabase.rpc(
+        'record_device_telemetry',
+        {
+          p_device_id: deviceId,
+          p_organization_id: this.config.organizationId,
+          p_telemetry: telemetry,
+          p_device_timestamp: deviceTimestamp || new Date().toISOString(),
+          p_activity_log_id: this.activityLogId || null,
+          p_integration_id: this.config.integrationId,
+        }
+      )
 
       if (error) {
-        console.error('[BaseIntegrationClient] Failed to record telemetry:', error)
+        console.error(
+          '[BaseIntegrationClient] Failed to record telemetry:',
+          error
+        )
         return null
       }
 
@@ -588,10 +622,10 @@ export abstract class BaseIntegrationClient {
   /**
    * Record multiple telemetry points in batch
    * More efficient for syncing historical telemetry data
-   * 
+   *
    * @param records - Array of telemetry records
    * @returns Number of successfully recorded entries
-   * 
+   *
    * @example
    * const goliothHistory = await this.getDeviceTelemetryHistory(deviceId, { since: last24Hours })
    * await this.recordTelemetryBatch(goliothHistory.map(point => ({
@@ -613,13 +647,19 @@ export abstract class BaseIntegrationClient {
     const batchSize = 50
     for (let i = 0; i < records.length; i += batchSize) {
       const batch = records.slice(i, i + batchSize)
-      
-      const promises = batch.map(record =>
-        this.recordTelemetry(record.deviceId, record.telemetry, record.timestamp)
+
+      const promises = batch.map((record) =>
+        this.recordTelemetry(
+          record.deviceId,
+          record.telemetry,
+          record.timestamp
+        )
       )
-      
+
       const results = await Promise.allSettled(promises)
-      successCount += results.filter(r => r.status === 'fulfilled' && r.value !== null).length
+      successCount += results.filter(
+        (r) => r.status === 'fulfilled' && r.value !== null
+      ).length
     }
 
     return successCount
@@ -628,7 +668,7 @@ export abstract class BaseIntegrationClient {
   /**
    * Extract telemetry from device metadata
    * Helper function to pull telemetry fields from device metadata JSON
-   * 
+   *
    * Common fields across all integrations:
    * - battery_level, battery, battery_percentage
    * - temperature, temp
@@ -636,7 +676,7 @@ export abstract class BaseIntegrationClient {
    * - rssi, signal_strength
    * - firmware_version
    * - uptime, uptime_seconds
-   * 
+   *
    * @param metadata - Device metadata JSON
    * @returns Extracted telemetry fields
    */
@@ -648,7 +688,8 @@ export abstract class BaseIntegrationClient {
     // Battery (check multiple field names)
     if ('battery_level' in metadata) telemetry.battery = metadata.battery_level
     else if ('battery' in metadata) telemetry.battery = metadata.battery
-    else if ('battery_percentage' in metadata) telemetry.battery = metadata.battery_percentage
+    else if ('battery_percentage' in metadata)
+      telemetry.battery = metadata.battery_percentage
 
     // Temperature
     if ('temperature' in metadata) telemetry.temperature = metadata.temperature
@@ -659,15 +700,19 @@ export abstract class BaseIntegrationClient {
 
     // Signal strength
     if ('rssi' in metadata) telemetry.rssi = metadata.rssi
-    else if ('signal_strength' in metadata) telemetry.rssi = metadata.signal_strength
+    else if ('signal_strength' in metadata)
+      telemetry.rssi = metadata.signal_strength
 
     // Firmware version
-    if ('firmware_version' in metadata) telemetry.firmware_version = metadata.firmware_version
-    else if ('firmware' in metadata) telemetry.firmware_version = metadata.firmware
+    if ('firmware_version' in metadata)
+      telemetry.firmware_version = metadata.firmware_version
+    else if ('firmware' in metadata)
+      telemetry.firmware_version = metadata.firmware
 
     // Uptime
     if ('uptime' in metadata) telemetry.uptime = metadata.uptime
-    else if ('uptime_seconds' in metadata) telemetry.uptime = metadata.uptime_seconds
+    else if ('uptime_seconds' in metadata)
+      telemetry.uptime = metadata.uptime_seconds
 
     return telemetry
   }
@@ -680,7 +725,7 @@ export abstract class BaseIntegrationClient {
 /**
  * Detect conflicts between local and remote device data
  * Compares timestamps and values to determine if a conflict exists
- * 
+ *
  * @param localDevice - Device from NetNeural database
  * @param remoteDevice - Device from external integration
  * @param strategy - Resolution strategy to apply
@@ -692,18 +737,18 @@ export function detectConflict(
   strategy: 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins'
 ): DeviceConflict[] {
   const conflicts: DeviceConflict[] = []
-  
+
   // Fields to check for conflicts
   const fieldsToCompare = ['name', 'status', 'hardware_id', 'location']
-  
+
   for (const field of fieldsToCompare) {
     const localValue = (localDevice as Record<string, unknown>)[field]
     const remoteValue = (remoteDevice as Record<string, unknown>)[field]
-    
+
     // Skip if both values are the same or both undefined
     if (localValue === remoteValue) continue
     if (localValue === undefined && remoteValue === undefined) continue
-    
+
     // For manual strategy, create conflict if values differ
     if (strategy === 'manual') {
       conflicts.push({
@@ -717,7 +762,7 @@ export function detectConflict(
       })
       continue
     }
-    
+
     // For automatic strategies, only create conflict if we can't auto-resolve
     if (strategy === 'newest_wins') {
       // Need timestamps to auto-resolve
@@ -736,14 +781,14 @@ export function detectConflict(
     }
     // local_wins and remote_wins always auto-resolve (no conflict record needed)
   }
-  
+
   return conflicts
 }
 
 /**
  * Resolve conflict automatically based on strategy
  * Returns the value to use based on the resolution strategy
- * 
+ *
  * @param localValue - Value from NetNeural
  * @param remoteValue - Value from external integration
  * @param localTimestamp - When local was updated
@@ -761,10 +806,10 @@ export function autoResolveConflict(
   switch (strategy) {
     case 'local_wins':
       return localValue
-    
+
     case 'remote_wins':
       return remoteValue
-    
+
     case 'newest_wins':
       if (!localTimestamp || !remoteTimestamp) {
         // Fall back to remote if timestamps missing
@@ -773,7 +818,7 @@ export function autoResolveConflict(
       const localTime = new Date(localTimestamp).getTime()
       const remoteTime = new Date(remoteTimestamp).getTime()
       return remoteTime > localTime ? remoteValue : localValue
-    
+
     default:
       return remoteValue
   }
@@ -782,7 +827,7 @@ export function autoResolveConflict(
 /**
  * Log conflict to database
  * Creates a record in device_conflicts table for manual review
- * 
+ *
  * @param supabase - Supabase client
  * @param syncLogId - ID of the sync operation
  * @param conflict - Conflict details
@@ -792,20 +837,18 @@ export async function logConflict(
   syncLogId: string | undefined,
   conflict: DeviceConflict
 ): Promise<void> {
-  const { error } = await supabase
-    .from('device_conflicts')
-    .insert({
-      device_id: conflict.deviceId,
-      sync_log_id: syncLogId || null,
-      conflict_type: conflict.conflictType,
-      field_name: conflict.fieldName,
-      local_value: conflict.localValue,
-      remote_value: conflict.remoteValue,
-      local_updated_at: conflict.localUpdatedAt,
-      remote_updated_at: conflict.remoteUpdatedAt,
-      resolution_status: 'pending',
-    })
-  
+  const { error } = await supabase.from('device_conflicts').insert({
+    device_id: conflict.deviceId,
+    sync_log_id: syncLogId || null,
+    conflict_type: conflict.conflictType,
+    field_name: conflict.fieldName,
+    local_value: conflict.localValue,
+    remote_value: conflict.remoteValue,
+    local_updated_at: conflict.localUpdatedAt,
+    remote_updated_at: conflict.remoteUpdatedAt,
+    resolution_status: 'pending',
+  })
+
   if (error) {
     console.error('[Conflict Detection] Failed to log conflict:', error)
   }

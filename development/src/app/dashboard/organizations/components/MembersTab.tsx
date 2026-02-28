@@ -1,15 +1,22 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useCallback } from 'react'
+import { useDateFormatter } from '@/hooks/useDateFormatter'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -17,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -25,71 +32,111 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useOrganization } from '@/contexts/OrganizationContext';
-import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization';
-import { UserPlus, Trash2, KeyRound, Copy, CheckCircle2 } from 'lucide-react';
-import { edgeFunctions } from '@/lib/edge-functions/client';
-import { useToast } from '@/hooks/use-toast';
-import { AddMemberDialog } from '@/components/organizations/AddMemberDialog';
-import { handleApiError } from '@/lib/sentry-utils';
+} from '@/components/ui/dialog'
+import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
+import { useOrgTier } from '@/hooks/useOrgTier'
+import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization'
+import {
+  UserPlus,
+  Trash2,
+  KeyRound,
+  Copy,
+  CheckCircle2,
+  Pencil,
+  Lock,
+  ArrowUpCircle,
+} from 'lucide-react'
+import { edgeFunctions } from '@/lib/edge-functions/client'
+import { useToast } from '@/hooks/use-toast'
+import { AddMemberDialog } from '@/components/organizations/AddMemberDialog'
+import { EditMemberDialog } from '@/components/organizations/EditMemberDialog'
+import { handleApiError } from '@/lib/sentry-utils'
+import Link from 'next/link'
+
+// ── Seat limits per tier (matches billing_plans.max_users in DB) ──
+// -1 = unlimited. Server-side enforcement is the source of truth.
+const SEAT_LIMITS: Record<string, number> = {
+  free: 1,
+  starter: 3,
+  professional: 25,
+  enterprise: -1,
+  unlimited: -1,
+  reseller: -1,
+}
 
 interface OrganizationMember {
-  id: string;
-  userId: string;
-  name: string;
-  email: string;
-  role: OrganizationRole;
-  joinedAt: string;
-  lastLogin?: string | null;
-  passwordChangeRequired?: boolean;
+  id: string
+  userId: string
+  name: string
+  email: string
+  role: OrganizationRole
+  joinedAt: string
+  lastLogin?: string | null
+  passwordChangeRequired?: boolean
 }
 
 interface MembersTabProps {
-  organizationId: string;
+  organizationId: string
 }
 
 export function MembersTab({ organizationId }: MembersTabProps) {
-  const { permissions, userRole } = useOrganization();
-  const { canManageMembers, canRemoveMembers } = permissions;
-  const { toast } = useToast();
-  
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
-  const [passwordCopied, setPasswordCopied] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
+  const { fmt } = useDateFormatter()
+  const { permissions, userRole } = useOrganization()
+  const { user } = useUser()
+  const isSuperAdmin = user?.isSuperAdmin || false
+  const { canManageMembers, canRemoveMembers } = permissions
+  const { toast } = useToast()
+
+  const [members, setMembers] = useState<OrganizationMember[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false)
+  const [showEditMemberDialog, setShowEditMemberDialog] = useState(false)
+  const [editingMember, setEditingMember] = useState<OrganizationMember | null>(
+    null
+  )
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [selectedMember, setSelectedMember] =
+    useState<OrganizationMember | null>(null)
+  const [generatedPassword, setGeneratedPassword] = useState<string>('')
+  const [passwordCopied, setPasswordCopied] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
+
+  // ── Seat limit logic (#318) ────────────────────────────────────
+  const { tier } = useOrgTier()
+  const seatLimit = SEAT_LIMITS[tier] ?? 3
+  const isUnlimitedSeats = seatLimit === -1
+  const memberCount = members.length
+  const seatLimitReached = !isUnlimitedSeats && memberCount >= seatLimit
+  const seatUsagePercent = isUnlimitedSeats ? 0 : Math.min(100, Math.round((memberCount / seatLimit) * 100))
 
   // Debug logging
-  console.log('📋 MembersTab context:', { 
-    userRole, 
-    canManageMembers, 
-    canRemoveMembers, 
-    organizationId 
-  });
+  console.log('📋 MembersTab context:', {
+    userRole,
+    canManageMembers,
+    canRemoveMembers,
+    organizationId,
+  })
 
   const fetchMembers = useCallback(async () => {
     if (!organizationId) {
-      setMembers([]);
-      setLoading(false);
-      return;
+      setMembers([])
+      setLoading(false)
+      return
     }
 
     try {
-      setLoading(true);
-      
-      const response = await edgeFunctions.members.list(organizationId);
+      setLoading(true)
+
+      const response = await edgeFunctions.members.list(organizationId)
 
       if (!response.success) {
         const error = new Error(
           typeof response.error === 'string'
             ? response.error
             : 'Failed to fetch members'
-        );
-        
+        )
+
         // Send to Sentry with context but don't show popup
         handleApiError(error, {
           endpoint: `/api/organizations/${organizationId}/members`,
@@ -98,18 +145,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
             organization_id: organizationId,
           },
           skipUserNotification: true, // Prevent Sentry popup
-        });
-        
+        })
+
         // Don't throw - just set empty members array and continue
-        setMembers([]);
-        return;
+        setMembers([])
+        return
       }
 
-      const data = response.data as { members?: OrganizationMember[] };
-      setMembers(data.members || []);
+      const data = response.data as { members?: OrganizationMember[] }
+      setMembers(data.members || [])
     } catch (error) {
-      console.error('Error fetching members:', error);
-      
+      console.error('Error fetching members:', error)
+
       // Send to Sentry but don't show popup to user
       handleApiError(
         error instanceof Error ? error : new Error('Unknown error'),
@@ -123,162 +170,187 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           },
           skipUserNotification: true, // Prevent Sentry popup
         }
-      );
-      
-      setMembers([]);
+      )
+
+      setMembers([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [organizationId]);
+  }, [organizationId])
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    fetchMembers()
+  }, [fetchMembers])
 
   const handleRemoveMember = async (memberId: string) => {
-    const memberToRemove = members.find(m => m.id === memberId);
-    const memberName = memberToRemove?.name || 'this member';
-    
-    if (!confirm(`Are you sure you want to remove ${memberName} from the organization?`)) {
-      return;
+    const memberToRemove = members.find((m) => m.id === memberId)
+    const memberName = memberToRemove?.name || 'this member'
+
+    if (
+      !confirm(
+        `Are you sure you want to remove ${memberName} from the organization?`
+      )
+    ) {
+      return
     }
 
     try {
-      console.log('🗑️ Removing member:', { memberId, organizationId });
-      
-      const response = await edgeFunctions.members.remove(organizationId, memberId);
+      console.log('🗑️ Removing member:', { memberId, organizationId })
+
+      const response = await edgeFunctions.members.remove(
+        organizationId,
+        memberId
+      )
 
       if (!response.success) {
-        const errorMsg = typeof response.error === 'string'
-          ? response.error
-          : 'Failed to remove member';
-        
-        console.error('❌ Remove member failed:', response.error);
-        throw new Error(errorMsg);
+        const errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to remove member'
+
+        console.error('❌ Remove member failed:', response.error)
+        throw new Error(errorMsg)
       }
 
-      console.log('✅ Member removed successfully');
-      
+      console.log('✅ Member removed successfully')
+
       toast({
         title: 'Success',
         description: `${memberName} has been removed from the organization`,
-      });
-      
-      await fetchMembers();
+      })
+
+      await fetchMembers()
     } catch (error) {
-      console.error('❌ Error removing member:', error);
-      
-      const errorMsg = error instanceof Error ? error.message : 'Failed to remove member';
-      
+      console.error('❌ Error removing member:', error)
+
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to remove member'
+
       toast({
         title: 'Error',
         description: errorMsg,
         variant: 'destructive',
-      });
+      })
     }
-  };
+  }
 
-  const handleChangeRole = async (memberId: string, newRole: OrganizationRole) => {
-    const memberToUpdate = members.find(m => m.id === memberId);
-    const memberName = memberToUpdate?.name || 'member';
-    
+  const handleChangeRole = async (
+    memberId: string,
+    newRole: OrganizationRole
+  ) => {
+    const memberToUpdate = members.find((m) => m.id === memberId)
+    const memberName = memberToUpdate?.name || 'member'
+
     try {
-      console.log('🔄 Updating member role:', { memberId, newRole, organizationId });
-      
-      const response = await edgeFunctions.members.updateRole(organizationId, memberId, newRole);
+      console.log('🔄 Updating member role:', {
+        memberId,
+        newRole,
+        organizationId,
+      })
+
+      const response = await edgeFunctions.members.updateRole(
+        organizationId,
+        memberId,
+        newRole
+      )
 
       if (!response.success) {
-        const errorMsg = typeof response.error === 'string'
-          ? response.error
-          : 'Failed to update role';
-        
-        console.error('❌ Update role failed:', response.error);
-        throw new Error(errorMsg);
+        const errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to update role'
+
+        console.error('❌ Update role failed:', response.error)
+        throw new Error(errorMsg)
       }
 
-      console.log('✅ Role updated successfully');
-      
+      console.log('✅ Role updated successfully')
+
       toast({
         title: 'Success',
         description: `${memberName}'s role has been updated to ${newRole}`,
-      });
-      
-      await fetchMembers();
+      })
+
+      await fetchMembers()
     } catch (error) {
-      console.error('❌ Error changing role:', error);
-      
-      const errorMsg = error instanceof Error ? error.message : 'Failed to update role';
-      
+      console.error('❌ Error changing role:', error)
+
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to update role'
+
       toast({
         title: 'Error',
         description: errorMsg,
         variant: 'destructive',
-      });
+      })
     }
-  };
+  }
 
   const handleResetPassword = async (member: OrganizationMember) => {
     try {
-      setResettingPassword(true);
-      setSelectedMember(member);
-      
+      setResettingPassword(true)
+      setSelectedMember(member)
+
       // Generate random password (12 characters, mix of letters, numbers, special chars)
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+      const chars =
+        'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*'
       const tempPassword = Array.from(
-        { length: 12 }, 
+        { length: 12 },
         () => chars[Math.floor(Math.random() * chars.length)]
-      ).join('');
-      
+      ).join('')
+
       // Call reset password API (we'll create this edge function)
       const response = await edgeFunctions.members.resetPassword(
-        member.userId, 
+        member.userId,
         tempPassword
-      );
+      )
 
       if (!response.success) {
-        const errorMsg = typeof response.error === 'string'
-          ? response.error
-          : 'Failed to reset password';
-        throw new Error(errorMsg);
+        const errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to reset password'
+        throw new Error(errorMsg)
       }
 
-      setGeneratedPassword(tempPassword);
-      setPasswordCopied(false);
-      setShowPasswordDialog(true);
-      
+      setGeneratedPassword(tempPassword)
+      setPasswordCopied(false)
+      setShowPasswordDialog(true)
+
       toast({
         title: 'Password Reset',
         description: `New temporary password generated for ${member.name}`,
-      });
-      
+      })
+
       // Refresh members to update password status
-      await fetchMembers();
+      await fetchMembers()
     } catch (error) {
-      console.error('❌ Error resetting password:', error);
-      
-      const errorMsg = error instanceof Error ? error.message : 'Failed to reset password';
-      
+      console.error('❌ Error resetting password:', error)
+
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to reset password'
+
       toast({
         title: 'Error',
         description: errorMsg,
         variant: 'destructive',
-      });
+      })
     } finally {
-      setResettingPassword(false);
+      setResettingPassword(false)
     }
-  };
+  }
 
   const handleCopyPassword = () => {
-    navigator.clipboard.writeText(generatedPassword);
-    setPasswordCopied(true);
-    
+    navigator.clipboard.writeText(generatedPassword)
+    setPasswordCopied(true)
+
     toast({
       title: 'Copied',
       description: 'Password copied to clipboard',
-    });
-    
-    setTimeout(() => setPasswordCopied(false), 2000);
-  };
+    })
+
+    setTimeout(() => setPasswordCopied(false), 2000)
+  }
 
   if (loading) {
     return (
@@ -287,7 +359,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           <p className="text-muted-foreground">Loading members...</p>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -297,23 +369,69 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Organization Members ({members.length})</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                Organization Members ({members.length})
+                {/* Seat usage badge */}
+                {!isUnlimitedSeats && (
+                  <Badge
+                    variant={seatLimitReached ? 'destructive' : 'outline'}
+                    className="text-xs font-normal"
+                  >
+                    {memberCount} of {seatLimit} seats used
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
                 Users who have access to this organization
+                {isUnlimitedSeats && ' • Unlimited seats'}
               </CardDescription>
+              {/* Seat usage bar */}
+              {!isUnlimitedSeats && (
+                <div className="mt-2 w-64">
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        seatLimitReached
+                          ? 'bg-destructive'
+                          : seatUsagePercent >= 80
+                            ? 'bg-amber-500'
+                            : 'bg-primary'
+                      }`}
+                      style={{ width: `${seatUsagePercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             {canManageMembers && (
-              <Button onClick={() => setShowAddMemberDialog(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Member
-              </Button>
+              seatLimitReached ? (
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Lock className="h-4 w-4" />
+                    <span>Seat limit reached</span>
+                  </div>
+                  <Link href="/dashboard/settings?tab=subscription">
+                    <Button size="sm" variant="default">
+                      <ArrowUpCircle className="mr-2 h-4 w-4" />
+                      Upgrade Plan
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Button onClick={() => setShowAddMemberDialog(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+              )
             )}
           </div>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No members in this organization yet</p>
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">
+                No members in this organization yet
+              </p>
             </div>
           ) : (
             <Table>
@@ -330,48 +448,79 @@ export function MembersTab({ organizationId }: MembersTabProps) {
               </TableHeader>
               <TableBody>
                 {members.map((member) => {
-                  const roleInfo = getRoleDisplayInfo(member.role);
-                  
+                  const roleInfo = getRoleDisplayInfo(member.role)
+
                   // Can modify if:
                   // 1. User can manage members (admin or owner)
                   // 2. AND (target is not owner OR current user is owner - only owners can modify owners)
-                  const canModifyThisMember = canManageMembers && (member.role !== 'owner' || userRole === 'owner');
-                  
+                  const canModifyThisMember =
+                    canManageMembers &&
+                    (member.role !== 'owner' ||
+                      userRole === 'owner' ||
+                      isSuperAdmin)
+
                   // Can delete if:
                   // 1. User has remove permissions (admin or owner)
-                  // 2. AND (target is not owner OR current user is owner - only owners can delete owners)
-                  const canDeleteThisMember = canRemoveMembers && (member.role !== 'owner' || userRole === 'owner');
-                  
+                  // 2. AND (target is not owner OR current user is owner/super_admin)
+                  const canDeleteThisMember =
+                    canRemoveMembers &&
+                    (member.role !== 'owner' ||
+                      userRole === 'owner' ||
+                      isSuperAdmin)
+
                   return (
                     <TableRow key={member.id}>
-                      <TableCell className="font-medium">{member.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                      <TableCell className="font-medium">
+                        {member.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {member.email}
+                      </TableCell>
                       <TableCell>
                         {canModifyThisMember ? (
-                          <Select 
-                            value={member.role} 
-                            onValueChange={(val) => handleChangeRole(member.id, val as OrganizationRole)}
+                          <Select
+                            value={member.role}
+                            onValueChange={(val) =>
+                              handleChangeRole(
+                                member.id,
+                                val as OrganizationRole
+                              )
+                            }
                           >
                             <SelectTrigger className="w-32">
-                              <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
+                              <Badge className={roleInfo.color}>
+                                {roleInfo.label}
+                              </Badge>
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="viewer">Viewer</SelectItem>
                               <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="billing">Billing</SelectItem>
                               <SelectItem value="admin">Admin</SelectItem>
-                              {userRole === 'owner' && <SelectItem value="owner">Owner</SelectItem>}
+                              {(userRole === 'owner' || isSuperAdmin) && (
+                                <SelectItem value="owner">Owner</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
+                          <Badge className={roleInfo.color}>
+                            {roleInfo.label}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={member.passwordChangeRequired ? "destructive" : "outline"}
+                          <Badge
+                            variant={
+                              member.passwordChangeRequired
+                                ? 'destructive'
+                                : 'outline'
+                            }
                             className="text-xs"
                           >
-                            {member.passwordChangeRequired ? "Temporary" : "Set"}
+                            {member.passwordChangeRequired
+                              ? 'Temporary'
+                              : 'Set'}
                           </Badge>
                           {canModifyThisMember && (
                             <Button
@@ -381,41 +530,56 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                               disabled={resettingPassword}
                               title="Reset password"
                             >
-                              <KeyRound className="w-3 h-3" />
+                              <KeyRound className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(member.joinedAt).toLocaleDateString()}
+                        {fmt.dateOnly(member.joinedAt)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {member.lastLogin 
-                          ? new Date(member.lastLogin).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : <span className="text-muted-foreground/50">Never</span>
-                        }
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {canDeleteThisMember ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(member.id)}
-                            title="Remove member from organization"
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {member.lastLogin ? (
+                          fmt.shortDateTime(member.lastLogin)
                         ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
+                          <span className="text-muted-foreground/50">
+                            Never
+                          </span>
                         )}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {canModifyThisMember && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingMember(member)
+                                setShowEditMemberDialog(true)
+                              }}
+                              title="Edit member profile"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDeleteThisMember ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id)}
+                              title="Remove member from organization"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              -
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  );
+                  )
                 })}
               </TableBody>
             </Table>
@@ -430,6 +594,16 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         onOpenChange={setShowAddMemberDialog}
         onMemberAdded={fetchMembers}
         userRole={userRole || 'member'}
+        isSuperAdmin={isSuperAdmin}
+      />
+
+      {/* Edit Member Dialog */}
+      <EditMemberDialog
+        organizationId={organizationId}
+        open={showEditMemberDialog}
+        onOpenChange={setShowEditMemberDialog}
+        member={editingMember}
+        onMemberUpdated={fetchMembers}
       />
 
       {/* Reset Password Dialog */}
@@ -438,15 +612,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>
             <DialogDescription>
-              A new temporary password has been generated for {selectedMember?.name} and has been emailed to {selectedMember?.email}.
-              The user will be required to change it on their next login.
+              A new temporary password has been generated for{' '}
+              {selectedMember?.name} and has been emailed to{' '}
+              {selectedMember?.email}. The user will be required to change it on
+              their next login.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
               <p className="text-sm text-green-800 dark:text-green-200">
-                ✉️ An email has been sent to the user with their temporary password.
+                ✉️ An email has been sent to the user with their temporary
+                password.
               </p>
             </div>
 
@@ -460,7 +637,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Temporary Password</label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
+                <code className="flex-1 rounded bg-muted px-3 py-2 font-mono text-sm">
                   {generatedPassword}
                 </code>
                 <Button
@@ -470,17 +647,18 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   title="Copy to clipboard"
                 >
                   {passwordCopied ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <Copy className="h-4 w-4" />
                   )}
                 </Button>
               </div>
             </div>
 
-            <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950/30">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Make sure to save this password - you won&apos;t be able to see it again!
+                ⚠️ Make sure to save this password - you won&apos;t be able to
+                see it again!
               </p>
             </div>
           </div>
@@ -496,5 +674,5 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

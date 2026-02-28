@@ -51,7 +51,7 @@ Webhooks send data out, so only export makes sense:
   integrationName={config.name}
   availableDirections={['export']}
   defaultOptions={{ direction: 'export' }}
-  showSyncMetadata={false}  // Webhooks don't sync metadata
+  showSyncMetadata={false} // Webhooks don't sync metadata
   helpText="Webhook sync sends device events to your endpoint"
 />
 ```
@@ -104,7 +104,9 @@ For complex integrations that need completely custom sync options:
         <Label>Custom Sync Mode</Label>
         <Select
           value={options.direction}
-          onValueChange={(value) => setOptions({ ...options, direction: value })}
+          onValueChange={(value) =>
+            setOptions({ ...options, direction: value })
+          }
           disabled={syncing}
         >
           <SelectTrigger>
@@ -117,7 +119,7 @@ For complex integrations that need completely custom sync options:
           </SelectContent>
         </Select>
       </div>
-      
+
       {/* Add any custom fields specific to this integration */}
       <Input placeholder="Custom field..." disabled={syncing} />
     </div>
@@ -163,22 +165,22 @@ switch (typedIntegration.integration_type) {
 
 ## Props Reference
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `integrationId` | string | **required** | Integration ID |
-| `organizationId` | string | **required** | Organization ID |
-| `integrationType` | string | **required** | Type for logging |
-| `integrationName` | string | **required** | Display name |
-| `defaultOptions` | Partial<SyncOptions> | `{}` | Default sync option values |
-| `availableDirections` | Array | `['import', 'export', 'bidirectional']` | Which directions to show |
-| `showCreateMissing` | boolean | `true` | Show "Create Missing" toggle |
-| `showUpdateExisting` | boolean | `true` | Show "Update Existing" toggle |
-| `showSyncStatus` | boolean | `true` | Show "Sync Status" toggle |
-| `showSyncMetadata` | boolean | `true` | Show "Sync Metadata" toggle |
-| `showDryRun` | boolean | `true` | Show "Dry Run" toggle |
-| `showDeviceLimit` | boolean | `true` | Show device limit input |
-| `customOptionsRenderer` | function | `undefined` | Completely custom options UI |
-| `helpText` | string | `undefined` | Help text shown in options header |
+| Prop                    | Type                 | Default                                 | Description                       |
+| ----------------------- | -------------------- | --------------------------------------- | --------------------------------- |
+| `integrationId`         | string               | **required**                            | Integration ID                    |
+| `organizationId`        | string               | **required**                            | Organization ID                   |
+| `integrationType`       | string               | **required**                            | Type for logging                  |
+| `integrationName`       | string               | **required**                            | Display name                      |
+| `defaultOptions`        | Partial<SyncOptions> | `{}`                                    | Default sync option values        |
+| `availableDirections`   | Array                | `['import', 'export', 'bidirectional']` | Which directions to show          |
+| `showCreateMissing`     | boolean              | `true`                                  | Show "Create Missing" toggle      |
+| `showUpdateExisting`    | boolean              | `true`                                  | Show "Update Existing" toggle     |
+| `showSyncStatus`        | boolean              | `true`                                  | Show "Sync Status" toggle         |
+| `showSyncMetadata`      | boolean              | `true`                                  | Show "Sync Metadata" toggle       |
+| `showDryRun`            | boolean              | `true`                                  | Show "Dry Run" toggle             |
+| `showDeviceLimit`       | boolean              | `true`                                  | Show device limit input           |
+| `customOptionsRenderer` | function             | `undefined`                             | Completely custom options UI      |
+| `helpText`              | string               | `undefined`                             | Help text shown in options header |
 
 ## Benefits
 
@@ -194,28 +196,35 @@ switch (typedIntegration.integration_type) {
 When adding sync to a new integration dialog:
 
 1. Import the component:
+
 ```tsx
 import { IntegrationSyncTab } from './IntegrationSyncTab'
 ```
 
 2. Add the tab to TabsList:
+
 ```tsx
-<TabsTrigger value="sync" disabled={!integrationId}>Run Sync</TabsTrigger>
+<TabsTrigger value="sync" disabled={!integrationId}>
+  Run Sync
+</TabsTrigger>
 ```
 
 3. Add the tab content:
+
 ```tsx
-{integrationId && (
-  <TabsContent value="sync" className="space-y-4">
-    <IntegrationSyncTab
-      integrationId={integrationId}
-      organizationId={organizationId}
-      integrationType="your_type"
-      integrationName={config.name}
-      // Add customization props as needed
-    />
-  </TabsContent>
-)}
+{
+  integrationId && (
+    <TabsContent value="sync" className="space-y-4">
+      <IntegrationSyncTab
+        integrationId={integrationId}
+        organizationId={organizationId}
+        integrationType="your_type"
+        integrationName={config.name}
+        // Add customization props as needed
+      />
+    </TabsContent>
+  )
+}
 ```
 
 That's it! 🎉

@@ -1,0 +1,19 @@
+# Pre-commit hooks for secret detection
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*node_modules/.*|
+            .*\.next/.*|
+            development/test-ai-insights\.js$|
+            development/scripts/validate-local-full\.sh$|
+            development/scripts/validate-local-quick\.sh$
+          )

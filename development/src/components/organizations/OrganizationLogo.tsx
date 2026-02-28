@@ -31,24 +31,26 @@ const fallbackIconSizes = {
  * Shows logo if available in settings.branding.logo_url
  * Falls back to Building2 icon if no logo or showFallback is false
  */
-export function OrganizationLogo({ 
-  settings, 
+export function OrganizationLogo({
+  settings,
   name = 'Organization',
   size = 'md',
   className,
-  showFallback = true
+  showFallback = true,
 }: OrganizationLogoProps) {
   const logoUrl = settings?.branding?.logo_url
 
   if (!logoUrl) {
     if (!showFallback) return null
-    
+
     return (
-      <div className={cn(
-        'flex items-center justify-center rounded-md bg-muted text-muted-foreground flex-shrink-0',
-        sizeClasses[size],
-        className
-      )}>
+      <div
+        className={cn(
+          'flex flex-shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground',
+          sizeClasses[size],
+          className
+        )}
+      >
         <Building2 className={fallbackIconSizes[size]} />
       </div>
     )
@@ -59,7 +61,7 @@ export function OrganizationLogo({
       src={logoUrl}
       alt={`${name} logo`}
       className={cn(
-        'object-contain flex-shrink-0',
+        'flex-shrink-0 object-contain',
         sizeClasses[size],
         className
       )}

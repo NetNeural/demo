@@ -1,6 +1,6 @@
 /**
  * COMPREHENSIVE TEST SUITE: Organization Management
- * 
+ *
  * Tests all organization CRUD operations, member management, RLS policies
  * Coverage: Organizations, Members, Roles, Permissions, Business Rules
  */
@@ -55,7 +55,11 @@ describe('Organization Management - Complete Coverage', () => {
         insert: jest.fn().mockReturnValue({
           select: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({
-              data: { id: 'org-123', ...orgData, created_at: new Date().toISOString() },
+              data: {
+                id: 'org-123',
+                ...orgData,
+                created_at: new Date().toISOString(),
+              },
               error: null,
             }),
           }),
@@ -115,7 +119,10 @@ describe('Organization Management - Complete Coverage', () => {
           select: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({
               data: null,
-              error: { message: 'slug must be lowercase alphanumeric', code: '23514' },
+              error: {
+                message: 'slug must be lowercase alphanumeric',
+                code: '23514',
+              },
             }),
           }),
         }),
@@ -132,7 +139,7 @@ describe('Organization Management - Complete Coverage', () => {
 
     test('should auto-create owner as first member', async () => {
       const mockFrom = mockSupabase.from as jest.Mock
-      
+
       // First call: create organization
       mockFrom.mockReturnValueOnce({
         insert: jest.fn().mockReturnValue({
@@ -150,22 +157,28 @@ describe('Organization Management - Complete Coverage', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockResolvedValue({
-              data: [{ 
-                organization_id: 'org-123',
-                user_id: 'user-123',
-                role: 'owner',
-              }],
+              data: [
+                {
+                  organization_id: 'org-123',
+                  user_id: 'user-123',
+                  role: 'owner',
+                },
+              ],
               error: null,
             }),
           }),
         }),
       })
 
-      await mockSupabase.from('organizations').insert({
-        name: 'New Org',
-        slug: 'new-org',
-        owner_id: 'user-123',
-      }).select().single()
+      await mockSupabase
+        .from('organizations')
+        .insert({
+          name: 'New Org',
+          slug: 'new-org',
+          owner_id: 'user-123',
+        })
+        .select()
+        .single()
 
       const members = await mockSupabase
         .from('organization_members')
@@ -296,11 +309,13 @@ describe('Organization Management - Complete Coverage', () => {
       const mockFrom = mockSupabase.from as jest.Mock
       mockFrom.mockReturnValue({
         select: jest.fn().mockResolvedValue({
-          data: [{
-            id: 'org-123',
-            name: 'Test Org',
-            member_count: 15,
-          }],
+          data: [
+            {
+              id: 'org-123',
+              name: 'Test Org',
+              member_count: 15,
+            },
+          ],
           error: null,
         }),
       })
@@ -581,7 +596,9 @@ describe('Organization Management - Complete Coverage', () => {
         .eq('organization_id', 'org-123')
 
       expect(result.data).toHaveLength(3)
-      expect(result.data?.find((m: { role: string }) => m.role === 'owner')).toBeDefined()
+      expect(
+        result.data?.find((m: { role: string }) => m.role === 'owner')
+      ).toBeDefined()
     })
   })
 
@@ -633,9 +650,7 @@ describe('Organization Management - Complete Coverage', () => {
         }),
       })
 
-      const result = await mockSupabase
-        .from('organizations')
-        .select('*')
+      const result = await mockSupabase.from('organizations').select('*')
 
       expect(result.data).toHaveLength(0)
     })
@@ -673,7 +688,10 @@ describe('Organization Management - Complete Coverage', () => {
         delete: jest.fn().mockReturnValue({
           eq: jest.fn().mockResolvedValue({
             data: null,
-            error: { message: 'organization has active devices', code: '23503' },
+            error: {
+              message: 'organization has active devices',
+              code: '23503',
+            },
           }),
         }),
       })
@@ -689,7 +707,7 @@ describe('Organization Management - Complete Coverage', () => {
 
     test('should cascade delete members when deleting organization', async () => {
       const mockFrom = mockSupabase.from as jest.Mock
-      
+
       // Delete org
       mockFrom.mockReturnValueOnce({
         delete: jest.fn().mockReturnValue({
@@ -726,10 +744,12 @@ describe('Organization Management - Complete Coverage', () => {
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockResolvedValue({
-            data: [{
-              quota: 100,
-              devices_count: 75,
-            }],
+            data: [
+              {
+                quota: 100,
+                devices_count: 75,
+              },
+            ],
             error: null,
           }),
         }),

@@ -2,7 +2,7 @@
 
 # Update admin@netneural.com to super_admin role using Supabase REST API
 
-SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY"
+SERVICE_ROLE_KEY=${PROD_SUPABASE_SERVICE_ROLE_KEY}
 SUPABASE_URL="https://bldojxpockljyivldxwf.supabase.co"
 
 echo "Fetching user admin@netneural.com..."

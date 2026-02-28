@@ -35,7 +35,7 @@ SELECT cron.schedule(
     url := 'https://atgbmxicqikmapfqouco.supabase.co/functions/v1/sensor-threshold-evaluator',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY'
+      'Authorization', 'Bearer <YOUR_SERVICE_ROLE_KEY>'
     ),
     body := '{}'::jsonb
   ) as request_id;

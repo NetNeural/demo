@@ -22,26 +22,27 @@ console.log(`🔍 Checking auth status for: ${TARGET_EMAIL}`)
 console.log('')
 
 const supabase = createClient(PROD_URL, SERVICE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
+  auth: { autoRefreshToken: false, persistSession: false },
 })
 
 async function checkAndFix() {
   try {
     // Get auth user
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
-    
+    const { data: authUsers, error: authError } =
+      await supabase.auth.admin.listUsers()
+
     if (authError) {
       console.error('❌ Error:', authError.message)
       return
     }
 
-    const authUser = authUsers.users.find(u => u.email === TARGET_EMAIL)
-    
+    const authUser = authUsers.users.find((u) => u.email === TARGET_EMAIL)
+
     if (!authUser) {
       console.log(`❌ User ${TARGET_EMAIL} not found in auth`)
       return
     }
-    
+
     console.log('✅ Auth user found')
     console.log(`   ID: ${authUser.id}`)
     console.log(`   Email: ${authUser.email}`)
@@ -54,28 +55,28 @@ async function checkAndFix() {
     if (!authUser.email_confirmed_at) {
       console.log('⚠️  Email is NOT confirmed')
       console.log('   Confirming email...')
-      
+
       await supabase.auth.admin.updateUserById(authUser.id, {
-        email_confirm: true
+        email_confirm: true,
       })
-      
+
       console.log('✅ Email confirmed')
       console.log('')
     }
 
     // Reset password
     console.log(`🔧 Resetting password to: ${NEW_PASSWORD}`)
-    
+
     const { error: updateError } = await supabase.auth.admin.updateUserById(
       authUser.id,
       { password: NEW_PASSWORD }
     )
-    
+
     if (updateError) {
       console.error('❌ Error resetting password:', updateError.message)
       return
     }
-    
+
     console.log('✅ Password reset successful')
     console.log('')
 
@@ -89,7 +90,6 @@ async function checkAndFix() {
     console.log('')
     console.log('Try logging in now (use incognito mode)!')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
   } catch (error) {
     console.error('❌ Unexpected error:', error.message)
   }

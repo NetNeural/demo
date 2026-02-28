@@ -1,24 +1,30 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
 import { Toaster } from 'sonner'
-import { SentryInit } from '@/components/SentryInit'
+import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+}
+
 export const metadata: Metadata = {
-  title: 'NetNeural IoT Platform',
+  title: 'Sentinel by NetNeural',
   description: 'Enterprise IoT Device Management and Monitoring Platform',
   keywords: ['IoT', 'device management', 'monitoring', 'sensors', 'Golioth'],
   authors: [{ name: 'NetNeural Team' }],
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.svg',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
+  // Security: X-Frame-Options equivalent via meta (prevents clickjacking)
+  other: {
+    'X-Content-Type-Options': 'nosniff',
   },
 }
 
@@ -29,8 +35,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Security Headers via meta tags (static export — no server headers) */}
+        {/* CSP: restrict content sources to self + known services */}
+        {/* Note: frame-ancestors is NOT supported via <meta> — only via HTTP header. */}
+        {/* GitHub Pages doesn't allow custom headers, so frame-ancestors is omitted here. */}
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com;"
+        />
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        {/* Referrer policy — don't leak full URLs to third parties */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        {/* Note: HSTS is provided by GitHub Pages automatically */}
+      </head>
       <body className={inter.className}>
-        <SentryInit />
+        <WebVitalsReporter />
         <Providers>
           {children}
           <Toaster theme="system" richColors />

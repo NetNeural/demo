@@ -5,7 +5,14 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
 describe('Label Component - Real Source Code Tests', () => {
@@ -143,7 +150,7 @@ describe('Alert Component - Real Source Code Tests', () => {
   })
 
   test('should accept custom className', () => {
-    const { container} = render(<Alert className="custom">Alert</Alert>)
+    const { container } = render(<Alert className="custom">Alert</Alert>)
     const alert = container.firstChild as HTMLElement
     expect(alert).toHaveClass('custom')
   })

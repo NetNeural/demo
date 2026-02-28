@@ -1,21 +1,21 @@
-'use client';
+'use client'
 
-import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs'
+import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { AlertTriangle } from 'lucide-react'
 
 export default function ErrorBoundary({
   error,
   reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
   useEffect(() => {
     // Log the error to Sentry
-    Sentry.captureException(error);
-  }, [error]);
+    Sentry.captureException(error)
+  }, [error])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -23,9 +23,11 @@ export default function ErrorBoundary({
         <div className="flex justify-center">
           <AlertTriangle className="h-16 w-16 text-destructive" />
         </div>
-        
+
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Something went wrong!</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Something went wrong!
+          </h1>
           <p className="text-muted-foreground">
             We&apos;ve been notified and are looking into the issue.
           </p>
@@ -37,9 +39,11 @@ export default function ErrorBoundary({
               Error Details (Development Only)
             </summary>
             <div className="mt-4 space-y-2">
-              <p className="text-sm font-mono break-all">{error.message}</p>
+              <p className="break-all font-mono text-sm">{error.message}</p>
               {error.digest && (
-                <p className="text-xs text-muted-foreground">Digest: {error.digest}</p>
+                <p className="text-xs text-muted-foreground">
+                  Digest: {error.digest}
+                </p>
               )}
               {error.stack && (
                 <pre className="mt-2 overflow-auto rounded bg-muted p-2 text-xs">
@@ -54,11 +58,14 @@ export default function ErrorBoundary({
           <Button onClick={reset} variant="default">
             Try again
           </Button>
-          <Button onClick={() => (window.location.href = '/dashboard')} variant="outline">
+          <Button
+            onClick={() => (window.location.href = '/dashboard')}
+            variant="outline"
+          >
             Go to Dashboard
           </Button>
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -3,6 +3,7 @@
 ## Overview
 
 The platform needs a **super admin** role that can:
+
 - Manage multiple organizations
 - View all data across all orgs
 - Create/edit/delete organizations
@@ -35,6 +36,7 @@ CREATE TYPE user_role AS ENUM ('super_admin', 'org_admin', 'org_owner', 'user', 
 ```
 
 ✅ **Users table supports it**:
+
 ```sql
 role user_role DEFAULT 'user',
 organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
@@ -44,34 +46,34 @@ organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
 
 ## Capabilities Comparison
 
-| Capability | Super Admin | Org Owner | Org Admin | User | Viewer |
-|------------|-------------|-----------|-----------|------|--------|
-| **Organizations** |
-| View all orgs | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Create orgs | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Edit any org | ✅ | Own only | ❌ | ❌ | ❌ |
-| Delete orgs | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manage org settings | ✅ | Own only | ❌ | ❌ | ❌ |
-| **Users** |
-| View all users | ✅ | Own org | Own org | ❌ | ❌ |
-| Create users | ✅ | Own org | Own org | ❌ | ❌ |
-| Edit any user | ✅ | Own org | Own org | ❌ | ❌ |
-| Delete users | ✅ | Own org | Own org | ❌ | ❌ |
-| Change user roles | ✅ | Own org | Own org | ❌ | ❌ |
-| **Devices** |
-| View all devices | ✅ | Own org | Own org | Own org | Own org |
-| Create devices | ✅ | Own org | Own org | ✅ | ❌ |
-| Edit devices | ✅ | Own org | Own org | ✅ | ❌ |
-| Delete devices | ✅ | Own org | Own org | ❌ | ❌ |
-| **Analytics** |
-| Platform-wide stats | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Org analytics | ✅ | Own org | Own org | ❌ | ❌ |
-| Device analytics | ✅ | Own org | Own org | Own org | Own org |
-| **Settings** |
-| Global platform settings | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Organization settings | ✅ | Own org | ❌ | ❌ | ❌ |
-| Integration settings | ✅ | Own org | Own org | ❌ | ❌ |
-| User preferences | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Capability               | Super Admin | Org Owner | Org Admin | User    | Viewer  |
+| ------------------------ | ----------- | --------- | --------- | ------- | ------- |
+| **Organizations**        |
+| View all orgs            | ✅          | ❌        | ❌        | ❌      | ❌      |
+| Create orgs              | ✅          | ❌        | ❌        | ❌      | ❌      |
+| Edit any org             | ✅          | Own only  | ❌        | ❌      | ❌      |
+| Delete orgs              | ✅          | ❌        | ❌        | ❌      | ❌      |
+| Manage org settings      | ✅          | Own only  | ❌        | ❌      | ❌      |
+| **Users**                |
+| View all users           | ✅          | Own org   | Own org   | ❌      | ❌      |
+| Create users             | ✅          | Own org   | Own org   | ❌      | ❌      |
+| Edit any user            | ✅          | Own org   | Own org   | ❌      | ❌      |
+| Delete users             | ✅          | Own org   | Own org   | ❌      | ❌      |
+| Change user roles        | ✅          | Own org   | Own org   | ❌      | ❌      |
+| **Devices**              |
+| View all devices         | ✅          | Own org   | Own org   | Own org | Own org |
+| Create devices           | ✅          | Own org   | Own org   | ✅      | ❌      |
+| Edit devices             | ✅          | Own org   | Own org   | ✅      | ❌      |
+| Delete devices           | ✅          | Own org   | Own org   | ❌      | ❌      |
+| **Analytics**            |
+| Platform-wide stats      | ✅          | ❌        | ❌        | ❌      | ❌      |
+| Org analytics            | ✅          | Own org   | Own org   | ❌      | ❌      |
+| Device analytics         | ✅          | Own org   | Own org   | Own org | Own org |
+| **Settings**             |
+| Global platform settings | ✅          | ❌        | ❌        | ❌      | ❌      |
+| Organization settings    | ✅          | Own org   | ❌        | ❌      | ❌      |
+| Integration settings     | ✅          | Own org   | Own org   | ❌      | ❌      |
+| User preferences         | ✅          | ✅        | ✅        | ✅      | ✅      |
 
 ## Implementation Steps
 
@@ -96,30 +98,35 @@ Modify `src/lib/auth.ts`:
 export interface UserProfile {
   id: string
   email: string
-  organizationId: string | null  // NULL for super admins
+  organizationId: string | null // NULL for super admins
   organizationName: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
-  isSuperAdmin: boolean  // Helper flag
+  isSuperAdmin: boolean // Helper flag
 }
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
   const supabase = createClient()
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
   if (!user || authError) {
     return null
   }
 
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select(`
+    .select(
+      `
       role,
       organization:organizations(
         id,
         name
       )
-    `)
+    `
+    )
     .eq('id', user.id)
     .single()
 
@@ -135,10 +142,10 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   return {
     id: user.id,
     email: user.email || '',
-    organizationId: isSuperAdmin ? null : (org?.id || null),
-    organizationName: isSuperAdmin ? null : (org?.name || null),
+    organizationId: isSuperAdmin ? null : org?.id || null,
+    organizationName: isSuperAdmin ? null : org?.name || null,
     role: profile.role,
-    isSuperAdmin
+    isSuperAdmin,
   }
 }
 ```
@@ -154,7 +161,10 @@ export function canViewAllOrganizations(user: UserProfile): boolean {
   return user.isSuperAdmin
 }
 
-export function canManageOrganization(user: UserProfile, orgId: string): boolean {
+export function canManageOrganization(
+  user: UserProfile,
+  orgId: string
+): boolean {
   return user.isSuperAdmin || user.organizationId === orgId
 }
 
@@ -182,7 +192,10 @@ export function canConfigureGlobalSettings(user: UserProfile): boolean {
   return user.isSuperAdmin
 }
 
-export function canAccessOrganization(user: UserProfile, orgId: string): boolean {
+export function canAccessOrganization(
+  user: UserProfile,
+  orgId: string
+): boolean {
   return user.isSuperAdmin || user.organizationId === orgId
 }
 ```
@@ -198,7 +211,9 @@ Modify edge functions to handle super admin access:
 const organizationId = url.searchParams.get('organization_id')
 
 // Get user's role from auth
-const { data: { user } } = await supabaseClient.auth.getUser()
+const {
+  data: { user },
+} = await supabaseClient.auth.getUser()
 const { data: userProfile } = await supabaseClient
   .from('users')
   .select('role, organization_id')
@@ -249,7 +264,7 @@ export default function SuperAdminDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Super Admin Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Organizations Card */}
         <div className="card">
@@ -299,16 +314,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <nav className="nav-sidebar">
         <div className="nav-header">
           <h1 className="nav-brand">NetNeural IoT</h1>
-          
+
           {/* Super Admin Badge */}
           {user?.isSuperAdmin && (
             <span className="badge badge-admin">Super Admin</span>
           )}
-          
+
           {/* Organization Selector for Super Admins */}
           {user?.isSuperAdmin && (
-            <select 
-              value={selectedOrgId || ''} 
+            <select
+              value={selectedOrgId || ''}
               onChange={(e) => setSelectedOrgId(e.target.value)}
               className="org-selector"
             >
@@ -325,7 +340,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <a href="/dashboard">Dashboard</a>
           <a href="/dashboard/devices">Devices</a>
           <a href="/dashboard/alerts">Alerts</a>
-          
+
           {/* Super Admin Only Links */}
           {user?.isSuperAdmin && (
             <>
@@ -413,6 +428,7 @@ Password: SuperSecure123!
 ## Testing Super Admin
 
 ### Test Case 1: View All Organizations
+
 ```typescript
 // As super admin
 const orgs = await fetchEdgeFunction('organizations')
@@ -420,31 +436,35 @@ const orgs = await fetchEdgeFunction('organizations')
 ```
 
 ### Test Case 2: View Devices from Any Org
+
 ```typescript
 // As super admin
 const devices = await fetchEdgeFunction('devices', {
-  organization_id: 'any-org-id'
+  organization_id: 'any-org-id',
 })
 // Should return that org's devices
 ```
 
 ### Test Case 3: Organization Switching
+
 ```typescript
 // Super admin can switch between orgs in UI
-setSelectedOrg('org-1')  // View org 1's data
-setSelectedOrg('org-2')  // View org 2's data
-setSelectedOrg(null)     // View all orgs
+setSelectedOrg('org-1') // View org 1's data
+setSelectedOrg('org-2') // View org 2's data
+setSelectedOrg(null) // View all orgs
 ```
 
 ## Security Considerations
 
 ### ⚠️ Super Admin Creation
+
 - **Never expose super admin creation in UI**
 - Only create via database seeds or manual SQL
 - Require strong passwords
 - Enable 2FA/MFA for super admins
 
 ### ⚠️ Audit Logging
+
 ```sql
 -- Log all super admin actions
 CREATE TABLE admin_audit_log (
@@ -459,6 +479,7 @@ CREATE TABLE admin_audit_log (
 ```
 
 ### ⚠️ Access Control
+
 - Super admin routes should check `user.isSuperAdmin`
 - Edge functions should verify role from database
 - Never trust client-side role checks alone
@@ -466,21 +487,23 @@ CREATE TABLE admin_audit_log (
 ## UI Components
 
 ### Super Admin Badge
+
 ```tsx
-{user?.isSuperAdmin && (
-  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800">
-    🛡️ Super Admin
-  </span>
-)}
+{
+  user?.isSuperAdmin && (
+    <span className="inline-flex items-center rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+      🛡️ Super Admin
+    </span>
+  )
+}
 ```
 
 ### Conditional Rendering
+
 ```tsx
-{user?.isSuperAdmin ? (
-  <SuperAdminView />
-) : (
-  <RegularUserView />
-)}
+{
+  user?.isSuperAdmin ? <SuperAdminView /> : <RegularUserView />
+}
 ```
 
 ## Summary
@@ -491,6 +514,7 @@ CREATE TABLE admin_audit_log (
 ✅ **Security Focused**: Proper permission checks
 
 **Next Steps**:
+
 1. Add super admin user to seed.sql
 2. Update auth context to handle NULL organization
 3. Create permission helpers

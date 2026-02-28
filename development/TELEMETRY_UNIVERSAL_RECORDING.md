@@ -12,14 +12,15 @@ Previously, only MQTT real-time messages triggered telemetry recording. Now, syn
 
 **Before This Update:**
 
-| Integration | Metadata Sync | Telemetry Recording | Status |
-|-------------|---------------|---------------------|--------|
-| MQTT        | Real-time     | ✅ Via listener     | WORKING |
+| Integration | Metadata Sync | Telemetry Recording | Status     |
+| ----------- | ------------- | ------------------- | ---------- |
+| MQTT        | Real-time     | ✅ Via listener     | WORKING    |
 | Golioth     | ✅ Working    | ❌ API not called   | INCOMPLETE |
 | AWS IoT     | ✅ Working    | ❌ Shadow ignored   | INCOMPLETE |
 | Azure IoT   | ✅ Working    | ❌ Twin ignored     | INCOMPLETE |
 
 **Issues:**
+
 - Users could see device status but NOT telemetry history
 - Charts only displayed MQTT data
 - Alerts only worked for MQTT devices
@@ -27,8 +28,8 @@ Previously, only MQTT real-time messages triggered telemetry recording. Now, syn
 
 **After This Update:**
 
-| Integration | Metadata Sync | Telemetry Recording | Status |
-|-------------|---------------|---------------------|--------|
+| Integration | Metadata Sync | Telemetry Recording | Status      |
+| ----------- | ------------- | ------------------- | ----------- |
 | MQTT        | Real-time     | ✅ Via listener     | ✅ COMPLETE |
 | Golioth     | ✅ Working    | ✅ Via sync         | ✅ COMPLETE |
 | AWS IoT     | ✅ Working    | ✅ Via sync         | ✅ COMPLETE |
@@ -75,11 +76,12 @@ CREATE OR REPLACE FUNCTION record_device_telemetry(
 **`extract_telemetry_from_metadata()` - Auto-extract from device metadata:**
 
 ```sql
-CREATE OR REPLACE FUNCTION extract_telemetry_from_metadata(p_metadata JSONB) 
+CREATE OR REPLACE FUNCTION extract_telemetry_from_metadata(p_metadata JSONB)
 RETURNS JSONB;
 ```
 
 Extracts common telemetry fields:
+
 - `battery_level`, `battery`, `battery_percentage` → `battery`
 - `temperature`, `temp` → `temperature`
 - `humidity` → `humidity`
@@ -152,15 +154,15 @@ export abstract class BaseIntegrationClient {
 ```typescript
 public async import(): Promise<SyncResult> {
   // ... fetch devices ...
-  
+
   for (const goliothDevice of goliothDevices) {
     // 1. Upsert device to database
     const localDeviceId = await this.upsertDevice(goliothDevice)
-    
+
     // 2. NEW: Fetch and record telemetry from Golioth API
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const telemetryData = await this.getDeviceTelemetry(goliothDevice.id, since)
-    
+
     if (telemetryData.length > 0) {
       await this.recordTelemetryBatch(
         telemetryData.map(point => ({
@@ -177,6 +179,7 @@ public async import(): Promise<SyncResult> {
 **Data Source:** Golioth `/telemetry` API endpoint (last 24 hours)
 
 **Telemetry Format Example:**
+
 ```json
 {
   "temperature": 22.5,
@@ -195,20 +198,20 @@ public async import(): Promise<SyncResult> {
 ```typescript
 public async import(): Promise<SyncResult> {
   // ... fetch things ...
-  
+
   for (const thing of things) {
     // 1. Upsert device to database
     const localDeviceId = await this.upsertDevice(thing)
-    
+
     // 2. Get Thing Shadow
     const shadow = await this.getThingShadow(thing.thingName)
-    
+
     // 3. NEW: Extract and record telemetry from Shadow "reported" state
     if (shadow?.state?.reported) {
       await this.recordTelemetry(
         localDeviceId,
         shadow.state.reported,
-        shadow.metadata?.timestamp 
+        shadow.metadata?.timestamp
           ? new Date(shadow.metadata.timestamp * 1000).toISOString()
           : undefined
       )
@@ -220,6 +223,7 @@ public async import(): Promise<SyncResult> {
 **Data Source:** AWS IoT Thing Shadow `state.reported` object
 
 **Telemetry Format Example:**
+
 ```json
 {
   "temperature": 23.1,
@@ -241,14 +245,14 @@ public async import(): Promise<SyncResult> {
 ```typescript
 public async import(): Promise<SyncResult> {
   // ... fetch devices ...
-  
+
   for (const azureDevice of azureDevices) {
     // 1. Upsert device to database
     const localDeviceId = await this.upsertDevice(azureDevice)
-    
+
     // 2. Get Device Twin
     const twin = await this.getDeviceTwin(azureDevice.deviceId)
-    
+
     // 3. NEW: Extract and record telemetry from Twin "reported" properties
     if (twin?.properties?.reported) {
       await this.recordTelemetry(
@@ -264,6 +268,7 @@ public async import(): Promise<SyncResult> {
 **Data Source:** Azure IoT Device Twin `properties.reported` object
 
 **Telemetry Format Example:**
+
 ```json
 {
   "temperature": 24.8,
@@ -284,7 +289,7 @@ public async import(): Promise<SyncResult> {
 async function handleMqttMessage(message: MqttMessage) {
   // 1. Log message to activity_log
   const activityLogId = await logActivity(...)
-  
+
   // 2. Record telemetry to device_telemetry_history
   await supabase.rpc('record_device_telemetry', {
     p_device_id: deviceId,
@@ -304,23 +309,28 @@ async function handleMqttMessage(message: MqttMessage) {
 ## Benefits
 
 ### 1. **Consistent Data Collection**
+
 - All integrations now record telemetry using the same database schema
 - Same helper functions ensure consistent error handling
 
 ### 2. **Historical Analytics**
+
 - Charts display telemetry from ALL integration types
 - Temperature trends, battery degradation, signal strength over time
 - Works for Golioth, AWS IoT, Azure IoT, and MQTT devices
 
 ### 3. **Universal Alerting**
+
 - Alert rules work across ALL integrations
 - Example: "Alert when battery < 20%" works for any device source
 
 ### 4. **Compliance & Auditing**
+
 - Complete historical telemetry for regulatory requirements
 - Can trace data source via `integration_id` column
 
 ### 5. **Auto-Sync Compatible**
+
 - Auto-sync schedules automatically record telemetry during import
 - No manual intervention needed
 
@@ -336,6 +346,7 @@ supabase migration up 20250109_telemetry_all_integrations.sql
 ```
 
 **This migration:**
+
 - Adds `integration_id` column to `device_telemetry_history`
 - Updates `record_device_telemetry()` function signature
 - Creates `extract_telemetry_from_metadata()` helper
@@ -348,6 +359,7 @@ supabase functions deploy device-sync  # Uses updated base-integration-client
 ```
 
 **Updated files:**
+
 - `base-integration-client.ts` - New helper methods
 - `golioth-client.ts` - Updated `import()` method
 - `aws-iot-client.ts` - Updated `import()` method
@@ -356,6 +368,7 @@ supabase functions deploy device-sync  # Uses updated base-integration-client
 ### 3. Verify Telemetry Recording
 
 **Test Golioth Sync:**
+
 ```bash
 curl -X POST https://your-project.supabase.co/functions/v1/device-sync \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
@@ -363,8 +376,9 @@ curl -X POST https://your-project.supabase.co/functions/v1/device-sync \
 ```
 
 **Check telemetry recorded:**
+
 ```sql
-SELECT 
+SELECT
   d.name,
   i.type AS integration_type,
   dth.telemetry,
@@ -395,7 +409,7 @@ WHERE organization_id = 'your-org-id'
 ### Get Telemetry for a Device (All Integrations)
 
 ```sql
-SELECT 
+SELECT
   dth.telemetry,
   dth.device_timestamp,
   dth.received_at,
@@ -424,7 +438,7 @@ ORDER BY i.type, dth.received_at DESC;
 ### Temperature Chart (All Sources)
 
 ```sql
-SELECT 
+SELECT
   dth.device_timestamp AS time,
   (dth.telemetry->>'temperature')::numeric AS temperature,
   i.type AS source
@@ -480,6 +494,7 @@ SELECT cleanup_old_telemetry(365, 'org-uuid');
 ### Issue: No Telemetry Recorded During Sync
 
 **Symptoms:**
+
 - Devices imported successfully
 - `device_telemetry_history` table remains empty
 
@@ -487,7 +502,7 @@ SELECT cleanup_old_telemetry(365, 'org-uuid');
 
 ```sql
 -- Check integration_activity_log for errors
-SELECT 
+SELECT
   activity_type,
   status,
   error_message,
@@ -499,11 +514,13 @@ ORDER BY created_at DESC;
 ```
 
 **Common Causes:**
+
 1. **Golioth:** No telemetry data on platform (devices haven't reported)
 2. **AWS IoT:** Thing Shadow doesn't exist (create via AWS Console)
 3. **Azure IoT:** Device Twin properties empty (devices haven't updated Twin)
 
 **Solution:**
+
 - Verify devices are actively reporting telemetry to external platform
 - Check external platform console (Golioth/AWS/Azure) for telemetry data
 - Ensure device credentials are valid
@@ -513,13 +530,14 @@ ORDER BY created_at DESC;
 ### Issue: Telemetry Missing Timestamp
 
 **Symptoms:**
+
 - Telemetry recorded but `device_timestamp` is NULL
 - Charts show incorrect time ordering
 
 **Diagnosis:**
 
 ```sql
-SELECT 
+SELECT
   COUNT(*) AS records_without_timestamp
 FROM device_telemetry_history
 WHERE device_timestamp IS NULL
@@ -532,10 +550,8 @@ Telemetry from Golioth/AWS/Azure should include timestamps. If missing, add time
 
 ```typescript
 // In integration client import() method:
-const timestamp = data.timestamp 
-  || data.time 
-  || data.ts 
-  || new Date().toISOString()
+const timestamp =
+  data.timestamp || data.time || data.ts || new Date().toISOString()
 
 await this.recordTelemetry(deviceId, data, timestamp)
 ```
@@ -545,13 +561,14 @@ await this.recordTelemetry(deviceId, data, timestamp)
 ### Issue: Duplicate Telemetry Records
 
 **Symptoms:**
+
 - Same telemetry point recorded multiple times
 - Charts show duplicate data
 
 **Diagnosis:**
 
 ```sql
-SELECT 
+SELECT
   device_id,
   telemetry,
   COUNT(*) AS duplicate_count
@@ -566,7 +583,7 @@ HAVING COUNT(*) > 1;
 Add uniqueness constraint (optional, may cause sync errors if platforms send duplicates):
 
 ```sql
-CREATE UNIQUE INDEX idx_telemetry_dedup 
+CREATE UNIQUE INDEX idx_telemetry_dedup
   ON device_telemetry_history (device_id, telemetry, device_timestamp)
   WHERE device_timestamp IS NOT NULL;
 ```
@@ -613,14 +630,18 @@ Stream telemetry updates to UI via Supabase Realtime:
 ```typescript
 const subscription = supabase
   .channel('telemetry')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'device_telemetry_history',
-    filter: `device_id=eq.${deviceId}`
-  }, (payload) => {
-    updateChart(payload.new.telemetry)
-  })
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'device_telemetry_history',
+      filter: `device_id=eq.${deviceId}`,
+    },
+    (payload) => {
+      updateChart(payload.new.telemetry)
+    }
+  )
   .subscribe()
 ```
 
@@ -630,7 +651,7 @@ Export telemetry for external analytics:
 
 ```sql
 COPY (
-  SELECT 
+  SELECT
     d.name,
     dth.device_timestamp,
     dth.telemetry
@@ -673,16 +694,16 @@ describe('Golioth Sync with Telemetry', () => {
   it('should import devices and record telemetry', async () => {
     const client = new GoliothClient(config)
     const result = await client.import()
-    
+
     expect(result.devices_succeeded).toBeGreaterThan(0)
     expect(result.details?.telemetry_points).toBeGreaterThan(0)
-    
+
     // Verify telemetry in database
     const { data } = await supabase
       .from('device_telemetry_history')
       .select('*')
       .eq('integration_id', config.integrationId)
-    
+
     expect(data?.length).toBeGreaterThan(0)
   })
 })
@@ -697,6 +718,6 @@ describe('Golioth Sync with Telemetry', () => {
 ✅ **Charts, alerts, and analytics work across all integration types**  
 ✅ **Auto-sync schedules automatically record telemetry**  
 ✅ **Unified helper functions ensure consistent error handling**  
-✅ **Telemetry linked to activity_log for complete audit trail**  
+✅ **Telemetry linked to activity_log for complete audit trail**
 
 This architecture provides a solid foundation for comprehensive IoT device monitoring across any integration platform.

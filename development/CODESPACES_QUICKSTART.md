@@ -19,6 +19,7 @@ npm run dev:codespaces
 ```
 
 This command will:
+
 - Auto-configure environment for Codespaces
 - Start Supabase (if not running)
 - Start Next.js development server
@@ -90,13 +91,13 @@ npm run dev
 
 All ports are automatically forwarded and made public:
 
-| Port  | Service           | Visibility |
-|-------|-------------------|------------|
-| 3000  | Next.js           | Public     |
-| 54321 | Supabase API      | Public     |
-| 54322 | PostgreSQL        | Private    |
-| 54323 | Supabase Studio   | Public     |
-| 54324 | Email (Inbucket)  | Public     |
+| Port  | Service          | Visibility |
+| ----- | ---------------- | ---------- |
+| 3000  | Next.js          | Public     |
+| 54321 | Supabase API     | Public     |
+| 54322 | PostgreSQL       | Private    |
+| 54323 | Supabase Studio  | Public     |
+| 54324 | Email (Inbucket) | Public     |
 
 ## 🔐 Environment Variables
 

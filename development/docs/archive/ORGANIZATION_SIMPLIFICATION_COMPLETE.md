@@ -7,6 +7,7 @@
 **File:** `src/app/dashboard/organizations/page.tsx`
 
 **Changes:**
+
 - ❌ Removed `<OrganizationSwitcher />` from top of page (when org selected)
 - ❌ Removed `<OrganizationSwitcher />` from "no org" state
 - ✅ Added `Building2` icon import
@@ -15,6 +16,7 @@
 - ✅ Improved "no organization" empty state with icon and helpful text
 
 **Before:**
+
 ```tsx
 <div className="flex items-start justify-between">
   <PageHeader ... />
@@ -25,6 +27,7 @@
 ```
 
 **After:**
+
 ```tsx
 <PageHeader
   title="Organization Management"
@@ -34,13 +37,14 @@
 ```
 
 **No Organization State:**
+
 ```tsx
-<div className="text-center space-y-4">
-  <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+<div className="space-y-4 text-center">
+  <Building2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
   <p className="text-lg font-semibold">No organization selected</p>
-  <p className="text-sm text-muted-foreground max-w-md">
-    Use the organization dropdown in the sidebar to select an 
-    organization to manage.
+  <p className="max-w-md text-sm text-muted-foreground">
+    Use the organization dropdown in the sidebar to select an organization to
+    manage.
   </p>
 </div>
 ```
@@ -52,50 +56,60 @@
 **File:** `src/components/organizations/OrganizationSwitcher.tsx`
 
 **Changes:**
+
 - ✅ Added `useUser` hook import
 - ✅ Added super admin check: `const isSuperAdmin = user?.isSuperAdmin || false;`
 - ✅ Updated condition: `{showCreateButton && isSuperAdmin && (...)}`
 - ✅ "Create Organization" option only visible to super admins
 
 **Before:**
+
 ```tsx
-{showCreateButton && (
-  <>
-    <DropdownMenuSeparator />
-    <DropdownMenuItem>
-      Create Organization  // ❌ VISIBLE TO ALL
-    </DropdownMenuItem>
-  </>
-)}
+{
+  showCreateButton && (
+    <>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem>
+        Create Organization // ❌ VISIBLE TO ALL
+      </DropdownMenuItem>
+    </>
+  )
+}
 ```
 
 **After:**
+
 ```tsx
-{showCreateButton && isSuperAdmin && (  // ✅ SUPER ADMIN ONLY
-  <>
-    <DropdownMenuSeparator />
-    <DropdownMenuItem
-      onClick={() => {
-        // TODO: Open create organization dialog
-        console.log('Create organization clicked');
-        setOpen(false);
-      }}
-      className="flex items-center gap-2 p-3 cursor-pointer text-blue-600"
-    >
-      <Plus className="w-4 h-4" />
-      <span className="font-medium">Create Organization</span>
-    </DropdownMenuItem>
-  </>
-)}
+{
+  showCreateButton &&
+    isSuperAdmin && ( // ✅ SUPER ADMIN ONLY
+      <>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => {
+            // TODO: Open create organization dialog
+            console.log('Create organization clicked')
+            setOpen(false)
+          }}
+          className="flex cursor-pointer items-center gap-2 p-3 text-blue-600"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="font-medium">Create Organization</span>
+        </DropdownMenuItem>
+      </>
+    )
+}
 ```
 
 **Permission Logic:**
+
 ```typescript
-const { user } = useUser();
-const isSuperAdmin = user?.isSuperAdmin || false;
+const { user } = useUser()
+const isSuperAdmin = user?.isSuperAdmin || false
 ```
 
 **Super Admin Role:**
+
 - App-wide admin access (not organization-specific)
 - `role: 'super_admin'` in users table
 - `isSuperAdmin: true` in UserProfile
@@ -110,6 +124,7 @@ const isSuperAdmin = user?.isSuperAdmin || false;
 **File:** `src/app/dashboard/settings/page.tsx`
 
 **Changes:**
+
 - ❌ Removed "Organizations" tab trigger
 - ❌ Removed Organizations tab content
 - ❌ Removed `Building2` icon import
@@ -118,18 +133,20 @@ const isSuperAdmin = user?.isSuperAdmin || false;
 - ✅ Changed grid from `grid-cols-4` to `grid-cols-3`
 
 **Before (4 tabs):**
+
 ```tsx
-<TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2">
+<TabsList className="grid w-full grid-cols-2 gap-2 lg:grid-cols-4">
   <TabsTrigger value="profile">Profile</TabsTrigger>
   <TabsTrigger value="preferences">Preferences</TabsTrigger>
   <TabsTrigger value="security">Security</TabsTrigger>
-  <TabsTrigger value="organizations">Organizations</TabsTrigger>  // ❌ REMOVED
+  <TabsTrigger value="organizations">Organizations</TabsTrigger> // ❌ REMOVED
 </TabsList>
 ```
 
 **After (3 tabs):**
+
 ```tsx
-<TabsList className="grid w-full grid-cols-1 lg:grid-cols-3 gap-2">
+<TabsList className="grid w-full grid-cols-1 gap-2 lg:grid-cols-3">
   <TabsTrigger value="profile">Profile</TabsTrigger>
   <TabsTrigger value="preferences">Preferences</TabsTrigger>
   <TabsTrigger value="security">Security</TabsTrigger>
@@ -152,6 +169,7 @@ Sidebar Organization Dropdown:
 ```
 
 **Features:**
+
 - Select organization → context switches globally
 - Current selection marked with checkmark
 - Role badges (Owner/Admin/Member/Viewer)
@@ -192,12 +210,14 @@ Switch organizations using the sidebar.
 ### What is a Super Admin? 🛡️
 
 **Super Admin:**
+
 - **App-wide role** (not organization-specific)
 - Set in `users` table: `role = 'super_admin'`
 - UserProfile has: `isSuperAdmin: true`
 - `organizationId` can be NULL (not tied to specific org)
 
 **Permissions:**
+
 - ✅ Admin access to ALL organizations (current and future)
 - ✅ Can create new organizations
 - ✅ Can manage all organizations regardless of membership
@@ -210,12 +230,14 @@ Switch organizations using the sidebar.
 - ✅ Bypass organization membership checks
 
 **vs Organization Owner:**
+
 - Organization Owner = Admin of ONE specific organization
 - Super Admin = Admin of ALL organizations platform-wide
 
 ### Permission Check Implementation
 
 **In Components:**
+
 ```typescript
 import { useUser } from '@/contexts/UserContext';
 
@@ -229,6 +251,7 @@ const isSuperAdmin = user?.isSuperAdmin || false;
 ```
 
 **In API/Backend:**
+
 ```typescript
 // From supabase/functions/_shared/auth.ts
 interface UserContext {
@@ -236,12 +259,12 @@ interface UserContext {
   email: string
   organizationId: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
-  isSuperAdmin: boolean  // true if role === 'super_admin'
+  isSuperAdmin: boolean // true if role === 'super_admin'
 }
 
 // Super admins can do anything
 if (userContext.isSuperAdmin) {
-  return true; // Allow all operations
+  return true // Allow all operations
 }
 ```
 
@@ -313,26 +336,31 @@ if (userContext.isSuperAdmin) {
 ## Benefits of This Architecture
 
 ### ✅ Clarity
+
 - **One place** to select organizations (sidebar)
 - **One place** to create organizations (sidebar, super admin only)
 - No confusion about which switcher to use
 
 ### ✅ Consistency
+
 - Follows industry patterns (Slack, GitHub, Discord)
 - Sidebar = Navigation & Context
 - Pages = Content & Actions
 
 ### ✅ Permission Control
+
 - Create organization restricted to super admins
 - Clear distinction between app-wide and org-specific roles
 - Future-proof for multi-tenant SaaS
 
 ### ✅ Cleaner UI
+
 - Less duplication
 - Fewer components
 - Simpler mental model
 
 ### ✅ Better UX
+
 - Fewer clicks
 - Persistent context
 - Clear hierarchy
@@ -342,6 +370,7 @@ if (userContext.isSuperAdmin) {
 ## Database Schema Reference
 
 ### Users Table
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY,
@@ -361,6 +390,7 @@ INSERT INTO users (id, email, organization_id, role) VALUES
 ```
 
 ### Organization Members Table
+
 ```sql
 CREATE TABLE organization_members (
   id UUID PRIMARY KEY,
@@ -380,12 +410,14 @@ CREATE TABLE organization_members (
 ## Next Steps
 
 ### Immediate (Required):
+
 1. ✅ Test super admin check in browser
 2. ✅ Verify "Create Organization" only shows for super admin
 3. ✅ Test organization switching from sidebar
 4. ✅ Verify Personal Settings has 3 tabs only
 
 ### Short-term (Recommended):
+
 1. Create "Create Organization" dialog/page
 2. Implement organization creation API endpoint
 3. Add validation (unique name, slug, etc.)
@@ -393,6 +425,7 @@ CREATE TABLE organization_members (
 5. Auto-switch to newly created org
 
 ### Medium-term (Enhancement):
+
 1. Add "Manage All Organizations" page for super admins
 2. Add super admin dashboard with platform-wide stats
 3. Add audit log for super admin actions
@@ -404,6 +437,7 @@ CREATE TABLE organization_members (
 ## Testing Checklist
 
 ### Super Admin Tests:
+
 - [x] Super admin user loaded from auth
 - [x] `isSuperAdmin` flag correctly set
 - [x] "Create Organization" visible in sidebar dropdown
@@ -412,6 +446,7 @@ CREATE TABLE organization_members (
 - [ ] Super admin can create new organization (TODO: implement dialog)
 
 ### Organization Switcher Tests:
+
 - [x] Sidebar dropdown shows all user's organizations
 - [x] Current organization marked with checkmark
 - [x] Clicking organization switches context
@@ -420,12 +455,14 @@ CREATE TABLE organization_members (
 - [x] Device counts display correctly
 
 ### Personal Settings Tests:
+
 - [x] Only 3 tabs visible (Profile, Preferences, Security)
 - [x] NO Organizations tab
 - [x] Description updated to remove "organizations"
 - [x] All existing tabs work correctly
 
 ### Organization Management Tests:
+
 - [x] NO organization switcher on page
 - [x] Description mentions "use sidebar to switch"
 - [x] Empty state shows helpful message
@@ -437,23 +474,27 @@ CREATE TABLE organization_members (
 ## Summary
 
 ### What Changed:
+
 1. ❌ Removed org switcher from Organization Management page
 2. ✅ Added "Create Organization" to sidebar (super admin only)
 3. ❌ Removed Organizations tab from Personal Settings
 
 ### Why:
+
 - Sidebar already handles organization selection
 - No need for 3 different places to select orgs
 - Create organization should be restricted to super admins
 - Cleaner, simpler user experience
 
 ### Result:
+
 - ✅ Single source of truth (sidebar)
 - ✅ Clear permission model (super admin = app-wide)
 - ✅ Better UX (fewer clicks, less confusion)
 - ✅ Scalable architecture (multi-tenant SaaS ready)
 
 ### Super Admin:
+
 - 🛡️ App-wide admin role (not org-specific)
 - 🛡️ Admin access to ALL organizations
 - 🛡️ Can create new organizations

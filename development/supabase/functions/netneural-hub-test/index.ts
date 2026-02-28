@@ -17,19 +17,21 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Only POST method allowed for telemetry ingestion'
+        error: 'Only POST method allowed for telemetry ingestion',
       }),
-      { 
-        status: 405, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
 
   try {
     const url = new URL(req.url)
-    console.log(`[NetNeural Hub Test] Received request: ${req.method} ${url.pathname}`)
-    
+    console.log(
+      `[NetNeural Hub Test] Received request: ${req.method} ${url.pathname}`
+    )
+
     // Extract device ID from various sources
     let deviceId = url.searchParams.get('device_id')
     if (!deviceId) {
@@ -43,7 +45,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Parse request body
     let body: any = {}
     const contentType = req.headers.get('content-type')
-    
+
     if (contentType?.includes('application/json')) {
       body = await req.json()
     }
@@ -60,11 +62,11 @@ export default async function handler(req: Request): Promise<Response> {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Device ID not found in request (URL param, header, or path)'
+          error: 'Device ID not found in request (URL param, header, or path)',
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
@@ -77,31 +79,27 @@ export default async function handler(req: Request): Promise<Response> {
         device_id: deviceId,
         protocol: 'https',
         telemetry: body,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     }
 
     console.log(`[NetNeural Hub Test] ✅ Success for device ${deviceId}`)
 
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     console.error('[NetNeural Hub Test] Error:', error)
-    
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }

@@ -5,35 +5,60 @@
 import type { EdgeFunctionResponse, EdgeFunctionOptions } from '../types'
 
 export interface DevicesAPI {
-  list: (organizationId: string, options?: { limit?: number }) => Promise<EdgeFunctionResponse<{ devices: unknown[]; count: number }>>
+  list: (
+    organizationId?: string,
+    options?: { limit?: number }
+  ) => Promise<EdgeFunctionResponse<{ devices: unknown[]; count: number }>>
   get: (deviceId: string) => Promise<EdgeFunctionResponse<unknown>>
   create: (data: unknown) => Promise<EdgeFunctionResponse<unknown>>
-  update: (deviceId: string, data: unknown) => Promise<EdgeFunctionResponse<unknown>>
+  update: (
+    deviceId: string,
+    data: unknown
+  ) => Promise<EdgeFunctionResponse<unknown>>
   delete: (deviceId: string) => Promise<EdgeFunctionResponse<unknown>>
-  mapToExternal: (deviceId: string, integrationId: string, externalDeviceId: string) => Promise<EdgeFunctionResponse<unknown>>
-  unmapFromExternal: (deviceId: string) => Promise<EdgeFunctionResponse<unknown>>
-  getStatus: (deviceId: string) => Promise<EdgeFunctionResponse<{ status: unknown }>>
+  /** Transfer a device to a different organization */
+  transfer: (
+    deviceId: string,
+    targetOrganizationId: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  mapToExternal: (
+    deviceId: string,
+    integrationId: string,
+    externalDeviceId: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  unmapFromExternal: (
+    deviceId: string
+  ) => Promise<EdgeFunctionResponse<unknown>>
+  getStatus: (
+    deviceId: string
+  ) => Promise<EdgeFunctionResponse<{ status: unknown }>>
 }
 
-export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeFunctionOptions) => Promise<EdgeFunctionResponse<T>>): DevicesAPI {
+export function createDevicesAPI(
+  call: <T>(
+    functionName: string,
+    options?: EdgeFunctionOptions
+  ) => Promise<EdgeFunctionResponse<T>>
+): DevicesAPI {
   return {
     /**
      * List all devices for an organization
      */
-    list: (organizationId: string, options?: { limit?: number }) =>
+    list: (organizationId?: string, options?: { limit?: number }) =>
       call<{ devices: unknown[]; count: number }>('devices', {
-        params: {
-          organization_id: organizationId,
-          ...options,
-        },
+        params: organizationId
+          ? {
+              organization_id: organizationId,
+              ...options,
+            }
+          : options,
       }),
-    
+
     /**
      * Get a specific device by ID
      */
-    get: (deviceId: string) =>
-      call(`devices/${deviceId}`),
-    
+    get: (deviceId: string) => call(`devices/${deviceId}`),
+
     /**
      * Create a new device
      */
@@ -42,7 +67,7 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an existing device
      */
@@ -51,7 +76,7 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
         method: 'PUT',
         body: data,
       }),
-    
+
     /**
      * Delete a device
      */
@@ -59,11 +84,25 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
       call(`devices/${deviceId}`, {
         method: 'DELETE',
       }),
-    
+
+    /**
+     * Transfer a device to a different organization
+     * User must have access to both source and target organizations
+     */
+    transfer: (deviceId: string, targetOrganizationId: string) =>
+      call(`devices/${deviceId}`, {
+        method: 'PUT',
+        body: { organization_id: targetOrganizationId },
+      }),
+
     /**
      * Map a device to an external integration
      */
-    mapToExternal: (deviceId: string, integrationId: string, externalDeviceId: string) =>
+    mapToExternal: (
+      deviceId: string,
+      integrationId: string,
+      externalDeviceId: string
+    ) =>
       call(`devices/${deviceId}/map-external`, {
         method: 'PATCH',
         body: {
@@ -71,7 +110,7 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
           external_device_id: externalDeviceId,
         },
       }),
-    
+
     /**
      * Unmap a device from external integration
      */
@@ -79,7 +118,7 @@ export function createDevicesAPI(call: <T>(functionName: string, options?: EdgeF
       call(`devices/${deviceId}/unmap-external`, {
         method: 'PATCH',
       }),
-    
+
     /**
      * Get device status with integration info
      */

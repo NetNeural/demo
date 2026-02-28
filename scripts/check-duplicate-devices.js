@@ -8,7 +8,7 @@
 const { createClient } = require('@supabase/supabase-js')
 
 const STAGING_URL = 'https://atgbmxicqikmapfqouco.supabase.co'
-const STAGING_SERVICE_KEY = 'YOUR_SUPABASE_SERVICE_ROLE_KEY'
+const STAGING_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabase = createClient(STAGING_URL, STAGING_SERVICE_KEY)
 

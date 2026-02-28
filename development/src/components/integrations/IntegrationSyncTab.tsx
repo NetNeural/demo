@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Loader2, Play, Square, Download, Trash2 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions'
@@ -32,7 +38,7 @@ interface Props {
   organizationId: string
   integrationType: string
   integrationName: string
-  
+
   // Optional customization per integration
   defaultOptions?: Partial<SyncOptions>
   availableDirections?: Array<'import' | 'export' | 'bidirectional'>
@@ -42,7 +48,11 @@ interface Props {
   showSyncMetadata?: boolean
   showDryRun?: boolean
   showDeviceLimit?: boolean
-  customOptionsRenderer?: (options: SyncOptions, setOptions: (options: SyncOptions) => void, syncing: boolean) => React.ReactNode
+  customOptionsRenderer?: (
+    options: SyncOptions,
+    setOptions: (options: SyncOptions) => void,
+    syncing: boolean
+  ) => React.ReactNode
   helpText?: string
 }
 
@@ -60,7 +70,7 @@ export function IntegrationSyncTab({
   showDryRun = true,
   showDeviceLimit = true,
   customOptionsRenderer,
-  helpText
+  helpText,
 }: Props) {
   const [syncing, setSyncing] = useState(false)
   const [syncOptions, setSyncOptions] = useState<SyncOptions>({
@@ -70,7 +80,7 @@ export function IntegrationSyncTab({
     syncStatus: defaultOptions.syncStatus ?? true,
     syncMetadata: defaultOptions.syncMetadata ?? true,
     dryRun: defaultOptions.dryRun ?? false,
-    deviceLimit: defaultOptions.deviceLimit ?? 0
+    deviceLimit: defaultOptions.deviceLimit ?? 0,
   })
   const [syncLog, setSyncLog] = useState<SyncLogEntry[]>([])
   const logEndRef = useRef<HTMLDivElement>(null)
@@ -81,11 +91,14 @@ export function IntegrationSyncTab({
   }, [syncLog])
 
   const addLogEntry = (level: SyncLogEntry['level'], message: string) => {
-    setSyncLog(prev => [...prev, {
-      timestamp: new Date().toISOString(),
-      level,
-      message
-    }])
+    setSyncLog((prev) => [
+      ...prev,
+      {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+      },
+    ])
   }
 
   const clearLog = () => {
@@ -93,10 +106,13 @@ export function IntegrationSyncTab({
   }
 
   const exportLog = () => {
-    const logText = syncLog.map(entry => 
-      `[${new Date(entry.timestamp).toLocaleTimeString()}] [${entry.level.toUpperCase()}] ${entry.message}`
-    ).join('\n')
-    
+    const logText = syncLog
+      .map(
+        (entry) =>
+          `[${new Date(entry.timestamp).toLocaleTimeString()}] [${entry.level.toUpperCase()}] ${entry.message}`
+      )
+      .join('\n')
+
     const blob = new Blob([logText], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -110,25 +126,38 @@ export function IntegrationSyncTab({
   const handleSync = async () => {
     setSyncing(true)
     clearLog()
-    
-    addLogEntry('info', `Starting ${syncOptions.dryRun ? 'DRY RUN' : 'sync'} for ${integrationName}...`)
+
+    addLogEntry(
+      'info',
+      `Starting ${syncOptions.dryRun ? 'DRY RUN' : 'sync'} for ${integrationName}...`
+    )
     addLogEntry('info', `Integration Type: ${integrationType}`)
     addLogEntry('info', `Direction: ${syncOptions.direction}`)
     addLogEntry('info', `Options: ${JSON.stringify(syncOptions, null, 2)}`)
 
     try {
       addLogEntry('info', 'Calling sync endpoint...')
-      
+
       const response = await edgeFunctions.integrations.sync({
         integrationId,
         organizationId,
-        operation: syncOptions.direction === 'import' ? 'import' : 
-                   syncOptions.direction === 'export' ? 'export' : 'bidirectional',
-        deviceIds: syncOptions.deviceLimit && syncOptions.deviceLimit > 0 ? [] : undefined
+        operation:
+          syncOptions.direction === 'import'
+            ? 'import'
+            : syncOptions.direction === 'export'
+              ? 'export'
+              : 'bidirectional',
+        deviceIds:
+          syncOptions.deviceLimit && syncOptions.deviceLimit > 0
+            ? []
+            : undefined,
       })
 
       if (!response.success) {
-        addLogEntry('error', `Sync failed: ${response.error?.message || 'Unknown error'}`)
+        addLogEntry(
+          'error',
+          `Sync failed: ${response.error?.message || 'Unknown error'}`
+        )
         toast.error('Sync failed')
         return
       }
@@ -153,60 +182,94 @@ export function IntegrationSyncTab({
           action: string
           error?: string
         }>
-        errors?: Array<{
-          deviceId: string
-          error: string
-        } | string>
+        errors?: Array<
+          | {
+              deviceId: string
+              error: string
+            }
+          | string
+        >
         logs?: string[] // Detailed log messages from edge function
       }
-      
+
       const result = response.data as SyncResult
       addLogEntry('success', 'Sync endpoint responded successfully')
-      
+
       // Log summary first (cleaner display)
       // Edge function returns devices_processed/succeeded/failed
       if (result.devices_processed !== undefined) {
         addLogEntry('info', '=== Sync Summary ===')
-        addLogEntry('success', `✓ Devices processed: ${result.devices_processed}`)
-        addLogEntry('success', `✓ Devices succeeded: ${result.devices_succeeded || 0}`)
+        addLogEntry(
+          'success',
+          `✓ Devices processed: ${result.devices_processed}`
+        )
+        addLogEntry(
+          'success',
+          `✓ Devices succeeded: ${result.devices_succeeded || 0}`
+        )
         if ((result.devices_failed || 0) > 0) {
           addLogEntry('warning', `⚠ Devices failed: ${result.devices_failed}`)
         }
       }
-      
+
       // Legacy summary format (for backwards compatibility)
       if (result.summary) {
         addLogEntry('info', '=== Sync Summary ===')
-        addLogEntry('success', `✓ Devices synced: ${result.summary.syncedDevices || 0}`)
-        addLogEntry('success', `✓ Devices created: ${result.summary.createdDevices || 0}`)
-        addLogEntry('success', `✓ Devices updated: ${result.summary.updatedDevices || 0}`)
+        addLogEntry(
+          'success',
+          `✓ Devices synced: ${result.summary.syncedDevices || 0}`
+        )
+        addLogEntry(
+          'success',
+          `✓ Devices created: ${result.summary.createdDevices || 0}`
+        )
+        addLogEntry(
+          'success',
+          `✓ Devices updated: ${result.summary.updatedDevices || 0}`
+        )
         if ((result.summary.skippedDevices || 0) > 0) {
-          addLogEntry('warning', `⚠ Devices skipped: ${result.summary.skippedDevices}`)
+          addLogEntry(
+            'warning',
+            `⚠ Devices skipped: ${result.summary.skippedDevices}`
+          )
         }
         if ((result.summary.errorCount || 0) > 0) {
-          addLogEntry('warning', `⚠ Devices with errors: ${result.summary.errorCount}`)
+          addLogEntry(
+            'warning',
+            `⚠ Devices with errors: ${result.summary.errorCount}`
+          )
         }
       }
-      
+
       // Only log detailed logs if there were actual errors or if user wants details
       // Suppress "Request failed with status code 500" from export operations (expected for pull-only APIs)
       if (result.logs && Array.isArray(result.logs)) {
-        const importantLogs = result.logs.filter(log => {
+        const importantLogs = result.logs.filter((log) => {
           // Filter out expected export failures for pull-only integrations like Golioth
           // Only filter lines that contain BOTH the error marker AND the 500 error
-          const isExportError = log.includes('✗') && log.includes('Request failed with status code 500')
+          const isExportError =
+            log.includes('✗') &&
+            log.includes('Request failed with status code 500')
           return !isExportError
         })
-        
+
         if (importantLogs.length > 0) {
           addLogEntry('info', '=== Sync Details ===')
           importantLogs.forEach((log) => {
             // Determine log level based on emoji/content
             if (log.includes('✅') || log.includes('SUCCESS')) {
               addLogEntry('success', log)
-            } else if (log.includes('⚠️') || log.includes('WARNING') || log.includes('ℹ️')) {
+            } else if (
+              log.includes('⚠️') ||
+              log.includes('WARNING') ||
+              log.includes('ℹ️')
+            ) {
               addLogEntry('warning', log)
-            } else if (log.includes('✗') || log.includes('ERROR') || log.includes('Failed')) {
+            } else if (
+              log.includes('✗') ||
+              log.includes('ERROR') ||
+              log.includes('Failed')
+            ) {
               addLogEntry('error', log)
             } else {
               addLogEntry('info', log)
@@ -220,21 +283,27 @@ export function IntegrationSyncTab({
         addLogEntry('info', '=== Sync Details ===')
         result.details.forEach((detail) => {
           if (detail.success) {
-            addLogEntry('success', `✓ ${detail.deviceName || detail.deviceId}: ${detail.action}`)
+            addLogEntry(
+              'success',
+              `✓ ${detail.deviceName || detail.deviceId}: ${detail.action}`
+            )
           } else {
-            addLogEntry('error', `✗ ${detail.deviceName || detail.deviceId}: ${detail.error}`)
+            addLogEntry(
+              'error',
+              `✗ ${detail.deviceName || detail.deviceId}: ${detail.error}`
+            )
           }
         })
       }
 
       // Log errors (filter out expected export failures for pull-only APIs)
       if (result.errors && Array.isArray(result.errors)) {
-        const importantErrors = result.errors.filter(error => {
+        const importantErrors = result.errors.filter((error) => {
           const errorText = typeof error === 'string' ? error : error.error
           // Skip "Request failed with status code 500" from export operations (Golioth is pull-only)
           return !errorText.includes('Request failed with status code 500')
         })
-        
+
         if (importantErrors.length > 0) {
           importantErrors.forEach((error) => {
             // Handle both string errors and object errors
@@ -247,11 +316,14 @@ export function IntegrationSyncTab({
         }
       }
 
-      addLogEntry('success', syncOptions.dryRun ? 'Dry run completed' : 'Sync completed successfully')
+      addLogEntry(
+        'success',
+        syncOptions.dryRun ? 'Dry run completed' : 'Sync completed successfully'
+      )
       toast.success(syncOptions.dryRun ? 'Dry run completed' : 'Sync completed')
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
       addLogEntry('error', `Sync failed: ${errorMessage}`)
       toast.error('Sync failed')
       console.error('Sync error:', error)
@@ -269,14 +341,14 @@ export function IntegrationSyncTab({
   return (
     <div className="space-y-4">
       {/* Sync Options */}
-      <Card className="p-4 space-y-4">
+      <Card className="space-y-4 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">Sync Options</h3>
+          <h3 className="text-lg font-semibold">Sync Options</h3>
           {helpText && (
             <p className="text-sm text-muted-foreground">{helpText}</p>
           )}
         </div>
-        
+
         {customOptionsRenderer ? (
           // Custom options UI for this integration
           customOptionsRenderer(syncOptions, setSyncOptions, syncing)
@@ -290,9 +362,9 @@ export function IntegrationSyncTab({
                   <Label htmlFor="sync-direction">Direction</Label>
                   <Select
                     value={syncOptions.direction}
-                    onValueChange={(value: 'import' | 'export' | 'bidirectional') => 
-                      setSyncOptions({ ...syncOptions, direction: value })
-                    }
+                    onValueChange={(
+                      value: 'import' | 'export' | 'bidirectional'
+                    ) => setSyncOptions({ ...syncOptions, direction: value })}
                     disabled={syncing}
                   >
                     <SelectTrigger id="sync-direction">
@@ -300,13 +372,19 @@ export function IntegrationSyncTab({
                     </SelectTrigger>
                     <SelectContent>
                       {availableDirections.includes('import') && (
-                        <SelectItem value="import">Import (Remote → Local)</SelectItem>
+                        <SelectItem value="import">
+                          Import (Remote → Local)
+                        </SelectItem>
                       )}
                       {availableDirections.includes('export') && (
-                        <SelectItem value="export">Export (Local → Remote)</SelectItem>
+                        <SelectItem value="export">
+                          Export (Local → Remote)
+                        </SelectItem>
                       )}
                       {availableDirections.includes('bidirectional') && (
-                        <SelectItem value="bidirectional">Bidirectional</SelectItem>
+                        <SelectItem value="bidirectional">
+                          Bidirectional
+                        </SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -322,8 +400,11 @@ export function IntegrationSyncTab({
                     type="number"
                     min={0}
                     value={syncOptions.deviceLimit}
-                    onChange={(e) => 
-                      setSyncOptions({ ...syncOptions, deviceLimit: parseInt(e.target.value) || 0 })
+                    onChange={(e) =>
+                      setSyncOptions({
+                        ...syncOptions,
+                        deviceLimit: parseInt(e.target.value) || 0,
+                      })
                     }
                     disabled={syncing}
                     placeholder="0 = no limit"
@@ -339,7 +420,7 @@ export function IntegrationSyncTab({
                   <Label>Create Missing Devices</Label>
                   <Switch
                     checked={syncOptions.createMissing}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSyncOptions({ ...syncOptions, createMissing: checked })
                     }
                     disabled={syncing}
@@ -352,8 +433,11 @@ export function IntegrationSyncTab({
                   <Label>Update Existing Devices</Label>
                   <Switch
                     checked={syncOptions.updateExisting}
-                    onCheckedChange={(checked) => 
-                      setSyncOptions({ ...syncOptions, updateExisting: checked })
+                    onCheckedChange={(checked) =>
+                      setSyncOptions({
+                        ...syncOptions,
+                        updateExisting: checked,
+                      })
                     }
                     disabled={syncing}
                   />
@@ -365,7 +449,7 @@ export function IntegrationSyncTab({
                   <Label>Sync Status</Label>
                   <Switch
                     checked={syncOptions.syncStatus}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSyncOptions({ ...syncOptions, syncStatus: checked })
                     }
                     disabled={syncing}
@@ -378,7 +462,7 @@ export function IntegrationSyncTab({
                   <Label>Sync Metadata</Label>
                   <Switch
                     checked={syncOptions.syncMetadata}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSyncOptions({ ...syncOptions, syncMetadata: checked })
                     }
                     disabled={syncing}
@@ -391,7 +475,7 @@ export function IntegrationSyncTab({
                   <Label className="text-amber-600">Dry Run (Test Mode)</Label>
                   <Switch
                     checked={syncOptions.dryRun}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSyncOptions({ ...syncOptions, dryRun: checked })
                     }
                     disabled={syncing}
@@ -404,11 +488,7 @@ export function IntegrationSyncTab({
 
         {/* Sync Controls */}
         <div className="flex gap-2 pt-2">
-          <Button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex-1"
-          >
+          <Button onClick={handleSync} disabled={syncing} className="flex-1">
             {syncing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -421,13 +501,9 @@ export function IntegrationSyncTab({
               </>
             )}
           </Button>
-          
+
           {syncing && (
-            <Button
-              onClick={stopSync}
-              variant="destructive"
-              size="icon"
-            >
+            <Button onClick={stopSync} variant="destructive" size="icon">
               <Square className="h-4 w-4" />
             </Button>
           )}
@@ -435,9 +511,9 @@ export function IntegrationSyncTab({
       </Card>
 
       {/* Sync Log Terminal */}
-      <Card className="p-4 space-y-3">
+      <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">Sync Log</h3>
+          <h3 className="text-lg font-semibold">Sync Log</h3>
           <div className="flex gap-2">
             <Button
               onClick={exportLog}
@@ -461,9 +537,9 @@ export function IntegrationSyncTab({
         </div>
 
         {/* Terminal-like log output */}
-        <div className="bg-gray-950 text-gray-100 rounded-md p-4 font-mono text-sm h-[400px] overflow-y-auto">
+        <div className="h-[400px] overflow-y-auto rounded-md bg-gray-950 p-4 font-mono text-sm text-gray-100">
           {syncLog.length === 0 ? (
-            <div className="text-gray-500 text-center py-8">
+            <div className="py-8 text-center text-gray-500">
               No sync operations yet. Click &quot;Start Sync&quot; to begin.
             </div>
           ) : (
@@ -471,25 +547,31 @@ export function IntegrationSyncTab({
               <div
                 key={index}
                 className={`py-1 ${
-                  entry.level === 'error' ? 'text-red-400' :
-                  entry.level === 'warning' ? 'text-yellow-400' :
-                  entry.level === 'success' ? 'text-green-400' :
-                  'text-gray-300'
+                  entry.level === 'error'
+                    ? 'text-red-400'
+                    : entry.level === 'warning'
+                      ? 'text-yellow-400'
+                      : entry.level === 'success'
+                        ? 'text-green-400'
+                        : 'text-gray-300'
                 }`}
               >
                 <span className="text-gray-500">
                   [{new Date(entry.timestamp).toLocaleTimeString()}]
-                </span>
-                {' '}
-                <span className={`font-bold ${
-                  entry.level === 'error' ? 'text-red-500' :
-                  entry.level === 'warning' ? 'text-yellow-500' :
-                  entry.level === 'success' ? 'text-green-500' :
-                  'text-blue-500'
-                }`}>
+                </span>{' '}
+                <span
+                  className={`font-bold ${
+                    entry.level === 'error'
+                      ? 'text-red-500'
+                      : entry.level === 'warning'
+                        ? 'text-yellow-500'
+                        : entry.level === 'success'
+                          ? 'text-green-500'
+                          : 'text-blue-500'
+                  }`}
+                >
                   [{entry.level.toUpperCase()}]
-                </span>
-                {' '}
+                </span>{' '}
                 {entry.message}
               </div>
             ))
@@ -498,7 +580,8 @@ export function IntegrationSyncTab({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Tip: Switch to the Activity Log tab to see detailed API communication logs.
+          Tip: Switch to the Activity Log tab to see detailed API communication
+          logs.
         </p>
       </Card>
     </div>

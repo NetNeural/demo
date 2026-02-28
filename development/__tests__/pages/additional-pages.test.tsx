@@ -34,7 +34,9 @@ jest.mock('@/contexts/UserContext', () => ({
     loading: false,
     refreshUser: jest.fn(),
   }),
-  UserProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  UserProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 jest.mock('@/contexts/OrganizationContext', () => ({
@@ -45,7 +47,9 @@ jest.mock('@/contexts/OrganizationContext', () => ({
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
   }),
-  OrganizationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 describe('Additional Pages', () => {
@@ -53,12 +57,6 @@ describe('Additional Pages', () => {
     // Test Sentry page is a client component, so just verify it can be imported
     const TestSentryPage = (await import('@/app/test-sentry/page')).default
     expect(TestSentryPage).toBeDefined()
-  })
-
-  test('Test Notification page module loads', async () => {
-    // Just verify module can be imported
-    const notificationModule = await import('@/app/test-notifications/page')
-    expect(notificationModule.default).toBeDefined()
   })
 
   test('Dashboard Users page renders', async () => {

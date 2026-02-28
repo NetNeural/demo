@@ -1,11 +1,13 @@
 # Supabase Functions - Error Analysis
 
 ## Summary
+
 Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories of issues.
 
 ## Error Categories
 
 ### 1. ✅ FALSE POSITIVES - Deno Runtime (Ignore These)
+
 **Error**: `Cannot find module 'https://esm.sh/@supabase/supabase-js@2'`  
 **Error**: `Cannot find name 'Deno'`
 
@@ -14,6 +16,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 **Status**: ✅ **IGNORE** - These are not real errors. Functions work correctly when deployed.
 
 **Affected Files**: Almost all functions
+
 - `mqtt-broker/index.ts`
 - `integrations/index.ts`
 - `members/index.ts`
@@ -26,6 +29,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 ---
 
 ### 2. ✅ FIXED - Missing Activity Type
+
 **Error**: `Type '"device_sync"' is not assignable to activityType`
 
 **Fix Applied**: Added `'device_sync'` to activity type enum in `_shared/activity-logger.ts`
@@ -35,6 +39,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 ---
 
 ### 3. ⚠️ ACCEPTABLE - Supabase Type Casting
+
 **Error**: `Unexpected any. Specify a different type`  
 **Error**: `Argument of type 'any' is not assignable to parameter of type 'never'`
 
@@ -43,12 +48,13 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 **Status**: ⚠️ **ACCEPTABLE** - Standard pattern for Supabase strict typing
 
 **Examples**:
+
 ```typescript
 // integrations/index.ts
 .update(updates as any)  // Line 804
 .insert({ ... } as any)  // Line 739
 
-// devices/index.ts  
+// devices/index.ts
 .update(updates as any)  // Line 131
 .update({ ... } as any)  // Lines 263, 287
 
@@ -61,6 +67,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 ---
 
 ### 4. ⚠️ LOW PRIORITY - Unused @ts-expect-error
+
 **Error**: `Unused '@ts-expect-error' directive`
 
 **Why**: We removed the `@ts-expect-error` comments but the underlying type issues remain (they're acceptable).
@@ -68,6 +75,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 **Status**: ⚠️ **LOW PRIORITY** - Cosmetic issue
 
 **Affected Files**:
+
 - `organizations/index.ts` - 11 instances
 - `integrations/index.ts` - 2 instances (already fixed 2)
 
@@ -76,6 +84,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 ---
 
 ### 5. ⚠️ LOW PRIORITY - Unused Parameters
+
 **Error**: `'callback' is defined but never used` (mqtt-broker/index.ts:89)
 
 **Status**: ⚠️ **LOW PRIORITY** - Likely stub code for future implementation
@@ -85,14 +94,17 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 ## Recommendations
 
 ### ✅ What We Fixed
+
 1. Added `device_sync` to activity type enum ✓
 2. Removed 2 unused `@ts-expect-error` from integrations/index.ts ✓
 
 ### ⚠️ What to Keep
+
 1. **Keep all `as any` casts** - Standard Supabase pattern for RLS strict types
 2. **Ignore Deno errors** - VS Code false positives, functions work in runtime
 
 ### 🔧 Optional Cleanup (Low Priority)
+
 1. Remove remaining unused `@ts-expect-error` comments in organizations/index.ts
 2. Either implement or remove callback parameter in mqtt-broker subscribe method
 
@@ -104,6 +116,7 @@ Analyzed all Supabase Edge Functions for TypeScript errors. Found 3 categories o
 **After fixes**: ~55 errors remaining
 
 **Breakdown**:
+
 - ❌ False Positives (Deno): ~40 errors (IGNORE)
 - ✅ Fixed: 2 errors (device_sync activity type)
 - ⚠️ Acceptable: ~10 errors (as any casting - standard pattern)

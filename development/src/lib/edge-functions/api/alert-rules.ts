@@ -72,11 +72,11 @@ export const alertRules = {
     }
   ) {
     const params = new URLSearchParams({ organization_id: organizationId })
-    
+
     if (filters?.rule_type) {
       params.append('rule_type', filters.rule_type)
     }
-    
+
     if (filters?.enabled !== undefined) {
       params.append('enabled', String(filters.enabled))
     }

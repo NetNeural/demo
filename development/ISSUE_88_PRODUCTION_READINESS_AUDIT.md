@@ -1,4 +1,5 @@
 # Issue #88 - Production Readiness Audit
+
 ## Generic Sync Service Infrastructure Review
 
 **Date:** November 20, 2025  
@@ -56,6 +57,7 @@ Issue #88 implemented a **Provider Abstraction Pattern** for device sync operati
 **Problem:** Only `GoliothClient` consistently uses `withActivityLog()`. Other providers don't.
 
 **Evidence:**
+
 ```typescript
 // ❌ GoliothIntegrationProvider (frontend) - NO activity logging
 export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
@@ -81,6 +83,7 @@ export class GoliothClient extends BaseIntegrationClient {
 ```
 
 **Impact:**
+
 - Frontend provider calls are NOT logged
 - Only edge function calls get logged
 - Can't track failed test connections from UI
@@ -91,6 +94,7 @@ export class GoliothClient extends BaseIntegrationClient {
 **Problem:** 50+ `console.log()` calls with unstructured text
 
 **Evidence:**
+
 ```typescript
 // ❌ Unstructured logging - can't search/filter
 console.log('[GoliothClient] Import starting with config:', {...})
@@ -106,6 +110,7 @@ logger.info('golioth_import_start', {
 ```
 
 **Impact:**
+
 - Can't search logs by integration ID
 - Can't filter by severity level
 - Can't aggregate errors across providers
@@ -116,6 +121,7 @@ logger.info('golioth_import_start', {
 **Problem:** Errors don't include correlation IDs, stack traces, or request context
 
 **Evidence:**
+
 ```typescript
 // ❌ Minimal error info
 catch (error) {
@@ -136,6 +142,7 @@ catch (error) {
 ```
 
 **Impact:**
+
 - Can't trace errors across multiple services
 - Can't link webhook failures to sync operations
 - No request ID for support tickets
@@ -146,12 +153,14 @@ catch (error) {
 **Problem:** When external systems call our webhooks and fail, we have no record
 
 **Evidence:**
+
 - `integration_activity_log` supports `direction: 'incoming'`
 - But NO webhook handlers actually use it
 - MQTT message handler doesn't log failures
 - No correlation between webhook and device updates
 
 **Impact:**
+
 - Can't debug "why isn't device updating?"
 - Can't see if Golioth webhooks are failing
 - No visibility into MQTT message processing
@@ -162,12 +171,14 @@ catch (error) {
 **Problem:** Cron jobs and auto-sync have no audit trail
 
 **Evidence:**
+
 - MQTT auto-subscribe/discovery - no logging
 - Scheduled syncs - no tracking
 - Telemetry polling - no error records
 - Message queue processing - no activity log
 
 **Impact:**
+
 - Silent failures in background
 - Can't see why devices aren't syncing
 - No alerts for stuck jobs
@@ -176,33 +187,39 @@ catch (error) {
 #### 6. **Provider Implementation Varies**
 
 **Golioth Provider:**
+
 - ✅ Uses `withActivityLog()` in edge function
 - ✅ Records telemetry
 - ✅ Detects conflicts
 - ❌ Frontend provider has no logging
 
 **AWS IoT Provider:**
+
 - ❌ Minimal logging
 - ❌ No activity log integration
 - ⚠️ Basic console.warn for telemetry failures
 
 **Azure IoT Provider:**
+
 - ❌ Minimal logging
 - ❌ No error tracking
 
 **MQTT Provider:**
+
 - ❌ No logging infrastructure
 - ❌ Silent connection failures
 
 #### 7. **No Log Aggregation Strategy**
 
 **Problem:** Logs scattered across:
+
 - Supabase Edge Function logs (ephemeral)
 - Next.js server logs (local only)
 - Console.log statements (not searchable)
 - Database activity_log table (partial)
 
 **Missing:**
+
 - Centralized log aggregation (e.g., Sentry, DataDog)
 - Log shipping from edge functions
 - Correlation between frontend and backend logs
@@ -229,47 +246,54 @@ export class StructuredLogger {
   ) {}
 
   info(event: string, data: Record<string, unknown>) {
-    console.log(JSON.stringify({
-      level: 'info',
-      event,
-      timestamp: new Date().toISOString(),
-      ...this.context,
-      ...data
-    }))
+    console.log(
+      JSON.stringify({
+        level: 'info',
+        event,
+        timestamp: new Date().toISOString(),
+        ...this.context,
+        ...data,
+      })
+    )
   }
 
   error(event: string, error: Error, data?: Record<string, unknown>) {
-    console.error(JSON.stringify({
-      level: 'error',
-      event,
-      timestamp: new Date().toISOString(),
-      error: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      },
-      ...this.context,
-      ...data
-    }))
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event,
+        timestamp: new Date().toISOString(),
+        error: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        },
+        ...this.context,
+        ...data,
+      })
+    )
   }
 
   warn(event: string, data: Record<string, unknown>) {
-    console.warn(JSON.stringify({
-      level: 'warn',
-      event,
-      timestamp: new Date().toISOString(),
-      ...this.context,
-      ...data
-    }))
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event,
+        timestamp: new Date().toISOString(),
+        ...this.context,
+        ...data,
+      })
+    )
   }
 }
 ```
 
 **Usage:**
+
 ```typescript
 const logger = new StructuredLogger({
   service: 'device-sync',
-  integrationId: integration.id
+  integrationId: integration.id,
 })
 
 logger.info('sync_started', { deviceCount: devices.length })
@@ -297,9 +321,9 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
       await this.activityLogger.complete(logId, { status: 'success' })
       return { success: true, ... }
     } catch (error) {
-      await this.activityLogger.complete(logId, { 
+      await this.activityLogger.complete(logId, {
         status: 'failed',
-        errorMessage: error.message 
+        errorMessage: error.message
       })
       throw error
     }
@@ -314,29 +338,32 @@ export class GoliothIntegrationProvider extends DeviceIntegrationProvider {
 ```typescript
 export abstract class BaseIntegrationClient {
   protected requestId: string = crypto.randomUUID()
-  
-  protected async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+
+  protected async request<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     // Add correlation header
     const headers = new Headers(options.headers)
     headers.set('X-Request-ID', this.requestId)
-    
+
     this.logger.info('http_request', {
       requestId: this.requestId,
       url,
-      method: options.method || 'GET'
+      method: options.method || 'GET',
     })
-    
+
     try {
       const response = await fetch(url, { ...options, headers })
       this.logger.info('http_response', {
         requestId: this.requestId,
-        status: response.status
+        status: response.status,
       })
       return await response.json()
     } catch (error) {
       this.logger.error('http_error', error, {
         requestId: this.requestId,
-        url
+        url,
       })
       throw error
     }
@@ -360,19 +387,19 @@ export default createEdgeFunction(async ({ req }) => {
     method: req.method,
     endpoint: new URL(req.url).pathname,
     requestHeaders: sanitizeHeaders(req.headers),
-    requestBody: await req.json()
+    requestBody: await req.json(),
   })
 
   try {
     const result = await processWebhook(data)
     await logActivityComplete(supabase, logId, {
       status: 'success',
-      responseBody: result
+      responseBody: result,
     })
   } catch (error) {
     await logActivityComplete(supabase, logId, {
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: error.message,
     })
     throw error
   }
@@ -393,8 +420,8 @@ async function handleMqttMessage(message) {
     activityType: 'mqtt_message_received',
     metadata: {
       topic: message.topic,
-      qos: message.qos
-    }
+      qos: message.qos,
+    },
   })
 
   try {
@@ -403,7 +430,7 @@ async function handleMqttMessage(message) {
   } catch (error) {
     await logActivityComplete(supabase, logId, {
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: error.message,
     })
   }
 }
@@ -420,9 +447,7 @@ import * as Sentry from '@sentry/nextjs'
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV,
-  integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-  ],
+  integrations: [new Sentry.Integrations.Http({ tracing: true })],
   tracesSampleRate: 0.1,
 })
 
@@ -430,12 +455,12 @@ Sentry.init({
 Sentry.captureException(error, {
   tags: {
     integration_type: 'golioth',
-    operation: 'sync_import'
+    operation: 'sync_import',
   },
   extra: {
     integrationId,
-    deviceCount
-  }
+    deviceCount,
+  },
 })
 ```
 

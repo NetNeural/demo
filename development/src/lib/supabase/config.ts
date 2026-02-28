@@ -11,7 +11,10 @@ export function getSupabaseUrl(): string {
   }
 
   // Detect Codespaces environment - use API proxy to avoid CORS
-  if (typeof window !== 'undefined' && window.location.hostname.includes('app.github.dev')) {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname.includes('app.github.dev')
+  ) {
     // Use the Next.js API proxy which can communicate with localhost Supabase without CORS issues
     return `${window.location.origin}/api/supabase-proxy`
   }

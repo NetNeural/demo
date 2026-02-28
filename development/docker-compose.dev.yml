@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: netneural-nextjs
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - .:/app
       - /app/node_modules
@@ -20,7 +20,7 @@ services:
     command: npm run dev
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,7 +37,7 @@ services:
       - supabase_db_netneural:db
       - supabase_kong_netneural:api
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:54321/health"]
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:54321/health']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,7 +57,7 @@ services:
       sh -c "deno run --allow-all --watch
       https://deno.land/x/supabase_functions@v1.0.0/cli.ts serve"
     ports:
-      - "54321:54321"
+      - '54321:54321'
     restart: unless-stopped
     depends_on:
       - supabase

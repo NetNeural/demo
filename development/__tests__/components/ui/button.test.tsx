@@ -30,7 +30,9 @@ describe('Button Component - Real Source Code Tests', () => {
 
   describe('Variant Styles', () => {
     test('should render secondary variant', () => {
-      const { container } = render(<Button variant="secondary">Secondary</Button>)
+      const { container } = render(
+        <Button variant="secondary">Secondary</Button>
+      )
       const button = container.firstChild as HTMLElement
       expect(button).toHaveClass('bg-white')
       expect(button).toHaveClass('text-gray-700')
@@ -52,7 +54,9 @@ describe('Button Component - Real Source Code Tests', () => {
     })
 
     test('should render destructive variant', () => {
-      const { container } = render(<Button variant="destructive">Delete</Button>)
+      const { container } = render(
+        <Button variant="destructive">Delete</Button>
+      )
       const button = container.firstChild as HTMLElement
       expect(button).toHaveClass('bg-red-600')
       expect(button).toHaveClass('text-white')
@@ -109,7 +113,11 @@ describe('Button Component - Real Source Code Tests', () => {
 
     test('should not call onClick when disabled', () => {
       const handleClick = jest.fn()
-      render(<Button onClick={handleClick} disabled>Disabled</Button>)
+      render(
+        <Button onClick={handleClick} disabled>
+          Disabled
+        </Button>
+      )
       fireEvent.click(screen.getByText('Disabled'))
       expect(handleClick).not.toHaveBeenCalled()
     })
@@ -145,7 +153,9 @@ describe('Button Component - Real Source Code Tests', () => {
     })
 
     test('should accept custom className', () => {
-      const { container } = render(<Button className="custom-class">Custom</Button>)
+      const { container } = render(
+        <Button className="custom-class">Custom</Button>
+      )
       const button = container.firstChild as HTMLElement
       expect(button).toHaveClass('custom-class')
     })
@@ -300,13 +310,13 @@ describe('Button Component - Real Source Code Tests', () => {
         </Button>
       )
       const button = container.firstChild as HTMLElement
-      
+
       expect(button).toHaveClass('bg-red-600')
       expect(button).toHaveClass('px-6')
       expect(button).toHaveClass('custom-class')
       expect(button).toBeDisabled()
       expect(screen.getByTestId('combo-button')).toBeInTheDocument()
-      
+
       fireEvent.click(button)
       expect(handleClick).not.toHaveBeenCalled()
     })

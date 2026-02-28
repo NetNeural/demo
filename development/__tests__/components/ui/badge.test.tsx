@@ -52,14 +52,18 @@ describe('Badge Component - Real Source Code Tests', () => {
 
   describe('Custom Styling', () => {
     test('should accept custom className', () => {
-      const { container } = render(<Badge className="custom-class">Custom</Badge>)
+      const { container } = render(
+        <Badge className="custom-class">Custom</Badge>
+      )
       const badge = container.firstChild as HTMLElement
       expect(badge).toHaveClass('custom-class')
     })
 
     test('should merge custom className with variant classes', () => {
       const { container } = render(
-        <Badge variant="secondary" className="text-lg">Merged</Badge>
+        <Badge variant="secondary" className="text-lg">
+          Merged
+        </Badge>
       )
       const badge = container.firstChild as HTMLElement
       expect(badge).toHaveClass('bg-secondary')
@@ -136,9 +140,7 @@ describe('Badge Component - Real Source Code Tests', () => {
     })
 
     test('should support aria-label', () => {
-      const { container } = render(
-        <Badge aria-label="Test badge">Badge</Badge>
-      )
+      const { container } = render(<Badge aria-label="Test badge">Badge</Badge>)
       const badge = container.firstChild as HTMLElement
       expect(badge).toHaveAttribute('aria-label', 'Test badge')
     })
@@ -170,14 +172,15 @@ describe('Badge Component - Real Source Code Tests', () => {
 
   describe('Edge Cases', () => {
     test('should handle very long text', () => {
-      const longText = 'This is a very long badge text that might wrap or truncate'
+      const longText =
+        'This is a very long badge text that might wrap or truncate'
       render(<Badge>{longText}</Badge>)
       expect(screen.getByText(longText)).toBeInTheDocument()
     })
 
     test('should handle special characters', () => {
-      render(<Badge>{"<>&\"'"}</Badge>)
-      expect(screen.getByText("<>&\"'")).toBeInTheDocument()
+      render(<Badge>{'<>&"\''}</Badge>)
+      expect(screen.getByText('<>&"\'')).toBeInTheDocument()
     })
 
     test('should handle numbers as children', () => {

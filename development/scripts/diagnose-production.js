@@ -26,15 +26,17 @@ if (!SERVICE_KEY) {
   console.error(`  export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key`)
   console.error('')
   console.error('Get it from:')
-  console.error(`  https://supabase.com/dashboard/project/${PROJECT_REF}/settings/api`)
+  console.error(
+    `  https://supabase.com/dashboard/project/${PROJECT_REF}/settings/api`
+  )
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 })
 
 async function diagnose() {
@@ -60,7 +62,7 @@ async function diagnose() {
           WHERE tablename = 'users' 
           AND schemaname = 'public'
           ORDER BY policyname;
-        `
+        `,
       })
       policies = result.data
       policyError = result.error
@@ -75,7 +77,7 @@ async function diagnose() {
       console.log('')
     } else if (policies) {
       console.log(`Found ${policies.length} policies:`)
-      policies.forEach(p => {
+      policies.forEach((p) => {
         console.log(`  - ${p.policyname} (${p.cmd})`)
       })
       console.log('')
@@ -84,11 +86,15 @@ async function diagnose() {
       const problematicPolicies = [
         'Super admins can manage all users',
         'Users can view users in their organization',
-        'Org admins can manage users in their organization'
+        'Org admins can manage users in their organization',
       ]
 
-      const hasProblematic = policies.some(p => problematicPolicies.includes(p.policyname))
-      const hasFixed = policies.some(p => p.policyname === 'Users can view own profile')
+      const hasProblematic = policies.some((p) =>
+        problematicPolicies.includes(p.policyname)
+      )
+      const hasFixed = policies.some(
+        (p) => p.policyname === 'Users can view own profile'
+      )
 
       if (hasProblematic) {
         console.log('❌ OLD PROBLEMATIC POLICIES STILL EXIST')
@@ -112,14 +118,17 @@ async function diagnose() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('')
 
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
+    const { data: authUsers, error: authError } =
+      await supabase.auth.admin.listUsers()
 
     if (authError) {
       console.log('❌ Cannot list auth users:', authError.message)
       console.log('')
     } else {
-      const targetUser = authUsers.users.find(u => u.email === 'admin@netneural.com')
-      
+      const targetUser = authUsers.users.find(
+        (u) => u.email === 'admin@netneural.com'
+      )
+
       if (targetUser) {
         console.log('✅ User exists in auth.users')
         console.log(`   ID: ${targetUser.id}`)
@@ -129,7 +138,7 @@ async function diagnose() {
       } else {
         console.log('❌ User NOT found in auth.users')
         console.log('   Available users:')
-        authUsers.users.forEach(u => console.log(`     - ${u.email}`))
+        authUsers.users.forEach((u) => console.log(`     - ${u.email}`))
         console.log('')
       }
     }
@@ -151,7 +160,7 @@ async function diagnose() {
       console.log('')
     } else {
       console.log(`✅ Found ${orgs.length} organizations:`)
-      orgs.forEach(o => console.log(`   - ${o.name} (${o.slug})`))
+      orgs.forEach((o) => console.log(`   - ${o.name} (${o.slug})`))
       console.log('')
     }
 
@@ -169,7 +178,7 @@ async function diagnose() {
       console.log('❌ Cannot query users table:', usersError.message)
       console.log('   Code:', usersError.code)
       console.log('')
-      
+
       if (usersError.code === 'PGRST204') {
         console.log('   This means the users table is EMPTY')
         console.log('')
@@ -180,14 +189,16 @@ async function diagnose() {
       console.log('')
     } else {
       console.log(`✅ Found ${users.length} users:`)
-      users.forEach(u => {
+      users.forEach((u) => {
         console.log(`   - ${u.email}`)
         console.log(`     Role: ${u.role}`)
         console.log(`     Org ID: ${u.organization_id || 'NULL'}`)
       })
       console.log('')
 
-      const targetUserProfile = users.find(u => u.email === 'admin@netneural.com')
+      const targetUserProfile = users.find(
+        (u) => u.email === 'admin@netneural.com'
+      )
       if (!targetUserProfile) {
         console.log('⚠️  admin@netneural.com NOT in public.users table')
         console.log('')
@@ -204,7 +215,9 @@ async function diagnose() {
     console.log('')
 
     // Get a user ID to test with
-    const testUserId = authUsers?.users?.find(u => u.email === 'admin@netneural.com')?.id
+    const testUserId = authUsers?.users?.find(
+      (u) => u.email === 'admin@netneural.com'
+    )?.id
 
     if (testUserId) {
       console.log(`Testing with user ID: ${testUserId}`)
@@ -241,8 +254,10 @@ async function diagnose() {
     console.log('')
 
     // Determine the main issues
-    const hasAuthUser = authUsers?.users?.some(u => u.email === 'admin@netneural.com')
-    const hasUserProfile = users?.some(u => u.email === 'admin@netneural.com')
+    const hasAuthUser = authUsers?.users?.some(
+      (u) => u.email === 'admin@netneural.com'
+    )
+    const hasUserProfile = users?.some((u) => u.email === 'admin@netneural.com')
     const hasOrganization = orgs && orgs.length > 0
     const tableEmpty = !users || users.length === 0
 
@@ -278,7 +293,6 @@ async function diagnose() {
 
     console.log('For full diagnostic output, check the sections above.')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
   } catch (error) {
     console.error('')
     console.error('❌ Unexpected error:', error.message)

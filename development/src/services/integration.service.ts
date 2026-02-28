@@ -43,9 +43,10 @@ export const integrationService = {
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'Failed to send notification'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'Failed to send notification'
       throw new Error(errorMsg)
     }
 
@@ -121,9 +122,10 @@ export const integrationService = {
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'Failed to sync with AWS IoT'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'Failed to sync with AWS IoT'
       throw new Error(errorMsg)
     }
 
@@ -142,9 +144,10 @@ export const integrationService = {
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'Failed to sync with Golioth'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'Failed to sync with Golioth'
       throw new Error(errorMsg)
     }
 
@@ -164,9 +167,10 @@ export const integrationService = {
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'Azure IoT sync failed'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'Azure IoT sync failed'
       throw new Error(errorMsg)
     }
 
@@ -179,7 +183,12 @@ export const integrationService = {
   async publishMqtt(
     organizationId: string,
     integrationId: string,
-    messages: Array<{ topic: string; payload: string | object; qos?: 0 | 1 | 2; retain?: boolean }>
+    messages: Array<{
+      topic: string
+      payload: string | object
+      qos?: 0 | 1 | 2
+      retain?: boolean
+    }>
   ) {
     // For now, publish to the first topic with the first message
     const firstMessage = messages[0]
@@ -191,15 +200,17 @@ export const integrationService = {
       organization_id: organizationId,
       integration_id: integrationId,
       topic: firstMessage.topic,
-      message: typeof firstMessage.payload === 'string' 
-        ? firstMessage.payload 
-        : JSON.stringify(firstMessage.payload),
+      message:
+        typeof firstMessage.payload === 'string'
+          ? firstMessage.payload
+          : JSON.stringify(firstMessage.payload),
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'MQTT publish failed'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'MQTT publish failed'
       throw new Error(errorMsg)
     }
 
@@ -227,9 +238,10 @@ export const integrationService = {
     })
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || 'MQTT subscribe failed'
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message || 'MQTT subscribe failed'
       throw new Error(errorMsg)
     }
 
@@ -243,9 +255,11 @@ export const integrationService = {
     const response = await edgeFunctions.integrations.test(integrationId)
 
     if (!response.success) {
-      const errorMsg = typeof response.error === 'string'
-        ? response.error
-        : response.error?.message || `Failed to test ${integrationType} connection`
+      const errorMsg =
+        typeof response.error === 'string'
+          ? response.error
+          : response.error?.message ||
+            `Failed to test ${integrationType} connection`
       throw new Error(errorMsg)
     }
 
@@ -258,7 +272,10 @@ export const integrationService = {
   async getNotificationLog(organizationId: string) {
     // This would need a new endpoint or direct database query
     // For now, return empty array as placeholder
-    console.warn('getNotificationLog not yet implemented in edge functions', organizationId)
+    console.warn(
+      'getNotificationLog not yet implemented in edge functions',
+      organizationId
+    )
     return []
   },
 }

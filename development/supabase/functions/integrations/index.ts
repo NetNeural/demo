@@ -1,13 +1,21 @@
 // Deno-lint-ignore-file no-explicit-any
-import { createEdgeFunction, createSuccessResponse, DatabaseError } from '../_shared/request-handler.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createServiceClient } from '../_shared/database.ts'
-import { 
-  getUserContext, 
+import {
+  getUserContext,
   getTargetOrganizationId,
-  createAuthenticatedClient
+  createAuthenticatedClient,
 } from '../_shared/auth.ts'
-import { logActivity, getIpAddress, sanitizeHeaders } from '../_shared/activity-logger.ts'
+import {
+  logActivity,
+  getIpAddress,
+  sanitizeHeaders,
+} from '../_shared/activity-logger.ts'
 import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
@@ -64,7 +72,11 @@ async function testIntegrationUnified(
   settings: IntegrationSettings,
   organizationId: string,
   integrationId: string
-): Promise<{ success: boolean; message: string; details: Record<string, unknown> }> {
+): Promise<{
+  success: boolean
+  message: string
+  details: Record<string, unknown>
+}> {
   try {
     let client: BaseIntegrationClient
 
@@ -113,6 +125,8 @@ async function testIntegrationUnified(
         break
 
       case 'mqtt':
+      case 'mqtt_hosted':
+      case 'mqtt_external':
         client = new MqttClient({
           type: 'mqtt',
           settings: {
@@ -142,7 +156,6 @@ async function testIntegrationUnified(
     // Call unified test() method
     const result = await client.test()
     return result
-
   } catch (error) {
     return {
       success: false,
@@ -158,13 +171,21 @@ async function testIntegrationUnified(
 
 async function testEmailIntegration(settings: IntegrationSettings) {
   if (!settings?.smtpHost || !settings?.smtpPort || !settings?.smtpUsername) {
-    return { success: false, message: 'Missing SMTP configuration', details: {} }
+    return {
+      success: false,
+      message: 'Missing SMTP configuration',
+      details: {},
+    }
   }
-  
-  return { 
-    success: true, 
-    message: 'SMTP configuration validated', 
-    details: { host: settings.smtpHost, port: settings.smtpPort, username: settings.smtpUsername }
+
+  return {
+    success: true,
+    message: 'SMTP configuration validated',
+    details: {
+      host: settings.smtpHost,
+      port: settings.smtpPort,
+      username: settings.smtpUsername,
+    },
   }
 }
 
@@ -172,26 +193,34 @@ async function testSlackIntegration(settings: IntegrationSettings) {
   if (!settings?.webhookUrl) {
     return { success: false, message: 'Missing Slack webhook URL', details: {} }
   }
-  
+
   // Test Slack webhook with a ping message
   try {
     const response = await fetch(settings.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: '✓ NetNeural integration test successful' })
+      body: JSON.stringify({ text: '✓ NetNeural integration test successful' }),
     })
-    
+
     if (!response.ok) {
-      return { success: false, message: `Slack webhook returned ${response.status}`, details: {} }
+      return {
+        success: false,
+        message: `Slack webhook returned ${response.status}`,
+        details: {},
+      }
     }
-    
-    return { 
-      success: true, 
-      message: 'Slack webhook validated (test message sent)', 
-      details: { channel: settings.channel || 'default' }
+
+    return {
+      success: true,
+      message: 'Slack webhook validated (test message sent)',
+      details: { channel: settings.channel || 'default' },
     }
   } catch (error) {
-    return { success: false, message: `Slack webhook error: ${(error as Error).message}`, details: {} }
+    return {
+      success: false,
+      message: `Slack webhook error: ${(error as Error).message}`,
+      details: {},
+    }
   }
 }
 
@@ -199,116 +228,130 @@ async function testWebhookIntegration(settings: IntegrationSettings) {
   if (!settings?.url) {
     return { success: false, message: 'Missing webhook URL', details: {} }
   }
-  
+
   // Test webhook with a ping
   try {
     const response = await fetch(settings.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: true, message: 'NetNeural integration test' })
+      body: JSON.stringify({
+        test: true,
+        message: 'NetNeural integration test',
+      }),
     })
-    
-    return { 
-      success: true, 
-      message: `Webhook responded with status ${response.status}`, 
-      details: { url: settings.url, status: response.status }
+
+    return {
+      success: true,
+      message: `Webhook responded with status ${response.status}`,
+      details: { url: settings.url, status: response.status },
     }
   } catch (error) {
-    return { success: false, message: `Webhook error: ${(error as Error).message}`, details: {} }
+    return {
+      success: false,
+      message: `Webhook error: ${(error as Error).message}`,
+      details: {},
+    }
   }
 }
 
-export default createEdgeFunction(async ({ req }) => {
-  // Get authenticated user context
-  const userContext = await getUserContext(req)
-  
-  // Create authenticated Supabase client (respects RLS)
-  const supabase = createAuthenticatedClient(req)
+export default createEdgeFunction(
+  async ({ req }) => {
+    // Get authenticated user context
+    const userContext = await getUserContext(req)
 
-  // GET /integrations/activity - Get activity logs for an integration (MUST BE BEFORE general GET)
-  if (req.method === 'GET' && req.url.includes('/activity')) {
-    const url = new URL(req.url)
-    const integrationId = url.searchParams.get('integration_id')
-    const limitParam = url.searchParams.get('limit')
-    const directionFilter = url.searchParams.get('direction') // 'incoming', 'outgoing', or 'all'
-    const statusFilter = url.searchParams.get('status') // 'success', 'failed', or 'all'
-    
-    if (!integrationId) {
-      throw new DatabaseError('Missing integration_id parameter', 400)
-    }
+    // Create authenticated Supabase client (respects RLS)
+    const supabase = createAuthenticatedClient(req)
 
-    // Verify user has access to this integration
-    const { data: integration, error: integrationError } = await supabase
-      .from('device_integrations')
-      .select('organization_id')
-      .eq('id', integrationId)
-      .single()
+    // GET /integrations/activity - Get activity logs for an integration (MUST BE BEFORE general GET)
+    if (req.method === 'GET' && req.url.includes('/activity')) {
+      const url = new URL(req.url)
+      const integrationId = url.searchParams.get('integration_id')
+      const limitParam = url.searchParams.get('limit')
+      const directionFilter = url.searchParams.get('direction') // 'incoming', 'outgoing', or 'all'
+      const statusFilter = url.searchParams.get('status') // 'success', 'failed', or 'all'
 
-    if (integrationError || !integration) {
-      throw new DatabaseError('Integration not found or access denied', 404)
-    }
-
-    // Build activity log query
-    let query = supabase
-      .from('integration_activity_log')
-      .select('*')
-      .eq('integration_id', integrationId)
-      .order('created_at', { ascending: false })
-
-    // Apply filters
-    if (directionFilter && directionFilter !== 'all') {
-      query = query.eq('direction', directionFilter)
-    }
-
-    if (statusFilter && statusFilter !== 'all') {
-      if (statusFilter === 'failed') {
-        query = query.in('status', ['failed', 'error', 'timeout'])
-      } else {
-        query = query.eq('status', 'success')
+      if (!integrationId) {
+        throw new DatabaseError('Missing integration_id parameter', 400)
       }
-    }
 
-    // Apply limit (default 100)
-    const limit = limitParam ? parseInt(limitParam, 10) : 100
-    query = query.limit(limit)
+      // Verify user has access to this integration
+      const { data: integration, error: integrationError } = await supabase
+        .from('device_integrations')
+        .select('organization_id')
+        .eq('id', integrationId)
+        .single()
 
-    const { data: logs, error: logsError } = await query
-
-    if (logsError) {
-      console.error('Activity log query error:', logsError)
-      throw new DatabaseError(`Failed to fetch activity logs: ${logsError.message}`, 500)
-    }
-
-    return createSuccessResponse({ 
-      logs: logs || [],
-      count: logs?.length || 0,
-      integrationId,
-      filters: {
-        direction: directionFilter || 'all',
-        status: statusFilter || 'all',
-        limit
+      if (integrationError || !integration) {
+        throw new DatabaseError('Integration not found or access denied', 404)
       }
-    })
-  }
 
-  if (req.method === 'GET') {
-    const url = new URL(req.url)
-    const requestedOrgId = url.searchParams.get('organization_id')
-    const integrationTypeFilter = url.searchParams.get('type') // Filter by integration type
-    
-    // Determine which organization to query based on user's role
-    const organizationId = getTargetOrganizationId(userContext, requestedOrgId)
-    
-    if (!organizationId && !userContext.isSuperAdmin) {
-      throw new DatabaseError('User has no organization access', 403)
+      // Build activity log query
+      let query = supabase
+        .from('integration_activity_log')
+        .select('*')
+        .eq('integration_id', integrationId)
+        .order('created_at', { ascending: false })
+
+      // Apply filters
+      if (directionFilter && directionFilter !== 'all') {
+        query = query.eq('direction', directionFilter)
+      }
+
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'failed') {
+          query = query.in('status', ['failed', 'error', 'timeout'])
+        } else {
+          query = query.eq('status', 'success')
+        }
+      }
+
+      // Apply limit (default 100)
+      const limit = limitParam ? parseInt(limitParam, 10) : 100
+      query = query.limit(limit)
+
+      const { data: logs, error: logsError } = await query
+
+      if (logsError) {
+        console.error('Activity log query error:', logsError)
+        throw new DatabaseError(
+          `Failed to fetch activity logs: ${logsError.message}`,
+          500
+        )
+      }
+
+      return createSuccessResponse({
+        logs: logs || [],
+        count: logs?.length || 0,
+        integrationId,
+        filters: {
+          direction: directionFilter || 'all',
+          status: statusFilter || 'all',
+          limit,
+        },
+      })
     }
+
+    if (req.method === 'GET') {
+      const url = new URL(req.url)
+      const requestedOrgId = url.searchParams.get('organization_id')
+      const integrationTypeFilter = url.searchParams.get('type') // Filter by integration type
+
+      // Determine which organization to query based on user's role
+      const organizationId = getTargetOrganizationId(
+        userContext,
+        requestedOrgId
+      )
+
+      if (!organizationId && !userContext.isSuperAdmin) {
+        throw new DatabaseError('User has no organization access', 403)
+      }
 
       // Build query - RLS will enforce access automatically
       let query = supabase
         .from('device_integrations')
         .select('*')
         .order('created_at', { ascending: false })
-      
+
       // Only filter by org if specified (super admins can query all orgs)
       if (organizationId) {
         query = query.eq('organization_id', organizationId)
@@ -324,11 +367,17 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (error) {
         console.error('Database error:', error)
-        throw new DatabaseError(`Failed to fetch integrations: ${error.message}`, 500)
+        throw new DatabaseError(
+          `Failed to fetch integrations: ${error.message}`,
+          500
+        )
       }
 
       // Get Supabase URL for dynamic webhook URL generation
-      const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || 'http://localhost:54321'
+      const supabaseUrl =
+        Deno.env.get('PUBLIC_SUPABASE_URL') ||
+        Deno.env.get('SUPABASE_URL') ||
+        'http://localhost:54321'
 
       // Enrich integrations with device counts and dynamic webhook URLs
       const enrichedIntegrations = await Promise.all(
@@ -359,18 +408,18 @@ export default createEdgeFunction(async ({ req }) => {
               apiKey: integration.api_key_encrypted || '',
             },
             createdAt: integration.created_at,
-            updatedAt: integration.updated_at
+            updatedAt: integration.updated_at,
           }
         })
       )
 
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         integrations: enrichedIntegrations,
         count: enrichedIntegrations.length,
         organizationId,
         filters: {
-          type: integrationTypeFilter
-        }
+          type: integrationTypeFilter,
+        },
       })
     }
 
@@ -379,7 +428,7 @@ export default createEdgeFunction(async ({ req }) => {
       const url = new URL(req.url)
       const integrationId = url.searchParams.get('id')
       const startTime = Date.now()
-      
+
       if (!integrationId) {
         throw new DatabaseError('Missing integration id parameter', 400)
       }
@@ -403,7 +452,9 @@ export default createEdgeFunction(async ({ req }) => {
       const mergedSettings: IntegrationSettings = {
         ...(typedIntegration.settings || {}),
         // Override with database columns if they exist (preferred source of truth)
-        ...(typedIntegration.project_id && { projectId: typedIntegration.project_id }),
+        ...(typedIntegration.project_id && {
+          projectId: typedIntegration.project_id,
+        }),
       }
 
       // Get api_key from database if available
@@ -417,7 +468,10 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (!fullFetchError && fullIntegration) {
         // Add credentials from database columns to merged settings
-        const fullIntegrationData = fullIntegration as { api_key_encrypted?: string; project_id?: string }
+        const fullIntegrationData = fullIntegration as {
+          api_key_encrypted?: string
+          project_id?: string
+        }
         if (fullIntegrationData.api_key_encrypted) {
           mergedSettings.apiKey = fullIntegrationData.api_key_encrypted
         }
@@ -431,8 +485,16 @@ export default createEdgeFunction(async ({ req }) => {
 
       try {
         // Use unified client pattern for supported integrations
-        const unifiedIntegrations = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'mqtt']
-        
+        const unifiedIntegrations = [
+          'golioth',
+          'aws_iot',
+          'azure_iot',
+          'google_iot',
+          'mqtt',
+          'mqtt_hosted',
+          'mqtt_external',
+        ]
+
         if (unifiedIntegrations.includes(typedIntegration.integration_type)) {
           testResult = await testIntegrationUnified(
             supabase,
@@ -447,20 +509,20 @@ export default createEdgeFunction(async ({ req }) => {
             case 'email':
               testResult = await testEmailIntegration(mergedSettings)
               break
-            
+
             case 'slack':
               testResult = await testSlackIntegration(mergedSettings)
               break
-            
+
             case 'webhook':
               testResult = await testWebhookIntegration(mergedSettings)
               break
-            
+
             default:
               testResult = {
                 success: false,
                 message: `Testing not implemented for ${typedIntegration.integration_type}`,
-                details: {}
+                details: {},
               }
           }
         }
@@ -468,8 +530,11 @@ export default createEdgeFunction(async ({ req }) => {
         console.error('Test execution error:', testError)
         testResult = {
           success: false,
-          message: testError instanceof Error ? testError.message : 'Test execution failed',
-          details: {}
+          message:
+            testError instanceof Error
+              ? testError.message
+              : 'Test execution failed',
+          details: {},
         }
       }
 
@@ -480,7 +545,7 @@ export default createEdgeFunction(async ({ req }) => {
         userId: userContext.userId,
         testSuccess: testResult.success,
       })
-      
+
       const responseTime = Date.now() - startTime
       await logActivity(supabase, {
         organizationId: typedIntegration.organization_id,
@@ -501,20 +566,20 @@ export default createEdgeFunction(async ({ req }) => {
         metadata: {
           integrationType: typedIntegration.integration_type,
           integrationName: typedIntegration.name,
-          testMessage: testResult.message
-        }
+          testMessage: testResult.message,
+        },
       })
-      
+
       console.log('[Test Connection] Activity logging completed')
 
       if (testResult.success) {
-        return createSuccessResponse({ 
+        return createSuccessResponse({
           ...testResult,
           integration: {
             id: typedIntegration.id,
             name: typedIntegration.name,
-            type: typedIntegration.integration_type
-          }
+            type: typedIntegration.integration_type,
+          },
         })
       } else {
         throw new DatabaseError(testResult.message, 400)
@@ -526,14 +591,14 @@ export default createEdgeFunction(async ({ req }) => {
       const url = new URL(req.url)
       const pathParts = url.pathname.split('/')
       const integrationId = pathParts[pathParts.indexOf('integrations') + 1]
-      
+
       if (!integrationId || integrationId === 'sync') {
         throw new DatabaseError('Missing integration ID in path', 400)
       }
 
       const body = await req.json()
       const { operation = 'bidirectional', deviceIds } = body
-      
+
       // Get integration details - RLS will enforce permissions
       const { data: integration, error: fetchError } = await supabase
         .from('device_integrations')
@@ -554,7 +619,7 @@ export default createEdgeFunction(async ({ req }) => {
           createdDevices: 0,
           updatedDevices: 0,
           skippedDevices: 0,
-          errorCount: 0
+          errorCount: 0,
         },
         details: [] as Array<{
           success: boolean
@@ -566,7 +631,7 @@ export default createEdgeFunction(async ({ req }) => {
         errors: [] as Array<{
           deviceId: string
           error: string
-        }>
+        }>,
       }
 
       try {
@@ -575,7 +640,8 @@ export default createEdgeFunction(async ({ req }) => {
 
         switch (typedIntegration.integration_type) {
           case 'golioth':
-            const goliothKey = typedIntegration.settings?.apiKey || typedIntegration.project_id
+            const goliothKey =
+              typedIntegration.settings?.apiKey || typedIntegration.project_id
             client = new GoliothClient({
               type: 'golioth',
               settings: {
@@ -610,7 +676,10 @@ export default createEdgeFunction(async ({ req }) => {
             break
 
           default:
-            throw new DatabaseError(`Sync not implemented for ${typedIntegration.integration_type}`, 501)
+            throw new DatabaseError(
+              `Sync not implemented for ${typedIntegration.integration_type}`,
+              501
+            )
         }
 
         // Get devices from remote provider
@@ -625,12 +694,12 @@ export default createEdgeFunction(async ({ req }) => {
         // Handle different client types
         if (client instanceof GoliothClient) {
           const goliothDevices = await client.getDevices()
-          remoteDevices = goliothDevices.map(d => ({
+          remoteDevices = goliothDevices.map((d) => ({
             externalId: d.id,
             name: d.name,
             type: 'golioth',
             status: d.status,
-            lastSeen: d.lastSeen
+            lastSeen: d.lastSeen,
           }))
         } else {
           // For other clients that implement listDevices
@@ -642,21 +711,24 @@ export default createEdgeFunction(async ({ req }) => {
         const serviceClient = createServiceClient()
 
         // Get local devices for this integration
-        const { data: localDevices, error: localDevicesError } = await serviceClient
-          .from('devices')
-          .select('*')
-          .eq('organization_id', typedIntegration.organization_id)
-          .eq('integration_id', integrationId)
+        const { data: localDevices, error: localDevicesError } =
+          await serviceClient
+            .from('devices')
+            .select('*')
+            .eq('organization_id', typedIntegration.organization_id)
+            .eq('integration_id', integrationId)
 
         if (localDevicesError) {
-          throw new DatabaseError(`Failed to fetch local devices: ${localDevicesError.message}`)
+          throw new DatabaseError(
+            `Failed to fetch local devices: ${localDevicesError.message}`
+          )
         }
 
         // Create a map of local devices by external_device_id
         const localDeviceMap = new Map(
           (localDevices || [])
-            .filter(d => d.external_device_id)
-            .map(d => [d.external_device_id!, d])
+            .filter((d) => d.external_device_id)
+            .map((d) => [d.external_device_id!, d])
         )
 
         // Sync devices based on operation
@@ -674,14 +746,14 @@ export default createEdgeFunction(async ({ req }) => {
                     name: remoteDevice.name,
                     status: remoteDevice.status || 'offline',
                     last_seen: remoteDevice.lastSeen || null,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
                   } as any)
                   .eq('id', localDevice.id)
 
                 if (updateError) {
                   syncResult.errors.push({
                     deviceId: remoteDevice.externalId,
-                    error: updateError.message
+                    error: updateError.message,
                   })
                   syncResult.summary.errorCount++
                 } else {
@@ -689,7 +761,7 @@ export default createEdgeFunction(async ({ req }) => {
                     success: true,
                     deviceId: remoteDevice.externalId,
                     deviceName: remoteDevice.name,
-                    action: 'Updated local device from remote'
+                    action: 'Updated local device from remote',
                   })
                   syncResult.summary.updatedDevices++
                   syncResult.summary.syncedDevices++
@@ -711,7 +783,7 @@ export default createEdgeFunction(async ({ req }) => {
                 if (createError) {
                   syncResult.errors.push({
                     deviceId: remoteDevice.externalId,
-                    error: createError.message
+                    error: createError.message,
                   })
                   syncResult.summary.errorCount++
                 } else {
@@ -719,17 +791,18 @@ export default createEdgeFunction(async ({ req }) => {
                     success: true,
                     deviceId: remoteDevice.externalId,
                     deviceName: remoteDevice.name,
-                    action: 'Created local device from remote'
+                    action: 'Created local device from remote',
                   })
                   syncResult.summary.createdDevices++
                   syncResult.summary.syncedDevices++
                 }
               }
             } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+              const errorMsg =
+                error instanceof Error ? error.message : 'Unknown error'
               syncResult.errors.push({
                 deviceId: remoteDevice.externalId,
-                error: errorMsg
+                error: errorMsg,
               })
               syncResult.summary.errorCount++
             }
@@ -751,16 +824,16 @@ export default createEdgeFunction(async ({ req }) => {
           status: 'success',
           metadata: {
             syncSummary: syncResult.summary,
-            operation
-          }
+            operation,
+          },
         })
 
         return createSuccessResponse(syncResult)
-
       } catch (error) {
         console.error('Sync error:', error)
-        const errorMsg = error instanceof Error ? error.message : 'Unknown sync error'
-        
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown sync error'
+
         // Log failed sync
         await logActivity(supabase, {
           organizationId: typedIntegration.organization_id,
@@ -775,8 +848,8 @@ export default createEdgeFunction(async ({ req }) => {
           responseTime: 0,
           status: 'failed',
           metadata: {
-            error: errorMsg
-          }
+            error: errorMsg,
+          },
         })
 
         throw new DatabaseError(`Sync failed: ${errorMsg}`, 500)
@@ -786,31 +859,85 @@ export default createEdgeFunction(async ({ req }) => {
     if (req.method === 'POST') {
       // Create new integration
       const body = await req.json()
-      const { organization_id, integration_type, name, settings, api_key, project_id, base_url, broker_type } = body
+      const {
+        organization_id,
+        integration_type,
+        name,
+        settings,
+        api_key,
+        project_id,
+        base_url,
+        broker_type,
+      } = body
 
       if (!organization_id || !integration_type || !name) {
-        throw new DatabaseError('Missing required fields: organization_id, integration_type, name', 400)
+        throw new DatabaseError(
+          'Missing required fields: organization_id, integration_type, name',
+          400
+        )
       }
 
       // Validate integration type
-      const validTypes = ['golioth', 'aws_iot', 'azure_iot', 'google_iot', 'email', 'slack', 'webhook', 'mqtt', 'mqtt_hosted', 'mqtt_external', 'netneural_hub']
+      const validTypes = [
+        'golioth',
+        'aws_iot',
+        'azure_iot',
+        'google_iot',
+        'email',
+        'slack',
+        'webhook',
+        'mqtt',
+        'mqtt_hosted',
+        'mqtt_external',
+        'netneural_hub',
+      ]
       if (!validTypes.includes(integration_type)) {
-        throw new DatabaseError(`Invalid integration_type. Must be one of: ${validTypes.join(', ')}`, 400)
+        throw new DatabaseError(
+          `Invalid integration_type. Must be one of: ${validTypes.join(', ')}`,
+          400
+        )
       }
 
       // Check if user has permission to create integrations for this org
-      const canCreate = userContext.isSuperAdmin || 
-                       userContext.organizationId === organization_id
-      
+      const canCreate =
+        userContext.isSuperAdmin ||
+        userContext.organizationId === organization_id
+
       if (!canCreate) {
-        throw new DatabaseError('Not authorized to create integrations for this organization', 403)
+        throw new DatabaseError(
+          'Not authorized to create integrations for this organization',
+          403
+        )
       }
 
       // Extract credentials from settings if they're there (frontend sends them in settings)
       // This handles both old format (api_key/project_id as separate fields) and new format (in settings)
       const finalApiKey = api_key || settings?.apiKey || settings?.api_key
-      const finalProjectId = project_id || settings?.projectId || settings?.project_id
+      const finalProjectId =
+        project_id || settings?.projectId || settings?.project_id
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
+
+      // Encrypt API key using pgsodium
+      let encryptedApiKey: string | null = null
+      if (finalApiKey) {
+        const { data: encrypted, error: encryptError } = await supabase.rpc(
+          'encrypt_api_key',
+          {
+            plaintext_key: finalApiKey,
+            p_key_id: 'default',
+          }
+        )
+
+        if (encryptError) {
+          console.error('API key encryption failed:', encryptError)
+          throw new DatabaseError(
+            `Failed to encrypt API key: ${encryptError.message}`,
+            500
+          )
+        }
+
+        encryptedApiKey = encrypted as string
+      }
 
       // Build insert object
       const insertData: any = {
@@ -818,10 +945,10 @@ export default createEdgeFunction(async ({ req }) => {
         integration_type,
         name,
         settings: settings || {},
-        api_key_encrypted: finalApiKey, // TODO: Encrypt this properly
+        api_key_encrypted: encryptedApiKey,
         project_id: finalProjectId,
         base_url: finalBaseUrl,
-        status: 'active'
+        status: 'active',
       }
 
       // Create integration - RLS will enforce permissions
@@ -833,34 +960,42 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (error) {
         console.error('Create integration error:', error)
-        throw new DatabaseError(`Failed to create integration: ${error.message}`, 500)
+        throw new DatabaseError(
+          `Failed to create integration: ${error.message}`,
+          500
+        )
       }
 
       // Webhook URL is now computed dynamically from environment
       // Just ensure webhook_secret is set (trigger should have done this)
       if (!newIntegration.webhook_secret) {
-        const webhookSecret = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
-        
+        const webhookSecret =
+          crypto.randomUUID().replace(/-/g, '') +
+          crypto.randomUUID().replace(/-/g, '')
+
         await supabase
           .from('device_integrations')
-          .update({ 
+          .update({
             webhook_secret: webhookSecret,
-            webhook_enabled: true 
+            webhook_enabled: true,
           })
           .eq('id', newIntegration.id)
       }
 
-      return createSuccessResponse({ 
-        integration: newIntegration,
-        message: 'Integration created successfully'
-      }, { status: 201 })
+      return createSuccessResponse(
+        {
+          integration: newIntegration,
+          message: 'Integration created successfully',
+        },
+        { status: 201 }
+      )
     }
 
     if (req.method === 'PUT') {
       // Update existing integration
       const url = new URL(req.url)
       const integrationId = url.searchParams.get('id')
-      
+
       if (!integrationId) {
         throw new DatabaseError('Missing integration id parameter', 400)
       }
@@ -882,29 +1017,54 @@ export default createEdgeFunction(async ({ req }) => {
       }
 
       const updates: UpdateFields = {
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }
-      
+
       if (name !== undefined) updates.name = name
       if (settings !== undefined) updates.settings = settings
-      
+
       // Extract credentials from settings if they're there (frontend sends them in settings)
       const finalApiKey = api_key || settings?.apiKey || settings?.api_key
-      const finalProjectId = project_id || settings?.projectId || settings?.project_id
+      const finalProjectId =
+        project_id || settings?.projectId || settings?.project_id
       const finalBaseUrl = base_url || settings?.baseUrl || settings?.base_url
       const finalWebhookEnabled = settings?.webhookEnabled
       const finalWebhookSecret = settings?.webhookSecret
-      
-      if (finalApiKey !== undefined) updates.api_key_encrypted = finalApiKey // TODO: Encrypt properly
+
+      // Encrypt API key if provided
+      if (finalApiKey !== undefined) {
+        const { data: encrypted, error: encryptError } = await supabase.rpc(
+          'encrypt_api_key',
+          {
+            plaintext_key: finalApiKey,
+            p_key_id: 'default',
+          }
+        )
+
+        if (encryptError) {
+          console.error('API key encryption failed:', encryptError)
+          throw new DatabaseError(
+            `Failed to encrypt API key: ${encryptError.message}`,
+            500
+          )
+        }
+
+        updates.api_key_encrypted = encrypted as string
+      }
       if (finalProjectId !== undefined) updates.project_id = finalProjectId
       if (finalBaseUrl !== undefined) updates.base_url = finalBaseUrl
-      if (finalWebhookEnabled !== undefined) updates.webhook_enabled = finalWebhookEnabled
-      if (finalWebhookSecret !== undefined) updates.webhook_secret = finalWebhookSecret
-      
+      if (finalWebhookEnabled !== undefined)
+        updates.webhook_enabled = finalWebhookEnabled
+      if (finalWebhookSecret !== undefined)
+        updates.webhook_secret = finalWebhookSecret
+
       if (status !== undefined) {
         const validStatuses = ['active', 'inactive', 'error']
         if (!validStatuses.includes(status)) {
-          throw new DatabaseError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400)
+          throw new DatabaseError(
+            `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+            400
+          )
         }
         updates.status = status
       }
@@ -919,16 +1079,19 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (error) {
         console.error('Update integration error:', error)
-        throw new DatabaseError(`Failed to update integration: ${error.message}`, 500)
+        throw new DatabaseError(
+          `Failed to update integration: ${error.message}`,
+          500
+        )
       }
 
       if (!updatedIntegration) {
         throw new DatabaseError('Integration not found or access denied', 404)
       }
 
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         integration: updatedIntegration,
-        message: 'Integration updated successfully'
+        message: 'Integration updated successfully',
       })
     }
 
@@ -936,7 +1099,7 @@ export default createEdgeFunction(async ({ req }) => {
       // Delete integration
       const url = new URL(req.url)
       const integrationId = url.searchParams.get('id')
-      
+
       if (!integrationId) {
         throw new DatabaseError('Missing integration id parameter', 400)
       }
@@ -949,15 +1112,20 @@ export default createEdgeFunction(async ({ req }) => {
 
       if (error) {
         console.error('Delete integration error:', error)
-        throw new DatabaseError(`Failed to delete integration: ${error.message}`, 500)
+        throw new DatabaseError(
+          `Failed to delete integration: ${error.message}`,
+          500
+        )
       }
 
-      return createSuccessResponse({ 
-        message: 'Integration deleted successfully'
+      return createSuccessResponse({
+        message: 'Integration deleted successfully',
       })
     }
 
     throw new Error('Method not allowed')
-}, {
-  allowedMethods: ['GET', 'POST', 'PUT', 'DELETE']
-})
+  },
+  {
+    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'],
+  }
+)

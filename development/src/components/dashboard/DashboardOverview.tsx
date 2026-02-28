@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface DashboardStats {
@@ -36,10 +42,14 @@ export function DashboardOverview() {
       }
 
       try {
-        const response = await edgeFunctions.organizations.stats(currentOrganization.id)
-        
+        const response = await edgeFunctions.organizations.stats(
+          currentOrganization.id
+        )
+
         if (!response.success) {
-          throw new Error(response.error?.message || 'Failed to fetch dashboard stats')
+          throw new Error(
+            response.error?.message || 'Failed to fetch dashboard stats'
+          )
         }
 
         const data = response.data as any
@@ -72,7 +82,7 @@ export function DashboardOverview() {
               <CardTitle className="text-sm font-medium">Loading...</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-8 bg-muted animate-pulse rounded"></div>
+              <div className="h-8 animate-pulse rounded bg-muted"></div>
             </CardContent>
           </Card>
         ))}
@@ -120,7 +130,9 @@ export function DashboardOverview() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Online Devices</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Online Devices
+            </CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -136,10 +148,10 @@ export function DashboardOverview() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.onlineDevices}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.onlineDevices}
+            </div>
+            <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
 
@@ -162,10 +174,10 @@ export function DashboardOverview() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.activeAlerts}</div>
-            <p className="text-xs text-muted-foreground">
-              Require attention
-            </p>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.activeAlerts}
+            </div>
+            <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
 
@@ -208,24 +220,30 @@ export function DashboardOverview() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Device sensor-001 came online</p>
+                  <p className="text-sm font-medium">
+                    Device sensor-001 came online
+                  </p>
                   <p className="text-xs text-muted-foreground">2 minutes ago</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Temperature alert triggered</p>
+                  <p className="text-sm font-medium">
+                    Temperature alert triggered
+                  </p>
                   <p className="text-xs text-muted-foreground">5 minutes ago</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">New user registered</p>
-                  <p className="text-xs text-muted-foreground">10 minutes ago</p>
+                  <p className="text-xs text-muted-foreground">
+                    10 minutes ago
+                  </p>
                 </div>
               </div>
             </div>
@@ -235,27 +253,33 @@ export function DashboardOverview() {
         <Card className="col-span-3">
           <CardHeader>
             <CardTitle>System Health</CardTitle>
-            <CardDescription>
-              Current platform status
-            </CardDescription>
+            <CardDescription>Current platform status</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Database</span>
-                <span className="text-sm text-green-600 font-medium">Healthy</span>
+                <span className="text-sm font-medium text-green-600">
+                  Healthy
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">API Services</span>
-                <span className="text-sm text-green-600 font-medium">Operational</span>
+                <span className="text-sm font-medium text-green-600">
+                  Operational
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Device Gateway</span>
-                <span className="text-sm text-green-600 font-medium">Active</span>
+                <span className="text-sm font-medium text-green-600">
+                  Active
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Alert System</span>
-                <span className="text-sm text-green-600 font-medium">Running</span>
+                <span className="text-sm font-medium text-green-600">
+                  Running
+                </span>
               </div>
             </div>
           </CardContent>

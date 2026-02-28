@@ -4,22 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import dynamic from 'next/dynamic'
 
 // Dynamically import the map component (client-side only)
-const LocationMap = dynamic(() => import('./LocationMap'), { 
+const LocationMap = dynamic(() => import('./LocationMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+    <div className="flex h-[300px] items-center justify-center rounded-lg bg-muted">
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
     </div>
-  )
+  ),
 })
 
 interface LocationDetailsCardProps {
@@ -40,28 +47,34 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
-  const [loadingLocations, setLoadingLocations] = useState(false)
-  
+  const [loadingLocations, setLoadingLocations] = useState(true)
+  const staleClearedRef = useRef(false) // Prevent repeated auto-clear
+
   // Form state
-  const [selectedLocationId, setSelectedLocationId] = useState<string>(device.location_id || '')
-  const [installedAt, setInstalledAt] = useState<string>(device.metadata?.installed_at || '')
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(
+    device.location_id || ''
+  )
+  const [installedAt, setInstalledAt] = useState<string>(
+    (device.metadata?.installed_at as string) || ''
+  )
 
   const fetchLocations = useCallback(async () => {
     if (!device.organization_id) {
       toast.error('Organization ID not found')
+      setLoadingLocations(false)
       return
     }
 
     try {
       setLoadingLocations(true)
       const supabase = createClient()
-      
+
       const { data, error } = await supabase
         .from('locations')
         .select('id, name, address, city, state, latitude, longitude')
         .eq('organization_id', device.organization_id)
         .order('name')
-      
+
       if (error) throw error
       setLocations(data || [])
     } catch (error) {
@@ -76,35 +89,45 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   useEffect(() => {
     if (device.organization_id) {
       fetchLocations()
+    } else {
+      setLoadingLocations(false)
     }
   }, [device.organization_id, fetchLocations])
 
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      const supabase = createClient()
 
-      // Update device with new location and metadata
-      const { error } = await supabase
-        .from('devices')
-        .update({
-          location_id: selectedLocationId || null,
-          metadata: {
-            ...device.metadata,
-            installed_at: installedAt || null,
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', device.id)
+      const updates = {
+        location_id: selectedLocationId || null,
+        metadata: {
+          ...device.metadata,
+          installed_at: installedAt || null,
+        },
+      }
 
-      if (error) throw error
+      console.log('💾 [LocationDetailsCard] Saving via edge function:', {
+        deviceId: device.id,
+        selectedLocationId,
+        updates,
+      })
+
+      // Use edge function (service role) to bypass RLS
+      const response = await edgeFunctions.devices.update(device.id, updates)
+
+      if (!response.success) {
+        throw new Error((response.error as { message?: string })?.message || 'Failed to update location')
+      }
+
+      console.log('✅ [LocationDetailsCard] Location saved for device:', device.id)
 
       toast.success('Location details updated successfully')
 
       setIsEditing(false)
-      
-      // Reload page to show updated data
-      window.location.reload()
+      staleClearedRef.current = true // Prevent auto-clear from wiping this save
+
+      // Brief delay so user sees the success toast before reload
+      setTimeout(() => window.location.reload(), 1000)
     } catch (error) {
       console.error('Error updating location:', error)
       toast.error('Failed to update location details')
@@ -115,13 +138,54 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
 
   const handleCancel = () => {
     setSelectedLocationId(device.location_id || '')
-    setInstalledAt(device.metadata?.installed_at || '')
+    setInstalledAt((device.metadata?.installed_at as string) || '')
     setIsEditing(false)
   }
 
   // Get selected location display name
-  const selectedLocation = locations.find(loc => loc.id === selectedLocationId)
-  const displayLocationName = selectedLocation?.name || device.location || 'Not assigned'
+  const selectedLocation = locations.find(
+    (loc) => loc.id === selectedLocationId
+  )
+
+  // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
+  // Only check after locations have actually loaded (length > 0 or loading finished with empty list)
+  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length > 0 && !selectedLocation)
+
+  // If the location_id is stale (cross-org), don't show the old location name
+  const displayLocationName = isStaleLocation
+    ? 'Not assigned'
+    : selectedLocation?.name || (selectedLocationId ? device.location : null) || 'Not assigned'
+
+  // Auto-clear stale location_id so the UI isn't stuck
+  // Also persist the null to the database so it doesn't keep showing the old location
+  useEffect(() => {
+    if (isStaleLocation && !isEditing && !staleClearedRef.current) {
+      console.warn(
+        '⚠️ [LocationDetailsCard] Stale location_id detected (likely from org transfer), clearing:',
+        selectedLocationId
+      )
+      staleClearedRef.current = true // Only clear once per mount
+      setSelectedLocationId('')
+
+      // Persist the null location_id via edge function (service role bypasses RLS)
+      const clearStaleLocation = async () => {
+        try {
+          const response = await edgeFunctions.devices.update(device.id, {
+            location_id: null,
+          })
+
+          if (!response.success) {
+            console.error('Failed to clear stale location_id:', response.error)
+          } else {
+            console.log('✅ [LocationDetailsCard] Cleared stale location_id from database for device:', device.id)
+          }
+        } catch (err) {
+          console.error('Error clearing stale location_id:', err)
+        }
+      }
+      clearStaleLocation()
+    }
+  }, [isStaleLocation, isEditing, selectedLocationId, device.id])
 
   // Debug logging for map display
   useEffect(() => {
@@ -132,12 +196,12 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
         hasLongitude: !!selectedLocation.longitude,
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
-        willShowMap: !!(selectedLocation.latitude && selectedLocation.longitude)
+        willShowMap: !!(
+          selectedLocation.latitude && selectedLocation.longitude
+        ),
       })
-    } else if (selectedLocationId) {
-      console.log('⚠️ [LocationDetailsCard] Location ID set but not found:', selectedLocationId)
     }
-  }, [selectedLocation, selectedLocationId])
+  }, [selectedLocation])
 
   return (
     <Card>
@@ -153,7 +217,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
               variant="outline"
               onClick={() => setIsEditing(true)}
             >
-              <Edit2 className="h-4 w-4 mr-1" />
+              <Edit2 className="mr-1 h-4 w-4" />
               Edit
             </Button>
           ) : (
@@ -164,18 +228,14 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                 onClick={handleCancel}
                 disabled={isSaving}
               >
-                <X className="h-4 w-4 mr-1" />
+                <X className="mr-1 h-4 w-4" />
                 Cancel
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
+              <Button size="sm" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="mr-1 h-4 w-4" />
                 )}
                 Save
               </Button>
@@ -197,7 +257,9 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
               ) : (
                 <Select
                   value={selectedLocationId || 'none'}
-                  onValueChange={(value) => setSelectedLocationId(value === 'none' ? '' : value)}
+                  onValueChange={(value) =>
+                    setSelectedLocationId(value === 'none' ? '' : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a location" />
@@ -207,7 +269,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                     {locations.map((location) => (
                       <SelectItem key={location.id} value={location.id}>
                         {location.name}
-                        {location.city && ` - ${location.city}, ${location.state}`}
+                        {location.city &&
+                          ` - ${location.city}, ${location.state}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -262,15 +325,15 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             {device.metadata?.placement && (
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="font-medium">{device.metadata.placement}</p>
+                <p className="font-medium">{String(device.metadata.placement)}</p>
               </div>
             )}
 
             {/* Map display when location has coordinates */}
             {selectedLocation?.latitude && selectedLocation?.longitude && (
               <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">Map</p>
-                <LocationMap 
+                <p className="mb-2 text-sm text-muted-foreground">Map</p>
+                <LocationMap
                   latitude={selectedLocation.latitude}
                   longitude={selectedLocation.longitude}
                   locationName={selectedLocation.name}
@@ -279,19 +342,22 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
                 />
               </div>
             )}
-            
+
             {/* Message when location exists but has no coordinates */}
-            {selectedLocation && !selectedLocation.latitude && !selectedLocation.longitude && (
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-dashed">
-                <p className="text-sm text-muted-foreground">
-                  📍 <strong>Map Not Available</strong>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add GPS coordinates (latitude/longitude) to this location to display the map. 
-                  Edit the location in <strong>Organizations → Locations</strong> tab.
-                </p>
-              </div>
-            )}
+            {selectedLocation &&
+              !selectedLocation.latitude &&
+              !selectedLocation.longitude && (
+                <div className="mt-4 rounded-lg border border-dashed bg-muted/50 p-3">
+                  <p className="text-sm text-muted-foreground">
+                    📍 <strong>Map Not Available</strong>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add GPS coordinates (latitude/longitude) to this location to
+                    display the map. Edit the location in{' '}
+                    <strong>Organizations → Locations</strong> tab.
+                  </p>
+                </div>
+              )}
           </>
         )}
       </CardContent>

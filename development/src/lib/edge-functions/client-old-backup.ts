@@ -53,8 +53,10 @@ export class EdgeFunctionClient {
    * Get authentication headers for requests
    */
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const { data: { session } } = await this.supabase.auth.getSession()
-    
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession()
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -74,7 +76,7 @@ export class EdgeFunctionClient {
     options: EdgeFunctionOptions = {}
   ): Promise<EdgeFunctionResponse<T>> {
     const { method = 'GET', body, params, headers: customHeaders } = options
-    
+
     // Build URL with query params
     const url = new URL(`${this.baseUrl}/${functionName}`)
     if (params) {
@@ -120,32 +122,42 @@ export class EdgeFunctionClient {
 
       // Log response (in development only)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[EdgeFunction ${requestId}] ← ${response.status} (${duration}ms)`, {
-          success: rawData.success,
-          hasError: !!rawData.error,
-        })
+        console.log(
+          `[EdgeFunction ${requestId}] ← ${response.status} (${duration}ms)`,
+          {
+            success: rawData.success,
+            hasError: !!rawData.error,
+          }
+        )
       }
 
       // Track performance metrics
-      this.trackMetrics(functionName, method, duration, rawData.success ? 200 : rawData.error?.status || 500)
+      this.trackMetrics(
+        functionName,
+        method,
+        duration,
+        rawData.success ? 200 : rawData.error?.status || 500
+      )
 
       // CRITICAL FIX: Backend returns { success, data: {...}, timestamp }
       // Extract the nested 'data' field so consumers get flat structure
       // This aligns with backend refactor using createSuccessResponse()
       return {
         success: rawData.success,
-        data: rawData.data,  // Extract nested data
+        data: rawData.data, // Extract nested data
         error: rawData.error,
         message: rawData.message,
         meta: rawData.meta,
         timestamp: rawData.timestamp,
       } as EdgeFunctionResponse<T>
-
     } catch (error) {
       const endTime = performance.now()
       const duration = Math.round(endTime - startTime)
 
-      console.error(`[EdgeFunction ${requestId}] ✗ Error (${duration}ms):`, error)
+      console.error(
+        `[EdgeFunction ${requestId}] ✗ Error (${duration}ms):`,
+        error
+      )
 
       // Track error metrics
       this.trackMetrics(functionName, method, duration, 500)
@@ -198,14 +210,16 @@ export class EdgeFunctionClient {
   // =========================================================================
   // ORGANIZATIONS API
   // =========================================================================
-  
+
   organizations = {
     /**
      * List all organizations for the current user
      */
     list: () =>
-      this.call<{ organizations: unknown[]; isSuperAdmin: boolean }>('organizations'),
-    
+      this.call<{ organizations: unknown[]; isSuperAdmin: boolean }>(
+        'organizations'
+      ),
+
     /**
      * Get dashboard stats for an organization
      */
@@ -213,7 +227,7 @@ export class EdgeFunctionClient {
       this.call('dashboard-stats', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Create a new organization
      */
@@ -227,21 +241,24 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an existing organization
      */
-    update: (organizationId: string, data: {
-      name?: string
-      description?: string
-      subscriptionTier?: 'free' | 'starter' | 'professional' | 'enterprise'
-      isActive?: boolean
-    }) =>
+    update: (
+      organizationId: string,
+      data: {
+        name?: string
+        description?: string
+        subscriptionTier?: 'free' | 'starter' | 'professional' | 'enterprise'
+        isActive?: boolean
+      }
+    ) =>
       this.call(`organizations/${organizationId}`, {
         method: 'PUT',
         body: data,
       }),
-    
+
     /**
      * Delete an organization
      */
@@ -254,7 +271,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // MEMBERS API
   // =========================================================================
-  
+
   members = {
     /**
      * List members for an organization
@@ -263,20 +280,23 @@ export class EdgeFunctionClient {
       this.call('members', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Add a member to an organization
      */
-    add: (organizationId: string, data: {
-      userId: string
-      role: string
-    }) =>
+    add: (
+      organizationId: string,
+      data: {
+        userId: string
+        role: string
+      }
+    ) =>
       this.call('members', {
         method: 'POST',
         params: { organization_id: organizationId },
         body: data,
       }),
-    
+
     /**
      * Update a member's role
      */
@@ -286,7 +306,7 @@ export class EdgeFunctionClient {
         params: { organization_id: organizationId },
         body: { userId, role },
       }),
-    
+
     /**
      * Remove a member from an organization
      */
@@ -301,7 +321,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // USER MANAGEMENT API
   // =========================================================================
-  
+
   users = {
     /**
      * Create a new user
@@ -321,7 +341,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // INTEGRATIONS API
   // =========================================================================
-  
+
   integrations = {
     /**
      * List integrations for an organization
@@ -330,7 +350,7 @@ export class EdgeFunctionClient {
       this.call('integrations', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Create a new integration
      */
@@ -344,20 +364,23 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an integration
      */
-    update: (integrationId: string, data: {
-      name?: string
-      config?: Record<string, unknown>
-      status?: string
-    }) =>
+    update: (
+      integrationId: string,
+      data: {
+        name?: string
+        config?: Record<string, unknown>
+        status?: string
+      }
+    ) =>
       this.call(`integrations/${integrationId}`, {
         method: 'PUT',
         body: data,
       }),
-    
+
     /**
      * Delete an integration
      */
@@ -365,7 +388,7 @@ export class EdgeFunctionClient {
       this.call(`integrations/${integrationId}`, {
         method: 'DELETE',
       }),
-    
+
     /**
      * Test an integration configuration
      */
@@ -374,7 +397,7 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: { integrationId },
       }),
-    
+
     /**
      * Trigger device sync
      */
@@ -393,7 +416,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // DEVICES API (keeping existing, placed after new APIs)
   // =========================================================================
-  
+
   devices = {
     /**
      * List all devices for an organization
@@ -405,13 +428,12 @@ export class EdgeFunctionClient {
           ...options,
         },
       }),
-    
+
     /**
      * Get a specific device by ID
      */
-    get: (deviceId: string) =>
-      this.call(`devices/${deviceId}`),
-    
+    get: (deviceId: string) => this.call(`devices/${deviceId}`),
+
     /**
      * Create a new device
      */
@@ -420,7 +442,7 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an existing device
      */
@@ -429,7 +451,7 @@ export class EdgeFunctionClient {
         method: 'PUT',
         body: data,
       }),
-    
+
     /**
      * Delete a device
      */
@@ -442,25 +464,30 @@ export class EdgeFunctionClient {
   // =========================================================================
   // ALERTS API
   // =========================================================================
-  
+
   alerts = {
     /**
      * List alerts for an organization
      */
-    list: (organizationId: string, options?: { 
-      limit?: number
-      severity?: 'info' | 'warning' | 'error' | 'critical'
-      resolved?: boolean
-    }) =>
+    list: (
+      organizationId: string,
+      options?: {
+        limit?: number
+        severity?: 'info' | 'warning' | 'error' | 'critical'
+        resolved?: boolean
+      }
+    ) =>
       this.call<{ alerts: unknown[]; count: number }>('alerts', {
         params: {
           organization_id: organizationId,
           ...(options?.limit && { limit: options.limit }),
           ...(options?.severity && { severity: options.severity }),
-          ...(options?.resolved !== undefined && { resolved: options.resolved }),
+          ...(options?.resolved !== undefined && {
+            resolved: options.resolved,
+          }),
         },
       }),
-    
+
     /**
      * Acknowledge an alert
      */
@@ -468,7 +495,7 @@ export class EdgeFunctionClient {
       this.call(`alerts/${alertId}/acknowledge`, {
         method: 'PATCH',
       }),
-    
+
     /**
      * Resolve an alert
      */
@@ -481,7 +508,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // LOCATIONS API
   // =========================================================================
-  
+
   locations = {
     /**
      * List all locations for an organization
@@ -490,7 +517,7 @@ export class EdgeFunctionClient {
       this.call<Location[]>('locations', {
         params: { organization_id: organizationId },
       }),
-    
+
     /**
      * Create a new location
      */
@@ -508,25 +535,28 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Update an existing location
      */
-    update: (locationId: string, data: {
-      name?: string
-      description?: string
-      address?: string
-      city?: string
-      state?: string
-      country?: string
-      postal_code?: string
-    }) =>
+    update: (
+      locationId: string,
+      data: {
+        name?: string
+        description?: string
+        address?: string
+        city?: string
+        state?: string
+        country?: string
+        postal_code?: string
+      }
+    ) =>
       this.call('locations', {
         method: 'PATCH',
         params: { id: locationId },
         body: data,
       }),
-    
+
     /**
      * Delete a location
      */
@@ -540,7 +570,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // DASHBOARD STATS API
   // =========================================================================
-  
+
   dashboardStats = {
     /**
      * Get dashboard statistics
@@ -548,7 +578,11 @@ export class EdgeFunctionClient {
     get: (organizationId: string) =>
       this.call<{
         devices: { total: number; online: number; offline: number }
-        alerts: { total: number; unresolved: number; bySeverity: Record<string, number> }
+        alerts: {
+          total: number
+          unresolved: number
+          bySeverity: Record<string, number>
+        }
         integrations: { total: number; active: number }
       }>('dashboard-stats', {
         params: { organization_id: organizationId },
@@ -558,7 +592,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // NOTIFICATIONS API
   // =========================================================================
-  
+
   notifications = {
     /**
      * Send a notification
@@ -574,7 +608,7 @@ export class EdgeFunctionClient {
         method: 'POST',
         body: data,
       }),
-    
+
     /**
      * Test notification configuration
      */
@@ -589,7 +623,7 @@ export class EdgeFunctionClient {
   // =========================================================================
   // MQTT BROKER API
   // =========================================================================
-  
+
   mqttBroker = {
     /**
      * Connect to MQTT broker

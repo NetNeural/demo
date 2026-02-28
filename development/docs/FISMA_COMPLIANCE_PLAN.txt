@@ -1,0 +1,632 @@
+# FISMA Compliance Plan — NetNeural IoT Platform
+
+**Date:** February 18, 2026  
+**Framework:** NIST SP 800-53 Rev. 5 / FIPS 200 (17 control families)  
+**Target:** FISMA Low / Moderate baseline (adjustable per ATO requirements)  
+**System:** NetNeural IoT Platform (Next.js 15 + Supabase + Edge Functions)  
+**Assessment Scope:** `development/` — production-active codebase  
+
+---
+
+## Executive Summary
+
+The platform has a **solid foundation** in several FISMA control families — particularly Access Control (RBAC), Audit Logging, and Secrets Management. However, **15 critical-to-high gaps** must be addressed before an Authority to Operate (ATO) assessment. The most urgent finding is a **hardcoded Supabase access token committed to the repository** in the CI/CD workflow.
+
+### Compliance Scorecard (Current State)
+
+| Control Family | Status | Coverage | Priority |
+|---|---|---|---|
+| AC — Access Control | ⚠️ Partial | 55% | P1 |
+| AT — Awareness & Training | ❌ Missing | 0% | P3 |
+| AU — Audit & Accountability | ⚠️ Partial | 65% | P2 |
+| CA — Assessment & Authorization | ❌ Missing | 0% | P2 |
+| CM — Configuration Management | ⚠️ Partial | 40% | P1 |
+| CP — Contingency Planning | ❌ Missing | 5% | P3 |
+| IA — Identification & Authentication | ⚠️ Partial | 40% | P1 |
+| IR — Incident Response | ⚠️ Partial | 25% | P2 |
+| MA — Maintenance | ⚠️ Partial | 30% | P3 |
+| MP — Media Protection | ⚠️ Partial | 30% | P2 |
+| PE — Physical & Environmental | N/A (Cloud) | N/A | — |
+| PL — Planning | ❌ Missing | 10% | P2 |
+| PM — Program Management | ❌ Missing | 5% | P3 |
+| PS — Personnel Security | ❌ Missing | 0% | P3 |
+| RA — Risk Assessment | ❌ Missing | 10% | P2 |
+| SA — System & Services Acquisition | ⚠️ Partial | 20% | P2 |
+| SC — System & Communications Protection | ⚠️ Partial | 35% | P1 |
+| SI — System & Information Integrity | ⚠️ Partial | 35% | P1 |
+
+---
+
+## Phase 0: Emergency Remediations (Week 1)
+
+> These are **stop-ship security defects** that should be fixed immediately, regardless of FISMA timeline.
+
+### 0.1 — Revoke Hardcoded Supabase Access Token ⛔ CRITICAL
+
+**Finding:** `.github/workflows/deploy.yml` contains a plaintext Supabase access token (`<SUPABASE_ACCESS_TOKEN>`) on lines 59, 65, 71, 77.
+
+**Remediation:**
+1. Rotate the Supabase access token immediately (Project Settings → API → Regenerate)
+2. Store new token as `SUPABASE_ACCESS_TOKEN` in GitHub Secrets
+3. Replace all 4 occurrences in `deploy.yml` with `${{ secrets.SUPABASE_ACCESS_TOKEN }}`
+4. Run `git filter-branch` or BFG Repo-Cleaner to scrub token from git history
+5. Consider the old token **compromised** — audit Supabase dashboard for unauthorized access
+
+**FISMA Controls:** CM-6, IA-5(7)  
+**Effort:** 2–4 hours  
+**Owner:** DevOps / Platform Lead  
+
+### 0.2 — Remove `--no-verify-jwt` from Edge Function Deployment ⛔ CRITICAL
+
+**Finding:** Both `.github/workflows/deploy.yml` (line 69) and `development/.github/workflows/deploy.yml` (line 98) deploy edge functions with `--no-verify-jwt`, allowing **unauthenticated** invocation.
+
+**Remediation:**
+1. Remove `--no-verify-jwt` flag from all deploy commands
+2. Audit each edge function to ensure it validates JWT (`Authorization: Bearer <token>`)
+3. Add explicit auth checks in the CORS handler (existing `corsHeaders` pattern)
+4. Test all integration flows to confirm JWT-gated access works
+
+**FISMA Controls:** AC-3, AC-17, IA-2  
+**Effort:** 1 day  
+**Owner:** Backend Lead  
+
+### 0.3 — Rotate Overdue Secrets
+
+**Finding:** Per `SECRETS_INVENTORY.md`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_PASSWORD` are ~3 months past their 30-day Tier 1 rotation schedule.
+
+**Remediation:**
+1. Rotate both keys in Supabase Dashboard
+2. Update GitHub Secrets via `gh secret set`
+3. Verify deployed services reconnect successfully
+4. Update rotation timestamps in inventory doc
+
+**FISMA Controls:** IA-5(1)  
+**Effort:** 1 hour  
+**Owner:** Platform Lead  
+
+---
+
+## Phase 1: Authentication & Access Control Hardening (Weeks 2–4)
+
+> **FISMA Families:** AC (Access Control), IA (Identification & Authentication)
+
+### 1.1 — Password Policy Enforcement (AC-7, IA-5)
+
+**Current State:** 6-character minimum, no complexity rules (`SecurityTab.tsx` line 106).  
+**Requirement:** NIST SP 800-63B recommends ≥8 characters (FISMA Moderate often requires ≥12); complexity requirements or passphrase length.
+
+**Implementation:**
+```typescript
+// lib/validation/password.ts
+export const PASSWORD_POLICY = {
+  minLength: 12,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumber: true,
+  requireSpecial: true,
+  maxLength: 128,
+  commonPasswordCheck: true, // NIST 800-63B requirement
+}
+```
+
+**Tasks:**
+- [ ] Create `lib/validation/password.ts` with zod schema
+- [ ] Update `SecurityTab.tsx` to enforce new policy
+- [ ] Add server-side validation in Supabase auth hook (or Edge Function)
+- [ ] Load a breached-password dictionary check (NIST 800-63B)
+- [ ] Display password strength meter in UI
+- [ ] Write tests for all boundary conditions
+
+**Effort:** 2–3 days  
+
+### 1.2 — Multi-Factor Authentication (IA-2(1), IA-2(2))
+
+**Current State:** UI exists with "Coming Soon" toast. No Supabase MFA enrollment.
+
+**Implementation:**
+1. Enable Supabase MFA (TOTP) in `config.toml`: `[auth.mfa.totp] enroll_enabled = true`
+2. Replace demo QR code with real `supabase.auth.mfa.enroll()` flow
+3. Add MFA challenge on login: `supabase.auth.mfa.challenge()` + `verify()`
+4. Require MFA for `org_admin` and above roles
+5. Add recovery codes flow
+
+**Tasks:**
+- [ ] Enable MFA in Supabase config
+- [ ] Implement MFA enrollment flow (QR scan + verification code)
+- [ ] Implement MFA challenge on login
+- [ ] Add recovery codes generation and storage
+- [ ] Create admin setting to enforce MFA for specific roles
+- [ ] Test enrollment, challenge, recovery, and unenrollment flows
+
+**Effort:** 1–2 weeks  
+
+### 1.3 — Account Lockout (AC-7)
+
+**Current State:** No lockout mechanism exists.
+
+**Implementation:**
+- Track failed attempts per email in a `login_attempts` table
+- Lock account after 5 consecutive failures for 30 minutes
+- Notify user and admin on lockout
+- Add CAPTCHA after 3 failed attempts (optional, defense-in-depth)
+
+**Tasks:**
+- [ ] Create `login_attempts` migration with automatic cleanup
+- [ ] Create Supabase auth hook or Edge Function to enforce lockout
+- [ ] Add admin UI to unlock accounts manually
+- [ ] Send email notification on lockout
+- [ ] Log lockout events in `user_audit_log`
+
+**Effort:** 3–5 days  
+
+### 1.4 — Session Management (AC-12)
+
+**Current State:** JWT expiry is 1 hour. No idle timeout. Refresh tokens rotate.
+
+**Implementation:**
+- Add client-side idle timeout (15 minutes for FISMA Moderate)
+- Implement heartbeat pattern with `useIdleTimer`
+- Force re-authentication after idle timeout
+- Add session listing in Settings (active sessions, revoke)
+
+**Tasks:**
+- [ ] Install `react-idle-timer` or implement custom hook
+- [ ] Add configurable idle timeout (default 15 min, admin-adjustable)
+- [ ] Show warning dialog 2 minutes before timeout
+- [ ] Auto-logout and redirect to login with `?reason=idle_timeout`
+- [ ] Log timeout events in audit log
+
+**Effort:** 2–3 days  
+
+### 1.5 — Server-Side Route Protection (AC-3)
+
+**Current State:** No `middleware.ts` — all route protection is client-side.
+
+**Implementation:**
+- Since the app is statically exported, middleware doesn't run on the server
+- Alternative: Validate session token at the Supabase Edge Function level for all API calls
+- Add `Authorization` header validation to every edge function handler
+- Add a shared `requireAuth()` utility for edge functions
+
+**Tasks:**
+- [ ] Create `_shared/auth.ts` with `requireAuth(req)` helper
+- [ ] Apply to all 10+ edge functions
+- [ ] Deny requests with expired/invalid tokens with 401 response
+- [ ] Log authentication failures
+
+**Effort:** 2–3 days  
+
+### 1.6 — Email Confirmation (IA-5)
+
+**Current State:** `enable_confirmations = false` in `config.toml`.
+
+**Tasks:**
+- [ ] Set `enable_confirmations = true` in Supabase config
+- [ ] Configure email template for verification
+- [ ] Add "verify your email" banner in UI for unverified users
+- [ ] Block sensitive operations until email is verified
+
+**Effort:** 1 day  
+
+---
+
+## Phase 2: Network & Communications Security (Weeks 3–5)
+
+> **FISMA Families:** SC (System & Communications Protection)
+
+### 2.1 — Security Headers (SC-7)
+
+**Current State:** Next.js static export doesn't support `headers()` config. Comment in `next.config.js` acknowledges this.
+
+**Implementation Options:**
+1. **GitHub Pages `_headers` file** (limited)
+2. **HTML `<meta>` tags** in the root layout for CSP
+3. **Move to Cloudflare Pages / Vercel** for proper header control (recommended for FISMA)
+4. **Supabase Edge Function proxy** that adds headers to responses
+
+**Required Headers:**
+```
+Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self' *.supabase.co *.sentry.io; img-src 'self' data:; style-src 'self' 'unsafe-inline';
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+**Tasks:**
+- [ ] Evaluate hosting migration (Cloudflare Pages recommended for FISMA)
+- [ ] Implement CSP via `<meta>` tag in root layout as interim measure
+- [ ] Add all required security headers at hosting level
+- [ ] Test with securityheaders.com and Mozilla Observatory
+- [ ] Document header policy
+
+**Effort:** 3–5 days (depends on hosting decision)  
+
+### 2.2 — Rate Limiting (SC-5)
+
+**Current State:** UI toggle in settings is cosmetic only — no backend enforcement.
+
+**Implementation:**
+- Supabase built-in rate limiting is project-level, not per-endpoint
+- Implement per-function rate limiting in Edge Functions using a Redis-like counter in Supabase
+
+```typescript
+// _shared/rate-limiter.ts
+export async function checkRateLimit(
+  supabase: SupabaseClient,
+  key: string, // e.g., "login:{ip}" or "api:{userId}"
+  limit: number,
+  windowSeconds: number
+): Promise<{ allowed: boolean; remaining: number; resetAt: Date }>
+```
+
+**Tasks:**
+- [ ] Create `rate_limit_entries` table with TTL cleanup trigger
+- [ ] Create `_shared/rate-limiter.ts` utility
+- [ ] Apply limits: Login (5/min/IP), API (100/min/user), Export (5/hour/user)
+- [ ] Return `429 Too Many Requests` with `Retry-After` header
+- [ ] Wire UI toggle to actual backend configuration
+- [ ] Log rate limit violations in audit log
+
+**Effort:** 3–5 days  
+
+### 2.3 — CORS Restriction (SC-7)
+
+**Current State:** All edge functions use `Access-Control-Allow-Origin: *`.
+
+**Tasks:**
+- [ ] Create `_shared/cors.ts` with allowed origins list
+- [ ] Set allowed origins: production URL, staging URL, localhost
+- [ ] Replace `*` in all edge function CORS headers
+- [ ] Test cross-origin requests from all allowed origins
+
+**Effort:** 1 day  
+
+### 2.4 — CSRF Protection (SC-23)
+
+**Current State:** No CSRF tokens. JWT-only auth.
+
+**Implementation:**
+- Supabase PKCE flow already provides some protection
+- Add `SameSite=Strict` on auth cookies
+- For sensitive state-changing operations, add a double-submit cookie pattern
+
+**Effort:** 2 days  
+
+---
+
+## Phase 3: Audit, Monitoring & Incident Response (Weeks 4–6)
+
+> **FISMA Families:** AU (Audit), IR (Incident Response), SI (System Integrity)
+
+### 3.1 — Audit Log Retention Policy (AU-4, AU-11)
+
+**Current State:** Logs grow indefinitely. No retention policy.
+
+**Implementation:**
+- Define retention periods: 3 years for audit logs (FISMA), 1 year for telemetry
+- Create a `pg_cron` job for automated cleanup
+- Archive logs to cold storage before deletion
+
+```sql
+-- Scheduled cleanup (runs daily at 2 AM)
+SELECT cron.schedule('cleanup-audit-logs', '0 2 * * *', $$
+  DELETE FROM user_audit_log 
+  WHERE created_at < NOW() - INTERVAL '3 years';
+  DELETE FROM device_telemetry_history 
+  WHERE received_at < NOW() - INTERVAL '1 year';
+$$);
+```
+
+**Tasks:**
+- [ ] Document retention policy (3 years operational, 7 years archive for federal)
+- [ ] Create archive table or export mechanism before deletion
+- [ ] Create pg_cron cleanup job
+- [ ] Add monitoring for log volume growth
+- [ ] Write retention policy document for ATO package
+
+**Effort:** 2–3 days  
+
+### 3.2 — Audit Log Integrity (AU-9)
+
+**Current State:** INSERT policy is `WITH CHECK (true)` — any authenticated user can insert.
+
+**Tasks:**
+- [ ] Restrict INSERT to service role and system-level triggers only
+- [ ] Add a hash chain (each log entry includes hash of previous entry) for tamper detection
+- [ ] Make audit log tables append-only (revoke UPDATE/DELETE from all roles)
+- [ ] Add periodic integrity verification job
+
+**Effort:** 2–3 days  
+
+### 3.3 — Security Monitoring & Alerting (SI-4, IR-6)
+
+**Current State:** Sentry captures errors but not security events.
+
+**Tasks:**
+- [ ] Create Sentry alerts for: >10 failed logins in 5 min, privilege escalation, audit log anomalies
+- [ ] Add a `security_events` view/table that aggregates suspicious patterns
+- [ ] Implement daily security digest email to super_admins
+- [ ] Set up Sentry project-level alerts for error rate spikes
+- [ ] Integrate with PagerDuty/Opsgenie for on-call (if applicable)
+
+**Effort:** 3–5 days  
+
+### 3.4 — Incident Response Plan (IR-1 through IR-8)
+
+**Current State:** No documented incident response plan.
+
+**Deliverables:**
+- [ ] Incident Response Plan document (roles, escalation, communication)
+- [ ] Incident severity classification matrix
+- [ ] Runbooks for common incidents (data breach, DDoS, credential compromise)
+- [ ] Post-incident review template
+- [ ] Annual incident response testing schedule
+- [ ] Contact list for incident response team
+
+**Effort:** 3–5 days (documentation)  
+
+### 3.5 — Input Validation (SI-10)
+
+**Current State:** Ad-hoc validation. No schema validation library.
+
+**Implementation:**
+```bash
+npm install zod
+```
+
+**Tasks:**
+- [ ] Add `zod` to project dependencies
+- [ ] Create validation schemas: `schemas/auth.ts`, `schemas/device.ts`, `schemas/integration.ts`, `schemas/alert.ts`
+- [ ] Apply schemas to all form submissions in UI
+- [ ] Apply schemas to all Edge Function request handlers
+- [ ] Add validation error display components
+- [ ] Write tests for validation edge cases
+
+**Effort:** 1–2 weeks  
+
+---
+
+## Phase 4: Configuration & Vulnerability Management (Weeks 5–7)
+
+> **FISMA Families:** CM (Configuration Management), RA (Risk Assessment), SA (System Acquisition)
+
+### 4.1 — CI/CD Security Hardening (CM-3, CM-6)
+
+**Current State:** `continue-on-error: true` allows broken code to deploy. No security scanning.
+
+**Tasks:**
+- [ ] Remove `continue-on-error: true` from type-check and lint steps
+- [ ] Add `npm audit --audit-level=high` step to CI
+- [ ] Add GitHub CodeQL action for SAST
+- [ ] Add dependency license scanning (FOSSA or similar)
+- [ ] Enforce branch protection: require PR reviews, status checks
+- [ ] Add signed commits verification
+- [ ] Pin all GitHub Actions to SHA (not tags) to prevent supply chain attacks
+
+**Effort:** 3–5 days  
+
+### 4.2 — Vulnerability Scanning (RA-5)
+
+**Tasks:**
+- [ ] Enable GitHub Advanced Security (CodeQL) for JavaScript/TypeScript
+- [ ] Add `npm audit` to CI pipeline with blocking threshold
+- [ ] Schedule quarterly dependency review
+- [ ] Create vulnerability remediation SLA (Critical: 48h, High: 7d, Medium: 30d)
+- [ ] Document vulnerability management process
+
+**Effort:** 2–3 days  
+
+### 4.3 — Secure Configuration Baseline (CM-2, CM-6)
+
+**Tasks:**
+- [ ] Document secure configuration baseline for Supabase (auth, RLS, API settings)
+- [ ] Create a `security-config-check.sh` script that validates settings
+- [ ] Document and enforce: email confirmation ON, MFA required for admins, JWT expiry ≤1h
+- [ ] Disable unused Supabase features (e.g., anonymous auth if not needed)
+- [ ] Remove or document all `anon` key usage patterns
+
+**Effort:** 2–3 days  
+
+---
+
+## Phase 5: Documentation & Compliance Artifacts (Weeks 6–8)
+
+> **FISMA Families:** PL, CA, AT, PS, CP, PM
+
+### 5.1 — System Security Plan (SSP) (PL-2)
+
+The cornerstone ATO document. Must describe:
+- [ ] System boundary and data flow diagrams
+- [ ] Architecture description (Next.js + Supabase + Edge Functions + GitHub Pages)
+- [ ] User roles and responsibilities
+- [ ] All NIST 800-53 control implementations (which controls are inherited from Supabase, which are custom)
+- [ ] Network diagram showing data flows
+- [ ] Interconnection agreements (Supabase, Sentry, Golioth, GitHub)
+
+**Effort:** 2–3 weeks  
+
+### 5.2 — Plan of Action & Milestones (POA&M) (CA-5)
+
+- [ ] Create POA&M from this document's findings
+- [ ] Track each gap with: finding ID, control, risk level, remediation plan, milestone date, responsible party
+- [ ] Update monthly
+
+**Effort:** 2–3 days  
+
+### 5.3 — Risk Assessment (RA-3)
+
+- [ ] Categorize system per FIPS 199 (Confidentiality, Integrity, Availability impact levels)
+- [ ] Conduct threat modeling (STRIDE or PASTA methodology)
+- [ ] Document risk register with likelihood × impact scoring
+- [ ] Identify and document residual risks
+
+**Effort:** 1–2 weeks  
+
+### 5.4 — Contingency Plan (CP-1 through CP-10)
+
+- [ ] Backup strategy documentation (Supabase automated backups, frequency, retention)
+- [ ] Disaster recovery procedures
+- [ ] Recovery Time Objective (RTO) and Recovery Point Objective (RPO)
+- [ ] Annual contingency plan testing schedule
+- [ ] Alternate processing site documentation (Supabase regions)
+
+**Effort:** 1 week  
+
+### 5.5 — Awareness & Training (AT-1 through AT-4)
+
+- [ ] Security awareness training plan for all platform users
+- [ ] Role-based training for admins (RBAC, audit log review, incident response)
+- [ ] Annual training schedule and completion tracking
+- [ ] Training materials/curriculum
+
+**Effort:** 1 week  
+
+### 5.6 — Personnel Security (PS-1 through PS-8)
+
+- [ ] Personnel screening requirements for system administrators
+- [ ] Access agreement templates (rules of behavior)
+- [ ] Personnel termination/transfer procedures (account deprovisioning)
+- [ ] Separation of duties documentation
+
+**Effort:** 1 week (policy/documentation)  
+
+---
+
+## Phase 6: Inherited Controls & Third-Party Assessment (Weeks 7–10)
+
+> Many controls are **inherited** from Supabase (their infrastructure) and GitHub (hosting).
+
+### 6.1 — Supabase FedRAMP Status
+
+**Action:** Verify if Supabase has a FedRAMP authorization or SOC 2 Type II.
+- If yes: Inherit PE, MA, and many SC/AC controls from their authorization package
+- If no: These become **higher risk** and may require compensating controls or migration to a FedRAMP-authorized hosting provider (e.g., AWS GovCloud + self-hosted Supabase, or Azure Government)
+
+**Critical Decision Point:** If FISMA Moderate is required and Supabase is not FedRAMP authorized, the platform may need to migrate to a FedRAMP-authorized infrastructure.
+
+### 6.2 — GitHub Pages/Actions Assessment
+
+**Action:** GitHub has FedRAMP authorization (GitHub Enterprise Cloud with Data Residency). Verify applicability to your GitHub organization tier.
+
+### 6.3 — Sentry Assessment
+
+**Action:** Verify Sentry's compliance posture. Sentry has SOC 2 Type II. For FISMA, ensure error data doesn't contain CUI/PII (already partially addressed by token filtering).
+
+---
+
+## Implementation Timeline
+
+```
+Week 1:  ████ Phase 0 — Emergency (token, JWT, secrets rotation)
+Week 2:  ████ Phase 1a — Password policy, email confirmation
+Week 3:  ████ Phase 1b — MFA, account lockout
+Week 4:  ████ Phase 1c — Session mgmt, route protection
+Week 5:  ████ Phase 2 — Security headers, rate limiting, CORS
+Week 6:  ████ Phase 3 — Audit retention, monitoring, input validation
+Week 7:  ████ Phase 4 — CI/CD hardening, vulnerability scanning
+Week 8:  ████ Phase 5a — SSP, POA&M, risk assessment (begin)
+Week 9:  ████ Phase 5b — Contingency, training, personnel docs
+Week 10: ████ Phase 6 — Third-party assessment, inherited controls
+Week 11-12: █ Buffer, remediation of findings from assessment
+```
+
+### Estimated Total Effort
+
+| Phase | Effort | FTE Weeks |
+|-------|--------|-----------|
+| Phase 0 — Emergency | 2–3 days | 0.5 |
+| Phase 1 — Auth Hardening | 3–4 weeks | 3.5 |
+| Phase 2 — Network Security | 2–3 weeks | 2.5 |
+| Phase 3 — Audit & Monitoring | 2–3 weeks | 2.5 |
+| Phase 4 — Config & Vuln Mgmt | 1–2 weeks | 1.5 |
+| Phase 5 — Documentation | 3–4 weeks | 3.5 |
+| Phase 6 — Third-Party | 1–2 weeks | 1.5 |
+| **Total** | **~10–12 weeks** | **~15 FTE weeks** |
+
+---
+
+## What Already Works Well (Inherited Strengths)
+
+These existing implementations provide a strong starting point:
+
+| Area | Implementation | FISMA Controls |
+|------|---------------|----------------|
+| **RBAC** | 5-tier role hierarchy with 22 granular permission functions | AC-2, AC-3, AC-6 |
+| **Row-Level Security** | Comprehensive RLS on 10+ tables, org-scoped | AC-3, AC-4 |
+| **Audit Logging** | Structured audit trail with 12 action categories, IP/user-agent capture | AU-2, AU-3, AU-12 |
+| **Secrets Governance** | 4-tier classification, rotation schedule, comprehensive inventory | IA-5, CM-6 |
+| **Credential Encryption** | pgsodium encryption for device credentials + access logging | SC-28, MP-5 |
+| **Error Monitoring** | Sentry with PII filtering, error boundaries, performance monitoring | SI-4, SI-11 |
+| **Dependency Scanning** | Dependabot configured for weekly updates | RA-5, SI-2 |
+| **Token Rotation** | Refresh token rotation with 10s reuse interval | IA-5, SC-23 |
+| **Soft Delete** | Devices use soft-delete pattern preserving audit trail | AU-9, SI-12 |
+
+---
+
+## Decision Points Requiring Stakeholder Input
+
+1. **FISMA Impact Level:** Low, Moderate, or High? This determines which 800-53 controls are required.
+2. **Supabase FedRAMP Status:** If not FedRAMP authorized, is migration to GovCloud acceptable?
+3. **Timeline:** 10-week fast track vs. 16-week standard cadence?
+4. **3PAO Selection:** Which third-party assessment organization will conduct the security assessment?
+5. **Continuous Monitoring:** What tools/frequency for ongoing compliance (monthly scans, quarterly reviews)?
+6. **Data Classification:** Does the platform handle CUI (Controlled Unclassified Information)?
+
+---
+
+## Appendix A: NIST 800-53 Control Family Mapping
+
+| Family | ID | Controls Applicable | Currently Met | Gap Count |
+|--------|----|--------------------:|:-------------:|:---------:|
+| Access Control | AC | 25 | 12 | 13 |
+| Awareness & Training | AT | 5 | 0 | 5 |
+| Audit & Accountability | AU | 12 | 7 | 5 |
+| Assessment & Authorization | CA | 9 | 0 | 9 |
+| Configuration Management | CM | 11 | 4 | 7 |
+| Contingency Planning | CP | 13 | 1 | 12 |
+| Identification & Auth | IA | 11 | 4 | 7 |
+| Incident Response | IR | 10 | 2 | 8 |
+| Maintenance | MA | 6 | 2 | 4 |
+| Media Protection | MP | 8 | 3 | 5 |
+| Physical & Environmental | PE | 20 | Inherited | — |
+| Planning | PL | 8 | 1 | 7 |
+| Program Management | PM | 16 | 1 | 15 |
+| Personnel Security | PS | 8 | 0 | 8 |
+| Risk Assessment | RA | 5 | 1 | 4 |
+| System & Services Acq. | SA | 22 | 4 | 18 |
+| System & Comms Protection | SC | 44 | 12 | 32 |
+| System & Info Integrity | SI | 16 | 5 | 11 |
+| **Totals** | | **249** | **~59** | **~170** |
+
+> Note: PE controls are largely inherited from cloud providers (Supabase/GitHub). Exact counts depend on FIPS 199 categorization and selected baseline.
+
+---
+
+## Appendix B: Immediate Action Items (Copy to Issue Tracker)
+
+```
+[ ] CRITICAL: Replace hardcoded Supabase token in deploy.yml with GitHub Secret
+[ ] CRITICAL: Rotate compromised Supabase access token
+[ ] CRITICAL: Remove --no-verify-jwt from edge function deployments
+[ ] CRITICAL: Enforce 12+ character password with complexity
+[ ] CRITICAL: Implement functional MFA via Supabase TOTP
+[ ] CRITICAL: Add security headers (CSP, HSTS, X-Frame-Options)
+[ ] CRITICAL: Implement server-side rate limiting
+[ ] HIGH: Implement account lockout after 5 failed attempts
+[ ] HIGH: Add idle session timeout (15 minutes)
+[ ] HIGH: Restrict CORS to known origins
+[ ] HIGH: Enable email confirmation in Supabase config
+[ ] HIGH: Rotate overdue secrets (SERVICE_ROLE_KEY, DB_PASSWORD)
+[ ] HIGH: Add npm audit and CodeQL to CI pipeline
+[ ] HIGH: Remove continue-on-error from CI quality gates
+[ ] HIGH: Define and implement audit log retention policy
+[ ] HIGH: Add zod input validation across all entry points
+[ ] HIGH: Write Incident Response Plan
+```
+
+---
+
+*This document should be reviewed by the Information System Security Officer (ISSO) and updated as remediation progresses. It forms the basis for the Plan of Action & Milestones (POA&M) required for ATO.*

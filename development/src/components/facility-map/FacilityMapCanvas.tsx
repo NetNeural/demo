@@ -1,0 +1,506 @@
+'use client'
+
+/**
+ * FacilityMapCanvas — Interactive canvas that renders a floor plan image
+ * with device markers overlaid. Supports click-to-place, drag-to-reposition,
+ * and real-time status display.
+ */
+
+import { useState, useRef, useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+import { DeviceMarker } from './DeviceMarker'
+import { MapZoneOverlay } from './MapZoneOverlay'
+import { HeatmapOverlay } from './HeatmapOverlay'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  MousePointer2,
+  Plus,
+  Trash2,
+  Download,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react'
+import type {
+  FacilityMap,
+  DeviceMapPlacement,
+  PlacementMode,
+  PlacedDevice,
+  MapZone,
+} from '@/types/facility-map'
+
+interface FacilityMapCanvasProps {
+  facilityMap: FacilityMap
+  placements: DeviceMapPlacement[]
+  availableDevices: PlacedDevice[]
+  mode: PlacementMode
+  selectedPlacementId: string | null
+  deviceToPlace: string | null
+  onPlaceDevice: (deviceId: string, xPercent: number, yPercent: number) => void
+  onMovePlacement: (placementId: string, xPercent: number, yPercent: number) => void
+  onSelectPlacement: (placementId: string | null) => void
+  onRemovePlacement: (placementId: string) => void
+  onDeviceNavigate?: (deviceId: string) => void
+  telemetryMap?: Record<string, Record<string, unknown>>
+  /** Compact mode for collage grid — hides toolbar, shrinks canvas */
+  compact?: boolean
+  /** Hide fullscreen button (parent handles it) */
+  hideFullscreen?: boolean
+  /** Show device name labels on markers */
+  showLabels?: boolean
+  /** Show device type labels */
+  showDeviceType?: boolean
+  /** Show map name overlay */
+  showMapName?: boolean
+  /** Show device count overlay */
+  showDeviceCount?: boolean
+  /** Show location overlay */
+  showLocation?: boolean
+  /** Zones to render on the map */
+  zones?: MapZone[]
+  /** Whether zone editing is active */
+  zoneEditMode?: boolean
+  /** Currently selected zone id */
+  selectedZoneId?: string | null
+  onSelectZone?: (zoneId: string | null) => void
+  /** Callback when a zone polygon is finished drawing */
+  onCreateZone?: (points: { x: number; y: number }[]) => void
+  /** Whether zone drawing mode is active */
+  zoneDrawing?: boolean
+  /** Heatmap: telemetry metric key to visualize (null = off) */
+  heatmapMetric?: string | null
+  /** Extra content rendered in the status bar (filters, zone controls, heatmap) */
+  statusBarExtra?: ReactNode
+}
+
+export function FacilityMapCanvas({
+  facilityMap,
+  placements,
+  mode,
+  selectedPlacementId,
+  deviceToPlace,
+  onPlaceDevice,
+  onMovePlacement,
+  onSelectPlacement,
+  onRemovePlacement,
+  onDeviceNavigate,
+  telemetryMap,
+  compact = false,
+  hideFullscreen = false,
+  showLabels = false,
+  showDeviceType = false,
+  showMapName = false,
+  showDeviceCount = false,
+  showLocation = false,
+  zones = [],
+  zoneEditMode = false,
+  selectedZoneId,
+  onSelectZone,
+  onCreateZone,
+  zoneDrawing = false,
+  heatmapMetric = null,
+  statusBarExtra,
+}: FacilityMapCanvasProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const fullscreenRef = useRef<HTMLDivElement | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Marker scale: shrink dots proportionally when the rendered image is
+  // smaller than the single-view reference width (600px).
+  const REFERENCE_WIDTH = 600
+  const [markerScale, setMarkerScale] = useState(1)
+  // Track the actual rendered image content area within the <img> element.
+  // With object-contain the visual content can be smaller than the element box.
+  const [imgRect, setImgRect] = useState<{ w: number; h: number; ox: number; oy: number } | null>(null)
+
+  useEffect(() => {
+    const img = imgRef.current
+    if (!img || !imageLoaded) return
+    const measure = () => {
+      const boxW = img.clientWidth
+      const boxH = img.clientHeight
+      const natW = img.naturalWidth
+      const natH = img.naturalHeight
+      if (!natW || !natH || !boxW || !boxH) return
+      // Compute the actual rendered content rect inside the object-contain box
+      const scale = Math.min(boxW / natW, boxH / natH)
+      const renderedW = natW * scale
+      const renderedH = natH * scale
+      // object-contain centers the image in the element box
+      const offsetX = (boxW - renderedW) / 2
+      const offsetY = (boxH - renderedH) / 2
+      setImgRect({ w: renderedW, h: renderedH, ox: offsetX, oy: offsetY })
+      setMarkerScale(Math.min(1, renderedW / REFERENCE_WIDTH))
+    }
+    measure()
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(img)
+    return () => ro.disconnect()
+  }, [imageLoaded])
+
+  // Reset when switching maps
+  useEffect(() => {
+    setImageLoaded(false)
+    setMarkerScale(1)
+    setImgRect(null)
+  }, [facilityMap.id])
+
+  // Click to place device — use the image container directly
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (mode !== 'place' || !deviceToPlace || !containerRef.current) return
+
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+
+      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+        onPlaceDevice(deviceToPlace, x, y)
+      }
+    },
+    [mode, deviceToPlace, onPlaceDevice]
+  )
+
+  // Touch support for placing devices on mobile
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (mode !== 'place' || !deviceToPlace || !containerRef.current) return
+      e.preventDefault()
+      const touch = e.changedTouches[0]
+      if (!touch) return
+
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = ((touch.clientX - rect.left) / rect.width) * 100
+      const y = ((touch.clientY - rect.top) / rect.height) * 100
+
+      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+        onPlaceDevice(deviceToPlace, x, y)
+      }
+    },
+    [mode, deviceToPlace, onPlaceDevice]
+  )
+
+  // Drag-and-drop from device palette
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/x-device-id')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      const deviceId = e.dataTransfer.getData('application/x-device-id')
+      if (!deviceId || !containerRef.current) return
+      e.preventDefault()
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+        onPlaceDevice(deviceId, x, y)
+      }
+    },
+    [onPlaceDevice]
+  )
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!fullscreenRef.current) return
+    if (!document.fullscreenElement) {
+      fullscreenRef.current.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    return () => document.removeEventListener('fullscreenchange', handler)
+  }, [])
+
+  // Export map as PNG
+  const exportMapAsPNG = useCallback(async () => {
+    if (!facilityMap.image_url) return
+
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = facilityMap.image_url
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = reject
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(img, 0, 0)
+
+    const statusColors: Record<string, string> = {
+      online: '#22c55e', offline: '#9ca3af', warning: '#f59e0b',
+      error: '#ef4444', maintenance: '#3b82f6',
+    }
+
+    for (const p of placements) {
+      const x = (p.x_percent / 100) * img.naturalWidth
+      const y = (p.y_percent / 100) * img.naturalHeight
+      const color = statusColors[p.device?.status || 'offline'] || '#9ca3af'
+      ctx.beginPath()
+      ctx.arc(x, y, 12, 0, Math.PI * 2)
+      ctx.fillStyle = 'white'
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(x, y, 9, 0, Math.PI * 2)
+      ctx.fillStyle = color
+      ctx.fill()
+      const name = p.label || p.device?.name || ''
+      if (name) {
+        ctx.font = 'bold 14px sans-serif'
+        ctx.fillStyle = '#1f2937'
+        ctx.textAlign = 'center'
+        ctx.fillText(name, x, y + 24)
+      }
+    }
+
+    const link = document.createElement('a')
+    link.download = `${facilityMap.name.replace(/[^a-z0-9]/gi, '_')}_map.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  }, [facilityMap, placements])
+
+  // Status summary
+  const statusSummary = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const p of placements) {
+      const s = p.device?.status || 'offline'
+      counts[s] = (counts[s] || 0) + 1
+    }
+    return counts
+  }, [placements])
+
+  return (
+    <div ref={fullscreenRef} className={cn('relative flex flex-col', isFullscreen && 'bg-background')}>
+      {/* Toolbar — hidden in compact mode */}
+      {!compact && (
+      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          {mode === 'place' && deviceToPlace && (
+            <div className="flex flex-col gap-0.5">
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <Plus className="h-3 w-3" />
+                Tap on map or drag device to place
+              </Badge>
+              <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+                Drag icon back to device list to remove
+              </Badge>
+            </div>
+          )}
+          {mode === 'edit' && (
+            <div className="flex flex-col gap-0.5">
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <MousePointer2 className="h-3 w-3" />
+                Drag devices to reposition
+              </Badge>
+              <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+                Drag icon off map to remove
+              </Badge>
+            </div>
+          )}
+          {mode === 'view' && placements.length > 0 && (
+            <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+              Click a device to view details
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {selectedPlacementId && mode === 'edit' && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onRemovePlacement(selectedPlacementId)}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Remove
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={exportMapAsPNG}
+            title="Export as PNG"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+          {!hideFullscreen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </Button>
+          )}
+          <span className="text-xs text-muted-foreground ml-1">
+            {placements.length} device{placements.length !== 1 ? 's' : ''} placed
+          </span>
+        </div>
+      </div>
+      )}
+
+      {/* Status summary bar — hidden in compact mode */}
+      {!compact && (placements.length > 0 || statusBarExtra) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b bg-muted/10 px-3 py-1.5">
+          {Object.entries(statusSummary).map(([status, count]) => (
+            <div key={status} className="flex items-center gap-1.5 text-xs">
+              <span className={cn(
+                'h-2 w-2 rounded-full',
+                status === 'online' && 'bg-green-500',
+                status === 'offline' && 'bg-gray-400',
+                status === 'warning' && 'bg-amber-500',
+                status === 'error' && 'bg-red-500',
+                status === 'maintenance' && 'bg-blue-500',
+              )} />
+              <span className="text-muted-foreground capitalize">{count} {status}</span>
+            </div>
+          ))}
+          {/* Divider before extra controls */}
+          {statusBarExtra && (
+            <>
+              <span className="h-4 w-px bg-border" />
+              {statusBarExtra}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Canvas area */}
+      <div
+        className={cn(
+          'relative bg-gray-100',
+          !compact && 'overflow-hidden',
+          mode === 'place' && deviceToPlace && 'cursor-crosshair'
+        )}
+        style={compact
+          ? { maxHeight: '220px', overflow: 'hidden' }
+          : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px', overflow: 'hidden' }
+        }
+      >
+        {!facilityMap.image_url ? (
+          <div className="flex h-[300px] items-center justify-center">
+            <p className="text-muted-foreground">No floor plan image uploaded</p>
+          </div>
+        ) : (
+          <div
+            ref={containerRef}
+            className="relative inline-block w-full"
+            onClick={handleCanvasClick}
+            onTouchEnd={handleTouchEnd}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={imgRef}
+              src={facilityMap.image_url}
+              alt={facilityMap.name}
+              className={cn(
+                'w-full object-contain transition-opacity',
+                compact && 'max-h-[220px]',
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              )}
+              onLoad={() => setImageLoaded(true)}
+              draggable={false}
+            />
+
+            {/* Marker overlay — positioned exactly over the rendered image
+                content area (accounts for object-contain letterboxing) */}
+            {imageLoaded && imgRect && (
+              <div
+                className="absolute"
+                style={{
+                  width: imgRect.w,
+                  height: imgRect.h,
+                  left: imgRect.ox,
+                  top: imgRect.oy,
+                }}
+              >
+              {/* Heatmap overlay (behind zones and markers) */}
+              {heatmapMetric && telemetryMap && (
+                <HeatmapOverlay
+                  placements={placements}
+                  telemetryMap={telemetryMap}
+                  metricKey={heatmapMetric}
+                  width={imgRect.w}
+                  height={imgRect.h}
+                />
+              )}
+
+              {/* Zone overlays */}
+              {zones.length > 0 || zoneDrawing ? (
+                <MapZoneOverlay
+                  zones={zones}
+                  width={imgRect.w}
+                  height={imgRect.h}
+                  editMode={zoneEditMode}
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={onSelectZone}
+                  onCreateZone={onCreateZone}
+                  drawing={zoneDrawing}
+                />
+              ) : null}
+
+              {placements.map((p) => (
+                <DeviceMarker
+                  key={p.id}
+                  placement={p}
+                  mode={mode}
+                  selected={p.id === selectedPlacementId}
+                  onClick={() => onSelectPlacement(p.id === selectedPlacementId ? null : p.id)}
+                  onNavigate={onDeviceNavigate}
+                  onDragEnd={(x, y) => onMovePlacement(p.id, x, y)}
+                  onDragRemove={() => onRemovePlacement(p.id)}
+                  containerRef={containerRef}
+                  telemetry={telemetryMap?.[p.device_id]}
+                  showLabel={showLabels}
+                  showDeviceType={showDeviceType}
+                  scale={markerScale}
+                />
+              ))}
+              </div>
+            )}
+
+            {/* Overlay badges */}
+            {imageLoaded && (showMapName || showDeviceCount || showLocation) && (
+              <div className="absolute bottom-1 left-1 z-20 flex flex-wrap items-center gap-1">
+                {showMapName && (
+                  <Badge variant="secondary" className="text-[10px] bg-black/60 text-white backdrop-blur-sm shadow-sm">
+                    {facilityMap.name}
+                  </Badge>
+                )}
+                {showLocation && facilityMap.location?.name && (
+                  <Badge variant="outline" className="text-[10px] bg-black/60 text-white border-transparent backdrop-blur-sm shadow-sm">
+                    {facilityMap.location.name}
+                  </Badge>
+                )}
+                {showDeviceCount && placements.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] bg-black/60 text-white backdrop-blur-sm shadow-sm">
+                    {placements.length} device{placements.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

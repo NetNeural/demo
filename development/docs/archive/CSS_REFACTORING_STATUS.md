@@ -6,6 +6,7 @@
 ## Current State
 
 We successfully implemented a **hybrid approach** where:
+
 - ✅ Tailwind CSS is enabled (with `@tailwind` directives)
 - ✅ Custom CSS classes are preserved (for backward compatibility)
 - ✅ Refactored components use pure Tailwind + shadcn/ui components
@@ -83,17 +84,20 @@ We successfully implemented a **hybrid approach** where:
 If you want to continue the refactoring journey, here's the roadmap:
 
 ### Phase 1: Small Components (Low Risk)
+
 - [ ] Refactor AlertsList component buttons
 - [ ] Refactor Integrations page buttons
 - [ ] Test each change thoroughly
 
 ### Phase 2: Settings Page (Higher Risk - Large File)
+
 - [ ] Break Settings page into smaller components
 - [ ] Refactor each section individually
 - [ ] Replace custom form classes with Tailwind
 - [ ] Replace tab system with shadcn/ui Tabs component
 
 ### Phase 3: CSS Cleanup (Final Step)
+
 - [ ] Once all components are refactored, remove unused CSS classes
 - [ ] Keep only CSS variables
 - [ ] Final bundle size reduction
@@ -101,11 +105,13 @@ If you want to continue the refactoring journey, here's the roadmap:
 ## Recommended Approach Going Forward
 
 **For New Components:**
+
 - ✅ Use pure Tailwind classes
 - ✅ Use shadcn/ui components (Button, Card, Alert, etc.)
 - ✅ Follow the patterns in DashboardShell, Dashboard page, Login page
 
 **For Existing Components:**
+
 - ⚠️ Leave them as-is for now (working and stable)
 - ⚠️ Only refactor if you're actively working on that component
 - ⚠️ Test thoroughly after any changes
@@ -113,10 +119,12 @@ If you want to continue the refactoring journey, here's the roadmap:
 ## Files Modified
 
 ### Added
+
 - `src/components/ui/stats-card.tsx`
 - `src/components/ui/page-header.tsx`
 
 ### Modified
+
 - `src/components/ui/button.tsx` - Enhanced with exact CSS matches
 - `src/app/dashboard/page.tsx` - Fully refactored
 - `src/components/dashboard/DashboardShell.tsx` - Fully refactored
@@ -124,6 +132,7 @@ If you want to continue the refactoring journey, here's the roadmap:
 - `src/app/globals.css` - Added `@tailwind` directives (kept custom classes)
 
 ### Backup Created
+
 - `src/app/globals_backup.css` - Original CSS saved
 
 ## Success Metrics

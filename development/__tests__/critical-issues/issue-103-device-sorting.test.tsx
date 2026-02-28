@@ -1,6 +1,6 @@
 /**
  * UNIT TESTS: Issue #103 - Default Sorting on Devices Page
- * 
+ *
  * Tests that devices are sorted with online devices appearing first
  * Priority: online > warning > error > offline > maintenance
  */
@@ -8,7 +8,11 @@
 import { describe, test, expect } from '@jest/globals'
 
 // Mock device data
-const createDevice = (id: string, name: string, status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance') => ({
+const createDevice = (
+  id: string,
+  name: string,
+  status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
+) => ({
   id,
   name,
   device_type: 'sensor',
@@ -19,12 +23,12 @@ const createDevice = (id: string, name: string, status: 'online' | 'offline' | '
 describe('Issue #103: Device Sorting Priority', () => {
   describe('Status Priority Mapping', () => {
     test('should define correct status priority order', () => {
-      const statusPriority = { 
-        online: 1, 
-        warning: 2, 
-        error: 3, 
-        offline: 4, 
-        maintenance: 5 
+      const statusPriority = {
+        online: 1,
+        warning: 2,
+        error: 3,
+        offline: 4,
+        maintenance: 5,
       }
 
       expect(statusPriority.online).toBeLessThan(statusPriority.warning)
@@ -34,12 +38,12 @@ describe('Issue #103: Device Sorting Priority', () => {
     })
 
     test('should handle unknown status with lowest priority', () => {
-      const statusPriority: Record<string, number> = { 
-        online: 1, 
-        warning: 2, 
-        error: 3, 
-        offline: 4, 
-        maintenance: 5 
+      const statusPriority: Record<string, number> = {
+        online: 1,
+        warning: 2,
+        error: 3,
+        offline: 4,
+        maintenance: 5,
       }
       const unknownStatus = 'unknown_status'
       const priority = statusPriority[unknownStatus] || 999
@@ -59,12 +63,12 @@ describe('Issue #103: Device Sorting Priority', () => {
         createDevice('5', 'Device Maintenance', 'maintenance'),
       ]
 
-      const statusPriority: Record<string, number> = { 
-        online: 1, 
-        warning: 2, 
-        error: 3, 
-        offline: 4, 
-        maintenance: 5 
+      const statusPriority: Record<string, number> = {
+        online: 1,
+        warning: 2,
+        error: 3,
+        offline: 4,
+        maintenance: 5,
       }
 
       const sorted = [...devices].sort((a, b) => {
@@ -87,22 +91,22 @@ describe('Issue #103: Device Sorting Priority', () => {
         createDevice('3', 'Device B', 'online'),
       ]
 
-      const statusPriority: Record<string, number> = { 
-        online: 1, 
-        warning: 2, 
-        error: 3, 
-        offline: 4, 
-        maintenance: 5 
+      const statusPriority: Record<string, number> = {
+        online: 1,
+        warning: 2,
+        error: 3,
+        offline: 4,
+        maintenance: 5,
       }
 
       const sorted = [...devices].sort((a, b) => {
         const aPriority = statusPriority[a.status] || 999
         const bPriority = statusPriority[b.status] || 999
-        
+
         if (aPriority !== bPriority) {
           return aPriority - bPriority
         }
-        
+
         // Secondary sort by name
         return a.name.localeCompare(b.name)
       })
@@ -110,7 +114,7 @@ describe('Issue #103: Device Sorting Priority', () => {
       expect(sorted[0].name).toBe('Device A')
       expect(sorted[1].name).toBe('Device B')
       expect(sorted[2].name).toBe('Device C')
-      expect(sorted.every(d => d.status === 'online')).toBe(true)
+      expect(sorted.every((d) => d.status === 'online')).toBe(true)
     })
 
     test('should handle mixed status with secondary name sorting', () => {
@@ -121,29 +125,29 @@ describe('Issue #103: Device Sorting Priority', () => {
         createDevice('4', 'Sensor Y', 'offline'),
       ]
 
-      const statusPriority: Record<string, number> = { 
-        online: 1, 
-        warning: 2, 
-        error: 3, 
-        offline: 4, 
-        maintenance: 5 
+      const statusPriority: Record<string, number> = {
+        online: 1,
+        warning: 2,
+        error: 3,
+        offline: 4,
+        maintenance: 5,
       }
 
       const sorted = [...devices].sort((a, b) => {
         const aPriority = statusPriority[a.status] || 999
         const bPriority = statusPriority[b.status] || 999
-        
+
         if (aPriority !== bPriority) {
           return aPriority - bPriority
         }
-        
+
         return a.name.localeCompare(b.name)
       })
 
       // Online devices first, alphabetically
       expect(sorted[0]).toMatchObject({ name: 'Sensor A', status: 'online' })
       expect(sorted[1]).toMatchObject({ name: 'Sensor B', status: 'online' })
-      
+
       // Offline devices last, alphabetically
       expect(sorted[2]).toMatchObject({ name: 'Sensor Y', status: 'offline' })
       expect(sorted[3]).toMatchObject({ name: 'Sensor Z', status: 'offline' })
@@ -165,13 +169,17 @@ describe('Issue #103: Device Sorting Priority', () => {
   describe('Edge Cases', () => {
     test('should handle empty device list', () => {
       const devices: any[] = []
-      const sorted = [...devices].sort((a, b) => a.status.localeCompare(b.status))
+      const sorted = [...devices].sort((a, b) =>
+        a.status.localeCompare(b.status)
+      )
       expect(sorted).toEqual([])
     })
 
     test('should handle single device', () => {
       const devices = [createDevice('1', 'Only Device', 'online')]
-      const sorted = [...devices].sort((a, b) => a.status.localeCompare(b.status))
+      const sorted = [...devices].sort((a, b) =>
+        a.status.localeCompare(b.status)
+      )
       expect(sorted).toHaveLength(1)
       expect(sorted[0].name).toBe('Only Device')
     })
@@ -184,7 +192,7 @@ describe('Issue #103: Device Sorting Priority', () => {
       ]
 
       const sorted = [...devices].sort((a, b) => a.name.localeCompare(b.name))
-      
+
       expect(sorted[0].name).toBe('Device 1')
       expect(sorted[1].name).toBe('Device 2')
       expect(sorted[2].name).toBe('Device 3')

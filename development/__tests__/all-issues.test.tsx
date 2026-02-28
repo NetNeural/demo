@@ -1,6 +1,6 @@
 /**
  * Comprehensive Test Suite for All GitHub Issue Fixes
- * 
+ *
  * This file contains integration tests for all 17 fixed GitHub issues
  */
 
@@ -485,7 +485,7 @@ describe('Performance Tests', () => {
     expect(true).toBe(true)
   })
 
-  test('toast notifications don\'t block UI', () => {
+  test("toast notifications don't block UI", () => {
     expect(true).toBe(true)
   })
 })

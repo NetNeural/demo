@@ -1,13 +1,13 @@
 /**
  * Template for creating new pages with built-in Sentry error handling
- * 
+ *
  * INSTRUCTIONS FOR NEW PAGES:
  * 1. Copy this file to your new page location: src/app/[your-route]/page.tsx
  * 2. Rename the component function (e.g., YourFeaturePage)
  * 3. Replace the content with your actual page implementation
  * 4. For API calls, ALWAYS use handleApiError from '@/lib/sentry-utils'
  * 5. For wrapping risky components, use <ErrorBoundaryWrapper>
- * 
+ *
  * This template ensures:
  * - ✅ All unhandled errors are automatically sent to Sentry
  * - ✅ API errors show user feedback dialogs in production
@@ -39,7 +39,7 @@ export default function NewPageTemplate() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const error = new Error(errorData.error || `HTTP ${response.status}`)
-        
+
         // ✅ This automatically:
         // - Sends error to Sentry with context
         // - Shows feedback dialog to user (in production)
@@ -53,7 +53,7 @@ export default function NewPageTemplate() {
             userId: 'user-123', // Add relevant context
           },
         })
-        
+
         throw error
       }
 
@@ -83,22 +83,20 @@ export default function NewPageTemplate() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Your Page Title</h1>
-      
+      <h1 className="mb-4 text-2xl font-bold">Your Page Title</h1>
+
       {/* EXAMPLE: Wrap risky components in error boundary */}
       <ErrorBoundaryWrapper>
         <div>
           <p>Your page content here...</p>
-          
+
           {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
-          
+
           <button onClick={fetchData} disabled={loading}>
             {loading ? 'Loading...' : 'Fetch Data'}
           </button>
-          
-          <button onClick={handleCustomAction}>
-            Test Custom Action
-          </button>
+
+          <button onClick={handleCustomAction}>Test Custom Action</button>
         </div>
       </ErrorBoundaryWrapper>
     </div>

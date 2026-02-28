@@ -49,7 +49,9 @@ jest.mock('@/contexts/UserContext', () => ({
     loading: false,
     refreshUser: jest.fn(),
   }),
-  UserProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  UserProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 jest.mock('@/contexts/OrganizationContext', () => ({
@@ -60,23 +62,15 @@ jest.mock('@/contexts/OrganizationContext', () => ({
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
   }),
-  OrganizationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }))
 
 describe('Dashboard Layout', () => {
-  test('DashboardLayoutClient component exists', async () => {
-    const layoutModule = await import('@/app/dashboard/layout-client')
+  test('Dashboard layout module exists', async () => {
+    const layoutModule = await import('@/app/dashboard/layout')
     expect(layoutModule.default).toBeDefined()
-  })
-
-  test('DashboardLayoutClient renders children', async () => {
-    const LayoutClient = (await import('@/app/dashboard/layout-client')).default
-    const { container } = render(
-      <LayoutClient userEmail="test@example.com">
-        <div>Test Content</div>
-      </LayoutClient>
-    )
-    expect(container).toBeTruthy()
   })
 })
 

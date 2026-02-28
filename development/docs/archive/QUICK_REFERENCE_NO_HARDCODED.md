@@ -30,19 +30,19 @@ import { fetchEdgeFunction } from '@/lib/auth'
 
 function MyComponent() {
   const { user, loading } = useUser()
-  
+
   if (!user) return null
-  
+
   // Access user data
-  user.id                  // User ID
-  user.email               // Email
-  user.organizationId      // Org ID
-  user.organizationName    // Org name
-  user.role                // Role
-  
+  user.id // User ID
+  user.email // Email
+  user.organizationId // Org ID
+  user.organizationName // Org name
+  user.role // Role
+
   // Make API calls
   const data = await fetchEdgeFunction('devices', {
-    organization_id: user.organizationId
+    organization_id: user.organizationId,
   })
 }
 ```
@@ -100,8 +100,8 @@ Database → Return org's data only
 const user = await getCurrentUser()
 
 // Make API call
-const data = await fetchEdgeFunction('endpoint', { 
-  organization_id: user.organizationId 
+const data = await fetchEdgeFunction('endpoint', {
+  organization_id: user.organizationId,
 })
 
 // Use in component
@@ -136,18 +136,19 @@ npm run type-check
 
 ## Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| "User not found" | Run `npm run setup:users` |
-| "No devices" | Check org ID matches seed data |
-| "Redirecting to login" | Sign in at `/auth/login` |
-| "Edge functions 503" | Run `npm run supabase:functions:serve` |
+| Issue                  | Solution                               |
+| ---------------------- | -------------------------------------- |
+| "User not found"       | Run `npm run setup:users`              |
+| "No devices"           | Check org ID matches seed data         |
+| "Redirecting to login" | Sign in at `/auth/login`               |
+| "Edge functions 503"   | Run `npm run supabase:functions:serve` |
 
 ## Status
 
 ✅ **Core complete** - No hardcoded values!
+
 - Dynamic user from auth
-- Dynamic organization filtering  
+- Dynamic organization filtering
 - All data from database
 - Multi-tenant ready
 
@@ -160,10 +161,10 @@ import { fetchEdgeFunction } from '@/lib/auth'
 
 export function AlertsCard() {
   const { user } = useUser()
-  
+
   const fetchAlerts = async () => {
     const data = await fetchEdgeFunction('alerts', {
-      organization_id: user.organizationId  // ✅ Dynamic!
+      organization_id: user.organizationId, // ✅ Dynamic!
     })
   }
 }

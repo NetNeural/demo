@@ -32,12 +32,12 @@ export interface GoliothSettings {
 export interface GoliothDevice {
   id: string
   name: string
-  hardwareIds?: string[]  // Golioth uses plural array
+  hardwareIds?: string[] // Golioth uses plural array
   blueprintId?: string
   cohortId?: string
   enabled: boolean
-  status: string  // Golioth uses "-" for unknown, we normalize to offline
-  lastReport?: string  // Most recent activity timestamp
+  status: string // Golioth uses "-" for unknown, we normalize to offline
+  lastReport?: string // Most recent activity timestamp
   createdAt: string
   updatedAt: string
   metadata?: {
@@ -75,7 +75,7 @@ export class GoliothClient extends BaseIntegrationClient {
     this.apiKey = settings.apiKey
     this.projectId = settings.projectId
     this.baseUrl = settings.baseUrl || 'https://api.golioth.io/v1'
-    
+
     // Create axios instance with proper configuration
     this.httpClient = axios.create({
       baseURL: this.baseUrl,
@@ -99,11 +99,14 @@ export class GoliothClient extends BaseIntegrationClient {
    * Database accepts: 'online' | 'offline' | 'warning' | 'error'
    * Base Device interface expects: 'online' | 'offline' | 'unknown' | 'maintenance'
    * We map to database enum for storage, 'unknown' for the interface
-   * 
+   *
    * Since Golioth doesn't provide reliable online/offline status (usually "-" or empty),
    * we calculate status based on last_seen: if device reported within last 60 minutes, it's online.
    */
-  private normalizeDeviceStatus(status: string | undefined, lastSeen?: string | null): 'online' | 'offline' | 'warning' | 'error' {
+  private normalizeDeviceStatus(
+    status: string | undefined,
+    lastSeen?: string | null
+  ): 'online' | 'offline' | 'warning' | 'error' {
     // First check if device is recently active (within last 60 minutes)
     if (lastSeen) {
       const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000)
@@ -112,24 +115,28 @@ export class GoliothClient extends BaseIntegrationClient {
         return 'online'
       }
     }
-    
+
     // If status field is explicitly set, use it
     if (status && status !== '-' && status !== '') {
       const normalized = status.toLowerCase()
       if (normalized === 'online' || normalized === 'connected') return 'online'
-      if (normalized === 'offline' || normalized === 'disconnected') return 'offline'
-      if (normalized === 'warning' || normalized === 'maintenance') return 'warning'
+      if (normalized === 'offline' || normalized === 'disconnected')
+        return 'offline'
+      if (normalized === 'warning' || normalized === 'maintenance')
+        return 'warning'
       if (normalized === 'error' || normalized === 'critical') return 'error'
     }
-    
+
     // Default to offline if no recent activity and no explicit status
     return 'offline'
   }
-  
+
   /**
    * Map database status to base Device interface status
    */
-  private mapToDeviceInterfaceStatus(status: string): 'online' | 'offline' | 'unknown' | 'maintenance' {
+  private mapToDeviceInterfaceStatus(
+    status: string
+  ): 'online' | 'offline' | 'unknown' | 'maintenance' {
     if (status === 'online') return 'online'
     if (status === 'offline') return 'offline'
     if (status === 'warning') return 'maintenance'
@@ -175,13 +182,19 @@ export class GoliothClient extends BaseIntegrationClient {
    * Includes timestamp to allow multiple instances of the same alert type over time.
    * Format: golioth:{projectId}:{deviceId}:{alertType}:{hash(trigger_conditions)}:{timestamp}
    */
-  private computeGoliothAlertKey(projectId: string, deviceId: string, alertType: string, triggerConditions: Record<string, unknown>, timestamp?: string): string {
+  private computeGoliothAlertKey(
+    projectId: string,
+    deviceId: string,
+    alertType: string,
+    triggerConditions: Record<string, unknown>,
+    timestamp?: string
+  ): string {
     const payload = JSON.stringify(triggerConditions || {})
     // Simple, deterministic djb2 hash
     let hash = 5381
     for (let i = 0; i < payload.length; i++) {
       // charCodeAt is safe for JSON-stringified ASCII/UTF-8
-      hash = ((hash << 5) + hash) + payload.charCodeAt(i) // hash * 33 + c
+      hash = (hash << 5) + hash + payload.charCodeAt(i) // hash * 33 + c
       hash = hash & 0xffffffff
     }
     const hex = (hash >>> 0).toString(16)
@@ -193,7 +206,7 @@ export class GoliothClient extends BaseIntegrationClient {
     return this.withActivityLog('test', async () => {
       try {
         await this.httpClient.get(`/projects/${this.projectId}`)
-        
+
         return this.createSuccessResult(
           `Golioth project '${this.projectId}' is accessible`,
           { projectId: this.projectId }
@@ -213,23 +226,30 @@ export class GoliothClient extends BaseIntegrationClient {
       const logs: string[] = []
       let telemetryRecorded = 0
       let alertsCreated = 0
-      
+
       try {
         // Log configuration for debugging
-        logs.push(`[GoliothClient] Import starting with config: baseUrl=${this.baseUrl}, projectId=${this.projectId}`)
+        logs.push(
+          `[GoliothClient] Import starting with config: baseUrl=${this.baseUrl}, projectId=${this.projectId}`
+        )
         console.log('[GoliothClient] Import starting with config:', {
           baseUrl: this.baseUrl,
           projectId: this.projectId,
           hasApiKey: !!this.apiKey,
-          apiKeyLength: this.apiKey?.length
+          apiKeyLength: this.apiKey?.length,
         })
-        
+
         // Fetch all devices from Golioth
         const goliothDevices = await this.getDevices()
-        logs.push(`[GoliothClient] Fetched ${goliothDevices.length} devices from Golioth`)
-        console.log('[GoliothClient] Fetched devices from Golioth:', goliothDevices.length)
+        logs.push(
+          `[GoliothClient] Fetched ${goliothDevices.length} devices from Golioth`
+        )
+        console.log(
+          '[GoliothClient] Fetched devices from Golioth:',
+          goliothDevices.length
+        )
         result.devices_processed = goliothDevices.length
-        
+
         // Fetch project metadata for additional context
         let projectMetadata: { name?: string; id?: string } | null = null
         try {
@@ -237,16 +257,16 @@ export class GoliothClient extends BaseIntegrationClient {
         } catch (err) {
           console.warn('Could not fetch project metadata:', err)
         }
-        
+
         // Convert to NetNeural device format
         for (const goliothDevice of goliothDevices) {
           try {
             // First check for hardware ID match, then external ID
             const hardwareIdMatch = goliothDevice.hardwareIds?.[0]
-            const query = hardwareIdMatch 
+            const query = hardwareIdMatch
               ? `hardware_ids.cs.{${hardwareIdMatch}},external_device_id.eq.${goliothDevice.id}`
               : `external_device_id.eq.${goliothDevice.id}`
-            
+
             // First, upsert the device to get/create NetNeural device ID
             const { data: existingDevice } = await this.config.supabase
               .from('devices')
@@ -258,18 +278,22 @@ export class GoliothClient extends BaseIntegrationClient {
             let localDeviceId = existingDevice?.id
 
             // Determine last_seen timestamp from available fields
-            const lastSeen = goliothDevice.lastReport || 
-                           goliothDevice.metadata?.lastSeenOnline || 
-                           goliothDevice.metadata?.lastReport ||
-                           goliothDevice.updatedAt
+            const lastSeen =
+              goliothDevice.lastReport ||
+              goliothDevice.metadata?.lastSeenOnline ||
+              goliothDevice.metadata?.lastReport ||
+              goliothDevice.updatedAt
 
             // If device doesn't exist, create it
             if (!localDeviceId) {
-              const normalizedStatus = this.normalizeDeviceStatus(goliothDevice.status, lastSeen)
+              const normalizedStatus = this.normalizeDeviceStatus(
+                goliothDevice.status,
+                lastSeen
+              )
               const logMsg = `📝 Creating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${normalizedStatus}, last_seen: ${lastSeen})`
               logs.push(logMsg)
               console.log(logMsg)
-              
+
               const devicePayload = {
                 id: crypto.randomUUID(), // Explicitly generate UUID to avoid Supabase client caching bug
                 organization_id: this.config.organizationId,
@@ -292,21 +316,32 @@ export class GoliothClient extends BaseIntegrationClient {
                 },
                 external_device_id: goliothDevice.id,
               }
-              
-              console.log('[GoliothClient] *** ATTEMPTING INSERT with payload:', JSON.stringify(devicePayload, null, 2))
-              
-              const { data: newDevice, error: createError } = await this.config.supabase
-                .from('devices')
-                .insert(devicePayload)
-                .select('id')
-                .single()
 
-              console.log('[GoliothClient] *** INSERT RESULT:', { 
-                success: !!newDevice, 
-                error: createError ? { message: createError.message, code: createError.code, details: createError.details, hint: createError.hint } : null,
-                deviceId: newDevice?.id 
+              console.log(
+                '[GoliothClient] *** ATTEMPTING INSERT with payload:',
+                JSON.stringify(devicePayload, null, 2)
+              )
+
+              const { data: newDevice, error: createError } =
+                await this.config.supabase
+                  .from('devices')
+                  .insert(devicePayload)
+                  .select('id')
+                  .single()
+
+              console.log('[GoliothClient] *** INSERT RESULT:', {
+                success: !!newDevice,
+                error: createError
+                  ? {
+                      message: createError.message,
+                      code: createError.code,
+                      details: createError.details,
+                      hint: createError.hint,
+                    }
+                  : null,
+                deviceId: newDevice?.id,
               })
-              
+
               if (createError || !newDevice) {
                 const errorMsg = `Failed to create device: ${createError?.message} (code: ${createError?.code}, details: ${JSON.stringify(createError?.details)})`
                 console.error('[GoliothClient] *** INSERT FAILED:', errorMsg)
@@ -317,15 +352,25 @@ export class GoliothClient extends BaseIntegrationClient {
               logs.push(successMsg)
               console.log(successMsg)
             } else {
-              const normalizedStatus = this.normalizeDeviceStatus(goliothDevice.status, lastSeen)
+              const normalizedStatus = this.normalizeDeviceStatus(
+                goliothDevice.status,
+                lastSeen
+              )
               const updateMsg = `🔄 Updating device: ${goliothDevice.name} (status: ${goliothDevice.status} → ${normalizedStatus}, last_seen: ${lastSeen})`
               logs.push(updateMsg)
               console.log(updateMsg)
-              
+
               // Get conflict resolution strategy from settings
-              const settings = this.getSettings<GoliothSettings & { conflictResolution?: string }>()
-              const conflictStrategy = (settings.conflictResolution || 'remote_wins') as 'manual' | 'local_wins' | 'remote_wins' | 'newest_wins'
-              
+              const settings = this.getSettings<
+                GoliothSettings & { conflictResolution?: string }
+              >()
+              const conflictStrategy = (settings.conflictResolution ||
+                'remote_wins') as
+                | 'manual'
+                | 'local_wins'
+                | 'remote_wins'
+                | 'newest_wins'
+
               // Prepare local and remote device data for conflict detection
               const localDevice: Device = {
                 id: localDeviceId!,
@@ -335,7 +380,7 @@ export class GoliothClient extends BaseIntegrationClient {
                 updated_at: existingDevice.metadata?.updated_at,
                 metadata: existingDevice.metadata,
               }
-              
+
               const remoteDevice: Device = {
                 id: localDeviceId!,
                 name: goliothDevice.name,
@@ -344,14 +389,22 @@ export class GoliothClient extends BaseIntegrationClient {
                 updated_at: goliothDevice.updatedAt,
                 metadata: goliothDevice.metadata,
               }
-              
+
               // Detect conflicts
-              const conflicts = detectConflict(localDevice, remoteDevice, conflictStrategy)
-              
+              const conflicts = detectConflict(
+                localDevice,
+                remoteDevice,
+                conflictStrategy
+              )
+
               if (conflicts.length > 0) {
-                console.log(`[GoliothClient] Detected ${conflicts.length} conflicts for device ${goliothDevice.name}`)
-                logs.push(`⚠️  Detected ${conflicts.length} conflicts for ${goliothDevice.name}`)
-                
+                console.log(
+                  `[GoliothClient] Detected ${conflicts.length} conflicts for device ${goliothDevice.name}`
+                )
+                logs.push(
+                  `⚠️  Detected ${conflicts.length} conflicts for ${goliothDevice.name}`
+                )
+
                 // Log conflicts to database if strategy is manual
                 if (conflictStrategy === 'manual') {
                   for (const conflict of conflicts) {
@@ -359,33 +412,55 @@ export class GoliothClient extends BaseIntegrationClient {
                   }
                   // Skip update for manual resolution
                   result.devices_failed++
-                  errors.push(`${goliothDevice.name}: Conflicts require manual resolution`)
+                  errors.push(
+                    `${goliothDevice.name}: Conflicts require manual resolution`
+                  )
                   continue
                 }
               }
-              
+
               // For automatic strategies, resolve conflicts and update
-              const resolvedName = conflicts.find(c => c.fieldName === 'name')
-                ? autoResolveConflict(localDevice.name, remoteDevice.name, localDevice.updated_at, remoteDevice.updated_at, conflictStrategy as any)
+              const resolvedName = conflicts.find((c) => c.fieldName === 'name')
+                ? autoResolveConflict(
+                    localDevice.name,
+                    remoteDevice.name,
+                    localDevice.updated_at,
+                    remoteDevice.updated_at,
+                    conflictStrategy as any
+                  )
                 : goliothDevice.name
-              
-              const resolvedStatus = conflicts.find(c => c.fieldName === 'status')
-                ? autoResolveConflict(localDevice.status, remoteDevice.status, localDevice.updated_at, remoteDevice.updated_at, conflictStrategy as any)
+
+              const resolvedStatus = conflicts.find(
+                (c) => c.fieldName === 'status'
+              )
+                ? autoResolveConflict(
+                    localDevice.status,
+                    remoteDevice.status,
+                    localDevice.updated_at,
+                    remoteDevice.updated_at,
+                    conflictStrategy as any
+                  )
                 : normalizedStatus
-              
+
               // Check if device_type was manually changed (not auto-detected)
               const autoDetectedType = this.determineDeviceType(goliothDevice)
-              const wasManuallySet = existingDevice.metadata?.device_type_manually_set === true
-              const shouldPreserveType = wasManuallySet || 
-                (existingDevice.device_type && existingDevice.device_type !== autoDetectedType && existingDevice.device_type !== 'iot-device')
-              
+              const wasManuallySet =
+                existingDevice.metadata?.device_type_manually_set === true
+              const shouldPreserveType =
+                wasManuallySet ||
+                (existingDevice.device_type &&
+                  existingDevice.device_type !== autoDetectedType &&
+                  existingDevice.device_type !== 'iot-device')
+
               // Update existing device with latest data
               await this.config.supabase
                 .from('devices')
                 .update({
                   name: String(resolvedName),
                   // Only update device_type if it wasn't manually set
-                  ...(shouldPreserveType ? {} : { device_type: autoDetectedType }),
+                  ...(shouldPreserveType
+                    ? {}
+                    : { device_type: autoDetectedType }),
                   hardware_ids: goliothDevice.hardwareIds || [],
                   status: String(resolvedStatus),
                   last_seen: lastSeen,
@@ -399,16 +474,16 @@ export class GoliothClient extends BaseIntegrationClient {
                     golioth_enabled: goliothDevice.enabled,
                     golioth_tag_ids: goliothDevice.tagIds || [],
                     last_synced_at: new Date().toISOString(),
-                    ...(conflicts.length > 0 && { 
+                    ...(conflicts.length > 0 && {
                       last_conflict_resolution: conflictStrategy,
-                      last_conflict_count: conflicts.length 
+                      last_conflict_count: conflicts.length,
                     }),
                   },
                   external_device_id: goliothDevice.id,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', localDeviceId)
-              
+
               const updatedMsg = `✅ Device updated: ${goliothDevice.name}${conflicts.length > 0 ? ` (${conflicts.length} conflicts auto-resolved: ${conflictStrategy})` : ''}`
               logs.push(updatedMsg)
               console.log(updatedMsg)
@@ -417,16 +492,28 @@ export class GoliothClient extends BaseIntegrationClient {
             // Create default alerts for new/synced devices based on device type
             if (localDeviceId) {
               try {
-                const deviceType = String(goliothDevice.metadata?.deviceType || goliothDevice.metadata?.type || 'sensor')
-                const alertsToCreate = this.generateDefaultAlertsForDevice(goliothDevice.name, deviceType)
-                
+                const deviceType = String(
+                  goliothDevice.metadata?.deviceType ||
+                    goliothDevice.metadata?.type ||
+                    'sensor'
+                )
+                const alertsToCreate = this.generateDefaultAlertsForDevice(
+                  goliothDevice.name,
+                  deviceType
+                )
+
                 const alertCheckMsg = `🔔 Checking alerts for ${goliothDevice.name}: ${alertsToCreate.length} potential alerts`
                 logs.push(alertCheckMsg)
                 console.log(alertCheckMsg)
-                
+
                 for (const alertData of alertsToCreate) {
                   // Compute a unique key for this alert instance (includes timestamp)
-                  const goliothKey = this.computeGoliothAlertKey(this.projectId, goliothDevice.id, alertData.alert_type, alertData.trigger_conditions)
+                  const goliothKey = this.computeGoliothAlertKey(
+                    this.projectId,
+                    goliothDevice.id,
+                    alertData.alert_type,
+                    alertData.trigger_conditions
+                  )
 
                   // Insert new alert with unique golioth_key (timestamp makes each instance unique)
                   const toInsert = {
@@ -438,7 +525,9 @@ export class GoliothClient extends BaseIntegrationClient {
                     alert_type: alertData.alert_type,
                     severity: alertData.severity,
                     metadata: {
-                      ...alertData.trigger_conditions && { trigger_conditions: alertData.trigger_conditions },
+                      ...(alertData.trigger_conditions && {
+                        trigger_conditions: alertData.trigger_conditions,
+                      }),
                       golioth_key: goliothKey,
                       golioth_device_id: goliothDevice.id,
                       golioth_project_id: this.projectId,
@@ -471,16 +560,21 @@ export class GoliothClient extends BaseIntegrationClient {
             // Fetch and record telemetry from Golioth
             try {
               // Get last 24 hours of telemetry
-              const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+              const since = new Date(
+                Date.now() - 24 * 60 * 60 * 1000
+              ).toISOString()
               const telemetryMsg = `📊 Fetching telemetry for ${goliothDevice.name} (last 24h)...`
               logs.push(telemetryMsg)
               console.log(telemetryMsg)
-              const telemetryData = await this.getDeviceTelemetry(goliothDevice.id, since)
+              const telemetryData = await this.getDeviceTelemetry(
+                goliothDevice.id,
+                since
+              )
 
               // Record each telemetry point
               if (telemetryData && telemetryData.length > 0) {
                 const recordCount = await this.recordTelemetryBatch(
-                  telemetryData.map(point => ({
+                  telemetryData.map((point) => ({
                     deviceId: localDeviceId!,
                     telemetry: point.data,
                     timestamp: point.timestamp,
@@ -506,7 +600,9 @@ export class GoliothClient extends BaseIntegrationClient {
               id: localDeviceId,
               name: goliothDevice.name,
               hardware_id: goliothDevice.hardwareIds?.[0] || '',
-              status: this.mapToDeviceInterfaceStatus(this.normalizeDeviceStatus(goliothDevice.status)),
+              status: this.mapToDeviceInterfaceStatus(
+                this.normalizeDeviceStatus(goliothDevice.status)
+              ),
               last_seen: lastSeen,
               metadata: goliothDevice.metadata,
               tags: goliothDevice.tagIds || [],
@@ -519,21 +615,29 @@ export class GoliothClient extends BaseIntegrationClient {
                 updatedAt: goliothDevice.updatedAt,
               },
             }
-            
+
             result.devices_succeeded++
             result.details = result.details || {}
-            const details = result.details as { devices?: Device[]; telemetry_points?: number }
+            const details = result.details as {
+              devices?: Device[]
+              telemetry_points?: number
+            }
             details.devices = details.devices || []
             details.devices.push(device)
           } catch (error) {
             result.devices_failed++
-            result.errors.push(`${goliothDevice.name}: ${(error as Error).message}`)
+            result.errors.push(
+              `${goliothDevice.name}: ${(error as Error).message}`
+            )
           }
         }
 
         // Add telemetry and alerts stats to result
         if (telemetryRecorded > 0 || alertsCreated > 0) {
-          const details = result.details as { telemetry_points?: number; alerts_created?: number }
+          const details = result.details as {
+            telemetry_points?: number
+            alerts_created?: number
+          }
           if (telemetryRecorded > 0) {
             details.telemetry_points = telemetryRecorded
           }
@@ -541,10 +645,10 @@ export class GoliothClient extends BaseIntegrationClient {
             details.alerts_created = alertsCreated
           }
         }
-        
+
         // Add logs to result
         result.logs = logs
-        
+
         return result
       } catch (error) {
         result.errors.push(`Import failed: ${(error as Error).message}`)
@@ -557,19 +661,21 @@ export class GoliothClient extends BaseIntegrationClient {
     return this.withActivityLog('export', async () => {
       const result = this.createSyncResult()
       result.devices_processed = devices.length
-      
+
       for (const device of devices) {
         try {
           // Check if device exists in Golioth
-          const existingDevice = await this.getDeviceById(device.external_id || device.id).catch(() => null)
-          
+          const existingDevice = await this.getDeviceById(
+            device.external_id || device.id
+          ).catch(() => null)
+
           const goliothDevice: Partial<GoliothDevice> = {
             name: device.name,
             hardwareIds: device.hardware_id ? [device.hardware_id] : [],
             metadata: device.metadata,
             tagIds: device.tags,
           }
-          
+
           if (existingDevice) {
             // Update existing device
             await this.updateDevice(existingDevice.id, goliothDevice)
@@ -577,14 +683,14 @@ export class GoliothClient extends BaseIntegrationClient {
             // Create new device
             await this.createDevice(goliothDevice)
           }
-          
+
           result.devices_succeeded++
         } catch (error) {
           result.devices_failed++
           result.errors.push(`${device.name}: ${(error as Error).message}`)
         }
       }
-      
+
       return result
     })
   }
@@ -598,19 +704,29 @@ export class GoliothClient extends BaseIntegrationClient {
    */
   async getDevices(): Promise<GoliothDevice[]> {
     try {
-      console.log('[GoliothClient] Fetching devices for project:', this.projectId)
-      
-      const response = await this.httpClient.get(`/projects/${this.projectId}/devices`)
-      
+      console.log(
+        '[GoliothClient] Fetching devices for project:',
+        this.projectId
+      )
+
+      const response = await this.httpClient.get(
+        `/projects/${this.projectId}/devices`
+      )
+
       // Golioth API returns {list: [], page, perPage, total}
-      const data = response.data as { list: GoliothDevice[]; page: number; perPage: number; total: number }
-      
+      const data = response.data as {
+        list: GoliothDevice[]
+        page: number
+        perPage: number
+        total: number
+      }
+
       console.log('[GoliothClient] Fetched devices:', {
         count: data.list.length,
         page: data.page,
-        total: data.total
+        total: data.total,
       })
-      
+
       return data.list
     } catch (error) {
       console.error('[GoliothClient] Error fetching devices:', error)
@@ -625,7 +741,9 @@ export class GoliothClient extends BaseIntegrationClient {
    * Get a specific device by ID
    */
   async getDeviceById(deviceId: string): Promise<GoliothDevice> {
-    const response = await this.httpClient.get(`/projects/${this.projectId}/devices/${deviceId}`)
+    const response = await this.httpClient.get(
+      `/projects/${this.projectId}/devices/${deviceId}`
+    )
     const data = response.data as { data: GoliothDevice }
     return data.data
   }
@@ -646,25 +764,33 @@ export class GoliothClient extends BaseIntegrationClient {
         params.start = since
         params.end = new Date().toISOString()
       }
-      
+
       const response = await this.httpClient.get(
         `/projects/${this.projectId}/devices/${deviceId}/stream`,
-        { 
+        {
           params,
-          validateStatus: (status: number) => status === 200 || status === 404
+          validateStatus: (status: number) => status === 200 || status === 404,
         }
       )
-      
+
       if (response.status === 404) {
         // Telemetry endpoint not available for this device
         return []
       }
-      
-      const data = response.data as { list: GoliothTelemetry[]; page: number; perPage: number; total: number }
+
+      const data = response.data as {
+        list: GoliothTelemetry[]
+        page: number
+        perPage: number
+        total: number
+      }
       return data.list || []
     } catch (error) {
       // Telemetry fetching is optional - don't throw
-      console.warn(`[GoliothClient] Telemetry not available for device ${deviceId}:`, error)
+      console.warn(
+        `[GoliothClient] Telemetry not available for device ${deviceId}:`,
+        error
+      )
       return []
     }
   }
@@ -672,8 +798,13 @@ export class GoliothClient extends BaseIntegrationClient {
   /**
    * Create a new device in Golioth
    */
-  async createDevice(deviceData: Partial<GoliothDevice>): Promise<GoliothDevice> {
-    const response = await this.httpClient.post(`/projects/${this.projectId}/devices`, deviceData)
+  async createDevice(
+    deviceData: Partial<GoliothDevice>
+  ): Promise<GoliothDevice> {
+    const response = await this.httpClient.post(
+      `/projects/${this.projectId}/devices`,
+      deviceData
+    )
     const data = response.data as { data: GoliothDevice }
     return data.data
   }
@@ -685,7 +816,10 @@ export class GoliothClient extends BaseIntegrationClient {
     deviceId: string,
     deviceData: Partial<GoliothDevice>
   ): Promise<GoliothDevice> {
-    const response = await this.httpClient.put(`/projects/${this.projectId}/devices/${deviceId}`, deviceData)
+    const response = await this.httpClient.put(
+      `/projects/${this.projectId}/devices/${deviceId}`,
+      deviceData
+    )
     const data = response.data as { data: GoliothDevice }
     return data.data
   }
@@ -694,22 +828,33 @@ export class GoliothClient extends BaseIntegrationClient {
    * Delete a device from Golioth
    */
   async deleteDevice(deviceId: string): Promise<void> {
-    await this.httpClient.delete(`/projects/${this.projectId}/devices/${deviceId}`)
+    await this.httpClient.delete(
+      `/projects/${this.projectId}/devices/${deviceId}`
+    )
   }
 
   /**
    * Get project information from Golioth
    */
-  async getProjectInfo(): Promise<{ id: string; name: string; [key: string]: unknown }> {
+  async getProjectInfo(): Promise<{
+    id: string
+    name: string
+    [key: string]: unknown
+  }> {
     const response = await this.httpClient.get(`/projects/${this.projectId}`)
-    const data = response.data as { data: { id: string; name: string; [key: string]: unknown } }
+    const data = response.data as {
+      data: { id: string; name: string; [key: string]: unknown }
+    }
     return data.data
   }
 
   /**
    * Generate default alerts for a device based on its type
    */
-  private generateDefaultAlertsForDevice(deviceName: string, deviceType: string): Array<{
+  private generateDefaultAlertsForDevice(
+    deviceName: string,
+    deviceType: string
+  ): Array<{
     title: string
     message: string
     alert_type: string
@@ -733,16 +878,21 @@ export class GoliothClient extends BaseIntegrationClient {
       alert_type: 'device_offline',
       severity: 'medium',
       trigger_conditions: {
-        offline_duration_minutes: 15
+        offline_duration_minutes: 15,
       },
-      is_active: true
+      is_active: true,
     })
 
     // Type-specific alerts
     const lowerType = deviceType.toLowerCase()
     const lowerName = deviceName.toLowerCase()
-    
-    if (lowerType.includes('temperature') || lowerType.includes('temp') || lowerName.includes('temperature') || lowerName.includes('temp')) {
+
+    if (
+      lowerType.includes('temperature') ||
+      lowerType.includes('temp') ||
+      lowerName.includes('temperature') ||
+      lowerName.includes('temp')
+    ) {
       alerts.push({
         title: `${deviceName} - High Temperature`,
         message: `Temperature reading exceeds 80°F threshold`,
@@ -752,9 +902,9 @@ export class GoliothClient extends BaseIntegrationClient {
           metric: 'temperature',
           operator: '>',
           threshold: 80,
-          unit: '°F'
+          unit: '°F',
         },
-        is_active: true
+        is_active: true,
       })
     }
 
@@ -768,9 +918,9 @@ export class GoliothClient extends BaseIntegrationClient {
           metric: 'humidity',
           operator: '>',
           threshold: 85,
-          unit: '%'
+          unit: '%',
         },
-        is_active: true
+        is_active: true,
       })
     }
 
@@ -785,9 +935,9 @@ export class GoliothClient extends BaseIntegrationClient {
           operator: 'outside_range',
           min_threshold: 980,
           max_threshold: 1050,
-          unit: 'hPa'
+          unit: 'hPa',
         },
-        is_active: true
+        is_active: true,
       })
     }
 
@@ -801,38 +951,55 @@ export class GoliothClient extends BaseIntegrationClient {
           metric: 'battery_level',
           operator: '<',
           threshold: 20,
-          unit: '%'
+          unit: '%',
         },
-        is_active: true
+        is_active: true,
       })
     }
 
-    if (lowerType.includes('motion') || lowerType.includes('door') || lowerType.includes('security') || lowerName.includes('motion') || lowerName.includes('door') || lowerName.includes('security') || lowerName.includes('detector')) {
+    if (
+      lowerType.includes('motion') ||
+      lowerType.includes('door') ||
+      lowerType.includes('security') ||
+      lowerName.includes('motion') ||
+      lowerName.includes('door') ||
+      lowerName.includes('security') ||
+      lowerName.includes('detector')
+    ) {
       alerts.push({
         title: `${deviceName} - Motion Detected`,
         message: `Motion or activity detected by ${deviceName}`,
         alert_type: 'event',
         severity: 'low',
         trigger_conditions: {
-          event_type: 'motion_detected'
+          event_type: 'motion_detected',
         },
-        is_active: true
+        is_active: true,
       })
     }
 
-    if (lowerType.includes('smoke') || lowerType.includes('fire') || lowerType.includes('co2') || lowerName.includes('smoke') || lowerName.includes('fire') || lowerName.includes('co2')) {
+    if (
+      lowerType.includes('smoke') ||
+      lowerType.includes('fire') ||
+      lowerType.includes('co2') ||
+      lowerName.includes('smoke') ||
+      lowerName.includes('fire') ||
+      lowerName.includes('co2')
+    ) {
       alerts.push({
         title: `${deviceName} - Safety Alert`,
-        message: lowerType.includes('co2') ? `CO2 level exceeds safe threshold of 1000 ppm` : `Smoke or fire detected`,
+        message: lowerType.includes('co2')
+          ? `CO2 level exceeds safe threshold of 1000 ppm`
+          : `Smoke or fire detected`,
         alert_type: 'threshold',
         severity: 'critical',
         trigger_conditions: {
           metric: lowerType.includes('co2') ? 'co2_level' : 'smoke_level',
           operator: '>',
           threshold: lowerType.includes('co2') ? 1000 : 50,
-          unit: lowerType.includes('co2') ? 'ppm' : 'level'
+          unit: lowerType.includes('co2') ? 'ppm' : 'level',
         },
-        is_active: true
+        is_active: true,
       })
     }
 

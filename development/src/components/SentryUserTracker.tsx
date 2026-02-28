@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+import { createClient } from '@/lib/supabase/client'
 
 /**
  * Component that tracks authenticated users in Sentry
@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
  */
 export function SentryUserTracker() {
   useEffect(() => {
-    const supabase = createClient();
+    const supabase = createClient()
 
     // Get current user and set in Sentry
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -19,9 +19,9 @@ export function SentryUserTracker() {
           id: user.id,
           email: user.email,
           username: user.user_metadata?.username || user.email?.split('@')[0],
-        });
+        })
       }
-    });
+    })
 
     // Listen for auth state changes
     const {
@@ -31,17 +31,19 @@ export function SentryUserTracker() {
         Sentry.setUser({
           id: session.user.id,
           email: session.user.email,
-          username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-        });
+          username:
+            session.user.user_metadata?.username ||
+            session.user.email?.split('@')[0],
+        })
       } else if (event === 'SIGNED_OUT') {
-        Sentry.setUser(null);
+        Sentry.setUser(null)
       }
-    });
+    })
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+      subscription.unsubscribe()
+    }
+  }, [])
 
-  return null; // This component doesn't render anything
+  return null // This component doesn't render anything
 }

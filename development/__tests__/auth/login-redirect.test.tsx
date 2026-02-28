@@ -1,17 +1,18 @@
 /**
  * Test Suite for Issue #23: Login Redirect to Dashboard
- * 
+ *
  * Tests the authentication flow and redirect behavior after successful login
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import LoginPage from '@/app/auth/login/page'
 import { createClient } from '@/lib/supabase/client'
 
-// Mock Next.js router
+// Mock Next.js router and search params
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(),
 }))
 
 // Mock Supabase client
@@ -21,21 +22,32 @@ jest.mock('@/lib/supabase/client', () => ({
 
 describe('Issue #23: Login Redirect Flow', () => {
   let mockRouter: {
-    push: jest.Mock;
-    replace: jest.Mock;
-    refresh: jest.Mock;
-  };
+    push: jest.Mock
+    replace: jest.Mock
+    refresh: jest.Mock
+  }
   let mockSupabase: {
     auth: {
-      signInWithPassword: jest.Mock;
-      getSession: jest.Mock;
-      setSession: jest.Mock;
-    };
-  };
+      signInWithPassword: jest.Mock
+      getSession: jest.Mock
+      setSession: jest.Mock
+      mfa: {
+        getAuthenticatorAssuranceLevel: jest.Mock
+        listFactors: jest.Mock
+      }
+    }
+    from: jest.Mock
+  }
 
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks()
+
+    // Mock global fetch for branding endpoint
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: null }),
+    }) as jest.Mock
 
     // Mock router
     mockRouter = {
@@ -45,13 +57,34 @@ describe('Issue #23: Login Redirect Flow', () => {
     }
     ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
 
-    // Mock Supabase client
+    // Mock useSearchParams
+    ;(useSearchParams as jest.Mock).mockReturnValue({
+      get: jest.fn().mockReturnValue(null),
+    })
+
+    // Mock Supabase client — includes mfa and from() chain needed by login page
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: { password_change_required: false },
+      error: null,
+    })
+    const mockEq = jest.fn().mockReturnValue({ single: mockSingle })
+    const mockSelect = jest.fn().mockReturnValue({ eq: mockEq })
+    const mockFrom = jest.fn().mockReturnValue({ select: mockSelect })
+
     mockSupabase = {
       auth: {
         signInWithPassword: jest.fn(),
         getSession: jest.fn(),
         setSession: jest.fn(),
+        mfa: {
+          getAuthenticatorAssuranceLevel: jest.fn().mockResolvedValue({
+            data: { currentLevel: 'aal1', nextLevel: 'aal1' },
+          }),
+          listFactors: jest.fn().mockResolvedValue({ data: { totp: [] } }),
+        },
       },
+      from: mockFrom,
+      rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
     }
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
   })
@@ -72,15 +105,27 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
-      error: null,
+    // On mount: getSession returns null (no existing session)
+    // After login: getSession returns the new session
+    // Use default fallback for any extra calls (Suspense re-mounts)
+    let getSessionCallCount = 0
+    mockSupabase.auth.getSession.mockImplementation(() => {
+      getSessionCallCount++
+      // First call(s) are mount auth-check — return null
+      // After signInWithPassword is called, return the session
+      if (
+        mockSupabase.auth.signInWithPassword.mock.calls.length > 0 &&
+        getSessionCallCount > 1
+      ) {
+        return Promise.resolve({ data: { session: mockSession }, error: null })
+      }
+      return Promise.resolve({ data: { session: null }, error: null })
     })
 
     render(<LoginPage />)
 
-    // Fill in login form
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -89,9 +134,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.click(submitButton)
 
     // Wait for redirect
-    await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-    }, { timeout: 3000 })
+    await waitFor(
+      () => {
+        expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
+      },
+      { timeout: 5000 }
+    )
 
     // Verify session was checked
     expect(mockSupabase.auth.getSession).toHaveBeenCalled()
@@ -114,7 +162,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -122,9 +171,10 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } })
     fireEvent.click(submitButton)
 
-    // Should show error message
+    // Should show error message (may be split across Alert elements)
     await waitFor(() => {
-      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument()
+      const errorText = document.body.textContent || ''
+      expect(errorText.toLowerCase()).toContain('invalid email or password')
     })
 
     // Should NOT redirect
@@ -169,12 +219,15 @@ describe('Issue #23: Login Redirect Flow', () => {
     render(<LoginPage />)
 
     // Should NOT redirect if no session
-    await waitFor(() => {
-      expect(mockRouter.replace).not.toHaveBeenCalled()
-    }, { timeout: 1000 })
+    await waitFor(
+      () => {
+        expect(mockRouter.replace).not.toHaveBeenCalled()
+      },
+      { timeout: 1000 }
+    )
 
-    // Form should be visible
-    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+    // Form should be visible after branding loads
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
   })
 
   /**
@@ -192,14 +245,24 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
-      error: null,
+    // On mount: getSession returns null (no existing session)
+    // After login: getSession returns the new session
+    let tc5CallCount = 0
+    mockSupabase.auth.getSession.mockImplementation(() => {
+      tc5CallCount++
+      if (
+        mockSupabase.auth.signInWithPassword.mock.calls.length > 0 &&
+        tc5CallCount > 1
+      ) {
+        return Promise.resolve({ data: { session: mockSession }, error: null })
+      }
+      return Promise.resolve({ data: { session: null }, error: null })
     })
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -207,14 +270,15 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.click(submitButton)
 
-    await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
-      expect(mockSupabase.auth.getSession).toHaveBeenCalled()
-    })
+    await waitFor(
+      () => {
+        expect(mockRouter.push).toHaveBeenCalledWith('/dashboard')
+      },
+      { timeout: 5000 }
+    )
 
-    // Session should be established
-    const { data } = await mockSupabase.auth.getSession()
-    expect(data.session).toBeTruthy()
+    // Verify login was attempted
+    expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalled()
   })
 
   /**
@@ -279,7 +343,8 @@ describe('Issue #23: Login Redirect Flow', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -308,15 +373,16 @@ describe('Issue #23: Login Redirect Flow', () => {
       error: null,
     })
 
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: { session: mockSession },
-      error: null,
-    })
+    // First getSession (on mount) returns null, second (after login) returns session
+    mockSupabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockResolvedValueOnce({ data: { session: mockSession }, error: null })
 
     render(<LoginPage />)
 
-    screen.getByLabelText(/remember me/i) // Verify it exists
-    const emailInput = screen.getByLabelText(/email address/i)
+    // Wait for branding to load and form to render
+    const emailInput = await screen.findByLabelText(/email address/i)
+    screen.getByLabelText(/keep me signed in/i) // Verify it exists
     const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
@@ -325,9 +391,12 @@ describe('Issue #23: Login Redirect Flow', () => {
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.click(submitButton)
 
-    await waitFor(() => {
-      // Should call setSession when remember me is NOT checked
-      expect(mockSupabase.auth.setSession).toHaveBeenCalled()
-    })
+    await waitFor(
+      () => {
+        // Should call setSession when remember me is NOT checked
+        expect(mockSupabase.auth.setSession).toHaveBeenCalled()
+      },
+      { timeout: 3000 }
+    )
   })
 })

@@ -10,7 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { RefreshCw, Download, Upload, ArrowLeftRight, Loader2 } from 'lucide-react'
+import {
+  RefreshCw,
+  Download,
+  Upload,
+  ArrowLeftRight,
+  Loader2,
+} from 'lucide-react'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { toast } from 'sonner'
 
@@ -20,7 +26,11 @@ interface Props {
   onSyncComplete?: () => void
 }
 
-export function GoliothSyncButton({ integrationId, organizationId, onSyncComplete }: Props) {
+export function GoliothSyncButton({
+  integrationId,
+  organizationId,
+  onSyncComplete,
+}: Props) {
   const [syncing, setSyncing] = useState(false)
   const [operation, setOperation] = useState<string | null>(null)
 
@@ -59,10 +69,14 @@ export function GoliothSyncButton({ integrationId, organizationId, onSyncComplet
 
   const getOperationLabel = () => {
     switch (operation) {
-      case 'import': return 'Importing...'
-      case 'export': return 'Exporting...'
-      case 'bidirectional': return 'Syncing...'
-      default: return 'Syncing...'
+      case 'import':
+        return 'Importing...'
+      case 'export':
+        return 'Exporting...'
+      case 'bidirectional':
+        return 'Syncing...'
+      default:
+        return 'Syncing...'
     }
   }
 
@@ -86,21 +100,21 @@ export function GoliothSyncButton({ integrationId, organizationId, onSyncComplet
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Sync Direction</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={() => handleSync('import')}>
           <Download className="mr-2 h-4 w-4" />
           Import from Golioth
           <span className="ml-auto text-xs text-muted-foreground">→</span>
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={() => handleSync('export')}>
           <Upload className="mr-2 h-4 w-4" />
           Export to Golioth
           <span className="ml-auto text-xs text-muted-foreground">←</span>
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem onClick={() => handleSync('bidirectional')}>
           <ArrowLeftRight className="mr-2 h-4 w-4" />
           Bidirectional Sync

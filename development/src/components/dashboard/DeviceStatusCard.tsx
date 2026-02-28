@@ -34,27 +34,34 @@ export function DeviceStatusCard() {
           params.organization_id = user.organizationId
         }
         // If super admin with no org specified, fetch all devices
-        
-        const result = await fetchEdgeFunction('devices', params) as { devices?: Array<{
-          id: string;
-          name?: string;
-          device_name?: string;
-          status?: string;
-          last_seen?: string;
-          updated_at?: string;
-          battery_level?: number;
-          signal_strength?: number;
-        }> }
-        
-        const deviceStatuses = result.devices?.map((device) => ({
-          id: device.id,
-          name: device.name || device.device_name || 'Unknown Device',
-          status: (device.status || 'offline') as 'online' | 'offline' | 'warning',
-          lastSeen: device.last_seen || device.updated_at || new Date().toISOString(),
-          batteryLevel: device.battery_level,
-          signalStrength: device.signal_strength
-        })) || []
-        
+
+        const result = (await fetchEdgeFunction('devices', params)) as {
+          devices?: Array<{
+            id: string
+            name?: string
+            device_name?: string
+            status?: string
+            last_seen?: string
+            updated_at?: string
+            battery_level?: number
+            signal_strength?: number
+          }>
+        }
+
+        const deviceStatuses =
+          result.devices?.map((device) => ({
+            id: device.id,
+            name: device.name || device.device_name || 'Unknown Device',
+            status: (device.status || 'offline') as
+              | 'online'
+              | 'offline'
+              | 'warning',
+            lastSeen:
+              device.last_seen || device.updated_at || new Date().toISOString(),
+            batteryLevel: device.battery_level,
+            signalStrength: device.signal_strength,
+          })) || []
+
         setDevices(deviceStatuses)
       } catch (error) {
         console.error('Error fetching devices:', error)
@@ -65,8 +72,8 @@ export function DeviceStatusCard() {
             status: 'online',
             lastSeen: '2 minutes ago',
             batteryLevel: 85,
-            signalStrength: 92
-          }
+            signalStrength: 92,
+          },
         ])
       } finally {
         setLoading(false)
@@ -83,7 +90,7 @@ export function DeviceStatusCard() {
           <CardTitle>Device Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-4">Loading devices...</div>
+          <div className="py-4 text-center">Loading devices...</div>
         </CardContent>
       </Card>
     )
@@ -97,18 +104,25 @@ export function DeviceStatusCard() {
       <CardContent>
         <div className="space-y-3">
           {devices.slice(0, 5).map((device) => (
-            <div key={device.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div
+              key={device.id}
+              className="flex items-center justify-between rounded-lg border p-3"
+            >
               <div className="flex items-center space-x-3">
-                <div 
-                  className={`w-3 h-3 rounded-full ${
-                    device.status === 'online' ? 'bg-green-500' :
-                    device.status === 'warning' ? 'bg-yellow-500' : 
-                    'bg-red-500'
+                <div
+                  className={`h-3 w-3 rounded-full ${
+                    device.status === 'online'
+                      ? 'bg-green-500'
+                      : device.status === 'warning'
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
                   }`}
                 />
                 <div>
                   <p className="font-medium">{device.name}</p>
-                  <p className="text-sm text-muted-foreground">Last seen: {device.lastSeen}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Last seen: {device.lastSeen}
+                  </p>
                 </div>
               </div>
             </div>

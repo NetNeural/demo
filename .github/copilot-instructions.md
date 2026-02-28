@@ -71,11 +71,12 @@ curl http://127.0.0.1:54321/health
 
 ## Environment & Secrets
 
-### Current State ✅ SECURED (November 13, 2025)
+### Current State ✅ 3-Environment Setup (February 24, 2026)
 ✅ **Completed:** All hardcoded secrets removed from repo  
-✅ **Completed:** 14 secrets managed via GitHub Secrets  
-✅ **Completed:** Full GitHub CLI access verified (`gh secret list/set/delete`)  
-✅ **Completed:** Code refactored to use `process.env`
+✅ **Completed:** 22 secrets managed via GitHub Secrets (PROD_, STAGING_, DEV_ prefixes)  
+✅ **Completed:** 3 Supabase projects configured (Production, Staging, Development)  
+✅ **Completed:** 3 GitHub Actions workflows (deploy-production, deploy-staging, deploy-dev)  
+✅ **Completed:** Git branch strategy (main → prod, staging → stage, develop → dev)
 
 ### Guidelines for AI Assistants
 - **DO NOT** commit secrets to any file
@@ -88,14 +89,10 @@ curl http://127.0.0.1:54321/health
   - `development/docs/SUPABASE_GITHUB_SECRETS_STRATEGY.md` - Best practices
 
 ### Secrets Management
-- **GitHub Secrets:** 14 total (Supabase, Sentry, Golioth, GitHub)
+- **GitHub Secrets:** 22 total (4 PROD_, 7 STAGING_, 4 DEV_, 7 shared)
 - **Local Development:** `.env.local` (gitignored) with local Supabase demo keys
-- **Production:** `.env.production` with placeholders pointing to GitHub secrets
+- **Environment Files:** `.env.production`, `.env.staging`, `.env.development`
 - **Rotation Schedule:** Tier 1 (30 days), Tier 2 (90 days) - see SECRETS_INVENTORY.md
-
-**Optional Actions:**
-- Rotate 3-month-old Supabase secrets (not urgent)
-- Remove duplicate secrets (SUPABASE_ANON_KEY, SUPABASE_URL)
 
 ---
 
@@ -115,15 +112,30 @@ curl http://127.0.0.1:54321/health
 
 ## Deployment
 
-### Current Strategy
-**Production:** GitHub Pages (static export)  
-**Works:** Proven, simple, fast  
-**Revisit Later:** Preview deployments, staging environments
+### 3-Environment Architecture ✅ IMPLEMENTED (February 24, 2026)
+
+| Environment | Name | Domain | Branch | Supabase Ref | Workflow |
+|---|---|---|---|---|---|
+| **Production** | Sentinel | sentinel.netneural.ai | `main` | `bldojxpockljyivldxwf` | `deploy-production.yml` |
+| **Staging** | Demo-Stage | demo-stage.netneural.ai | `staging` | `atgbmxicqikmapfqouco` | `deploy-staging.yml` |
+| **Development** | Demo | demo.netneural.ai | `develop` | `tsomafkalaoarnuwgdyu` | `deploy-dev.yml` |
+
+**Promotion Flow:** `develop` → `staging` → `main`  
+**Branching:** Feature branches → `develop` → `staging` → `main`
+
+### GitHub Secrets (22 total, grouped by prefix)
+- **PROD_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID
+- **STAGING_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID, SUPABASE_DB_PASSWORD, SUPABASE_ACCESS_TOKEN, GOLIOTH_API_KEY
+- **DEV_**: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PROJECT_ID
+- **Shared**: SUPABASE_ACCESS_TOKEN, OPENAI_API_KEY, TWILIO_* (3), NEXT_PUBLIC_SUPABASE_* (2 legacy)
 
 ### Guidelines for AI Assistants
 - `npm run build` must succeed before deploy
 - Static export only (no server-side runtime)
 - All dynamic features use Supabase/Edge Functions
+- **DO** target the correct environment for changes
+- **DO** use the correct branch for the target environment
+- **DO NOT** mix environment configurations (e.g., staging keys in prod)
 
 ---
 
@@ -257,13 +269,32 @@ CREATE INDEX idx_devices_user ON devices(user_id);
 
 ---
 
+## Planning Status (Active)
+
+### ✅ Completed
+1. **Process Management** - VS Code debugging integrated
+2. **Secrets Management** - GitHub Secrets + comprehensive docs
+3. **Workspace Filtering** - Multi-root workspace implemented
+4. **Architecture Documentation** - Clear A vs B guidance
+
+### 🔍 Needs Planning Session
+5. **Testing Strategy** - Coverage requirements, test types, blocking criteria
+6. **CI/CD Quality Gates** - Progressive enforcement strategy
+
+### ⏸️ Low Priority (Revisit Later)
+7. **Deployment Preview Strategy** (Current GitHub Pages works)
+8. **Monorepo Build Tooling** (Single active project, not needed yet)
+9. **Microservices Integration** (Strategic business decision)
+
+---
+
 ## Known Pain Points (Planning Status)
 
 1. ✅ **Process Management** - SOLVED (VS Code debugging)
 2. ✅ **Architecture Duality** - DOCUMENTED (this file)
 3. ✅ **Secrets Management** - SECURED (GitHub Secrets + docs)
 4. ✅ **Monorepo Filtering** - IMPLEMENTED (multi-root workspace)
-5. ⏸️ **Deployment Pipeline** - WORKS, revisit later
+5. ✅ **Deployment Pipeline** - IMPLEMENTED (3-env: dev/staging/prod)
 6. 🔍 **Testing Infrastructure** - NEEDS SESSION (coverage, CI gates)
 7. 🔍 **CI/CD Quality Gates** - NEEDS EVALUATION (progressive enforcement)
 8. 📋 **Microservices Strategy** - REFERENCE ONLY (strategic decision)
@@ -317,6 +348,12 @@ npm run build
 ---
 
 ## Version History
+- **2026-02-24:** 3-environment setup implemented (Dev/Staging/Prod)
+  - 3 Supabase projects: tsomafkalaoarnuwgdyu (dev), atgbmxicqikmapfqouco (staging), bldojxpockljyivldxwf (prod)
+  - 3 GitHub Actions workflows: deploy-dev.yml, deploy-staging.yml, deploy-production.yml
+  - 22 GitHub secrets (DEV_, STAGING_, PROD_ prefixes)
+  - Git branches: develop → staging → main
+  - Domains: demo.netneural.ai, demo-stage.netneural.ai, sentinel.netneural.ai
 - **2025-11-13 (Morning):** Initial creation, debugging setup integrated
 - **2025-11-13 (Afternoon):** Secrets management completed, workspace filtering implemented
   - Added 14 secrets to GitHub (GOLIOTH_API_KEY, GITHUB_TOKEN, etc.)

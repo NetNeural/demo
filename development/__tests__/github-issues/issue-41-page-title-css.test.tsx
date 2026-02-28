@@ -1,6 +1,6 @@
 /**
  * Test Suite for GitHub Issue #41 - Page Title CSS Alignment
- * 
+ *
  * Tests:
  * - Visual regression: Page title alignment across all pages
  * - Consistency: Same padding/margins across dashboard sections
@@ -235,7 +235,9 @@ describe('Issue #41 - Page Title Alignment', () => {
         alerts: 'pl-6',
       }
 
-      const isConsistent = Object.values(afterFix).every((val) => val === 'pl-6')
+      const isConsistent = Object.values(afterFix).every(
+        (val) => val === 'pl-6'
+      )
 
       expect(isConsistent).toBe(true)
     })

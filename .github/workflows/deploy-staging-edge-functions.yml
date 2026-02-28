@@ -10,14 +10,27 @@ on:
         type: choice
         options:
           - all
+          - devices
+          - alerts
+          - organizations
+          - dashboard-stats
           - device-sync
           - auto-sync-cron
           - integration-webhook
           - members
+          - create-user
           - thresholds
           - sensor-threshold-evaluator
           - send-alert-email
+          - send-alert-notifications
           - ai-insights
+          - transfer-device
+          - feedback-submit
+          - feedback-sync
+          - feedback-comments
+          - org-branding
+          - reseller-agreement-apply
+          - threshold-ai-recommend
 
 jobs:
   deploy:
@@ -39,14 +52,27 @@ jobs:
         run: |
           if [ "${{ inputs.function }}" == "all" ]; then
             echo "Deploying all edge functions..."
+            npx supabase functions deploy devices --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy alerts --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy organizations --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy dashboard-stats --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy device-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy auto-sync-cron --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy integration-webhook --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy members --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy create-user --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy thresholds --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy sensor-threshold-evaluator --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy send-alert-email --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy send-alert-notifications --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy ai-insights --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy transfer-device --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-submit --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-sync --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy feedback-comments --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy org-branding --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy reseller-agreement-apply --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy threshold-ai-recommend --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt

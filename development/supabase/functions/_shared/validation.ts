@@ -16,14 +16,14 @@ export const schemas = {
   uuid: z.string().uuid('Invalid UUID format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   url: z.string().url('Invalid URL format'),
-  
+
   // Entity IDs
   organizationId: z.string().uuid('Invalid organization ID'),
   integrationId: z.string().uuid('Invalid integration ID'),
   deviceId: z.string().uuid('Invalid device ID'),
   userId: z.string().uuid('Invalid user ID'),
   alertId: z.string().uuid('Invalid alert ID'),
-  
+
   // Pagination
   pagination: z.object({
     limit: z.number().int().min(1).max(500).default(50),
@@ -33,19 +33,23 @@ export const schemas = {
   // Common query params
   queryParams: {
     organizationId: z.string().uuid().optional(),
-    limit: z.string().transform((val) => parseInt(val, 10)).pipe(
-      z.number().int().min(1).max(500)
-    ).optional(),
-    offset: z.string().transform((val) => parseInt(val, 10)).pipe(
-      z.number().int().min(0)
-    ).optional(),
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(500))
+      .optional(),
+    offset: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(0))
+      .optional(),
   },
 
   // Status types
   deviceStatus: z.enum(['online', 'offline', 'unknown', 'maintenance']),
   alertStatus: z.enum(['new', 'acknowledged', 'resolved']),
   integrationStatus: z.enum(['active', 'inactive', 'error', 'testing']),
-  
+
   // User roles
   userRole: z.enum(['super_admin', 'org_owner', 'org_admin', 'user', 'viewer']),
 }
@@ -189,10 +193,7 @@ export async function validateBody<T>(
 /**
  * Validate URL search params with Zod schema
  */
-export function validateSearchParams<T>(
-  url: URL,
-  schema: z.ZodSchema<T>
-): T {
+export function validateSearchParams<T>(url: URL, schema: z.ZodSchema<T>): T {
   const params = Object.fromEntries(url.searchParams)
   try {
     return schema.parse(params)
@@ -213,9 +214,12 @@ export function validatePathParam(
   paramName: string
 ): unknown {
   if (!value) {
-    throw new ValidationError(`Missing required path parameter: ${paramName}`, [])
+    throw new ValidationError(
+      `Missing required path parameter: ${paramName}`,
+      []
+    )
   }
-  
+
   try {
     return schema.parse(value)
   } catch (error) {
@@ -250,7 +254,10 @@ export class ValidationError extends Error {
 /**
  * Safe string to number conversion with validation
  */
-export function parseIntParam(value: string | null, defaultValue: number = 0): number {
+export function parseIntParam(
+  value: string | null,
+  defaultValue: number = 0
+): number {
   if (!value) return defaultValue
   const parsed = parseInt(value, 10)
   return isNaN(parsed) ? defaultValue : parsed
@@ -259,7 +266,10 @@ export function parseIntParam(value: string | null, defaultValue: number = 0): n
 /**
  * Safe boolean param parsing
  */
-export function parseBooleanParam(value: string | null, defaultValue: boolean = false): boolean {
+export function parseBooleanParam(
+  value: string | null,
+  defaultValue: boolean = false
+): boolean {
   if (!value) return defaultValue
   return value === 'true' || value === '1'
 }

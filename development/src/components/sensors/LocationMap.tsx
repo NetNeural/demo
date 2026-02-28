@@ -11,12 +11,12 @@ interface LocationMapProps {
   installedAt?: string
 }
 
-function LocationMap({ 
-  latitude, 
-  longitude, 
-  locationName, 
+function LocationMap({
+  latitude,
+  longitude,
+  locationName,
   deviceName,
-  installedAt 
+  installedAt,
 }: LocationMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<any>(null)
@@ -43,7 +43,8 @@ function LocationMap({
         await new Promise((resolve, reject) => {
           const script = document.createElement('script')
           script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-          script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
+          script.integrity =
+            'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
           script.crossOrigin = ''
           script.onload = resolve
           script.onerror = reject
@@ -65,7 +66,8 @@ function LocationMap({
 
       // Add OpenStreetMap tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
       }).addTo(map)
 
@@ -77,7 +79,7 @@ function LocationMap({
           ${installedAt ? `<br/><span style="color: #666; font-size: 11px;">📍 ${installedAt}</span>` : ''}
         </div>
       `
-      
+
       L.marker([latitude, longitude])
         .addTo(map)
         .bindPopup(popupContent)
@@ -103,9 +105,9 @@ function LocationMap({
   }, [latitude, longitude, locationName, deviceName, installedAt])
 
   return (
-    <div 
-      ref={mapRef} 
-      className="h-[300px] w-full rounded-lg overflow-hidden border border-border"
+    <div
+      ref={mapRef}
+      className="h-[300px] w-full overflow-hidden rounded-lg border border-border"
       style={{ zIndex: 0 }}
     />
   )

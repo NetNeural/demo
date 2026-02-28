@@ -7,7 +7,9 @@ All sidebar navigation pages now respect the currently selected organization con
 ## Pages Updated
 
 ### 1. **Dashboard (`/dashboard/page.tsx`)** ✅
+
 **Changes:**
+
 - Added `useOrganization()` hook
 - Displays organization name in page header
 - Shows message if no organization selected
@@ -20,7 +22,9 @@ All sidebar navigation pages now respect the currently selected organization con
 ---
 
 ### 2. **Devices Page (`/dashboard/devices/page.tsx`)** ✅
+
 **Changes:**
+
 - Made client component with `'use client'` directive
 - Added `useOrganization()` hook
 - Shows "No organization selected" message when none selected
@@ -32,7 +36,9 @@ All sidebar navigation pages now respect the currently selected organization con
 ---
 
 ### 3. **Alerts Page (`/dashboard/alerts/page.tsx`)** ✅
+
 **Changes:**
+
 - Made client component with `'use client'` directive
 - Added `useOrganization()` hook
 - Shows "No organization selected" message when none selected
@@ -44,7 +50,9 @@ All sidebar navigation pages now respect the currently selected organization con
 ---
 
 ### 4. **Analytics Page (`/dashboard/analytics/page.tsx`)** ✅
+
 **Changes:**
+
 - Added `useOrganization()` hook
 - Shows "No organization selected" message when none selected
 - Organization name displayed in all headers
@@ -59,6 +67,7 @@ All sidebar navigation pages now respect the currently selected organization con
 ## User Experience Flow
 
 ### Before Changes:
+
 ```
 User logs in → Sees ALL data from ALL organizations
 Changes organization switcher → Nothing changes, still sees ALL data
@@ -66,6 +75,7 @@ Security risk: Cross-organization data exposure
 ```
 
 ### After Changes:
+
 ```
 User logs in → Organization auto-selected from context
 Sees ONLY data from that organization
@@ -76,6 +86,7 @@ Security: Data properly isolated by organization
 ## Organization Context Behavior
 
 ### When Organization is Selected:
+
 - ✅ Dashboard shows organization-specific stats
 - ✅ Devices page ready to filter (components need organizationId)
 - ✅ Alerts page ready to filter (components need organizationId)
@@ -83,6 +94,7 @@ Security: Data properly isolated by organization
 - ✅ All pages refetch data when organization changes
 
 ### When No Organization is Selected:
+
 - ℹ️ Dashboard shows "Select an organization" message
 - ℹ️ Devices shows "Select an organization" message
 - ℹ️ Alerts shows "Select an organization" message
@@ -92,16 +104,19 @@ Security: Data properly isolated by organization
 ## Security Improvements
 
 ### ✅ Data Isolation
+
 - Each page now checks for `currentOrganization`
 - No data displayed without organization context
 - Prevents accidental cross-org data access
 
 ### ✅ Context Awareness
+
 - All pages use `useOrganization()` hook
 - Organization name displayed in headers
 - User always knows which org context they're viewing
 
 ### ✅ Automatic Updates
+
 - When user switches organizations, pages re-render
 - Analytics page refetches data (useEffect dependency on `currentOrganization`)
 - Stats automatically update via context
@@ -109,31 +124,33 @@ Security: Data properly isolated by organization
 ## Next Steps for Complete Integration
 
 ### 1. Update Component Props
+
 The following components need to accept and use `organizationId`:
 
 ```typescript
 // DevicesList component
 interface DevicesListProps {
-  organizationId: string; // Add this
+  organizationId: string // Add this
 }
 
-// AlertsList component  
+// AlertsList component
 interface AlertsListProps {
-  organizationId: string; // Add this
+  organizationId: string // Add this
 }
 
 // DevicesHeader component
 interface DevicesHeaderProps {
-  organizationId: string; // Add this
+  organizationId: string // Add this
 }
 
 // AlertsHeader component
 interface AlertsHeaderProps {
-  organizationId: string; // Add this
+  organizationId: string // Add this
 }
 ```
 
 ### 2. Update API Calls
+
 All data fetching should include organizationId:
 
 ```typescript
@@ -145,6 +162,7 @@ const devices = await fetch(`/api/devices?organizationId=${organizationId}`)
 ```
 
 ### 3. Update Database Queries
+
 Add WHERE clauses to all queries:
 
 ```sql
@@ -156,6 +174,7 @@ SELECT * FROM devices WHERE organization_id = $1;
 ```
 
 ### 4. Add RLS Policies
+
 Row Level Security policies should enforce organization isolation:
 
 ```sql
@@ -163,8 +182,8 @@ CREATE POLICY "Users can only see their org's devices"
 ON devices FOR SELECT
 USING (
   organization_id IN (
-    SELECT organization_id 
-    FROM organization_members 
+    SELECT organization_id
+    FROM organization_members
     WHERE user_id = auth.uid()
   )
 );
@@ -187,20 +206,23 @@ USING (
 ## Summary
 
 **Files Modified:** 4
+
 - `/app/dashboard/page.tsx` - Main dashboard with org-scoped stats
 - `/app/dashboard/devices/page.tsx` - Devices page with org check
-- `/app/dashboard/alerts/page.tsx` - Alerts page with org check  
+- `/app/dashboard/alerts/page.tsx` - Alerts page with org check
 - `/app/dashboard/analytics/page.tsx` - Analytics with org headers
 
 **Lines Changed:** ~100 lines total
 
-**Security Status:** 
+**Security Status:**
+
 - ✅ UI Layer: Pages check organization context
 - ⏳ Component Layer: Components need organizationId props
 - ⏳ API Layer: Endpoints need organization filtering
 - ⏳ Database Layer: RLS policies needed
 
 **User Experience:**
+
 - ✅ Clear messaging when no org selected
 - ✅ Organization name visible in headers
 - ✅ Automatic updates when switching orgs

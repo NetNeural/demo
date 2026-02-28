@@ -1,4 +1,4 @@
-const { Client } = require('pg');
+const { Client } = require('pg')
 
 async function compareGoliothSettings() {
   const client = new Client({
@@ -6,12 +6,12 @@ async function compareGoliothSettings() {
     port: 54322,
     database: 'postgres',
     user: 'postgres',
-    password: 'postgres'
-  });
+    password: 'postgres',
+  })
 
   try {
-    await client.connect();
-    
+    await client.connect()
+
     // Get integration settings
     const integrationResult = await client.query(`
       SELECT 
@@ -29,8 +29,8 @@ async function compareGoliothSettings() {
         updated_at
       FROM device_integrations 
       WHERE integration_type = 'golioth'
-    `);
-    
+    `)
+
     // Get device count
     const deviceCountResult = await client.query(`
       SELECT 
@@ -41,8 +41,8 @@ async function compareGoliothSettings() {
         MAX(last_seen) as most_recent_seen
       FROM devices 
       WHERE integration_id IN (SELECT id FROM device_integrations WHERE integration_type = 'golioth')
-    `);
-    
+    `)
+
     // Get sample devices
     const devicesResult = await client.query(`
       SELECT 
@@ -56,22 +56,21 @@ async function compareGoliothSettings() {
       FROM devices 
       WHERE integration_id IN (SELECT id FROM device_integrations WHERE integration_type = 'golioth')
       LIMIT 5
-    `);
-    
-    console.log('\n=== LOCAL GOLIOTH INTEGRATION SETTINGS ===\n');
-    console.log(JSON.stringify(integrationResult.rows[0], null, 2));
-    
-    console.log('\n=== LOCAL DEVICE COUNT ===\n');
-    console.log(JSON.stringify(deviceCountResult.rows[0], null, 2));
-    
-    console.log('\n=== LOCAL SAMPLE DEVICES ===\n');
-    console.log(JSON.stringify(devicesResult.rows, null, 2));
-    
+    `)
+
+    console.log('\n=== LOCAL GOLIOTH INTEGRATION SETTINGS ===\n')
+    console.log(JSON.stringify(integrationResult.rows[0], null, 2))
+
+    console.log('\n=== LOCAL DEVICE COUNT ===\n')
+    console.log(JSON.stringify(deviceCountResult.rows[0], null, 2))
+
+    console.log('\n=== LOCAL SAMPLE DEVICES ===\n')
+    console.log(JSON.stringify(devicesResult.rows, null, 2))
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', error.message)
   } finally {
-    await client.end();
+    await client.end()
   }
 }
 
-compareGoliothSettings();
+compareGoliothSettings()

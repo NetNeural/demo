@@ -4,7 +4,8 @@
 
 The edge function code fixes have been committed to the repository, but **the edge functions are not being deployed automatically** because GitHub Actions deployment workflow has Supabase CLI steps commented out.
 
-**Impact:** 
+**Impact:**
+
 - Frontend changes deploy successfully ✅
 - Edge function changes do NOT deploy ❌
 - This is why the 500 error persists despite fixing the code
@@ -34,6 +35,7 @@ export SUPABASE_ACCESS_TOKEN='your-token-here'
 ### Option 3: Fix GitHub Actions (Long-term Solution)
 
 Uncomment and configure these secrets in GitHub:
+
 - STAGING_SUPABASE_PROJECT_ID
 - STAGING_SUPABASE_ACCESS_TOKEN
 
@@ -41,7 +43,7 @@ Then uncomment lines 62-90 in `.github/workflows/deploy-staging.yml`
 
 ## 📝 What's Been Fixed (But Not Deployed)
 
-1. ✅ **Parameter name mismatch** - `name` → `fullName` 
+1. ✅ **Parameter name mismatch** - `name` → `fullName`
 2. ✅ **Super admin bypass** - `super_admin` users skip org membership check
 3. ✅ **Comprehensive logging** - Debug logs at every step
 4. ✅ **Error handling** - Better error messages
@@ -60,6 +62,7 @@ Test the complete flow at https://demo-stage.netneural.ai/dashboard/organization
 8. ✅ User appears in members list
 
 Console logs should show:
+
 ```
 🔵 Members API called
 ✅ Super admin detected - granting owner-level access

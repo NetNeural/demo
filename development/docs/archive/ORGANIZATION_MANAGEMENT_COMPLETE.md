@@ -11,6 +11,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ### 1. Create Organization Dialog (`src/components/organizations/CreateOrganizationDialog.tsx`)
 
 **Features:**
+
 - Form with validation for name, slug, description, subscription tier
 - Auto-generates slug from organization name
 - Client-side validation (required fields, length limits, format checks)
@@ -19,18 +20,20 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 - Integrates with OrganizationContext to refresh and auto-switch to new org
 
 **Usage:**
+
 ```tsx
 <CreateOrganizationDialog
   onSuccess={(newOrgId) => {
     // Refresh organizations and switch to new one
     refreshOrganizations().then(() => {
-      switchOrganization(newOrgId);
-    });
+      switchOrganization(newOrgId)
+    })
   }}
 />
 ```
 
 **Validation Rules:**
+
 - Name: 3-100 characters, required
 - Slug: 3-50 characters, lowercase letters/numbers/hyphens only, required, unique
 - Description: 0-500 characters, optional
@@ -41,6 +44,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ### 2. Edit Organization Dialog (`src/components/organizations/EditOrganizationDialog.tsx`)
 
 **Features:**
+
 - Edit organization name, description, subscription tier, active status
 - Slug is read-only (cannot be changed after creation)
 - Form validation same as create dialog
@@ -49,17 +53,19 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 - Triggers refresh callback on success
 
 **Usage:**
+
 ```tsx
 <EditOrganizationDialog
   organization={currentOrganization}
   onSuccess={() => {
     // Refresh organization list
-    refreshOrganizations();
+    refreshOrganizations()
   }}
 />
 ```
 
 **Permissions:**
+
 - Super admins can edit any organization
 - Organization owners can edit their own organization
 - Other users cannot edit organizations
@@ -71,12 +77,14 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 **Endpoints:**
 
 #### GET `/functions/v1/organizations`
+
 - Returns list of organizations user has access to
 - Super admins see ALL organizations
 - Regular users see only their organization (RLS enforced)
 - Includes enriched data: userCount, deviceCount, alertCount
 
 **Response:**
+
 ```json
 {
   "organizations": [
@@ -102,12 +110,14 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ```
 
 #### POST `/functions/v1/organizations`
+
 - Create new organization
 - **Permission:** Super admins only
 - Validates slug format and uniqueness
 - Auto-creates organization with default settings
 
 **Request Body:**
+
 ```json
 {
   "name": "Acme Manufacturing",
@@ -118,6 +128,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ```
 
 **Response:**
+
 ```json
 {
   "organization": {
@@ -130,11 +141,13 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ```
 
 #### PATCH `/functions/v1/organizations/{id}`
+
 - Update existing organization
 - **Permissions:** Super admins OR organization owners
 - Cannot change slug (immutable)
 
 **Request Body:**
+
 ```json
 {
   "name": "Updated Name",
@@ -145,6 +158,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 ```
 
 #### DELETE `/functions/v1/organizations/{id}`
+
 - Soft delete organization (marks as inactive)
 - **Permission:** Super admins only
 - Does NOT hard delete (preserves data)
@@ -156,6 +170,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 **Updated Functions:**
 
 #### `fetchUserOrganizations()`
+
 - **Before:** Mock data hardcoded in context
 - **After:** Fetches from `GET /functions/v1/organizations` edge function
 - Includes proper error handling and loading states
@@ -163,6 +178,7 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 - Persists selection to localStorage
 
 #### `fetchOrganizationStats()`
+
 - **Before:** Mock stats calculated from cached data
 - **After:** Fetches from `GET /functions/v1/dashboard-stats` edge function
 - Falls back to cached data if API call fails
@@ -170,14 +186,17 @@ Implemented full organization CRUD (Create, Read, Update, Delete) functionality 
 
 **Authentication:**
 All API calls include:
+
 ```typescript
-const { data: { session } } = await supabase.auth.getSession();
+const {
+  data: { session },
+} = await supabase.auth.getSession()
 
 fetch(url, {
   headers: {
-    'Authorization': `Bearer ${session.access_token}`,
+    Authorization: `Bearer ${session.access_token}`,
     'Content-Type': 'application/json',
-  }
+  },
 })
 ```
 
@@ -186,12 +205,14 @@ fetch(url, {
 ### 5. Organization Switcher Integration
 
 **Updated `OrganizationSwitcher.tsx`:**
+
 - Replaced hardcoded "Create Organization" menu item with `<CreateOrganizationDialog />`
 - Only shows create button for super admins (`isSuperAdmin` check)
 - Auto-refreshes organization list after creation
 - Auto-switches to newly created organization
 
 **User Flow:**
+
 1. Super admin clicks organization dropdown in sidebar
 2. Sees "Create Organization" button at bottom
 3. Clicks button → dialog opens
@@ -208,24 +229,28 @@ fetch(url, {
 ### Frontend (Client-Side Only)
 
 **Technology:**
+
 - Next.js 15.5.5 with App Router
 - React 18.3.1 (client components only)
 - 100% static generation (no server-side rendering for auth pages)
 - Can be hosted on GitHub Pages, Netlify, Vercel, etc.
 
 **API Communication:**
+
 - All data fetching goes through Supabase Edge Functions
 - No direct database access from frontend
 - No `/api` routes in Next.js (all API logic in Supabase)
 - Authentication via Supabase Auth (JWT tokens)
 
 **Environment Variables:**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 **Build Output:**
+
 ```bash
 npm run build
 # Generates static files in .next/out/
@@ -237,18 +262,21 @@ npm run build
 ### Backend (Supabase Edge Functions)
 
 **Technology:**
+
 - Deno runtime
 - TypeScript
 - Serverless functions
 - Deployed to Supabase infrastructure
 
 **Security:**
+
 - Row Level Security (RLS) on all tables
 - User authentication required for all endpoints
 - Super admin checks in business logic
 - CORS headers properly configured
 
 **Edge Functions:**
+
 ```
 supabase/functions/
 ├── organizations/      ← CRUD for organizations
@@ -265,6 +293,7 @@ supabase/functions/
 ## 📊 Database Schema
 
 ### organizations table
+
 ```sql
 CREATE TABLE organizations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -280,6 +309,7 @@ CREATE TABLE organizations (
 ```
 
 ### users table
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id),
@@ -294,6 +324,7 @@ CREATE TABLE users (
 ```
 
 ### organization_members table
+
 ```sql
 CREATE TABLE organization_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -309,19 +340,19 @@ CREATE TABLE organization_members (
 
 ## 🔒 Permissions Matrix
 
-| Action | Super Admin | Org Owner | Org Admin | Member | Viewer |
-|--------|------------|-----------|-----------|---------|---------|
-| View organizations | All | Own | Own | Own | Own |
-| Create organization | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Edit organization | All | Own | ❌ | ❌ | ❌ |
-| Delete organization | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Switch organizations | ✅ | ✅ | ✅ | ✅ | ✅ |
-| View devices | All | Own | Own | Own | Own |
-| Manage devices | All | ✅ | ✅ | ❌ | ❌ |
-| View members | All | ✅ | ✅ | ❌ | ❌ |
-| Manage members | All | ✅ | ✅ | ❌ | ❌ |
-| View integrations | All | ✅ | ✅ | ✅ | ✅ |
-| Manage integrations | All | ✅ | ✅ | ❌ | ❌ |
+| Action               | Super Admin | Org Owner | Org Admin | Member | Viewer |
+| -------------------- | ----------- | --------- | --------- | ------ | ------ |
+| View organizations   | All         | Own       | Own       | Own    | Own    |
+| Create organization  | ✅          | ❌        | ❌        | ❌     | ❌     |
+| Edit organization    | All         | Own       | ❌        | ❌     | ❌     |
+| Delete organization  | ✅          | ❌        | ❌        | ❌     | ❌     |
+| Switch organizations | ✅          | ✅        | ✅        | ✅     | ✅     |
+| View devices         | All         | Own       | Own       | Own    | Own    |
+| Manage devices       | All         | ✅        | ✅        | ❌     | ❌     |
+| View members         | All         | ✅        | ✅        | ❌     | ❌     |
+| Manage members       | All         | ✅        | ✅        | ❌     | ❌     |
+| View integrations    | All         | ✅        | ✅        | ✅     | ✅     |
+| Manage integrations  | All         | ✅        | ✅        | ❌     | ❌     |
 
 ---
 
@@ -451,18 +482,21 @@ npm run deploy
 ## 📋 Next Steps (Optional Enhancements)
 
 ### Immediate:
+
 - [ ] Add "Edit Organization" button to Organization Overview tab
 - [ ] Add organization deletion confirmation dialog
 - [ ] Add organization member invitation flow
 - [ ] Add organization API keys management
 
 ### Short-term:
+
 - [ ] Add organization billing/subscription management
 - [ ] Add organization usage stats (device limits, API calls, etc.)
 - [ ] Add organization transfer ownership feature
 - [ ] Add organization team management (roles, permissions)
 
 ### Long-term:
+
 - [ ] Add organization templates (pre-configured settings for industries)
 - [ ] Add organization white-labeling (custom branding)
 - [ ] Add organization SSO integration
@@ -473,18 +507,22 @@ npm run deploy
 ## 🐛 Known Issues & Solutions
 
 ### Issue: TypeScript errors in edge functions
+
 **Cause:** Deno uses different type system than Node.js
 **Solution:** Errors are cosmetic only, functions work correctly. Can be ignored or fixed with Deno-specific types.
 
 ### Issue: CORS errors in development
+
 **Cause:** Supabase edge functions need CORS headers
 **Solution:** Already implemented in `_shared/auth.ts` with `corsHeaders` object.
 
 ### Issue: Session expired errors
+
 **Cause:** JWT token expired (default: 1 hour)
 **Solution:** Supabase client auto-refreshes tokens. If errors persist, log out and log back in.
 
 ### Issue: Organization not showing after creation
+
 **Cause:** Context not refreshing
 **Solution:** Already implemented - `onSuccess` callback triggers `refreshOrganizations()`
 
@@ -493,21 +531,25 @@ npm run deploy
 ## 📝 Code Locations
 
 ### Frontend Components:
+
 - `src/components/organizations/CreateOrganizationDialog.tsx` - Create org dialog
 - `src/components/organizations/EditOrganizationDialog.tsx` - Edit org dialog
 - `src/components/organizations/OrganizationSwitcher.tsx` - Org dropdown with create button
 - `src/contexts/OrganizationContext.tsx` - State management with real API calls
 
 ### Backend Edge Functions:
+
 - `supabase/functions/organizations/index.ts` - CRUD operations
 - `supabase/functions/dashboard-stats/index.ts` - Statistics endpoint
 - `supabase/functions/_shared/auth.ts` - Auth utilities
 
 ### Database:
+
 - `supabase/migrations/` - Database schema
 - `supabase/seed.sql` - Seed data with NetNeural Demo org + test data
 
 ### Scripts:
+
 - `scripts/create-test-users.js` - Creates auth users with proper roles
 - `scripts/setup-dev-db.sh` - Complete database reset and setup
 
@@ -515,16 +557,16 @@ npm run deploy
 
 ## ✅ Completion Status
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Create Organization Dialog | ✅ Complete | With validation and API integration |
-| Edit Organization Dialog | ✅ Complete | With permissions and validation |
-| Organizations Edge Function | ✅ Complete | GET, POST, PATCH, DELETE endpoints |
-| Replace Mock Data with Real API | ✅ Complete | OrganizationContext now uses edge functions |
-| Database Seed Script | ✅ Complete | Has NetNeural Demo org + sample data |
-| Setup/Reset Scripts | ⏳ Existing | Already in place, no changes needed |
-| Client/Server Separation | ✅ Complete | 100% client-side frontend, edge function backend |
-| Production Ready | ✅ Complete | Ready for deployment to Supabase + static hosting |
+| Task                            | Status      | Notes                                             |
+| ------------------------------- | ----------- | ------------------------------------------------- |
+| Create Organization Dialog      | ✅ Complete | With validation and API integration               |
+| Edit Organization Dialog        | ✅ Complete | With permissions and validation                   |
+| Organizations Edge Function     | ✅ Complete | GET, POST, PATCH, DELETE endpoints                |
+| Replace Mock Data with Real API | ✅ Complete | OrganizationContext now uses edge functions       |
+| Database Seed Script            | ✅ Complete | Has NetNeural Demo org + sample data              |
+| Setup/Reset Scripts             | ⏳ Existing | Already in place, no changes needed               |
+| Client/Server Separation        | ✅ Complete | 100% client-side frontend, edge function backend  |
+| Production Ready                | ✅ Complete | Ready for deployment to Supabase + static hosting |
 
 ---
 
@@ -540,6 +582,6 @@ The organization management system is now **FULLY FUNCTIONAL** and **PRODUCTION 
 ✅ **Real API integration** (no more mock data)  
 ✅ **Proper security** (RLS + permission checks)  
 ✅ **Client/Server separation** (static frontend + edge functions)  
-✅ **GitHub Pages ready** (100% static build)  
+✅ **GitHub Pages ready** (100% static build)
 
 The system follows best practices for multi-tenant SaaS applications and is ready for your first production release! 🚀

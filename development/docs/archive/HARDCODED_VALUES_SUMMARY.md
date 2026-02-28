@@ -3,13 +3,16 @@
 ## What Was Done
 
 ### Problem
+
 The application had hardcoded user IDs, emails, and organization IDs throughout the codebase:
+
 - Mock user data in dashboard layout
 - Hardcoded email addresses in settings
 - No dynamic organization filtering
 - Edge functions using default organization ID
 
 ### Solution
+
 Implemented proper authentication flow with dynamic data from database:
 
 1. **Created Auth Utilities** (`src/lib/auth.ts`)
@@ -43,11 +46,12 @@ Implemented proper authentication flow with dynamic data from database:
 ## Key Changes
 
 ### Before
+
 ```typescript
 // ❌ Hardcoded everywhere
 const mockUser = {
   id: '00000000-0000-0000-0000-000000000001',
-  email: 'admin@netneural.ai'
+  email: 'admin@netneural.ai',
 }
 
 // No organization filtering
@@ -55,13 +59,14 @@ fetch('/api/devices')
 ```
 
 ### After
+
 ```typescript
 // ✅ Dynamic from authentication
-const { user } = useUser()  // From database
+const { user } = useUser() // From database
 
 // Filtered by organization
 fetchEdgeFunction('devices', {
-  organization_id: user.organizationId
+  organization_id: user.organizationId,
 })
 ```
 
@@ -83,6 +88,7 @@ fetchEdgeFunction('devices', {
 ## How to Use
 
 ### Setup (First Time)
+
 ```bash
 npm run supabase:reset    # Reset database with seed data
 npm run setup:users       # Create auth users
@@ -91,21 +97,23 @@ npm run dev               # Start dev server (new terminal)
 ```
 
 ### Login
+
 1. Navigate to http://localhost:3000
 2. Login with:
    - Email: `admin@netneural.ai`
    - Password: `password123`
 
 ### Use in Components
+
 ```typescript
 import { useUser } from '@/contexts/UserContext'
 
 function MyComponent() {
   const { user, loading } = useUser()
-  
+
   if (loading) return <div>Loading...</div>
   if (!user) return null
-  
+
   // Use user data
   console.log(user.email)           // From database
   console.log(user.organizationId)  // From database
@@ -115,16 +123,17 @@ function MyComponent() {
 ```
 
 ### Make API Calls
+
 ```typescript
 import { fetchEdgeFunction } from '@/lib/auth'
 import { useUser } from '@/contexts/UserContext'
 
 function MyComponent() {
   const { user } = useUser()
-  
+
   const fetchData = async () => {
     const data = await fetchEdgeFunction('devices', {
-      organization_id: user.organizationId  // Dynamic!
+      organization_id: user.organizationId, // Dynamic!
     })
   }
 }
@@ -133,21 +142,25 @@ function MyComponent() {
 ## Benefits
 
 ### ✅ Security
+
 - No hardcoded credentials
 - Proper authentication required
 - Organization data isolation
 
 ### ✅ Scalability
+
 - Works with multiple organizations
 - Easy to add more users
 - Multi-tenant ready
 
-### ✅ Maintainability  
+### ✅ Maintainability
+
 - Single source of truth (database)
 - No magic values in code
 - Easy to test
 
 ### ✅ Flexibility
+
 - Users can belong to multiple orgs (future)
 - Role-based permissions (future)
 - Organization switching (future)
@@ -157,18 +170,21 @@ function MyComponent() {
 ### Test with Different Users
 
 **Admin (org_owner)**:
+
 ```
 Email: admin@netneural.ai
 Password: password123
 ```
 
 **Regular User**:
+
 ```
 Email: user@netneural.ai
 Password: password123
 ```
 
 **Viewer**:
+
 ```
 Email: viewer@netneural.ai
 Password: password123
@@ -179,6 +195,7 @@ All users see the same 20 devices (same organization).
 ### Verify No Hardcoded Values
 
 Open browser console on dashboard:
+
 ```javascript
 // Should see dynamic loading
 console.log('Loading user from database...')
@@ -238,6 +255,7 @@ UI displays only user's org data
 ✅ Ready for production use
 
 The application now properly:
+
 1. Authenticates users via Supabase Auth
 2. Loads user profiles from database
 3. Filters all data by user's organization

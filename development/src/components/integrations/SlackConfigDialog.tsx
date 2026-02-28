@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,18 +35,21 @@ interface Props {
   mode?: 'dialog' | 'page'
 }
 
-export function SlackConfigDialog({ 
-  open, 
-  onOpenChange, 
-  integrationId, 
+export function SlackConfigDialog({
+  open,
+  onOpenChange,
+  integrationId,
   organizationId,
   onSaved,
-  mode = 'dialog'
+  mode = 'dialog',
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
-  
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
+
   const [config, setConfig] = useState<SlackConfig>({
     name: 'Slack Integration',
     webhook_url: '',
@@ -62,9 +71,13 @@ export function SlackConfigDialog({
     setLoading(true)
     try {
       const response = await edgeFunctions.integrations.list(organizationId)
-      
+
       if (!response.success) {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load integrations')
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to load integrations'
+        )
       }
 
       const integrations = (response.data as any)?.integrations || []
@@ -98,19 +111,23 @@ export function SlackConfigDialog({
     setTestResult(null)
 
     try {
-      const result: any = await integrationService.testIntegration(integrationId, 'slack')
+      const result: any = await integrationService.testIntegration(
+        integrationId,
+        'slack'
+      )
       setTestResult({
         success: result.success,
-        message: result.message || 'Test message sent successfully'
+        message: result.message || 'Test message sent successfully',
       })
-      
+
       if (result.success) {
         toast.success('Test message sent successfully!')
       } else {
         toast.error(result.message || 'Failed to send test message')
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to send test message'
+      const message =
+        error instanceof Error ? error.message : 'Failed to send test message'
       setTestResult({ success: false, message })
       toast.error(message)
     } finally {
@@ -150,12 +167,18 @@ export function SlackConfigDialog({
       }
 
       if (!response.success) {
-        let errorMsg = typeof response.error === 'string' ? response.error : 'Failed to save integration'
-        
-        if (errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')) {
+        let errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to save integration'
+
+        if (
+          errorMsg.includes('duplicate key') ||
+          errorMsg.includes('unique constraint')
+        ) {
           errorMsg = `A Slack integration with the name "${config.name}" already exists. Please choose a different name.`
         }
-        
+
         throw new Error(errorMsg)
       }
 
@@ -174,83 +197,94 @@ export function SlackConfigDialog({
   const renderContent = () => (
     <>
       <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Integration Name *</Label>
-            <Input
-              id="name"
-              value={config.name}
-              onChange={(e) => setConfig({ ...config, name: e.target.value })}
-              placeholder="e.g., Team Alerts"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="webhook-url">Webhook URL *</Label>
-            <Input
-              id="webhook-url"
-              type="password"
-              value={config.webhook_url}
-              onChange={(e) => setConfig({ ...config, webhook_url: e.target.value })}
-              placeholder="https://hooks.slack.com/services/..."
-            />
-            <p className="text-sm text-muted-foreground">
-              Create a webhook URL in your Slack workspace settings → Apps → Incoming Webhooks
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="channel">Channel *</Label>
-            <Input
-              id="channel"
-              value={config.channel}
-              onChange={(e) => setConfig({ ...config, channel: e.target.value })}
-              placeholder="#alerts"
-            />
-            <p className="text-sm text-muted-foreground">
-              The channel where notifications will be posted
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Bot Username (Optional)</Label>
-              <Input
-                id="username"
-                value={config.username}
-                onChange={(e) => setConfig({ ...config, username: e.target.value })}
-                placeholder="NetNeural Bot"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon Emoji (Optional)</Label>
-              <Input
-                id="icon"
-                value={config.icon_emoji}
-                onChange={(e) => setConfig({ ...config, icon_emoji: e.target.value })}
-                placeholder=":robot_face:"
-              />
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="name">Integration Name *</Label>
+          <Input
+            id="name"
+            value={config.name}
+            onChange={(e) => setConfig({ ...config, name: e.target.value })}
+            placeholder="e.g., Team Alerts"
+          />
         </div>
 
-        {testResult && (
-          <div className={`p-3 rounded-md flex items-start gap-2 ${
-            testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
-            {testResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            ) : (
-              <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-            )}
-            <div className="text-sm">{testResult.message}</div>
+        <div className="space-y-2">
+          <Label htmlFor="webhook-url">Webhook URL *</Label>
+          <Input
+            id="webhook-url"
+            type="password"
+            value={config.webhook_url}
+            onChange={(e) =>
+              setConfig({ ...config, webhook_url: e.target.value })
+            }
+            placeholder="https://hooks.slack.com/services/..."
+          />
+          <p className="text-sm text-muted-foreground">
+            Create a webhook URL in your Slack workspace settings → Apps →
+            Incoming Webhooks
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="channel">Channel *</Label>
+          <Input
+            id="channel"
+            value={config.channel}
+            onChange={(e) => setConfig({ ...config, channel: e.target.value })}
+            placeholder="#alerts"
+          />
+          <p className="text-sm text-muted-foreground">
+            The channel where notifications will be posted
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="username">Bot Username (Optional)</Label>
+            <Input
+              id="username"
+              value={config.username}
+              onChange={(e) =>
+                setConfig({ ...config, username: e.target.value })
+              }
+              placeholder="NetNeural Bot"
+            />
           </div>
-        )}
-      <div className="flex justify-end gap-2 pt-4 border-t">
+
+          <div className="space-y-2">
+            <Label htmlFor="icon">Icon Emoji (Optional)</Label>
+            <Input
+              id="icon"
+              value={config.icon_emoji}
+              onChange={(e) =>
+                setConfig({ ...config, icon_emoji: e.target.value })
+              }
+              placeholder=":robot_face:"
+            />
+          </div>
+        </div>
+      </div>
+
+      {testResult && (
+        <div
+          className={`flex items-start gap-2 rounded-md p-3 ${
+            testResult.success
+              ? 'bg-green-50 text-green-800'
+              : 'bg-red-50 text-red-800'
+          }`}
+        >
+          {testResult.success ? (
+            <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          ) : (
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          )}
+          <div className="text-sm">{testResult.message}</div>
+        </div>
+      )}
+      <div className="flex justify-end gap-2 border-t pt-4">
         {integrationId && (
-          <Button 
-            variant="secondary" 
-            onClick={handleTest} 
+          <Button
+            variant="secondary"
+            onClick={handleTest}
             disabled={testing || loading}
           >
             {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -271,20 +305,20 @@ export function SlackConfigDialog({
   // Render as page or dialog based on mode
   if (mode === 'page') {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
               {integrationId ? 'Edit' : 'Add'} Slack Integration
             </h2>
-            <p className="text-muted-foreground">Configure your Slack notification settings</p>
+            <p className="text-muted-foreground">
+              Configure your Slack notification settings
+            </p>
           </div>
         </div>
 
         <Card>
-          <CardContent className="pt-6">
-            {renderContent()}
-          </CardContent>
+          <CardContent className="pt-6">{renderContent()}</CardContent>
         </Card>
       </div>
     )

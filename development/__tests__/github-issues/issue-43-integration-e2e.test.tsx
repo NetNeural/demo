@@ -1,11 +1,11 @@
 /**
  * Test Suite for GitHub Issue #43 - Integration Priorities E2E Testing
- * 
+ *
  * Tests end-to-end functionality for priority integrations:
  * 1. MQTT Broker Integration
  * 2. Golioth Integration
  * 3. Custom Webhook Integration
- * 
+ *
  * Validates: Configuration → Save → Sync → Device Management → Events
  */
 
@@ -38,7 +38,6 @@ describe('Issue #43 - Integration Priorities End-to-End', () => {
       },
       from: jest.fn(),
     }
-
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
 
     mockFetch = jest.fn()
@@ -683,7 +682,10 @@ describe('Issue #43 - Integration Priorities End-to-End', () => {
         'http://localhost:54321/functions/v1/send-notification',
         {
           method: 'POST',
-          body: JSON.stringify({ event: 'telemetry.received', data: deviceData }),
+          body: JSON.stringify({
+            event: 'telemetry.received',
+            data: deviceData,
+          }),
         }
       )
 

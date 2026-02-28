@@ -1,28 +1,35 @@
 # Edge Functions Authentication Requirements
 
 ## Discovery Summary
+
 Date: November 14, 2025
 
 ### Issue
+
 Edge Functions were requiring Authorization headers even when configured with `requireAuth: false` in our custom wrapper.
 
 ### Root Cause
+
 **Supabase Edge Functions platform enforces Authorization headers at the runtime level**, before function code executes. This is not configurable and applies to all functions.
 
 ### Solution for Device Telemetry
+
 IoT devices must include an Authorization header with one of these keys:
 
 #### Option 1: Anonymous Key (Recommended for IoT)
+
 ```bash
-Authorization: Bearer YOUR_LOCAL_SUPABASE_ANON_KEY
+Authorization: Bearer <YOUR_SUPABASE_ANON_KEY>
 ```
 
 #### Option 2: Service Role Key (Admin Access)
+
 ```bash
-Authorization: Bearer YOUR_LOCAL_SUPABASE_SERVICE_ROLE_KEY
+Authorization: Bearer <YOUR_SUPABASE_SERVICE_ROLE_KEY>
 ```
 
 ### Testing Examples
+
 ```bash
 # Test endpoint (works)
 curl -X POST "http://127.0.0.1:54321/functions/v1/netneural-hub-test?device_id=test-device-123" \
