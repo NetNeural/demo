@@ -31,6 +31,11 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   Map as MapIcon,
   Plus,
   Edit2,
@@ -125,8 +130,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [zones, setZones] = useState<MapZone[]>([])
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
   const [zoneDrawing, setZoneDrawing] = useState(false)
+  const [showZones, setShowZones] = useState(true)
   /** Heatmap metric (null = off) */
   const [heatmapMetric, setHeatmapMetric] = useState<string | null>(null)
+  const [showHeatmap, setShowHeatmap] = useState(true)
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -418,6 +425,22 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         .eq('id', selectedZoneId)
       if (error) throw error
       setSelectedZoneId(null)
+      toast.success('Zone deleted')
+      await loadZones()
+    } catch (err) {
+      console.error('Delete zone error:', err)
+      toast.error('Failed to delete zone')
+    }
+  }, [selectedZoneId, loadZones])
+
+  const handleDeleteZoneById = useCallback(async (zoneId: string) => {
+    try {
+      const { error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .delete()
+        .eq('id', zoneId)
+      if (error) throw error
+      if (selectedZoneId === zoneId) setSelectedZoneId(null)
       toast.success('Zone deleted')
       await loadZones()
     } catch (err) {
@@ -999,13 +1022,13 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   showDeviceType={mapDisplayOpts.deviceType}
                   showDeviceCount={mapDisplayOpts.deviceCount}
                   showLocation={mapDisplayOpts.location}
-                  zones={zones}
+                  zones={showZones ? zones : []}
                   zoneEditMode={mode === 'edit' || mode === 'place'}
                   selectedZoneId={selectedZoneId}
                   onSelectZone={setSelectedZoneId}
                   onCreateZone={handleCreateZone}
                   zoneDrawing={zoneDrawing}
-                  heatmapMetric={heatmapMetric}
+                  heatmapMetric={showHeatmap ? heatmapMetric : null}
                   statusBarExtra={
                     <>
                       {/* Device type filter chips */}
@@ -1053,21 +1076,66 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                           {zoneDrawing ? 'Cancel' : 'Draw Zone'}
                         </Button>
                       )}
-                      {selectedZoneId && (mode === 'edit' || mode === 'place') && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="h-6 text-[10px] px-2"
-                          onClick={handleDeleteZone}
-                        >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Delete Zone
-                        </Button>
+                      {(mode === 'edit' || mode === 'place') && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
+                              <Info className="h-3 w-3" /> Zone Help
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" className="w-64 text-xs space-y-2">
+                            <p className="font-semibold">How to Draw Zones</p>
+                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                              <li>Click <strong>Draw Zone</strong> to start</li>
+                              <li>Click on the map to place polygon points</li>
+                              <li>Double-click to finish the polygon</li>
+                              <li>Enter a name and color for the zone</li>
+                            </ol>
+                            <p className="text-muted-foreground">Click a zone to select it. Use the zone list to manage or delete zones.</p>
+                          </PopoverContent>
+                        </Popover>
                       )}
+
+                      {/* Zone list with delete + visibility toggle */}
                       {zones.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground">
-                          <Layers className="inline h-3 w-3 mr-0.5" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                              <Layers className="h-3 w-3" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" className="w-56 p-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold">Zones</span>
+                              <div className="flex items-center gap-1.5">
+                                <Checkbox
+                                  id="toggle-zones-vis"
+                                  checked={showZones}
+                                  onCheckedChange={() => setShowZones(!showZones)}
+                                  className="h-3 w-3"
+                                />
+                                <Label htmlFor="toggle-zones-vis" className="text-[10px] cursor-pointer">Show</Label>
+                              </div>
+                            </div>
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {zones.map((z) => (
+                                <div key={z.id} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-muted/50 group">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: z.color }} />
+                                    <span className="text-[11px] truncate">{z.name}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteZoneById(z.id)}
+                                    className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                                    title={`Delete ${z.name}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       )}
 
                       {/* Heatmap toggle */}
@@ -1095,10 +1163,42 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                             </select>
                           )}
                           {heatmapMetric && (
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5" title="Heatmap uses Inverse Distance Weighting to interpolate values between device positions. Colors range from blue (low) to red (high). Place 2+ devices with numeric telemetry data for best results.">
-                              <Info className="h-3 w-3" /> How it works
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Checkbox
+                                id="toggle-heatmap-vis"
+                                checked={showHeatmap}
+                                onCheckedChange={() => setShowHeatmap(!showHeatmap)}
+                                className="h-3 w-3"
+                              />
+                              <Label htmlFor="toggle-heatmap-vis" className="text-[10px] cursor-pointer">Show</Label>
+                            </div>
                           )}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
+                                <Info className="h-3 w-3" /> How it works
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="left" className="w-72 text-xs space-y-2">
+                              <p className="font-semibold">Heatmap Overlay</p>
+                              <p className="text-muted-foreground">The heatmap uses <strong>Inverse Distance Weighting (IDW)</strong> to interpolate telemetry values between device positions.</p>
+                              <div className="flex items-center gap-1">
+                                <span className="h-3 w-3 rounded-sm bg-blue-500" />
+                                <span className="text-muted-foreground">Low</span>
+                                <span className="h-3 w-3 rounded-sm bg-cyan-400" />
+                                <span className="h-3 w-3 rounded-sm bg-green-500" />
+                                <span className="text-muted-foreground">Mid</span>
+                                <span className="h-3 w-3 rounded-sm bg-yellow-400" />
+                                <span className="h-3 w-3 rounded-sm bg-red-500" />
+                                <span className="text-muted-foreground">High</span>
+                              </div>
+                              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                <li>Select a metric from the dropdown</li>
+                                <li>Requires 2+ devices with numeric telemetry</li>
+                                <li>Use the <strong>Show</strong> checkbox to toggle visibility</li>
+                              </ul>
+                            </PopoverContent>
+                          </Popover>
                         </>
                       )}
                     </>
