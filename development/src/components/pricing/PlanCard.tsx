@@ -18,7 +18,7 @@ interface PlanCardProps {
 
 /** Key highlights per plan slug */
 const PLAN_HIGHLIGHTS: Record<string, string[]> = {
-  monitor: [
+  starter: [
     'Real-time temperature dashboard',
     'HACCP compliance logging',
     'Email & SMS alerts',
@@ -26,8 +26,8 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     '30-day data retention',
     'Up to 5 team members',
   ],
-  protect: [
-    'Everything in Monitor, plus:',
+  professional: [
+    'Everything in Starter, plus:',
     'AI anomaly detection',
     'Predictive failure alerts',
     'Multi-site dashboard',
@@ -35,8 +35,8 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     '1-year data retention',
     'Up to 25 team members',
   ],
-  command: [
-    'Everything in Protect, plus:',
+  enterprise: [
+    'Everything in Professional, plus:',
     'AI energy optimization',
     'Chain benchmarking',
     'ESG & carbon analytics',

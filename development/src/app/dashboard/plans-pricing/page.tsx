@@ -568,7 +568,7 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
                   setName(e.target.value)
                   if (isNew) setSlug(autoSlug(e.target.value))
                 }}
-                placeholder="e.g., Monitor Plus"
+                placeholder="e.g., Starter Plus"
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>

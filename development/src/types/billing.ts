@@ -13,7 +13,7 @@ export interface BillingPlanFeatures {
   compliance_logs: boolean
   haccp_export: boolean
   manual_report_export: boolean
-  // Protect+ features
+  // Professional features
   ai_analytics: boolean
   predictive_alerts: boolean
   multi_site_dashboard: boolean
@@ -24,7 +24,7 @@ export interface BillingPlanFeatures {
   mfa: boolean
   audit_log: boolean
   webhook_integrations: boolean
-  // Command features
+  // Enterprise features
   ai_optimization: boolean
   chain_benchmarking: boolean
   esg_reporting: boolean
@@ -82,7 +82,7 @@ export interface PlanFeatureDisplay {
 
 /** All displayable features for the comparison table */
 export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
-  // Monitor (all plans)
+  // Starter (all plans)
   {
     key: 'dashboard',
     label: 'Real-time Monitoring',
@@ -113,7 +113,7 @@ export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
     label: 'Report Export',
     description: 'Manual data export and reporting',
   },
-  // Protect+
+  // Professional
   {
     key: 'ai_analytics',
     label: 'AI Anomaly Detection',
@@ -164,7 +164,7 @@ export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
     label: 'Webhook Integrations',
     description: 'Connect to external services',
   },
-  // Command
+  // Enterprise
   {
     key: 'ai_optimization',
     label: 'AI Optimization',

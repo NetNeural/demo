@@ -149,9 +149,9 @@ export default function PricingPage() {
   }
 
   const planIcons: Record<string, React.ReactNode> = {
-    monitor: <Thermometer className="h-8 w-8 text-emerald-600" />,
-    protect: <Shield className="h-8 w-8 text-blue-600" />,
-    command: <Zap className="h-8 w-8 text-purple-600" />,
+    starter: <Thermometer className="h-8 w-8 text-emerald-600" />,
+    professional: <Shield className="h-8 w-8 text-blue-600" />,
+    enterprise: <Zap className="h-8 w-8 text-purple-600" />,
   }
 
   if (loading) {

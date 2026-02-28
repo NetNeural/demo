@@ -12,7 +12,7 @@ interface FeatureComparisonTableProps {
 /** Group features by tier for section headers */
 const FEATURE_GROUPS = [
   {
-    title: 'Core — Monitor',
+    title: 'Core — Starter',
     description: 'Compliance & visibility essentials',
     keys: [
       'dashboard',
@@ -24,7 +24,7 @@ const FEATURE_GROUPS = [
     ],
   },
   {
-    title: 'Advanced — Protect',
+    title: 'Advanced — Professional',
     description: 'Operational intelligence',
     keys: [
       'ai_analytics',
@@ -40,7 +40,7 @@ const FEATURE_GROUPS = [
     ],
   },
   {
-    title: 'Enterprise — Command',
+    title: 'Enterprise',
     description: 'Optimization & sustainability',
     keys: [
       'ai_optimization',
