@@ -85,17 +85,28 @@ export function FacilityMapCanvas({
   // smaller than the single-view reference width (600px).
   const REFERENCE_WIDTH = 600
   const [markerScale, setMarkerScale] = useState(1)
-  // Track rendered image size so we can constrain the marker overlay to match
-  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
+  // Track the actual rendered image content area within the <img> element.
+  // With object-contain the visual content can be smaller than the element box.
+  const [imgRect, setImgRect] = useState<{ w: number; h: number; ox: number; oy: number } | null>(null)
 
   useEffect(() => {
     const img = imgRef.current
     if (!img || !imageLoaded) return
     const measure = () => {
-      const w = img.clientWidth
-      const h = img.clientHeight
-      setImgSize({ w, h })
-      setMarkerScale(Math.min(1, w / REFERENCE_WIDTH))
+      const boxW = img.clientWidth
+      const boxH = img.clientHeight
+      const natW = img.naturalWidth
+      const natH = img.naturalHeight
+      if (!natW || !natH || !boxW || !boxH) return
+      // Compute the actual rendered content rect inside the object-contain box
+      const scale = Math.min(boxW / natW, boxH / natH)
+      const renderedW = natW * scale
+      const renderedH = natH * scale
+      // object-contain centers the image in the element box
+      const offsetX = (boxW - renderedW) / 2
+      const offsetY = (boxH - renderedH) / 2
+      setImgRect({ w: renderedW, h: renderedH, ox: offsetX, oy: offsetY })
+      setMarkerScale(Math.min(1, renderedW / REFERENCE_WIDTH))
     }
     measure()
     const ro = new ResizeObserver(() => measure())
@@ -107,7 +118,7 @@ export function FacilityMapCanvas({
   useEffect(() => {
     setImageLoaded(false)
     setMarkerScale(1)
-    setImgSize(null)
+    setImgRect(null)
   }, [facilityMap.id])
 
   // Click to place device — use the image container directly
@@ -367,18 +378,16 @@ export function FacilityMapCanvas({
               draggable={false}
             />
 
-            {/* Marker overlay — sized to match the actual rendered image so
-                percentage-based positions stay accurate when object-contain
-                causes the image to be smaller than the container */}
-            {imageLoaded && imgSize && (
+            {/* Marker overlay — positioned exactly over the rendered image
+                content area (accounts for object-contain letterboxing) */}
+            {imageLoaded && imgRect && (
               <div
                 className="absolute"
                 style={{
-                  width: imgSize.w,
-                  height: imgSize.h,
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
+                  width: imgRect.w,
+                  height: imgRect.h,
+                  left: imgRect.ox,
+                  top: imgRect.oy,
                 }}
               >
               {placements.map((p) => (
