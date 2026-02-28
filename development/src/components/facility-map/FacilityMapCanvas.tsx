@@ -80,9 +80,25 @@ export function FacilityMapCanvas({
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
+  // Marker scale: 1.0 at ≥600px container width, proportionally smaller below.
+  // This makes collage dots match single-view proportions.
+  const REFERENCE_WIDTH = 600
+  const [markerScale, setMarkerScale] = useState(1)
+
+  useEffect(() => {
+    if (!containerRef.current || !imageLoaded) return
+    const el = containerRef.current
+    const measure = () => setMarkerScale(Math.min(1, el.clientWidth / REFERENCE_WIDTH))
+    measure()
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [imageLoaded])
+
   // Reset when switching maps
   useEffect(() => {
     setImageLoaded(false)
+    setMarkerScale(1)
   }, [facilityMap.id])
 
   // Click to place device — use the image container directly
@@ -356,6 +372,7 @@ export function FacilityMapCanvas({
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
                   showDeviceType={showDeviceType}
+                  scale={markerScale}
                 />
               ))}
 

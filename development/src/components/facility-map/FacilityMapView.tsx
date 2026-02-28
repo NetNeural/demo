@@ -84,12 +84,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   /** Persistent display options (stored in localStorage) */
   const [mapDisplayOpts, setMapDisplayOpts] = useState(() => {
-    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false, mapName: false, deviceCount: false }
+    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false }
     try {
       const saved = localStorage.getItem('facility-map-display')
       if (saved) return JSON.parse(saved) as Record<string, boolean>
     } catch { /* ignore */ }
-    return { deviceName: false, deviceType: false, location: false, mapName: false, deviceCount: false }
+    return { deviceName: false, deviceType: false, location: false }
   })
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
@@ -709,8 +709,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               ['deviceName', 'Device Name'],
               ['deviceType', 'Device Type'],
               ['location', 'Location'],
-              ['mapName', 'Map Name'],
-              ['deviceCount', 'Device Count'],
             ] as const).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
@@ -734,8 +732,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               ['deviceName', 'Device Name'],
               ['deviceType', 'Device Type'],
               ['location', 'Location'],
-              ['mapName', 'Map Name'],
-              ['deviceCount', 'Device Count'],
             ] as const).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
@@ -850,8 +846,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   telemetryMap={telemetryMap}
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
-                  showMapName={mapDisplayOpts.mapName}
-                  showDeviceCount={mapDisplayOpts.deviceCount}
+                  showDeviceCount
                   showLocation={mapDisplayOpts.location}
                 />
               </Card>
@@ -916,67 +911,24 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             maps.length === 1
               ? 'grid-cols-1'
               : maps.length === 2
-              ? 'grid-cols-1 md:grid-cols-2'
-              : maps.length <= 4
-              ? 'grid-cols-1 md:grid-cols-2'
-              : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+              ? 'grid-cols-2'
+              : maps.length === 3
+              ? 'grid-cols-3'
+              : 'grid-cols-2 lg:grid-cols-4'
           } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
         >
           {maps.map((m) => {
             const mapPlacements = allPlacements[m.id] || []
             return (
-              <Card key={m.id} className="overflow-hidden group relative">
-                {/* Map label overlay — respects display options */}
-                {(mapDisplayOpts.mapName || mapDisplayOpts.deviceCount || mapDisplayOpts.location) && (
+              <Card key={m.id} className="overflow-hidden relative">
+                {/* Map label overlay — location only */}
+                {mapDisplayOpts.location && m.location?.name && (
                 <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
-                  {mapDisplayOpts.mapName && (
-                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
-                    {m.name}
-                  </Badge>
-                  )}
-                  {mapDisplayOpts.location && m.location?.name && (
                   <Badge variant="outline" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
                     {m.location.name}
                   </Badge>
-                  )}
-                  {mapDisplayOpts.deviceCount && (mapPlacementCounts[m.id] || 0) > 0 && (
-                  <Badge variant="secondary" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
-                    {mapPlacementCounts[m.id]} device{(mapPlacementCounts[m.id] || 0) !== 1 ? 's' : ''}
-                  </Badge>
-                  )}
                 </div>
                 )}
-                {/* Quick actions overlay */}
-                <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
-                    onClick={() => {
-                      setSelectedMapId(m.id)
-                      setViewMode('single')
-                      setMode('view')
-                    }}
-                    title="Open in single view"
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
-                    onClick={() => {
-                      setEditingMap(m)
-                      setDialogOpen(true)
-                    }}
-                    title="Edit map"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-destructive hover:text-white"
-                    onClick={() => setDeleteMapId(m.id)}
-                    title="Delete map"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
                 <FacilityMapCanvas
                   facilityMap={m}
                   placements={mapPlacements}
@@ -992,8 +944,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   telemetryMap={telemetryMap}
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
-                  showMapName={mapDisplayOpts.mapName}
-                  showDeviceCount={mapDisplayOpts.deviceCount}
+                  showDeviceCount
                   showLocation={mapDisplayOpts.location}
                   compact
                   hideFullscreen

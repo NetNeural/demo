@@ -84,6 +84,8 @@ interface DeviceMarkerProps {
   showLabel?: boolean
   /** Show device type below the name label */
   showDeviceType?: boolean
+  /** Scale factor for the marker (1 = full, <1 for compact views) */
+  scale?: number
 }
 
 export function DeviceMarker({
@@ -97,6 +99,7 @@ export function DeviceMarker({
   telemetry,
   showLabel = false,
   showDeviceType = false,
+  scale = 1,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -163,7 +166,7 @@ export function DeviceMarker({
         <TooltipTrigger asChild>
           <div
             className={cn(
-              'absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-shadow',
+              'absolute z-10 transition-shadow',
               mode === 'view' && onNavigate && 'cursor-pointer',
               mode === 'edit' && 'cursor-grab',
               dragging && 'cursor-grabbing z-50',
@@ -172,6 +175,7 @@ export function DeviceMarker({
             style={{
               left: `${posX}%`,
               top: `${posY}%`,
+              transform: `translate(-50%, -50%) scale(${scale})`,
             }}
             onClick={(e) => {
               e.stopPropagation()
