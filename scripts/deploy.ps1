@@ -313,17 +313,23 @@ if ("dev" -in $deployEnvs -and -not $stopped) {
     Run "git fetch staging" "Fetching from staging..."
 
     if ($DryRun) {
-        Write-Info "[dry-run] git cherry-pick $commitHash"
+        Write-Info "[dry-run] git checkout staging/staging -- development/"
+        Write-Info "[dry-run] git commit (sync from staging $commitHash)"
         $devHash = "DRY-RUN"
     } else {
-        $cpOutput = git cherry-pick $commitHashFull 2>&1
+        # Copy development/ directory from staging — no conflicts possible
+        git checkout staging/staging -- development/ 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Err "Cherry-pick to dev failed!"
-            $cpOutput | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkRed }
-            Write-Warn "Resolve conflicts in $DEV_DIR, then run:"
-            Write-Info "  cd $DEV_DIR; git cherry-pick --continue; git push origin main"
+            Write-Err "Failed to checkout development/ from staging!"
             Pop-Location
-            Abort "Cherry-pick to dev failed."
+            Abort "Checkout from staging failed."
+        }
+        git add -A 2>&1 | Out-Null
+        git diff --cached --quiet 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            git commit -m "$($Message -replace "'","''") (sync from staging $commitHash)" 2>&1 | Out-Null
+        } else {
+            Write-Info "No changes to sync (dev already matches staging)"
         }
         $devHash = (git rev-parse --short HEAD) 2>$null
     }
@@ -379,17 +385,23 @@ if ("prod" -in $deployEnvs -and -not $stopped) {
     Run "git fetch staging" "Fetching from staging..."
 
     if ($DryRun) {
-        Write-Info "[dry-run] git cherry-pick $commitHash"
+        Write-Info "[dry-run] git checkout staging/staging -- development/"
+        Write-Info "[dry-run] git commit (sync from staging $commitHash)"
         $prodHash = "DRY-RUN"
     } else {
-        $cpOutput = git cherry-pick $commitHashFull 2>&1
+        # Copy development/ directory from staging — no conflicts possible
+        git checkout staging/staging -- development/ 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Err "Cherry-pick to prod failed!"
-            $cpOutput | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkRed }
-            Write-Warn "Resolve conflicts in $PROD_DIR, then run:"
-            Write-Info "  cd $PROD_DIR; git cherry-pick --continue; git push origin main"
+            Write-Err "Failed to checkout development/ from staging!"
             Pop-Location
-            Abort "Cherry-pick to prod failed."
+            Abort "Checkout from staging failed."
+        }
+        git add -A 2>&1 | Out-Null
+        git diff --cached --quiet 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            git commit -m "$($Message -replace "'","''") (sync from staging $commitHash)" 2>&1 | Out-Null
+        } else {
+            Write-Info "No changes to sync (prod already matches staging)"
         }
         $prodHash = (git rev-parse --short HEAD) 2>$null
     }
