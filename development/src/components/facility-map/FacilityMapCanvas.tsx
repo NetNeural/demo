@@ -511,7 +511,7 @@ export function FacilityMapCanvas({
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}
         style={compact
-          ? undefined
+          ? { maxHeight: '280px', overflow: 'hidden' }
           : { maxHeight: isFullscreen ? 'calc(100vh - 80px)' : '520px', overflow: 'hidden' }
         }
       >
@@ -533,7 +533,8 @@ export function FacilityMapCanvas({
               src={facilityMap.image_url}
               alt={facilityMap.name}
               className={cn(
-                'block transition-opacity w-full',
+                'block transition-opacity',
+                compact ? 'max-w-full max-h-[280px] object-contain' : 'w-full',
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               )}
               onLoad={() => setImageLoaded(true)}
