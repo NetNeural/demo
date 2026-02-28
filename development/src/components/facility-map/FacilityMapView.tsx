@@ -85,7 +85,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
-  const sliderRef = useRef<HTMLDivElement | null>(null)
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
@@ -293,46 +292,22 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const selectedMapIndex = maps.findIndex((m) => m.id === selectedMapId)
   const canGoPrev = selectedMapIndex > 0
   const canGoNext = selectedMapIndex < maps.length - 1 && selectedMapIndex >= 0
-  const scrollToSlide = useCallback((index: number) => {
-    if (!sliderRef.current) return
-    const slide = sliderRef.current.children[index] as HTMLElement | undefined
-    if (slide) slide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
-  }, [])
-
   const goToPrevMap = () => {
     if (canGoPrev && maps[selectedMapIndex - 1]) {
-      const newIdx = selectedMapIndex - 1
-      setSelectedMapId(maps[newIdx]!.id)
+      setSelectedMapId(maps[selectedMapIndex - 1]!.id)
       setMode('view')
       setDeviceToPlace(null)
       setSelectedPlacementId(null)
-      scrollToSlide(newIdx)
     }
   }
   const goToNextMap = () => {
     if (canGoNext && maps[selectedMapIndex + 1]) {
-      const newIdx = selectedMapIndex + 1
-      setSelectedMapId(maps[newIdx]!.id)
+      setSelectedMapId(maps[selectedMapIndex + 1]!.id)
       setMode('view')
       setDeviceToPlace(null)
       setSelectedPlacementId(null)
-      scrollToSlide(newIdx)
     }
   }
-
-  // Detect which slide is currently visible after a swipe/scroll
-  const handleSliderScroll = useCallback(() => {
-    if (!sliderRef.current) return
-    const { scrollLeft, offsetWidth } = sliderRef.current
-    const index = Math.round(scrollLeft / offsetWidth)
-    const map = maps[index]
-    if (map && map.id !== selectedMapId) {
-      setSelectedMapId(map.id)
-      setMode('view')
-      setDeviceToPlace(null)
-      setSelectedPlacementId(null)
-    }
-  }, [maps, selectedMapId])
 
   // Real-time device status subscription
   useEffect(() => {
@@ -708,112 +683,98 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         )}
       </div>
 
-      {/* === SINGLE VIEW — HORIZONTAL SLIDER === */}
-      {viewMode === 'single' && maps.length > 0 && (
-        <div className="space-y-3">
-          <div className="relative">
-            {/* Left arrow overlay */}
-            {canGoPrev && (
-              <button
-                className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
-                onClick={goToPrevMap}
-                title={`Previous: ${maps[selectedMapIndex - 1]?.name}`}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-            )}
-            {/* Right arrow overlay */}
-            {canGoNext && (
-              <button
-                className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
-                onClick={goToNextMap}
-                title={`Next: ${maps[selectedMapIndex + 1]?.name}`}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            )}
+      {/* === SINGLE VIEW === */}
+      {viewMode === 'single' && selectedMap && (
+        <div className="mx-auto max-w-4xl">
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            {/* Map with left/right arrows */}
+            <div className="relative">
+              {/* Left arrow */}
+              {canGoPrev && (
+                <button
+                  className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
+                  onClick={goToPrevMap}
+                  title={`Previous: ${maps[selectedMapIndex - 1]?.name}`}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+              {/* Right arrow */}
+              {canGoNext && (
+                <button
+                  className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-colors hover:bg-black/70"
+                  onClick={goToNextMap}
+                  title={`Next: ${maps[selectedMapIndex + 1]?.name}`}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
 
-            {/* Scroll-snap slider */}
-            <div
-              ref={sliderRef}
-              className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide"
-              style={{ scrollBehavior: 'smooth' }}
-              onScroll={handleSliderScroll}
-            >
-              {maps.map((m) => {
-                const isActive = m.id === selectedMapId
-                const slidePlacements = isActive ? placements : (allPlacements[m.id] || [])
-                return (
-                  <div key={m.id} className="min-w-full shrink-0 snap-center">
-                    <Card className="overflow-hidden">
-                      <FacilityMapCanvas
-                        facilityMap={m}
-                        placements={slidePlacements}
-                        availableDevices={devices}
-                        mode={isActive ? (mode === 'place' ? 'place' : mode) : 'view'}
-                        selectedPlacementId={isActive ? selectedPlacementId : null}
-                        deviceToPlace={isActive ? deviceToPlace : null}
-                        onPlaceDevice={isActive ? handlePlaceDevice : () => {}}
-                        onMovePlacement={isActive ? handleMovePlacement : () => {}}
-                        onSelectPlacement={isActive ? setSelectedPlacementId : () => {}}
-                        onRemovePlacement={isActive ? handleRemovePlacement : () => {}}
-                        onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
-                        telemetryMap={telemetryMap}
-                      />
-                    </Card>
-                  </div>
-                )
-              })}
+              <Card className="overflow-hidden">
+                <FacilityMapCanvas
+                  facilityMap={selectedMap}
+                  placements={placements}
+                  availableDevices={devices}
+                  mode={mode === 'place' ? 'place' : mode}
+                  selectedPlacementId={selectedPlacementId}
+                  deviceToPlace={deviceToPlace}
+                  onPlaceDevice={handlePlaceDevice}
+                  onMovePlacement={handleMovePlacement}
+                  onSelectPlacement={setSelectedPlacementId}
+                  onRemovePlacement={handleRemovePlacement}
+                  onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+                  telemetryMap={telemetryMap}
+                />
+              </Card>
+
+              {/* Map indicator dots */}
+              {maps.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 pt-2">
+                  {maps.map((m) => (
+                    <button
+                      key={m.id}
+                      className={`h-2 rounded-full transition-all ${
+                        m.id === selectedMapId ? 'w-6 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                      }`}
+                      onClick={() => {
+                        setSelectedMapId(m.id)
+                        setMode('view')
+                        setDeviceToPlace(null)
+                        setSelectedPlacementId(null)
+                      }}
+                      title={m.name}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Dot indicators */}
-            {maps.length > 1 && (
-              <div className="flex items-center justify-center gap-1.5 pt-3">
-                {maps.map((m, i) => (
-                  <button
-                    key={m.id}
-                    className={`h-2 rounded-full transition-all ${
-                      m.id === selectedMapId ? 'w-6 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                    }`}
-                    onClick={() => {
-                      setSelectedMapId(m.id)
-                      setMode('view')
-                      setDeviceToPlace(null)
-                      setSelectedPlacementId(null)
-                      scrollToSlide(i)
-                    }}
-                    title={m.name}
-                  />
-                ))}
+            {/* Device palette (only in edit mode) */}
+            {(mode === 'edit' || mode === 'place') && (
+              <div className="min-h-[300px] max-h-[520px]">
+                <DevicePalette
+                  devices={devices}
+                  placements={placements}
+                  deviceToPlace={deviceToPlace}
+                  onSelectToPlace={(id) => {
+                    setDeviceToPlace(id)
+                    setMode(id ? 'place' : 'edit')
+                  }}
+                  onRemovePlacement={handleRemovePlacement}
+                  loading={loadingDevices}
+                />
               </div>
             )}
           </div>
-
-          {/* Device palette (only in edit mode) */}
-          {(mode === 'edit' || mode === 'place') && (
-            <div className="max-h-[400px]">
-              <DevicePalette
-                devices={devices}
-                placements={placements}
-                deviceToPlace={deviceToPlace}
-                onSelectToPlace={(id) => {
-                  setDeviceToPlace(id)
-                  setMode(id ? 'place' : 'edit')
-                }}
-                onRemovePlacement={handleRemovePlacement}
-                loading={loadingDevices}
-              />
-            </div>
-          )}
         </div>
       )}
 
-      {/* Single view empty */}
-      {viewMode === 'single' && maps.length === 0 && (
+      {/* Single view no map selected */}
+      {viewMode === 'single' && !selectedMap && (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Building2 className="mx-auto mb-3 h-8 w-8 opacity-50" />
-            <p>No maps yet. Add your first map below.</p>
+            <p>No map selected. Add a map below or switch to collage view.</p>
           </CardContent>
         </Card>
       )}
