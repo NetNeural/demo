@@ -1145,7 +1145,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                           <Button
                             variant={heatmapMetric ? 'default' : 'outline'}
                             size="sm"
-                            className="h-6 text-[10px] px-2"
+                            className={`h-6 text-[10px] px-2 ${heatmapMetric ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
                             onClick={() => setHeatmapMetric(heatmapMetric ? null : availableMetrics[0]!)}
                           >
                             <Flame className="mr-1 h-3 w-3" />
