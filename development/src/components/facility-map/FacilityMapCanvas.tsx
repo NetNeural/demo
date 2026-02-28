@@ -319,6 +319,32 @@ export function FacilityMapCanvas({
           <span className="text-xs text-muted-foreground">
             {placements.length} device{placements.length !== 1 ? 's' : ''} placed
           </span>
+
+          {/* Show device names checkbox */}
+          {onShowLabelsChange && (
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showLabels}
+                onChange={(e) => onShowLabelsChange(e.target.checked)}
+                className="h-3 w-3 rounded accent-primary cursor-pointer"
+              />
+              Show Device Names
+            </label>
+          )}
+
+          {/* Show device type checkbox */}
+          {onShowDeviceTypesChange && (
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showDeviceTypes}
+                onChange={(e) => onShowDeviceTypesChange(e.target.checked)}
+                className="h-3 w-3 rounded accent-primary cursor-pointer"
+              />
+              Show Device Type
+            </label>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -417,32 +443,6 @@ export function FacilityMapCanvas({
             <span className="text-muted-foreground/40">|</span>
           )}
 
-          {/* Show device names checkbox */}
-          {onShowLabelsChange && (
-            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showLabels}
-                onChange={(e) => onShowLabelsChange(e.target.checked)}
-                className="h-3 w-3 rounded accent-primary cursor-pointer"
-              />
-              Show Device Names
-            </label>
-          )}
-
-          {/* Show device type checkbox */}
-          {onShowDeviceTypesChange && (
-            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showDeviceTypes}
-                onChange={(e) => onShowDeviceTypesChange(e.target.checked)}
-                className="h-3 w-3 rounded accent-primary cursor-pointer"
-              />
-              Show Device Type
-            </label>
-          )}
-
           {/* Heatmap selector */}
           {availableHeatmapMetrics.length > 0 && (
             <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
@@ -522,7 +522,7 @@ export function FacilityMapCanvas({
         ) : (
           <div
             ref={containerRef}
-            className={cn('relative', compact ? 'w-full' : 'inline-block w-full')}
+            className={cn('relative select-none', compact ? 'w-full' : 'inline-block w-full')}
             onClick={handleCanvasClick}
             onTouchEnd={handleTouchEnd}
             onDrop={handleDrop}
