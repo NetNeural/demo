@@ -141,7 +141,7 @@ jobs:
 
       - name: Create issue if performance degraded
         if: steps.analyze.outputs.FAILED == '1'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const date = new Date().toISOString().split('T')[0];
