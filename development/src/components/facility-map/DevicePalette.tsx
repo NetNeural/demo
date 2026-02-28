@@ -134,9 +134,14 @@ export function DevicePalette({
                         key={device.id}
                         className={cn(
                           'flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors',
-                          'hover:bg-accent',
+                          'hover:bg-accent cursor-grab active:cursor-grabbing',
                           deviceToPlace === device.id && 'bg-primary/10 ring-1 ring-primary'
                         )}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('application/x-device-id', device.id)
+                          e.dataTransfer.effectAllowed = 'copy'
+                        }}
                         onClick={() =>
                           onSelectToPlace(deviceToPlace === device.id ? null : device.id)
                         }

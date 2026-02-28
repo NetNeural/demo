@@ -134,6 +134,31 @@ export function FacilityMapCanvas({
     [mode, deviceToPlace, onPlaceDevice, zoneDrawing, onZonePointAdd]
   )
 
+  // Drop handler for drag-and-drop from DevicePalette
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      const deviceId = e.dataTransfer.getData('application/x-device-id')
+      if (!deviceId || !containerRef.current) return
+
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+
+      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+        onPlaceDevice(deviceId, x, y)
+      }
+    },
+    [onPlaceDevice]
+  )
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/x-device-id')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
+  }, [])
+
   // Touch support for placing devices on mobile
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
@@ -272,6 +297,9 @@ export function FacilityMapCanvas({
               Hover over icon to view details
             </Badge>
           )}
+          <span className="text-xs text-muted-foreground">
+            {placements.length} device{placements.length !== 1 ? 's' : ''} placed
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -306,9 +334,6 @@ export function FacilityMapCanvas({
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
           )}
-          <span className="text-xs text-muted-foreground ml-1">
-            {placements.length} device{placements.length !== 1 ? 's' : ''} placed
-          </span>
         </div>
       </div>
       )}
@@ -414,6 +439,8 @@ export function FacilityMapCanvas({
             className="relative inline-block w-full"
             onClick={handleCanvasClick}
             onTouchEnd={handleTouchEnd}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
