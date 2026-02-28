@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_restart_pending
 ALTER TABLE public.service_restart_requests ENABLE ROW LEVEL SECURITY;
 
 -- Allow authenticated users to request restarts
+DROP POLICY IF EXISTS "Users can request service restarts" ON public.service_restart_requests;
 CREATE POLICY "Users can request service restarts"
     ON public.service_restart_requests
     FOR INSERT
@@ -29,6 +30,7 @@ CREATE POLICY "Users can request service restarts"
     WITH CHECK (true);
 
 -- Allow users to view their own requests
+DROP POLICY IF EXISTS "Users can view their requests" ON public.service_restart_requests;
 CREATE POLICY "Users can view their requests"
     ON public.service_restart_requests
     FOR SELECT
@@ -36,6 +38,7 @@ CREATE POLICY "Users can view their requests"
     USING (requested_by = auth.uid() OR auth.jwt()->>'role' = 'service_role');
 
 -- Allow service role to update statuses (for MQTT subscriber)
+DROP POLICY IF EXISTS "Service role can update requests" ON public.service_restart_requests;
 CREATE POLICY "Service role can update requests"
     ON public.service_restart_requests
     FOR UPDATE

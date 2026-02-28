@@ -124,7 +124,8 @@ export function FeedbackDetailDialog({
   ) => {
     if (!replyText.trim() || !item || !currentOrganization) return
 
-    const setter = action === 'request-info' ? setRequestingInfo : setSendingReply
+    const setter =
+      action === 'request-info' ? setRequestingInfo : setSendingReply
     setter(true)
 
     try {
@@ -458,9 +459,7 @@ export function FeedbackDetailDialog({
               <div className="flex items-center gap-2">
                 <Send className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-sm font-semibold">
-                  {isSubmitter
-                    ? 'Add More Information'
-                    : 'Reply to Submitter'}
+                  {isSubmitter ? 'Add More Information' : 'Reply to Submitter'}
                 </h3>
               </div>
               <Textarea
@@ -478,9 +477,7 @@ export function FeedbackDetailDialog({
                 <Button
                   size="sm"
                   onClick={() => handlePostComment('comment')}
-                  disabled={
-                    sendingReply || requestingInfo || !replyText.trim()
-                  }
+                  disabled={sendingReply || requestingInfo || !replyText.trim()}
                 >
                   {sendingReply ? (
                     <>

@@ -31,6 +31,8 @@ import {
   FileSpreadsheet,
 } from 'lucide-react'
 import ExecutiveReportsCard from './ExecutiveReportsCard'
+import { EmailBroadcastCard } from './EmailBroadcastCard'
+import { useUser } from '@/contexts/UserContext'
 
 interface Props {
   organizationId: string
@@ -38,6 +40,8 @@ interface Props {
 
 export default function AdminToolsTab({ organizationId }: Props) {
   const supabase = createClient()
+  const { user } = useUser()
+  const isSuperAdmin = user?.isSuperAdmin || false
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv')
   const [exportType, setExportType] = useState<string>('telemetry')
   const [exporting, setExporting] = useState(false)
@@ -182,8 +186,11 @@ export default function AdminToolsTab({ organizationId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Executive Reports */}
+      {/* Executive Reports + Feature Reports */}
       <ExecutiveReportsCard organizationId={organizationId} />
+
+      {/* Email Broadcast — Super Admin only */}
+      {isSuperAdmin && <EmailBroadcastCard />}
 
       {/* Data Export */}
       <Card>

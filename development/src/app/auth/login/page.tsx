@@ -87,18 +87,26 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Form state
-  const [email, setEmail] = useState(
-    process.env.NODE_ENV === 'development' ? 'admin@netneural.ai' : ''
-  )
-  const [password, setPassword] = useState(
-    process.env.NODE_ENV === 'development' ? 'password123' : ''
-  )
+  // Form state — Issue #271: Removed hardcoded dev credentials
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const hasCheckedAuth = useRef(false)
+  // Issue #275: Prevent state updates on unmounted component
+  const isMounted = useRef(true)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
 
   // MFA challenge state
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -227,11 +235,13 @@ function LoginForm() {
 
         if (loginError) {
           auditLoginFailed(email.trim(), loginError.message)
+          if (!isMounted.current) return
           setError('Invalid email or password. Please try again.')
           setIsLoading(false)
           return
         }
         if (!data.user) {
+          if (!isMounted.current) return
           setError('Login failed — please try again')
           setIsLoading(false)
           return
@@ -288,10 +298,12 @@ function LoginForm() {
           router.push('/dashboard')
           setTimeout(() => router.refresh(), 50)
         } else {
+          if (!isMounted.current) return
           setError('Session could not be established. Please try again.')
           setIsLoading(false)
         }
       } catch {
+        if (!isMounted.current) return
         setError('An unexpected error occurred. Please try again.')
         setIsLoading(false)
       }
@@ -317,6 +329,7 @@ function LoginForm() {
             factorId: mfaFactorId,
           })
         if (challengeError) {
+          if (!isMounted.current) return
           setError(`Verification failed: ${challengeError.message}`)
           setMfaVerifying(false)
           return
@@ -328,6 +341,7 @@ function LoginForm() {
           code: mfaCode,
         })
         if (verifyError) {
+          if (!isMounted.current) return
           setError('Invalid verification code. Please try again.')
           setMfaCode('')
           setMfaVerifying(false)
@@ -361,11 +375,49 @@ function LoginForm() {
         router.push('/dashboard')
         setTimeout(() => router.refresh(), 50)
       } catch {
+        if (!isMounted.current) return
         setError('An unexpected error occurred during verification.')
         setMfaVerifying(false)
       }
     },
     [mfaFactorId, mfaCode, router]
+  )
+
+  // ── Forgot password handler ──────────────────────────────────────────
+  const handleForgotPassword = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      const trimmedEmail = email.trim()
+      if (!trimmedEmail) {
+        setError('Please enter your email address')
+        return
+      }
+      setResetLoading(true)
+      setError('')
+      try {
+        const supabase = createClient()
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          trimmedEmail,
+          {
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+          }
+        )
+        if (resetError) {
+          if (!isMounted.current) return
+          setError(resetError.message)
+          setResetLoading(false)
+          return
+        }
+        if (!isMounted.current) return
+        setResetSent(true)
+      } catch {
+        if (!isMounted.current) return
+        setError('An unexpected error occurred. Please try again.')
+      } finally {
+        if (isMounted.current) setResetLoading(false)
+      }
+    },
+    [email]
   )
 
   // Don't render until branding is resolved (prevents flash)
@@ -384,21 +436,29 @@ function LoginForm() {
     >
       {/* ───── Background image (if configured) ───── */}
       {bgUrl && (
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Desktop background */}
           <img
             src={bgUrl}
             alt=""
             className={`hidden h-full w-full md:block ${
-              bgFit === 'cover' ? 'object-cover' :
-              bgFit === 'contain' ? 'object-contain' :
-              bgFit === 'fill' ? 'object-fill' :
-              'object-none'
+              bgFit === 'cover'
+                ? 'object-cover'
+                : bgFit === 'contain'
+                  ? 'object-contain'
+                  : bgFit === 'fill'
+                    ? 'object-fill'
+                    : 'object-none'
             }`}
             style={{
               objectPosition: `${bgPosDesktop.x}% ${bgPosDesktop.y}%`,
-              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
+              ...(enhanceBg
+                ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' }
+                : {}),
               minHeight: '100vh',
               minWidth: '100vw',
             }}
@@ -408,14 +468,19 @@ function LoginForm() {
             src={bgUrl}
             alt=""
             className={`block h-full w-full md:hidden ${
-              bgFit === 'cover' ? 'object-cover' :
-              bgFit === 'contain' ? 'object-contain' :
-              bgFit === 'fill' ? 'object-fill' :
-              'object-none'
+              bgFit === 'cover'
+                ? 'object-cover'
+                : bgFit === 'contain'
+                  ? 'object-contain'
+                  : bgFit === 'fill'
+                    ? 'object-fill'
+                    : 'object-none'
             }`}
             style={{
               objectPosition: `${bgPosMobile.x}% ${bgPosMobile.y}%`,
-              ...(enhanceBg ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' } : {}),
+              ...(enhanceBg
+                ? { filter: 'brightness(1.08) contrast(1.12) saturate(1.25)' }
+                : {}),
               minHeight: '100vh',
               minWidth: '100vw',
             }}
@@ -426,121 +491,120 @@ function LoginForm() {
 
       {/* ───── Animated mesh background ───── */}
       {showAnimatedBg && (
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        aria-hidden="true"
-      >
-        {/* Gradient orbs */}
         <div
-          className="absolute h-[600px] w-[600px] animate-pulse rounded-full opacity-20 blur-[128px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.primary}, transparent)`,
-            top: '-10%',
-            left: '-10%',
-            animationDuration: '8s',
-          }}
-        />
-        <div
-          className="absolute h-[500px] w-[500px] animate-pulse rounded-full opacity-15 blur-[128px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.secondary}, transparent)`,
-            bottom: '-10%',
-            right: '-10%',
-            animationDuration: '10s',
-            animationDelay: '-3s',
-          }}
-        />
-        <div
-          className="absolute h-[400px] w-[400px] animate-pulse rounded-full opacity-10 blur-[100px]"
-          style={{
-            background: `radial-gradient(circle, ${colors.accent}, transparent)`,
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            animationDuration: '12s',
-            animationDelay: '-6s',
-          }}
-        />
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          {/* Gradient orbs */}
+          <div
+            className="absolute h-[600px] w-[600px] animate-pulse rounded-full opacity-20 blur-[128px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.primary}, transparent)`,
+              top: '-10%',
+              left: '-10%',
+              animationDuration: '8s',
+            }}
+          />
+          <div
+            className="absolute h-[500px] w-[500px] animate-pulse rounded-full opacity-15 blur-[128px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.secondary}, transparent)`,
+              bottom: '-10%',
+              right: '-10%',
+              animationDuration: '10s',
+              animationDelay: '-3s',
+            }}
+          />
+          <div
+            className="absolute h-[400px] w-[400px] animate-pulse rounded-full opacity-10 blur-[100px]"
+            style={{
+              background: `radial-gradient(circle, ${colors.accent}, transparent)`,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              animationDuration: '12s',
+              animationDelay: '-6s',
+            }}
+          />
 
-        {/* Grid lines */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(${colors.primary}40 1px, transparent 1px), linear-gradient(90deg, ${colors.primary}40 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
-          }}
-        />
+          {/* Grid lines */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(${colors.primary}40 1px, transparent 1px), linear-gradient(90deg, ${colors.primary}40 1px, transparent 1px)`,
+              backgroundSize: '60px 60px',
+            }}
+          />
 
-        {/* Floating IoT node icons */}
-        {nodes.map((node) => {
-          const IconComponent = NODE_ICONS[node.icon] as LucideIcon
-          return (
-            <div
-              key={node.id}
-              className="absolute"
-              style={{
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                opacity: 0.06,
-                animation: `nnFloat ${node.speed}s linear infinite`,
-                animationDelay: `${node.delay}s`,
-              }}
-            >
-              <IconComponent
+          {/* Floating IoT node icons */}
+          {nodes.map((node) => {
+            const IconComponent = NODE_ICONS[node.icon] as LucideIcon
+            return (
+              <div
+                key={node.id}
+                className="absolute"
                 style={{
-                  width: node.size,
-                  height: node.size,
-                  color: colors.primary,
+                  left: `${node.x}%`,
+                  top: `${node.y}%`,
+                  opacity: 0.06,
+                  animation: `nnFloat ${node.speed}s linear infinite`,
+                  animationDelay: `${node.delay}s`,
                 }}
-              />
-            </div>
-          )
-        })}
-      </div>
+              >
+                <IconComponent
+                  style={{
+                    width: node.size,
+                    height: node.size,
+                    color: colors.primary,
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {/* ───── Content ───── */}
       <div className="relative z-10 mx-4 w-full max-w-md sm:mx-auto">
         {/* Brand header */}
-        <div className="mb-6 sm:mb-8 text-center">
-          {showLogo && (
-            logoUrl ? (
-              <div className="mb-3 sm:mb-4 flex justify-center">
+        <div className="mb-6 text-center sm:mb-8">
+          {showLogo &&
+            (logoUrl ? (
+              <div className="mb-3 flex justify-center sm:mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
                   alt={`${orgName} logo`}
-                  className="h-12 sm:h-16 w-auto object-contain drop-shadow-lg"
+                  className="h-12 w-auto object-contain drop-shadow-lg sm:h-16"
                 />
               </div>
             ) : (
-              <div className="mb-3 sm:mb-4 flex justify-center">
+              <div className="mb-3 flex justify-center sm:mb-4">
                 <div
-                  className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl shadow-lg"
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg sm:h-16 sm:w-16"
                   style={{
                     background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                     boxShadow: `0 8px 32px ${colors.primary}30`,
                   }}
                 >
-                  <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                  <Activity className="h-6 w-6 text-white sm:h-8 sm:w-8" />
                 </div>
               </div>
-            )
-          )}
+            ))}
           <h1
-            className="text-2xl sm:text-3xl font-bold tracking-tight"
+            className="text-2xl font-bold tracking-tight sm:text-3xl"
             style={{ color: colors.primary }}
           >
             {headline || orgName}
           </h1>
-          <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-gray-300">
+          <p className="mt-1 text-2xl font-bold tracking-tight text-gray-300 sm:text-3xl">
             {subtitle || (branding ? 'Sentinel' : 'Sentinel by NetNeural')}
           </p>
         </div>
 
         {/* Glass card */}
         <div
-          className="rounded-2xl border p-6 sm:p-8 shadow-2xl backdrop-blur-xl"
+          className="rounded-2xl border p-6 shadow-2xl backdrop-blur-xl sm:p-8"
           style={{
             background: `rgba(15, 23, 42, ${cardOpacity / 100})`,
             borderColor: `${colors.primary}20`,
@@ -670,6 +734,97 @@ function LoginForm() {
                 ← Back to sign in
               </button>
             </form>
+          ) : forgotMode ? (
+            /* ── Forgot Password Form ── */
+            resetSent ? (
+              <div className="text-center py-4">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
+                  <Lock className="h-6 w-6 text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-100">Check your email</h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  We sent a password reset link to{' '}
+                  <span className="font-medium text-gray-200">{email}</span>.
+                  Click the link in the email to reset your password.
+                </p>
+                <p className="mt-3 text-xs text-gray-500">
+                  Didn&apos;t receive it? Check your spam folder or try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(false)
+                    setResetSent(false)
+                    setError('')
+                  }}
+                  className="mt-6 text-sm transition-colors hover:text-gray-300"
+                  style={{ color: colors.primary }}
+                >
+                  ← Back to sign in
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword}>
+                <p className="mb-4 text-sm text-gray-400">
+                  Enter your email address and we&apos;ll send you a link to reset your password.
+                </p>
+
+                {/* Email */}
+                <div className="mb-6">
+                  <label
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                    htmlFor="reset-email"
+                  >
+                    Email address
+                  </label>
+                  <input
+                    id="reset-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    autoFocus
+                    className="w-full rounded-lg border border-gray-700/60 bg-gray-800/60 px-4 py-3 text-gray-100 transition-all placeholder:text-gray-500 focus:outline-none focus:ring-2"
+                    style={{
+                      ['--tw-ring-color' as string]: `${colors.primary}80`,
+                    }}
+                  />
+                </div>
+
+                {/* Submit */}
+                <Button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="h-12 w-full rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                    boxShadow: `0 4px 20px ${colors.primary}30`,
+                  }}
+                >
+                  {resetLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send reset link'
+                  )}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(false)
+                    setError('')
+                  }}
+                  className="mt-4 w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-300"
+                >
+                  ← Back to sign in
+                </button>
+              </form>
+            )
           ) : (
             /* ── Normal Login Form ── */
             <form onSubmit={handleSubmit}>
@@ -775,9 +930,34 @@ function LoginForm() {
           )}
 
           {/* Footer */}
-          <p className="mt-6 text-center text-xs text-gray-500">
-            Forgot your password? Contact your system administrator
-          </p>
+          {!forgotMode && !mfaRequired && (
+            <p className="mt-6 text-center text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotMode(true)
+                  setError('')
+                }}
+                className="text-gray-500 transition-colors hover:text-gray-300 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </p>
+          )}
+
+          {/* Sign up link */}
+          {!forgotMode && !mfaRequired && (
+            <p className="mt-3 text-center text-sm text-gray-400">
+              Don&apos;t have an account?{' '}
+              <a
+                href="/auth/signup"
+                className="font-medium transition-colors hover:underline"
+                style={{ color: colors.primary }}
+              >
+                Sign up
+              </a>
+            </p>
+          )}
         </div>
 
         {/* Security badge */}
@@ -786,6 +966,13 @@ function LoginForm() {
           <span>Enterprise-grade security</span>
           <span className="text-gray-700">•</span>
           <span>256-bit encryption</span>
+          <span className="text-gray-700">•</span>
+          <a
+            href="/privacy"
+            className="underline transition-colors hover:text-gray-300"
+          >
+            Privacy Policy
+          </a>
         </div>
 
         {/* Powered by (only for org-branded logins) */}

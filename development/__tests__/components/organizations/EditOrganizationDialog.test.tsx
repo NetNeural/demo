@@ -35,7 +35,11 @@ jest.mock('@/lib/edge-functions/client', () => ({
 // Mock Supabase client (needed by other transitive imports)
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
-    auth: { getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }) },
+    auth: {
+      getSession: jest
+        .fn()
+        .mockResolvedValue({ data: { session: null }, error: null }),
+    },
   })),
 }))
 

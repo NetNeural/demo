@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import { FeatureGate } from '@/components/FeatureGate'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { format } from 'date-fns'
@@ -159,6 +160,7 @@ export default function ReportsIndexPage() {
         'CSV export',
       ],
       adminOnly: true,
+      gateFeature: 'audit_logs',
     },
   ]
 
@@ -252,7 +254,7 @@ export default function ReportsIndexPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {reports.map((report) => {
             const Icon = report.icon
-            return (
+            const card = (
               <Card
                 key={report.href}
                 className="transition-shadow hover:shadow-lg"
@@ -293,6 +295,20 @@ export default function ReportsIndexPage() {
                 </CardContent>
               </Card>
             )
+
+            if (report.gateFeature) {
+              return (
+                <FeatureGate
+                  key={report.href}
+                  feature={report.gateFeature}
+                  showUpgradePrompt
+                >
+                  {card}
+                </FeatureGate>
+              )
+            }
+
+            return card
           })}
         </div>
       </div>

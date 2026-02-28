@@ -1,7 +1,6 @@
 // Direct API test - check integrations and trigger sync
 const SUPABASE_URL = 'http://127.0.0.1:54321'
-const SUPABASE_ANON_KEY =
-  '<YOUR_SUPABASE_ANON_KEY>'
+const SUPABASE_ANON_KEY = '<YOUR_SUPABASE_ANON_KEY>'
 const ORG_ID = '00000000-0000-0000-0000-000000000001'
 
 console.log('🧪 Direct API: Golioth Sync\n')

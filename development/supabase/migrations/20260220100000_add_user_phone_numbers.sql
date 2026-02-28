@@ -69,6 +69,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for phone validation
+DROP TRIGGER IF EXISTS validate_phone_numbers ON users;
 CREATE TRIGGER validate_phone_numbers
     BEFORE INSERT OR UPDATE OF phone_number, phone_number_secondary, phone_sms_enabled, phone_secondary_sms_enabled
     ON users

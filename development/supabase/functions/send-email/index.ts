@@ -9,7 +9,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 }
 
 interface EmailRequest {
@@ -34,7 +35,8 @@ serve(async (req) => {
       throw new Error('RESEND_API_KEY not configured')
     }
 
-    const { to, subject, html, text, attachments } = (await req.json()) as EmailRequest
+    const { to, subject, html, text, attachments } =
+      (await req.json()) as EmailRequest
 
     if (!to || to.length === 0) {
       throw new Error('No recipients specified')
@@ -44,7 +46,9 @@ serve(async (req) => {
       throw new Error('Subject and html are required')
     }
 
-    console.log(`[send-email] Sending to ${to.length} recipients: ${to.join(', ')}`)
+    console.log(
+      `[send-email] Sending to ${to.length} recipients: ${to.join(', ')}`
+    )
     console.log(`[send-email] Subject: ${subject}`)
 
     const resendBody: Record<string, unknown> = {
@@ -60,13 +64,15 @@ serve(async (req) => {
 
     if (attachments && attachments.length > 0) {
       resendBody.attachments = attachments
-      console.log(`[send-email] Attachments: ${attachments.map(a => a.filename).join(', ')}`)
+      console.log(
+        `[send-email] Attachments: ${attachments.map((a) => a.filename).join(', ')}`
+      )
     }
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(resendBody),
@@ -76,7 +82,9 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error('[send-email] Resend API error:', JSON.stringify(result))
-      throw new Error(`Resend API error: ${result.message || response.statusText}`)
+      throw new Error(
+        `Resend API error: ${result.message || response.statusText}`
+      )
     }
 
     console.log('[send-email] Email sent successfully:', JSON.stringify(result))

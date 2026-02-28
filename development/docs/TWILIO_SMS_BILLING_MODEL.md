@@ -7,13 +7,14 @@ NetNeural charges customers for SMS alert delivery as a **billable service featu
 ✅ **Simplifies operations** - One Twilio account to manage  
 ✅ **Improves security** - Credentials stored in environment only, not in database  
 ✅ **Enables billing** - Track SMS sends per organization for invoicing  
-✅ **Better UX** - Users just enable SMS in thresholds, no Twilio setup needed  
+✅ **Better UX** - Users just enable SMS in thresholds, no Twilio setup needed
 
 ---
 
 ## Configuration (One-Time Setup)
 
 ### Prerequisites
+
 - Twilio account with active SMS service
 - Access to GitHub repository secrets (for prod deployment)
 - Access to Supabase environment variables (for local/staging)
@@ -29,6 +30,7 @@ NetNeural charges customers for SMS alert delivery as a **billable service featu
 ### Step 2: Set Environment Variables
 
 #### **For Production (GitHub Pages)**
+
 Store in GitHub repository secrets:
 
 ```bash
@@ -40,6 +42,7 @@ gh secret set TWILIO_FROM_NUMBER --body "+1234567890"
 See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
 
 #### **For Local Development**
+
 Create `.env.local` (gitignored):
 
 ```env
@@ -49,6 +52,7 @@ TWILIO_FROM_NUMBER=+1234567890
 ```
 
 #### **For Staging/Preview**
+
 Set in Supabase environment:
 
 1. Supabase Dashboard → **Settings** → **Environment**
@@ -71,6 +75,7 @@ supabase functions deploy send-alert-notifications --project-ref YOUR-PROJECT-ID
 ## How It Works
 
 ### User Flow
+
 1. User enables **SMS** in sensor threshold notification channels
 2. User enters recipient phone numbers (or selects users with saved phone numbers)
 3. Alert triggers → Edge Function reads Twilio credentials from environment
@@ -78,6 +83,7 @@ supabase functions deploy send-alert-notifications --project-ref YOUR-PROJECT-ID
 5. SMS cost tracked and billed to customer
 
 ### Code Flow
+
 ```
 alert triggers
     ↓
@@ -101,16 +107,19 @@ Cost added to NetNeural's Twilio bill
 ## Billing & Cost Tracking
 
 ### Current (Manual)
+
 - Check Twilio Dashboard → **Messages** → See all SMS sent
 - Filter by date range to calculate costs per customer
 - Implement custom billing logic in dashboard later
 
 ### Future (Automated)
+
 - Webhook from Twilio → capture SMS send events → store in `notification_logs` table
 - Track SMS count per `organization_id`
 - Auto-invoice based on SMS volume
 
 ### Twilio Pricing (as of 2026)
+
 - Typically **$0.0075 per SMS** (varies by country)
 - Include in usage billing alongside device API calls
 
@@ -164,12 +173,14 @@ Users enable SMS by:
 ## Security Best Practices
 
 ✅ **DO:**
+
 - Store Twilio credentials in GitHub Secrets (production) or `.env.local` (local)
 - Never commit credentials to version control
 - Rotate Auth Token annually (see SECRETS_INVENTORY.md)
 - Use service account for API access
 
 ❌ **DON'T:**
+
 - Store credentials in `organizations.settings` (not scalable, multi-tenant risk)
 - Commit `.env.local` or any secrets to git
 - Share Auth Token via Slack, email, or documentation

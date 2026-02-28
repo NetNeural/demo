@@ -180,9 +180,7 @@ export function SendReportDialog({
           if (emailResponse.success) {
             results.push(`Email sent to ${emailRecipients.length} recipient(s)`)
           } else {
-            throw new Error(
-              String(emailResponse.error || 'Email send failed')
-            )
+            throw new Error(String(emailResponse.error || 'Email send failed'))
           }
         }
       }
@@ -201,9 +199,7 @@ export function SendReportDialog({
           if (smsResponse.success) {
             results.push(`SMS sent to ${smsRecipients.length} recipient(s)`)
           } else {
-            throw new Error(
-              String(smsResponse.error || 'SMS send failed')
-            )
+            throw new Error(String(smsResponse.error || 'SMS send failed'))
           }
         }
       }
@@ -325,22 +321,19 @@ export function SendReportDialog({
                     checked={selectedIds.has(member.id)}
                     onCheckedChange={() => toggleMember(member.id)}
                   />
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium">
                         {member.full_name || member.email}
                       </span>
-                      <Badge variant="outline" className="text-xs shrink-0">
+                      <Badge variant="outline" className="shrink-0 text-xs">
                         {member.role}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="truncate">{member.email}</span>
                       {hasSMS && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs shrink-0"
-                        >
+                        <Badge variant="secondary" className="shrink-0 text-xs">
                           SMS
                         </Badge>
                       )}
@@ -354,11 +347,12 @@ export function SendReportDialog({
 
         {/* Send Info */}
         {selectedIds.size > 0 && (
-          <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
+          <div className="space-y-1 rounded-md bg-muted/50 p-3 text-sm">
             {(channel === 'email' || channel === 'both') && (
               <p>
                 <Mail className="mr-1 inline h-3 w-3" />
-                Email with CSV attachment → {emailRecipients.length} recipient(s)
+                Email with CSV attachment → {emailRecipients.length}{' '}
+                recipient(s)
               </p>
             )}
             {(channel === 'sms' || channel === 'both') && (

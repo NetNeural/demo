@@ -52,9 +52,14 @@ async function sendResolutionNotification(
       .select('full_name, email')
       .eq('id', resolvedByUserId)
       .single()
-    const resolverName = resolver?.full_name || resolver?.email || resolvedByUserId
-    const resolvedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
-    const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert.id.slice(0, 8)
+    const resolverName =
+      resolver?.full_name || resolver?.email || resolvedByUserId
+    const resolvedAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+    })
+    const alertNum = alert.alert_number
+      ? `ALT-${alert.alert_number}`
+      : alert.id.slice(0, 8)
 
     // Find threshold to get original notification recipients
     const thresholdId = alert.metadata?.threshold_id
@@ -85,7 +90,8 @@ async function sendResolutionNotification(
           .select('user_id')
           .eq('organization_id', orgId)
           .in('role', ['owner', 'admin'])
-        recipientUserIds = members?.map((m: { user_id: string }) => m.user_id) || []
+        recipientUserIds =
+          members?.map((m: { user_id: string }) => m.user_id) || []
       }
     }
 
@@ -135,7 +141,9 @@ async function sendResolutionNotification(
       })
       .eq('id', alertId)
 
-    console.log(`[alerts] Resolution notification sent for alert ${alertId} (${alertNum})`)
+    console.log(
+      `[alerts] Resolution notification sent for alert ${alertId} (${alertNum})`
+    )
   } catch (err) {
     console.warn('[alerts] Resolution notification failed (non-fatal):', err)
   }
@@ -155,6 +163,10 @@ export default createEdgeFunction(
         parseInt(url.searchParams.get('limit') || '50'),
         500
       ) // Cap at 500
+      const offset = Math.max(
+        parseInt(url.searchParams.get('offset') || '0'),
+        0
+      ) // Issue #269: Pagination offset
       const requestedOrgId = url.searchParams.get('organization_id')
       const severityFilter = url.searchParams.get('severity') // Filter by severity
       const resolvedFilter = url.searchParams.get('resolved') // Filter by resolution status
@@ -170,16 +182,18 @@ export default createEdgeFunction(
       }
 
       // Build query - RLS will enforce access automatically
+      // Issue #269: Use .range() for offset-based pagination and count: 'exact' for total
       let query = supabase
         .from('alerts')
         .select(
           `
           *,
           devices!device_id(name, device_type)
-        `
+        `,
+          { count: 'exact' }
         )
         .order('created_at', { ascending: false })
-        .limit(limit)
+        .range(offset, offset + limit - 1)
 
       // Only filter by org if specified (super admins can query all orgs)
       if (organizationId) {
@@ -197,7 +211,7 @@ export default createEdgeFunction(
       }
 
       // Execute query - RLS ensures user can only see allowed alerts
-      const { data: alerts, error } = await query
+      const { data: alerts, error, count: totalCount } = await query
 
       if (error) {
         console.error('Database error:', error)
@@ -224,14 +238,18 @@ export default createEdgeFunction(
           resolvedBy: alert.resolved_by,
           snoozedUntil: alert.snoozed_until,
           snoozedBy: alert.snoozed_by,
-          isSnoozed: alert.snoozed_until ? new Date(alert.snoozed_until) > new Date() : false,
+          isSnoozed: alert.snoozed_until
+            ? new Date(alert.snoozed_until) > new Date()
+            : false,
           metadata: alert.metadata,
         })) || []
 
       return createSuccessResponse({
         alerts: transformedAlerts,
         count: transformedAlerts.length,
+        totalCount: totalCount ?? transformedAlerts.length, // Issue #269: Total matching records for pagination
         limit,
+        offset, // Issue #269: Current offset for pagination
         organizationId,
         filters: {
           severity: severityFilter,
@@ -321,14 +339,22 @@ export default createEdgeFunction(
 
       // Check access for each alert — verify membership (Bug #221 fix)
       if (!userContext.isSuperAdmin) {
-        const uniqueOrgIds = [...new Set(alertsToAck?.map(a => a.organization_id).filter(Boolean) || [])]
+        const uniqueOrgIds = [
+          ...new Set(
+            alertsToAck?.map((a) => a.organization_id).filter(Boolean) || []
+          ),
+        ]
         const membershipChecks = await Promise.all(
           uniqueOrgIds.map(async (orgId) => ({
             orgId,
-            isMember: await isUserMemberOfOrg(supabase, userContext.userId, orgId),
+            isMember: await isUserMemberOfOrg(
+              supabase,
+              userContext.userId,
+              orgId
+            ),
           }))
         )
-        const deniedOrgs = membershipChecks.filter(c => !c.isMember)
+        const deniedOrgs = membershipChecks.filter((c) => !c.isMember)
         if (deniedOrgs.length > 0) {
           throw new DatabaseError(
             'You do not have access to some of these alerts',
@@ -369,7 +395,10 @@ export default createEdgeFunction(
         .in('id', alert_ids)
 
       if (resolveError) {
-        console.error('Failed to resolve bulk acknowledged alerts:', resolveError)
+        console.error(
+          'Failed to resolve bulk acknowledged alerts:',
+          resolveError
+        )
         // Non-fatal: acknowledgements were recorded, but alerts may still show
       }
 
@@ -398,7 +427,11 @@ export default createEdgeFunction(
       if (!alert) throw new DatabaseError('Alert not found', 404)
 
       if (!userContext.isSuperAdmin) {
-        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        const hasMembership = await isUserMemberOfOrg(
+          supabase,
+          userContext.userId,
+          alert.organization_id
+        )
         if (!hasMembership) {
           throw new DatabaseError('Access denied', 403)
         }
@@ -411,10 +444,19 @@ export default createEdgeFunction(
         .eq('alert_id', alertId)
         .order('created_at', { ascending: true })
 
-      if (eventsError) throw new DatabaseError(`Failed to fetch timeline: ${eventsError.message}`)
+      if (eventsError)
+        throw new DatabaseError(
+          `Failed to fetch timeline: ${eventsError.message}`
+        )
 
       // Resolve user names for events that have user_ids
-      const userIds = [...new Set((events || []).filter((e: any) => e.user_id).map((e: any) => e.user_id))]
+      const userIds = [
+        ...new Set(
+          (events || [])
+            .filter((e: any) => e.user_id)
+            .map((e: any) => e.user_id)
+        ),
+      ]
       let userMap: Record<string, string> = {}
 
       if (userIds.length > 0) {
@@ -423,10 +465,13 @@ export default createEdgeFunction(
           .select('id, full_name, email')
           .in('id', userIds)
 
-        userMap = (users || []).reduce((acc: Record<string, string>, u: any) => {
-          acc[u.id] = u.full_name || u.email || u.id
-          return acc
-        }, {})
+        userMap = (users || []).reduce(
+          (acc: Record<string, string>, u: any) => {
+            acc[u.id] = u.full_name || u.email || u.id
+            return acc
+          },
+          {}
+        )
       }
 
       // Record 'viewed' event
@@ -448,7 +493,10 @@ export default createEdgeFunction(
     if (req.method === 'GET' && req.url.includes('/stats')) {
       const url = new URL(req.url)
       const requestedOrgId = url.searchParams.get('organization_id')
-      const organizationId = await resolveOrganizationId(userContext, requestedOrgId)
+      const organizationId = await resolveOrganizationId(
+        userContext,
+        requestedOrgId
+      )
 
       if (!organizationId && !userContext.isSuperAdmin) {
         throw new DatabaseError('Organization required', 403)
@@ -493,13 +541,19 @@ export default createEdgeFunction(
 
       if (!alert) throw new DatabaseError('Alert not found', 404)
       if (!userContext.isSuperAdmin) {
-        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        const hasMembership = await isUserMemberOfOrg(
+          supabase,
+          userContext.userId,
+          alert.organization_id
+        )
         if (!hasMembership) {
           throw new DatabaseError('Access denied', 403)
         }
       }
 
-      const snoozedUntil = new Date(Date.now() + duration_minutes * 60 * 1000).toISOString()
+      const snoozedUntil = new Date(
+        Date.now() + duration_minutes * 60 * 1000
+      ).toISOString()
 
       const { error: snoozeError } = await supabase
         .from('alerts')
@@ -509,9 +563,12 @@ export default createEdgeFunction(
         })
         .eq('id', alert_id)
 
-      if (snoozeError) throw new DatabaseError(`Failed to snooze: ${snoozeError.message}`)
+      if (snoozeError)
+        throw new DatabaseError(`Failed to snooze: ${snoozeError.message}`)
 
-      const alertNum = alert.alert_number ? `ALT-${alert.alert_number}` : alert_id.slice(0, 8)
+      const alertNum = alert.alert_number
+        ? `ALT-${alert.alert_number}`
+        : alert_id.slice(0, 8)
 
       return createSuccessResponse({
         message: `${alertNum} snoozed for ${duration_minutes} minutes`,
@@ -534,7 +591,11 @@ export default createEdgeFunction(
 
       if (!alert) throw new DatabaseError('Alert not found', 404)
       if (!userContext.isSuperAdmin) {
-        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        const hasMembership = await isUserMemberOfOrg(
+          supabase,
+          userContext.userId,
+          alert.organization_id
+        )
         if (!hasMembership) {
           throw new DatabaseError('Access denied', 403)
         }
@@ -574,7 +635,11 @@ export default createEdgeFunction(
 
       // Check if user has access to this alert's organization (Bug #221 fix: check membership, not default org)
       if (!userContext.isSuperAdmin) {
-        const hasMembership = await isUserMemberOfOrg(supabase, userContext.userId, alert.organization_id)
+        const hasMembership = await isUserMemberOfOrg(
+          supabase,
+          userContext.userId,
+          alert.organization_id
+        )
         if (!hasMembership) {
           throw new DatabaseError('You do not have access to this alert', 403)
         }
@@ -625,8 +690,11 @@ export default createEdgeFunction(
 
         // Send resolution notification to original recipients
         sendResolutionNotification(
-          supabase, alertId, userContext.userId,
-          acknowledgementType, notes
+          supabase,
+          alertId,
+          userContext.userId,
+          acknowledgementType,
+          notes
         ).catch(() => {}) // Fire-and-forget
 
         return createSuccessResponse({

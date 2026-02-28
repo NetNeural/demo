@@ -559,7 +559,9 @@ export default createEdgeFunction(
         const extendedInsert = {
           ...baseInsert,
           created_by: userContext.userId,
-          ...(parentOrganizationId ? { parent_organization_id: parentOrganizationId } : {}),
+          ...(parentOrganizationId
+            ? { parent_organization_id: parentOrganizationId }
+            : {}),
         }
 
         let newOrg: Record<string, unknown> | null = null
@@ -577,20 +579,31 @@ export default createEdgeFunction(
               error.message?.includes('parent_organization_id') ||
               error.code === '42703' // undefined_column
             if (missingColumn) {
-              console.warn('Extended columns missing — retrying with base schema:', error.message)
-              const { data: fallbackData, error: fallbackError } = await supabaseAdmin
-                .from('organizations')
-                .insert(baseInsert)
-                .select()
-                .single()
+              console.warn(
+                'Extended columns missing — retrying with base schema:',
+                error.message
+              )
+              const { data: fallbackData, error: fallbackError } =
+                await supabaseAdmin
+                  .from('organizations')
+                  .insert(baseInsert)
+                  .select()
+                  .single()
               if (fallbackError) {
-                console.error('Failed to create organization (fallback):', fallbackError)
-                throw new DatabaseError(`Failed to create organization: ${fallbackError.message}`)
+                console.error(
+                  'Failed to create organization (fallback):',
+                  fallbackError
+                )
+                throw new DatabaseError(
+                  `Failed to create organization: ${fallbackError.message}`
+                )
               }
               newOrg = fallbackData as Record<string, unknown>
             } else {
               console.error('Failed to create organization:', error)
-              throw new DatabaseError(`Failed to create organization: ${error.message}`)
+              throw new DatabaseError(
+                `Failed to create organization: ${error.message}`
+              )
             }
           } else {
             newOrg = data as Record<string, unknown>
@@ -598,7 +611,9 @@ export default createEdgeFunction(
         }
 
         if (!newOrg) {
-          throw new DatabaseError('Failed to create organization: no data returned')
+          throw new DatabaseError(
+            'Failed to create organization: no data returned'
+          )
         }
 
         console.log('Organization created:', newOrg)
@@ -609,7 +624,8 @@ export default createEdgeFunction(
 
         // Resolve Supabase URL and service key for direct Admin API calls
         const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+        const supabaseServiceKey =
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
         if (ownerEmail && ownerFullName) {
           console.log('Creating owner account:', { ownerEmail, ownerFullName })
@@ -716,7 +732,10 @@ export default createEdgeFunction(
 
                 if (!resetResponse.ok) {
                   const resetError = await resetResponse.text()
-                  console.error('Failed to reset auth user password:', resetError)
+                  console.error(
+                    'Failed to reset auth user password:',
+                    resetError
+                  )
                   // Non-fatal — user can still log in with their old password
                 }
               } catch (resetErr) {
@@ -1060,10 +1079,7 @@ export default createEdgeFunction(
         // Root organizations (no parent) cannot be deleted
         // @ts-expect-error - parent_organization_id exists
         if (!org.parent_organization_id) {
-          throw new DatabaseError(
-            'Root organizations cannot be deleted',
-            403
-          )
+          throw new DatabaseError('Root organizations cannot be deleted', 403)
         }
 
         // Perform actual deletion (CASCADE will handle related records)

@@ -13,6 +13,7 @@ Your Twilio credentials need to be added to Supabase environment variables. Here
 5. Go to **Phone Numbers** → **Manage** → Copy your SMS number in format: `+1234567890`
 
 You now have:
+
 - `TWILIO_ACCOUNT_SID` = `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 - `TWILIO_AUTH_TOKEN` = `your_auth_token_here`
 - `TWILIO_FROM_NUMBER` = `+1234567890`
@@ -22,6 +23,7 @@ You now have:
 ## Step 2: Add to Supabase Environment
 
 ### For Local Development:
+
 Create/edit `.env.local` in the `development/` folder (this file is gitignored):
 
 ```env
@@ -31,21 +33,22 @@ TWILIO_FROM_NUMBER=+1234567890
 ```
 
 Then restart your dev server:
+
 ```bash
 npm run dev:full:debug
 ```
 
 ### For Supabase Staging/Prod:
 
-1. Open **Supabase Dashboard** 
+1. Open **Supabase Dashboard**
 2. Go to **Settings** → **Environment**
 3. Click **+ New Variable** and add these three:
 
-   | Name | Value |
-   |------|-------|
+   | Name                 | Value                             |
+   | -------------------- | --------------------------------- |
    | `TWILIO_ACCOUNT_SID` | `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
-   | `TWILIO_AUTH_TOKEN` | `your_auth_token_here` |
-   | `TWILIO_FROM_NUMBER` | `+1234567890` |
+   | `TWILIO_AUTH_TOKEN`  | `your_auth_token_here`            |
+   | `TWILIO_FROM_NUMBER` | `+1234567890`                     |
 
 4. Click **Save**
 
@@ -73,6 +76,7 @@ Once credentials are added, deploy the patched Edge Function:
 6. Check **Functions** → **send-alert-notifications** → **Logs**
 
 Look for success:
+
 ```
 [send-alert-notifications] SMS result: { success: true, detail: "Sent X/X SMS" }
 ```

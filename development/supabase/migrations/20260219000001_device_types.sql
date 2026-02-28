@@ -40,15 +40,16 @@ CREATE TABLE IF NOT EXISTS device_types (
 );
 
 -- Indexes
-CREATE INDEX idx_device_types_org ON device_types(organization_id);
-CREATE INDEX idx_device_types_name ON device_types(name);
-CREATE INDEX idx_device_types_class ON device_types(device_class) WHERE device_class IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_device_types_org ON device_types(organization_id);
+CREATE INDEX IF NOT EXISTS idx_device_types_name ON device_types(name);
+CREATE INDEX IF NOT EXISTS idx_device_types_class ON device_types(device_class) WHERE device_class IS NOT NULL;
 
 -- Enable RLS
 ALTER TABLE device_types ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Users can view device types for their organization
+DROP POLICY IF EXISTS "device_types_select_org_members" ON device_types;
 CREATE POLICY "device_types_select_org_members"
     ON device_types FOR SELECT
     USING (
@@ -65,6 +66,7 @@ CREATE POLICY "device_types_select_org_members"
     );
 
 -- Only admins/owners can create device types
+DROP POLICY IF EXISTS "device_types_insert_admins" ON device_types;
 CREATE POLICY "device_types_insert_admins"
     ON device_types FOR INSERT
     WITH CHECK (
@@ -82,6 +84,7 @@ CREATE POLICY "device_types_insert_admins"
     );
 
 -- Only admins/owners can update device types
+DROP POLICY IF EXISTS "device_types_update_admins" ON device_types;
 CREATE POLICY "device_types_update_admins"
     ON device_types FOR UPDATE
     USING (
@@ -99,6 +102,7 @@ CREATE POLICY "device_types_update_admins"
     );
 
 -- Only admins/owners can delete device types
+DROP POLICY IF EXISTS "device_types_delete_admins" ON device_types;
 CREATE POLICY "device_types_delete_admins"
     ON device_types FOR DELETE
     USING (
@@ -124,6 +128,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS device_types_updated_at ON device_types;
 CREATE TRIGGER device_types_updated_at
     BEFORE UPDATE ON device_types
     FOR EACH ROW

@@ -2,12 +2,6 @@ import * as Sentry from '@sentry/nextjs'
 
 // Ensure this runs on the client side only
 if (typeof window !== 'undefined') {
-  console.log('[Sentry] Initializing client from lib/sentry-client-init...')
-  console.log(
-    '[Sentry] DSN:',
-    process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌'
-  )
-
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
@@ -70,6 +64,4 @@ if (typeof window !== 'undefined') {
       'ChunkLoadError',
     ],
   })
-
-  console.log('[Sentry] Client initialized!', Sentry.getClient() ? '✅' : '❌')
 }

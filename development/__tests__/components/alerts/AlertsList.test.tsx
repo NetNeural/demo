@@ -53,14 +53,20 @@ jest.mock('sonner', () => ({
 
 jest.mock('@/contexts/OrganizationContext', () => ({
   useOrganization: jest.fn(() => ({
-    currentOrganization: { id: 'org-1', name: 'Test Org', slug: 'test-org', settings: {} },
+    currentOrganization: {
+      id: 'org-1',
+      name: 'Test Org',
+      slug: 'test-org',
+      settings: {},
+    },
     userOrganizations: [{ id: 'org-1', name: 'Test Org', slug: 'test-org' }],
     canManageDevices: true,
     isLoading: false,
     switchOrganization: jest.fn(),
     refreshOrganizations: jest.fn(),
   })),
-  OrganizationProvider: ({ children }: { children: React.ReactNode }) => children,
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
 }))
 
 jest.mock('@/contexts/UserContext', () => ({
@@ -114,7 +120,9 @@ describe('AlertsList - Simplified Integration Tests', () => {
 
     // Wait for loading to finish, then check search input
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: /search/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('textbox', { name: /search/i })
+      ).toBeInTheDocument()
     })
   })
 
@@ -183,7 +191,9 @@ describe('AlertsList - Simplified Integration Tests', () => {
     render(<AlertsList />)
 
     await waitFor(() => {
-      expect(screen.getByRole('textbox', { name: /search/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('textbox', { name: /search/i })
+      ).toBeInTheDocument()
     })
   })
 
@@ -197,7 +207,9 @@ describe('AlertsList - Simplified Integration Tests', () => {
     render(<AlertsList />)
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: /severity/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('combobox', { name: /severity/i })
+      ).toBeInTheDocument()
     })
   })
 
@@ -211,7 +223,9 @@ describe('AlertsList - Simplified Integration Tests', () => {
     render(<AlertsList />)
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: /category/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole('combobox', { name: /category/i })
+      ).toBeInTheDocument()
     })
   })
 

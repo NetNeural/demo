@@ -15,13 +15,21 @@ import { AlertsSummaryBar } from './AlertsSummaryBar'
 import { AlertsFilters } from './AlertsFilters'
 import { AlertsBulkActions } from './AlertsBulkActions'
 import { AlertsTable, type Alert } from './AlertsTable'
-import { Table2, Grid3x3, Download, Bell, BellOff } from 'lucide-react'
+import {
+  Table2,
+  Grid3x3,
+  Download,
+  Bell,
+  BellOff,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+  ChevronDown,
+} from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   Dialog,
@@ -104,7 +112,8 @@ export function AlertsList() {
 
   // Clear All state
   const [showClearAllDialog, setShowClearAllDialog] = useState(false)
-  const [clearAllType, setClearAllType] = useState<AcknowledgementType>('resolved')
+  const [clearAllType, setClearAllType] =
+    useState<AcknowledgementType>('resolved')
   const [clearAllNotes, setClearAllNotes] = useState('')
   const [clearingAll, setClearingAll] = useState(false)
 
@@ -134,6 +143,12 @@ export function AlertsList() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const prevAlertCountRef = useRef<number>(0)
 
+  // Issue #269: Pagination state
+  const PAGE_SIZE = 50
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
   const fetchAlerts = useCallback(async () => {
     if (!currentOrganization) {
       setAlerts([])
@@ -144,8 +159,12 @@ export function AlertsList() {
     try {
       setLoading(true)
 
+      // Issue #269: Pass limit and offset for server-side pagination
+      const offset = (page - 1) * PAGE_SIZE
       const response = await edgeFunctions.alerts.list(currentOrganization.id, {
         resolved: false,
+        limit: PAGE_SIZE,
+        offset,
       })
 
       if (!response.success || !response.data) {
@@ -169,6 +188,10 @@ export function AlertsList() {
       }
 
       const data = response.data
+
+      // Issue #269: Track total count for pagination
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setTotalCount((data as any).totalCount ?? 0)
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transformedAlerts = ((data as any).alerts || []).map(
@@ -204,7 +227,24 @@ export function AlertsList() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrganization])
+  }, [currentOrganization, page])
+
+  // ─── Timeline Handler ──────────────────────────────────────────────
+  // Issue #275: Wrap in useCallback to prevent re-renders of children receiving this as a prop
+  const loadTimeline = useCallback(async (alertId: string) => {
+    setTimelineLoading(true)
+    setTimelineEvents([])
+    try {
+      const response = await edgeFunctions.alerts.timeline(alertId)
+      if (response.success && response.data) {
+        setTimelineEvents(response.data.events || [])
+      }
+    } catch {
+      console.error('Failed to load timeline')
+    } finally {
+      setTimelineLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchAlerts()
@@ -215,7 +255,7 @@ export function AlertsList() {
     if (showDetails && selectedAlert) {
       loadTimeline(selectedAlert.id)
     }
-  }, [showDetails, selectedAlert])
+  }, [showDetails, selectedAlert, loadTimeline])
 
   // Deep-link: auto-open alert detail when ?alertId= is in URL
   useEffect(() => {
@@ -265,7 +305,8 @@ export function AlertsList() {
           a.device.toLowerCase().includes(term) ||
           a.category.toLowerCase().includes(term) ||
           a.severity.toLowerCase().includes(term) ||
-          (a.alertNumber && `ALT-${a.alertNumber}`.toLowerCase().includes(term)) ||
+          (a.alertNumber &&
+            `ALT-${a.alertNumber}`.toLowerCase().includes(term)) ||
           (a.alertNumber && String(a.alertNumber).includes(term))
       )
     }
@@ -324,7 +365,6 @@ export function AlertsList() {
       )
 
       if (!response.success) {
-        toast.error('Failed to acknowledge alert')
         throw new Error('Failed to acknowledge alert')
       }
 
@@ -356,7 +396,8 @@ export function AlertsList() {
     } catch (error) {
       console.error('Error acknowledging alert:', error)
       toast.error('Failed to acknowledge alert')
-      throw error
+      // Bug #248: don't re-throw — the toast already notifies the user and
+      // re-throwing prevents the AcknowledgeAlertDialog from closing properly
     }
   }
 
@@ -439,7 +480,10 @@ export function AlertsList() {
     if (!snoozeAlertId) return
     setSnoozing(true)
     try {
-      const response = await edgeFunctions.alerts.snooze(snoozeAlertId, snoozeDuration)
+      const response = await edgeFunctions.alerts.snooze(
+        snoozeAlertId,
+        snoozeDuration
+      )
       if (response.success) {
         toast.success(`Alert snoozed for ${snoozeDuration} minutes`)
         setShowSnoozeDialog(false)
@@ -466,25 +510,17 @@ export function AlertsList() {
     }
   }
 
-  // ─── Timeline Handler ──────────────────────────────────────────────
-  const loadTimeline = async (alertId: string) => {
-    setTimelineLoading(true)
-    setTimelineEvents([])
-    try {
-      const response = await edgeFunctions.alerts.timeline(alertId)
-      if (response.success && response.data) {
-        setTimelineEvents(response.data.events || [])
-      }
-    } catch {
-      console.error('Failed to load timeline')
-    } finally {
-      setTimelineLoading(false)
-    }
-  }
-
   // ─── Export CSV ────────────────────────────────────────────────────
   const handleExportCSV = () => {
-    const headers = ['Alert #', 'Title', 'Severity', 'Category', 'Device', 'Status', 'Timestamp']
+    const headers = [
+      'Alert #',
+      'Title',
+      'Severity',
+      'Category',
+      'Device',
+      'Status',
+      'Timestamp',
+    ]
     const rows = filteredAlerts.map((a) => [
       a.alertNumber ? `ALT-${a.alertNumber}` : '',
       `"${a.title.replace(/"/g, '""')}"`,
@@ -552,16 +588,19 @@ export function AlertsList() {
     if (alerts.length > prevAlertCountRef.current && newAlerts.length > 0) {
       const newest = newAlerts[0]
       if (newest) {
-      const alertNum = newest.alertNumber ? `ALT-${newest.alertNumber}` : ''
-      try {
-        new Notification(`${newest.severity === 'critical' ? '🚨' : '⚠️'} ${alertNum} ${newest.title}`, {
-          body: `${newest.device}: ${newest.description}`,
-          icon: '/favicon.ico',
-          tag: `alert-${newest.id}`,
-        })
-      } catch {
-        // Notification may fail silently in some contexts
-      }
+        const alertNum = newest.alertNumber ? `ALT-${newest.alertNumber}` : ''
+        try {
+          new Notification(
+            `${newest.severity === 'critical' ? '🚨' : '⚠️'} ${alertNum} ${newest.title}`,
+            {
+              body: `${newest.device}: ${newest.description}`,
+              icon: '/favicon.ico',
+              tag: `alert-${newest.id}`,
+            }
+          )
+        } catch {
+          // Notification may fail silently in some contexts
+        }
       }
     }
     prevAlertCountRef.current = alerts.length
@@ -742,7 +781,11 @@ export function AlertsList() {
               variant="outline"
               size="sm"
               onClick={toggleBrowserNotifications}
-              title={notificationsEnabled ? 'Disable browser notifications' : 'Enable browser notifications'}
+              title={
+                notificationsEnabled
+                  ? 'Disable browser notifications'
+                  : 'Enable browser notifications'
+              }
             >
               {notificationsEnabled ? (
                 <Bell className="mr-1 h-4 w-4 text-green-600" />
@@ -754,11 +797,7 @@ export function AlertsList() {
 
             {/* Export CSV */}
             {filteredAlerts.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-              >
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>
                 <Download className="mr-1 h-4 w-4" />
                 Export
               </Button>
@@ -843,7 +882,7 @@ export function AlertsList() {
                                 </span>
                               </CardTitle>
                               {isCollapsed ? (
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRightIcon className="h-5 w-5" />
                               ) : (
                                 <ChevronDown className="h-5 w-5" />
                               )}
@@ -891,21 +930,26 @@ export function AlertsList() {
                                   </div>
                                   <div className="flex flex-col items-end space-y-2">
                                     <div className="flex space-x-2">
-                                      {!alert.acknowledged && !alert.isSnoozed && (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400"
-                                          onClick={() => openSnoozeDialog(alert.id)}
-                                        >
-                                          😴
-                                        </Button>
-                                      )}
+                                      {!alert.acknowledged &&
+                                        !alert.isSnoozed && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400"
+                                            onClick={() =>
+                                              openSnoozeDialog(alert.id)
+                                            }
+                                          >
+                                            😴
+                                          </Button>
+                                        )}
                                       {alert.isSnoozed && (
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => handleUnsnooze(alert.id)}
+                                          onClick={() =>
+                                            handleUnsnooze(alert.id)
+                                          }
                                         >
                                           Wake
                                         </Button>
@@ -948,13 +992,49 @@ export function AlertsList() {
         </TabsContent>
       </Tabs>
 
+      {/* Issue #269: Pagination Controls */}
+      {totalCount > PAGE_SIZE && (
+        <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            Showing {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–
+            {Math.min(page * PAGE_SIZE, totalCount)} of {totalCount} alerts
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-sm font-medium">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+              <ChevronRightIcon className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Alert Details Dialog */}
-      <Dialog open={showDetails} onOpenChange={(open) => {
-        setShowDetails(open)
-        if (!open) {
-          setTimelineEvents([])
-        }
-      }}>
+      <Dialog
+        open={showDetails}
+        onOpenChange={(open) => {
+          setShowDetails(open)
+          if (!open) {
+            setTimelineEvents([])
+          }
+        }}
+      >
         <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -1229,11 +1309,13 @@ export function AlertsList() {
                     <LoadingSpinner />
                   </div>
                 ) : timelineEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No timeline events</p>
+                  <p className="text-sm text-muted-foreground">
+                    No timeline events
+                  </p>
                 ) : (
                   <div className="relative space-y-0 pl-6">
                     {/* Vertical line */}
-                    <div className="absolute left-[9px] top-1 bottom-1 w-0.5 bg-border" />
+                    <div className="absolute bottom-1 left-[9px] top-1 w-0.5 bg-border" />
                     {timelineEvents
                       .filter((e) => e.event_type !== 'viewed')
                       .map((event, idx) => {
@@ -1248,7 +1330,10 @@ export function AlertsList() {
                           comment: '💬',
                         }
                         return (
-                          <div key={event.id || idx} className="relative flex items-start pb-3">
+                          <div
+                            key={event.id || idx}
+                            className="relative flex items-start pb-3"
+                          >
                             <div className="absolute -left-6 flex h-5 w-5 items-center justify-center rounded-full bg-background text-sm">
                               {icons[event.event_type] || '•'}
                             </div>
@@ -1264,16 +1349,24 @@ export function AlertsList() {
                               <p className="text-xs text-muted-foreground">
                                 {fmt.dateTime(new Date(event.created_at))}
                               </p>
-                              {event.event_type === 'escalated' && Boolean(event.metadata?.minutes_open) && (
-                                <p className="text-xs text-orange-600 dark:text-orange-400">
-                                  Open for {Number(event.metadata?.minutes_open)} min
-                                </p>
-                              )}
-                              {event.event_type === 'snoozed' && Boolean(event.metadata?.snoozed_until) && (
-                                <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                                  Until {fmt.dateTime(new Date(String(event.metadata?.snoozed_until)))}
-                                </p>
-                              )}
+                              {event.event_type === 'escalated' &&
+                                Boolean(event.metadata?.minutes_open) && (
+                                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                                    Open for{' '}
+                                    {Number(event.metadata?.minutes_open)} min
+                                  </p>
+                                )}
+                              {event.event_type === 'snoozed' &&
+                                Boolean(event.metadata?.snoozed_until) && (
+                                  <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    Until{' '}
+                                    {fmt.dateTime(
+                                      new Date(
+                                        String(event.metadata?.snoozed_until)
+                                      )
+                                    )}
+                                  </p>
+                                )}
                             </div>
                           </div>
                         )
@@ -1288,18 +1381,20 @@ export function AlertsList() {
             <Button variant="outline" onClick={() => setShowDetails(false)}>
               Close
             </Button>
-            {selectedAlert && !selectedAlert.acknowledged && !selectedAlert.isSnoozed && (
-              <Button
-                variant="outline"
-                className="text-yellow-600"
-                onClick={() => {
-                  setShowDetails(false)
-                  openSnoozeDialog(selectedAlert.id)
-                }}
-              >
-                😴 Snooze
-              </Button>
-            )}
+            {selectedAlert &&
+              !selectedAlert.acknowledged &&
+              !selectedAlert.isSnoozed && (
+                <Button
+                  variant="outline"
+                  className="text-yellow-600"
+                  onClick={() => {
+                    setShowDetails(false)
+                    openSnoozeDialog(selectedAlert.id)
+                  }}
+                >
+                  😴 Snooze
+                </Button>
+              )}
             {selectedAlert && selectedAlert.isSnoozed && (
               <Button
                 variant="outline"
@@ -1390,7 +1485,9 @@ export function AlertsList() {
               onClick={handleClearAll}
               disabled={clearingAll || !clearAllNotes.trim()}
             >
-              {clearingAll ? 'Clearing…' : `Clear ${unacknowledgedAlerts.length} Alert${unacknowledgedAlerts.length !== 1 ? 's' : ''}`}
+              {clearingAll
+                ? 'Clearing…'
+                : `Clear ${unacknowledgedAlerts.length} Alert${unacknowledgedAlerts.length !== 1 ? 's' : ''}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1402,8 +1499,8 @@ export function AlertsList() {
           <DialogHeader>
             <DialogTitle>😴 Snooze Alert</DialogTitle>
             <DialogDescription>
-              Suppress notifications for this alert for a set duration. The alert
-              will reactivate automatically when the snooze expires.
+              Suppress notifications for this alert for a set duration. The
+              alert will reactivate automatically when the snooze expires.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -1429,11 +1526,16 @@ export function AlertsList() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSnoozeDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowSnoozeDialog(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSnooze} disabled={snoozing}>
-              {snoozing ? 'Snoozing…' : `Snooze for ${snoozeDuration >= 60 ? `${snoozeDuration / 60}h` : `${snoozeDuration}m`}`}
+              {snoozing
+                ? 'Snoozing…'
+                : `Snooze for ${snoozeDuration >= 60 ? `${snoozeDuration / 60}h` : `${snoozeDuration}m`}`}
             </Button>
           </DialogFooter>
         </DialogContent>

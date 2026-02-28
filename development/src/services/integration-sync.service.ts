@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import type { Json } from '@/types/supabase'
 import type { Database } from '@/types/supabase'
 
 // Note: Database table will be renamed in migration from golioth_sync_log to integration_sync_log
@@ -115,8 +116,7 @@ export class IntegrationSyncService {
       .update({
         resolution_status: 'resolved',
         resolution_strategy: strategy,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        resolved_value: resolvedValue as any,
+        resolved_value: (resolvedValue as Json) ?? null,
         resolved_by: user.data.user?.id,
         resolved_at: new Date().toISOString(),
       })
@@ -194,11 +194,6 @@ export class IntegrationSyncService {
     organizationId: string
   ): Promise<boolean> {
     try {
-      console.log('[Integration Service] Starting test connection...', {
-        integrationId,
-        organizationId,
-      })
-
       // Trigger a test sync using SDK
       const response = await edgeFunctions.integrations.sync({
         integrationId,
@@ -206,8 +201,6 @@ export class IntegrationSyncService {
         operation: 'test',
         deviceIds: [],
       })
-
-      console.log('[Integration Service] Response received:', response)
 
       if (!response.success) {
         const errorMessage = response.error?.message || 'Connection test failed'
@@ -220,7 +213,6 @@ export class IntegrationSyncService {
         throw new Error(errorMessage)
       }
 
-      console.log('[Integration Service] Test connection successful')
       return true
     } catch (error) {
       console.error('[Integration Service] Test connection exception:', error)

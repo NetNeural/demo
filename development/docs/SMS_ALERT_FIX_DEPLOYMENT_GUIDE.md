@@ -1,7 +1,9 @@
 # SMS Alert Fix - Complete Deployment Guide
 
 ## Overview
+
 This guide walks you through deploying the SMS alert fix to your Supabase environment. The fix resolves two issues:
+
 1. **Phone resolution from user IDs** - SMS now uses user-stored phone numbers, not just manual entries
 2. **Phone format normalization** - All phones converted to E.164 format before Twilio API call
 
@@ -19,6 +21,7 @@ This guide walks you through deploying the SMS alert fix to your Supabase enviro
 ## Step 1: Configure Twilio (One-Time Setup)
 
 ### 1.1 Get Your Twilio Credentials
+
 1. Visit https://console.twilio.com/
 2. Click "Account" in left menu → "API keys & tokens"
 3. Copy your **Account SID** (starts with `AC`)
@@ -31,6 +34,7 @@ This guide walks you through deploying the SMS alert fix to your Supabase enviro
 NetNeural uses a **centralized Twilio account** charged as a billable service. Store credentials in:
 
 **For Production (GitHub Pages deployment):**
+
 ```bash
 gh secret set TWILIO_ACCOUNT_SID --body "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 gh secret set TWILIO_AUTH_TOKEN --body "your_auth_token_here"
@@ -39,6 +43,7 @@ gh secret set TWILIO_FROM_NUMBER --body "+1234567890"
 
 **For Local Development:**
 Create `.env.local` (gitignored):
+
 ```env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your_auth_token_here
@@ -46,6 +51,7 @@ TWILIO_FROM_NUMBER=+1234567890
 ```
 
 **For Supabase Staging:**
+
 1. Open **Supabase Dashboard** → **Settings** → **Environment**
 2. Add three variables with your Twilio credentials
 
@@ -56,6 +62,7 @@ See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
 ## Step 2: Validate Fix Logic (Diagnostic Test)
 
 ### 2.1 Run the Diagnostic Script
+
 1. Open **Supabase Dashboard** → **SQL Editor**
 2. Create a new query
 3. Paste content from `SMS_ALERT_FIX_DIAGNOSTIC.sql`
@@ -71,6 +78,7 @@ See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
 **Expected results:**
 
 - **Section 1**: Users with phone numbers + SMS enabled
+
   ```
   id | email | phone_number | phone_sms_enabled
   ---+-------+--------------+-------------------
@@ -78,6 +86,7 @@ See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
   ```
 
 - **Section 3**: Phone numbers resolved from user IDs
+
   ```
   user_id | primary_phone  | phone_available
   --------+----------------+-----------------
@@ -85,6 +94,7 @@ See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
   ```
 
 - **Section 4**: Combined phone list (manual + from users)
+
   ```
   threshold_id | source        | phone        | is_e164_format
   ─────────────+───────────────+──────────────+────────────────
@@ -103,6 +113,7 @@ See `development/docs/SECRETS_INVENTORY.md` for complete secrets list.
 **If results look good → Proceed to Step 3**
 
 **If issues found:**
+
 - Empty Section 1: Users haven't set up phone numbers (go to Dashboard → Profile → Phone to add)
 - Empty Section 3: No `notify_user_ids` in threshold (edit threshold in Dashboard)
 - Empty Section 4: Twilio not configured (redo Step 1)
@@ -137,6 +148,7 @@ Find your project ID in: **Supabase Dashboard** → **Settings** → **General**
 ## Step 4: Test SMS Delivery
 
 ### 4.1 Manual Test via API
+
 After function deployed, run this from PowerShell or terminal:
 
 ```bash
@@ -160,6 +172,7 @@ curl -X POST "https://$PROJECT_ID.supabase.co/functions/v1/send-alert-notificati
 ```
 
 **Expected response:**
+
 ```json
 {
   "success": true,
@@ -206,28 +219,35 @@ If you deployed the Edge Function but can't test via API:
 ### SMS Not Sending
 
 **Check 1: Twilio configured?**
+
 ```sql
 SELECT settings->'notification_settings' FROM organizations LIMIT 1;
 ```
+
 Should show: `twilio_account_sid`, `twilio_auth_token`, `twilio_from_number`
 
 **Check 2: Threshold has SMS enabled?**
+
 ```sql
-SELECT id, notification_channels, notify_user_ids, notify_phone_numbers 
-FROM sensor_thresholds 
+SELECT id, notification_channels, notify_user_ids, notify_phone_numbers
+FROM sensor_thresholds
 WHERE id = 'your-threshold-id';
 ```
+
 Should show: `notification_channels` contains `"sms"`, and either `notify_user_ids` or `notify_phone_numbers` populated
 
 **Check 3: Users have phone numbers?**
+
 ```sql
-SELECT id, email, phone_number, phone_sms_enabled 
-FROM users 
+SELECT id, email, phone_number, phone_sms_enabled
+FROM users
 WHERE phone_sms_enabled = true;
 ```
+
 Should show at least one user with a phone number
 
 **Check 4: Function logs**
+
 - Open **Supabase Dashboard** → **Functions** → **send-alert-notifications** → **Logs**
 - Trigger a test alert
 - Look for errors like "Twilio not configured" or "No SMS recipients"
@@ -235,6 +255,7 @@ Should show at least one user with a phone number
 ### Trial Twilio Account Limitations
 
 If using a **Twilio trial account**:
+
 - Can only send SMS to **verified phone numbers**
 - Must explicitly verify each recipient number in Twilio Console
 - Remove trial restriction after upgrading to paid account
@@ -242,12 +263,14 @@ If using a **Twilio trial account**:
 ### Phone Format Issues
 
 Phone must be in **E.164 format**: `+[country code][number]`
+
 - ✅ `+15551234567` (US)
 - ✅ `+441234567890` (UK)
 - ❌ `555-123-4567` (invalid)
 - ❌ `(555) 123-4567` (invalid)
 
 The patched function automatically normalizes phones, so:
+
 - User enters: `(555) 123-4567`
 - Normalized to: `+15551234567`
 - Sent to Twilio: `+15551234567`
@@ -257,6 +280,7 @@ The patched function automatically normalizes phones, so:
 ## What Changed in the Edge Function
 
 ### Before:
+
 ```typescript
 // Only checked manual phone numbers from threshold
 const allPhones = threshold.notify_phone_numbers || []
@@ -264,6 +288,7 @@ await sendSmsNotification(alert, allPhones, ...)
 ```
 
 ### After:
+
 ```typescript
 // Now resolves phones from user IDs + normalizes them
 let phones = threshold.notify_phone_numbers || []
@@ -302,6 +327,7 @@ If you need to revert the function to the previous version:
 4. Click **Rollback**
 
 Or manually:
+
 - Paste the original function code back into the editor
 - Click **Deploy**
 
@@ -310,6 +336,7 @@ Or manually:
 ## Next Steps
 
 After SMS is working:
+
 1. Test with production alert (create a threshold that triggers an alert)
 2. Monitor **Supabase Functions** logs for SMS results
 3. Check Twilio Console → **Messages** tab to see all sent SMS
@@ -320,6 +347,7 @@ After SMS is working:
 ## Support
 
 If SMS still doesn't work after these steps:
+
 1. Check **TWILIO_SMS_SETUP.md** in the codebase for additional setup
 2. Review **Function Logs** in Supabase Dashboard for specific error messages
 3. Verify Twilio account is not in trial mode with unverified numbers

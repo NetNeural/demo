@@ -6,6 +6,7 @@ import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { FeedbackForm } from '@/components/feedback/FeedbackForm'
 import { FeedbackHistory } from '@/components/feedback/FeedbackHistory'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { BackButton } from '@/components/ui/back-button'
 import { useOrganization } from '@/contexts/OrganizationContext'
 
 export default function FeedbackPage() {
@@ -33,6 +34,7 @@ export default function FeedbackPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <BackButton href="/dashboard" label="Back to Dashboard" />
       <div className="flex items-center gap-3">
         <OrganizationLogo
           settings={currentOrganization?.settings}
@@ -53,11 +55,17 @@ export default function FeedbackPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left: Submit form */}
-        <FeedbackForm key={currentOrganization.id} onSubmitted={() => setRefreshKey((k) => k + 1)} />
+        <FeedbackForm
+          key={currentOrganization.id}
+          onSubmitted={() => setRefreshKey((k) => k + 1)}
+        />
 
         {/* Right: History */}
         <Suspense fallback={<LoadingSpinner />}>
-          <FeedbackHistory key={currentOrganization.id} refreshKey={refreshKey} />
+          <FeedbackHistory
+            key={currentOrganization.id}
+            refreshKey={refreshKey}
+          />
         </Suspense>
       </div>
     </div>

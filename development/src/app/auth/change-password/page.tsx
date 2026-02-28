@@ -3,10 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import {
-  formatPhoneE164,
-  isValidPhoneNumber,
-} from '@/lib/helpers/sms-users'
+import { formatPhoneE164, isValidPhoneNumber } from '@/lib/helpers/sms-users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

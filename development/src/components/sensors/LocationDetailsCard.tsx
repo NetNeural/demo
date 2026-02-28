@@ -12,8 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MapPin, Edit2, X, Save, Loader2 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import type { Device } from '@/types/sensor-details'
 import dynamic from 'next/dynamic'
@@ -46,19 +47,21 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
-  const [loadingLocations, setLoadingLocations] = useState(false)
+  const [loadingLocations, setLoadingLocations] = useState(true)
+  const staleClearedRef = useRef(false) // Prevent repeated auto-clear
 
   // Form state
   const [selectedLocationId, setSelectedLocationId] = useState<string>(
     device.location_id || ''
   )
   const [installedAt, setInstalledAt] = useState<string>(
-    device.metadata?.installed_at || ''
+    (device.metadata?.installed_at as string) || ''
   )
 
   const fetchLocations = useCallback(async () => {
     if (!device.organization_id) {
       toast.error('Organization ID not found')
+      setLoadingLocations(false)
       return
     }
 
@@ -86,35 +89,45 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   useEffect(() => {
     if (device.organization_id) {
       fetchLocations()
+    } else {
+      setLoadingLocations(false)
     }
   }, [device.organization_id, fetchLocations])
 
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      const supabase = createClient()
 
-      // Update device with new location and metadata
-      const { error } = await supabase
-        .from('devices')
-        .update({
-          location_id: selectedLocationId || null,
-          metadata: {
-            ...device.metadata,
-            installed_at: installedAt || null,
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', device.id)
+      const updates = {
+        location_id: selectedLocationId || null,
+        metadata: {
+          ...device.metadata,
+          installed_at: installedAt || null,
+        },
+      }
 
-      if (error) throw error
+      console.log('💾 [LocationDetailsCard] Saving via edge function:', {
+        deviceId: device.id,
+        selectedLocationId,
+        updates,
+      })
+
+      // Use edge function (service role) to bypass RLS
+      const response = await edgeFunctions.devices.update(device.id, updates)
+
+      if (!response.success) {
+        throw new Error((response.error as { message?: string })?.message || 'Failed to update location')
+      }
+
+      console.log('✅ [LocationDetailsCard] Location saved for device:', device.id)
 
       toast.success('Location details updated successfully')
 
       setIsEditing(false)
+      staleClearedRef.current = true // Prevent auto-clear from wiping this save
 
-      // Reload page to show updated data
-      window.location.reload()
+      // Brief delay so user sees the success toast before reload
+      setTimeout(() => window.location.reload(), 1000)
     } catch (error) {
       console.error('Error updating location:', error)
       toast.error('Failed to update location details')
@@ -125,7 +138,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
 
   const handleCancel = () => {
     setSelectedLocationId(device.location_id || '')
-    setInstalledAt(device.metadata?.installed_at || '')
+    setInstalledAt((device.metadata?.installed_at as string) || '')
     setIsEditing(false)
   }
 
@@ -133,8 +146,46 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
   const selectedLocation = locations.find(
     (loc) => loc.id === selectedLocationId
   )
-  const displayLocationName =
-    selectedLocation?.name || device.location || 'Not assigned'
+
+  // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
+  // Only check after locations have actually loaded (length > 0 or loading finished with empty list)
+  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length > 0 && !selectedLocation)
+
+  // If the location_id is stale (cross-org), don't show the old location name
+  const displayLocationName = isStaleLocation
+    ? 'Not assigned'
+    : selectedLocation?.name || (selectedLocationId ? device.location : null) || 'Not assigned'
+
+  // Auto-clear stale location_id so the UI isn't stuck
+  // Also persist the null to the database so it doesn't keep showing the old location
+  useEffect(() => {
+    if (isStaleLocation && !isEditing && !staleClearedRef.current) {
+      console.warn(
+        '⚠️ [LocationDetailsCard] Stale location_id detected (likely from org transfer), clearing:',
+        selectedLocationId
+      )
+      staleClearedRef.current = true // Only clear once per mount
+      setSelectedLocationId('')
+
+      // Persist the null location_id via edge function (service role bypasses RLS)
+      const clearStaleLocation = async () => {
+        try {
+          const response = await edgeFunctions.devices.update(device.id, {
+            location_id: null,
+          })
+
+          if (!response.success) {
+            console.error('Failed to clear stale location_id:', response.error)
+          } else {
+            console.log('✅ [LocationDetailsCard] Cleared stale location_id from database for device:', device.id)
+          }
+        } catch (err) {
+          console.error('Error clearing stale location_id:', err)
+        }
+      }
+      clearStaleLocation()
+    }
+  }, [isStaleLocation, isEditing, selectedLocationId, device.id])
 
   // Debug logging for map display
   useEffect(() => {
@@ -149,13 +200,8 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
           selectedLocation.latitude && selectedLocation.longitude
         ),
       })
-    } else if (selectedLocationId) {
-      console.log(
-        '⚠️ [LocationDetailsCard] Location ID set but not found:',
-        selectedLocationId
-      )
     }
-  }, [selectedLocation, selectedLocationId])
+  }, [selectedLocation])
 
   return (
     <Card>
@@ -279,7 +325,7 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             {device.metadata?.placement && (
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="font-medium">{device.metadata.placement}</p>
+                <p className="font-medium">{String(device.metadata.placement)}</p>
               </div>
             )}
 

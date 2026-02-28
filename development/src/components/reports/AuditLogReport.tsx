@@ -146,9 +146,7 @@ const ACTION_CATEGORIES = [
 
 /** Humanize action_type for display */
 const humanizeAction = (action: string): string => {
-  return action
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase())
+  return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 }
 
 const STATUS_OPTIONS = [
@@ -208,7 +206,11 @@ function formatDiffValue(val: unknown): string {
 }
 
 export function AuditLogReport() {
-  const { currentOrganization, userRole, isLoading: isLoadingOrg } = useOrganization()
+  const {
+    currentOrganization,
+    userRole,
+    isLoading: isLoadingOrg,
+  } = useOrganization()
   const { user: currentUser } = useUser()
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -247,7 +249,9 @@ export function AuditLogReport() {
   const debouncedSearch = useDebounce(searchQuery, 400)
 
   // Realtime subscription ref
-  const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
+  const realtimeChannelRef = useRef<ReturnType<
+    ReturnType<typeof createClient>['channel']
+  > | null>(null)
 
   // Check if user is admin - check both global and organization roles
   const isAdmin = useMemo(() => {
@@ -292,7 +296,10 @@ export function AuditLogReport() {
           .order('email')
 
         if (userError) {
-          console.error('[AuditLogReport] Error fetching user details:', userError)
+          console.error(
+            '[AuditLogReport] Error fetching user details:',
+            userError
+          )
           return
         }
 
@@ -406,7 +413,8 @@ export function AuditLogReport() {
         eod.setHours(23, 59, 59, 999)
         statsBuilder.lte('created_at', eod.toISOString())
       }
-      if (categoryFilter !== 'all') statsBuilder.eq('action_category', categoryFilter)
+      if (categoryFilter !== 'all')
+        statsBuilder.eq('action_category', categoryFilter)
       if (statusFilter !== 'all') statsBuilder.eq('status', statusFilter)
       if (userFilter !== 'all') statsBuilder.eq('user_id', userFilter)
       if (hideSystemActions) statsBuilder.not('user_id', 'is', null)
@@ -420,9 +428,15 @@ export function AuditLogReport() {
       const { data: statsData } = await statsBuilder
 
       if (statsData && statsData.length > 0) {
-        const successCount = statsData.filter((l) => l.status === 'success').length
-        const failedCount = statsData.filter((l) => l.status === 'failed' || l.status === 'error').length
-        const uniqueUserIds = new Set(statsData.filter((l) => l.user_id).map((l) => l.user_id))
+        const successCount = statsData.filter(
+          (l) => l.status === 'success'
+        ).length
+        const failedCount = statsData.filter(
+          (l) => l.status === 'failed' || l.status === 'error'
+        ).length
+        const uniqueUserIds = new Set(
+          statsData.filter((l) => l.user_id).map((l) => l.user_id)
+        )
         const criticalCount = statsData.filter((l) =>
           CRITICAL_ACTION_TYPES.some((type) => l.action_type.includes(type))
         ).length
@@ -467,7 +481,15 @@ export function AuditLogReport() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearch, categoryFilter, statusFilter, userFilter, hideSystemActions, startDate, endDate])
+  }, [
+    debouncedSearch,
+    categoryFilter,
+    statusFilter,
+    userFilter,
+    hideSystemActions,
+    startDate,
+    endDate,
+  ])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -506,9 +528,21 @@ export function AuditLogReport() {
             setStats((prev) => ({
               ...prev,
               totalActions: prev.totalActions + 1,
-              successfulActions: prev.successfulActions + (newEntry.status === 'success' ? 1 : 0),
-              failedActions: prev.failedActions + (newEntry.status === 'failed' || newEntry.status === 'error' ? 1 : 0),
-              criticalActions: prev.criticalActions + (CRITICAL_ACTION_TYPES.some((t) => newEntry.action_type.includes(t)) ? 1 : 0),
+              successfulActions:
+                prev.successfulActions +
+                (newEntry.status === 'success' ? 1 : 0),
+              failedActions:
+                prev.failedActions +
+                (newEntry.status === 'failed' || newEntry.status === 'error'
+                  ? 1
+                  : 0),
+              criticalActions:
+                prev.criticalActions +
+                (CRITICAL_ACTION_TYPES.some((t) =>
+                  newEntry.action_type.includes(t)
+                )
+                  ? 1
+                  : 0),
             }))
           }
         }
@@ -521,7 +555,13 @@ export function AuditLogReport() {
       supabase.removeChannel(channel)
       realtimeChannelRef.current = null
     }
-  }, [currentOrganization, isAdmin, isResolvingAdmin, currentPage, hideSystemActions])
+  }, [
+    currentOrganization,
+    isAdmin,
+    isResolvingAdmin,
+    currentPage,
+    hideSystemActions,
+  ])
 
   // Handle date range preset change
   const handleDateRangePresetChange = (preset: DateRangePreset) => {
@@ -613,16 +653,40 @@ export function AuditLogReport() {
 
   // Build payload for SendReportDialog
   const getReportPayload = (): ReportPayload => {
-    const headers = ['Timestamp', 'User Email', 'Action Category', 'Action Type', 'Resource Type', 'Resource Name', 'Resource ID', 'Status', 'Method', 'Endpoint', 'IP Address', 'Error Message']
+    const headers = [
+      'Timestamp',
+      'User Email',
+      'Action Category',
+      'Action Type',
+      'Resource Type',
+      'Resource Name',
+      'Resource ID',
+      'Status',
+      'Method',
+      'Endpoint',
+      'IP Address',
+      'Error Message',
+    ]
     const csvData = logs.map((log) => [
       format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
       log.user_email || 'System',
-      log.action_category, log.action_type,
-      log.resource_type || '', log.resource_name || '', log.resource_id || '',
-      log.status, log.method || '', log.endpoint || '',
-      log.ip_address || '', log.error_message || '',
+      log.action_category,
+      log.action_type,
+      log.resource_type || '',
+      log.resource_name || '',
+      log.resource_id || '',
+      log.status,
+      log.method || '',
+      log.endpoint || '',
+      log.ip_address || '',
+      log.error_message || '',
     ])
-    const csvContent = [headers.join(','), ...csvData.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n')
     return {
       title: 'User Activity Audit Log',
       csvContent,
@@ -701,7 +765,8 @@ export function AuditLogReport() {
   // Activity timeline data — bin actions by hour or day
   const timelineData = useMemo(() => {
     if (!logs.length || !startDate || !endDate) return []
-    const diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    const diffDays =
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     const useHours = diffDays <= 2
     try {
       if (useHours) {
@@ -715,9 +780,18 @@ export function AuditLogReport() {
           }).length
           const failCount = logs.filter((l) => {
             const t = new Date(l.created_at)
-            return t >= hourStart && t < hourEnd && (l.status === 'failed' || l.status === 'error')
+            return (
+              t >= hourStart &&
+              t < hourEnd &&
+              (l.status === 'failed' || l.status === 'error')
+            )
           }).length
-          return { label: format(hour, 'HH:mm'), fullLabel: format(hour, 'MMM dd HH:mm'), total: count, failed: failCount }
+          return {
+            label: format(hour, 'HH:mm'),
+            fullLabel: format(hour, 'MMM dd HH:mm'),
+            total: count,
+            failed: failCount,
+          }
         })
       } else {
         const days = eachDayOfInterval({ start: startDate, end: endDate })
@@ -730,9 +804,18 @@ export function AuditLogReport() {
           }).length
           const failCount = logs.filter((l) => {
             const t = new Date(l.created_at)
-            return t >= dayStart && t < dayEnd && (l.status === 'failed' || l.status === 'error')
+            return (
+              t >= dayStart &&
+              t < dayEnd &&
+              (l.status === 'failed' || l.status === 'error')
+            )
           }).length
-          return { label: format(day, 'MMM dd'), fullLabel: format(day, 'MMM dd, yyyy'), total: count, failed: failCount }
+          return {
+            label: format(day, 'MMM dd'),
+            fullLabel: format(day, 'MMM dd, yyyy'),
+            total: count,
+            failed: failCount,
+          }
         })
       }
     } catch {
@@ -790,14 +873,14 @@ export function AuditLogReport() {
               dateRangePreset === 'today'
                 ? 'Today'
                 : dateRangePreset === '24h'
-                ? 'Last 24 hours'
-                : dateRangePreset === '7d'
-                  ? 'Last 7 days'
-                  : dateRangePreset === '30d'
-                    ? 'Last 30 days'
-                    : startDate && endDate
-                      ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
-                      : 'Custom',
+                  ? 'Last 24 hours'
+                  : dateRangePreset === '7d'
+                    ? 'Last 7 days'
+                    : dateRangePreset === '30d'
+                      ? 'Last 30 days'
+                      : startDate && endDate
+                        ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
+                        : 'Custom',
             totalRecords: stats.totalActions,
             metadata: {
               successfulActions: stats.successfulActions,
@@ -821,7 +904,10 @@ export function AuditLogReport() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => { setCategoryFilter('all'); setStatusFilter('all') }}
+          onClick={() => {
+            setCategoryFilter('all')
+            setStatusFilter('all')
+          }}
         >
           <CardHeader className="pb-3">
             <CardDescription>Total Actions</CardDescription>
@@ -829,8 +915,13 @@ export function AuditLogReport() {
           </CardHeader>
         </Card>
         <Card
-          className={cn('cursor-pointer transition-shadow hover:shadow-md', statusFilter === 'success' && 'ring-2 ring-green-400')}
-          onClick={() => setStatusFilter(statusFilter === 'success' ? 'all' : 'success')}
+          className={cn(
+            'cursor-pointer transition-shadow hover:shadow-md',
+            statusFilter === 'success' && 'ring-2 ring-green-400'
+          )}
+          onClick={() =>
+            setStatusFilter(statusFilter === 'success' ? 'all' : 'success')
+          }
         >
           <CardHeader className="pb-3">
             <CardDescription>Successful</CardDescription>
@@ -840,8 +931,13 @@ export function AuditLogReport() {
           </CardHeader>
         </Card>
         <Card
-          className={cn('cursor-pointer transition-shadow hover:shadow-md', statusFilter === 'failed' && 'ring-2 ring-red-400')}
-          onClick={() => setStatusFilter(statusFilter === 'failed' ? 'all' : 'failed')}
+          className={cn(
+            'cursor-pointer transition-shadow hover:shadow-md',
+            statusFilter === 'failed' && 'ring-2 ring-red-400'
+          )}
+          onClick={() =>
+            setStatusFilter(statusFilter === 'failed' ? 'all' : 'failed')
+          }
         >
           <CardHeader className="pb-3">
             <CardDescription>Failed</CardDescription>
@@ -863,7 +959,9 @@ export function AuditLogReport() {
         </Card>
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => setSearchQuery(searchQuery === 'delete' ? '' : 'delete')}
+          onClick={() =>
+            setSearchQuery(searchQuery === 'delete' ? '' : 'delete')
+          }
         >
           <CardHeader className="pb-3">
             <CardDescription>Critical Actions</CardDescription>
@@ -890,18 +988,31 @@ export function AuditLogReport() {
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={timelineData} barCategoryGap="15%">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={30} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11 }}
+                  width={30}
+                />
                 <RechartsTooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const d = (payload[0] as any).payload as { fullLabel: string; total: number; failed: number }
+                    const d = (payload[0] as any).payload as {
+                      fullLabel: string
+                      total: number
+                      failed: number
+                    }
                     return (
                       <div className="rounded border bg-white px-3 py-2 text-xs shadow-md">
                         <p className="font-medium">{d.fullLabel}</p>
                         <p className="text-muted-foreground">
-                          {d.total} actions{d.failed > 0 ? ` (${d.failed} failed)` : ''}
+                          {d.total} actions
+                          {d.failed > 0 ? ` (${d.failed} failed)` : ''}
                         </p>
                       </div>
                     )
@@ -931,28 +1042,50 @@ export function AuditLogReport() {
               Filters
             </CardTitle>
             {/* Active filter badges */}
-            {(categoryFilter !== 'all' || statusFilter !== 'all' || userFilter !== 'all' || debouncedSearch.trim()) && (
+            {(categoryFilter !== 'all' ||
+              statusFilter !== 'all' ||
+              userFilter !== 'all' ||
+              debouncedSearch.trim()) && (
               <div className="flex flex-wrap gap-1.5">
                 {categoryFilter !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer gap-1 pl-2 pr-1" onClick={() => setCategoryFilter('all')}>
-                    {ACTION_CATEGORIES.find((c) => c.value === categoryFilter)?.label || categoryFilter}
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer gap-1 pl-2 pr-1"
+                    onClick={() => setCategoryFilter('all')}
+                  >
+                    {ACTION_CATEGORIES.find((c) => c.value === categoryFilter)
+                      ?.label || categoryFilter}
                     <X className="h-3 w-3" />
                   </Badge>
                 )}
                 {statusFilter !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer gap-1 pl-2 pr-1" onClick={() => setStatusFilter('all')}>
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer gap-1 pl-2 pr-1"
+                    onClick={() => setStatusFilter('all')}
+                  >
                     Status: {statusFilter}
                     <X className="h-3 w-3" />
                   </Badge>
                 )}
                 {userFilter !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer gap-1 pl-2 pr-1" onClick={() => setUserFilter('all')}>
-                    User: {users.find((u) => u.id === userFilter)?.email || 'Selected'}
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer gap-1 pl-2 pr-1"
+                    onClick={() => setUserFilter('all')}
+                  >
+                    User:{' '}
+                    {users.find((u) => u.id === userFilter)?.email ||
+                      'Selected'}
                     <X className="h-3 w-3" />
                   </Badge>
                 )}
                 {debouncedSearch.trim() && (
-                  <Badge variant="secondary" className="cursor-pointer gap-1 pl-2 pr-1" onClick={() => setSearchQuery('')}>
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer gap-1 pl-2 pr-1"
+                    onClick={() => setSearchQuery('')}
+                  >
                     Search: &quot;{debouncedSearch.trim()}&quot;
                     <X className="h-3 w-3" />
                   </Badge>
@@ -987,14 +1120,21 @@ export function AuditLogReport() {
                 variant={hideSystemActions ? 'outline' : 'secondary'}
                 size="sm"
                 onClick={() => setHideSystemActions(!hideSystemActions)}
-                title={hideSystemActions ? 'Show system/automated actions' : 'Hide system/automated actions'}
+                title={
+                  hideSystemActions
+                    ? 'Show system/automated actions'
+                    : 'Hide system/automated actions'
+                }
               >
                 <Bot className="mr-1.5 h-3.5 w-3.5" />
                 {hideSystemActions ? 'Show System' : 'Hide System'}
               </Button>
 
               {/* Clear Filters */}
-              {(categoryFilter !== 'all' || statusFilter !== 'all' || userFilter !== 'all' || searchQuery.trim()) && (
+              {(categoryFilter !== 'all' ||
+                statusFilter !== 'all' ||
+                userFilter !== 'all' ||
+                searchQuery.trim()) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1217,10 +1357,14 @@ export function AuditLogReport() {
                   <TableBody>
                     {logs.map((log) => (
                       <React.Fragment key={log.id}>
-                        <TableRow className={cn(
-                          expandedRow === log.id && 'bg-muted/30',
-                          CRITICAL_ACTION_TYPES.some((t) => log.action_type.includes(t)) && 'border-l-2 border-l-orange-400'
-                        )}>
+                        <TableRow
+                          className={cn(
+                            expandedRow === log.id && 'bg-muted/30',
+                            CRITICAL_ACTION_TYPES.some((t) =>
+                              log.action_type.includes(t)
+                            ) && 'border-l-2 border-l-orange-400'
+                          )}
+                        >
                           <TableCell className="whitespace-nowrap">
                             <div>
                               <div className="text-sm">
@@ -1230,7 +1374,9 @@ export function AuditLogReport() {
                                 )}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(log.created_at), {
+                                  addSuffix: true,
+                                })}
                               </div>
                             </div>
                           </TableCell>
@@ -1241,7 +1387,12 @@ export function AuditLogReport() {
                               ) : (
                                 <Bot className="h-4 w-4 text-muted-foreground" />
                               )}
-                              <span className={cn('font-medium', !log.user_id && 'italic text-muted-foreground')}>
+                              <span
+                                className={cn(
+                                  'font-medium',
+                                  !log.user_id && 'italic text-muted-foreground'
+                                )}
+                              >
                                 {log.user_email || 'System'}
                               </span>
                             </div>
@@ -1257,7 +1408,12 @@ export function AuditLogReport() {
                           <TableCell>
                             {log.resource_type && (
                               <div>
-                                <div className="max-w-[200px] truncate font-medium" title={log.resource_name || log.resource_id || ''}>
+                                <div
+                                  className="max-w-[200px] truncate font-medium"
+                                  title={
+                                    log.resource_name || log.resource_id || ''
+                                  }
+                                >
                                   {log.resource_name || log.resource_id}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -1281,7 +1437,9 @@ export function AuditLogReport() {
                                         size="sm"
                                         onClick={() =>
                                           setExpandedRow(
-                                            expandedRow === log.id ? null : log.id
+                                            expandedRow === log.id
+                                              ? null
+                                              : log.id
                                           )
                                         }
                                       >
@@ -1293,7 +1451,9 @@ export function AuditLogReport() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      {expandedRow === log.id ? 'Collapse changes' : 'View changes'}
+                                      {expandedRow === log.id
+                                        ? 'Collapse changes'
+                                        : 'View changes'}
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -1309,39 +1469,67 @@ export function AuditLogReport() {
                                 {log.changes.before && log.changes.after ? (
                                   (() => {
                                     const diffs = computeDiff(
-                                      log.changes.before as Record<string, unknown>,
-                                      log.changes.after as Record<string, unknown>
+                                      log.changes.before as Record<
+                                        string,
+                                        unknown
+                                      >,
+                                      log.changes.after as Record<
+                                        string,
+                                        unknown
+                                      >
                                     )
                                     if (diffs.length === 0) {
                                       return (
                                         <p className="text-sm italic text-muted-foreground">
-                                          No visible field changes (only timestamps updated)
+                                          No visible field changes (only
+                                          timestamps updated)
                                         </p>
                                       )
                                     }
                                     return (
                                       <div className="space-y-1">
                                         <h4 className="mb-2 text-sm font-semibold">
-                                          {diffs.length} field{diffs.length !== 1 ? 's' : ''} changed
+                                          {diffs.length} field
+                                          {diffs.length !== 1 ? 's' : ''}{' '}
+                                          changed
                                         </h4>
                                         <div className="overflow-x-auto rounded border">
                                           <table className="w-full text-xs">
                                             <thead>
                                               <tr className="border-b bg-muted/80">
-                                                <th className="px-3 py-1.5 text-left font-medium">Field</th>
-                                                <th className="px-3 py-1.5 text-left font-medium text-red-600">Before</th>
-                                                <th className="px-3 py-1.5 text-left font-medium text-green-600">After</th>
+                                                <th className="px-3 py-1.5 text-left font-medium">
+                                                  Field
+                                                </th>
+                                                <th className="px-3 py-1.5 text-left font-medium text-red-600">
+                                                  Before
+                                                </th>
+                                                <th className="px-3 py-1.5 text-left font-medium text-green-600">
+                                                  After
+                                                </th>
                                               </tr>
                                             </thead>
                                             <tbody>
                                               {diffs.map((d) => (
-                                                <tr key={d.key} className="border-b last:border-0">
-                                                  <td className="px-3 py-1.5 font-mono font-medium">{d.key}</td>
+                                                <tr
+                                                  key={d.key}
+                                                  className="border-b last:border-0"
+                                                >
+                                                  <td className="px-3 py-1.5 font-mono font-medium">
+                                                    {d.key}
+                                                  </td>
                                                   <td className="max-w-[300px] truncate px-3 py-1.5 text-red-700">
-                                                    <pre className="whitespace-pre-wrap">{formatDiffValue(d.oldVal)}</pre>
+                                                    <pre className="whitespace-pre-wrap">
+                                                      {formatDiffValue(
+                                                        d.oldVal
+                                                      )}
+                                                    </pre>
                                                   </td>
                                                   <td className="max-w-[300px] truncate px-3 py-1.5 text-green-700">
-                                                    <pre className="whitespace-pre-wrap">{formatDiffValue(d.newVal)}</pre>
+                                                    <pre className="whitespace-pre-wrap">
+                                                      {formatDiffValue(
+                                                        d.newVal
+                                                      )}
+                                                    </pre>
                                                   </td>
                                                 </tr>
                                               ))}
@@ -1353,7 +1541,9 @@ export function AuditLogReport() {
                                   })()
                                 ) : (
                                   <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold">Details</h4>
+                                    <h4 className="text-sm font-semibold">
+                                      Details
+                                    </h4>
                                     <pre className="max-h-48 overflow-auto rounded bg-white p-2 text-xs">
                                       {JSON.stringify(log.changes, null, 2)}
                                     </pre>
@@ -1383,7 +1573,9 @@ export function AuditLogReport() {
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount}
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}&ndash;
+                    {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of{' '}
+                    {totalCount}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button

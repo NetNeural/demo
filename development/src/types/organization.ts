@@ -3,7 +3,12 @@
  * Defines interfaces for multi-tenant organization management
  */
 
-export type OrganizationRole = 'owner' | 'admin' | 'billing' | 'member' | 'viewer'
+export type OrganizationRole =
+  | 'owner'
+  | 'admin'
+  | 'billing'
+  | 'member'
+  | 'viewer'
 
 export interface OrganizationSettings {
   branding?: {

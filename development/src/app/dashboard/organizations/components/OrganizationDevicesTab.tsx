@@ -129,9 +129,7 @@ export function OrganizationDevicesTab({
     try {
       const response = await edgeFunctions.devices.delete(device.id)
       if (!response.success) {
-        throw new Error(
-          response.error?.message || 'Failed to remove device'
-        )
+        throw new Error(response.error?.message || 'Failed to remove device')
       }
       toast({
         title: 'Device Removed',
@@ -167,9 +165,7 @@ export function OrganizationDevicesTab({
       )
 
       if (!response.success) {
-        throw new Error(
-          response.error?.message || 'Failed to transfer device'
-        )
+        throw new Error(response.error?.message || 'Failed to transfer device')
       }
 
       const targetOrg = userOrganizations.find((o) => o.id === targetOrgId)
@@ -334,9 +330,7 @@ export function OrganizationDevicesTab({
 
           <div className="space-y-4 py-4">
             <div className="grid gap-2">
-              <label className="text-sm font-medium">
-                Target Organization
-              </label>
+              <label className="text-sm font-medium">Target Organization</label>
               <Select value={targetOrgId} onValueChange={setTargetOrgId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select organization..." />

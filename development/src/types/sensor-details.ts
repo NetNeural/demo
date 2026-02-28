@@ -85,16 +85,37 @@ export interface Device {
   is_test_device?: boolean
   model?: string
   serial_number?: string
-  external_device_id?: string
+  external_device_id?: string | null
   status: 'online' | 'offline' | 'warning' | 'error' | 'maintenance'
   location?: string
   location_id?: string
+  department_id?: string
   firmware_version?: string
   battery_level?: number
   signal_strength?: number
   last_seen?: string
-  metadata?: Record<string, any>
-  organization_id?: string
+  last_seen_online?: string
+  last_seen_offline?: string
+  metadata?: Record<string, unknown>
+  organization_id: string
+  description?: string
+  hardware_ids?: string[]
+  cohort_id?: string
+  parent_device_id?: string | null
+  is_gateway?: boolean
+  integration_id?: string | null
+  is_externally_managed?: boolean
+  integration_name?: string | null
+  integration_type?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface TelemetryReading {
+  device_id: string
+  telemetry: Record<string, unknown>
+  device_timestamp: string | null
+  received_at: string
 }
 
 export interface SensorDetailsData {

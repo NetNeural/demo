@@ -91,6 +91,42 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+    // --- Tier-based AI gating ---
+    // Look up the org's billing plan and verify AI features are enabled
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('billing_plan_id')
+      .eq('id', organizationId)
+      .single()
+
+    if (org?.billing_plan_id) {
+      const { data: plan } = await supabase
+        .from('billing_plans')
+        .select('features, slug')
+        .eq('id', org.billing_plan_id)
+        .single()
+
+      if (plan && !plan.features?.ai_analytics) {
+        console.log(
+          `🚫 AI insights blocked for org ${organizationId} — plan "${plan.slug}" does not include AI`
+        )
+        return new Response(
+          JSON.stringify({
+            error: 'AI features are not available on your current plan',
+            upgrade_required: true,
+            insights: [],
+          }),
+          {
+            status: 403,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          }
+        )
+      }
+    }
+
     // Check cache first
     const cacheKey = `ai_insights:${deviceId}:${telemetryReadings.length}`
     const { data: cached } = await supabase

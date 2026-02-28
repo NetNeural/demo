@@ -24,10 +24,12 @@ CREATE INDEX IF NOT EXISTS idx_alert_events_created_at ON alert_events(created_a
 ALTER TABLE alert_events ENABLE ROW LEVEL SECURITY;
 
 -- Service role full access
+DROP POLICY IF EXISTS "service_role_alert_events" ON alert_events;
 CREATE POLICY "service_role_alert_events" ON alert_events FOR ALL
   USING (auth.jwt() ->> 'role' = 'service_role');
 
 -- Users can view events for alerts in their org
+DROP POLICY IF EXISTS "users_view_alert_events" ON alert_events;
 CREATE POLICY "users_view_alert_events" ON alert_events FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM alerts a
@@ -57,9 +59,11 @@ CREATE INDEX IF NOT EXISTS idx_escalation_rules_org ON alert_escalation_rules(or
 
 ALTER TABLE alert_escalation_rules ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "service_role_escalation_rules" ON alert_escalation_rules;
 CREATE POLICY "service_role_escalation_rules" ON alert_escalation_rules FOR ALL
   USING (auth.jwt() ->> 'role' = 'service_role');
 
+DROP POLICY IF EXISTS "users_view_escalation_rules" ON alert_escalation_rules;
 CREATE POLICY "users_view_escalation_rules" ON alert_escalation_rules FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM organization_members om
@@ -67,6 +71,7 @@ CREATE POLICY "users_view_escalation_rules" ON alert_escalation_rules FOR SELECT
     AND om.user_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS "admins_manage_escalation_rules" ON alert_escalation_rules;
 CREATE POLICY "admins_manage_escalation_rules" ON alert_escalation_rules FOR ALL
   USING (EXISTS (
     SELECT 1 FROM organization_members om

@@ -8,6 +8,7 @@ import {
   createServiceClient,
   getUserContext,
 } from '../_shared/auth.ts'
+import { enforceQuota, QuotaExceededError } from '../_shared/quota-check.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -107,11 +108,15 @@ export default createEdgeFunction(
         .maybeSingle()
 
       if (membership) {
-        console.log(`✅ User ${ctx.userId} is ${membership.role} of org ${requestedOrgId}`)
+        console.log(
+          `✅ User ${ctx.userId} is ${membership.role} of org ${requestedOrgId}`
+        )
         return requestedOrgId
       }
 
-      console.warn(`⚠️ User ${ctx.userId} is not a member of org ${requestedOrgId}, falling back to primary`)
+      console.warn(
+        `⚠️ User ${ctx.userId} is not a member of org ${requestedOrgId}, falling back to primary`
+      )
       return ctx.organizationId || null
     }
 
@@ -372,7 +377,10 @@ export default createEdgeFunction(
       if (model !== undefined) updates.model = model
 
       // Handle organization_id change (device transfer between orgs)
-      if (organization_id !== undefined && organization_id !== existingDevice.organization_id) {
+      if (
+        organization_id !== undefined &&
+        organization_id !== existingDevice.organization_id
+      ) {
         // Verify user has access to the TARGET organization too
         if (!userContext.isSuperAdmin) {
           const { data: targetMembership } = await supabase
@@ -390,9 +398,14 @@ export default createEdgeFunction(
           }
         }
         updates.organization_id = organization_id
+        // Clear org-specific foreign keys — they reference entities in the OLD org
+        updates.location_id = null
+        updates.department_id = null
+        updates.integration_id = null
         console.log('🔵 Device transfer:', {
           from: existingDevice.organization_id,
           to: organization_id,
+          cleared: ['location_id', 'department_id', 'integration_id'],
         })
       }
 
@@ -478,10 +491,29 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this organization
-      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(
+        userContext,
+        organization_id
+      )
 
       if (!targetOrgId) {
         throw new DatabaseError('User has no organization access', 403)
+      }
+
+      // Check device quota before creating
+      try {
+        const quota = await enforceQuota(targetOrgId, 'device_count', 'device')
+        if (quota.is_warning) {
+          console.warn(
+            `⚠️ Org ${targetOrgId} approaching device limit: ${quota.current_usage}/${quota.plan_limit}`
+          )
+        }
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          throw new DatabaseError(err.message, 403)
+        }
+        // Non-quota errors: log but don't block (fail-open)
+        console.error('Quota check error (allowing device creation):', err)
       }
 
       // Create new device - RLS will enforce access automatically
@@ -543,7 +575,10 @@ export default createEdgeFunction(
       }
 
       // Verify user has access to this device's organization
-      const targetOrgId = await getTargetOrganizationId(userContext, organization_id)
+      const targetOrgId = await getTargetOrganizationId(
+        userContext,
+        organization_id
+      )
 
       if (!targetOrgId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)

@@ -5,12 +5,6 @@ import * as Sentry from '@sentry/nextjs'
 
 export function SentryInit() {
   useEffect(() => {
-    console.log('[Sentry] Initializing client...')
-    console.log(
-      '[Sentry] DSN:',
-      process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Configured ✅' : 'Missing ❌'
-    )
-
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
@@ -85,11 +79,6 @@ export function SentryInit() {
         'ChunkLoadError',
       ],
     })
-
-    console.log(
-      '[Sentry] Client initialized!',
-      Sentry.getClient() ? '✅' : '❌'
-    )
 
     // Global error handler for unhandled errors
     const handleGlobalError = (event: ErrorEvent) => {

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { useExportable } from '@/hooks/useExportable'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +29,28 @@ export default function AlertRulesPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'telemetry' | 'offline'>('all')
   const activeOrgRef = useRef<string | null>(null)
+
+  // Wire CSV export for Ctrl+E / Quick Actions
+  useExportable({
+    getData: () =>
+      rules.map((r) => ({
+        name: r.name,
+        enabled: r.enabled,
+        rule_type: r.rule_type,
+        device_scope: r.device_scope,
+        cooldown_minutes: r.cooldown_minutes,
+        last_triggered_at: r.last_triggered_at,
+      })),
+    filename: 'alert-rules',
+    columns: [
+      { key: 'name' as const, label: 'Name' },
+      { key: 'enabled' as const, label: 'Enabled' },
+      { key: 'rule_type' as const, label: 'Rule Type' },
+      { key: 'device_scope' as const, label: 'Device Scope' },
+      { key: 'cooldown_minutes' as const, label: 'Cooldown (min)' },
+      { key: 'last_triggered_at' as const, label: 'Last Triggered' },
+    ],
+  })
 
   useEffect(() => {
     if (currentOrganization) {

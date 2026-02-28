@@ -239,8 +239,7 @@ curl -H "Authorization: Bearer <YOUR_SUPABASE_ANON_KEY>" \
 // Run in browser console at http://localhost:3000/dashboard
 fetch('http://localhost:54321/functions/v1/devices', {
   headers: {
-    Authorization:
-      'Bearer <YOUR_SUPABASE_ANON_KEY>',
+    Authorization: 'Bearer <YOUR_SUPABASE_ANON_KEY>',
   },
 })
   .then((r) => r.json())

@@ -15,8 +15,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // Only run when explicitly opted in AND a real key is provided (not a placeholder)
 const hasRealSupabase =
-  process.env.RUN_INTEGRATION_TESTS === 'true' &&
-  SUPABASE_ANON_KEY.length > 10
+  process.env.RUN_INTEGRATION_TESTS === 'true' && SUPABASE_ANON_KEY.length > 10
 
 const describeIfSupabase = hasRealSupabase ? describe : describe.skip
 

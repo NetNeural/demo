@@ -164,8 +164,7 @@ export default function DashboardPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.activeAlerts ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.activeAlerts ?? 0}</div>
             <div className="mt-1 flex items-center text-xs text-muted-foreground">
               {(stats?.activeAlerts ?? 0) > 0 ? (
                 <>
@@ -177,9 +176,7 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <ArrowDownRight className="mr-1 h-3 w-3 text-green-500" />
-                  <span className="font-medium text-green-500">
-                    All clear
-                  </span>
+                  <span className="font-medium text-green-500">All clear</span>
                 </>
               )}
             </div>

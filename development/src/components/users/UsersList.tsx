@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { UserDetailsDialog } from './UserDetailsDialog'
 import { EditUserDialog } from './EditUserDialog'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useExportable } from '@/hooks/useExportable'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -42,6 +43,20 @@ export function UsersList() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
 
+  // Wire CSV export for Ctrl+E / Quick Actions
+  useExportable({
+    getData: () => users,
+    filename: 'users',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'role', label: 'Role' },
+      { key: 'status', label: 'Status' },
+      { key: 'department', label: 'Department' },
+      { key: 'lastLogin', label: 'Last Login' },
+    ],
+  })
+
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -77,9 +92,7 @@ export function UsersList() {
         email: u.email,
         role: (u.role as User['role']) ?? 'user',
         status: u.is_active ? 'active' : 'inactive',
-        lastLogin: u.last_login
-          ? formatRelativeTime(u.last_login)
-          : undefined,
+        lastLogin: u.last_login ? formatRelativeTime(u.last_login) : undefined,
       }))
 
       // Try to fetch secondary org members via organization_members table
@@ -101,7 +114,9 @@ export function UsersList() {
               .in('id', secondaryIds)
 
             if (secondaryUsers) {
-              const roleMap = new Map(secondaryMembers.map((m) => [m.user_id, m.role]))
+              const roleMap = new Map(
+                secondaryMembers.map((m) => [m.user_id, m.role])
+              )
               for (const u of secondaryUsers) {
                 mapped.push({
                   id: u.id,
@@ -123,7 +138,8 @@ export function UsersList() {
 
       setUsers(mapped)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load users'
+      const message =
+        err instanceof Error ? err.message : 'Failed to load users'
       console.error('Error fetching users:', err)
       setFetchError(message)
     } finally {
