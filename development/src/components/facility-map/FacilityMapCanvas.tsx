@@ -77,21 +77,29 @@ export function FacilityMapCanvas({
 }: FacilityMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fullscreenRef = useRef<HTMLDivElement | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Marker scale: 1.0 at ≥600px container width, proportionally smaller below.
-  // This makes collage dots match single-view proportions.
+  // Marker scale: shrink dots proportionally when the rendered image is
+  // smaller than the single-view reference width (600px).
   const REFERENCE_WIDTH = 600
   const [markerScale, setMarkerScale] = useState(1)
+  // Track rendered image size so we can constrain the marker overlay to match
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
 
   useEffect(() => {
-    if (!containerRef.current || !imageLoaded) return
-    const el = containerRef.current
-    const measure = () => setMarkerScale(Math.min(1, el.clientWidth / REFERENCE_WIDTH))
+    const img = imgRef.current
+    if (!img || !imageLoaded) return
+    const measure = () => {
+      const w = img.clientWidth
+      const h = img.clientHeight
+      setImgSize({ w, h })
+      setMarkerScale(Math.min(1, w / REFERENCE_WIDTH))
+    }
     measure()
     const ro = new ResizeObserver(() => measure())
-    ro.observe(el)
+    ro.observe(img)
     return () => ro.disconnect()
   }, [imageLoaded])
 
@@ -99,6 +107,7 @@ export function FacilityMapCanvas({
   useEffect(() => {
     setImageLoaded(false)
     setMarkerScale(1)
+    setImgSize(null)
   }, [facilityMap.id])
 
   // Click to place device — use the image container directly
@@ -346,6 +355,7 @@ export function FacilityMapCanvas({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              ref={imgRef}
               src={facilityMap.image_url}
               alt={facilityMap.name}
               className={cn(
@@ -357,9 +367,21 @@ export function FacilityMapCanvas({
               draggable={false}
             />
 
-            {/* Device markers overlay */}
-            {imageLoaded &&
-              placements.map((p) => (
+            {/* Marker overlay — sized to match the actual rendered image so
+                percentage-based positions stay accurate when object-contain
+                causes the image to be smaller than the container */}
+            {imageLoaded && imgSize && (
+              <div
+                className="absolute"
+                style={{
+                  width: imgSize.w,
+                  height: imgSize.h,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                }}
+              >
+              {placements.map((p) => (
                 <DeviceMarker
                   key={p.id}
                   placement={p}
@@ -375,6 +397,8 @@ export function FacilityMapCanvas({
                   scale={markerScale}
                 />
               ))}
+              </div>
+            )}
 
             {/* Overlay badges */}
             {imageLoaded && (showMapName || showDeviceCount || showLocation) && (
