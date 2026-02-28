@@ -63,15 +63,12 @@ jobs:
           cache-dependency-path: development/package-lock.json
 
       - name: 📦 Install dependencies
-        run: npm install --legacy-peer-deps --ignore-scripts
+        run: npm ci --legacy-peer-deps --ignore-scripts
 
       - name: 🏗️ Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-
-      - name: 🗑️ Clear build artifacts
-        run: rm -rf .next out
 
       - name: ✅ Verify environment
         env:
