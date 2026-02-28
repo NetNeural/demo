@@ -83,7 +83,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
   const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
-  const [showLabels, setShowLabels] = useState(false)
+  const [showLabels, setShowLabels] = useState(() => {
+    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_showLabels') === 'true' } catch {} } return false
+  })
   const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(new Set())
   /** Zones */
   const [zones, setZones] = useState<FacilityMapZone[]>([])
@@ -99,11 +101,28 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   /** Collage: hidden locations */
   const [hiddenLocations, setHiddenLocations] = useState<Set<string>>(new Set())
   /** Collage: show only maps with issues (warning/error/offline) */
-  const [issuesOnly, setIssuesOnly] = useState(false)
+  const [issuesOnly, setIssuesOnly] = useState(() => {
+    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_issuesOnly') === 'true' } catch {} } return false
+  })
   /** Collage: show map name labels on cards */
-  const [showCollageName, setShowCollageName] = useState(true)
+  const [showCollageName, setShowCollageName] = useState(() => {
+    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_showCollageName'); return v === null ? true : v === 'true' } catch {} } return true
+  })
   /** Collage: show device count labels on cards */
-  const [showCollageCount, setShowCollageCount] = useState(true)
+  const [showCollageCount, setShowCollageCount] = useState(() => {
+    if (typeof window !== 'undefined') { try { const v = localStorage.getItem('fm_showCollageCount'); return v === null ? true : v === 'true' } catch {} } return true
+  })
+  /** Show device type labels on markers */
+  const [showDeviceTypes, setShowDeviceTypes] = useState(() => {
+    if (typeof window !== 'undefined') { try { return localStorage.getItem('fm_showDeviceTypes') === 'true' } catch {} } return false
+  })
+
+  // Persist checkbox preferences to localStorage
+  useEffect(() => { try { localStorage.setItem('fm_showLabels', String(showLabels)) } catch {} }, [showLabels])
+  useEffect(() => { try { localStorage.setItem('fm_issuesOnly', String(issuesOnly)) } catch {} }, [issuesOnly])
+  useEffect(() => { try { localStorage.setItem('fm_showCollageName', String(showCollageName)) } catch {} }, [showCollageName])
+  useEffect(() => { try { localStorage.setItem('fm_showCollageCount', String(showCollageCount)) } catch {} }, [showCollageCount])
+  useEffect(() => { try { localStorage.setItem('fm_showDeviceTypes', String(showDeviceTypes)) } catch {} }, [showDeviceTypes])
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
@@ -947,6 +966,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
+                  showDeviceTypes={showDeviceTypes}
                   heatmapMetric={heatmapMetric}
                   onHeatmapMetricChange={setHeatmapMetric}
                   availableHeatmapMetrics={getAvailableMetrics(telemetryMap)}
@@ -1158,6 +1178,17 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 Show Names
               </label>
 
+              {/* Show device type on markers */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showDeviceTypes}
+                  onChange={(e) => setShowDeviceTypes(e.target.checked)}
+                  className="h-3 w-3 rounded accent-primary cursor-pointer"
+                />
+                Show Device Type
+              </label>
+
               {/* Heatmap selector */}
               {getAvailableMetrics(telemetryMap).length > 0 && (
                 <>
@@ -1256,6 +1287,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
+                  showDeviceTypes={showDeviceTypes}
                   heatmapMetric={heatmapMetric}
                   zones={allZones[m.id] || []}
                   compact

@@ -82,6 +82,8 @@ interface DeviceMarkerProps {
   telemetry?: Record<string, unknown> | null
   /** Show device name label next to the marker dot */
   showLabel?: boolean
+  /** Show device type label below the name label */
+  showDeviceType?: boolean
 }
 
 export function DeviceMarker({
@@ -94,6 +96,7 @@ export function DeviceMarker({
   containerRef,
   telemetry,
   showLabel = false,
+  showDeviceType = false,
 }: DeviceMarkerProps) {
   const device = placement.device
   const status = device?.status || 'offline'
@@ -213,6 +216,12 @@ export function DeviceMarker({
             {showLabel && (
               <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm pointer-events-none">
                 {displayName}
+              </span>
+            )}
+            {/* Device type label */}
+            {showDeviceType && device?.device_type && (
+              <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-[9px] text-gray-300 shadow-sm pointer-events-none" style={{ top: showLabel ? 'calc(50% + 10px)' : '50%', transform: showLabel ? 'none' : 'translateY(-50%)' }}>
+                {device.device_type}
               </span>
             )}
           </div>

@@ -54,6 +54,8 @@ interface FacilityMapCanvasProps {
   zoneDrawing?: boolean
   /** Show device name labels next to sensor pins */
   showLabels?: boolean
+  /** Show device type labels next to sensor pins */
+  showDeviceTypes?: boolean
   /** Currently selected heatmap metric (empty string = off) */
   heatmapMetric?: string
   /** Callback when heatmap metric changes */
@@ -96,6 +98,7 @@ export function FacilityMapCanvas({
   onZonePointAdd,
   zoneDrawing = false,
   showLabels = false,
+  showDeviceTypes = false,
   heatmapMetric = '',
   onHeatmapMetricChange,
   availableHeatmapMetrics = [],
@@ -539,6 +542,7 @@ export function FacilityMapCanvas({
                   containerRef={containerRef}
                   telemetry={telemetryMap?.[p.device_id]}
                   showLabel={showLabels}
+                  showDeviceType={showDeviceTypes}
                 />
               ))}
           </div>
