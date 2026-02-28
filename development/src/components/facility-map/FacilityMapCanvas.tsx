@@ -347,7 +347,7 @@ export function FacilityMapCanvas({
       )}
 
       {/* Status summary bar — hidden in compact mode */}
-      {!compact && placements.length > 0 && (
+      {!compact && (placements.length > 0 || statusBarExtra) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b bg-muted/10 px-3 py-1.5">
           {Object.entries(statusSummary).map(([status, count]) => (
             <div key={status} className="flex items-center gap-1.5 text-xs">
