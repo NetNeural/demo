@@ -38,16 +38,16 @@ export default function RootLayout({
       <head>
         {/* Security Headers via meta tags (static export — no server headers) */}
         {/* CSP: restrict content sources to self + known services */}
+        {/* Note: frame-ancestors is NOT supported via <meta> — only via HTTP header. */}
+        {/* GitHub Pages doesn't allow custom headers, so frame-ancestors is omitted here. */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com; frame-ancestors 'none';"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com;"
         />
-        {/* X-Frame-Options equivalent — prevent embedding in iframes */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         {/* Referrer policy — don't leak full URLs to third parties */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
         {/* Note: HSTS is provided by GitHub Pages automatically */}
-        {/* Note: X-Frame-Options header not settable via meta, using CSP frame-ancestors instead */}
       </head>
       <body className={inter.className}>
         <WebVitalsReporter />
