@@ -36,7 +36,6 @@ CREATE POLICY "Org admins can view API keys"
       WHERE om.organization_id = organization_api_keys.organization_id
         AND om.user_id = auth.uid()
         AND om.role IN ('owner', 'admin')
-        AND om.status = 'active'
     )
   );
 
@@ -49,7 +48,6 @@ CREATE POLICY "Org admins can insert API keys"
       WHERE om.organization_id = organization_api_keys.organization_id
         AND om.user_id = auth.uid()
         AND om.role IN ('owner', 'admin')
-        AND om.status = 'active'
     )
   );
 
@@ -62,7 +60,6 @@ CREATE POLICY "Org admins can update API keys"
       WHERE om.organization_id = organization_api_keys.organization_id
         AND om.user_id = auth.uid()
         AND om.role IN ('owner', 'admin')
-        AND om.status = 'active'
     )
   );
 
@@ -95,7 +92,6 @@ CREATE POLICY "Org owners can view SSO config"
       WHERE om.organization_id = organization_sso_config.organization_id
         AND om.user_id = auth.uid()
         AND om.role = 'owner'
-        AND om.status = 'active'
     )
   );
 
@@ -108,7 +104,6 @@ CREATE POLICY "Org owners can manage SSO config"
       WHERE om.organization_id = organization_sso_config.organization_id
         AND om.user_id = auth.uid()
         AND om.role = 'owner'
-        AND om.status = 'active'
     )
   );
 
