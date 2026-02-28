@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
+import { useOrgTier } from '@/hooks/useOrgTier'
 import { getRoleDisplayInfo, OrganizationRole } from '@/types/organization'
 import {
   UserPlus,
@@ -43,12 +44,26 @@ import {
   Copy,
   CheckCircle2,
   Pencil,
+  Lock,
+  ArrowUpCircle,
 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useToast } from '@/hooks/use-toast'
 import { AddMemberDialog } from '@/components/organizations/AddMemberDialog'
 import { EditMemberDialog } from '@/components/organizations/EditMemberDialog'
 import { handleApiError } from '@/lib/sentry-utils'
+import Link from 'next/link'
+
+// ── Seat limits per tier (matches billing_plans.max_users in DB) ──
+// -1 = unlimited. Server-side enforcement is the source of truth.
+const SEAT_LIMITS: Record<string, number> = {
+  free: 1,
+  starter: 3,
+  professional: 25,
+  enterprise: -1,
+  unlimited: -1,
+  reseller: -1,
+}
 
 interface OrganizationMember {
   id: string
@@ -86,6 +101,14 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [generatedPassword, setGeneratedPassword] = useState<string>('')
   const [passwordCopied, setPasswordCopied] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
+
+  // ── Seat limit logic (#318) ────────────────────────────────────
+  const { tier } = useOrgTier()
+  const seatLimit = SEAT_LIMITS[tier] ?? 3
+  const isUnlimitedSeats = seatLimit === -1
+  const memberCount = members.length
+  const seatLimitReached = !isUnlimitedSeats && memberCount >= seatLimit
+  const seatUsagePercent = isUnlimitedSeats ? 0 : Math.min(100, Math.round((memberCount / seatLimit) * 100))
 
   // Debug logging
   console.log('📋 MembersTab context:', {
@@ -346,16 +369,60 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Organization Members ({members.length})</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                Organization Members ({members.length})
+                {/* Seat usage badge */}
+                {!isUnlimitedSeats && (
+                  <Badge
+                    variant={seatLimitReached ? 'destructive' : 'outline'}
+                    className="text-xs font-normal"
+                  >
+                    {memberCount} of {seatLimit} seats used
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
                 Users who have access to this organization
+                {isUnlimitedSeats && ' • Unlimited seats'}
               </CardDescription>
+              {/* Seat usage bar */}
+              {!isUnlimitedSeats && (
+                <div className="mt-2 w-64">
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        seatLimitReached
+                          ? 'bg-destructive'
+                          : seatUsagePercent >= 80
+                            ? 'bg-amber-500'
+                            : 'bg-primary'
+                      }`}
+                      style={{ width: `${seatUsagePercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             {canManageMembers && (
-              <Button onClick={() => setShowAddMemberDialog(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Member
-              </Button>
+              seatLimitReached ? (
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Lock className="h-4 w-4" />
+                    <span>Seat limit reached</span>
+                  </div>
+                  <Link href="/dashboard/settings?tab=subscription">
+                    <Button size="sm" variant="default">
+                      <ArrowUpCircle className="mr-2 h-4 w-4" />
+                      Upgrade Plan
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Button onClick={() => setShowAddMemberDialog(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+              )
             )}
           </div>
         </CardHeader>

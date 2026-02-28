@@ -224,7 +224,62 @@ export default createEdgeFunction(
         throw new Error('User is already a member of this organization')
       }
 
-      console.log('✅ User not yet a member, proceeding with insert')
+      console.log('✅ User not yet a member, checking seat limits')
+
+      // ── Seat Limit Enforcement (#318) ──────────────────────────────
+      // Look up the org's subscription_tier → billing_plans.max_users
+      const { data: org, error: orgError } = await supabaseAdmin
+        .from('organizations')
+        .select('subscription_tier')
+        .eq('id', organizationId)
+        .single()
+
+      if (orgError) {
+        console.error('❌ Failed to fetch organization:', orgError)
+        throw new DatabaseError(`Failed to fetch organization: ${orgError.message}`, 500)
+      }
+
+      const tier = org?.subscription_tier || 'starter'
+
+      // Look up max_users from the billing plan
+      const { data: plan, error: planError } = await supabaseAdmin
+        .from('billing_plans')
+        .select('max_users')
+        .eq('slug', tier)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (planError) {
+        console.error('❌ Failed to fetch billing plan:', planError)
+        throw new DatabaseError(`Failed to fetch billing plan: ${planError.message}`, 500)
+      }
+
+      const maxUsers = plan?.max_users ?? 3 // default to starter limit
+
+      if (maxUsers !== -1) {
+        // Count current members in the organization
+        const { count: currentMemberCount, error: countError } = await supabaseAdmin
+          .from('organization_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+
+        if (countError) {
+          console.error('❌ Failed to count members:', countError)
+          throw new DatabaseError(`Failed to count members: ${countError.message}`, 500)
+        }
+
+        console.log('📊 Seat usage:', { currentMemberCount, maxUsers, tier })
+
+        if ((currentMemberCount ?? 0) >= maxUsers) {
+          console.log('🚫 Seat limit reached:', { currentMemberCount, maxUsers, tier })
+          throw new DatabaseError(
+            `Seat limit reached. Your ${tier} plan allows ${maxUsers} users. Upgrade your plan to add more members.`,
+            403
+          )
+        }
+      }
+
+      console.log('✅ Seat limit check passed, proceeding with insert')
 
       // Add member using admin client (bypasses RLS)
       console.log('🔵 Inserting new member:', {
