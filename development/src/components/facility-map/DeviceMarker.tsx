@@ -273,7 +273,7 @@ export function DeviceMarker({
               </div>
             )}
             {mode === 'view' && onNavigate && (
-              <p className="text-[10px] text-gray-500 italic pt-0.5">Click icon to view details</p>
+              <p className="text-[10px] text-gray-500 italic pt-0.5">Hover over icon to view details</p>
             )}
           </div>
         </TooltipContent>

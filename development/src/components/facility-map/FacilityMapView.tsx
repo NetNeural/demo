@@ -42,17 +42,22 @@ import {
   Image as ImageIcon,
   Maximize2,
   Minimize2,
+  Filter,
+  Hexagon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { FacilityMapCanvas } from './FacilityMapCanvas'
 import { DevicePalette } from './DevicePalette'
 import { MapManagerDialog } from './MapManagerDialog'
+import { ZoneDrawer } from './ZoneDrawer'
+import { getAvailableMetrics, formatMetricLabel, HeatmapLegend } from './HeatmapOverlay'
 import type {
   FacilityMap,
   DeviceMapPlacement,
   PlacedDevice,
   PlacementMode,
+  FacilityMapZone,
 } from '@/types/facility-map'
 
 interface FacilityMapViewProps {
@@ -81,6 +86,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [viewMode, setViewMode] = useState<'single' | 'collage'>('single')
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   const [showLabels, setShowLabels] = useState(false)
+  const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(new Set())
+  /** Zones */
+  const [zones, setZones] = useState<FacilityMapZone[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
+  const [drawingZone, setDrawingZone] = useState(false)
+  const [zonePoints, setZonePoints] = useState<Array<{ x: number; y: number }>>([])
+  /** All zones across all maps, keyed by map id */
+  const [allZones, setAllZones] = useState<Record<string, FacilityMapZone[]>>({})
+  /** Heatmap metric selection (empty = off) */
+  const [heatmapMetric, setHeatmapMetric] = useState('')
   /** All placements across all maps, keyed by map id */
   const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
 
@@ -246,6 +261,86 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [placements])
 
+  // --- Zone Loading ---
+  const loadZones = useCallback(async () => {
+    if (!selectedMapId) { setZones([]); return }
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .select('*')
+        .eq('facility_map_id', selectedMapId)
+        .order('z_order', { ascending: true })
+      if (error) throw error
+      setZones((data || []) as FacilityMapZone[])
+    } catch {
+      // Table may not exist yet — silently ignore
+      setZones([])
+    }
+  }, [selectedMapId])
+
+  const loadAllZones = useCallback(async () => {
+    if (maps.length === 0) return
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .select('*')
+        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
+      if (error) throw error
+      const grouped: Record<string, FacilityMapZone[]> = {}
+      for (const row of (data || []) as FacilityMapZone[]) {
+        if (!grouped[row.facility_map_id]) grouped[row.facility_map_id] = []
+        grouped[row.facility_map_id]!.push(row)
+      }
+      setAllZones(grouped)
+    } catch {
+      setAllZones({})
+    }
+  }, [maps])
+
+  const handleSaveZone = useCallback(async (
+    name: string, color: string, opacity: number, points: Array<{ x: number; y: number }>
+  ) => {
+    if (!selectedMapId) return
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .insert({
+          facility_map_id: selectedMapId,
+          name,
+          color,
+          opacity,
+          points,
+          z_order: zones.length,
+        })
+        .select()
+        .single()
+      if (error) throw error
+      setZones((prev) => [...prev, data as FacilityMapZone])
+      setDrawingZone(false)
+      setZonePoints([])
+      toast.success(`Zone "${name}" created`)
+    } catch (err) {
+      console.error('Save zone error:', err)
+      toast.error('Failed to save zone')
+    }
+  }, [selectedMapId, zones.length])
+
+  const handleDeleteZone = useCallback(async (zoneId: string) => {
+    try {
+      const { error } = await supabaseRef.current
+        .from('facility_map_zones')
+        .delete()
+        .eq('id', zoneId)
+      if (error) throw error
+      setZones((prev) => prev.filter((z) => z.id !== zoneId))
+      setSelectedZoneId(null)
+      toast.success('Zone deleted')
+    } catch (err) {
+      console.error('Delete zone error:', err)
+      toast.error('Failed to delete zone')
+    }
+  }, [])
+
   // Initial load
   useEffect(() => {
     loadMaps()
@@ -272,6 +367,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   useEffect(() => {
     loadTelemetry()
   }, [loadTelemetry])
+
+  // Load zones when map changes
+  useEffect(() => {
+    loadZones()
+  }, [loadZones])
+
+  // Load all zones for collage view
+  useEffect(() => {
+    loadAllZones()
+  }, [loadAllZones, zones])
 
   // Collage fullscreen toggle
   const toggleCollageFullscreen = useCallback(() => {
@@ -692,6 +797,35 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               />
               Show Names
             </label>
+            <Button
+              variant={drawingZone ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                if (drawingZone) {
+                  setDrawingZone(false)
+                  setZonePoints([])
+                } else {
+                  setDrawingZone(true)
+                  setMode('edit')
+                  setDeviceToPlace(null)
+                }
+              }}
+            >
+              <Hexagon className="mr-1 h-3 w-3" />
+              {drawingZone ? 'Cancel Zone' : 'Draw Zone'}
+            </Button>
+            {selectedZoneId && mode === 'edit' && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => handleDeleteZone(selectedZoneId)}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Delete Zone
+              </Button>
+            )}
           </div>
         )}
 
@@ -750,6 +884,95 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         )}
       </div>
 
+      {/* Device type filter bar */}
+      {(() => {
+        // Collect device types from current placements (single) or all (collage)
+        const activePlacements = viewMode === 'single' ? placements : Object.values(allPlacements).flat()
+        const typeCounts: Record<string, number> = {}
+        for (const p of activePlacements) {
+          const dt = p.device?.device_type || 'unknown'
+          typeCounts[dt] = (typeCounts[dt] || 0) + 1
+        }
+        const deviceTypes = Object.keys(typeCounts).sort()
+        if (deviceTypes.length <= 1) return null
+        const hiddenCount = activePlacements.filter((p) => hiddenDeviceTypes.has(p.device?.device_type || 'unknown')).length
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+            {deviceTypes.map((dt) => {
+              const isHidden = hiddenDeviceTypes.has(dt)
+              return (
+                <button
+                  key={dt}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    isHidden
+                      ? 'border-muted bg-muted/50 text-muted-foreground line-through opacity-60'
+                      : 'border-primary/30 bg-primary/5 text-foreground'
+                  }`}
+                  onClick={() => {
+                    setHiddenDeviceTypes((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(dt)) next.delete(dt)
+                      else next.add(dt)
+                      return next
+                    })
+                  }}
+                >
+                  {dt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  <span className="text-muted-foreground">({typeCounts[dt]})</span>
+                </button>
+              )
+            })}
+            {hiddenDeviceTypes.size > 0 && (
+              <button
+                className="text-xs text-primary hover:underline"
+                onClick={() => setHiddenDeviceTypes(new Set())}
+              >
+                Show All {hiddenCount > 0 && `(${hiddenCount} hidden)`}
+              </button>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Heatmap controls */}
+      {(() => {
+        const metrics = getAvailableMetrics(telemetryMap)
+        if (metrics.length === 0) return null
+        return (
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              Heatmap
+              <select
+                value={heatmapMetric}
+                onChange={(e) => setHeatmapMetric(e.target.value)}
+                className="rounded border bg-background px-2 py-1 text-xs"
+              >
+                <option value="">Off</option>
+                {metrics.map((m) => (
+                  <option key={m} value={m}>{formatMetricLabel(m)}</option>
+                ))}
+              </select>
+            </label>
+            {heatmapMetric && (() => {
+              const activePl = viewMode === 'single' ? placements : Object.values(allPlacements).flat()
+              const vals = activePl
+                .map((p) => {
+                  const t = telemetryMap[p.device_id]
+                  if (!t) return null
+                  const raw = t[heatmapMetric]
+                  return typeof raw === 'number' ? raw : parseFloat(String(raw))
+                })
+                .filter((v): v is number => v !== null && !isNaN(v))
+              if (vals.length < 2) return <span className="text-xs text-muted-foreground italic">Need 2+ devices with data</span>
+              const min = Math.min(...vals)
+              const max = Math.min === Math.max ? 0 : Math.max(...vals)
+              return <HeatmapLegend min={min} max={max} metric={heatmapMetric} />
+            })()}
+          </div>
+        )
+      })()}
+
       {/* === SINGLE VIEW === */}
       {viewMode === 'single' && selectedMap && (
         <div className="mx-auto max-w-4xl">
@@ -777,10 +1000,30 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </button>
               )}
 
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden group relative">
+                {/* Quick actions overlay (same as collage view) */}
+                <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-primary hover:text-white"
+                    onClick={() => {
+                      setEditingMap(selectedMap)
+                      setDialogOpen(true)
+                    }}
+                    title="Edit map"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    className="rounded-full bg-background/90 p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-destructive hover:text-white"
+                    onClick={() => setDeleteMapId(selectedMap.id)}
+                    title="Delete map"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <FacilityMapCanvas
                   facilityMap={selectedMap}
-                  placements={placements}
+                  placements={hiddenDeviceTypes.size > 0 ? placements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown')) : placements}
                   availableDevices={devices}
                   mode={mode === 'place' ? 'place' : mode}
                   selectedPlacementId={selectedPlacementId}
@@ -792,6 +1035,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
+                  heatmapMetric={heatmapMetric}
+                  zones={zones}
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={setSelectedZoneId}
+                  zoneDrawing={drawingZone}
+                  onZonePointAdd={(x, y) => setZonePoints((prev) => [...prev, { x, y }])}
                 />
               </Card>
 
@@ -816,6 +1065,21 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </div>
               )}
             </div>
+
+            {/* Zone drawer panel (when drawing zones) */}
+            {drawingZone && (
+              <div className="mb-4">
+                <ZoneDrawer
+                  points={zonePoints}
+                  onCancel={() => {
+                    setDrawingZone(false)
+                    setZonePoints([])
+                  }}
+                  onSave={handleSaveZone}
+                  onUndo={() => setZonePoints((prev) => prev.slice(0, -1))}
+                />
+              </div>
+            )}
 
             {/* Device palette (only in edit mode) */}
             {(mode === 'edit' || mode === 'place') && (
@@ -909,7 +1173,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </div>
                 <FacilityMapCanvas
                   facilityMap={m}
-                  placements={mapPlacements}
+                  placements={hiddenDeviceTypes.size > 0 ? mapPlacements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'unknown')) : mapPlacements}
                   availableDevices={devices}
                   mode="view"
                   selectedPlacementId={null}
@@ -921,6 +1185,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
                   telemetryMap={telemetryMap}
                   showLabels={showLabels}
+                  heatmapMetric={heatmapMetric}
+                  zones={allZones[m.id] || []}
                   compact
                   hideFullscreen
                 />

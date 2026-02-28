@@ -9,6 +9,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { DeviceMarker } from './DeviceMarker'
+import { ZoneOverlay } from './ZoneOverlay'
+import { HeatmapOverlay } from './HeatmapOverlay'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +26,7 @@ import type {
   DeviceMapPlacement,
   PlacementMode,
   PlacedDevice,
+  FacilityMapZone,
 } from '@/types/facility-map'
 
 interface FacilityMapCanvasProps {
@@ -39,8 +42,18 @@ interface FacilityMapCanvasProps {
   onRemovePlacement: (placementId: string) => void
   onDeviceNavigate?: (deviceId: string) => void
   telemetryMap?: Record<string, Record<string, unknown>>
+  /** Zone annotations to overlay on the map */
+  zones?: FacilityMapZone[]
+  selectedZoneId?: string | null
+  onSelectZone?: (zoneId: string | null) => void
+  /** Callback when canvas is clicked in zone-drawing mode */
+  onZonePointAdd?: (xPercent: number, yPercent: number) => void
+  /** Whether zone drawing mode is active */
+  zoneDrawing?: boolean
   /** Show device name labels next to sensor pins */
   showLabels?: boolean
+  /** Currently selected heatmap metric (empty string = off) */
+  heatmapMetric?: string
   /** Compact mode for collage grid — hides toolbar, shrinks canvas */
   compact?: boolean
   /** Hide fullscreen button (parent handles it) */
@@ -59,7 +72,13 @@ export function FacilityMapCanvas({
   onRemovePlacement,
   onDeviceNavigate,
   telemetryMap,
+  zones = [],
+  selectedZoneId,
+  onSelectZone,
+  onZonePointAdd,
+  zoneDrawing = false,
   showLabels = false,
+  heatmapMetric = '',
   compact = false,
   hideFullscreen = false,
 }: FacilityMapCanvasProps) {
@@ -73,26 +92,36 @@ export function FacilityMapCanvas({
     setImageLoaded(false)
   }, [facilityMap.id])
 
-  // Click to place device — use the image container directly
+  // Click to place device or add zone point
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
-      if (mode !== 'place' || !deviceToPlace || !containerRef.current) return
+      if (!containerRef.current) return
 
       const rect = containerRef.current.getBoundingClientRect()
       const x = ((e.clientX - rect.left) / rect.width) * 100
       const y = ((e.clientY - rect.top) / rect.height) * 100
 
+      if (x < 0 || x > 100 || y < 0 || y > 100) return
+
+      // Zone drawing takes priority
+      if (zoneDrawing && onZonePointAdd) {
+        onZonePointAdd(x, y)
+        return
+      }
+
+      if (mode !== 'place' || !deviceToPlace) return
+
       if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
         onPlaceDevice(deviceToPlace, x, y)
       }
     },
-    [mode, deviceToPlace, onPlaceDevice]
+    [mode, deviceToPlace, onPlaceDevice, zoneDrawing, onZonePointAdd]
   )
 
   // Touch support for placing devices on mobile
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      if (mode !== 'place' || !deviceToPlace || !containerRef.current) return
+      if (!containerRef.current) return
       e.preventDefault()
       const touch = e.changedTouches[0]
       if (!touch) return
@@ -101,11 +130,19 @@ export function FacilityMapCanvas({
       const x = ((touch.clientX - rect.left) / rect.width) * 100
       const y = ((touch.clientY - rect.top) / rect.height) * 100
 
-      if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
-        onPlaceDevice(deviceToPlace, x, y)
+      if (x < 0 || x > 100 || y < 0 || y > 100) return
+
+      // Zone drawing takes priority
+      if (zoneDrawing && onZonePointAdd) {
+        onZonePointAdd(x, y)
+        return
       }
+
+      if (mode !== 'place' || !deviceToPlace) return
+
+      onPlaceDevice(deviceToPlace, x, y)
     },
-    [mode, deviceToPlace, onPlaceDevice]
+    [mode, deviceToPlace, onPlaceDevice, zoneDrawing, onZonePointAdd]
   )
 
   // Fullscreen toggle
@@ -205,7 +242,7 @@ export function FacilityMapCanvas({
           )}
           {mode === 'view' && placements.length > 0 && (
             <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-              Click icon to view details
+              Hover over icon to view details
             </Badge>
           )}
         </div>
@@ -303,6 +340,25 @@ export function FacilityMapCanvas({
               onLoad={() => setImageLoaded(true)}
               draggable={false}
             />
+
+            {/* Heatmap overlay (behind zones and markers) */}
+            {imageLoaded && heatmapMetric && telemetryMap && (
+              <HeatmapOverlay
+                placements={placements}
+                telemetryMap={telemetryMap}
+                metric={heatmapMetric}
+              />
+            )}
+
+            {/* Zone overlays (behind device markers) */}
+            {imageLoaded && zones.length > 0 && (
+              <ZoneOverlay
+                zones={zones}
+                selectedZoneId={selectedZoneId}
+                editMode={mode === 'edit'}
+                onSelectZone={onSelectZone}
+              />
+            )}
 
             {/* Device markers overlay */}
             {imageLoaded &&
