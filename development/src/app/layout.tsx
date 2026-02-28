@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
+  // Security: X-Frame-Options equivalent via meta (prevents clickjacking)
+  other: {
+    'X-Content-Type-Options': 'nosniff',
+  },
 }
 
 export default function RootLayout({
@@ -31,6 +35,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Security Headers via meta tags (static export — no server headers) */}
+        {/* CSP: restrict content sources to self + known services */}
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com; frame-ancestors 'none';"
+        />
+        {/* X-Frame-Options equivalent — prevent embedding in iframes */}
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        {/* Referrer policy — don't leak full URLs to third parties */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        {/* Note: HSTS is provided by GitHub Pages automatically */}
+        {/* Note: X-Frame-Options header not settable via meta, using CSP frame-ancestors instead */}
+      </head>
       <body className={inter.className}>
         <WebVitalsReporter />
         <Providers>

@@ -944,6 +944,20 @@ function LoginForm() {
               </button>
             </p>
           )}
+
+          {/* Sign up link */}
+          {!forgotMode && !mfaRequired && (
+            <p className="mt-3 text-center text-sm text-gray-400">
+              Don&apos;t have an account?{' '}
+              <a
+                href="/auth/signup"
+                className="font-medium transition-colors hover:underline"
+                style={{ color: colors.primary }}
+              >
+                Sign up
+              </a>
+            </p>
+          )}
         </div>
 
         {/* Security badge */}
@@ -952,6 +966,13 @@ function LoginForm() {
           <span>Enterprise-grade security</span>
           <span className="text-gray-700">•</span>
           <span>256-bit encryption</span>
+          <span className="text-gray-700">•</span>
+          <a
+            href="/privacy"
+            className="underline transition-colors hover:text-gray-300"
+          >
+            Privacy Policy
+          </a>
         </div>
 
         {/* Powered by (only for org-branded logins) */}

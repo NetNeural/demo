@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { UserDetailsDialog } from './UserDetailsDialog'
 import { EditUserDialog } from './EditUserDialog'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useExportable } from '@/hooks/useExportable'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 
@@ -41,6 +42,20 @@ export function UsersList() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Wire CSV export for Ctrl+E / Quick Actions
+  useExportable({
+    getData: () => users,
+    filename: 'users',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'role', label: 'Role' },
+      { key: 'status', label: 'Status' },
+      { key: 'department', label: 'Department' },
+      { key: 'lastLogin', label: 'Last Login' },
+    ],
+  })
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)

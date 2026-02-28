@@ -18,6 +18,7 @@ import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { integrationSyncService } from '@/services/integration-sync.service'
+import { useExportable } from '@/hooks/useExportable'
 import { toast } from 'sonner'
 
 interface Integration {
@@ -40,6 +41,20 @@ export default function IntegrationsPage() {
   const [conflictOpen, setConflictOpen] = useState(false)
   const [pendingConflicts, setPendingConflicts] = useState(0)
   const activeOrgRef = useRef<string | null>(null)
+
+  // Wire CSV export for Ctrl+E / Quick Actions
+  useExportable({
+    getData: () => integrations,
+    filename: 'integrations',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'integration_type', label: 'Type' },
+      { key: 'status', label: 'Status' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'last_sync_at', label: 'Last Sync At' },
+      { key: 'last_sync_status', label: 'Last Sync Status' },
+    ],
+  })
 
   const loadIntegrations = useCallback(async () => {
     if (!currentOrganization) return
