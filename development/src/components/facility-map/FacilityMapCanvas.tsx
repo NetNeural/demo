@@ -21,6 +21,7 @@ import {
   Maximize2,
   Minimize2,
   Filter,
+  Hexagon,
 } from 'lucide-react'
 import type {
   FacilityMap,
@@ -65,6 +66,10 @@ interface FacilityMapCanvasProps {
   onToggleDeviceType?: (type: string) => void
   /** Callback to show all device types */
   onShowAllTypes?: () => void
+  /** Callback to toggle zone drawing mode */
+  onToggleZoneDrawing?: () => void
+  /** Callback to delete the selected zone */
+  onDeleteZone?: (zoneId: string) => void
   /** Compact mode for collage grid — hides toolbar, shrinks canvas */
   compact?: boolean
   /** Hide fullscreen button (parent handles it) */
@@ -95,6 +100,8 @@ export function FacilityMapCanvas({
   hiddenDeviceTypes,
   onToggleDeviceType,
   onShowAllTypes,
+  onToggleZoneDrawing,
+  onDeleteZone,
   compact = false,
   hideFullscreen = false,
 }: FacilityMapCanvasProps) {
@@ -338,8 +345,8 @@ export function FacilityMapCanvas({
       </div>
       )}
 
-      {/* Status + type + heatmap bar — hidden in compact mode */}
-      {!compact && placements.length > 0 && (
+      {/* Status + type + heatmap + zone bar — hidden in compact mode */}
+      {!compact && (placements.length > 0 || onToggleZoneDrawing) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/10 px-3 py-1.5">
           {/* Status counts */}
           {Object.entries(statusSummary).map(([status, count]) => (
@@ -413,6 +420,37 @@ export function FacilityMapCanvas({
                 ))}
               </select>
             </label>
+          )}
+
+          {/* Separator before zone tools */}
+          {onToggleZoneDrawing && (
+            <span className="text-muted-foreground/40">|</span>
+          )}
+
+          {/* Zone draw / delete */}
+          {onToggleZoneDrawing && (
+            <>
+              <button
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  zoneDrawing
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-primary/30 bg-primary/5 text-foreground hover:bg-primary/10'
+                }`}
+                onClick={onToggleZoneDrawing}
+              >
+                <Hexagon className="h-3 w-3" />
+                {zoneDrawing ? 'Cancel Zone' : 'Draw Zone'}
+              </button>
+              {selectedZoneId && mode === 'edit' && onDeleteZone && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                  onClick={() => onDeleteZone(selectedZoneId)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Delete Zone
+                </button>
+              )}
+            </>
           )}
         </div>
       )}

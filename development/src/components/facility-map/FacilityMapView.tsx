@@ -6,7 +6,7 @@
  * and map CRUD. Supports real-time device status via Supabase subscriptions.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,6 @@ import {
   Image as ImageIcon,
   Maximize2,
   Minimize2,
-  Hexagon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -104,6 +103,15 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
   const router = useRouter()
   const collageFullscreenRef = useRef<HTMLDivElement | null>(null)
+
+  // Set of all device IDs placed on ANY map (prevents duplicates across maps)
+  const globallyPlacedDeviceIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const arr of Object.values(allPlacements)) {
+      for (const p of arr) ids.add(p.device_id)
+    }
+    return ids
+  }, [allPlacements])
 
   // Cast to any for new tables not yet in generated Database types
   // (will be resolved after running `supabase gen types`)
@@ -800,35 +808,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               />
               Show Names
             </label>
-            <Button
-              variant={drawingZone ? 'default' : 'outline'}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                if (drawingZone) {
-                  setDrawingZone(false)
-                  setZonePoints([])
-                } else {
-                  setDrawingZone(true)
-                  setMode('edit')
-                  setDeviceToPlace(null)
-                }
-              }}
-            >
-              <Hexagon className="mr-1 h-3 w-3" />
-              {drawingZone ? 'Cancel Zone' : 'Draw Zone'}
-            </Button>
-            {selectedZoneId && mode === 'edit' && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => handleDeleteZone(selectedZoneId)}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Delete Zone
-              </Button>
-            )}
+
           </div>
         )}
 
@@ -965,6 +945,17 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onSelectZone={setSelectedZoneId}
                   zoneDrawing={drawingZone}
                   onZonePointAdd={(x, y) => setZonePoints((prev) => [...prev, { x, y }])}
+                  onToggleZoneDrawing={() => {
+                    if (drawingZone) {
+                      setDrawingZone(false)
+                      setZonePoints([])
+                    } else {
+                      setDrawingZone(true)
+                      setMode('edit')
+                      setDeviceToPlace(null)
+                    }
+                  }}
+                  onDeleteZone={handleDeleteZone}
                 />
               </Card>
 
@@ -1011,6 +1002,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 <DevicePalette
                   devices={devices}
                   placements={placements}
+                  globallyPlacedDeviceIds={globallyPlacedDeviceIds}
                   deviceToPlace={deviceToPlace}
                   onSelectToPlace={(id) => {
                     setDeviceToPlace(id)

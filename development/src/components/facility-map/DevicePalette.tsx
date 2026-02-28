@@ -54,6 +54,8 @@ const STATUS_SORT_ORDER: Record<string, number> = {
 interface DevicePaletteProps {
   devices: PlacedDevice[]
   placements: DeviceMapPlacement[]
+  /** Device IDs placed on ANY map (global uniqueness) */
+  globallyPlacedDeviceIds?: Set<string>
   deviceToPlace: string | null
   onSelectToPlace: (deviceId: string | null) => void
   onRemovePlacement: (placementId: string) => void
@@ -63,6 +65,7 @@ interface DevicePaletteProps {
 export function DevicePalette({
   devices,
   placements,
+  globallyPlacedDeviceIds,
   deviceToPlace,
   onSelectToPlace,
   onRemovePlacement,
@@ -85,7 +88,7 @@ export function DevicePalette({
   }, [devices, search])
 
   const unplaced = filtered
-    .filter((d) => !placedDeviceIds.has(d.id))
+    .filter((d) => !placedDeviceIds.has(d.id) && !(globallyPlacedDeviceIds?.has(d.id)))
     .sort((a, b) => (STATUS_SORT_ORDER[a.status] ?? 9) - (STATUS_SORT_ORDER[b.status] ?? 9))
   const placed = filtered
     .filter((d) => placedDeviceIds.has(d.id))
