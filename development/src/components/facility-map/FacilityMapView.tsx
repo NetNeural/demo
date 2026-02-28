@@ -893,6 +893,32 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </Label>
               </div>
             ))}
+            {/* Show Heatmap toggle */}
+            {availableMetrics.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Checkbox
+                  id="opt-show-heatmap"
+                  checked={showHeatmap}
+                  onCheckedChange={() => setShowHeatmap(!showHeatmap)}
+                  className="h-3.5 w-3.5"
+                />
+                <Label htmlFor="opt-show-heatmap" className="text-xs cursor-pointer select-none">
+                  Show Heatmap
+                </Label>
+              </div>
+            )}
+            {/* Show Zones toggle */}
+            <div className="flex items-center gap-1.5">
+              <Checkbox
+                id="opt-show-zones"
+                checked={showZones}
+                onCheckedChange={() => setShowZones(!showZones)}
+                className="h-3.5 w-3.5"
+              />
+              <Label htmlFor="opt-show-zones" className="text-xs cursor-pointer select-none">
+                Show Zones
+              </Label>
+            </div>
           </div>
         )}
 
@@ -917,6 +943,32 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 </Label>
               </div>
             ))}
+            {/* Show Heatmap toggle */}
+            {availableMetrics.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Checkbox
+                  id="opt-col-show-heatmap"
+                  checked={showHeatmap}
+                  onCheckedChange={() => setShowHeatmap(!showHeatmap)}
+                  className="h-3.5 w-3.5"
+                />
+                <Label htmlFor="opt-col-show-heatmap" className="text-xs cursor-pointer select-none">
+                  Show Heatmap
+                </Label>
+              </div>
+            )}
+            {/* Show Zones toggle */}
+            <div className="flex items-center gap-1.5">
+              <Checkbox
+                id="opt-col-show-zones"
+                checked={showZones}
+                onCheckedChange={() => setShowZones(!showZones)}
+                className="h-3.5 w-3.5"
+              />
+              <Label htmlFor="opt-col-show-zones" className="text-xs cursor-pointer select-none">
+                Show Zones
+              </Label>
+            </div>
           </div>
         )}
 
@@ -1087,17 +1139,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                   ))}
                                 </select>
                               )}
-                              {heatmapMetric && (
-                                <div className="flex items-center gap-1">
-                                  <Checkbox
-                                    id="toggle-heatmap-vis"
-                                    checked={showHeatmap}
-                                    onCheckedChange={() => setShowHeatmap(!showHeatmap)}
-                                    className="h-3 w-3"
-                                  />
-                                  <Label htmlFor="toggle-heatmap-vis" className="text-[10px] cursor-pointer">Show</Label>
-                                </div>
-                              )}
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
@@ -1120,7 +1161,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                   <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                     <li>Select a metric from the dropdown</li>
                                     <li>Requires 2+ devices with numeric telemetry</li>
-                                    <li>Use the <strong>Show</strong> checkbox to toggle visibility</li>
+                                    <li>Use the <strong>Show Heatmap</strong> checkbox in the toolbar above to toggle visibility</li>
                                   </ul>
                                 </PopoverContent>
                               </Popover>
@@ -1150,15 +1191,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                 <PopoverContent side="left" className="w-56 p-2">
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-semibold">Zones</span>
-                                    <div className="flex items-center gap-1.5">
-                                      <Checkbox
-                                        id="toggle-zones-vis"
-                                        checked={showZones}
-                                        onCheckedChange={() => setShowZones(!showZones)}
-                                        className="h-3 w-3"
-                                      />
-                                      <Label htmlFor="toggle-zones-vis" className="text-[10px] cursor-pointer">Show</Label>
-                                    </div>
                                   </div>
                                   <div className="space-y-1 max-h-40 overflow-y-auto">
                                     {zones.map((z) => (
