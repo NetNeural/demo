@@ -24,7 +24,7 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     'Email & SMS alerts',
     'Manual report export',
     '30-day data retention',
-    'Up to 5 team members',
+    'Up to 3 team members',
   ],
   professional: [
     'Everything in Starter, plus:',
