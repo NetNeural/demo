@@ -364,16 +364,23 @@ export function SecurityTab() {
         setEnrolling(true)
         const supabase = createClient()
 
-        // Clean up any stale unverified factors before enrolling a new one.
-        // This prevents 422 errors when re-enrolling after disabling 2FA.
+        // Clean up ALL existing TOTP factors before enrolling a new one.
+        // Supabase returns 422 if any factor (verified or unverified) already exists.
+        // This handles: re-enrollment after disable, stale unverified factors, etc.
         const { data: existingFactors } =
           await supabase.auth.mfa.listFactors()
-        if (existingFactors?.totp) {
+        if (existingFactors?.totp && existingFactors.totp.length > 0) {
           for (const factor of existingFactors.totp) {
-            if (factor.status === 'unverified') {
+            try {
               await supabase.auth.mfa.unenroll({ factorId: factor.id })
+            } catch {
+              // Continue cleaning up remaining factors even if one fails
+              console.warn(`Failed to clean up factor ${factor.id}`)
             }
           }
+          // Update local state since we removed everything
+          setMfaEnrolled(false)
+          setMfaFactorId(null)
         }
 
         const { data, error } = await supabase.auth.mfa.enroll({
@@ -402,22 +409,54 @@ export function SecurityTab() {
         setEnrolling(false)
       }
     } else {
-      // Unenroll MFA
-      if (!mfaFactorId) return
+      // Unenroll MFA — remove ALL TOTP factors to ensure clean state
       try {
         setUnenrolling(true)
         const supabase = createClient()
-        const { error } = await supabase.auth.mfa.unenroll({
-          factorId: mfaFactorId,
-        })
-        if (error) {
+
+        // List and remove all TOTP factors, not just the one in state
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        const totpFactors = factors?.totp || []
+
+        if (totpFactors.length === 0 && !mfaFactorId) {
+          // Nothing to unenroll
+          setMfaEnrolled(false)
+          setMfaFactorId(null)
+          toast({
+            title: '2FA Disabled',
+            description: 'Two-factor authentication has been removed from your account.',
+          })
+          return
+        }
+
+        let anyError: Error | null = null
+        for (const factor of totpFactors) {
+          const { error } = await supabase.auth.mfa.unenroll({
+            factorId: factor.id,
+          })
+          if (error) {
+            anyError = error
+            console.error(`Failed to unenroll factor ${factor.id}:`, error)
+          }
+        }
+
+        // Also try the tracked factor if it wasn't in the list
+        if (mfaFactorId && !totpFactors.some((f) => f.id === mfaFactorId)) {
+          const { error } = await supabase.auth.mfa.unenroll({
+            factorId: mfaFactorId,
+          })
+          if (error) anyError = error
+        }
+
+        if (anyError && totpFactors.length > 0) {
           toast({
             title: 'Error',
-            description: `Failed to disable 2FA: ${error.message}`,
+            description: `Failed to disable 2FA: ${anyError.message}`,
             variant: 'destructive',
           })
           return
         }
+
         setMfaEnrolled(false)
         setMfaFactorId(null)
         toast({
