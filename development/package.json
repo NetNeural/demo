@@ -69,6 +69,13 @@
     "seed:device-types:staging": "SUPABASE_URL=https://atgbmxicqikmapfqouco.supabase.co node scripts/backfill-device-types-all-orgs.js",
     "health": "bash scripts/health-check.sh",
     "check": "npm run type-check && npm run lint && npm run format:check && npm run test",
+    "deploy": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1",
+    "deploy:dev": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target dev",
+    "deploy:staging": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target staging",
+    "deploy:all": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target all",
+    "deploy:all:edge": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target all -EdgeFunctions",
+    "deploy:fast": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target all -NoGate",
+    "deploy:dry": "powershell -ExecutionPolicy Bypass -File ../scripts/deploy.ps1 -Target all -DryRun",
     "postinstall": "exit 0",
     "prepare": "husky"
   },
