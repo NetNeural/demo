@@ -515,7 +515,7 @@ export function PreferencesTab() {
               <SelectContent className="max-h-[300px]">
                 {(() => {
                   try {
-                    const allZones = Intl.supportedValuesOf('timeZone')
+                    const allZones = (Intl as unknown as { supportedValuesOf: (key: string) => string[] }).supportedValuesOf('timeZone')
                     return allZones.map((tz: string) => {
                       // Format display: replace underscores, show offset
                       const display = tz.replace(/_/g, ' ')

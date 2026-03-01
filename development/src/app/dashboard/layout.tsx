@@ -46,10 +46,18 @@ function getSupabase() {
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
-  const { currentOrganization, userRole } = useOrganization()
+  const { currentOrganization, userOrganizations, userRole } = useOrganization()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isSuperAdmin = user?.isSuperAdmin || false
+
+  // Always show sentinel logo from root NetNeural org, regardless of selected org
+  const sentinelLogoUrl = (() => {
+    const rootOrg = userOrganizations.find(
+      (org) => org.id === '00000000-0000-0000-0000-000000000001' || (!org.parent_organization_id && org.name === 'NetNeural')
+    )
+    return rootOrg?.settings?.branding?.sentinel_logo_url || currentOrganization?.settings?.branding?.sentinel_logo_url
+  })()
 
   // Keep browser tab title in sync with current page + org
   usePageTitle()
@@ -155,9 +163,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="nav-header">
             <div className="flex items-center gap-2">
-              {currentOrganization?.settings?.branding?.sentinel_logo_url && (
+              {sentinelLogoUrl && (
                 <img
-                  src={currentOrganization.settings.branding.sentinel_logo_url}
+                  src={sentinelLogoUrl}
                   alt="Sentinel logo"
                   className="h-16 w-16 flex-shrink-0 object-contain"
                 />

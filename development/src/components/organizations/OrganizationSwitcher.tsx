@@ -225,7 +225,16 @@ export function OrganizationSwitcher({
           Your Organizations
         </DropdownMenuLabel>
 
-        {userOrganizations.map((org) => {
+        {[...userOrganizations]
+          .sort((a, b) => {
+            // NetNeural (root org) always first
+            const aIsRoot = a.id === '00000000-0000-0000-0000-000000000001' || (!a.parent_organization_id && a.name === 'NetNeural')
+            const bIsRoot = b.id === '00000000-0000-0000-0000-000000000001' || (!b.parent_organization_id && b.name === 'NetNeural')
+            if (aIsRoot && !bIsRoot) return -1
+            if (!aIsRoot && bIsRoot) return 1
+            return a.name.localeCompare(b.name)
+          })
+          .map((org) => {
           const isSelected = org.id === currentOrganization.id
           const orgRoleInfo = getRoleDisplayInfo(org.role)
 
