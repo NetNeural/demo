@@ -41,7 +41,9 @@ export function PreferencesTab() {
   const [useOrgDefault, setUseOrgDefault] = useState(true) // Default to organization theme
   const [theme, setTheme] = useState('system')
   const [language, setLanguage] = useState('en')
-  const [timezone, setTimezone] = useState('America/New_York')
+  const [timezone, setTimezone] = useState(() =>
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
+  )
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
   const [timeFormat, setTimeFormat] = useState('12h')
   const [compactMode, setCompactMode] = useState(false)
@@ -510,23 +512,39 @@ export function PreferencesTab() {
               <SelectTrigger id="timezone">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="America/New_York">
-                  Eastern Time (ET)
-                </SelectItem>
-                <SelectItem value="America/Chicago">
-                  Central Time (CT)
-                </SelectItem>
-                <SelectItem value="America/Denver">
-                  Mountain Time (MT)
-                </SelectItem>
-                <SelectItem value="America/Los_Angeles">
-                  Pacific Time (PT)
-                </SelectItem>
-                <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
-                <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                <SelectItem value="Australia/Sydney">Sydney (AEDT)</SelectItem>
+              <SelectContent className="max-h-[300px]">
+                {(() => {
+                  try {
+                    const allZones = Intl.supportedValuesOf('timeZone')
+                    return allZones.map((tz: string) => {
+                      // Format display: replace underscores, show offset
+                      const display = tz.replace(/_/g, ' ')
+                      return (
+                        <SelectItem key={tz} value={tz}>
+                          {display}
+                        </SelectItem>
+                      )
+                    })
+                  } catch {
+                    // Fallback for older browsers
+                    const fallback = [
+                      'America/New_York', 'America/Chicago', 'America/Denver',
+                      'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu',
+                      'America/Sao_Paulo', 'America/Argentina/Buenos_Aires',
+                      'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
+                      'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
+                      'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore',
+                      'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Seoul',
+                      'Australia/Sydney', 'Australia/Melbourne', 'Australia/Perth',
+                      'Pacific/Auckland', 'Pacific/Fiji', 'UTC',
+                    ]
+                    return fallback.map((tz) => (
+                      <SelectItem key={tz} value={tz}>
+                        {tz.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))
+                  }
+                })()}
               </SelectContent>
             </Select>
           </div>

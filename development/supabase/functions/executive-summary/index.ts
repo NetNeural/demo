@@ -148,6 +148,24 @@ serve(async (req) => {
     const resolvedAlerts = (resolved24h || []).length
     const uniqueUsers = new Set((members || []).map((m: any) => m.user_id)).size
 
+    // Per-organization device breakdown
+    const orgDeviceMap = new Map<string, { total: number; online: number; name: string }>()
+    for (const org of (orgs || [])) {
+      orgDeviceMap.set(org.id, { total: 0, online: 0, name: org.name })
+    }
+    for (const d of (allDevices || [])) {
+      const entry = orgDeviceMap.get(d.organization_id)
+      if (entry) {
+        entry.total++
+        if (d.status === 'online') entry.online++
+      }
+    }
+    const orgBreakdownRows = Array.from(orgDeviceMap.values())
+      .filter(o => o.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map(o => `<tr><td style="padding:4px 8px; font-size:12px; color:#374151;">${o.name}</td><td style="padding:4px 8px; font-size:12px; color:#374151; text-align:center;">${o.total}</td><td style="padding:4px 8px; font-size:12px; color:${o.online === o.total ? '#16a34a' : '#d97706'}; text-align:center;">${o.online}</td></tr>`)
+      .join('\n')
+
     // ─── Additional Executive Metrics ────────────────────────────────
 
     // Billing / Revenue readiness
@@ -510,13 +528,28 @@ serve(async (req) => {
   <!-- Platform Health Cards -->
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:16px 24px;">
     <tr>
-    ${statCard(String(totalDevices), 'Devices', `${uptimePct}% uptime`)}
-    ${statCard(String(onlineDevices), 'Online', `${offlineDevices} offline`, onlineDevices === totalDevices ? '#10b981' : '#f59e0b')}
+    ${statCard(String(totalDevices), 'Total Devices', `across ${totalOrgs} orgs`)}
+    ${statCard(String(onlineDevices), 'Online', `${offlineDevices} offline · ${uptimePct}% uptime`, onlineDevices === totalDevices ? '#10b981' : '#f59e0b')}
     ${statCard(String(totalUnresolved), 'Active Alerts', `${totalCritical} crit · ${totalHigh} high`, totalUnresolved > 0 ? '#ef4444' : '#10b981')}
     ${statCard(String(uniqueUsers), 'Users', `${totalOrgs} organizations`)}
     ${statCard(String(resolvedAlerts), 'Resolved 24h', `${newAlerts} new`, '#10b981')}
     </tr>
   </table>
+
+  <!-- Per-Organization Device Breakdown -->
+  ${orgBreakdownRows.length > 0 ? `
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📊 Devices by Organization</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <tr style="background:#f8fafc;">
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:left; text-transform:uppercase;">Organization</th>
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:center; text-transform:uppercase;">Devices</th>
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:center; text-transform:uppercase;">Online</th>
+      </tr>
+      ${orgBreakdownRows}
+    </table>
+  </div>
+  ` : ''}
 
   <!-- Revenue & Business Readiness -->
   <div style="padding:0 24px 16px;">
