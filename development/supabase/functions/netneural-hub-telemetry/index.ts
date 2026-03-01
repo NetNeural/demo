@@ -12,11 +12,12 @@
 // - Real-time subscriptions for dashboard updates
 // ===========================================================================
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
-  createEdgeFunction,
   createSuccessResponse,
   createErrorResponse,
 } from '../_shared/create-edge-function.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 import { NetNeuralHubClient } from '../_shared/netneural-hub-client.ts'
 
 // Protocol detection from request
@@ -147,16 +148,27 @@ function normalizeTelemetry(
   }
 }
 
-// Main Edge Function
-export default createEdgeFunction(
-  async ({ request, supabase, url: _url }) => {
-    // Only allow POST requests for telemetry
-    if (request.method !== 'POST') {
-      return createErrorResponse(
-        'Only POST method allowed for telemetry ingestion',
-        405
-      )
-    }
+// Main Edge Function — uses service_role key to bypass RLS for device telemetry
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+serve(async (request: Request): Promise<Response> => {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  // Only allow POST requests for telemetry
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Only POST method allowed for telemetry ingestion' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Create service-role Supabase client (bypasses RLS — required for unauthenticated device telemetry)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
     try {
       // Parse request
