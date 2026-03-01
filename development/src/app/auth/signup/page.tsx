@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -22,12 +22,15 @@ import {
   Brain,
   Building2,
   Lock,
+  DollarSign,
   type LucideIcon,
 } from 'lucide-react'
+import type { BillingPlan, BillingPlanFeatures } from '@/types/billing'
+import { PLAN_FEATURE_DISPLAY } from '@/types/billing'
 
-// ─── Plan definitions (matches billing_plans seed data) ───────────────
+// ─── Plan display type ────────────────────────────────────────────────
 interface PlanTier {
-  slug: 'starter' | 'professional' | 'enterprise'
+  slug: string
   name: string
   tagline: string
   pricePerSensor: number
@@ -38,14 +41,102 @@ interface PlanTier {
   popular?: boolean
 }
 
-const PLANS: PlanTier[] = [
+// ─── Helpers: map DB billing_plans → UI PlanTier ──────────────────────
+function getPlanIcon(slug: string): LucideIcon {
+  switch (slug) {
+    case 'starter':
+      return BarChart3
+    case 'professional':
+      return Brain
+    case 'enterprise':
+      return Building2
+    default:
+      return DollarSign
+  }
+}
+
+function getPlanColor(slug: string): string {
+  switch (slug) {
+    case 'starter':
+      return '#06b6d4'
+    case 'professional':
+      return '#8b5cf6'
+    case 'enterprise':
+      return '#10b981'
+    default:
+      return '#06b6d4'
+  }
+}
+
+function formatRetention(days: number): string {
+  if (days === -1) return 'Unlimited retention'
+  if (days >= 365) return `${Math.round(days / 365)}-year retention`
+  return `${days}-day retention`
+}
+
+function formatUserLimit(max: number): string {
+  if (max === -1) return 'Unlimited users'
+  return `${max} user${max !== 1 ? 's' : ''}`
+}
+
+function formatIntegrationLimit(max: number): string {
+  if (max === -1) return 'Unlimited integrations'
+  return `${max} integration${max !== 1 ? 's' : ''}`
+}
+
+/** Build a human-readable feature list from the features JSONB flags */
+function buildFeatureList(plan: BillingPlan, allPlans: BillingPlan[]): string[] {
+  const features: string[] = []
+
+  // For non-starter plans, reference the tier below
+  const sortedPlans = [...allPlans].sort((a, b) => a.sort_order - b.sort_order)
+  const planIndex = sortedPlans.findIndex((p) => p.slug === plan.slug)
+  const prevPlan = planIndex > 0 ? sortedPlans[planIndex - 1] : null
+
+  if (prevPlan) {
+    features.push(`Everything in ${prevPlan.name}, plus:`)
+  }
+
+  // Add features that are enabled and (for non-starter) not in the previous tier
+  for (const fd of PLAN_FEATURE_DISPLAY) {
+    const enabled = plan.features[fd.key]
+    const enabledInPrev = prevPlan ? prevPlan.features[fd.key] : false
+    if (enabled && !enabledInPrev) {
+      features.push(fd.label)
+    }
+  }
+
+  return features
+}
+
+/** Convert a BillingPlan DB row into the PlanTier UI shape */
+function billingPlanToTier(plan: BillingPlan, allPlans: BillingPlan[]): PlanTier {
+  return {
+    slug: plan.slug,
+    name: plan.name,
+    tagline: plan.description || plan.name,
+    pricePerSensor: plan.price_per_device,
+    icon: getPlanIcon(plan.slug),
+    color: getPlanColor(plan.slug),
+    popular: plan.slug === 'professional',
+    features: buildFeatureList(plan, allPlans),
+    limits: {
+      users: formatUserLimit(plan.max_users),
+      integrations: formatIntegrationLimit(plan.max_integrations),
+      retention: formatRetention(plan.telemetry_retention_days),
+    },
+  }
+}
+
+// ─── Static fallback (used while DB is loading or on error) ───────────
+const FALLBACK_PLANS: PlanTier[] = [
   {
     slug: 'starter',
     name: 'Starter',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
     icon: BarChart3,
-    color: '#06b6d4', // cyan
+    color: '#06b6d4',
     features: [
       'Real-time monitoring dashboard',
       'Automated compliance logs',
@@ -61,7 +152,7 @@ const PLANS: PlanTier[] = [
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
     icon: Brain,
-    color: '#8b5cf6', // violet
+    color: '#8b5cf6',
     popular: true,
     features: [
       'Everything in Starter, plus:',
@@ -81,7 +172,7 @@ const PLANS: PlanTier[] = [
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,
     icon: Building2,
-    color: '#10b981', // emerald
+    color: '#10b981',
     features: [
       'Everything in Professional, plus:',
       'AI optimization insights',
@@ -128,6 +219,39 @@ function SignupForm() {
   // Step state: 1 = select plan, 2 = account details, 3 = success
   const [step, setStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null)
+
+  // Dynamic plans fetched from billing_plans table
+  const [plans, setPlans] = useState<PlanTier[]>(FALLBACK_PLANS)
+  const [plansLoading, setPlansLoading] = useState(true)
+
+  // Fetch active, public billing plans from Supabase on mount
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from('billing_plans')
+          .select('*')
+          .eq('is_active', true)
+          .eq('is_public', true)
+          .order('sort_order', { ascending: true })
+
+        if (error) throw error
+        if (data && data.length > 0) {
+          const dbPlans = data as unknown as BillingPlan[]
+          setPlans(dbPlans.map((p) => billingPlanToTier(p, dbPlans)))
+        }
+        // If no plans returned, keep FALLBACK_PLANS
+      } catch (err) {
+        console.error('Failed to load billing plans, using defaults:', err)
+        // Keep FALLBACK_PLANS on error
+      } finally {
+        setPlansLoading(false)
+      }
+    }
+    loadPlans()
+  }, [])
 
   // Form state
   const [fullName, setFullName] = useState('')
@@ -471,9 +595,15 @@ function SignupForm() {
         {/* ── Step 1: Plan selection ──────────────────────────────── */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="grid gap-6 md:grid-cols-3">
-              {PLANS.map(renderPlanCard)}
-            </div>
+            {plansLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-500" />
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-3">
+                {plans.map(renderPlanCard)}
+              </div>
+            )}
 
             <div className="mt-8 flex justify-center">
               <Button
