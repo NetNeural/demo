@@ -33,6 +33,7 @@ import {
   DollarSign,
   CreditCard,
   UsersRound,
+  TrendingUp,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -118,6 +119,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/customers',
             label: 'Customers',
             icon: UsersRound,
+          },
+          {
+            href: '/dashboard/admin/revenue',
+            label: 'Revenue',
+            icon: TrendingUp,
           },
         ]
       : []),
