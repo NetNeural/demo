@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
   '/auth/signup',
   '/auth/reset-password',
   '/auth/change-password',
+  '/auth/setup-mfa',
 ]
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -94,6 +95,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Success! We have both a valid session and user profile
       setUser(userProfile)
       hasRedirected.current = false
+
+      // Check if user needs MFA setup (before password check so MFA is enforced first)
+      if (
+        pathname !== '/auth/setup-mfa' &&
+        pathname !== '/auth/change-password'
+      ) {
+        const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
+        const hasVerifiedTotp = mfaFactors?.totp?.some(
+          (f) => f.status === 'verified'
+        )
+        if (!hasVerifiedTotp) {
+          router.push('/auth/setup-mfa')
+          return
+        }
+      }
 
       // Check if user needs to change password
       if (

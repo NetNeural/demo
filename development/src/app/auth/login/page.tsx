@@ -209,6 +209,17 @@ function LoginForm() {
           return
         }
         if (session) {
+          // Check MFA enrollment before auto-redirecting to dashboard
+          const { data: mfaFactors } =
+            await supabase.auth.mfa.listFactors()
+          const hasVerifiedTotp = mfaFactors?.totp?.some(
+            (f) => f.status === 'verified'
+          )
+          if (!hasVerifiedTotp) {
+            hasCheckedAuth.current = true
+            router.replace('/auth/setup-mfa')
+            return
+          }
           hasCheckedAuth.current = true
           router.replace('/dashboard')
         }
