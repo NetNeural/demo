@@ -95,6 +95,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           },
         ]
       : []),
+    ...(isSuperAdmin || userRole === 'owner' || userRole === 'admin' || userRole === 'billing'
+      ? [
+          {
+            href: '/dashboard/billing/invoices',
+            label: 'Invoices',
+            icon: FileText,
+          },
+        ]
+      : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]

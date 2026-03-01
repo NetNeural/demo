@@ -503,9 +503,17 @@ export function BillingTab({ organizationId }: BillingTabProps) {
 
       {/* Invoice History */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Invoice History</CardTitle>
-          <CardDescription>Recent invoices and payments</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-lg">Invoice History</CardTitle>
+            <CardDescription>Recent invoices and payments</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/dashboard/billing/invoices">
+              View All
+              <ExternalLink className="ml-1.5 h-3 w-3" />
+            </a>
+          </Button>
         </CardHeader>
         <CardContent>
           {invoices.length > 0 ? (
