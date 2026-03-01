@@ -11,6 +11,10 @@ import { InvoiceTable } from '@/components/billing/InvoiceTable'
 import { PaymentTable } from '@/components/billing/PaymentTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { edgeFunctions } from '@/lib/edge-functions'
+import { createClient } from '@/lib/supabase/client'
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   ExternalLink,
@@ -27,6 +31,9 @@ import {
   Settings,
   Wrench,
   Tag,
+  Power,
+  FlaskConical,
+  Zap,
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
@@ -39,6 +46,14 @@ import { BillingOperationsTab } from './components/BillingOperationsTab'
 import { PromoCodesTab } from './components/PromoCodesTab'
 
 const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
+type BillingMode = 'off' | 'testing' | 'live'
+
+const BILLING_MODES: { value: BillingMode; label: string; icon: typeof Power; color: string; bg: string; description: string }[] = [
+  { value: 'off', label: 'Off', icon: Power, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', description: 'Billing disabled — no charges processed' },
+  { value: 'testing', label: 'Testing', icon: FlaskConical, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950', description: 'Stripe test mode — sandbox charges only' },
+  { value: 'live', label: 'Live', icon: Zap, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950', description: 'Production billing — real charges active' },
+]
 
 // ── Tab configuration (mirrors the support page pattern) ─────────────
 const billingTabs = [
@@ -145,6 +160,80 @@ function BillingAdminContent() {
 
   // ── Stripe Customer Portal (hooks must be before early returns) ───
   const [portalLoading, setPortalLoading] = useState(false)
+
+  // ── Billing Mode Toggle (super admin only) ───
+  const [billingMode, setBillingMode] = useState<BillingMode>('off')
+  const [billingModeLoading, setBillingModeLoading] = useState(true)
+  const [billingModeSaving, setBillingModeSaving] = useState(false)
+  const supabase = createClient()
+
+  // Load billing mode from org settings
+  useEffect(() => {
+    async function loadBillingMode() {
+      try {
+        const { data } = await supabase
+          .from('organizations')
+          .select('settings')
+          .eq('id', NETNEURAL_ROOT_ORG_ID)
+          .single()
+        const mode = (data?.settings as Record<string, unknown>)?.billing_mode as BillingMode
+        if (mode && ['off', 'testing', 'live'].includes(mode)) {
+          setBillingMode(mode)
+        }
+      } catch (err) {
+        console.error('Failed to load billing mode:', err)
+      } finally {
+        setBillingModeLoading(false)
+      }
+    }
+    loadBillingMode()
+  }, [supabase])
+
+  const handleBillingModeChange = useCallback(async (newMode: BillingMode) => {
+    if (!isSuperAdmin) return
+    if (newMode === billingMode) return
+
+    // Confirmation for going live
+    if (newMode === 'live') {
+      const confirmed = window.confirm(
+        '⚠️ GOING LIVE — This will enable real billing charges.\n\n' +
+        'All subscriptions will process real payments through Stripe.\n\n' +
+        'Are you sure you want to activate live billing?'
+      )
+      if (!confirmed) return
+    }
+
+    setBillingModeSaving(true)
+    try {
+      // Get current settings first to merge
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('settings')
+        .eq('id', NETNEURAL_ROOT_ORG_ID)
+        .single()
+
+      const currentSettings = (orgData?.settings as Record<string, unknown>) || {}
+      const updatedSettings = { ...currentSettings, billing_mode: newMode }
+
+      const { error } = await supabase
+        .from('organizations')
+        .update({ settings: updatedSettings })
+        .eq('id', NETNEURAL_ROOT_ORG_ID)
+
+      if (error) throw error
+
+      setBillingMode(newMode)
+      const modeInfo = BILLING_MODES.find(m => m.value === newMode)!
+      toast.success(`Billing mode set to ${modeInfo.label}`, {
+        description: modeInfo.description,
+      })
+    } catch (err) {
+      console.error('Failed to update billing mode:', err)
+      toast.error('Failed to update billing mode')
+    } finally {
+      setBillingModeSaving(false)
+    }
+  }, [isSuperAdmin, billingMode, supabase])
 
   const handleOpenPortal = useCallback(async () => {
     if (!currentOrganization) return
@@ -283,15 +372,57 @@ function BillingAdminContent() {
             Financial management for the NetNeural platform
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleOpenPortal}
-          disabled={portalLoading}
-        >
-          <CreditCard className="mr-2 h-4 w-4" />
-          {portalLoading ? 'Opening…' : 'Manage Billing'}
-          <ExternalLink className="ml-2 h-3 w-3" />
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Billing Mode Toggle — Super Admin Only */}
+          {isSuperAdmin && (
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center rounded-lg border bg-muted/30 p-1">
+                {BILLING_MODES.map((mode) => {
+                  const Icon = mode.icon
+                  const isActive = billingMode === mode.value
+                  return (
+                    <button
+                      key={mode.value}
+                      onClick={() => handleBillingModeChange(mode.value)}
+                      disabled={billingModeSaving || billingModeLoading}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                        isActive
+                          ? cn(mode.bg, mode.color, 'shadow-sm ring-1 ring-inset',
+                              mode.value === 'off' && 'ring-gray-300 dark:ring-gray-600',
+                              mode.value === 'testing' && 'ring-amber-300 dark:ring-amber-700',
+                              mode.value === 'live' && 'ring-green-300 dark:ring-green-700',
+                            )
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                        (billingModeSaving || billingModeLoading) && 'opacity-50 cursor-not-allowed',
+                      )}
+                      title={mode.description}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {mode.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {billingModeLoading ? 'Loading...' : (
+                  billingMode === 'off' ? 'Billing inactive' :
+                  billingMode === 'testing' ? 'Sandbox mode' :
+                  '🔴 Live billing active'
+                )}
+              </span>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleOpenPortal}
+            disabled={portalLoading}
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            {portalLoading ? 'Opening…' : 'Manage Billing'}
+            <ExternalLink className="ml-2 h-3 w-3" />
+          </Button>
+        </div>
       </div>
 
       {/* Tabs — support page style */}
