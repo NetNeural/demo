@@ -11,7 +11,6 @@ import {
 } from '@/contexts/OrganizationContext'
 import { PreferencesProvider } from '@/contexts/PreferencesContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
-import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { QuickActionsDropdown } from '@/components/quick-actions/QuickActionsDropdown'
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/KeyboardShortcutsModal'
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
@@ -165,12 +164,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="nav-header">
             <div className="flex items-center gap-2">
-              {currentOrganization?.settings?.branding?.logo_url && (
-                <OrganizationLogo
-                  settings={currentOrganization.settings}
-                  name={currentOrganization.name}
-                  size="lg"
-                  showFallback={false}
+              {currentOrganization?.settings?.branding?.sentinel_logo_url && (
+                <img
+                  src={currentOrganization.settings.branding.sentinel_logo_url}
+                  alt="Sentinel logo"
+                  className="h-8 w-8 flex-shrink-0 object-contain"
                 />
               )}
               <h1 className="nav-brand">
