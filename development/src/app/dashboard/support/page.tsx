@@ -163,54 +163,99 @@ function SupportPageContent() {
       </div>
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+        value={(() => {
+          const groupMap: Record<string, string> = {
+            'customer-assistance': 'customer-support', 'admin-tools': 'customer-support',
+            documentation: 'resources',
+            troubleshooting: 'platform', 'system-health': 'platform', tests: 'platform',
+          }
+          return groupMap[activeTab] || 'customer-support'
+        })()}
+        onValueChange={(group) => {
+          const defaults: Record<string, string> = {
+            'customer-support': 'customer-assistance',
+            resources: 'documentation',
+            platform: 'troubleshooting',
+          }
+          handleTabChange(defaults[group] || 'customer-assistance')
+        }}
         className="space-y-6"
       >
-        <TabsList className="w-full flex-wrap justify-start">
-          {visibleTabs.map(({ id, label, icon: Icon, superAdminOnly }) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              className="flex items-center gap-2"
-            >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{label}</span>
-              {superAdminOnly && <Shield className="h-3 w-3 text-red-400" />}
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="customer-support" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Customer Support</span>
+          </TabsTrigger>
+          <TabsTrigger value="resources" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span>Resources</span>
+          </TabsTrigger>
+          {canAccessPlatformTabs && (
+            <TabsTrigger value="platform" className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-red-400" />
+              <span>Platform</span>
             </TabsTrigger>
-          ))}
+          )}
         </TabsList>
 
-        <TabsContent value="customer-assistance">
-          <CustomerAssistanceTab organizationId={orgId} />
+        {/* Customer Support — Customer Assistance + Admin Tools */}
+        <TabsContent value="customer-support">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="customer-assistance" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Customer Assistance
+              </TabsTrigger>
+              <TabsTrigger value="admin-tools" className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4" />
+                Admin Tools
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="customer-assistance" className="mt-6">
+              <CustomerAssistanceTab organizationId={orgId} />
+            </TabsContent>
+            <TabsContent value="admin-tools" className="mt-6">
+              <AdminToolsTab organizationId={orgId} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="admin-tools">
-          <AdminToolsTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="documentation">
+        {/* Resources — Documentation (single tab, no sub-tabs) */}
+        <TabsContent value="resources">
           <DocumentationTab />
         </TabsContent>
 
+        {/* Platform — Troubleshooting + System Health + Tests (super admin) */}
         {canAccessPlatformTabs && (
-          <TabsContent value="troubleshooting">
-            <TroubleshootingTab organizationId={orgId} />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="system-health">
-            <SystemHealthTab
-              organizationId={orgId}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="tests">
-            <TestsTab organizationId={orgId} />
+          <TabsContent value="platform">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger value="troubleshooting" className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4" />
+                  Troubleshooting
+                </TabsTrigger>
+                <TabsTrigger value="system-health" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  System Health
+                </TabsTrigger>
+                <TabsTrigger value="tests" className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4" />
+                  Tests & Validation
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="troubleshooting" className="mt-6">
+                <TroubleshootingTab organizationId={orgId} />
+              </TabsContent>
+              <TabsContent value="system-health" className="mt-6">
+                <SystemHealthTab
+                  organizationId={orgId}
+                  isSuperAdmin={isSuperAdmin}
+                />
+              </TabsContent>
+              <TabsContent value="tests" className="mt-6">
+                <TestsTab organizationId={orgId} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
       </Tabs>

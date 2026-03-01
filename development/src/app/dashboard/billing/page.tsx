@@ -420,90 +420,152 @@ function BillingAdminContent() {
         </div>
       </div>
 
-      {/* Tabs — support page style */}
+      {/* Tabs — grouped with sub-tabs */}
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+        value={(() => {
+          const groupMap: Record<string, string> = {
+            'financial-reports': 'reports', revenue: 'reports',
+            invoices: 'transactions', payments: 'transactions',
+            subscriptions: 'management', usage: 'management', customers: 'management',
+            'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
+          }
+          return groupMap[activeTab] || 'reports'
+        })()}
+        onValueChange={(group) => {
+          const defaults: Record<string, string> = {
+            reports: 'financial-reports', transactions: 'invoices',
+            management: 'subscriptions', operations: 'plan-management',
+          }
+          handleTabChange(defaults[group] || 'financial-reports')
+        }}
         className="space-y-6"
       >
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1">
-          {visibleTabs.map(({ id, label, icon: Icon }) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              className="flex items-center gap-2"
-            >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </TabsTrigger>
-          ))}
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <FileBarChart className="h-4 w-4" />
+            <span>Reports & Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="transactions" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            <span>Transactions</span>
+          </TabsTrigger>
+          <TabsTrigger value="management" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Management</span>
+          </TabsTrigger>
+          <TabsTrigger value="operations" className="flex items-center gap-2">
+            <Wrench className="h-4 w-4" />
+            <span>Operations</span>
+          </TabsTrigger>
         </TabsList>
 
-        {canAccessOwnerTabs && (
-          <TabsContent value="financial-reports">
-            <FinancialReportsTab />
-          </TabsContent>
-        )}
+        {/* Reports & Analytics — Financial Reports + Revenue */}
+        <TabsContent value="reports">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="financial-reports" className="flex items-center gap-2">
+                <FileBarChart className="h-4 w-4" />
+                Financial Reports
+              </TabsTrigger>
+              <TabsTrigger value="revenue" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Revenue
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="financial-reports" className="mt-6">
+              <FinancialReportsTab />
+            </TabsContent>
+            <TabsContent value="revenue" className="mt-6">
+              <RevenueTab />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
 
-        {canAccessOwnerTabs && (
-          <TabsContent value="revenue">
-            <RevenueTab />
-          </TabsContent>
-        )}
+        {/* Transactions — Invoices + Payments */}
+        <TabsContent value="transactions">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="invoices" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Invoices
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Payments
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="invoices" className="mt-6">
+              <InvoiceTable
+                organizationId={currentOrganization.id}
+                canManage={canManage}
+              />
+            </TabsContent>
+            <TabsContent value="payments" className="mt-6">
+              <PaymentTable
+                organizationId={currentOrganization.id}
+                canManage={canManage}
+              />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
 
-        {canAccessOwnerTabs && (
-          <TabsContent value="subscriptions">
-            <SubscriptionsTab />
-          </TabsContent>
-        )}
+        {/* Management — Subscriptions + Usage Metering + Customers */}
+        <TabsContent value="management">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <Repeat className="h-4 w-4" />
+                Subscriptions
+              </TabsTrigger>
+              <TabsTrigger value="usage" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Usage Metering
+              </TabsTrigger>
+              <TabsTrigger value="customers" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Customers
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="subscriptions" className="mt-6">
+              <SubscriptionsTab />
+            </TabsContent>
+            <TabsContent value="usage" className="mt-6">
+              <UsageMeteringTab />
+            </TabsContent>
+            <TabsContent value="customers" className="mt-6">
+              <CustomersTab />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
 
-        {canAccessOwnerTabs && (
-          <TabsContent value="payments">
-            <PaymentTable
-              organizationId={currentOrganization.id}
-              canManage={canManage}
-            />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="invoices">
-            <InvoiceTable
-              organizationId={currentOrganization.id}
-              canManage={canManage}
-            />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="usage">
-            <UsageMeteringTab />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="customers">
-            <CustomersTab />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="plan-management">
-            <PlanManagementTab />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="operations">
-            <BillingOperationsTab />
-          </TabsContent>
-        )}
-
-        {canAccessOwnerTabs && (
-          <TabsContent value="promo-codes">
-            <PromoCodesTab />
-          </TabsContent>
-        )}
+        {/* Operations — Plan Management + Billing Ops + Promo Codes */}
+        <TabsContent value="operations">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="plan-management" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Plan Management
+              </TabsTrigger>
+              <TabsTrigger value="operations" className="flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                Billing Ops
+              </TabsTrigger>
+              <TabsTrigger value="promo-codes" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Promo Codes
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="plan-management" className="mt-6">
+              <PlanManagementTab />
+            </TabsContent>
+            <TabsContent value="operations" className="mt-6">
+              <BillingOperationsTab />
+            </TabsContent>
+            <TabsContent value="promo-codes" className="mt-6">
+              <PromoCodesTab />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
       </Tabs>
     </div>
   )

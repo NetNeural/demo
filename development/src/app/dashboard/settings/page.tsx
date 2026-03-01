@@ -74,89 +74,111 @@ function SettingsPageContent() {
       />
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+        value={(() => {
+          const groupMap: Record<string, string> = {
+            profile: 'account', preferences: 'account',
+            security: 'security',
+            organizations: 'organization', subscription: 'organization',
+          }
+          return groupMap[activeTab] || 'account'
+        })()}
+        onValueChange={(group) => {
+          const defaults: Record<string, string> = {
+            account: 'profile', security: 'security', organization: 'organizations',
+          }
+          handleTabChange(defaults[group] || 'profile')
+        }}
         className="space-y-6"
       >
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
+          <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            <span>Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Preferences</span>
+            <span>Account</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span>Security</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="organizations"
-            className="flex items-center gap-2"
-          >
+          <TabsTrigger value="organization" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            <span>Organizations</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="subscription"
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            <span>Subscription</span>
+            <span>Organization</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile">
-          <ProfileTab />
+        {/* Account — Profile + Preferences */}
+        <TabsContent value="account">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="preferences" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Preferences
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile" className="mt-6">
+              <ProfileTab />
+            </TabsContent>
+            <TabsContent value="preferences" className="mt-6">
+              <PreferencesTab />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        {/* Preferences Tab */}
-        <TabsContent value="preferences">
-          <PreferencesTab />
-        </TabsContent>
-
-        {/* Security Tab */}
+        {/* Security — single tab, no sub-tabs */}
         <TabsContent value="security">
           <SecurityTab />
         </TabsContent>
 
-        {/* Organizations Tab */}
-        <TabsContent value="organizations">
-          <UserOrganizationsTab />
-        </TabsContent>
-
-        {/* Subscription Tab */}
-        <TabsContent value="subscription">
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-card p-6">
-              <h3 className="text-lg font-semibold">Current Plan</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {currentOrganization?.subscription_tier
-                  ? `Your organization is on the ${currentOrganization.subscription_tier.charAt(0).toUpperCase() + currentOrganization.subscription_tier.slice(1)} plan.`
-                  : 'No active subscription found.'}
-              </p>
-              <div className="mt-4 flex gap-3">
-                <Button onClick={() => setChangePlanOpen(true)}>
-                  <ArrowUpRight className="mr-2 h-4 w-4" />
-                  Change Plan
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href="/pricing">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    View Plans & Pricing
-                  </a>
-                </Button>
+        {/* Organization — Organizations + Subscription */}
+        <TabsContent value="organization">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="organizations" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Organizations
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Subscription
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="organizations" className="mt-6">
+              <UserOrganizationsTab />
+            </TabsContent>
+            <TabsContent value="subscription" className="mt-6">
+              <div className="space-y-4">
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="text-lg font-semibold">Current Plan</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {currentOrganization?.subscription_tier
+                      ? `Your organization is on the ${currentOrganization.subscription_tier.charAt(0).toUpperCase() + currentOrganization.subscription_tier.slice(1)} plan.`
+                      : 'No active subscription found.'}
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <Button onClick={() => setChangePlanOpen(true)}>
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      Change Plan
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href="/pricing">
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        View Plans & Pricing
+                      </a>
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <ChangePlanModal
-            open={changePlanOpen}
-            onOpenChange={setChangePlanOpen}
-            currentPlanSlug={currentOrganization?.subscription_tier || null}
-            organizationId={currentOrganization?.id || ''}
-          />
+              <ChangePlanModal
+                open={changePlanOpen}
+                onOpenChange={setChangePlanOpen}
+                currentPlanSlug={currentOrganization?.subscription_tier || null}
+                organizationId={currentOrganization?.id || ''}
+              />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
