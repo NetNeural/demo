@@ -443,12 +443,13 @@ serve(async (req) => {
       score += 10 // Secrets management (known)
       score += 5 // No hardcoded creds (known)
       score += 5 // CSP meta tags + HSTS via GitHub Pages (implemented)
+      score += 5 // Forced MFA enrollment on login (implemented 2026-03-01)
       score = clamp(score)
       dimensions.push({
         name: 'Security',
         score,
         grade: calcGrade(score),
-        notes: `Auth + RLS (${rlsPolicyCount}+ policies). 22 managed secrets. CSP headers, HSTS. Gaps: MFA enforcement, SOC 2 compliance.`,
+        notes: `Auth + RLS (${rlsPolicyCount}+ policies). 22 managed secrets. CSP headers, HSTS. Forced MFA on login. Gaps: SOC 2 compliance.`,
       })
     }
 
@@ -487,7 +488,7 @@ serve(async (req) => {
 
       let notes: string
       if (score >= 80) {
-        notes = `${billingPlanCount} plans, ${activeSubCount} active subs. Stripe checkout + webhooks + portal. Usage metering.`
+        notes = `${billingPlanCount} plans, ${activeSubCount} active subs. Stripe checkout + webhooks + portal. 10-tab billing admin. Usage metering.`
       } else if (score >= 40) {
         notes = `${billingPlanCount} plans defined. Stripe partially configured. ${activeSubCount} active subs.`
       } else if (billingPlanCount > 0) {

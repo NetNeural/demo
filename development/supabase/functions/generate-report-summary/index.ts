@@ -123,7 +123,22 @@ Be specific, actionable, and data-driven.`,
     )
 
     if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+      console.error(`OpenAI API error: ${openaiResponse.status}`)
+      // Return graceful fallback instead of crashing
+      const fallbackSummary: AISummary = {
+        keyFindings: [`Report covers ${reportData.totalRecords} records in ${reportData.dateRange}`],
+        redFlags: [],
+        recommendations: ['AI analysis temporarily unavailable — review data manually'],
+        trendAnalysis: `AI summary could not be generated (API error ${openaiResponse.status}). Please try again later.`,
+        confidence: 0,
+        generatedAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(fallbackSummary), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
     }
 
     const openaiData = await openaiResponse.json()

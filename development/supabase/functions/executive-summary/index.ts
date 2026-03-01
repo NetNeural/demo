@@ -302,10 +302,11 @@ serve(async (req) => {
     // MVP completion — based on core feature milestones, NOT raw issue closure
     // Core features: Auth ✅, Devices ✅, Alerts ✅, Orgs ✅, Billing ✅,
     // Edge Functions ✅, CI/CD ✅, Reports ✅, Roles ✅, Dashboard ✅,
-    // Signup/Registration ✅, Plans & Pricing Admin ✅
+    // Signup/Registration ✅, Plans & Pricing Admin ✅,
+    // Billing Admin (10-tab) ✅, Forced MFA Enrollment ✅
     // Remaining gaps: test coverage (~22% vs 70% target)
-    const coreFeaturesDone = 12 // count of shipped feature areas
-    const coreFeaturesTotal = 12
+    const coreFeaturesDone = 14 // count of shipped feature areas
+    const coreFeaturesTotal = 14
     const coreFeaturePct = Math.round((coreFeaturesDone / coreFeaturesTotal) * 100)
     // Apply small deductions for known gaps
     const gapDeductions = [
@@ -327,7 +328,7 @@ serve(async (req) => {
       { name: 'Signup & Registration', done: true }, // 3-step signup with plan selection
       { name: 'Plans & Pricing Admin', done: true }, // owner-only admin page
       { name: 'Cookie Consent (GDPR)', done: false }, // #250
-      { name: 'MFA Enforcement', done: false }, // #254
+      { name: 'MFA Enforcement', done: true }, // Forced MFA setup on login — shipped 2026-03-01
       { name: 'CI Quality Gates (remove continue-on-error)', done: false }, // #253
     ]
     const launchDone = launchBlockers.filter((b) => b.done).length
