@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -29,6 +30,9 @@ import {
   CheckCircle2,
   FileJson,
   FileSpreadsheet,
+  FileBarChart,
+  Mail,
+  Wrench,
 } from 'lucide-react'
 import ExecutiveReportsCard from './ExecutiveReportsCard'
 import { EmailBroadcastCard } from './EmailBroadcastCard'
@@ -185,15 +189,40 @@ export default function AdminToolsTab({ organizationId }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Executive Reports + Feature Reports */}
-      <ExecutiveReportsCard organizationId={organizationId} />
+    <Tabs defaultValue="reports" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="reports" className="flex items-center gap-2">
+          <FileBarChart className="h-4 w-4" />
+          Reports
+        </TabsTrigger>
+        {isSuperAdmin && (
+          <TabsTrigger value="communication" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Communication
+          </TabsTrigger>
+        )}
+        <TabsTrigger value="data-ops" className="flex items-center gap-2">
+          <Wrench className="h-4 w-4" />
+          Data & Operations
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Email Broadcast — Super Admin only */}
-      {isSuperAdmin && <EmailBroadcastCard />}
+      {/* Reports */}
+      <TabsContent value="reports">
+        <ExecutiveReportsCard organizationId={organizationId} />
+      </TabsContent>
 
-      {/* Data Export */}
-      <Card>
+      {/* Communication — Super Admin only */}
+      {isSuperAdmin && (
+        <TabsContent value="communication">
+          <EmailBroadcastCard />
+        </TabsContent>
+      )}
+
+      {/* Data & Operations */}
+      <TabsContent value="data-ops" className="space-y-6">
+        {/* Data Export */}
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
@@ -285,6 +314,7 @@ export default function AdminToolsTab({ organizationId }: Props) {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+    </Tabs>
   )
 }
