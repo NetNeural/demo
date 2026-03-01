@@ -220,7 +220,7 @@ export function OrganizationSwitcher({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="z-[200] w-[320px]">
+      <DropdownMenuContent align="start" className="z-[200] w-[320px] max-h-[400px] overflow-y-auto">
         <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
           Your Organizations
         </DropdownMenuLabel>
