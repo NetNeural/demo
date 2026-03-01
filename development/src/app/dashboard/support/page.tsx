@@ -12,6 +12,7 @@ import {
   FlaskConical,
   BookOpen,
   Shield,
+  UserCheck,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -29,6 +30,7 @@ import SystemHealthTab from './components/SystemHealthTab'
 import DataOperationsTab from './components/DataOperationsTab'
 import ExecutiveReportsCard from './components/ExecutiveReportsCard'
 import { EmailBroadcastCard } from './components/EmailBroadcastCard'
+import { AccessRequestsTab } from '@/app/dashboard/organizations/components/AccessRequestsTab'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
 
@@ -182,6 +184,7 @@ function SupportPageContent() {
         value={(() => {
           const groupMap: Record<string, string> = {
             'customer-assistance': 'customer-support',
+            'access-requests': 'customer-support',
             'executive-reports': 'customer-support',
             'data-operations': 'customer-support',
             communication: 'customer-support',
@@ -225,6 +228,10 @@ function SupportPageContent() {
                 <Users className="h-4 w-4" />
                 Customer Assistance
               </TabsTrigger>
+              <TabsTrigger value="access-requests" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Access Requests
+              </TabsTrigger>
               <TabsTrigger value="executive-reports" className="flex items-center gap-2">
                 <FileBarChart className="h-4 w-4" />
                 Reports
@@ -242,6 +249,9 @@ function SupportPageContent() {
             </TabsList>
             <TabsContent value="customer-assistance" className="mt-6">
               <CustomerAssistanceTab organizationId={orgId} />
+            </TabsContent>
+            <TabsContent value="access-requests" className="mt-6">
+              <AccessRequestsTab organizationId={orgId} />
             </TabsContent>
             <TabsContent value="executive-reports" className="mt-6">
               <ExecutiveReportsCard organizationId={orgId} />

@@ -168,7 +168,7 @@ function OrganizationsPageContent() {
           // Map flat tab IDs to group IDs
           const groupMap: Record<string, string> = {
             overview: 'overview',
-            members: 'people', access: 'people',
+            members: 'people',
             locations: 'infrastructure', integrations: 'infrastructure', 'api-keys': 'infrastructure',
             billing: 'business', customers: 'business',
             settings: 'settings',
@@ -193,7 +193,7 @@ function OrganizationsPageContent() {
 
           <TabsTrigger value="people" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span>People & Access</span>
+            <span>People</span>
           </TabsTrigger>
 
           <TabsTrigger value="infrastructure" className="flex items-center gap-2">
@@ -221,30 +221,9 @@ function OrganizationsPageContent() {
           <OverviewTab organizationId={currentOrganization.id} />
         </TabsContent>
 
-        {/* People & Access — Members + Access Requests */}
+        {/* People — Members */}
         <TabsContent value="people">
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList>
-              <TabsTrigger value="members" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Members
-              </TabsTrigger>
-              {(isSuperAdmin || isOwner || isAdmin) && (
-                <TabsTrigger value="access" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Access Requests
-                </TabsTrigger>
-              )}
-            </TabsList>
-            <TabsContent value="members" className="mt-6">
-              <MembersTab organizationId={currentOrganization.id} />
-            </TabsContent>
-            {(isSuperAdmin || isOwner || isAdmin) && (
-              <TabsContent value="access" className="mt-6">
-                <AccessRequestsTab organizationId={currentOrganization.id} />
-              </TabsContent>
-            )}
-          </Tabs>
+          <MembersTab organizationId={currentOrganization.id} />
         </TabsContent>
 
         {/* Infrastructure — Locations + Integrations + API Keys */}
