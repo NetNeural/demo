@@ -255,7 +255,7 @@ function BillingAdminContent() {
         onValueChange={handleTabChange}
         className="space-y-6"
       >
-        <TabsList className="w-full flex-wrap justify-start">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1">
           {visibleTabs.map(({ id, label, icon: Icon }) => (
             <TabsTrigger
               key={id}
