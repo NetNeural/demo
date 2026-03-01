@@ -316,6 +316,23 @@ export default createEdgeFunction(
 
       console.log('✅ Member added successfully:', newMember.id)
 
+      // If the user has no default organization_id, set it to this org.
+      // This prevents the "null organization_id" bug where users added via
+      // the members flow never get their users.organization_id populated.
+      const { data: memberUser } = await supabaseAdmin
+        .from('users')
+        .select('organization_id')
+        .eq('id', targetUserId)
+        .maybeSingle()
+
+      if (memberUser && !memberUser.organization_id) {
+        console.log(`🔧 User ${targetUserId} has null organization_id — setting to ${organizationId}`)
+        await supabaseAdmin
+          .from('users')
+          .update({ organization_id: organizationId, updated_at: new Date().toISOString() })
+          .eq('id', targetUserId)
+      }
+
       return createSuccessResponse(
         {
           member: {
