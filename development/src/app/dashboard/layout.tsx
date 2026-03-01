@@ -88,7 +88,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       label: 'Organization',
       icon: Building2,
     },
-    ...(isSuperAdmin || userRole === 'owner'
+    ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
+      (isSuperAdmin || userRole === 'owner')
       ? [
           {
             href: '/dashboard/plans-pricing',
