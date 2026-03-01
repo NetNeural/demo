@@ -45,31 +45,31 @@ const billingTabs = [
     id: 'financial-reports',
     label: 'Financial Reports',
     icon: FileBarChart,
-    ownerOnly: false,
+    ownerOnly: true,
   },
   {
     id: 'revenue',
     label: 'Revenue',
     icon: TrendingUp,
-    ownerOnly: false,
+    ownerOnly: true,
   },
   {
     id: 'subscriptions',
     label: 'Subscriptions',
     icon: Repeat,
-    ownerOnly: false,
+    ownerOnly: true,
   },
   {
     id: 'payments',
     label: 'Payments',
     icon: CreditCard,
-    ownerOnly: false,
+    ownerOnly: true,
   },
   {
     id: 'invoices',
     label: 'Invoices',
     icon: FileText,
-    ownerOnly: false,
+    ownerOnly: true,
   },
   {
     id: 'usage',
@@ -230,8 +230,8 @@ function BillingAdminContent() {
 
   const canManage = isSuperAdmin || permissions.canManageBilling
 
-  // Owner-only tabs visible to org owners and super admins
-  const canAccessOwnerTabs = isSuperAdmin || userRole === 'owner'
+  // Owner/billing tabs visible to org owners, billing role, and super admins
+  const canAccessOwnerTabs = isSuperAdmin || userRole === 'owner' || userRole === 'billing'
 
   const visibleTabs = billingTabs.filter(
     (tab) => !tab.ownerOnly || canAccessOwnerTabs
@@ -270,31 +270,41 @@ function BillingAdminContent() {
           ))}
         </TabsList>
 
-        <TabsContent value="financial-reports">
-          <FinancialReportsTab />
-        </TabsContent>
+        {canAccessOwnerTabs && (
+          <TabsContent value="financial-reports">
+            <FinancialReportsTab />
+          </TabsContent>
+        )}
 
-        <TabsContent value="revenue">
-          <RevenueTab />
-        </TabsContent>
+        {canAccessOwnerTabs && (
+          <TabsContent value="revenue">
+            <RevenueTab />
+          </TabsContent>
+        )}
 
-        <TabsContent value="subscriptions">
-          <SubscriptionsTab />
-        </TabsContent>
+        {canAccessOwnerTabs && (
+          <TabsContent value="subscriptions">
+            <SubscriptionsTab />
+          </TabsContent>
+        )}
 
-        <TabsContent value="payments">
-          <PaymentTable
-            organizationId={currentOrganization.id}
-            canManage={canManage}
-          />
-        </TabsContent>
+        {canAccessOwnerTabs && (
+          <TabsContent value="payments">
+            <PaymentTable
+              organizationId={currentOrganization.id}
+              canManage={canManage}
+            />
+          </TabsContent>
+        )}
 
-        <TabsContent value="invoices">
-          <InvoiceTable
-            organizationId={currentOrganization.id}
-            canManage={canManage}
-          />
-        </TabsContent>
+        {canAccessOwnerTabs && (
+          <TabsContent value="invoices">
+            <InvoiceTable
+              organizationId={currentOrganization.id}
+              canManage={canManage}
+            />
+          </TabsContent>
+        )}
 
         {canAccessOwnerTabs && (
           <TabsContent value="usage">
