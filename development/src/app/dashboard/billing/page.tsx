@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,8 +10,10 @@ import { useUser } from '@/contexts/UserContext'
 import { InvoiceTable } from '@/components/billing/InvoiceTable'
 import { PaymentTable } from '@/components/billing/PaymentTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { edgeFunctions } from '@/lib/edge-functions'
 import {
   ArrowLeft,
+  ExternalLink,
   FileBarChart,
   TrendingUp,
   CreditCard,
@@ -236,17 +238,60 @@ function BillingAdminContent() {
     (tab) => !tab.ownerOnly || canAccessOwnerTabs
   )
 
+  // ── Stripe Customer Portal ────────────────────────────────────────
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  const handleOpenPortal = useCallback(async () => {
+    if (!currentOrganization) return
+    setPortalLoading(true)
+    try {
+      const res = await edgeFunctions.call<{ url: string }>(
+        '/create-portal-session',
+        {
+          method: 'POST',
+          body: {
+            organizationId: currentOrganization.id,
+            returnPath: '/dashboard/billing',
+          },
+        }
+      )
+      const portalUrl = res?.data?.url
+      if (portalUrl) {
+        window.open(portalUrl, '_blank')
+        return
+      }
+      alert(
+        'Stripe Customer Portal is not yet configured. Contact support for billing changes.'
+      )
+    } catch {
+      alert('Unable to open billing portal. Please contact support.')
+    } finally {
+      setPortalLoading(false)
+    }
+  }, [currentOrganization])
+
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       {/* Header */}
-      <div>
-        <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-          <DollarSign className="h-7 w-7" />
-          Billing Administration
-        </h2>
-        <p className="text-muted-foreground">
-          Financial management for the NetNeural platform
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+            <DollarSign className="h-7 w-7" />
+            Billing Administration
+          </h2>
+          <p className="text-muted-foreground">
+            Financial management for the NetNeural platform
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleOpenPortal}
+          disabled={portalLoading}
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          {portalLoading ? 'Opening…' : 'Manage Billing'}
+          <ExternalLink className="ml-2 h-3 w-3" />
+        </Button>
       </div>
 
       {/* Tabs — support page style */}
