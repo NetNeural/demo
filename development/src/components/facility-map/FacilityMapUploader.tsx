@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Upload, X, ImageIcon, Loader2, Replace, Camera } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { moderateImage } from '@/lib/image-moderation'
 
 const VALID_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -51,6 +52,15 @@ export function FacilityMapUploader({
 
       setUploading(true)
       try {
+        // AI content moderation check
+        toast.info('Checking image content...')
+        const moderation = await moderateImage(file)
+        if (!moderation.safe) {
+          toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+          setUploading(false)
+          return
+        }
+
         // Get image dimensions
         const dimensions = await getImageDimensions(file)
 

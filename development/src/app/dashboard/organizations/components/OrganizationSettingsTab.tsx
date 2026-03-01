@@ -43,6 +43,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { OrganizationSettings } from '@/types/organization'
 import { DeviceTypeImageManager } from '@/components/organizations/DeviceTypeImageManager'
 import { FeatureGate } from '@/components/FeatureGate'
+import { moderateImage } from '@/lib/image-moderation'
 
 interface OrganizationSettingsTabProps {
   organizationId: string
@@ -317,6 +318,16 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
     try {
       setIsUploadingLogo(true)
+
+      // AI content moderation check
+      toast.info('Checking image content...')
+      const moderation = await moderateImage(file)
+      if (!moderation.safe) {
+        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        setIsUploadingLogo(false)
+        return
+      }
+
       const supabase = createClient()
 
       let processedFile: File | Blob = file
@@ -433,6 +444,16 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
     try {
       setIsUploadingSentinelLogo(true)
+
+      // AI content moderation check
+      toast.info('Checking image content...')
+      const moderation = await moderateImage(file)
+      if (!moderation.safe) {
+        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        setIsUploadingSentinelLogo(false)
+        return
+      }
+
       const supabase = createClient()
 
       let processedFile: File | Blob = file
@@ -514,6 +535,16 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
     try {
       setIsUploadingBg(true)
+
+      // AI content moderation check
+      toast.info('Checking image content...')
+      const moderation = await moderateImage(file)
+      if (!moderation.safe) {
+        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        setIsUploadingBg(false)
+        return
+      }
+
       const supabase = createClient()
 
       toast.info('Compressing background image...')

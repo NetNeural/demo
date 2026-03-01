@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { toast } from 'sonner'
+import { moderateImage } from '@/lib/image-moderation'
 
 interface DeviceTypeImageManagerProps {
   organizationId: string
@@ -201,6 +202,16 @@ export function DeviceTypeImageManager({
 
     try {
       setUploadingType(deviceType)
+
+      // AI content moderation check
+      toast.info('Checking image content...')
+      const moderation = await moderateImage(file)
+      if (!moderation.safe) {
+        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        setUploadingType(null)
+        return
+      }
+
       const supabase = createClient()
 
       toast.info('Compressing image...')

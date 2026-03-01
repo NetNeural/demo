@@ -20,6 +20,7 @@ import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseUrl } from '@/lib/supabase/config'
+import { moderateImage } from '@/lib/image-moderation'
 
 interface FeedbackFormProps {
   onSubmitted?: () => void
@@ -50,7 +51,7 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const MAX_SCREENSHOTS = 3
   const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-  const handleScreenshotAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshotAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
@@ -73,6 +74,15 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     })
 
     if (validFiles.length === 0) return
+
+    // AI content moderation check on each file
+    for (const file of validFiles) {
+      const moderation = await moderateImage(file)
+      if (!moderation.safe) {
+        toast.error(`Screenshot "${file.name}" rejected: ${moderation.reason || 'Inappropriate content detected'}.`)
+        return
+      }
+    }
 
     // Create previews
     validFiles.forEach((file) => {
