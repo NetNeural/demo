@@ -812,6 +812,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px.
+                    Check &quot;Remove background&quot; before uploading to strip the background.
                   </p>
                   {logoUrl && (
                     <Button
@@ -882,7 +883,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Sentinel brand logo. Same formats &amp; compression.
+                      Sentinel brand icon. PNG, JPG, WebP, or SVG. Auto-compressed to 800×800px.
+                      Check &quot;Remove background&quot; before uploading to strip the background.
                     </p>
                     {sentinelLogoUrl && (
                       <Button
