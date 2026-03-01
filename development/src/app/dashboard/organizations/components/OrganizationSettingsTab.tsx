@@ -452,7 +452,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       }
 
       toast.info('Compressing image...')
-      const compressedBlob = await compressImage(processedFile as File)
+      const compressedBlob = await compressImage(processedFile as File, 800)
 
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
@@ -897,7 +897,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Sentinel brand logo. PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px.
+                      Sentinel brand logo. PNG, JPG, WebP, or SVG. Auto-compressed to 800×800px.
                       Check &quot;Remove background&quot; before uploading to strip the background.
                     </p>
                     {sentinelLogoUrl && (
