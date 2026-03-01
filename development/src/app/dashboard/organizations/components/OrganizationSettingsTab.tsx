@@ -323,9 +323,16 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       // Remove background if checkbox is checked
       if (removeLogoBg && file.type !== 'image/svg+xml') {
-        toast.info('Removing background... (this may take a moment)')
-        const bgRemovedBlob = await removeBackground(file)
-        processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+        try {
+          toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          const bgRemovedBlob = await removeBackground(file)
+          processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+          toast.success('Background removed successfully')
+        } catch (bgError: any) {
+          console.error('Background removal failed:', bgError)
+          toast.error(`Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`)
+          // Continue with original file
+        }
       }
 
       // Compress image before upload
@@ -432,13 +439,20 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       // Remove background if checkbox is checked
       if (removeSentinelBg && file.type !== 'image/svg+xml') {
-        toast.info('Removing background... (this may take a moment)')
-        const bgRemovedBlob = await removeBackground(file)
-        processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+        try {
+          toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          const bgRemovedBlob = await removeBackground(file)
+          processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+          toast.success('Background removed successfully')
+        } catch (bgError: any) {
+          console.error('Background removal failed:', bgError)
+          toast.error(`Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`)
+          // Continue with original file
+        }
       }
 
       toast.info('Compressing image...')
-      const compressedBlob = await compressImage(processedFile as File, 800)
+      const compressedBlob = await compressImage(processedFile as File)
 
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
@@ -883,7 +897,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Sentinel brand icon. PNG, JPG, WebP, or SVG. Auto-compressed to 800×800px.
+                      Sentinel brand logo. PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px.
                       Check &quot;Remove background&quot; before uploading to strip the background.
                     </p>
                     {sentinelLogoUrl && (

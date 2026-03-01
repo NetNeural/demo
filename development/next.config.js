@@ -172,6 +172,17 @@ const nextConfig = {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         leaflet: false,
+        fs: false,
+        path: false,
+        os: false,
+      }
+
+      // Exclude node-only packages from client bundle
+      // Required for @imgly/background-removal (uses WASM/ONNX in browser)
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        sharp: false,
+        'onnxruntime-node': false,
       }
 
       // Also add to externals to completely exclude from bundling
