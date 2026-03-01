@@ -589,8 +589,35 @@ export interface PlanDraft {
 /** Health score status derived from numeric score */
 export type HealthStatus = 'healthy' | 'at_risk' | 'critical'
 
-/** Lifecycle stage for a customer */
-export type LifecycleStage = 'new' | 'onboarding' | 'active' | 'at_risk' | 'churning' | 'churned'
+/** Lifecycle stage for a customer (matches customer_lifecycle_stage DB enum) */
+export type LifecycleStage = 'trial' | 'onboarding' | 'active' | 'at_risk' | 'churned' | 'reactivated'
+
+/** Trigger type for lifecycle transitions */
+export type LifecycleTriggerType = 'automatic' | 'manual' | 'system'
+
+/** Row from customer_lifecycle_events table */
+export interface LifecycleEvent {
+  id: string
+  organization_id: string
+  from_stage: LifecycleStage | null
+  to_stage: LifecycleStage
+  trigger_type: LifecycleTriggerType
+  trigger_reason: string | null
+  metadata: Record<string, unknown>
+  created_by: string | null
+  created_at: string
+}
+
+/** Activity timeline entry (unified across multiple tables) */
+export interface TimelineEntry {
+  id: string
+  type: 'lifecycle' | 'device' | 'payment' | 'subscription' | 'member' | 'alert' | 'login'
+  title: string
+  description: string | null
+  timestamp: string
+  metadata?: Record<string, unknown>
+  icon?: string
+}
 
 /** Row from admin_customer_overview view */
 export interface CustomerOverviewRow {
@@ -647,18 +674,16 @@ export function formatHealthStatus(status: HealthStatus): string {
   }
 }
 
-/** Derive lifecycle stage from customer data */
+/** Derive lifecycle stage from customer data (client-side fallback when DB column not yet populated) */
 export function getLifecycleStage(customer: CustomerOverviewRow): LifecycleStage {
   // Churned: subscription canceled and past end date
   if (customer.subscription_status === 'canceled') return 'churned'
-  // Churning: cancel at period end
-  if (customer.cancel_at_period_end) return 'churning'
-  // At risk: health score < 50 or past_due
-  if (customer.health_score < 50 || customer.subscription_status === 'past_due') return 'at_risk'
-  // New: created within last 14 days
+  // At risk: health score < 50 or past_due or canceling
+  if (customer.cancel_at_period_end || customer.health_score < 50 || customer.subscription_status === 'past_due') return 'at_risk'
+  // Trial: created within last 14 days with no subscription
   const created = new Date(customer.created_at)
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-  if (created > twoWeeksAgo) return 'new'
+  if (created > twoWeeksAgo && !customer.subscription_id) return 'trial'
   // Onboarding: no devices yet
   if (customer.device_count === 0) return 'onboarding'
   return 'active'
@@ -667,12 +692,12 @@ export function getLifecycleStage(customer: CustomerOverviewRow): LifecycleStage
 /** Human-readable lifecycle label */
 export function formatLifecycleStage(stage: LifecycleStage): string {
   switch (stage) {
-    case 'new': return 'New'
+    case 'trial': return 'Trial'
     case 'onboarding': return 'Onboarding'
     case 'active': return 'Active'
     case 'at_risk': return 'At Risk'
-    case 'churning': return 'Churning'
     case 'churned': return 'Churned'
+    case 'reactivated': return 'Reactivated'
   }
 }
 

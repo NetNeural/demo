@@ -59,12 +59,12 @@ function getSupabase() {
 const PAGE_SIZE = 25
 
 const lifecycleColors: Record<LifecycleStage, string> = {
-  new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  trial: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   onboarding: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   at_risk: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  churning: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   churned: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  reactivated: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
 }
 
 type SortColumn = 'name' | 'health_score' | 'mrr' | 'device_count' | 'member_count' | 'last_active' | 'created_at'
@@ -239,12 +239,12 @@ export function CustomerTable() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Stages</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
                   <SelectItem value="onboarding">Onboarding</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="at_risk">At Risk</SelectItem>
-                  <SelectItem value="churning">Churning</SelectItem>
                   <SelectItem value="churned">Churned</SelectItem>
+                  <SelectItem value="reactivated">Reactivated</SelectItem>
                 </SelectContent>
               </Select>
 
