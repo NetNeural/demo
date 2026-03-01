@@ -687,8 +687,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   // Allow super_admin or organization owner to access settings
   const canAccessSettings = isOwner || user?.role === 'super_admin'
 
-  // NetNeural root org = no parent — only root org gets Sentinel logo upload
-  const isNetNeuralRoot = !currentOrganization?.parent_organization_id
+  // NetNeural root org — only root org gets Sentinel logo upload
+  const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'
+  const isNetNeuralRoot = currentOrganization?.id === NETNEURAL_ROOT_ORG_ID
 
   if (!canAccessSettings) {
     return (
@@ -1798,8 +1799,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         </Card>
       </FeatureGate>
 
-      {/* Only show delete for child organizations — root org (no parent) cannot be deleted */}
-      {currentOrganization?.parent_organization_id && (
+      {/* Show delete for all organizations except the NetNeural root org */}
+      {currentOrganization?.id !== NETNEURAL_ROOT_ORG_ID && (
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-900">

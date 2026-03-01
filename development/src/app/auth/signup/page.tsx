@@ -265,6 +265,7 @@ function SignupForm() {
   // Loading / error
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false)
 
   // Colors
   const colors = useMemo(() => ({
@@ -305,6 +306,7 @@ function SignupForm() {
 
     setIsLoading(true)
     setError('')
+    setNeedsEmailConfirmation(false)
 
     try {
       const supabase = createClient()
@@ -342,50 +344,59 @@ function SignupForm() {
         return
       }
 
-      // If email confirmation is required, show success step
-      // If auto-confirmed, provision org + user record
-      if (data.session) {
-        // Auto-confirmed — create organization and user record
-        try {
-          // Create organization
-          const { data: orgData, error: orgError } = await supabase
-            .from('organizations')
-            .insert({
+      // Detect Supabase "fake success" for already-registered emails.
+      // Supabase returns a user object with an empty identities array
+      // to prevent email enumeration attacks — no user is actually created.
+      if (!data.user.identities || data.user.identities.length === 0) {
+        setError(
+          'An account with this email may already exist. ' +
+          'Please try signing in, or use a different email address.'
+        )
+        setIsLoading(false)
+        return
+      }
+
+      // If email confirmation is required (no session returned), the user
+      // must click the confirmation link before they can sign in.
+      if (!data.session) {
+        setNeedsEmailConfirmation(true)
+        setStep(3)
+        setIsLoading(false)
+        return
+      }
+
+      // Auto-confirmed — provision organization via edge function (uses
+      // admin client, bypasses RLS)
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData?.session?.access_token
+
+        if (accessToken) {
+          const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+          const response = await fetch(`${apiUrl}/functions/v1/organizations`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
               name: orgName.trim(),
               slug,
-              subscription_tier: selectedPlan.slug,
-              is_active: true,
-              settings: {},
-            })
-            .select('id')
-            .single()
+              subscriptionTier: selectedPlan.slug,
+            }),
+          })
 
-          if (orgError) {
-            console.error('Org creation error:', orgError)
-            // Still proceed — org can be set up later
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}))
+            console.error('Org provisioning error:', errBody)
+            // Non-fatal — user is created, org can be provisioned later
+          } else {
+            console.log('Organization provisioned successfully via edge function')
           }
-
-          // Create user record in public.users
-          if (orgData) {
-            const { error: userError } = await supabase
-              .from('users')
-              .insert({
-                id: data.user.id,
-                email: data.user.email || email.trim(),
-                full_name: fullName.trim(),
-                role: 'org_owner',
-                organization_id: orgData.id,
-                is_active: true,
-              })
-
-            if (userError) {
-              console.error('User record creation error:', userError)
-            }
-          }
-        } catch (provisionErr) {
-          console.error('Provisioning error:', provisionErr)
-          // Auth user is created — provisioning can be retried
         }
+      } catch (provisionErr) {
+        console.error('Provisioning error:', provisionErr)
+        // Auth user is created — provisioning can be retried
       }
 
       // Move to success step
@@ -844,7 +855,10 @@ function SignupForm() {
                 <span className="font-semibold" style={{ color: selectedPlan?.color }}>
                   {selectedPlan?.name}
                 </span>{' '}
-                plan is ready. Check your email for a confirmation link, then sign in to get started.
+                plan is ready.{' '}
+                {needsEmailConfirmation
+                  ? 'Check your email for a confirmation link, then sign in to get started.'
+                  : 'You can now sign in to get started.'}
               </p>
 
               <Button
