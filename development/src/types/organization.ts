@@ -13,6 +13,8 @@ export type OrganizationRole =
 export interface OrganizationSettings {
   branding?: {
     logo_url?: string
+    /** Sentinel product logo — only used by the NetNeural root org */
+    sentinel_logo_url?: string
     primary_color?: string
     secondary_color?: string
     accent_color?: string

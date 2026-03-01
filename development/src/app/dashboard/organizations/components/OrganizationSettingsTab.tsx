@@ -57,12 +57,15 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [saveMessage, setSaveMessage] = useState('')
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingSentinelLogo, setIsUploadingSentinelLogo] = useState(false)
   const [isUploadingBg, setIsUploadingBg] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const sentinelFileInputRef = useRef<HTMLInputElement>(null)
   const bgFileInputRef = useRef<HTMLInputElement>(null)
 
   // Branding settings state
   const [logoUrl, setLogoUrl] = useState('')
+  const [sentinelLogoUrl, setSentinelLogoUrl] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#3b82f6')
   const [secondaryColor, setSecondaryColor] = useState('#64748b')
   const [accentColor, setAccentColor] = useState('#10b981')
@@ -101,6 +104,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       const settings: OrganizationSettings = currentOrganization.settings || {}
       setLogoUrl(settings.branding?.logo_url || '')
+      setSentinelLogoUrl(settings.branding?.sentinel_logo_url || '')
       setPrimaryColor(settings.branding?.primary_color || '#3b82f6')
       setSecondaryColor(settings.branding?.secondary_color || '#64748b')
       setAccentColor(settings.branding?.accent_color || '#10b981')
@@ -383,6 +387,80 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }
 
+  /** Sentinel logo upload — mirrors handleLogoUpload but saves to sentinel-logo path */
+  const handleSentinelLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file || !currentOrganization) return
+
+    const validTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/webp',
+      'image/svg+xml',
+    ]
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (PNG, JPG, WebP, or SVG)')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB')
+      return
+    }
+
+    try {
+      setIsUploadingSentinelLogo(true)
+      const supabase = createClient()
+
+      toast.info('Compressing image...')
+      const compressedBlob = await compressImage(file)
+
+      const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
+      const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
+
+      // Delete old sentinel logo if exists
+      if (sentinelLogoUrl) {
+        const oldPath = sentinelLogoUrl.split('/').slice(-2).join('/')
+        await supabase.storage.from('organization-assets').remove([oldPath])
+      }
+
+      const { data, error } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, compressedBlob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType:
+            file.type === 'image/svg+xml' ? 'image/svg+xml' : 'image/webp',
+        })
+
+      if (error) throw error
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('organization-assets').getPublicUrl(data.path)
+
+      setSentinelLogoUrl(publicUrl)
+      toast.success(
+        `Sentinel logo uploaded! (${(compressedBlob.size / 1024).toFixed(0)}KB) Click "Save Changes" to apply.`
+      )
+    } catch (error: any) {
+      console.error('Error uploading Sentinel logo:', error)
+      let errorMessage = 'Failed to upload Sentinel logo'
+      if (error?.message?.includes('row-level security')) {
+        errorMessage =
+          'Permission denied. Please ensure you are an organization owner and storage policies are applied.'
+      } else if (error?.message) {
+        errorMessage = `Upload failed: ${error.message}`
+      }
+      toast.error(errorMessage)
+    } finally {
+      setIsUploadingSentinelLogo(false)
+    }
+  }
+
   const handleBgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !currentOrganization) return
@@ -454,6 +532,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         ...currentSettings,
         branding: {
           logo_url: logoUrl,
+          ...(isNetNeuralRoot ? { sentinel_logo_url: sentinelLogoUrl } : {}),
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
@@ -586,6 +665,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   // Allow super_admin or organization owner to access settings
   const canAccessSettings = isOwner || user?.role === 'super_admin'
 
+  // NetNeural root org = no parent — only root org gets Sentinel logo upload
+  const isNetNeuralRoot = !currentOrganization?.parent_organization_id
+
   if (!canAccessSettings) {
     return (
       <Card>
@@ -711,6 +793,69 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
               </div>
             </div>
           </div>
+
+          {/* Sentinel Logo — NetNeural root org only */}
+          {isNetNeuralRoot && (
+            <div className="space-y-2 border-t pt-4">
+              <Label>Sentinel Logo</Label>
+              <div className="flex items-start gap-4">
+                {/* Sentinel logo preview */}
+                <div className="flex-shrink-0">
+                  {sentinelLogoUrl ? (
+                    <div className="relative h-24 w-24 overflow-hidden rounded-lg border-2 border-blue-200 bg-white">
+                      <img
+                        src={sentinelLogoUrl}
+                        alt="Sentinel logo"
+                        className="h-full w-full object-contain p-2"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50">
+                      <Shield className="h-8 w-8 text-blue-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload controls */}
+                <div className="flex-1 space-y-2">
+                  <input
+                    ref={sentinelFileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                    onChange={handleSentinelLogoUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sentinelFileInputRef.current?.click()}
+                    disabled={isUploadingSentinelLogo}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isUploadingSentinelLogo
+                      ? 'Uploading...'
+                      : 'Upload Sentinel Logo'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Product logo for the Sentinel brand. Same formats &amp;
+                    compression as org logo.
+                  </p>
+                  {sentinelLogoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSentinelLogoUrl('')}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remove Sentinel Logo
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
