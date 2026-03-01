@@ -372,11 +372,11 @@ function BillingAdminContent() {
             Financial management for the NetNeural platform
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 rounded-lg border bg-card p-2 shadow-sm">
           {/* Billing Mode Toggle — Super Admin Only */}
           {isSuperAdmin && (
-            <div className="flex flex-col items-end gap-1.5">
-              <div className="flex items-center rounded-lg border bg-muted/30 p-1">
+            <>
+              <div className="flex items-center rounded-md border bg-muted/30 p-0.5">
                 {BILLING_MODES.map((mode) => {
                   const Icon = mode.icon
                   const isActive = billingMode === mode.value
@@ -386,7 +386,7 @@ function BillingAdminContent() {
                       onClick={() => handleBillingModeChange(mode.value)}
                       disabled={billingModeSaving || billingModeLoading}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                        'flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-all',
                         isActive
                           ? cn(mode.bg, mode.color, 'shadow-sm ring-1 ring-inset',
                               mode.value === 'off' && 'ring-gray-300 dark:ring-gray-600',
@@ -404,17 +404,12 @@ function BillingAdminContent() {
                   )
                 })}
               </div>
-              <span className="text-[10px] text-muted-foreground">
-                {billingModeLoading ? 'Loading...' : (
-                  billingMode === 'off' ? 'Billing inactive' :
-                  billingMode === 'testing' ? 'Sandbox mode' :
-                  '🔴 Live billing active'
-                )}
-              </span>
-            </div>
+              <div className="mx-1 h-6 w-px bg-border" />
+            </>
           )}
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={handleOpenPortal}
             disabled={portalLoading}
           >
