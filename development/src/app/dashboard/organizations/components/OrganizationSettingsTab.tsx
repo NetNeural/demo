@@ -146,7 +146,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
    * - Quality: 85% (good balance)
    * - Target size: <500KB
    */
-  const compressImage = async (file: File): Promise<Blob> => {
+  const compressImage = async (file: File, maxSize = 400): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       // Skip SVG files (they're already optimized and vector-based)
       if (file.type === 'image/svg+xml') {
@@ -162,8 +162,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         img.src = e.target?.result as string
 
         img.onload = () => {
-          // Calculate new dimensions (max 400x400, maintain aspect ratio)
-          const MAX_SIZE = 400
+          // Calculate new dimensions (maintain aspect ratio)
+          const MAX_SIZE = maxSize
           let width = img.width
           let height = img.height
 
@@ -438,7 +438,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       }
 
       toast.info('Compressing image...')
-      const compressedBlob = await compressImage(processedFile as File)
+      const compressedBlob = await compressImage(processedFile as File, 800)
 
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
