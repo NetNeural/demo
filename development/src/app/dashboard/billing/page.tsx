@@ -19,7 +19,6 @@ import {
   ShieldAlert,
   Building2,
   DollarSign,
-  Shield,
   Users,
   BarChart3,
   Repeat,
@@ -257,7 +256,7 @@ function BillingAdminContent() {
         className="space-y-6"
       >
         <TabsList className="w-full flex-wrap justify-start">
-          {visibleTabs.map(({ id, label, icon: Icon, ownerOnly }) => (
+          {visibleTabs.map(({ id, label, icon: Icon }) => (
             <TabsTrigger
               key={id}
               value={id}
@@ -265,7 +264,6 @@ function BillingAdminContent() {
             >
               <Icon className="h-4 w-4" />
               <span className="hidden sm:inline">{label}</span>
-              {ownerOnly && <Shield className="h-3 w-3 text-yellow-500" />}
             </TabsTrigger>
           ))}
         </TabsList>
