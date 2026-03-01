@@ -268,14 +268,115 @@ export const integrationService = {
 
   /**
    * Get notification history for an organization
+   * Queries integration_activity_log filtered by notification types
    */
-  async getNotificationLog(organizationId: string) {
-    // This would need a new endpoint or direct database query
-    // For now, return empty array as placeholder
-    console.warn(
-      'getNotificationLog not yet implemented in edge functions',
-      organizationId
-    )
-    return []
+  async getNotificationLog(
+    organizationId: string,
+    options?: {
+      type?: 'all' | 'email' | 'slack' | 'webhook' | 'sms'
+      status?: 'all' | 'success' | 'failed' | 'started'
+      limit?: number
+      offset?: number
+      dateFrom?: string
+      dateTo?: string
+    }
+  ) {
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+
+    const notificationTypes = [
+      'notification_email',
+      'notification_slack',
+      'notification_webhook',
+    ]
+
+    let query = supabase
+      .from('integration_activity_log')
+      .select(
+        '*, device_integrations:integration_id(name, integration_type)',
+        { count: 'exact' }
+      )
+      .eq('organization_id', organizationId)
+      .in('activity_type', notificationTypes)
+      .order('created_at', { ascending: false })
+
+    // Apply type filter
+    if (options?.type && options.type !== 'all') {
+      query = query.eq('activity_type', `notification_${options.type}`)
+    }
+
+    // Apply status filter
+    if (options?.status && options.status !== 'all') {
+      if (options.status === 'failed') {
+        query = query.in('status', ['failed', 'error', 'timeout'])
+      } else {
+        query = query.eq('status', options.status)
+      }
+    }
+
+    // Apply date range
+    if (options?.dateFrom) {
+      query = query.gte('created_at', options.dateFrom)
+    }
+    if (options?.dateTo) {
+      query = query.lte('created_at', options.dateTo)
+    }
+
+    // Apply pagination
+    const limit = options?.limit ?? 100
+    const offset = options?.offset ?? 0
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+
+    if (error) {
+      console.error('[NotificationLog] Failed to query:', error)
+      throw new Error(error.message || 'Failed to load notification log')
+    }
+
+    return { data: data || [], count: count ?? 0 }
+  },
+
+  /**
+   * Retry a failed notification
+   * Re-sends the notification using the original payload stored in metadata
+   */
+  async retryNotification(logEntryId: string, organizationId: string) {
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+
+    // Fetch the original log entry
+    const { data: logEntry, error } = await supabase
+      .from('integration_activity_log')
+      .select('*')
+      .eq('id', logEntryId)
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (error || !logEntry) {
+      throw new Error('Failed to find notification log entry')
+    }
+
+    if (!['failed', 'error', 'timeout'].includes(logEntry.status)) {
+      throw new Error('Only failed notifications can be retried')
+    }
+
+    // Extract original notification details from metadata
+    const metadata = (logEntry.metadata || {}) as Record<string, unknown>
+    const integrationType = (
+      logEntry.activity_type as string
+    ).replace('notification_', '') as 'email' | 'slack' | 'webhook'
+
+    // Re-send using the integration service
+    return integrationService.sendNotification({
+      organizationId,
+      integrationType,
+      integrationId: logEntry.integration_id,
+      message: (metadata.message as string) || (metadata.subject as string) || 'Retry notification',
+      subject: metadata.subject as string | undefined,
+      recipients: metadata.recipients as string[] | undefined,
+      priority: metadata.severity as 'low' | 'medium' | 'high' | 'critical' | undefined,
+      data: metadata.data as Record<string, unknown> | undefined,
+    })
   },
 }

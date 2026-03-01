@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Plus, Settings, Trash2, AlertTriangle, Send } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
+import { NotificationHistory } from '@/components/integrations/NotificationHistory'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { useExportable } from '@/hooks/useExportable'
@@ -195,6 +197,17 @@ export default function IntegrationsPage() {
         </Button>
       </div>
 
+      {/* Tabs: Integrations + Notification Log */}
+      <Tabs defaultValue="integrations" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Send className="h-4 w-4" />
+            Notification Log
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="integrations">
       {/* Pending Conflicts Alert */}
       {pendingConflicts > 0 && (
         <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950">
@@ -313,6 +326,7 @@ export default function IntegrationsPage() {
 
       {/* Dialogs */}
       {currentOrganization && (
+        <>
         <ConflictResolutionDialog
           open={conflictOpen}
           onOpenChange={setConflictOpen}
@@ -322,7 +336,16 @@ export default function IntegrationsPage() {
             setConflictOpen(false)
           }}
         />
+        </>
       )}
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          {currentOrganization && (
+            <NotificationHistory organizationId={currentOrganization.id} />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
