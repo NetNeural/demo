@@ -230,8 +230,17 @@ export async function resolveOrganizationId(
   userContext: UserContext,
   requestedOrgId?: string | null
 ): Promise<string | null> {
+  console.log('🔵 resolveOrganizationId called:', {
+    userId: userContext.userId,
+    email: userContext.email,
+    defaultOrgId: userContext.organizationId,
+    requestedOrgId: requestedOrgId || '(none)',
+    isSuperAdmin: userContext.isSuperAdmin,
+  })
+
   // Super admins can query any organization
   if (userContext.isSuperAdmin) {
+    console.log('🔵 resolveOrganizationId: super_admin → returning requestedOrgId')
     return requestedOrgId || null
   }
 
@@ -239,6 +248,7 @@ export async function resolveOrganizationId(
   if (!requestedOrgId || requestedOrgId === userContext.organizationId) {
     // If user has a default org, use it
     if (userContext.organizationId) {
+      console.log(`🔵 resolveOrganizationId: default/same org → ${userContext.organizationId}`)
       return userContext.organizationId
     }
     // No default org — try to find any membership
@@ -251,15 +261,16 @@ export async function resolveOrganizationId(
       .maybeSingle()
     if (anyMembership) {
       console.log(
-        `User ${userContext.email} has no default org, resolved via membership to ${anyMembership.organization_id}`
+        `🔵 resolveOrganizationId: no default org, resolved via membership to ${anyMembership.organization_id}`
       )
       return anyMembership.organization_id
     }
+    console.log('🔵 resolveOrganizationId: no default org, no membership found → null')
     return null
   }
 
-  // Check if user is a member of the requested org
-  // Also verify temporary memberships haven't expired
+  // User is requesting a DIFFERENT org than their default — verify membership
+  console.log(`🔵 resolveOrganizationId: checking membership for ${requestedOrgId}`)
   const serviceClient = createServiceClient()
   const { data: membership, error: membershipError } = await serviceClient
     .from('organization_members')
@@ -293,6 +304,7 @@ export async function resolveOrganizationId(
         return userContext.organizationId
       }
     }
+    console.log(`🔵 resolveOrganizationId: membership confirmed → returning ${requestedOrgId}`)
     return requestedOrgId
   }
 
@@ -307,14 +319,14 @@ export async function resolveOrganizationId(
 
   if (orgRecord?.created_by === userContext.userId) {
     console.log(
-      `User ${userContext.email} is the creator of org ${requestedOrgId} — granting access`
+      `🔵 resolveOrganizationId: user is creator of org ${requestedOrgId} — granting access`
     )
     return requestedOrgId
   }
 
   // Final fallback to default org
   console.warn(
-    `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org ${userContext.organizationId}.`
+    `⚠️ resolveOrganizationId: ${userContext.email} requested org ${requestedOrgId} but is NOT a member. Falling back to default org ${userContext.organizationId}.`
   )
   return userContext.organizationId
 }

@@ -197,11 +197,24 @@ export default createEdgeFunction(
       // GET /devices - List all devices
       const requestedOrgId = url.searchParams.get('organization_id')
 
+      console.log('🔵 Device list request:', {
+        email: userContext.email,
+        requestedOrgId,
+        defaultOrgId: userContext.organizationId,
+        isSuperAdmin: userContext.isSuperAdmin,
+      })
+
       // Determine which organization to query — supports multi-org via organization_members
       const organizationId = await resolveOrganizationId(
         userContext,
         requestedOrgId
       )
+
+      console.log('🔵 Resolved organization:', {
+        resolvedOrgId: organizationId,
+        requestedOrgId,
+        defaultOrgId: userContext.organizationId,
+      })
 
       if (!organizationId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)
