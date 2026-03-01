@@ -628,6 +628,8 @@ export interface CustomerOverviewRow {
   is_active: boolean
   created_at: string
   last_updated: string
+  parent_organization_id: string | null
+  is_reseller: boolean
   device_count: number
   member_count: number
   active_device_count: number

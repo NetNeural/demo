@@ -16,6 +16,8 @@ const CUSTOMER_SELECT = `
   is_active,
   created_at,
   last_updated,
+  parent_organization_id,
+  is_reseller,
   device_count,
   member_count,
   active_device_count,

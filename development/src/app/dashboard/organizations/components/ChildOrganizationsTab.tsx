@@ -164,17 +164,25 @@ export function ChildOrganizationsTab({
   )
 
   const getTierBadge = (tier: string) => {
+    // Normalize: if subscription_tier is 'reseller', show actual plan as 'starter'
+    const displayTier = tier === 'reseller' ? 'starter' : tier
     const colors: Record<string, string> = {
       free: 'bg-gray-100 text-gray-700',
       starter: 'bg-blue-100 text-blue-700',
       professional: 'bg-purple-100 text-purple-700',
-      reseller: 'bg-amber-100 text-amber-700',
       enterprise: 'bg-emerald-100 text-emerald-700',
     }
     return (
-      <Badge className={colors[tier] || 'bg-gray-100 text-gray-700'}>
-        {tier.charAt(0).toUpperCase() + tier.slice(1)}
-      </Badge>
+      <div className="flex items-center gap-1">
+        <Badge className={colors[displayTier] || 'bg-gray-100 text-gray-700'}>
+          {displayTier.charAt(0).toUpperCase() + displayTier.slice(1)}
+        </Badge>
+        {tier === 'reseller' && (
+          <Badge className="bg-amber-100 text-amber-700">
+            Reseller
+          </Badge>
+        )}
+      </div>
     )
   }
 

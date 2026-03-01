@@ -289,6 +289,7 @@ export function CustomerTable() {
                         </button>
                       </TableHead>
                       <TableHead>Plan</TableHead>
+                      <TableHead>Reseller</TableHead>
                       <TableHead>
                         <button className="flex items-center font-medium" onClick={() => handleSort('device_count')}>
                           Devices <SortIcon column="device_count" />
@@ -335,8 +336,19 @@ export function CustomerTable() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">
-                              {c.plan_name || c.subscription_tier || 'None'}
+                              {c.plan_name || (c.subscription_tier === 'reseller' ? 'starter' : c.subscription_tier) || 'None'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {c.is_reseller ? (
+                              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                                Reseller
+                              </Badge>
+                            ) : c.parent_organization_id ? (
+                              <Badge variant="outline" className="text-xs">Sub-org</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <span className="flex items-center gap-1">
@@ -411,8 +423,16 @@ export function CustomerTable() {
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Badge variant="outline" className="capitalize">
-                          {c.plan_name || c.subscription_tier || 'None'}
+                          {c.plan_name || (c.subscription_tier === 'reseller' ? 'starter' : c.subscription_tier) || 'None'}
                         </Badge>
+                        {c.is_reseller && (
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 text-xs">
+                            Reseller
+                          </Badge>
+                        )}
+                        {!c.is_reseller && c.parent_organization_id && (
+                          <Badge variant="outline" className="text-xs">Sub-org</Badge>
+                        )}
                         <Badge
                           variant="outline"
                           className={`border-0 ${lifecycleColors[stage]}`}
