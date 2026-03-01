@@ -32,6 +32,8 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { removeBackground } from '@imgly/background-removal'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -59,6 +61,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isUploadingSentinelLogo, setIsUploadingSentinelLogo] = useState(false)
   const [isUploadingBg, setIsUploadingBg] = useState(false)
+  const [removeLogoBg, setRemoveLogoBg] = useState(false)
+  const [removeSentinelBg, setRemoveSentinelBg] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sentinelFileInputRef = useRef<HTMLInputElement>(null)
   const bgFileInputRef = useRef<HTMLInputElement>(null)
@@ -315,9 +319,18 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setIsUploadingLogo(true)
       const supabase = createClient()
 
+      let processedFile: File | Blob = file
+
+      // Remove background if checkbox is checked
+      if (removeLogoBg && file.type !== 'image/svg+xml') {
+        toast.info('Removing background... (this may take a moment)')
+        const bgRemovedBlob = await removeBackground(file)
+        processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+      }
+
       // Compress image before upload
       toast.info('Compressing image...')
-      const compressedBlob = await compressImage(file)
+      const compressedBlob = await compressImage(processedFile as File)
 
       // Check compressed size (should be <500KB for logos)
       if (compressedBlob.size > 500 * 1024) {
@@ -415,8 +428,17 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       setIsUploadingSentinelLogo(true)
       const supabase = createClient()
 
+      let processedFile: File | Blob = file
+
+      // Remove background if checkbox is checked
+      if (removeSentinelBg && file.type !== 'image/svg+xml') {
+        toast.info('Removing background... (this may take a moment)')
+        const bgRemovedBlob = await removeBackground(file)
+        processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+      }
+
       toast.info('Compressing image...')
-      const compressedBlob = await compressImage(file)
+      const compressedBlob = await compressImage(processedFile as File)
 
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
@@ -736,126 +758,147 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Organization Logo</Label>
-            <div className="flex items-start gap-4">
-              {/* Logo preview */}
-              <div className="flex-shrink-0">
-                {logoUrl ? (
-                  <div className="relative h-24 w-24 overflow-hidden rounded-lg border-2 border-gray-200 bg-white">
-                    <img
-                      src={logoUrl}
-                      alt="Organization logo"
-                      className="h-full w-full object-contain p-2"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-                    <ImageIcon className="h-8 w-8 text-gray-400" />
-                  </div>
-                )}
-              </div>
-
-              {/* Upload controls */}
-              <div className="flex-1 space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WebP, or SVG. Auto-compressed to WebP at 400x400px
-                  (~200KB). Max 10MB before compression.
-                </p>
-                {logoUrl && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setLogoUrl('')}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    Remove Logo
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Sentinel Logo — NetNeural root org only */}
-          {isNetNeuralRoot && (
-            <div className="space-y-2 border-t pt-4">
-              <Label>Sentinel Logo</Label>
-              <div className="flex items-start gap-4">
-                {/* Sentinel logo preview */}
+          <div className={`grid gap-6 ${isNetNeuralRoot ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+            {/* Organization Logo */}
+            <div className="space-y-3">
+              <Label>Organization Logo</Label>
+              <div className="flex items-start gap-3">
+                {/* Logo preview */}
                 <div className="flex-shrink-0">
-                  {sentinelLogoUrl ? (
-                    <div className="relative h-24 w-24 overflow-hidden rounded-lg border-2 border-blue-200 bg-white">
+                  {logoUrl ? (
+                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-gray-200 bg-white">
                       <img
-                        src={sentinelLogoUrl}
-                        alt="Sentinel logo"
-                        className="h-full w-full object-contain p-2"
+                        src={logoUrl}
+                        alt="Organization logo"
+                        className="h-full w-full object-contain p-1.5"
                       />
                     </div>
                   ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50">
-                      <Shield className="h-8 w-8 text-blue-400" />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+                      <ImageIcon className="h-7 w-7 text-gray-400" />
                     </div>
                   )}
                 </div>
 
                 {/* Upload controls */}
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 min-w-0 space-y-2">
                   <input
-                    ref={sentinelFileInputRef}
+                    ref={fileInputRef}
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                    onChange={handleSentinelLogoUpload}
+                    onChange={handleLogoUpload}
                     className="hidden"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => sentinelFileInputRef.current?.click()}
-                    disabled={isUploadingSentinelLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingLogo}
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    {isUploadingSentinelLogo
-                      ? 'Uploading...'
-                      : 'Upload Sentinel Logo'}
+                    {isUploadingLogo ? 'Processing...' : 'Upload Logo'}
                   </Button>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remove-logo-bg"
+                      checked={removeLogoBg}
+                      onCheckedChange={(checked) => setRemoveLogoBg(checked === true)}
+                    />
+                    <Label htmlFor="remove-logo-bg" className="text-xs font-normal cursor-pointer">
+                      Remove background
+                    </Label>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Product logo for the Sentinel brand. Same formats &amp;
-                    compression as org logo.
+                    PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px.
                   </p>
-                  {sentinelLogoUrl && (
+                  {logoUrl && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSentinelLogoUrl('')}
-                      className="text-red-600 hover:text-red-700"
+                      onClick={() => setLogoUrl('')}
+                      className="text-red-600 hover:text-red-700 h-auto p-0"
                     >
-                      Remove Sentinel Logo
+                      Remove Logo
                     </Button>
                   )}
                 </div>
               </div>
             </div>
-          )}
+
+            {/* Sentinel Logo — NetNeural root org only */}
+            {isNetNeuralRoot && (
+              <div className="space-y-3">
+                <Label>Sentinel Logo</Label>
+                <div className="flex items-start gap-3">
+                  {/* Sentinel logo preview */}
+                  <div className="flex-shrink-0">
+                    {sentinelLogoUrl ? (
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-blue-200 bg-white">
+                        <img
+                          src={sentinelLogoUrl}
+                          alt="Sentinel logo"
+                          className="h-full w-full object-contain p-1.5"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50">
+                        <Shield className="h-7 w-7 text-blue-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload controls */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <input
+                      ref={sentinelFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                      onChange={handleSentinelLogoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => sentinelFileInputRef.current?.click()}
+                      disabled={isUploadingSentinelLogo}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {isUploadingSentinelLogo
+                        ? 'Processing...'
+                        : 'Upload Sentinel Logo'}
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="remove-sentinel-bg"
+                        checked={removeSentinelBg}
+                        onCheckedChange={(checked) => setRemoveSentinelBg(checked === true)}
+                      />
+                      <Label htmlFor="remove-sentinel-bg" className="text-xs font-normal cursor-pointer">
+                        Remove background
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Sentinel brand logo. Same formats &amp; compression.
+                    </p>
+                    {sentinelLogoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSentinelLogoUrl('')}
+                        className="text-red-600 hover:text-red-700 h-auto p-0"
+                      >
+                        Remove Sentinel Logo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

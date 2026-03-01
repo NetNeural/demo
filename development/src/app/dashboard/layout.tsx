@@ -33,6 +33,7 @@ import {
   CreditCard,
   UsersRound,
   TrendingUp,
+  FileBarChart,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -123,6 +124,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/revenue',
             label: 'Revenue',
             icon: TrendingUp,
+          },
+          {
+            href: '/dashboard/admin/reports/financial',
+            label: 'Financial Reports',
+            icon: FileBarChart,
           },
         ]
       : []),
