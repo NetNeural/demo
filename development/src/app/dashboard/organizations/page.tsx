@@ -13,7 +13,6 @@ import {
   Crown,
   Plus,
   CreditCard,
-  BarChart3,
   Key,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -31,7 +30,6 @@ import { AccessRequestsTab } from './components/AccessRequestsTab'
 import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 import { BillingTab } from './components/BillingTab'
-import { BillingAdminTab } from './components/BillingAdminTab'
 import { ApiKeysTab } from './components/ApiKeysTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
@@ -203,16 +201,6 @@ function OrganizationsPageContent() {
             </TabsTrigger>
           )}
 
-          {(isSuperAdmin || canCreateChildOrgs) && (
-            <TabsTrigger
-              value="billing-admin"
-              className="flex items-center gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Billing Admin</span>
-            </TabsTrigger>
-          )}
-
           {(isSuperAdmin || isOwner || isAdmin) && (
             <TabsTrigger value="access" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -262,12 +250,6 @@ function OrganizationsPageContent() {
         {(isSuperAdmin || isOwner || isAdmin) && (
           <TabsContent value="billing">
             <BillingTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
-
-        {(isSuperAdmin || canCreateChildOrgs) && (
-          <TabsContent value="billing-admin">
-            <BillingAdminTab organizationId={currentOrganization.id} />
           </TabsContent>
         )}
 
