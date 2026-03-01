@@ -296,7 +296,23 @@ export async function resolveOrganizationId(
     return requestedOrgId
   }
 
-  // Not a member of the requested org — fall back to default
+  // Not a member via organization_members — check additional access paths
+  // before falling back. The user might be the org creator or have access
+  // via the organizations table directly.
+  const { data: orgRecord } = await serviceClient
+    .from('organizations')
+    .select('id, created_by')
+    .eq('id', requestedOrgId)
+    .maybeSingle()
+
+  if (orgRecord?.created_by === userContext.userId) {
+    console.log(
+      `User ${userContext.email} is the creator of org ${requestedOrgId} — granting access`
+    )
+    return requestedOrgId
+  }
+
+  // Final fallback to default org
   console.warn(
     `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org ${userContext.organizationId}.`
   )

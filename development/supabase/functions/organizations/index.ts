@@ -749,21 +749,44 @@ export default createEdgeFunction(
           // Upsert user in public.users — the on_auth_user_created trigger
           // may have already inserted a skeleton row, so we always upsert to
           // set organization_id, full_name, etc.
+          // BUG FIX: Check if user already exists — if so, do NOT overwrite
+          // their organization_id. Overwriting caused multi-org users to lose
+          // access to their original org's devices (the devices edge function
+          // falls back to users.organization_id when organization_members
+          // lookup fails).
+          const { data: existingUser } = await supabaseAdmin
+            .from('users')
+            .select('id, organization_id')
+            .eq('id', ownerUserId)
+            .maybeSingle()
+
+          const userRecord: Record<string, unknown> = {
+            id: ownerUserId,
+            email: ownerEmail,
+            full_name: ownerFullName,
+            role: 'user',
+            password_change_required: isNewAuthUser ? true : (existingUser ? undefined : true),
+            updated_at: new Date().toISOString(),
+          }
+
+          // Only set organization_id for NEW users (no existing record).
+          // Existing users keep their current primary org.
+          if (!existingUser || !existingUser.organization_id) {
+            // @ts-expect-error - id exists
+            userRecord.organization_id = newOrg.id
+            console.log(`Setting organization_id to ${newOrg.id} for new user ${ownerEmail}`)
+          } else {
+            console.log(`Preserving existing organization_id ${existingUser.organization_id} for user ${ownerEmail}`)
+          }
+
+          // Remove undefined values before upsert
+          Object.keys(userRecord).forEach(key => {
+            if (userRecord[key] === undefined) delete userRecord[key]
+          })
+
           const { error: userUpsertError } = await supabaseAdmin
             .from('users')
-            .upsert(
-              {
-                id: ownerUserId,
-                email: ownerEmail,
-                full_name: ownerFullName,
-                role: 'user',
-                // @ts-expect-error - id exists
-                organization_id: newOrg.id,
-                password_change_required: true,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: 'id' }
-            )
+            .upsert(userRecord, { onConflict: 'id' })
 
           if (userUpsertError) {
             console.error('Failed to upsert user record:', userUpsertError)
