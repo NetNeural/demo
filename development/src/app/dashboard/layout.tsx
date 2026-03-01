@@ -159,7 +159,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 <img
                   src={currentOrganization.settings.branding.sentinel_logo_url}
                   alt="Sentinel logo"
-                  className="h-8 w-8 flex-shrink-0 object-contain"
+                  className="h-16 w-16 flex-shrink-0 object-contain"
                 />
               )}
               <h1 className="nav-brand">
