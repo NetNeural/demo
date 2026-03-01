@@ -6,7 +6,9 @@ import {
   Users,
   Wrench,
   Activity,
-  Settings2,
+  FileBarChart,
+  Download,
+  Mail,
   FlaskConical,
   BookOpen,
   Shield,
@@ -24,7 +26,9 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import CustomerAssistanceTab from './components/CustomerAssistanceTab'
 import TroubleshootingTab from './components/TroubleshootingTab'
 import SystemHealthTab from './components/SystemHealthTab'
-import AdminToolsTab from './components/AdminToolsTab'
+import DataOperationsTab from './components/DataOperationsTab'
+import ExecutiveReportsCard from './components/ExecutiveReportsCard'
+import { EmailBroadcastCard } from './components/EmailBroadcastCard'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
 
@@ -37,10 +41,22 @@ const tabs = [
     superAdminOnly: false,
   },
   {
-    id: 'admin-tools',
-    label: 'Admin Tools',
-    icon: Settings2,
+    id: 'executive-reports',
+    label: 'Reports',
+    icon: FileBarChart,
     superAdminOnly: false,
+  },
+  {
+    id: 'data-operations',
+    label: 'Data & Operations',
+    icon: Download,
+    superAdminOnly: false,
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    icon: Mail,
+    superAdminOnly: true,
   },
   {
     id: 'documentation',
@@ -165,7 +181,10 @@ function SupportPageContent() {
       <Tabs
         value={(() => {
           const groupMap: Record<string, string> = {
-            'customer-assistance': 'customer-support', 'admin-tools': 'customer-support',
+            'customer-assistance': 'customer-support',
+            'executive-reports': 'customer-support',
+            'data-operations': 'customer-support',
+            communication: 'customer-support',
             documentation: 'resources',
             troubleshooting: 'platform', 'system-health': 'platform', tests: 'platform',
           }
@@ -198,7 +217,7 @@ function SupportPageContent() {
           )}
         </TabsList>
 
-        {/* Customer Support — Customer Assistance + Admin Tools */}
+        {/* Customer Support — Customer Assistance + Reports + Data & Ops + Communication */}
         <TabsContent value="customer-support">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
@@ -206,17 +225,35 @@ function SupportPageContent() {
                 <Users className="h-4 w-4" />
                 Customer Assistance
               </TabsTrigger>
-              <TabsTrigger value="admin-tools" className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4" />
-                Admin Tools
+              <TabsTrigger value="executive-reports" className="flex items-center gap-2">
+                <FileBarChart className="h-4 w-4" />
+                Reports
               </TabsTrigger>
+              <TabsTrigger value="data-operations" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Data & Operations
+              </TabsTrigger>
+              {isSuperAdmin && (
+                <TabsTrigger value="communication" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Communication
+                </TabsTrigger>
+              )}
             </TabsList>
             <TabsContent value="customer-assistance" className="mt-6">
               <CustomerAssistanceTab organizationId={orgId} />
             </TabsContent>
-            <TabsContent value="admin-tools" className="mt-6">
-              <AdminToolsTab organizationId={orgId} />
+            <TabsContent value="executive-reports" className="mt-6">
+              <ExecutiveReportsCard organizationId={orgId} />
             </TabsContent>
+            <TabsContent value="data-operations" className="mt-6">
+              <DataOperationsTab organizationId={orgId} />
+            </TabsContent>
+            {isSuperAdmin && (
+              <TabsContent value="communication" className="mt-6">
+                <EmailBroadcastCard />
+              </TabsContent>
+            )}
           </Tabs>
         </TabsContent>
 
