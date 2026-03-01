@@ -165,35 +165,43 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
   }
 
   /**
-   * List all devices from Azure IoT Hub
+   * List devices from Azure IoT Hub using IoT Hub query language.
+   * Uses registry.createQuery() for server-side pagination instead of
+   * fetching all devices into memory.
    */
   override async listDevices(
     options?: PaginationOptions
   ): Promise<DeviceListResult> {
     try {
-      // Azure IoT Hub doesn't have built-in pagination
-      // We fetch all devices and paginate in memory
-      const maxDevices = options?.limit || 1000
+      const limit = options?.limit || 100
+      const page = options?.page || 0
 
-      const result = await this.registry.list()
-      const azureDevices = result.responseBody as AzureDevice[]
+      // Use IoT Hub query language with server-side pagination
+      // This avoids loading ALL devices into memory (the previous approach)
+      const query = this.registry.createQuery(
+        'SELECT * FROM devices',
+        limit
+      )
+
+      // Skip pages by consuming continuation tokens
+      let currentPage = 0
+      let queryResult: { result: AzureDevice[]; hasMoreResults: boolean } | null = null
+      while (query.hasMoreResults && currentPage <= page) {
+        const response = await query.next()
+        queryResult = response as unknown as { result: AzureDevice[]; hasMoreResults: boolean }
+        currentPage++
+      }
+
+      const azureDevices = queryResult?.result || []
 
       // Map Azure devices to generic format
       const devices: DeviceData[] = await Promise.all(
-        azureDevices
-          .slice(0, maxDevices)
-          .map(async (device) => this.mapDeviceToGeneric(device))
+        azureDevices.map(async (device) => this.mapDeviceToGeneric(device))
       )
 
-      // Apply pagination
-      const page = options?.page || 0
-      const limit = options?.limit || 100
-      const offset = options?.offset || page * limit
-      const paginatedDevices = devices.slice(offset, offset + limit)
-
       return {
-        devices: paginatedDevices,
-        total: devices.length,
+        devices,
+        total: devices.length, // Exact total unknown with cursor pagination
         page,
         limit,
       }
@@ -272,16 +280,20 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
   }
 
   /**
-   * Query telemetry data
-   * Azure IoT Hub requires Azure IoT Central or custom telemetry storage
+   * Query telemetry data.
+   *
+   * Azure IoT Hub does not store telemetry history natively.
+   * Device-to-cloud messages are transient and routed via endpoints.
+   * Historical telemetry requires one of:
+   *  - Azure IoT Central (managed app with built-in telemetry storage)
+   *  - Azure Time Series Insights / Data Explorer
+   *  - Azure Event Hubs → Stream Analytics → storage
+   *  - Custom routing rules to Blob Storage / Cosmos DB
+   *
+   * Current device state IS available via Device Twins (see getDeviceStatus).
+   * Returns empty array to signal "not supported" without throwing.
    */
   override async queryTelemetry(): Promise<TelemetryData[]> {
-    // Azure IoT Hub doesn't store telemetry by default
-    // This requires integration with:
-    // - Azure IoT Central (has built-in telemetry storage)
-    // - Azure Time Series Insights
-    // - Azure Data Explorer
-    // - Custom Event Hub/Stream Analytics pipeline
     return []
   }
 

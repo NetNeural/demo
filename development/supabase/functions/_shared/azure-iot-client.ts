@@ -90,31 +90,39 @@ export class AzureIotClient extends BaseIntegrationClient {
   public async test(): Promise<TestResult> {
     return this.withActivityLog('test', async () => {
       try {
-        const deviceListUrl = `/devices?api-version=2021-04-12`
-        const response = await fetch(
-          `https://${this.parsedConfig.hostName}${deviceListUrl}`,
-          {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          }
+        // Authenticate with SAS token and query devices (top 1) to verify credentials
+        const devices = await this.requestAzure<AzureDevice[]>(
+          '/devices?top=1&api-version=2021-04-12',
+          'GET'
         )
 
-        // 401 = hub exists but needs SAS token (which is good)
-        if (response.status === 401) {
-          return this.createSuccessResult(
-            `Azure IoT Hub '${this.hubName}' endpoint is reachable`,
+        const deviceCount = Array.isArray(devices) ? devices.length : 0
+        return this.createSuccessResult(
+          `Connected to Azure IoT Hub '${this.hubName}' (${deviceCount} device${deviceCount !== 1 ? 's' : ''} found)`,
+          { hubName: this.hubName, hostname: this.parsedConfig.hostName, devicesFound: deviceCount }
+        )
+      } catch (error) {
+        if (error instanceof IntegrationError) {
+          return this.createErrorResult(error.message, {
+            hubName: this.hubName,
+            hostname: this.parsedConfig.hostName,
+            code: error.code,
+            statusCode: error.statusCode,
+          })
+        }
+
+        const msg = (error as Error).message || 'Unknown error'
+        // Network-level failures (DNS, timeout, connection refused)
+        if (msg.includes('fetch') || msg.includes('network') || msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+          return this.createErrorResult(
+            `Cannot reach Azure IoT Hub '${this.hubName}'. Check hub name and connection string hostname.`,
             { hubName: this.hubName, hostname: this.parsedConfig.hostName }
           )
         }
 
-        return this.createSuccessResult(
-          `Azure IoT Hub '${this.hubName}' configured`,
-          { hubName: this.hubName, hostname: this.parsedConfig.hostName }
-        )
-      } catch (error) {
         return this.createErrorResult(
-          `Azure IoT Hub API error: ${(error as Error).message}`,
-          { hubName: this.hubName }
+          `Azure IoT Hub connection failed: ${msg}`,
+          { hubName: this.hubName, hostname: this.parsedConfig.hostName }
         )
       }
     })
@@ -341,7 +349,23 @@ export class AzureIotClient extends BaseIntegrationClient {
   }
 
   /**
-   * Generate SAS Token for Azure IoT Hub authentication
+   * Decode a Base64 string to a Uint8Array.
+   * Azure IoT Hub connection strings store the SharedAccessKey in Base64.
+   */
+  private base64ToUint8Array(base64: string): Uint8Array {
+    const binaryStr = atob(base64)
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i)
+    }
+    return bytes
+  }
+
+  /**
+   * Generate SAS Token for Azure IoT Hub authentication.
+   * The SharedAccessKey from the connection string is Base64-encoded;
+   * it must be decoded before use as the HMAC-SHA256 signing key.
+   * Reference: https://learn.microsoft.com/en-us/azure/iot-hub/iot-hub-dev-guide-sas
    */
   private async generateSasToken(
     expiryInMinutes: number = 60
@@ -350,9 +374,9 @@ export class AzureIotClient extends BaseIntegrationClient {
     const expiry = Math.floor(Date.now() / 1000) + expiryInMinutes * 60
     const stringToSign = `${encodeURIComponent(resourceUri)}\n${expiry}`
 
-    const encoder = new TextEncoder()
-    const keyData = encoder.encode(this.parsedConfig.sharedAccessKey)
-    const data = encoder.encode(stringToSign)
+    // Decode the Base64-encoded shared access key to raw bytes
+    const keyData = this.base64ToUint8Array(this.parsedConfig.sharedAccessKey)
+    const data = new TextEncoder().encode(stringToSign)
 
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
@@ -368,6 +392,57 @@ export class AzureIotClient extends BaseIntegrationClient {
     )
 
     return `SharedAccessSignature sr=${encodeURIComponent(resourceUri)}&sig=${encodeURIComponent(base64Signature)}&se=${expiry}&skn=${this.parsedConfig.sharedAccessKeyName}`
+  }
+
+  /**
+   * Categorize Azure IoT Hub error responses into specific error codes
+   */
+  private categorizeAzureError(
+    status: number,
+    errorBody: string
+  ): { message: string; code: string } {
+    // Try to parse JSON error response from Azure
+    let azureMessage = errorBody
+    try {
+      const parsed = JSON.parse(errorBody)
+      azureMessage = parsed.Message || parsed.message || parsed.ExceptionMessage || errorBody
+    } catch {
+      // Use raw text
+    }
+
+    switch (status) {
+      case 401:
+        return {
+          message: `Azure IoT Hub authentication failed: Invalid connection string or SAS key. ${azureMessage}`,
+          code: 'AZURE_INVALID_CREDENTIALS',
+        }
+      case 403:
+        return {
+          message: `Azure IoT Hub access denied: Insufficient permissions in shared access policy. ${azureMessage}`,
+          code: 'AZURE_ACCESS_DENIED',
+        }
+      case 404:
+        if (azureMessage.includes('IotHubNotFound') || azureMessage.includes('not found')) {
+          return {
+            message: `Azure IoT Hub not found. Check the hub name in your connection string.`,
+            code: 'AZURE_HUB_NOT_FOUND',
+          }
+        }
+        return {
+          message: `Azure IoT Hub resource not found: ${azureMessage}`,
+          code: 'AZURE_NOT_FOUND',
+        }
+      case 429:
+        return {
+          message: `Azure IoT Hub throttling: Too many requests. Retry after a brief delay.`,
+          code: 'AZURE_THROTTLED',
+        }
+      default:
+        return {
+          message: azureMessage || `Azure IoT Hub API error (HTTP ${status})`,
+          code: 'AZURE_API_ERROR',
+        }
+    }
   }
 
   /**
@@ -393,9 +468,11 @@ export class AzureIotClient extends BaseIntegrationClient {
 
     if (!response.ok) {
       const errorText = await response.text()
+      const categorized = this.categorizeAzureError(response.status, errorText)
+
       throw new IntegrationError(
-        `Azure IoT Hub API error: ${errorText}`,
-        'AZURE_API_ERROR',
+        categorized.message,
+        categorized.code,
         response.status,
         { errorText }
       )
