@@ -269,6 +269,16 @@ function LoginForm() {
           }
         }
 
+        // Force MFA setup if user has no enrolled TOTP factors
+        const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
+        const hasVerifiedTotp = mfaFactors?.totp?.some(
+          (f) => f.status === 'verified'
+        )
+        if (!hasVerifiedTotp) {
+          router.push('/auth/setup-mfa')
+          return
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 100))
         const {
           data: { session },
