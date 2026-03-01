@@ -218,12 +218,12 @@ function OrganizationsPageContent() {
 
         {/* Overview — single tab, no sub-tabs */}
         <TabsContent value="overview">
-          <OverviewTab organizationId={currentOrganization.id} />
+          <OverviewTab key={currentOrganization.id} organizationId={currentOrganization.id} />
         </TabsContent>
 
         {/* People — Members */}
         <TabsContent value="people">
-          <MembersTab organizationId={currentOrganization.id} />
+          <MembersTab key={currentOrganization.id} organizationId={currentOrganization.id} />
         </TabsContent>
 
         {/* Infrastructure — Locations + Integrations + API Keys */}
@@ -246,14 +246,14 @@ function OrganizationsPageContent() {
               )}
             </TabsList>
             <TabsContent value="locations" className="mt-6">
-              <LocationsTab organizationId={currentOrganization.id} />
+              <LocationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
             </TabsContent>
             <TabsContent value="integrations" className="mt-6">
-              <OrganizationIntegrationsTab organizationId={currentOrganization.id} />
+              <OrganizationIntegrationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
             </TabsContent>
             {(isSuperAdmin || isOwner || isAdmin) && (
               <TabsContent value="api-keys" className="mt-6">
-                <ApiKeysTab organizationId={currentOrganization.id} />
+                <ApiKeysTab key={currentOrganization.id} organizationId={currentOrganization.id} />
               </TabsContent>
             )}
           </Tabs>
@@ -274,10 +274,10 @@ function OrganizationsPageContent() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="billing" className="mt-6">
-                <BillingTab organizationId={currentOrganization.id} />
+                <BillingTab key={currentOrganization.id} organizationId={currentOrganization.id} />
               </TabsContent>
               <TabsContent value="customers" className="mt-6">
-                <ChildOrganizationsTab organizationId={currentOrganization.id} />
+                <ChildOrganizationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -286,7 +286,7 @@ function OrganizationsPageContent() {
         {/* Settings — single tab, no sub-tabs */}
         {(isSuperAdmin || isOwner) && (
           <TabsContent value="settings">
-            <OrganizationSettingsTab organizationId={currentOrganization.id} />
+            <OrganizationSettingsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
           </TabsContent>
         )}
       </Tabs>

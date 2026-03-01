@@ -248,16 +248,16 @@ function SupportPageContent() {
               )}
             </TabsList>
             <TabsContent value="customer-assistance" className="mt-6">
-              <CustomerAssistanceTab organizationId={orgId} />
+              <CustomerAssistanceTab key={orgId} organizationId={orgId} />
             </TabsContent>
             <TabsContent value="access-requests" className="mt-6">
-              <AccessRequestsTab organizationId={orgId} />
+              <AccessRequestsTab key={orgId} organizationId={orgId} />
             </TabsContent>
             <TabsContent value="executive-reports" className="mt-6">
-              <ExecutiveReportsCard organizationId={orgId} />
+              <ExecutiveReportsCard key={orgId} organizationId={orgId} />
             </TabsContent>
             <TabsContent value="data-operations" className="mt-6">
-              <DataOperationsTab organizationId={orgId} />
+              <DataOperationsTab key={orgId} organizationId={orgId} />
             </TabsContent>
             {isSuperAdmin && (
               <TabsContent value="communication" className="mt-6">
@@ -291,16 +291,17 @@ function SupportPageContent() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="troubleshooting" className="mt-6">
-                <TroubleshootingTab organizationId={orgId} />
+                <TroubleshootingTab key={orgId} organizationId={orgId} />
               </TabsContent>
               <TabsContent value="system-health" className="mt-6">
                 <SystemHealthTab
+                  key={orgId}
                   organizationId={orgId}
                   isSuperAdmin={isSuperAdmin}
                 />
               </TabsContent>
               <TabsContent value="tests" className="mt-6">
-                <TestsTab organizationId={orgId} />
+                <TestsTab key={orgId} organizationId={orgId} />
               </TabsContent>
             </Tabs>
           </TabsContent>
