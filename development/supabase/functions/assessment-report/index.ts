@@ -113,6 +113,28 @@ async function ghSearchCount(
   return data.total_count || 0
 }
 
+/** Use GitHub code search API to count files matching a query */
+async function ghCodeSearchCount(
+  repo: string,
+  query: string,
+  token: string
+): Promise<number> {
+  const q = encodeURIComponent(`repo:${repo} ${query}`)
+  const res = await fetch(
+    `https://api.github.com/search/code?q=${q}&per_page=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'NetNeural-Assessment-Report',
+      },
+    }
+  )
+  if (!res.ok) return 0
+  const data = await res.json()
+  return data.total_count || 0
+}
+
 // ─── Safe Count Query ────────────────────────────────────────────
 
 async function safeCount(
@@ -326,6 +348,277 @@ serve(async (req) => {
     }
 
     // ─────────────────────────────────────────────────────────────────
+    // 2b. GITHUB REPO TREE + CODE SEARCH — Verify features exist
+    // ─────────────────────────────────────────────────────────────────
+
+    // File counts from repo tree
+    let tsxComponentCount = 0
+    let unitTestFileCount = 0
+    let edgeFnTestFileCount = 0
+    let e2eTestFileCount = 0
+    let integrationTestFileCount = 0
+    let docMdFileCount = 0
+    let docTotalBytes = 0
+    let workflowFileCount = 0
+    let edgeFunctionCount = 0
+
+    // Feature detection flags
+    let hasEscalation = false
+    let hasSnooze = false
+    let hasAlertTimeline = false
+    let hasCsvExport = false
+    let hasBrowserNotifications = false
+    let hasDarkMode = false
+    let hasKeyboardShortcuts = false
+    let hasGoliothCode = false
+    let hasMqttCode = false
+    let hasSlackCode = false
+    let hasEmailCode = false
+    let hasSmsCode = false
+    let hasCspHeaders = false
+    let hasMfaCode = false
+    let ghSecretCount = 0
+    let hasEnvFiles = false
+
+    if (githubToken) {
+      const repo = 'NetNeural/MonoRepo-Staging'
+
+      // --- Get full repo tree in ONE call ---
+      try {
+        const treeData = await ghGet(
+          `/repos/${repo}/git/trees/staging?recursive=1`,
+          githubToken
+        )
+        if (treeData && Array.isArray(treeData.tree)) {
+          const blobs = treeData.tree.filter((f: any) => f.type === 'blob')
+
+          // TSX components (exclude test files)
+          tsxComponentCount = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('development/src/') &&
+              f.path.endsWith('.tsx') &&
+              !f.path.includes('.test.') &&
+              !f.path.includes('.spec.') &&
+              !f.path.includes('__tests__')
+          ).length
+
+          // Test files by category
+          unitTestFileCount = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              (f.path.includes('__tests__/') ||
+                f.path.includes('.test.ts') ||
+                f.path.includes('.test.tsx') ||
+                f.path.includes('.spec.ts') ||
+                f.path.includes('.spec.tsx')) &&
+              !f.path.includes('node_modules') &&
+              !f.path.startsWith('development/supabase/') &&
+              !f.path.startsWith('development/e2e/') &&
+              !f.path.startsWith('development/tests/')
+          ).length
+
+          edgeFnTestFileCount = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('development/supabase/functions/') &&
+              (f.path.includes('.test.') || f.path.includes('_test.'))
+          ).length
+
+          e2eTestFileCount = blobs.filter(
+            (f: any) =>
+              (f.path.startsWith('development/e2e/') ||
+                f.path.startsWith('development/tests/playwright/')) &&
+              (f.path.endsWith('.ts') || f.path.endsWith('.js'))
+          ).length
+
+          integrationTestFileCount = blobs.filter(
+            (f: any) => f.path.startsWith('development/tests/integration/')
+          ).length
+
+          // Documentation
+          const docFiles = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('development/docs/') &&
+              f.path.endsWith('.md')
+          )
+          docMdFileCount = docFiles.length
+          docTotalBytes = docFiles.reduce(
+            (sum: number, f: any) => sum + (f.size || 0),
+            0
+          )
+
+          // Workflow files
+          workflowFileCount = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('.github/workflows/') &&
+              (f.path.endsWith('.yml') || f.path.endsWith('.yaml'))
+          ).length
+
+          // Edge function count (directories with index.ts)
+          edgeFunctionCount = blobs.filter(
+            (f: any) =>
+              f.path.startsWith('development/supabase/functions/') &&
+              f.path.endsWith('/index.ts')
+          ).length
+
+          // ─── Path-based feature detection (from tree, no extra API calls) ───
+
+          const pathLower = (p: string) => p.toLowerCase()
+
+          // Integrations
+          hasGoliothCode = blobs.some((f: any) =>
+            pathLower(f.path).includes('golioth')
+          )
+          hasMqttCode = blobs.some((f: any) =>
+            pathLower(f.path).includes('mqtt')
+          )
+          hasSlackCode = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              pathLower(f.path).includes('slack')
+          )
+          hasEmailCode = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              (pathLower(f.path).includes('send-email') ||
+                pathLower(f.path).includes('send_email') ||
+                pathLower(f.path).includes('resend'))
+          )
+          hasSmsCode = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              (pathLower(f.path).includes('sms') ||
+                pathLower(f.path).includes('twilio'))
+          )
+
+          // Security features
+          hasMfaCode = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/src/') &&
+              (pathLower(f.path).includes('mfa') ||
+                pathLower(f.path).includes('totp'))
+          )
+
+          // Alert features
+          hasEscalation = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              pathLower(f.path).includes('escalat')
+          )
+          hasSnooze = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              pathLower(f.path).includes('snooze')
+          )
+          hasAlertTimeline = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              pathLower(f.path).includes('timeline')
+          )
+          hasBrowserNotifications = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/src/') &&
+              pathLower(f.path).includes('notification')
+          )
+
+          // UI features
+          hasDarkMode = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/src/') &&
+              (pathLower(f.path).includes('theme') ||
+                pathLower(f.path).includes('dark-mode'))
+          )
+          hasKeyboardShortcuts = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/src/') &&
+              (pathLower(f.path).includes('shortcut') ||
+                pathLower(f.path).includes('hotkey'))
+          )
+
+          // Env files
+          hasEnvFiles = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/') &&
+              (f.path.includes('.env.production') ||
+                f.path.includes('.env.staging') ||
+                f.path.includes('.env.development'))
+          )
+
+          console.log(
+            `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
+          )
+          console.log(
+            `[assessment-report] Path-detect: escalation=${hasEscalation}, snooze=${hasSnooze}, timeline=${hasAlertTimeline}, darkMode=${hasDarkMode}, shortcuts=${hasKeyboardShortcuts}, slack=${hasSlackCode}, email=${hasEmailCode}, sms=${hasSmsCode}, mfa=${hasMfaCode}, golioth=${hasGoliothCode}, mqtt=${hasMqttCode}`
+          )
+        }
+      } catch (err) {
+        console.warn(
+          '[assessment-report] Tree API error:',
+          (err as Error).message
+        )
+      }
+
+      // --- Targeted code search for content-only features (max 2 calls) ---
+      try {
+        const [csvHits, cspHits] = await Promise.all([
+          ghCodeSearchCount(
+            repo,
+            '"csv" OR "exportToCsv" OR "downloadCsv" path:development/src',
+            githubToken
+          ),
+          ghCodeSearchCount(
+            repo,
+            '"Content-Security-Policy" path:development',
+            githubToken
+          ),
+        ])
+        hasCsvExport = csvHits > 0
+        hasCspHeaders = cspHits > 0
+        console.log(
+          `[assessment-report] Code search: csv=${hasCsvExport}, csp=${hasCspHeaders}`
+        )
+      } catch (err) {
+        console.warn(
+          '[assessment-report] Code search error:',
+          (err as Error).message
+        )
+      }
+
+      // --- GitHub Secrets count ---
+      try {
+        const secretsData = await ghGet(
+          `/repos/${repo}/actions/secrets`,
+          githubToken
+        )
+        if (secretsData) {
+          ghSecretCount = secretsData.total_count || 0
+        }
+      } catch {
+        /* secrets API may not be accessible */
+      }
+    }
+
+    // Derived counts
+    const totalTestFiles =
+      unitTestFileCount +
+      edgeFnTestFileCount +
+      e2eTestFileCount +
+      integrationTestFileCount
+    const estimatedDocWords = Math.round(docTotalBytes / 6) // ~6 bytes per word for markdown
+    const alertFeatureCount =
+      (hasEscalation ? 1 : 0) +
+      (hasSnooze ? 1 : 0) +
+      (hasAlertTimeline ? 1 : 0) +
+      (hasCsvExport ? 1 : 0) +
+      (hasBrowserNotifications ? 1 : 0)
+    const detectedIntegrations: string[] = []
+    if (hasGoliothCode) detectedIntegrations.push('Golioth')
+    if (hasMqttCode) detectedIntegrations.push('MQTT')
+    if (hasSlackCode) detectedIntegrations.push('Slack')
+    if (hasEmailCode) detectedIntegrations.push('Email')
+    if (hasSmsCode) detectedIntegrations.push('SMS')
+    if (hasStripePriceIds) detectedIntegrations.push('Stripe')
+
+    // ─────────────────────────────────────────────────────────────────
     // 3. SCORE EACH DIMENSION DYNAMICALLY
     // ─────────────────────────────────────────────────────────────────
 
@@ -386,51 +679,79 @@ serve(async (req) => {
       if (alertCount > 50) score += 5
       if (alertRuleCount > 0) score += 15
       if (alertRuleCount > 5) score += 5
-      // Features known to exist: escalation, timeline, snooze, numbering, deep links, CSV, browser notifications
-      score += 25
+      // Feature detection via GitHub code search (5 pts each, max 25)
+      if (hasEscalation) score += 5
+      if (hasSnooze) score += 5
+      if (hasAlertTimeline) score += 5
+      if (hasCsvExport) score += 5
+      if (hasBrowserNotifications) score += 5
       if (alertCount > 0) score += 5
       score = clamp(score)
+      const alertFeatures: string[] = []
+      if (hasEscalation) alertFeatures.push('escalation')
+      if (hasSnooze) alertFeatures.push('snooze')
+      if (hasAlertTimeline) alertFeatures.push('timeline')
+      if (hasCsvExport) alertFeatures.push('CSV export')
+      if (hasBrowserNotifications) alertFeatures.push('notifications')
       dimensions.push({
         name: 'Alert System',
         score,
         grade: calcGrade(score),
-        notes: `${alertCount} alerts, ${alertRuleCount} alert rules. Escalation, timeline, snooze, numbering, deep links, CSV export.`,
+        notes: `${alertCount} alerts, ${alertRuleCount} alert rules. Detected: ${alertFeatures.length > 0 ? alertFeatures.join(', ') : 'no advanced features'} (${alertFeatureCount}/5 features).`,
       })
     }
 
     // --- 4. UI/UX ---
     {
-      let score = 55
+      let score = 30
+      // Component count scoring (from repo tree)
+      if (tsxComponentCount >= 20) score += 10
+      if (tsxComponentCount >= 50) score += 5
+      if (tsxComponentCount >= 100) score += 5
+      if (tsxComponentCount >= 150) score += 5
+      if (tsxComponentCount >= 200) score += 5
+      // Data-backed features
       if (deviceCount > 0) score += 5
       if (orgCount > 1) score += 5
       if (feedbackCount > 0) score += 5
       if (billingPlanCount > 0) score += 5
       if (locationCount > 0) score += 3
-      score += 10 // Dark mode, responsive (known)
-      score += 5 // Keyboard shortcuts (Ctrl+K, ?, N/A/R/S/D nav)
+      // Verified via code search
+      if (hasDarkMode) score += 7
+      if (hasKeyboardShortcuts) score += 5
+      // Edge functions = backend for dynamic pages
+      if (edgeFunctionCount >= 5) score += 5
+      if (edgeFunctionCount >= 10) score += 5
       score = clamp(score)
+      const uiFeatures: string[] = []
+      if (hasDarkMode) uiFeatures.push('dark mode')
+      if (hasKeyboardShortcuts) uiFeatures.push('keyboard shortcuts')
       dimensions.push({
         name: 'UI/UX',
         score,
         grade: calcGrade(score),
-        notes: '158+ components, responsive, dark mode, keyboard shortcuts, pricing page, billing admin, signup flow. Gaps: i18n.',
+        notes: `${tsxComponentCount} TSX components, ${edgeFunctionCount} edge functions. ${uiFeatures.length > 0 ? uiFeatures.join(', ') + '.' : ''} Gaps: i18n.`,
       })
     }
 
     // --- 5. Integration Layer ---
     {
-      let score = 30
-      if (integrationCount > 0) score += 20
-      score += 15 // Golioth (known)
-      score += 10 // MQTT (known)
-      score += 10 // Email + SMS + Slack (known)
+      let score = 20
+      if (integrationCount > 0) score += 10
+      if (integrationCount > 5) score += 5
+      // Verified integrations via code search (10 pts each, max 60)
+      if (hasGoliothCode) score += 10
+      if (hasMqttCode) score += 10
+      if (hasSlackCode) score += 10
+      if (hasEmailCode) score += 10
+      if (hasSmsCode) score += 10
       if (hasStripePriceIds) score += 10
       score = clamp(score)
       dimensions.push({
         name: 'Integration Layer',
         score,
         grade: calcGrade(score),
-        notes: `Golioth, MQTT, Slack, Email, SMS.${hasStripePriceIds ? ' Stripe live.' : ''} ${integrationCount} configured integrations.`,
+        notes: `Detected: ${detectedIntegrations.length > 0 ? detectedIntegrations.join(', ') : 'none'}. ${integrationCount} DB-configured integrations.`,
       })
     }
 
@@ -440,35 +761,57 @@ serve(async (req) => {
       if (rlsPolicyCount >= 10) score += 15
       if (rlsPolicyCount >= 30) score += 10
       if (userCount > 0) score += 10
-      score += 10 // Secrets management (known)
-      score += 5 // No hardcoded creds (known)
-      score += 5 // CSP meta tags + HSTS via GitHub Pages (implemented)
-      score += 5 // Forced MFA enrollment on login (implemented 2026-03-01)
+      // Verified via GitHub API
+      if (ghSecretCount >= 5) score += 5
+      if (ghSecretCount >= 15) score += 5
+      if (hasEnvFiles) score += 3 // Env config management
+      // Verified via code search
+      if (hasCspHeaders) score += 7
+      if (hasMfaCode) score += 8
       score = clamp(score)
+      const secFeatures: string[] = []
+      if (hasMfaCode) secFeatures.push('MFA/TOTP')
+      if (hasCspHeaders) secFeatures.push('CSP headers')
+      if (ghSecretCount > 0) secFeatures.push(`${ghSecretCount} GitHub secrets`)
+      if (hasEnvFiles) secFeatures.push('env configs')
       dimensions.push({
         name: 'Security',
         score,
         grade: calcGrade(score),
-        notes: `Auth + RLS (${rlsPolicyCount}+ policies). 22 managed secrets. CSP headers, HSTS. Forced MFA on login. Gaps: SOC 2 compliance.`,
+        notes: `Auth + RLS (${rlsPolicyCount}+ policies). ${secFeatures.length > 0 ? secFeatures.join(', ') + '.' : ''} Gaps: SOC 2 compliance.`,
       })
     }
 
     // --- 7. Testing ---
     {
-      let score = 35
-      score += 15 // 1,350+ unit tests (Jest/Vitest in __tests__/)
-      score += 5 // 85 edge function tests (Deno.test in supabase/functions/)
-      score += 10 // 144 E2E tests (Playwright in e2e/ + tests/playwright/)
-      score += 3 // 9 integration tests (tests/integration/)
-      if (ghClosedIssues > 100) score += 5 // Issues resolved via CI
-      if (ghClosedIssues > 200) score += 5 // Strong CI quality gates
-      // Coverage gap penalty remains (target 70%, actual ~22%)
+      let score = 20
+      // Unit test files (from repo tree)
+      if (unitTestFileCount >= 10) score += 5
+      if (unitTestFileCount >= 50) score += 5
+      if (unitTestFileCount >= 100) score += 5
+      if (unitTestFileCount >= 200) score += 5
+      // Edge function tests
+      if (edgeFnTestFileCount >= 5) score += 5
+      if (edgeFnTestFileCount >= 20) score += 5
+      // E2E tests (Playwright)
+      if (e2eTestFileCount >= 5) score += 5
+      if (e2eTestFileCount >= 20) score += 5
+      if (e2eTestFileCount >= 50) score += 5
+      // Integration tests
+      if (integrationTestFileCount >= 3) score += 3
+      if (integrationTestFileCount >= 10) score += 2
+      // Quality signals from GitHub
+      if (ghClosedIssues > 100) score += 5
+      if (ghClosedIssues > 200) score += 5
+      // Breadth bonus
+      if (totalTestFiles >= 100) score += 5
+      if (totalTestFiles >= 300) score += 5
       score = clamp(score)
       dimensions.push({
         name: 'Testing',
         score,
         grade: calcGrade(score),
-        notes: '1,350+ unit, 85 edge fn, 144 E2E, 9 integration tests (~1,588 total). Coverage: ~22% (target 70%).',
+        notes: `${unitTestFileCount} unit test files, ${edgeFnTestFileCount} edge fn test files, ${e2eTestFileCount} E2E test files, ${integrationTestFileCount} integration test files (${totalTestFiles} total). ${ghClosedIssues}+ issues closed.`,
       })
     }
 
@@ -508,32 +851,54 @@ serve(async (req) => {
 
     // --- 9. DevOps/CI ---
     {
-      let score = 40
-      score += 20 // 3 environments (known)
-      score += 10 // Auto deploy (known)
-      score += 10 // Secrets management (known)
+      let score = 30
+      // Workflows verified from repo tree
+      if (workflowFileCount >= 1) score += 10
+      if (workflowFileCount >= 3) score += 10
+      if (workflowFileCount >= 5) score += 5
+      // Env config files detected
+      if (hasEnvFiles) score += 10
+      // Secrets managed via GitHub
+      if (ghSecretCount >= 5) score += 5
+      if (ghSecretCount >= 15) score += 5
+      // Edge function deployment breadth
+      if (edgeFunctionCount >= 5) score += 5
+      if (edgeFunctionCount >= 10) score += 5
+      // Quality: issues resolved
+      if (ghClosedIssues > 100) score += 5
       if (ghClosedIssues > 200) score += 5
       score = clamp(score)
       dimensions.push({
         name: 'DevOps/CI',
         score,
         grade: calcGrade(score),
-        notes: `GitHub Actions, 3-env pipeline (dev/staging/prod), auto-deploy, 22 secrets. ${ghClosedIssues}+ issues resolved.`,
+        notes: `${workflowFileCount} GitHub Actions workflows, ${ghSecretCount} secrets, ${edgeFunctionCount} edge functions. ${hasEnvFiles ? 'Multi-env configs. ' : ''}${ghClosedIssues}+ issues resolved.`,
       })
     }
 
     // --- 10. Documentation ---
     {
-      let score = 50
-      score += 15 // Enterprise docs (known)
-      score += 10 // API docs (known)
-      score += 5 // Automated reports (this function!)
+      let score = 20
+      // Doc files verified from repo tree
+      if (docMdFileCount >= 5) score += 10
+      if (docMdFileCount >= 15) score += 10
+      if (docMdFileCount >= 30) score += 5
+      if (docMdFileCount >= 50) score += 5
+      // Doc volume (estimated word count from file sizes)
+      if (estimatedDocWords >= 5000) score += 10
+      if (estimatedDocWords >= 20000) score += 10
+      if (estimatedDocWords >= 40000) score += 5
+      // Edge functions = API surface with inline docs
+      if (edgeFunctionCount >= 5) score += 5
+      if (edgeFunctionCount >= 10) score += 5
+      // Automated reports exist (this function!)
+      score += 5
       score = clamp(score)
       dimensions.push({
         name: 'Documentation',
         score,
         grade: calcGrade(score),
-        notes: 'Enterprise docs (39,500+ words), API reference, admin guide. Automated daily reports.',
+        notes: `${docMdFileCount} doc files (~${estimatedDocWords.toLocaleString()} words), ${edgeFunctionCount} edge functions. Automated reports.`,
       })
     }
 
