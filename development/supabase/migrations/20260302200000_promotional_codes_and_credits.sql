@@ -1,6 +1,10 @@
 -- #60: Plan management CRUD and billing administration tools
 -- Creates promotional_codes and account_credits tables
 
+-- Clean up any partial state from previous failed attempt
+DROP TABLE IF EXISTS account_credits CASCADE;
+DROP TABLE IF EXISTS promotional_codes CASCADE;
+
 -- ── Promotional Codes ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS promotional_codes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,7 +36,7 @@ ALTER TABLE promotional_codes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "promo_codes_select" ON promotional_codes
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true
+      SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin'
     )
     OR
     EXISTS (
@@ -46,17 +50,17 @@ CREATE POLICY "promo_codes_select" ON promotional_codes
 -- Only super admins can insert/update/delete promo codes
 CREATE POLICY "promo_codes_insert" ON promotional_codes
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true)
+    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin')
   );
 
 CREATE POLICY "promo_codes_update" ON promotional_codes
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true)
+    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin')
   );
 
 CREATE POLICY "promo_codes_delete" ON promotional_codes
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true)
+    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin')
   );
 
 -- ── Account Credits ────────────────────────────────────────────────────
@@ -82,7 +86,7 @@ ALTER TABLE account_credits ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "account_credits_select" ON account_credits
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true
+      SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin'
     )
     OR
     EXISTS (
@@ -95,12 +99,12 @@ CREATE POLICY "account_credits_select" ON account_credits
 
 CREATE POLICY "account_credits_insert" ON account_credits
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true)
+    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin')
   );
 
 CREATE POLICY "account_credits_update" ON account_credits
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_super_admin = true)
+    EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin')
   );
 
 -- Grant access to authenticated users (RLS handles filtering)
