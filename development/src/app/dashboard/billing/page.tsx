@@ -1,9 +1,10 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { InvoiceTable } from '@/components/billing/InvoiceTable'
@@ -18,20 +19,89 @@ import {
   ShieldAlert,
   Building2,
   DollarSign,
+  Shield,
+  Users,
+  BarChart3,
+  Repeat,
+  Settings,
+  Wrench,
+  Tag,
 } from 'lucide-react'
 
-// Revenue tab — lazy loaded
-import dynamic from 'next/dynamic'
-const RevenueTabContent = dynamic(
-  () => import('./components/RevenueTab').then((m) => ({ default: m.RevenueTab })),
-  { loading: () => <LoadingSpinner />, ssr: false }
-)
-const FinancialReportsTabContent = dynamic(
-  () => import('./components/FinancialReportsTab').then((m) => ({ default: m.FinancialReportsTab })),
-  { loading: () => <LoadingSpinner />, ssr: false }
-)
+import { RevenueTab } from './components/RevenueTab'
+import { FinancialReportsTab } from './components/FinancialReportsTab'
+import { SubscriptionsTab } from './components/SubscriptionsTab'
+import { UsageMeteringTab } from './components/UsageMeteringTab'
+import { CustomersTab } from './components/CustomersTab'
+import { PlanManagementTab } from './components/PlanManagementTab'
+import { BillingOperationsTab } from './components/BillingOperationsTab'
+import { PromoCodesTab } from './components/PromoCodesTab'
 
 const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
+// ── Tab configuration (mirrors the support page pattern) ─────────────
+const billingTabs = [
+  {
+    id: 'financial-reports',
+    label: 'Financial Reports',
+    icon: FileBarChart,
+    ownerOnly: false,
+  },
+  {
+    id: 'revenue',
+    label: 'Revenue',
+    icon: TrendingUp,
+    ownerOnly: false,
+  },
+  {
+    id: 'subscriptions',
+    label: 'Subscriptions',
+    icon: Repeat,
+    ownerOnly: false,
+  },
+  {
+    id: 'payments',
+    label: 'Payments',
+    icon: CreditCard,
+    ownerOnly: false,
+  },
+  {
+    id: 'invoices',
+    label: 'Invoices',
+    icon: FileText,
+    ownerOnly: false,
+  },
+  {
+    id: 'usage',
+    label: 'Usage Metering',
+    icon: BarChart3,
+    ownerOnly: true,
+  },
+  {
+    id: 'customers',
+    label: 'Customers',
+    icon: Users,
+    ownerOnly: true,
+  },
+  {
+    id: 'plan-management',
+    label: 'Plan Management',
+    icon: Settings,
+    ownerOnly: true,
+  },
+  {
+    id: 'operations',
+    label: 'Billing Ops',
+    icon: Wrench,
+    ownerOnly: true,
+  },
+  {
+    id: 'promo-codes',
+    label: 'Promo Codes',
+    icon: Tag,
+    ownerOnly: true,
+  },
+]
 
 export default function BillingAdministrationPage() {
   return (
@@ -43,20 +113,42 @@ export default function BillingAdministrationPage() {
 
 function BillingAdminContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { currentOrganization, isLoading, userRole, permissions } = useOrganization()
-  const { user } = useUser()
+  const { user, loading: userLoading } = useUser()
   const isSuperAdmin = user?.isSuperAdmin || false
-  const [activeTab, setActiveTab] = useState('financial-reports')
 
-  if (isLoading) {
+  // URL-synced tab state (same pattern as support page)
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return searchParams.get('tab') || 'financial-reports'
+    }
+    return 'financial-reports'
+  })
+
+  // Update activeTab when URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle tab change — update both state and URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', newTab)
+    router.push(`?${params.toString()}`, { scroll: false })
+  }
+
+  if (isLoading || userLoading) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
-        <div className="flex items-center justify-center p-12">
-          <div className="space-y-4 text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Loading billing administration...</p>
-          </div>
-        </div>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-6 w-96" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96 w-full" />
       </div>
     )
   }
@@ -138,64 +230,101 @@ function BillingAdminContent() {
 
   const canManage = isSuperAdmin || permissions.canManageBilling
 
+  // Owner-only tabs visible to org owners and super admins
+  const canAccessOwnerTabs = isSuperAdmin || userRole === 'owner'
+
+  const visibleTabs = billingTabs.filter(
+    (tab) => !tab.ownerOnly || canAccessOwnerTabs
+  )
+
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-            <DollarSign className="h-7 w-7" />
-            Billing Administration
-          </h2>
-          <p className="text-muted-foreground">
-            Financial management for the NetNeural platform
-          </p>
-        </div>
+      <div>
+        <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+          <DollarSign className="h-7 w-7" />
+          Billing Administration
+        </h2>
+        <p className="text-muted-foreground">
+          Financial management for the NetNeural platform
+        </p>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="financial-reports" className="flex items-center gap-2">
-            <FileBarChart className="h-4 w-4" />
-            <span className="hidden sm:inline">Financial Reports</span>
-            <span className="sm:hidden">Reports</span>
-          </TabsTrigger>
-          <TabsTrigger value="revenue" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Revenue</span>
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span>Payments</span>
-          </TabsTrigger>
-          <TabsTrigger value="invoices" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span>Invoices</span>
-          </TabsTrigger>
+      {/* Tabs — support page style */}
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
+        <TabsList className="w-full flex-wrap justify-start">
+          {visibleTabs.map(({ id, label, icon: Icon, ownerOnly }) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              className="flex items-center gap-2"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{label}</span>
+              {ownerOnly && <Shield className="h-3 w-3 text-yellow-500" />}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="financial-reports" className="space-y-4">
-          <FinancialReportsTabContent />
+        <TabsContent value="financial-reports">
+          <FinancialReportsTab />
         </TabsContent>
 
-        <TabsContent value="revenue" className="space-y-4">
-          <RevenueTabContent />
+        <TabsContent value="revenue">
+          <RevenueTab />
         </TabsContent>
 
-        <TabsContent value="payments" className="space-y-4">
+        <TabsContent value="subscriptions">
+          <SubscriptionsTab />
+        </TabsContent>
+
+        <TabsContent value="payments">
           <PaymentTable
             organizationId={currentOrganization.id}
             canManage={canManage}
           />
         </TabsContent>
 
-        <TabsContent value="invoices" className="space-y-4">
+        <TabsContent value="invoices">
           <InvoiceTable
             organizationId={currentOrganization.id}
             canManage={canManage}
           />
         </TabsContent>
+
+        {canAccessOwnerTabs && (
+          <TabsContent value="usage">
+            <UsageMeteringTab />
+          </TabsContent>
+        )}
+
+        {canAccessOwnerTabs && (
+          <TabsContent value="customers">
+            <CustomersTab />
+          </TabsContent>
+        )}
+
+        {canAccessOwnerTabs && (
+          <TabsContent value="plan-management">
+            <PlanManagementTab />
+          </TabsContent>
+        )}
+
+        {canAccessOwnerTabs && (
+          <TabsContent value="operations">
+            <BillingOperationsTab />
+          </TabsContent>
+        )}
+
+        {canAccessOwnerTabs && (
+          <TabsContent value="promo-codes">
+            <PromoCodesTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
