@@ -143,6 +143,38 @@ function BillingAdminContent() {
     router.push(`?${params.toString()}`, { scroll: false })
   }
 
+  // ── Stripe Customer Portal (hooks must be before early returns) ───
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  const handleOpenPortal = useCallback(async () => {
+    if (!currentOrganization) return
+    setPortalLoading(true)
+    try {
+      const res = await edgeFunctions.call<{ url: string }>(
+        '/create-portal-session',
+        {
+          method: 'POST',
+          body: {
+            organizationId: currentOrganization.id,
+            returnPath: '/dashboard/billing',
+          },
+        }
+      )
+      const portalUrl = res?.data?.url
+      if (portalUrl) {
+        window.open(portalUrl, '_blank')
+        return
+      }
+      alert(
+        'Stripe Customer Portal is not yet configured. Contact support for billing changes.'
+      )
+    } catch {
+      alert('Unable to open billing portal. Please contact support.')
+    } finally {
+      setPortalLoading(false)
+    }
+  }, [currentOrganization])
+
   if (isLoading || userLoading) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
@@ -237,38 +269,6 @@ function BillingAdminContent() {
   const visibleTabs = billingTabs.filter(
     (tab) => !tab.ownerOnly || canAccessOwnerTabs
   )
-
-  // ── Stripe Customer Portal ────────────────────────────────────────
-  const [portalLoading, setPortalLoading] = useState(false)
-
-  const handleOpenPortal = useCallback(async () => {
-    if (!currentOrganization) return
-    setPortalLoading(true)
-    try {
-      const res = await edgeFunctions.call<{ url: string }>(
-        '/create-portal-session',
-        {
-          method: 'POST',
-          body: {
-            organizationId: currentOrganization.id,
-            returnPath: '/dashboard/billing',
-          },
-        }
-      )
-      const portalUrl = res?.data?.url
-      if (portalUrl) {
-        window.open(portalUrl, '_blank')
-        return
-      }
-      alert(
-        'Stripe Customer Portal is not yet configured. Contact support for billing changes.'
-      )
-    } catch {
-      alert('Unable to open billing portal. Please contact support.')
-    } finally {
-      setPortalLoading(false)
-    }
-  }, [currentOrganization])
 
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
