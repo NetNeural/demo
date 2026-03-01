@@ -38,6 +38,7 @@ function SettingsPageContent() {
   const { currentOrganization } = useOrganization()
   const { user } = useUser()
   const [changePlanOpen, setChangePlanOpen] = useState(false)
+  const isNetNeural = currentOrganization?.id === '00000000-0000-0000-0000-000000000001'
 
   // Update activeTab when URL parameter changes
   useEffect(() => {
@@ -132,8 +133,11 @@ function SettingsPageContent() {
           <SecurityTab />
         </TabsContent>
 
-        {/* Organization — Organizations + Subscription */}
+        {/* Organization — Organizations + Subscription (subscription hidden for NetNeural) */}
         <TabsContent value="organization">
+          {isNetNeural ? (
+            <UserOrganizationsTab />
+          ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
               <TabsTrigger value="organizations" className="flex items-center gap-2">
@@ -179,6 +183,7 @@ function SettingsPageContent() {
               />
             </TabsContent>
           </Tabs>
+          )}
         </TabsContent>
       </Tabs>
     </div>
