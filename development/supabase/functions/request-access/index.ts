@@ -238,10 +238,10 @@ export default createEdgeFunction(
         .select(
           `
         *,
-        requester:users!access_requests_requester_id_fkey(id, full_name, email, avatar_url),
-        requester_org:organizations!access_requests_requester_org_id_fkey(id, name, slug),
-        target_org:organizations!access_requests_target_org_id_fkey(id, name, slug),
-        approver:users!access_requests_approved_by_fkey(id, full_name, email)
+        requester:users!requester_id(id, full_name, email, avatar_url),
+        requester_org:organizations!requester_org_id(id, name, slug),
+        target_org:organizations!target_org_id(id, name, slug),
+        approver:users!approved_by(id, full_name, email)
       `
         )
         .order('created_at', { ascending: false })
@@ -298,7 +298,7 @@ export default createEdgeFunction(
       const { data: request, error: fetchError } = await supabase
         .from('access_requests')
         .select(
-          '*, target_org:organizations!access_requests_target_org_id_fkey(id, name)'
+          '*, target_org:organizations!target_org_id(id, name)'
         )
         .eq('id', request_id)
         .single()

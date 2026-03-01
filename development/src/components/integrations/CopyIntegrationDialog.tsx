@@ -67,28 +67,51 @@ export function CopyIntegrationDialog({
         return
       }
 
-      // Get all organizations where user is a member
-      const { data: memberships, error: membershipsError } = await supabase
-        .from('organization_members')
-        .select('organization_id, organizations(id, name)')
-        .eq('user_id', user.id)
+      // Check if user is super_admin
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-      if (membershipsError) throw membershipsError
+      let orgs: { id: string; name: string }[] = []
 
-      // Extract organizations from memberships
-      const orgs =
-        memberships
-          ?.map((m) => m.organizations as { id: string; name: string } | null)
-          .filter(
-            (org): org is { id: string; name: string } =>
-              org !== null && org.id !== currentOrgId
-          ) // Exclude current organization
-          .map((org) => ({ id: org.id, name: org.name })) || []
+      if (profile?.role === 'super_admin') {
+        // Super admins can copy to ANY organization
+        const { data: allOrgs, error: orgsError } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name')
+
+        if (orgsError) throw orgsError
+
+        orgs = (allOrgs || [])
+          .filter((org) => org.id !== currentOrgId)
+          .map((org) => ({ id: org.id, name: org.name }))
+      } else {
+        // Regular users: only orgs they're a member of
+        const { data: memberships, error: membershipsError } = await supabase
+          .from('organization_members')
+          .select('organization_id, organizations(id, name)')
+          .eq('user_id', user.id)
+
+        if (membershipsError) throw membershipsError
+
+        orgs =
+          memberships
+            ?.map((m) => m.organizations as { id: string; name: string } | null)
+            .filter(
+              (org): org is { id: string; name: string } =>
+                org !== null && org.id !== currentOrgId
+            )
+            .map((org) => ({ id: org.id, name: org.name })) || []
+      }
 
       setOrganizations(orgs)
 
       if (orgs.length === 0) {
-        toast.info('You only belong to one organization')
+        toast.info('No other organizations available')
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
@@ -201,8 +224,7 @@ export function CopyIntegrationDialog({
             </div>
           ) : organizations.length === 0 ? (
             <div className="py-4 text-center text-sm text-muted-foreground">
-              No other organizations available. You only belong to one
-              organization.
+              No other organizations available to copy this integration to.
             </div>
           ) : (
             <div className="space-y-2">
