@@ -202,16 +202,32 @@ export default createEdgeFunction(
 // ===========================================================================
 // When a device is transferred, its integration_id points to the source org's
 // integration record. The target org needs its own integration record (or the
-// same one) so that auto-sync continues to work for the transferred device.
+// same integration moved over) so that webhooks/auto-sync continue to work.
 //
-// Strategy: Find a matching integration in target org by type. If none exists,
-// clone the source integration to the target org.
+// Strategy depends on integration type:
+//   - External webhook integrations (mqtt_external): MOVE the integration
+//     record to the target org. External brokers send webhooks using the
+//     integration's UUID — cloning creates a new UUID that the broker
+//     doesn't know about, breaking webhook routing.
+//   - Platform integrations (golioth, aws_iot, etc.): CLONE is fine because
+//     our system initiates sync using the integration record.
+//
+// For move mode: Move the integration when it's external-webhook-based and
+//   no other devices in the source org still reference it.
+// For copy mode: Always clone (caller passes mode).
 // ===========================================================================
+
+// Integration types where the external system sends webhooks using our
+// integration UUID. These must be MOVED, not cloned, to preserve the UUID.
+const EXTERNAL_WEBHOOK_TYPES = ['mqtt_external']
+
 async function resolveIntegrationForTargetOrg(
   // deno-lint-ignore no-explicit-any
   serviceClient: any,
   sourceIntegrationId: string | null,
-  targetOrgId: string
+  targetOrgId: string,
+  transferMode: 'move' | 'copy' = 'copy',
+  movingDeviceId?: string
 ): Promise<string | null> {
   if (!sourceIntegrationId) return null
 
@@ -242,7 +258,75 @@ async function resolveIntegrationForTargetOrg(
     return existingIntegration.id
   }
 
-  // Clone the source integration to target org
+  // -----------------------------------------------------------------------
+  // For external webhook integrations in MOVE mode: move the integration
+  // record itself (preserves UUID for external broker webhook routing)
+  // -----------------------------------------------------------------------
+  const isExternalWebhook = EXTERNAL_WEBHOOK_TYPES.includes(
+    sourceIntegration.integration_type
+  )
+
+  if (isExternalWebhook && transferMode === 'move') {
+    // Check if other devices in the source org still use this integration
+    let otherDevicesUsingIntegration = 0
+    if (movingDeviceId) {
+      const { count } = await serviceClient
+        .from('devices')
+        .select('id', { count: 'exact', head: true })
+        .eq('integration_id', sourceIntegrationId)
+        .eq('organization_id', sourceIntegration.organization_id)
+        .neq('id', movingDeviceId)
+        .is('deleted_at', null)
+
+      otherDevicesUsingIntegration = count ?? 0
+    }
+
+    if (otherDevicesUsingIntegration === 0) {
+      // Safe to move: no other devices in source org use this integration
+      console.log(
+        `Moving ${sourceIntegration.integration_type} integration ${sourceIntegrationId} to target org (preserves UUID for external webhooks)`
+      )
+      const { error: moveError } = await serviceClient
+        .from('device_integrations')
+        .update({
+          organization_id: targetOrgId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sourceIntegrationId)
+
+      if (moveError) {
+        console.error('Failed to move integration:', moveError)
+        // Fall through to clone as fallback
+      } else {
+        // Also move auto_sync_schedules
+        try {
+          await serviceClient
+            .from('auto_sync_schedules')
+            .update({
+              organization_id: targetOrgId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('integration_id', sourceIntegrationId)
+        } catch (err) {
+          console.log('Auto-sync schedule move skipped:', err)
+        }
+
+        console.log(
+          `Integration ${sourceIntegrationId} moved to target org (UUID preserved)`
+        )
+        return sourceIntegrationId // Same UUID — external broker webhooks keep working
+      }
+    } else {
+      console.log(
+        `Cannot move integration ${sourceIntegrationId}: ${otherDevicesUsingIntegration} other device(s) in source org still use it. Will clone instead.`
+      )
+      // Fall through to clone below
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Clone the source integration to target org (default for platform integrations)
+  // -----------------------------------------------------------------------
   console.log(`Cloning ${sourceIntegration.integration_type} integration to target org`)
   const {
     id: _id,
@@ -399,12 +483,16 @@ async function moveDevice(
 
   // 4. Resolve integration for target org
   //    If the device has an integration, ensure the target org has one too
+  //    For external webhook integrations (mqtt_external), MOVE the integration
+  //    record to preserve the UUID that external brokers use for webhooks.
   let targetIntegrationId = device.integration_id
   if (device.integration_id) {
     const resolvedId = await resolveIntegrationForTargetOrg(
       serviceClient,
       device.integration_id,
-      targetOrgId
+      targetOrgId,
+      'move',
+      deviceId
     )
     targetIntegrationId = resolvedId
     console.log(`Integration resolved for target org: ${targetIntegrationId}`)
@@ -496,13 +584,14 @@ async function copyDevice(
   let telemetryCount = 0
   let thresholdsCount = 0
 
-  // Resolve integration for target org
+  // Resolve integration for target org (copy mode always clones)
   let targetIntegrationId: string | null = null
   if (device.integration_id) {
     targetIntegrationId = await resolveIntegrationForTargetOrg(
       serviceClient,
       device.integration_id,
-      targetOrgId
+      targetOrgId,
+      'copy'
     )
     console.log(`Copy: integration resolved for target org: ${targetIntegrationId}`)
   }
