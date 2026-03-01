@@ -56,9 +56,8 @@ All 9 edge functions deployed to production:
    ```
 
 2. **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**
-   ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ
-   ```
+   - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api
+   - Copy the `anon` `public` key
 
 3. **`SUPABASE_SERVICE_ROLE_KEY`**
    - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api
