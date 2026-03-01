@@ -373,6 +373,70 @@ export function isSubscriptionActive(status: SubscriptionStatus): boolean {
 }
 
 // ============================================================================
+// Payment History (#55)
+// ============================================================================
+
+/** Payment status enum matching DB */
+export type PaymentStatus =
+  | 'succeeded'
+  | 'failed'
+  | 'pending'
+  | 'refunded'
+  | 'requires_action'
+
+/** Database row from payment_history table */
+export interface PaymentRecord {
+  id: string
+  organization_id: string
+  invoice_id: string | null
+  stripe_payment_intent: string | null
+  stripe_charge_id: string | null
+  amount_cents: number
+  currency: string
+  status: PaymentStatus
+  payment_method_type: string | null
+  card_brand: string | null
+  card_last4: string | null
+  receipt_url: string | null
+  failure_code: string | null
+  failure_message: string | null
+  retry_count: number
+  last_retry_at: string | null
+  created_at: string
+}
+
+/**
+ * Human-readable payment status label
+ */
+export function formatPaymentStatus(status: PaymentStatus): string {
+  const labels: Record<PaymentStatus, string> = {
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    pending: 'Pending',
+    refunded: 'Refunded',
+    requires_action: 'Action Required',
+  }
+  return labels[status]
+}
+
+/**
+ * Format card brand for display
+ */
+export function formatCardBrand(brand: string | null): string {
+  if (!brand) return 'Card'
+  const map: Record<string, string> = {
+    visa: 'Visa',
+    mastercard: 'Mastercard',
+    amex: 'Amex',
+    discover: 'Discover',
+    diners: 'Diners',
+    jcb: 'JCB',
+    unionpay: 'UnionPay',
+  }
+  return map[brand.toLowerCase()] ?? brand
+}
+
+// ============================================================================
 // Usage Metering (#244)
 // ============================================================================
 

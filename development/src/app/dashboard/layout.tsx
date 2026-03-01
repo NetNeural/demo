@@ -30,6 +30,7 @@ import {
   LifeBuoy,
   SlidersHorizontal,
   DollarSign,
+  CreditCard,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -101,6 +102,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/billing/invoices',
             label: 'Invoices',
             icon: FileText,
+          },
+          {
+            href: '/dashboard/billing/payments',
+            label: 'Payments',
+            icon: CreditCard,
           },
         ]
       : []),
