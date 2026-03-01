@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { CustomerTable } from '@/components/admin/CustomerTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import {
@@ -23,7 +24,9 @@ export default function CustomersAdminPage() {
 function CustomersPageContent() {
   const router = useRouter()
   const { user, loading } = useUser()
+  const { userRole } = useOrganization()
   const isSuperAdmin = user?.isSuperAdmin || false
+  const hasAccess = isSuperAdmin || userRole === 'owner'
 
   // Loading state
   if (loading) {
@@ -39,8 +42,8 @@ function CustomersPageContent() {
     )
   }
 
-  // Super admin only
-  if (!isSuperAdmin) {
+  // Owner or super admin only
+  if (!hasAccess) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div>
@@ -54,7 +57,7 @@ function CustomersPageContent() {
             <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold">Access Restricted</p>
             <p className="max-w-md text-sm text-muted-foreground">
-              The customer overview page is available to super admins only.
+              The customer overview page is available to organization owners and super admins.
               Contact the platform administrator if you need access.
             </p>
             <Button

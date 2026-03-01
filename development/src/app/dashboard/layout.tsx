@@ -107,7 +107,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           },
         ]
       : []),
-    ...(isSuperAdmin
+    ...(isSuperAdmin || userRole === 'owner'
       ? [
           {
             href: '/dashboard/admin/customers',

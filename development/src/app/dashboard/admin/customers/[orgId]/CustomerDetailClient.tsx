@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { HealthScoreBadge } from '@/components/admin/HealthScoreBadge'
 import { LifecycleStageIndicator } from '@/components/admin/LifecycleStageIndicator'
 import { CustomerTimeline } from '@/components/admin/CustomerTimeline'
@@ -59,8 +60,10 @@ function CustomerDetailContent() {
   const params = useParams()
   const orgId = params.orgId as string
   const { user, loading: userLoading } = useUser()
+  const { userRole } = useOrganization()
   const { fmt } = useDateFormatter()
   const isSuperAdmin = user?.isSuperAdmin || false
+  const hasAccess = isSuperAdmin || userRole === 'owner'
   const supabase = getSupabase()
 
   // Data
@@ -96,10 +99,10 @@ function CustomerDetailContent() {
   }, [supabase, orgId])
 
   useEffect(() => {
-    if (isSuperAdmin && orgId) {
+    if (hasAccess && orgId) {
       loadData()
     }
-  }, [isSuperAdmin, orgId, loadData])
+  }, [hasAccess, orgId, loadData])
 
   // Loading
   if (userLoading) {
@@ -115,8 +118,8 @@ function CustomerDetailContent() {
     )
   }
 
-  // Not super admin
-  if (!isSuperAdmin) {
+  // Not owner or super admin
+  if (!hasAccess) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
