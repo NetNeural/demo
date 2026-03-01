@@ -244,11 +244,12 @@ export default createEdgeFunction(
                 .select('id', { count: 'exact', head: true })
                 .eq('organization_id', org.id)
 
-              // Get device count
+              // Get device count (exclude soft-deleted devices — Bug #356)
               const { count: deviceCount } = await supabaseAdmin
                 .from('devices')
                 .select('id', { count: 'exact', head: true })
                 .eq('organization_id', org.id)
+                .is('deleted_at', null)
 
               // Get unresolved alert count
               const { count: alertCount } = await supabaseAdmin
@@ -343,11 +344,12 @@ export default createEdgeFunction(
               .select('id', { count: 'exact', head: true })
               .eq('organization_id', org.id)
 
-            // Get device count (use admin client to bypass RLS)
+            // Get device count (use admin client to bypass RLS, exclude soft-deleted — Bug #356)
             const { count: deviceCount } = await supabaseAdmin
               .from('devices')
               .select('id', { count: 'exact', head: true })
               .eq('organization_id', org.id)
+              .is('deleted_at', null)
 
             // Get unresolved alert count (use admin client to bypass RLS)
             const { count: alertCount } = await supabaseAdmin
@@ -708,40 +710,42 @@ export default createEdgeFunction(
               )
             }
 
-            // Reset password for existing user so the welcome email credentials work
-            if (temporaryPassword) {
-              try {
-                const resetResponse = await fetch(
-                  `${supabaseUrl}/auth/v1/admin/users/${authUserId}`,
-                  {
-                    method: 'PUT',
-                    headers: {
-                      Authorization: `Bearer ${supabaseServiceKey}`,
-                      'Content-Type': 'application/json',
-                      apikey: supabaseServiceKey,
+            // For existing users: do NOT reset their password or send temp
+            // credentials. They already have a working login. The org creation
+            // just adds them as owner of the new org via organization_members.
+            // Only update metadata (full_name) if not already set.
+            try {
+              const metaResponse = await fetch(
+                `${supabaseUrl}/auth/v1/admin/users/${authUserId}`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `Bearer ${supabaseServiceKey}`,
+                    'Content-Type': 'application/json',
+                    apikey: supabaseServiceKey,
+                  },
+                  body: JSON.stringify({
+                    email_confirm: true,
+                    user_metadata: {
+                      full_name: ownerFullName,
                     },
-                    body: JSON.stringify({
-                      password: temporaryPassword,
-                      email_confirm: true,
-                      user_metadata: {
-                        full_name: ownerFullName,
-                      },
-                    }),
-                  }
-                )
-
-                if (!resetResponse.ok) {
-                  const resetError = await resetResponse.text()
-                  console.error(
-                    'Failed to reset auth user password:',
-                    resetError
-                  )
-                  // Non-fatal — user can still log in with their old password
+                  }),
                 }
-              } catch (resetErr) {
-                console.error('Password reset fetch failed:', resetErr)
+              )
+
+              if (!metaResponse.ok) {
+                const metaError = await metaResponse.text()
+                console.error(
+                  'Failed to update auth user metadata:',
+                  metaError
+                )
               }
+            } catch (metaErr) {
+              console.error('Metadata update fetch failed:', metaErr)
             }
+
+            // Clear temporaryPassword so welcome email is NOT sent for existing users
+            temporaryPassword = null
           }
 
           ownerUserId = authUserId!
