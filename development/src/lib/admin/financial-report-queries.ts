@@ -118,7 +118,7 @@ function getMonthKey(date: Date): string {
 /**
  * Fetch accounts receivable aging report.
  * Buckets: Current, 1-30 days, 31-60 days, 61-90 days, 90+ days overdue.
- * Only includes invoices with status 'open' or 'overdue'.
+ * Only includes invoices with status 'open' (unpaid).
  */
 export async function fetchARAgingReport(
   supabase: SupabaseClient
@@ -133,7 +133,7 @@ export async function fetchARAgingReport(
       organization_id,
       organizations:organization_id(name)
     `)
-    .in('status', ['open', 'overdue', 'sent'])
+    .in('status', ['open'])
 
   if (error) throw new Error(`AR Aging query failed: ${error.message}`)
 

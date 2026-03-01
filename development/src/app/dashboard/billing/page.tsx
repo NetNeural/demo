@@ -205,7 +205,7 @@ function BillingAdminContent() {
 
     setBillingModeSaving(true)
     try {
-      // Get current settings first to merge
+      // Get current settings via edge function to merge
       const { data: orgData } = await supabase
         .from('organizations')
         .select('settings')
@@ -215,12 +215,12 @@ function BillingAdminContent() {
       const currentSettings = (orgData?.settings as Record<string, unknown>) || {}
       const updatedSettings = { ...currentSettings, billing_mode: newMode }
 
-      const { error } = await supabase
-        .from('organizations')
-        .update({ settings: updatedSettings })
-        .eq('id', NETNEURAL_ROOT_ORG_ID)
+      // Use edge function to bypass RLS (uses supabaseAdmin)
+      const result = await edgeFunctions.organizations.update(NETNEURAL_ROOT_ORG_ID, {
+        settings: updatedSettings,
+      })
 
-      if (error) throw error
+      if (!result.success) throw new Error(typeof result.error === 'string' ? result.error : 'Update failed')
 
       setBillingMode(newMode)
       const modeInfo = BILLING_MODES.find(m => m.value === newMode)!
