@@ -582,6 +582,100 @@ export interface PlanDraft {
   description: string
 }
 
+// ==========================================================================
+// Customer / Health Score types (#56)
+// ==========================================================================
+
+/** Health score status derived from numeric score */
+export type HealthStatus = 'healthy' | 'at_risk' | 'critical'
+
+/** Lifecycle stage for a customer */
+export type LifecycleStage = 'new' | 'onboarding' | 'active' | 'at_risk' | 'churning' | 'churned'
+
+/** Row from admin_customer_overview view */
+export interface CustomerOverviewRow {
+  id: string
+  name: string
+  slug: string
+  subscription_tier: string | null
+  is_active: boolean
+  created_at: string
+  last_updated: string
+  device_count: number
+  member_count: number
+  active_device_count: number
+  subscription_id: string | null
+  subscription_status: string | null
+  current_period_end: string | null
+  cancel_at_period_end: boolean | null
+  plan_name: string | null
+  plan_slug: string | null
+  mrr: number | null
+  health_score: number
+  login_frequency_score: number | null
+  device_activity_score: number | null
+  feature_adoption_score: number | null
+  support_ticket_score: number | null
+  payment_health_score: number | null
+  health_computed_at: string | null
+  last_active: string | null
+}
+
+/** Summary stats for the customer overview dashboard */
+export interface CustomerSummaryStats {
+  totalCustomers: number
+  activeCustomers: number
+  totalMrr: number
+  avgHealth: number
+  churnRate: number
+  atRiskCount: number
+}
+
+/** Get health status from numeric score */
+export function getHealthStatus(score: number): HealthStatus {
+  if (score >= 80) return 'healthy'
+  if (score >= 50) return 'at_risk'
+  return 'critical'
+}
+
+/** Human-readable health status label */
+export function formatHealthStatus(status: HealthStatus): string {
+  switch (status) {
+    case 'healthy': return 'Healthy'
+    case 'at_risk': return 'At Risk'
+    case 'critical': return 'Critical'
+  }
+}
+
+/** Derive lifecycle stage from customer data */
+export function getLifecycleStage(customer: CustomerOverviewRow): LifecycleStage {
+  // Churned: subscription canceled and past end date
+  if (customer.subscription_status === 'canceled') return 'churned'
+  // Churning: cancel at period end
+  if (customer.cancel_at_period_end) return 'churning'
+  // At risk: health score < 50 or past_due
+  if (customer.health_score < 50 || customer.subscription_status === 'past_due') return 'at_risk'
+  // New: created within last 14 days
+  const created = new Date(customer.created_at)
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  if (created > twoWeeksAgo) return 'new'
+  // Onboarding: no devices yet
+  if (customer.device_count === 0) return 'onboarding'
+  return 'active'
+}
+
+/** Human-readable lifecycle label */
+export function formatLifecycleStage(stage: LifecycleStage): string {
+  switch (stage) {
+    case 'new': return 'New'
+    case 'onboarding': return 'Onboarding'
+    case 'active': return 'Active'
+    case 'at_risk': return 'At Risk'
+    case 'churning': return 'Churning'
+    case 'churned': return 'Churned'
+  }
+}
+
 /** Empty feature set (all off) */
 export const EMPTY_FEATURES: BillingPlanFeatures = {
   dashboard: false,

@@ -31,6 +31,7 @@ import {
   SlidersHorizontal,
   DollarSign,
   CreditCard,
+  UsersRound,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -107,6 +108,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/billing/payments',
             label: 'Payments',
             icon: CreditCard,
+          },
+        ]
+      : []),
+    ...(isSuperAdmin
+      ? [
+          {
+            href: '/dashboard/admin/customers',
+            label: 'Customers',
+            icon: UsersRound,
           },
         ]
       : []),
