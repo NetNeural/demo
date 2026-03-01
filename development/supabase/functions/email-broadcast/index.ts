@@ -198,6 +198,9 @@ serve(async (req) => {
 })
 
 // ---- Helper: Get recipient emails by tier ----
+// Exclude NetNeural internal org from all broadcasts
+const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
 async function getRecipientEmails(
   supabase: ReturnType<typeof createClient>,
   targetTiers: string[]
@@ -205,20 +208,22 @@ async function getRecipientEmails(
   const includeAll = targetTiers.includes('all')
 
   if (includeAll) {
-    // All users with verified emails
+    // All users with verified emails, excluding NetNeural internal staff
     const { data: users } = await supabase
       .from('users')
       .select('email')
       .not('email', 'is', null)
+      .neq('organization_id', NETNEURAL_ORG_ID)
 
     return (users || []).map((u: { email: string }) => u.email).filter(Boolean)
   }
 
-  // Get orgs matching tiers
+  // Get orgs matching tiers, excluding NetNeural
   const { data: orgs } = await supabase
     .from('organizations')
     .select('id')
     .in('subscription_tier', targetTiers)
+    .neq('id', NETNEURAL_ORG_ID)
 
   if (!orgs || orgs.length === 0) return []
 
