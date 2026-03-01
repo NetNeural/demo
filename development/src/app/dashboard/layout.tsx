@@ -30,9 +30,7 @@ import {
   LifeBuoy,
   SlidersHorizontal,
   DollarSign,
-  CreditCard,
   UsersRound,
-  TrendingUp,
   FileBarChart,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
@@ -99,17 +97,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           },
         ]
       : []),
-    ...(isSuperAdmin || userRole === 'owner' || userRole === 'admin' || userRole === 'billing'
+    ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
+      (isSuperAdmin || userRole === 'owner' || userRole === 'billing')
       ? [
           {
-            href: '/dashboard/billing/invoices',
-            label: 'Invoices',
-            icon: FileText,
-          },
-          {
-            href: '/dashboard/billing/payments',
-            label: 'Payments',
-            icon: CreditCard,
+            href: '/dashboard/billing',
+            label: 'Billing Administration',
+            icon: FileBarChart,
           },
         ]
       : []),
@@ -119,16 +113,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/customers',
             label: 'Customers',
             icon: UsersRound,
-          },
-          {
-            href: '/dashboard/admin/revenue',
-            label: 'Revenue',
-            icon: TrendingUp,
-          },
-          {
-            href: '/dashboard/admin/reports/financial',
-            label: 'Financial Reports',
-            icon: FileBarChart,
           },
         ]
       : []),
