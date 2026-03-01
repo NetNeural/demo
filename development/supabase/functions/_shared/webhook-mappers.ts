@@ -231,6 +231,7 @@ export function mapWebhookPayload(
       return mapAzureIotWebhook(payload)
 
     case 'mqtt':
+    case 'mqtt_external':
       return mapMqttWebhook(payload)
 
     case 'webhook':

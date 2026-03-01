@@ -215,8 +215,12 @@ serve(async (request: Request): Promise<Response> => {
 
       // Telemetry received and processed
 
-      // Find device in database
-      const { data: device, error: deviceError } = await supabase
+      // Find device in database — try hardware_ids array, then serial_number, then external_device_id
+      let device: any = null
+      let deviceError: any = null
+
+      // 1. Try hardware_ids array (contains operator for TEXT[])
+      const { data: byHwId, error: hwErr } = await supabase
         .from('devices')
         .select(
           `
@@ -228,9 +232,36 @@ serve(async (request: Request): Promise<Response> => {
         )
       `
         )
-        .eq('hardware_id', deviceId)
+        .contains('hardware_ids', [deviceId])
         .eq('device_integrations.integration_type', 'netneural_hub')
-        .single()
+        .maybeSingle()
+
+      if (byHwId) {
+        device = byHwId
+      } else {
+        // 2. Fallback: serial_number or external_device_id
+        const { data: bySerial, error: serialErr } = await supabase
+          .from('devices')
+          .select(
+            `
+          *,
+          device_integrations!inner(
+            id,
+            integration_type,
+            settings
+          )
+        `
+          )
+          .or(`serial_number.eq.${deviceId},external_device_id.eq.${deviceId}`)
+          .eq('device_integrations.integration_type', 'netneural_hub')
+          .maybeSingle()
+
+        if (bySerial) {
+          device = bySerial
+        } else {
+          deviceError = hwErr || serialErr || { message: 'Device not found' }
+        }
+      }
 
       if (deviceError || !device) {
         console.warn(`[NetNeuralHub] Device not found: ${deviceId}`)
@@ -247,15 +278,16 @@ serve(async (request: Request): Promise<Response> => {
         device.device_type
       )
 
-      // Store telemetry in database
+      // Store telemetry in database (device_telemetry_history is the actual table)
       const { error: telemetryError } = await supabase
-        .from('device_telemetry')
+        .from('device_telemetry_history')
         .insert({
-          id: crypto.randomUUID(), // Explicit UUID to avoid caching bug
+          id: crypto.randomUUID(),
           device_id: device.id,
-          data: telemetryData,
+          organization_id: device.organization_id,
+          telemetry: telemetryData,
           received_at: new Date().toISOString(),
-          protocol: protocol,
+          device_timestamp: telemetryData?.protocol_meta?.timestamp || null,
         })
 
       if (telemetryError) {
