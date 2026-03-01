@@ -138,5 +138,5 @@ registerProvider('azure_iot', AzureIotIntegrationProvider)
 registerProvider('mqtt', MqttIntegrationProvider)
 registerProvider('netneural_hub', NetNeuralHubIntegrationProvider)
 
-// Note: Google IoT Core was discontinued by Google in August 2023
-// Legacy 'google_iot' type entries should be migrated to alternative providers
+// Note: Google IoT Core was removed (discontinued by Google Aug 2023).
+// Legacy 'google_iot' DB entries can be ignored or migrated to other providers.

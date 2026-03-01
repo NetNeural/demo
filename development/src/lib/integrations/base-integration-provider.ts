@@ -122,7 +122,7 @@ export abstract class DeviceIntegrationProvider {
   abstract providerId: string
 
   /**
-   * Type of provider (golioth, aws-iot, azure-iot, google-iot, etc.)
+   * Type of provider (golioth, aws-iot, azure-iot, mqtt, netneural-hub, etc.)
    */
   abstract providerType: string
 
