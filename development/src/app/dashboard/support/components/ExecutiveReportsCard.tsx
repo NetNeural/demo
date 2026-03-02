@@ -1523,8 +1523,13 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   <Button
                     size="sm"
                     onClick={async () => {
+                      // Capture values before clearing state
+                      const html = previewHtml
+                      const title = previewTitle
+                      // Close dialog immediately — don't wait for afterprint
+                      setPreviewHtml(null)
                       const { printHtmlAsPdf } = await import('@/lib/pdf-export')
-                      printHtmlAsPdf(previewHtml, previewTitle, () => setPreviewHtml(null))
+                      printHtmlAsPdf(html, title)
                     }}
                   >
                     <FileDown className="mr-2 h-4 w-4" />

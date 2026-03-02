@@ -236,15 +236,16 @@ export function printHtmlAsPdf(html: string, title: string, onComplete?: () => v
     cleaned = true
     window.removeEventListener('afterprint', handleAfterPrint)
     document.title = prevTitle
-    if (document.head.contains(styleEl)) document.head.removeChild(styleEl)
-    if (document.body.contains(container)) document.body.removeChild(container)
+    // Use .remove() — safe no-op if element is already detached, never throws
+    styleEl.remove()
+    container.remove()
     onComplete?.()
   }
 
   const handleAfterPrint = () => cleanup()
   window.addEventListener('afterprint', handleAfterPrint)
 
-  // Safety fallback: clean up if afterprint never fires (e.g. some mobile browsers)
+  // Safety fallback: clean up if afterprint never fires (e.g. after PDF save in Chrome)
   const fallbackTimer = setTimeout(() => cleanup(), 30_000)
   window.addEventListener('afterprint', () => clearTimeout(fallbackTimer), { once: true })
 
