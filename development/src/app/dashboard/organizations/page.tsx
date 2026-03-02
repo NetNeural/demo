@@ -211,7 +211,7 @@ function OrganizationsPageContent() {
             </TabsTrigger>
           )}
 
-          {(isSuperAdmin || isOwner || isAdmin) && (
+          {isSuperAdmin && (
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               <span>Documents</span>
@@ -300,8 +300,8 @@ function OrganizationsPageContent() {
           </TabsContent>
         )}
 
-        {/* Documents — Data Room */}
-        {(isSuperAdmin || isOwner || isAdmin) && (
+        {/* Documents — Data Room (NetNeural super admins only) */}
+        {isSuperAdmin && (
           <TabsContent value="documents">
             <DocumentsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
           </TabsContent>
