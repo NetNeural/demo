@@ -1103,10 +1103,14 @@ export default createEdgeFunction(
           throw new DatabaseError('Organization not found', 404)
         }
 
-        // Root organizations (no parent) cannot be deleted
+        // Root organizations (no parent) cannot be deleted by non-super-admins
+        // Super admins can delete root/test organizations
         // @ts-expect-error - parent_organization_id exists
-        if (!org.parent_organization_id) {
-          throw new DatabaseError('Root organizations cannot be deleted', 403)
+        if (!org.parent_organization_id && !userContext.isSuperAdmin) {
+          throw new DatabaseError(
+            'Root organizations cannot be deleted',
+            403
+          )
         }
 
         // Perform actual deletion (CASCADE will handle related records)
