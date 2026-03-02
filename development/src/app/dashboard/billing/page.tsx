@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
+import { ExpensesTab } from './components/ExpensesTab'
 import { SubscriptionsTab } from './components/SubscriptionsTab'
 import { UsageMeteringTab } from './components/UsageMeteringTab'
 import { CustomersTab } from './components/CustomersTab'
@@ -115,6 +116,12 @@ const billingTabs = [
     id: 'usage',
     label: 'Usage Metering',
     icon: BarChart3,
+    ownerOnly: true,
+  },
+  {
+    id: 'expenses',
+    label: 'Expenses',
+    icon: DollarSign,
     ownerOnly: true,
   },
   {
@@ -493,7 +500,7 @@ function BillingAdminContent() {
           const groupMap: Record<string, string> = {
             revenue: 'reports', 'ar-aging': 'reports', 'payment-failures': 'reports', 'tax-summary': 'reports',
             invoices: 'transactions', payments: 'transactions',
-            subscriptions: 'reports', usage: 'reports', customers: 'management',
+            subscriptions: 'reports', usage: 'reports', expenses: 'reports', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
           }
           return groupMap[activeTab] || 'reports'
@@ -554,6 +561,10 @@ function BillingAdminContent() {
                 <BarChart3 className="h-4 w-4" />
                 Usage Metering
               </TabsTrigger>
+              <TabsTrigger value="expenses" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Expenses
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="revenue" className="mt-6">
               <RevenueTab />
@@ -572,6 +583,9 @@ function BillingAdminContent() {
             </TabsContent>
             <TabsContent value="usage" className="mt-6">
               <UsageMeteringTab />
+            </TabsContent>
+            <TabsContent value="expenses" className="mt-6">
+              <ExpensesTab />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -615,6 +629,7 @@ function BillingAdminContent() {
             </TabsList>
             <TabsContent value="customers" className="mt-6">
               <CustomersTab />
+            </TabsContent>
           </Tabs>
         </TabsContent>
 
