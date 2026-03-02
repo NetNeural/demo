@@ -5,10 +5,10 @@
  * Uses the admin API to bypass Supabase's "Secure password change" 
  * email confirmation requirement.
  * 
- * Flow:
- * 1. Verify the user is authenticated
- * 2. Verify the current password via Supabase Auth sign-in
- * 3. Update the password via admin API (always immediate)
+ * Supports two modes:
+ * 1. Normal: currentPassword + newPassword (Settings > Security)
+ * 2. Force:  newPassword only, when password_change_required = true
+ *            (temp password flow after first login)
  */
 
 import {
@@ -17,6 +17,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { getUserContext } from '../_shared/auth.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -28,10 +29,10 @@ export default createEdgeFunction(
     }
 
     const body = await req.json()
-    const { currentPassword, newPassword } = body
+    const { currentPassword, newPassword, forceChange } = body
 
-    if (!currentPassword || !newPassword) {
-      throw new Error('currentPassword and newPassword are required')
+    if (!newPassword) {
+      throw new Error('newPassword is required')
     }
 
     // Password validation
@@ -50,40 +51,69 @@ export default createEdgeFunction(
       )
     }
 
-    if (currentPassword === newPassword) {
-      throw new Error('New password must be different from current password')
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Step 1: Verify current password by attempting sign-in via Auth API
-    console.log('🔐 Verifying current password for user:', userContext.userId)
+    if (forceChange) {
+      // Force-change mode: skip current password, but ONLY if
+      // the user's password_change_required flag is actually true.
+      // This prevents abuse — only temp-password users can use this path.
+      console.log('🔐 Force-change mode for user:', userContext.userId)
 
-    const verifyResponse = await fetch(
-      `${supabaseUrl}/auth/v1/token?grant_type=password`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-        },
-        body: JSON.stringify({
-          email: userContext.email,
-          password: currentPassword,
-        }),
+      const { data: userRecord, error: lookupError } = await supabaseAdmin
+        .from('users')
+        .select('password_change_required')
+        .eq('id', userContext.userId)
+        .single()
+
+      if (lookupError || !userRecord) {
+        throw new DatabaseError('User record not found', 404)
       }
-    )
 
-    if (!verifyResponse.ok) {
-      console.error('❌ Current password verification failed')
-      throw new DatabaseError('Current password is incorrect', 401)
+      if (!userRecord.password_change_required) {
+        throw new DatabaseError(
+          'Force-change is only allowed for temporary password users',
+          403
+        )
+      }
+    } else {
+      // Normal mode: verify current password first
+      if (!currentPassword) {
+        throw new Error('currentPassword is required')
+      }
+
+      if (currentPassword === newPassword) {
+        throw new Error('New password must be different from current password')
+      }
+
+      console.log('🔐 Verifying current password for user:', userContext.userId)
+
+      const verifyResponse = await fetch(
+        `${supabaseUrl}/auth/v1/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({
+            email: userContext.email,
+            password: currentPassword,
+          }),
+        }
+      )
+
+      if (!verifyResponse.ok) {
+        console.error('❌ Current password verification failed')
+        throw new DatabaseError('Current password is incorrect', 401)
+      }
+
+      console.log('✅ Current password verified')
     }
 
-    console.log('✅ Current password verified')
-
-    // Step 2: Update password using admin API (bypasses email confirmation)
+    // Update password using admin API (bypasses email confirmation)
     const updateResponse = await fetch(
       `${supabaseUrl}/auth/v1/admin/users/${userContext.userId}`,
       {
@@ -103,6 +133,17 @@ export default createEdgeFunction(
       const error = await updateResponse.json()
       console.error('❌ Password update failed:', error)
       throw new Error(error.message || 'Failed to update password')
+    }
+
+    // Clear the password_change_required flag
+    const { error: clearError } = await supabaseAdmin
+      .from('users')
+      .update({ password_change_required: false })
+      .eq('id', userContext.userId)
+
+    if (clearError) {
+      console.error('Failed to clear password_change_required:', clearError)
+      // Don't fail — password was already changed successfully
     }
 
     console.log('✅ Password changed successfully for user:', userContext.userId)

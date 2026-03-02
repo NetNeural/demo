@@ -99,16 +99,37 @@ export default function ChangePasswordPage() {
       setIsSubmitting(true)
       const supabase = createClient()
 
-      // Update password in Supabase Auth
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
+      // Use change-password edge function with forceChange mode
+      // (admin API bypass — the client-side supabase.auth.updateUser silently
+      // fails when "Secure password change" is enabled in Supabase settings)
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (updateError) {
-        throw updateError
+      if (!session?.access_token) {
+        setError('Session expired. Please log in again.')
+        setIsSubmitting(false)
+        return
       }
 
-      // Update password_change_required flag in public.users table
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const res = await fetch(`${supabaseUrl}/functions/v1/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          newPassword,
+          forceChange: true, // Skip current password — user has temp password
+        }),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result?.error || result?.message || 'Failed to change password')
+      }
+
+      // Update phone numbers in public.users table
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -134,7 +155,6 @@ export default function ChangePasswordPage() {
         const { error: dbError } = await supabase
           .from('users')
           .update({
-            password_change_required: false,
             phone_number: normalizedPrimary,
             phone_sms_enabled: true,
             phone_number_secondary: normalizedSecondary,
@@ -144,11 +164,8 @@ export default function ChangePasswordPage() {
           .eq('id', user.id)
 
         if (dbError) {
-          console.error(
-            'Failed to update password_change_required flag:',
-            dbError
-          )
-          // Don't fail the operation, password was still changed
+          console.error('Failed to update phone numbers:', dbError)
+          // Don't fail — password was already changed
         }
       }
 
