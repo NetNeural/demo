@@ -140,10 +140,11 @@ export function SubscriptionsTab() {
         }
       }
 
-      // Fetch device counts per org
+      // Fetch device counts per org (scoped to subscription orgs only)
       const { data: deviceCounts } = await supabase
         .from('devices')
         .select('organization_id')
+        .in('organization_id', orgIds)
         .is('deleted_at', null)
       
       const deviceCountMap: Record<string, number> = {}

@@ -265,6 +265,7 @@ export function DeviceTypesList() {
           .from('devices')
           .select('id', { count: 'exact', head: true })
           .eq('device_type_id', deleteTarget!.id)
+          .eq('organization_id', currentOrganization?.id)
         if (!cancelled) {
           setDeleteDeviceCount(error ? 0 : (count ?? 0))
         }
@@ -278,7 +279,7 @@ export function DeviceTypesList() {
     return () => {
       cancelled = true
     }
-  }, [deleteTarget])
+  }, [deleteTarget, currentOrganization?.id])
 
   function handleEdit(dt: DeviceType) {
     setEditingType(dt)
