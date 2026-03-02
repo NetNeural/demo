@@ -193,8 +193,10 @@ export function exportTableToPDF(options: TablePDFOptions): void {
  *
  * The browser's Save as PDF option in the print dialog produces a high-quality
  * PDF without needing any server-side rendering.
+ *
+ * @param onComplete - Optional callback fired after the print dialog is dismissed.
  */
-export function printHtmlAsPdf(html: string, title: string): void {
+export function printHtmlAsPdf(html: string, title: string, onComplete?: () => void): void {
   const iframe = document.createElement('iframe')
   iframe.style.position = 'fixed'
   iframe.style.top = '-10000px'
@@ -236,11 +238,20 @@ export function printHtmlAsPdf(html: string, title: string): void {
   // Wait for content to render, then print
   iframe.onload = () => {
     setTimeout(() => {
-      iframe.contentWindow?.print()
-      // Clean up after print dialog closes
-      setTimeout(() => {
-        document.body.removeChild(iframe)
-      }, 1000)
+      const win = iframe.contentWindow
+      if (!win) return
+
+      // Fire onComplete and clean up after the print dialog is dismissed
+      const handleAfterPrint = () => {
+        win.removeEventListener('afterprint', handleAfterPrint)
+        setTimeout(() => {
+          if (document.body.contains(iframe)) document.body.removeChild(iframe)
+        }, 300)
+        onComplete?.()
+      }
+      win.addEventListener('afterprint', handleAfterPrint)
+
+      win.print()
     }, 300)
   }
 

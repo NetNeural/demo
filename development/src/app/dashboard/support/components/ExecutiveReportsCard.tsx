@@ -1508,17 +1508,24 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           </DialogHeader>
           {previewHtml && (
             <>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewHtml(null)}
+                >
+                  Close
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={async () => {
                     const { printHtmlAsPdf } = await import('@/lib/pdf-export')
-                    printHtmlAsPdf(previewHtml, previewTitle)
+                    printHtmlAsPdf(previewHtml, previewTitle, () => setPreviewHtml(null))
                   }}
                 >
                   <FileDown className="mr-2 h-4 w-4" />
-                  Download PDF
+                  Print / Save as PDF
                 </Button>
               </div>
               <div
