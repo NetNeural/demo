@@ -723,11 +723,12 @@ serve(async (req) => {
         <tr><th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Service</th><th style="background:#f3f4f6; padding:7px 10px; text-align:right; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:90px;">Monthly</th></tr>
       </thead>
       <tbody>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Supabase Pro (×3 envs)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$120</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">OpenAI API</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$90</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Sentry Team</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$26</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">GitHub (Actions + Pages)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">Free</td></tr>
-        <tr style="background:#f9fafb;"><td style="padding:6px 10px; font-weight:700;">Total</td><td style="padding:6px 10px; text-align:right; font-weight:700; font-size:15px; color:#059669;">$236/mo</td></tr>
+        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Supabase Pro (×3 envs)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$120.00</td></tr>
+        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">OpenAI API</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$90.00</td></tr>
+        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Sentry Team</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$26.00</td></tr>
+        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">GitHub Copilot</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$104.32</td></tr>
+        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">GitHub Actions + Pages</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$29.95</td></tr>
+        <tr style="background:#f9fafb;"><td style="padding:6px 10px; font-weight:700;">Total</td><td style="padding:6px 10px; text-align:right; font-weight:700; font-size:15px; color:#059669;">$370.27/mo</td></tr>
       </tbody>
     </table>
   </div>
