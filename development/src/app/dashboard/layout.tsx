@@ -204,7 +204,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="nav-user">
             <div className="user-info">
               <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              <p className="text-xs text-gray-500">{user.organizationName}</p>
             </div>
             <button
               onClick={async () => {
