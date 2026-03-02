@@ -188,75 +188,68 @@ export function exportTableToPDF(options: TablePDFOptions): void {
 // ─── HTML PDF Export (Print) ─────────────────────────────────────────────────
 
 /**
- * Print HTML content as PDF using a hidden iframe + window.print().
- * Best for rich executive reports that are already formatted as HTML.
+ * Print HTML content as PDF using a temporary print container + window.print().
+ * Avoids iframe cross-document DOM issues that cause removeChild errors.
  *
- * The browser's Save as PDF option in the print dialog produces a high-quality
- * PDF without needing any server-side rendering.
+ * During print, hides all page content except the report container via @media print.
+ * Uses window.afterprint (main window) which fires reliably across all browsers.
  *
- * @param onComplete - Optional callback fired after the print dialog is dismissed.
+ * In Chrome/Edge: print dialog → Destination → "Save as PDF" to download.
+ * In Firefox/Safari: print dialog → PDF button or printer dropdown.
+ *
+ * @param onComplete - Callback fired after the print dialog is dismissed.
  */
 export function printHtmlAsPdf(html: string, title: string, onComplete?: () => void): void {
-  const iframe = document.createElement('iframe')
-  iframe.style.position = 'fixed'
-  iframe.style.top = '-10000px'
-  iframe.style.left = '-10000px'
-  iframe.style.width = '1024px'
-  iframe.style.height = '768px'
+  const uid = `nn-pdf-${Date.now()}`
+  const prevTitle = document.title
 
-  document.body.appendChild(iframe)
+  // Inject print styles: hide everything except our container during print
+  const styleEl = document.createElement('style')
+  styleEl.id = `${uid}-style`
+  styleEl.textContent = [
+    `@media print {`,
+    `  body > *:not(#${uid}) { display: none !important; visibility: hidden !important; }`,
+    `  #${uid} { display: block !important; visibility: visible !important; }`,
+    `  @page { margin: 1.5cm; size: A4; }`,
+    `}`,
+    `#${uid} {`,
+    `  display: none;`,
+    `  font-family: Arial, Helvetica, sans-serif;`,
+    `  padding: 20px; color: #1e293b;`,
+    `}`,
+    `#${uid} table { border-collapse: collapse; width: 100%; }`,
+    `#${uid} td, #${uid} th { padding: 6px 10px; border: 1px solid #e2e8f0; }`,
+    `#${uid} th { background: #1e293b; color: white; text-align: left; }`,
+    `#${uid} img { max-width: 100%; }`,
+  ].join('\n')
 
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
-  if (!iframeDoc) {
-    document.body.removeChild(iframe)
-    return
+  const container = document.createElement('div')
+  container.id = uid
+  container.innerHTML = html
+
+  document.head.appendChild(styleEl)
+  document.body.appendChild(container)
+
+  let cleaned = false
+  const cleanup = () => {
+    if (cleaned) return
+    cleaned = true
+    window.removeEventListener('afterprint', handleAfterPrint)
+    document.title = prevTitle
+    if (document.head.contains(styleEl)) document.head.removeChild(styleEl)
+    if (document.body.contains(container)) document.body.removeChild(container)
+    onComplete?.()
   }
 
-  iframeDoc.open()
-  iframeDoc.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${title}</title>
-      <style>
-        @media print {
-          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-          @page { margin: 1.5cm; size: A4; }
-        }
-        body { font-family: Arial, Helvetica, sans-serif; padding: 20px; color: #1e293b; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { padding: 6px 10px; border: 1px solid #e2e8f0; }
-        th { background: #1e293b; color: white; text-align: left; }
-        img { max-width: 100%; }
-      </style>
-    </head>
-    <body>${html}</body>
-    </html>
-  `)
-  iframeDoc.close()
+  const handleAfterPrint = () => cleanup()
+  window.addEventListener('afterprint', handleAfterPrint)
 
-  // Wait for content to render, then print
-  iframe.onload = () => {
-    setTimeout(() => {
-      const win = iframe.contentWindow
-      if (!win) return
+  // Safety fallback: clean up if afterprint never fires (e.g. some mobile browsers)
+  const fallbackTimer = setTimeout(() => cleanup(), 30_000)
+  window.addEventListener('afterprint', () => clearTimeout(fallbackTimer), { once: true })
 
-      // Fire onComplete and clean up after the print dialog is dismissed
-      const handleAfterPrint = () => {
-        win.removeEventListener('afterprint', handleAfterPrint)
-        setTimeout(() => {
-          if (document.body.contains(iframe)) document.body.removeChild(iframe)
-        }, 300)
-        onComplete?.()
-      }
-      win.addEventListener('afterprint', handleAfterPrint)
-
-      win.print()
-    }, 300)
-  }
-
-  // Trigger load manually if already loaded
-  if (iframeDoc.readyState === 'complete') {
-    iframe.onload?.(new Event('load'))
-  }
+  setTimeout(() => {
+    document.title = title
+    window.print()
+  }, 100)
 }

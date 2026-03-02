@@ -1508,25 +1508,29 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           </DialogHeader>
           {previewHtml && (
             <>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewHtml(null)}
-                >
-                  Close
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const { printHtmlAsPdf } = await import('@/lib/pdf-export')
-                    printHtmlAsPdf(previewHtml, previewTitle, () => setPreviewHtml(null))
-                  }}
-                >
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Print / Save as PDF
-                </Button>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  In the print dialog, set Destination to <strong>Save as PDF</strong> to download the file.
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewHtml(null)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      const { printHtmlAsPdf } = await import('@/lib/pdf-export')
+                      printHtmlAsPdf(previewHtml, previewTitle, () => setPreviewHtml(null))
+                    }}
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Save as PDF
+                  </Button>
+                </div>
               </div>
               <div
                 className="rounded border bg-white p-4"
