@@ -80,7 +80,11 @@ describe('Issue #23: Login Redirect Flow', () => {
           getAuthenticatorAssuranceLevel: jest.fn().mockResolvedValue({
             data: { currentLevel: 'aal1', nextLevel: 'aal1' },
           }),
-          listFactors: jest.fn().mockResolvedValue({ data: { totp: [] } }),
+          // Return a verified TOTP factor so the login page skips /auth/setup-mfa
+          // and proceeds to redirect to /dashboard as expected
+          listFactors: jest.fn().mockResolvedValue({
+            data: { totp: [{ id: 'totp-factor-1', status: 'verified' }] },
+          }),
         },
       },
       from: mockFrom,

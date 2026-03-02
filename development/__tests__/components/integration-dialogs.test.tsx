@@ -41,7 +41,9 @@ describe('Integration Dialog Components', () => {
     expect(module7.AzureIotConfigDialog).toBeDefined()
   })
 
-  test('GoogleIotConfigDialog module loads', async () => {
+  // GoogleIotConfigDialog skipped — Google IoT Core was deprecated by Google in Aug 2023
+  // and the component was removed from the codebase
+  test.skip('GoogleIotConfigDialog module loads', async () => {
     const module8 =
       await import('@/components/integrations/GoogleIotConfigDialog')
     expect(module8.GoogleIotConfigDialog).toBeDefined()
