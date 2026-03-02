@@ -264,32 +264,43 @@ export function SecurityTab() {
 
     try {
       setChangingPassword(true)
+
+      // Use edge function with admin API to bypass Supabase's
+      // "Secure password change" email confirmation requirement
       const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
 
-      // First verify current password by attempting to sign in
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: (await supabase.auth.getUser()).data.user?.email || '',
-        password: currentPassword,
-      })
-
-      if (verifyError) {
+      if (!session?.access_token) {
         toast({
           title: 'Error',
-          description: 'Current password is incorrect',
+          description: 'Session expired. Please log in again.',
           variant: 'destructive',
         })
         return
       }
 
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const res = await fetch(`${supabaseUrl}/functions/v1/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
       })
 
-      if (updateError) {
+      const result = await res.json()
+
+      if (!res.ok) {
+        const message = result?.error || result?.message || 'Failed to update password'
         toast({
           title: 'Error',
-          description: 'Failed to update password: ' + updateError.message,
+          description: message.includes('incorrect')
+            ? 'Current password is incorrect'
+            : message,
           variant: 'destructive',
         })
         return
