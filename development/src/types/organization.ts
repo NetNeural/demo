@@ -44,7 +44,6 @@ export interface OrganizationSettings {
 }
 
 export type SubscriptionTier =
-  | 'free'
   | 'starter'
   | 'professional'
   | 'reseller'

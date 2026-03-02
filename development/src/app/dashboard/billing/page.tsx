@@ -493,7 +493,7 @@ function BillingAdminContent() {
           const groupMap: Record<string, string> = {
             revenue: 'reports', 'ar-aging': 'reports', 'payment-failures': 'reports', 'tax-summary': 'reports',
             invoices: 'transactions', payments: 'transactions',
-            subscriptions: 'management', usage: 'management', customers: 'management',
+            subscriptions: 'reports', usage: 'reports', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
           }
           return groupMap[activeTab] || 'reports'
@@ -501,7 +501,7 @@ function BillingAdminContent() {
         onValueChange={(group) => {
           const defaults: Record<string, string> = {
             reports: 'revenue', transactions: 'invoices',
-            management: 'subscriptions', operations: 'plan-management',
+            management: 'customers', operations: 'plan-management',
           }
           handleTabChange(defaults[group] || 'financial-reports')
         }}
@@ -546,6 +546,14 @@ function BillingAdminContent() {
                 <FileBarChart className="h-4 w-4" />
                 Tax Summary
               </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <Repeat className="h-4 w-4" />
+                Subscriptions
+              </TabsTrigger>
+              <TabsTrigger value="usage" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Usage Metering
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="revenue" className="mt-6">
               <RevenueTab />
@@ -558,6 +566,12 @@ function BillingAdminContent() {
             </TabsContent>
             <TabsContent value="tax-summary" className="mt-6">
               <TaxSummaryPanel />
+            </TabsContent>
+            <TabsContent value="subscriptions" className="mt-6">
+              <SubscriptionsTab />
+            </TabsContent>
+            <TabsContent value="usage" className="mt-6">
+              <UsageMeteringTab />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -590,32 +604,17 @@ function BillingAdminContent() {
           </Tabs>
         </TabsContent>
 
-        {/* Management — Subscriptions + Usage Metering + Customers */}
+        {/* Management — Customers */}
         <TabsContent value="management">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-                <Repeat className="h-4 w-4" />
-                Subscriptions
-              </TabsTrigger>
-              <TabsTrigger value="usage" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Usage Metering
-              </TabsTrigger>
               <TabsTrigger value="customers" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Customers
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="subscriptions" className="mt-6">
-              <SubscriptionsTab />
-            </TabsContent>
-            <TabsContent value="usage" className="mt-6">
-              <UsageMeteringTab />
-            </TabsContent>
             <TabsContent value="customers" className="mt-6">
               <CustomersTab />
-            </TabsContent>
           </Tabs>
         </TabsContent>
 

@@ -259,7 +259,12 @@ export default createEdgeFunction(
     }
 
     // POST /alerts - Create a new alert (e.g., test alerts)
-    if (req.method === 'POST' && !req.url.includes('/bulk-acknowledge')) {
+    if (
+      req.method === 'POST' &&
+      !req.url.includes('/bulk-acknowledge') &&
+      !req.url.includes('/snooze') &&
+      !req.url.includes('/unsnooze')
+    ) {
       const body = await req.json()
       const {
         organization_id,

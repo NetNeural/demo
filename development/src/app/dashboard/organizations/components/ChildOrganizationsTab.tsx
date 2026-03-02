@@ -167,7 +167,6 @@ export function ChildOrganizationsTab({
     // Normalize: if subscription_tier is 'reseller', show actual plan as 'starter'
     const displayTier = tier === 'reseller' ? 'starter' : tier
     const colors: Record<string, string> = {
-      free: 'bg-gray-100 text-gray-700',
       starter: 'bg-blue-100 text-blue-700',
       professional: 'bg-purple-100 text-purple-700',
       enterprise: 'bg-emerald-100 text-emerald-700',

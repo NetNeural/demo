@@ -208,11 +208,6 @@ export function CreateOrganizationDialog({
     adminOnly?: boolean
   }[] = [
     {
-      value: 'free',
-      label: 'Free',
-      description: 'Basic access, limited devices',
-    },
-    {
       value: 'starter',
       label: 'Starter',
       description: 'Standard features, default tier',
