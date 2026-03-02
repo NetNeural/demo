@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-03-01
+
+**🔧 MQTT External Integration Fixes & V-Mark ACK Support**
+
+### Fixed
+
+#### MQTT Integration Routing (#367)
+- Moved integration `a6d0e905` from NetNeural org to V-Mark org (`ba3e1c1e`)
+- Deactivated duplicate copy integration `4cb3e31e` (caused connection conflicts)
+- Root cause: `transfer-device` cloned `mqtt_external` integrations instead of moving them
+
+#### V-Mark Device Identifiers (#368)
+- Fixed NULL `serial_number` and `external_device_id` on V-Mark MQTT devices
+- Removed duplicate device records in V-Mark organization
+
+#### Webhook Mapper & Hub Telemetry Bugs (#369)
+- Added `case 'mqtt_external':` to webhook mapper router (was falling to default)
+- Fixed `hardware_id` → `hardware_ids` array lookup in `netneural-hub-telemetry`
+- Fixed `device_telemetry` → `device_telemetry_history` table name
+- Added `organization_id` and `device_timestamp` to telemetry inserts
+
+#### Transfer-Device Integration Cloning (#370)
+- `resolveIntegrationForTargetOrg()` now MOVES `mqtt_external` integrations (preserves UUID)
+  instead of cloning — critical because MQTT broker `clientId` references the integration UUID
+- Added `EXTERNAL_WEBHOOK_TYPES = ['mqtt_external']` constant
+- Safety check: only moves if no other devices in source org reference the integration
+
+#### MQTT Subscriber OOM Crash (#371)
+- Service was connecting to both active and deactivated integrations simultaneously
+- Duplicate connections to same broker caused memory exhaustion (~450MB → crash)
+- Deployed updated code to Digital Ocean server (`138.197.100.110`)
+- Added `--max-old-space-size=256` PM2 flag as safety net
+- Memory now stable at ~87MB with 0 restarts
+
+### Added
+
+#### V-Mark ACK Protocol Support (#372)
+- `message-processor.ts` detects `properties_report` messages from V-Mark hubs
+- Automatically publishes `{ "result": 0 }` ACK on `<topic>_reply`
+- Without ACK, V-Mark hub (MAC `0AB259CFD040`) stops transmitting
+- ACK code path: `parseVMarkMessage()` → `ackTopic`/`ackPayload` → `mqttClient.publish()`
+
+#### Documentation Updates
+- Updated MQTT Architecture doc with mqtt-subscriber service, V-Mark ACK protocol, infrastructure notes
+- Added `mqtt_external` integration type to Integrations Guide
+- Added MQTT troubleshooting section (Last Seen: Never, OOM crash, V-Mark ACK)
+- Created GitHub issues #367-#372 with full operational notes
+
+### Infrastructure
+
+- **MQTT Listener Server**: `138.197.100.110` (DO droplet, `NetNeural-MQTT-Server`)
+- **MQTT Broker**: `mqtt://142.93.60.126:1883` (external, V-Mark hub)
+- **Service**: `/opt/mqtt-subscriber/` — Node.js, PM2, manual SCP deploy
+- **SSH**: `root@138.197.100.110` via WSL key
+
+---
+
 ## [2.0.0] - 2026-02-17 🎉 MAJOR RELEASE
 
 **🚀 Architecture Migration:** Complete rewrite from Go microservices to Supabase-first architecture.

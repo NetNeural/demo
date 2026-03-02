@@ -162,6 +162,80 @@ ALTER TABLE devices DISABLE ROW LEVEL SECURITY;
 
 ## 🔗 External API Integration Issues
 
+### MQTT External Broker Issues
+
+#### Devices Show "Last Seen: Never"
+**Problem**: MQTT devices show "Last Seen: Never" even though the hub is connected
+```
+Symptom: V-Mark or other external MQTT devices show no telemetry
+Logs may show: OOM crash, duplicate connection warnings, or no messages at all
+```
+
+**Diagnostic Steps**:
+```bash
+# 1. Check mqtt-subscriber service on Digital Ocean
+ssh root@138.197.100.110 "pm2 list"
+# Should show mqtt-subscriber as 'online' with 0 restarts
+
+# 2. Check connection logs
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 30 --nostream"
+# Should show: "Found 1 MQTT integration(s) to monitor"
+# Should show: "✅ Connected to MQTT Broker Integration"
+# Should NOT show: flood of disconnect warnings
+
+# 3. Verify integration is in correct org
+-- Run in Supabase SQL Editor:
+SELECT id, name, organization_id, status, settings->>'brokerUrl' as broker
+FROM device_integrations
+WHERE integration_type IN ('mqtt', 'mqtt_external', 'mqtt_hosted');
+
+# 4. Check device identifiers
+SELECT id, name, serial_number, hardware_ids, external_device_id, last_seen
+FROM devices
+WHERE organization_id = 'your-org-id';
+```
+
+**Common Causes & Fixes**:
+- **Integration in wrong org**: If a device was transferred, the `mqtt_external` integration
+  may still be in the source org. Fix: update `organization_id` on the integration, or use
+  the `transfer-device` edge function (which now moves mqtt_external integrations correctly).
+- **Duplicate integrations**: Two integrations pointing to the same broker with the same
+  `clientId` cause connection conflicts and OOM. Fix: deactivate the duplicate
+  (`UPDATE device_integrations SET status='inactive' WHERE id='...'`).
+- **Missing device identifiers**: Devices need `serial_number` or `hardware_ids` for the
+  mqtt-subscriber to match incoming messages. Fix: populate these fields.
+- **Outdated code on server**: The mqtt-subscriber has no git repo. Redeploy via SCP:
+  `scp src/*.ts root@138.197.100.110:/opt/mqtt-subscriber/src/`
+  then `ssh root@138.197.100.110 "cd /opt/mqtt-subscriber && npm run build && pm2 restart mqtt-subscriber"`
+
+#### V-Mark Hub Stops Transmitting
+**Problem**: V-Mark hub sends data initially then stops
+
+**Solution**: V-Mark hubs require an application-level ACK. The mqtt-subscriber service
+automatically replies `{ "result": 0 }` on `<topic>_reply` when it receives a
+`properties_report` message. Check:
+```bash
+# Look for ACK log entries
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 50 --nostream | grep -i ack"
+# Should see: "V-Mark properties_report received — will ACK"
+# Should see: "✅ ACK published to device"
+
+# If no ACK entries, check the integration's payloadParser is set to 'vmark'
+```
+
+#### MQTT Subscriber Service OOM Crash
+**Problem**: Service crashes with "JavaScript heap out of memory"
+
+**Solution**:
+```bash
+# Restart with memory limit
+ssh root@138.197.100.110 "pm2 restart mqtt-subscriber --node-args='--max-old-space-size=256'"
+
+# Check for duplicate integrations causing connection flood
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 50 --nostream | grep -c Disconnected"
+# If many disconnections, check for duplicate active integrations in database
+```
+
 ### Golioth IoT Platform Integration
 
 #### Golioth Authentication Problems

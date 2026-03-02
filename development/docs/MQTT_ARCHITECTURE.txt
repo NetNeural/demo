@@ -1,20 +1,22 @@
 # MQTT Integration Architecture
 
-**Date**: February 19, 2026  
+**Date**: March 1, 2026  
 **Status**: ✅ Production-Ready  
-**Related Story**: #97 - MQTT Broker Integration Verification
+**Related Stories**: #97 - MQTT Broker Integration Verification, #367-#372 - V-Mark MQTT Fixes
 
 ## Executive Summary
 
-NetNeural's MQTT integration provides device communication via industry-standard MQTT protocol. The architecture is designed around **stateless Edge Functions** (Supabase/Deno runtime) and **async queue processing** (PGMQ), with support for both external customer brokers and HTTP ingestion paths.
+NetNeural's MQTT integration provides device communication via industry-standard MQTT protocol. The architecture uses three complementary paths: **stateless Edge Functions** (Supabase/Deno runtime), **async queue processing** (PGMQ), and a **persistent mqtt-subscriber service** (Node.js on Digital Ocean) for external brokers requiring long-lived connections and application-level ACK protocols.
 
 ### Key Capabilities
 - ✅ Publish to external MQTT brokers (Mosquitto, HiveMQ, AWS IoT, etc.)
 - ✅ Subscribe to topics (store subscriptions in database)
 - ✅ HTTP ingestion with queue-based processing (PGMQ)
-- ✅ Telemetry query from `mqtt_messages` table
+- ✅ Telemetry query from `device_telemetry_history` table
 - ✅ Activity logging and credential management
-- ⚠️ Persistent connections not supported (Edge Functions are stateless)
+- ✅ Persistent MQTT connections via `mqtt-subscriber` service (Digital Ocean)
+- ✅ V-Mark ACK protocol support (`properties_report` → `{ result: 0 }` reply)
+- ✅ Auto-discovery of new devices via `hardware_ids` array lookup
 
 ---
 
@@ -521,6 +523,117 @@ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-mqtt-broker.js
 
 ---
 
+## MQTT Subscriber Service (Persistent Connections)
+
+For external MQTT brokers that require persistent TCP connections (e.g., V-Mark hubs),
+a dedicated **mqtt-subscriber** Node.js service runs on a Digital Ocean droplet.
+
+### Infrastructure
+
+| Component               | Value                                      |
+|-------------------------|--------------------------------------------|
+| MQTT Listener Server    | `138.197.100.110` (DO droplet)             |
+| Hostname                | `NetNeural-MQTT-Server`                    |
+| MQTT Broker (external)  | `mqtt://142.93.60.126:1883`                |
+| Service Path            | `/opt/mqtt-subscriber/`                    |
+| Process Manager         | PM2 (`pm2 list`, `pm2 logs mqtt-subscriber`) |
+| Node.js                 | v20.20.0                                   |
+| SSH Access              | `ssh root@138.197.100.110` (WSL key)       |
+| Supabase Target         | Staging (`atgbmxicqikmapfqouco`)           |
+| Memory Limit            | 256 MB (`--max-old-space-size=256`)        |
+
+### Source Files
+
+| File                    | Purpose                                              |
+|-------------------------|------------------------------------------------------|
+| `src/index.ts`          | Service entry, MQTT client management, ACK publishing |
+| `src/message-processor.ts` | Message parsing (standard, vmark, custom), telemetry storage |
+| `src/config.ts`         | Environment configuration                            |
+| `src/types.ts`          | TypeScript interfaces (`MqttIntegration`, `ProcessedMessage`) |
+
+### How It Works
+
+1. On startup, queries `device_integrations` for active `mqtt`/`mqtt_external`/`mqtt_hosted` integrations
+2. Connects to each integration's broker URL using `npm:mqtt@5.3.4`
+3. Subscribes to configured topics (e.g., `$sys/version/+/devices/#`)
+4. On message received:
+   a. Parses payload using configured parser (`standard`, `vmark`, `custom`)
+   b. Looks up device by `hardware_ids` array → falls back to `serial_number`/`external_device_id`
+   c. Auto-creates device if not found
+   d. Stores telemetry in `device_telemetry_history` table
+   e. Publishes ACK if protocol requires it (see V-Mark ACK Protocol below)
+   f. Logs activity to `integration_activity_log`
+5. Refreshes integrations every 5 minutes (picks up new/removed integrations)
+6. Auto-reconnects on disconnect (10-second delay)
+
+### Deployment Process
+
+The service has no git repo on the server — deploy via SCP:
+
+```bash
+# 1. Copy updated source files
+scp development/services/mqtt-subscriber/src/*.ts root@138.197.100.110:/opt/mqtt-subscriber/src/
+
+# 2. Build on server
+ssh root@138.197.100.110 "cd /opt/mqtt-subscriber && npm run build"
+
+# 3. Restart with memory limit
+ssh root@138.197.100.110 "pm2 restart mqtt-subscriber --node-args='--max-old-space-size=256'"
+
+# 4. Verify
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 20 --nostream"
+```
+
+### V-Mark ACK Protocol
+
+V-Mark hubs (e.g., MAC `0AB259CFD040`) require an **application-level ACK** after sending
+`properties_report` messages. Without the ACK, the hub stops transmitting data.
+
+**Flow:**
+```
+V-Mark Hub  ──► MQTT Broker ──► mqtt-subscriber
+   │                                    │
+   │  payload.handle = "properties_report"
+   │  topic = "$sys/version/{ver}/devices/{mac}/up"
+   │                                    │
+   │                                    ├── parse telemetry (paras: { temperature, humidity, ... })
+   │                                    ├── store in device_telemetry_history
+   │                                    └── publish ACK:
+   │                                         topic: "<incoming_topic>_reply"
+   │                                         payload: { "result": 0 }
+   │                                    │
+   ◄────────────────────────────────────┘
+   Hub receives ACK, continues reporting
+```
+
+**Code path:**
+- `message-processor.ts` → `parseVMarkMessage()` detects `payload.handle === 'properties_report'`
+- Sets `ackTopic = incomingTopic + '_reply'` and `ackPayload = JSON.stringify({ result: 0 })`
+- `index.ts` → `handleMessage()` publishes ACK via `mqttClient.publish(ackTopic, ackPayload)`
+
+**V-Mark payload format:**
+```json
+{
+  "device": "0AB259CFD0400002",
+  "handle": "properties_report",
+  "paras": {
+    "temperature": 23.5,
+    "humidity": 65.2
+  },
+  "time": "2026-03-01_12:30:45.123"
+}
+```
+
+### Key Integration IDs
+
+| ID | Name | Status |
+|---|---|---|
+| `a6d0e905-0532-4178-9ed0-2aae24a896f6` | MQTT Broker Integration | Active |
+| `4cb3e31e-71ab-4c5c-a5e2-9a7fcd92cb21` | MQTT Broker Integration (Copy) | Inactive (deactivated) |
+| `ba3e1c1e-e9ba-4d36-aec5-b25132bdc642` | V-Mark Organization | — |
+
+---
+
 ## Future Enhancements
 
 ### Near-Term (Next Quarter)
@@ -528,9 +641,10 @@ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-mqtt-broker.js
 - [ ] Add MQTT message visualization in dashboard
 - [ ] Implement topic pattern matching (wildcards: +, #)
 - [ ] Add QoS 1/2 support in mqtt-hybrid
+- [ ] Git-based deployment for mqtt-subscriber service
 
 ### Long-Term (12+ months)
-- [ ] External MQTT bridge service for persistent subscriptions (separate from Edge Functions)
+- [x] ~~External MQTT bridge service for persistent subscriptions~~ → Implemented as `mqtt-subscriber` (March 2026)
 - [ ] WebSocket streaming for real-time telemetry (alternative to MQTT)
 - [ ] MQTT v5 support when npm:mqtt adds it
 - [ ] Custom payload transformation rules
@@ -543,10 +657,23 @@ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-mqtt-broker.js
 - **npm:mqtt Library**: [npmjs.com/package/mqtt](https://www.npmjs.com/package/mqtt)
 - **Supabase Edge Functions**: [supabase.com/docs/guides/functions](https://supabase.com/docs/guides/functions)
 - **PGMQ**: [github.com/tembo-io/pgmq](https://github.com/tembo-io/pgmq)
+- **GitHub Issues**: #367-#372 (V-Mark MQTT integration fixes)
 
 ---
 
 ## Changelog
+
+- **2026-03-01**: Major update — MQTT Subscriber Service & V-Mark ACK (#367-#372)
+  - Documented persistent mqtt-subscriber service on DO droplet (138.197.100.110)
+  - Added V-Mark ACK protocol documentation (properties_report → { result: 0 })
+  - Documented infrastructure: MQTT Listener IP, Broker IP, SSH access, deployment process
+  - Added key integration IDs and V-Mark organization reference
+  - Fixed integration routing: moved a6d0e905 from NetNeural to V-Mark org
+  - Fixed transfer-device to move (not clone) mqtt_external integrations
+  - Fixed webhook-mappers: added mqtt_external case routing
+  - Fixed hub-telemetry: hardware_ids array + device_telemetry_history table
+  - Deployed updated code to DO server, resolved OOM crash
+  - Marked "External MQTT bridge service" as completed in Future Enhancements
 
 - **2026-02-19**: Initial architecture document created (Story #97)
   - Documented stateless Edge Function design
@@ -557,5 +684,5 @@ SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/test-mqtt-broker.js
 ---
 
 **Maintained by**: NetNeural Platform Team  
-**Last Updated**: February 19, 2026  
+**Last Updated**: March 1, 2026  
 **Status**: ✅ Production-Ready

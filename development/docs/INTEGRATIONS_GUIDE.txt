@@ -81,8 +81,8 @@ NetNeural supports 8 different integration types for IoT device management, noti
 
 ### 8. **MQTT Broker**
 - **Type:** `mqtt`
-- **Purpose:** Pub/sub messaging with IoT devices
-- **Backend:** ✅ Implemented (`mqtt-broker` function)
+- **Purpose:** Pub/sub messaging with IoT devices via Edge Functions
+- **Backend:** ✅ Implemented (`mqtt-hybrid` function)
 - **Features:**
   - Real-time device communication
   - Publish/subscribe messaging
@@ -91,6 +91,28 @@ NetNeural supports 8 different integration types for IoT device management, noti
   - Topic-based routing
   - QoS support (0, 1, 2)
   - Message persistence
+
+### 9. **MQTT External Broker**
+- **Type:** `mqtt_external`
+- **Purpose:** Persistent connections to customer-owned MQTT brokers
+- **Backend:** ✅ Implemented (`mqtt-subscriber` service on Digital Ocean)
+- **Features:**
+  - Long-lived persistent MQTT connections (not possible with Edge Functions)
+  - Custom payload parsers: `standard`, `vmark`, `custom`
+  - V-Mark ACK protocol support (`properties_report` → `{ result: 0 }` reply)
+  - Auto-discovery of new devices via `hardware_ids` array
+  - Telemetry stored in `device_telemetry_history` table
+  - Activity logging to `integration_activity_log`
+  - Auto-reconnect on disconnect
+  - Integration refresh every 5 minutes
+- **Infrastructure:**
+  - MQTT Listener Server: `138.197.100.110` (Digital Ocean)
+  - Service path: `/opt/mqtt-subscriber/`
+  - Process manager: PM2
+  - SSH: `root@138.197.100.110`
+- **Note:** When transferring devices between orgs, `mqtt_external` integrations
+  are MOVED (not cloned) to preserve the broker's `clientId` reference.
+  See `transfer-device` edge function. (Issues #367, #370)
 
 ---
 
@@ -334,6 +356,20 @@ curl -X POST https://your-project.supabase.co/functions/v1/mqtt-broker \
   password: 'your-password',
   client_id: 'netneural-client',
   use_tls: false
+}
+```
+
+### MQTT External Broker Configuration (mqtt_external)
+```typescript
+{
+  brokerUrl: 'mqtt://142.93.60.126',  // External broker address
+  port: 1883,
+  username: 'optional-username',
+  password: 'optional-password',
+  clientId: 'netneural-subscriber-{integration_id}',
+  topics: '$sys/version/+/devices/#',   // Can be string or array
+  payloadParser: 'vmark',               // 'standard' | 'vmark' | 'custom'
+  useTls: false
 }
 ```
 
@@ -585,6 +621,16 @@ curl -X POST https://your-project.supabase.co/functions/v1/mqtt-broker \
 - Check for SSL certificate issues
 - Verify signature verification if enabled
 - Check endpoint logs for errors
+
+**MQTT External devices showing "Last Seen: Never":**
+- Check mqtt-subscriber service is running: `ssh root@138.197.100.110 "pm2 list"`
+- Check logs for connection: `ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 30 --nostream"`
+- Verify integration has `status: 'active'` in `device_integrations`
+- Verify integration has correct `organization_id` (not left in source org after transfer)
+- Check `payloadParser` matches device protocol (e.g., `vmark` for V-Mark hubs)
+- Check device has `serial_number` or `hardware_ids` populated for lookup
+- For V-Mark: ensure hub receives ACK (`{ result: 0 }` on `<topic>_reply`) — without it, hub stops transmitting
+- If OOM crash: check for duplicate integrations pointing to same broker with same clientId
 
 **Sync errors:**
 - Verify API credentials are valid
