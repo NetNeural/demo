@@ -223,6 +223,43 @@ ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 50 --nostream | grep 
 # If no ACK entries, check the integration's payloadParser is set to 'vmark'
 ```
 
+#### V-Mark Temperature Data Missing or Shows Zero (#373)
+**Problem**: V-Mark temp sensor (product `VTS13W01`) is connected and data flows,
+but the telemetry page shows no temperature values, or temperature appears briefly
+then disappears.
+
+**Root Cause**: The mqtt-subscriber subscribes to wildcard `#` on the V-Mark broker.
+When it publishes an ACK reply (`{ result: 0 }`), the broker echoes it back. The
+service then parses this echo as a new message with empty `paras`, storing empty
+telemetry `{}` — which overwrites the real temperature reading.
+
+**Diagnostic Steps**:
+```bash
+# 1. Check if temperature data arrives at all
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 500 --nostream 2>/dev/null | grep -A2 'parasKeys'"
+# Look for: parasKeys: ["temperature", "RSSI", "SNR", ...]
+# If you see parasKeys: [] with payloadKeys: ["result"] — that's the ACK echo
+
+# 2. Search specifically for temperature telemetry
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 500 --nostream 2>/dev/null | grep -B5 -A20 'temperature'"
+# Should show: temperature: 20.87 (or similar value)
+# If present, the data IS arriving but being overwritten by ACK echo
+
+# 3. Check full message sequence for the temp sensor
+ssh root@138.197.100.110 "pm2 logs mqtt-subscriber --lines 300 --nostream 2>/dev/null | grep -B5 -A15 '2400390030314701' | head -80"
+# Shows all messages for the temp sensor including ACK echoes
+```
+
+**V-Mark Temp Sensor Message Types (serial `2400390030314701`):**
+- Temperature data: `paras: { temperature, RSSI, SNR, Monitor_ID, sampletime, Pedestal, SmapleTrigger, BatteryIdle, BatteryTx }`
+- Gateway signal: `paras: { GwRssi, GwSnr }`
+- ACK echo (bug): `payload: { result: 0 }` — no `paras` field → empty telemetry
+
+**Fix**: Filter ACK echoes in `message-processor.ts`:
+1. Skip messages on `_reply` topics
+2. Skip messages where payload only contains `{ result: ... }`
+See GitHub issue #373 and `MQTT_ARCHITECTURE.txt` → "Known Issue: ACK Echo Overwrites Telemetry"
+
 #### MQTT Subscriber Service OOM Crash
 **Problem**: Service crashes with "JavaScript heap out of memory"
 

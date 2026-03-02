@@ -2,7 +2,7 @@
 
 **Date**: March 1, 2026  
 **Status**: ✅ Production-Ready  
-**Related Stories**: #97 - MQTT Broker Integration Verification, #367-#372 - V-Mark MQTT Fixes
+**Related Stories**: #97 - MQTT Broker Integration Verification, #367-#372 - V-Mark MQTT Fixes, #373 - ACK Echo Overwrite Bug
 
 ## Executive Summary
 
@@ -624,6 +624,76 @@ V-Mark Hub  ──► MQTT Broker ──► mqtt-subscriber
 }
 ```
 
+### V-Mark Device Message Types (Observed March 2026)
+
+The V-Mark system sends multiple message types per reporting cycle.
+Each device (hub and child sensors) sends on its own topic.
+
+#### Hub (`0AB259CFD040`, product `Android-001`)
+
+Topic: `$sys/version/1.0.0/devices/0AB259CFD040/product/Android-001/mac/0AB259CFD040/dev_protocol/1/properties/up`
+
+| Message | paras | Notes |
+|---|---|---|
+| `properties_report` | `{ sim_state }` | Hub connectivity status, no sensor data |
+
+#### Temp Sensor (`2400390030314701`, product `VTS13W01`)
+
+Topic: `$sys/version/1.0.0/devices/2400390030314701/product/VTS13W01/mac/0AB259CFD040/dev_protocol/1/properties/up`
+
+| Message | paras | Notes |
+|---|---|---|
+| `properties_report` (telemetry) | `{ temperature, RSSI, SNR, Monitor_ID, sampletime, Pedestal, SmapleTrigger, BatteryIdle, BatteryTx }` | **Actual temperature data** — e.g. `temperature: 20.87` |
+| `properties_report` (gateway) | `{ GwRssi, GwSnr }` | Gateway signal strength — e.g. `GwRssi: -25, GwSnr: 14` |
+
+**Example full temp sensor payload:**
+```json
+{
+  "device": "2400390030314701",
+  "handle": "properties_report",
+  "product": "VTS13W01",
+  "serial": "2400390030314701",
+  "service": "...",
+  "time": "2026-03-02_00:50:58.000",
+  "paras": {
+    "temperature": 20.87,
+    "RSSI": -38,
+    "SNR": 14,
+    "Monitor_ID": "0000000000000000",
+    "sampletime": "1772412634",
+    "Pedestal": "LOST",
+    "SmapleTrigger": "TIMER",
+    "BatteryIdle": 3590,
+    "BatteryTx": 3010
+  }
+}
+```
+
+### ⚠️ Known Issue: ACK Echo Overwrites Telemetry (#373)
+
+**Status:** Open bug — temperature data IS received and stored, but immediately
+overwritten by ACK echo messages with empty telemetry.
+
+**Root Cause:** The mqtt-subscriber subscribes to wildcard `#` on the broker.
+When it publishes an ACK reply to `<topic>_reply`, the broker delivers that
+message back to the subscriber. The ACK payload `{ result: 0 }` has no `paras`
+field, so the parser extracts empty telemetry `{}` and stores it — overwriting
+the real temperature reading.
+
+**Sequence per reporting cycle:**
+```
+1. Temp sensor sends properties_report → paras: { temperature: 20.87, ... }
+2. Service stores telemetry ✅ (temperature, RSSI, SNR, etc.)
+3. Service publishes ACK to <topic>_reply → { result: 0 }
+4. Broker echoes ACK back to subscriber (wildcard match)
+5. Service parses echo: payloadKeys: ["result"], parasKeys: [] → telemetry: {}
+6. Empty telemetry stored ❌ — no keys, but device last_seen updated
+```
+
+**Fix required in `message-processor.ts`:**
+1. Skip messages on `_reply` topics (ACK echoes)
+2. Skip messages where payload only contains `{ result: ... }` (ACK responses)
+
 ### Key Integration IDs
 
 | ID | Name | Status |
@@ -663,6 +733,14 @@ V-Mark Hub  ──► MQTT Broker ──► mqtt-subscriber
 
 ## Changelog
 
+- **2026-03-02**: V-Mark telemetry diagnosis & ACK echo bug (#373)
+  - Documented V-Mark device message types (hub vs temp sensor paras fields)
+  - Discovered ACK echo bug: service receives its own ACK reply via wildcard subscription
+  - ACK echo payload `{ result: 0 }` parsed as empty telemetry, overwrites real data
+  - Confirmed temperature IS being received (20.87°C) but immediately overwritten
+  - Added full temp sensor payload example with all paras keys
+  - Created GitHub issue #373 with fix requirements
+
 - **2026-03-01**: Major update — MQTT Subscriber Service & V-Mark ACK (#367-#372)
   - Documented persistent mqtt-subscriber service on DO droplet (138.197.100.110)
   - Added V-Mark ACK protocol documentation (properties_report → { result: 0 })
@@ -684,5 +762,5 @@ V-Mark Hub  ──► MQTT Broker ──► mqtt-subscriber
 ---
 
 **Maintained by**: NetNeural Platform Team  
-**Last Updated**: March 1, 2026  
+**Last Updated**: March 2, 2026  
 **Status**: ✅ Production-Ready

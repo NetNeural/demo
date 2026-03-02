@@ -110,6 +110,15 @@ NetNeural supports 8 different integration types for IoT device management, noti
   - Service path: `/opt/mqtt-subscriber/`
   - Process manager: PM2
   - SSH: `root@138.197.100.110`
+- **V-Mark Temp Sensor Data Format (product `VTS13W01`):**
+  - Sends `properties_report` with paras: `{ temperature, RSSI, SNR, Monitor_ID, sampletime, Pedestal, SmapleTrigger, BatteryIdle, BatteryTx }`
+  - Also sends gateway signal: `{ GwRssi, GwSnr }`
+  - Hub (`0AB259CFD040`) sends status only: `{ sim_state }`
+  - See `MQTT_ARCHITECTURE.txt` → "V-Mark Device Message Types" for full payload examples
+- **⚠️ Known Issue (#373):** ACK echo messages overwrite real telemetry.
+  The service subscribes to `#` wildcard and receives its own ACK reply back.
+  The ACK `{ result: 0 }` has no `paras`, so empty telemetry `{}` is stored.
+  Fix: filter `_reply` topics and `{ result }` payloads in `message-processor.ts`.
 - **Note:** When transferring devices between orgs, `mqtt_external` integrations
   are MOVED (not cloned) to preserve the broker's `clientId` reference.
   See `transfer-device` edge function. (Issues #367, #370)
