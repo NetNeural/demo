@@ -146,6 +146,9 @@ function SupportPageContent() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
+  // Sub-orgs (customer orgs) don't see Reports or Data & Operations
+  const isSubOrg = !!currentOrganization?.parentOrganizationId
+
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
   const canAccessPlatformTabs = isSuperAdmin
 
@@ -220,14 +223,18 @@ function SupportPageContent() {
                 <UserCheck className="h-4 w-4" />
                 Access Requests
               </TabsTrigger>
-              <TabsTrigger value="executive-reports" className="flex items-center gap-2">
-                <FileBarChart className="h-4 w-4" />
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value="data-operations" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Data & Operations
-              </TabsTrigger>
+              {!isSubOrg && (
+                <TabsTrigger value="executive-reports" className="flex items-center gap-2">
+                  <FileBarChart className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
+              )}
+              {!isSubOrg && (
+                <TabsTrigger value="data-operations" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Data & Operations
+                </TabsTrigger>
+              )}
               {isSuperAdmin && (
                 <TabsTrigger value="communication" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
@@ -238,12 +245,16 @@ function SupportPageContent() {
             <TabsContent value="access-requests" className="mt-6">
               <AccessRequestsTab key={orgId} organizationId={orgId} />
             </TabsContent>
-            <TabsContent value="executive-reports" className="mt-6">
-              <ExecutiveReportsCard key={orgId} organizationId={orgId} />
-            </TabsContent>
-            <TabsContent value="data-operations" className="mt-6">
-              <DataOperationsTab key={orgId} organizationId={orgId} />
-            </TabsContent>
+            {!isSubOrg && (
+              <TabsContent value="executive-reports" className="mt-6">
+                <ExecutiveReportsCard key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
+            {!isSubOrg && (
+              <TabsContent value="data-operations" className="mt-6">
+                <DataOperationsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
             {isSuperAdmin && (
               <TabsContent value="communication" className="mt-6">
                 <EmailBroadcastCard />

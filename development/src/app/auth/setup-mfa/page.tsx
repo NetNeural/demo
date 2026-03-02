@@ -30,6 +30,7 @@ export default function SetupMfaPage() {
   const [authChecking, setAuthChecking] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
+  const [qrCodeError, setQrCodeError] = useState(false)
   const [secret, setSecret] = useState<string | null>(null)
   const [factorId, setFactorId] = useState<string | null>(null)
   const [verifyCode, setVerifyCode] = useState('')
@@ -48,7 +49,7 @@ export default function SetupMfaPage() {
         router.replace('/auth/login')
       } else {
         // Check if user already has MFA enrolled — if so, skip to dashboard
-        supabase.auth.mfa.listFactors().then(({ data: factors }) => {
+        supabase.auth.mfa.listFactors().then(async ({ data: factors }) => {
           const hasVerifiedTotp = factors?.totp?.some(
             (f) => f.status === 'verified'
           )
@@ -56,7 +57,7 @@ export default function SetupMfaPage() {
             router.replace('/dashboard')
           } else {
             setAuthChecking(false)
-            startEnrollment()
+            await startEnrollment()
           }
         })
       }
@@ -68,6 +69,8 @@ export default function SetupMfaPage() {
     try {
       setEnrolling(true)
       setError('')
+      setQrCode(null)
+      setQrCodeError(false)
       const supabase = createClient()
 
       // Clean up any existing unverified TOTP factors
@@ -242,12 +245,20 @@ export default function SetupMfaPage() {
           {qrCode && (
             <div className="mb-6 flex flex-col items-center">
               <div className="rounded-lg border bg-white p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qrCode}
-                  alt="Scan this QR code with your authenticator app"
-                  className="h-48 w-48"
-                />
+                {qrCodeError ? (
+                  <div className="flex h-48 w-48 flex-col items-center justify-center gap-3 text-center">
+                    <AlertCircle className="h-8 w-8 text-amber-500" />
+                    <p className="text-xs text-muted-foreground">QR code failed to load. Use the manual code below.</p>
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={qrCode}
+                    alt="Scan this QR code with your authenticator app"
+                    className="h-48 w-48"
+                    onError={() => setQrCodeError(true)}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -314,7 +325,7 @@ export default function SetupMfaPage() {
               />
             </div>
 
-            {error && (
+          {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
@@ -342,6 +353,19 @@ export default function SetupMfaPage() {
 
           <div className="mt-4 text-center text-xs text-muted-foreground">
             For security reasons, you cannot skip this step.
+          </div>
+
+          <div className="mt-2 text-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={startEnrollment}
+              disabled={enrolling || isVerifying}
+            >
+              QR code not showing? Regenerate it
+            </Button>
           </div>
         </CardContent>
       </Card>
