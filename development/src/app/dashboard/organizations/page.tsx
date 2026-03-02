@@ -83,6 +83,9 @@ function OrganizationsPageContent() {
   const { user } = useUser()
   const isSuperAdmin = user?.isSuperAdmin || false
 
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+  const isNetNeuralOwner = isOwner && currentOrganization?.id === NETNEURAL_ORG_ID
+
   // Show loading state while fetching organizations
   if (isLoading) {
     return (
@@ -211,7 +214,7 @@ function OrganizationsPageContent() {
             </TabsTrigger>
           )}
 
-          {isSuperAdmin && (
+          {(isSuperAdmin || isNetNeuralOwner) && (
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               <span>Documents</span>
@@ -300,8 +303,8 @@ function OrganizationsPageContent() {
           </TabsContent>
         )}
 
-        {/* Documents — Data Room (NetNeural super admins only) */}
-        {isSuperAdmin && (
+        {/* Documents — Data Room (NetNeural super admins + NetNeural org owners only) */}
+        {(isSuperAdmin || isNetNeuralOwner) && (
           <TabsContent value="documents">
             <DocumentsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
           </TabsContent>
