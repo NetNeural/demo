@@ -72,7 +72,7 @@ jobs:
         run: npm run format:check
 
       - name: 🧪 Run unit tests
-        run: npm run test:coverage
+        run: npm run test:ci
         env:
           NODE_ENV: test
 

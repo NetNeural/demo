@@ -74,13 +74,17 @@ const config = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
 
-  // Coverage thresholds - set to current achievable levels, increase as coverage improves
+  // Coverage thresholds — enforced in CI. Raise each week:
+  // Week 1 (2026-03-02): 20/20/20/50 — baseline enforcement enabled
+  // Week 2 target: statements/lines/functions → 30%
+  // Week 3 target: statements/lines/functions → 50%
+  // Week 4 target: statements/lines/functions → 70%
   coverageThreshold: {
     global: {
-      branches: 5,
-      functions: 5,
-      lines: 5,
-      statements: 5,
+      branches: 50,
+      functions: 20,
+      lines: 20,
+      statements: 20,
     },
   },
 
