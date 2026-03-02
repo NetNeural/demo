@@ -6,7 +6,6 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CreateOrganizationDialog } from '@/components/organizations/CreateOrganizationDialog'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import {
   DropdownMenu,
@@ -21,7 +20,7 @@ import { cn } from '@/lib/utils'
 
 interface OrganizationSwitcherProps {
   className?: string
-  showCreateButton?: boolean
+  showCreateButton?: boolean // deprecated, no longer used
   compact?: boolean
 }
 
@@ -48,7 +47,7 @@ export function OrganizationSwitcher({
     isSuperAdminFromUser: user?.isSuperAdmin,
     calculatedIsSuperAdmin: isSuperAdmin,
     showCreateButton: showCreateButton,
-    willShowCreateOrg: showCreateButton && isSuperAdmin,
+    willShowCreateOrg: false, // create org button removed
   })
 
   const [open, setOpen] = useState(false)
@@ -115,27 +114,6 @@ export function OrganizationSwitcher({
             Get Started
           </DropdownMenuLabel>
 
-          {showCreateButton && (
-            <div className="px-2 py-2">
-              <CreateOrganizationDialog
-                onSuccess={(newOrgId) => {
-                  setOpen(false)
-                  refreshOrganizations().then(() => {
-                    switchOrganization(newOrgId)
-                  })
-                }}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Create Organization
-                  </Button>
-                }
-              />
-            </div>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     )
@@ -298,31 +276,6 @@ export function OrganizationSwitcher({
           )
         })}
 
-        {showCreateButton && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-2">
-              <CreateOrganizationDialog
-                onSuccess={(newOrgId) => {
-                  setOpen(false)
-                  // Refresh organizations and switch to new one
-                  refreshOrganizations().then(() => {
-                    switchOrganization(newOrgId)
-                  })
-                }}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Create Organization
-                  </Button>
-                }
-              />
-            </div>
-          </>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

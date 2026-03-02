@@ -24,7 +24,6 @@ import { toast } from 'sonner'
 
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
-import CustomerAssistanceTab from './components/CustomerAssistanceTab'
 import TroubleshootingTab from './components/TroubleshootingTab'
 import SystemHealthTab from './components/SystemHealthTab'
 import DataOperationsTab from './components/DataOperationsTab'
@@ -36,12 +35,6 @@ import DocumentationTab from './components/DocumentationTab'
 
 const tabs = [
   // Org-admin tabs — visible to all org admins
-  {
-    id: 'customer-assistance',
-    label: 'Customer Assistance',
-    icon: Users,
-    superAdminOnly: false,
-  },
   {
     id: 'executive-reports',
     label: 'Reports',
@@ -104,9 +97,9 @@ function SupportPageContent() {
   // Initialize activeTab from URL parameter or default
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
-      return searchParams.get('tab') || 'customer-assistance'
+      return searchParams.get('tab') || 'access-requests'
     }
-    return 'customer-assistance'
+    return 'access-requests'
   })
 
   // Update activeTab when URL parameter changes
@@ -183,7 +176,6 @@ function SupportPageContent() {
       <Tabs
         value={(() => {
           const groupMap: Record<string, string> = {
-            'customer-assistance': 'customer-support',
             'access-requests': 'customer-support',
             'executive-reports': 'customer-support',
             'data-operations': 'customer-support',
@@ -195,11 +187,11 @@ function SupportPageContent() {
         })()}
         onValueChange={(group) => {
           const defaults: Record<string, string> = {
-            'customer-support': 'customer-assistance',
+            'customer-support': 'access-requests',
             resources: 'documentation',
             platform: 'troubleshooting',
           }
-          handleTabChange(defaults[group] || 'customer-assistance')
+          handleTabChange(defaults[group] || 'access-requests')
         }}
         className="space-y-6"
       >
@@ -224,10 +216,6 @@ function SupportPageContent() {
         <TabsContent value="customer-support">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="customer-assistance" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Customer Assistance
-              </TabsTrigger>
               <TabsTrigger value="access-requests" className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
                 Access Requests
@@ -247,9 +235,6 @@ function SupportPageContent() {
                 </TabsTrigger>
               )}
             </TabsList>
-            <TabsContent value="customer-assistance" className="mt-6">
-              <CustomerAssistanceTab key={orgId} organizationId={orgId} />
-            </TabsContent>
             <TabsContent value="access-requests" className="mt-6">
               <AccessRequestsTab key={orgId} organizationId={orgId} />
             </TabsContent>
