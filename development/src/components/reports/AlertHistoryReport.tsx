@@ -42,6 +42,7 @@ import { format, subDays, subHours } from 'date-fns'
 import {
   CalendarIcon,
   Download,
+  FileDown,
   Filter,
   Clock,
   AlertTriangle,
@@ -477,6 +478,42 @@ export function AlertHistoryReport() {
     toast.success('Report exported successfully')
   }
 
+  // Export to PDF
+  const handleExportPDF = async () => {
+    const headers = [
+      'Date', 'Alert Type', 'Severity', 'Device', 'Status',
+      'Response Time (min)', 'Acknowledged By', 'Title',
+    ]
+    const rows = alerts.map((alert) => [
+      format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm'),
+      alert.alert_type,
+      alert.severity,
+      alert.device_name || 'N/A',
+      alert.is_resolved ? 'Resolved' : 'Unresolved',
+      alert.responseTimeMinutes ? alert.responseTimeMinutes.toFixed(1) : 'N/A',
+      alert.acknowledgement?.user_email || 'N/A',
+      alert.title,
+    ])
+    const { exportTableToPDF } = await import('@/lib/pdf-export')
+    exportTableToPDF({
+      title: 'Alert History Report',
+      subtitle: startDate && endDate
+        ? `${format(startDate, 'MMM d, yyyy')} — ${format(endDate, 'MMM d, yyyy')}${severityFilter !== 'all' ? ` · Severity: ${severityFilter}` : ''}`
+        : undefined,
+      headers,
+      rows,
+      filename: 'alert-history',
+      organization: currentOrganization?.name,
+      summary: stats ? [
+        { label: 'Total Alerts', value: String(stats.totalAlerts) },
+        { label: 'Critical', value: String(stats.criticalAlerts) },
+        { label: 'Unresolved', value: String(stats.unresolvedAlerts) },
+        { label: 'Avg Response', value: `${stats.avgResponseTimeMinutes.toFixed(1)} min` },
+      ] : undefined,
+    })
+    toast.success('PDF exported successfully')
+  }
+
   // Build payload for SendReportDialog
   const getReportPayload = (): ReportPayload => {
     const csv = [
@@ -572,6 +609,14 @@ export function AlertHistoryReport() {
           >
             <Send className="mr-2 h-4 w-4" />
             Send Report
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={loading || alerts.length === 0}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
           <Button
             onClick={handleExport}

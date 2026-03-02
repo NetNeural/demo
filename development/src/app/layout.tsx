@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
 import { Toaster } from 'sonner'
 import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter'
+import { CookieConsent } from '@/components/ui/CookieConsent'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,6 +55,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster theme="system" richColors />
+          <CookieConsent />
         </Providers>
       </body>
     </html>

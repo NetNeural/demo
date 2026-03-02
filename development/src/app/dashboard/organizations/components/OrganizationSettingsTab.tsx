@@ -33,7 +33,7 @@ import {
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { removeBackground } from '@imgly/background-removal'
+// @imgly/background-removal loaded dynamically on use to keep ~100KB out of vendor bundle
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
@@ -336,6 +336,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       if (removeLogoBg && file.type !== 'image/svg+xml') {
         try {
           toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          const { removeBackground } = await import('@imgly/background-removal')
           const bgRemovedBlob = await removeBackground(file)
           processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
           toast.success('Background removed successfully')
@@ -462,6 +463,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       if (removeSentinelBg && file.type !== 'image/svg+xml') {
         try {
           toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          const { removeBackground } = await import('@imgly/background-removal')
           const bgRemovedBlob = await removeBackground(file)
           processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
           toast.success('Background removed successfully')

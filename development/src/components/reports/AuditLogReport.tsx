@@ -75,6 +75,7 @@ import {
   X,
   Minus,
   Plus,
+  FileDown,
 } from 'lucide-react'
 import {
   BarChart,
@@ -649,6 +650,41 @@ export function AuditLogReport() {
     document.body.removeChild(link)
 
     toast.success('Audit log exported successfully')
+  }
+
+  // Export to PDF
+  const exportToPDF = async () => {
+    if (logs.length === 0) {
+      toast.error('No data to export')
+      return
+    }
+    const headers = [
+      'Timestamp', 'User', 'Category', 'Action',
+      'Resource Type', 'Resource Name', 'Status',
+    ]
+    const rows = logs.map((log) => [
+      format(new Date(log.created_at), 'yyyy-MM-dd HH:mm'),
+      log.user_email || 'System',
+      log.action_category,
+      log.action_type,
+      log.resource_type || '',
+      log.resource_name || '',
+      log.status,
+    ])
+    const { exportTableToPDF } = await import('@/lib/pdf-export')
+    exportTableToPDF({
+      title: 'User Activity Audit Log',
+      subtitle: `${logs.length} entries`,
+      headers,
+      rows,
+      filename: 'audit-log',
+      organization: currentOrganization?.name,
+      summary: [
+        { label: 'Total Actions', value: String(logs.length) },
+        { label: 'Unique Users', value: String(new Set(logs.map(l => l.user_email)).size) },
+      ],
+    })
+    toast.success('PDF exported successfully')
   }
 
   // Build payload for SendReportDialog
@@ -1293,6 +1329,14 @@ export function AuditLogReport() {
             >
               <Send className="mr-2 h-4 w-4" />
               Send Report
+            </Button>
+            <Button
+              variant="outline"
+              onClick={exportToPDF}
+              disabled={logs.length === 0}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Export PDF
             </Button>
             <Button
               variant="outline"

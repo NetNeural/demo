@@ -37,13 +37,25 @@ import {
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
-import { FinancialReportsTab } from './components/FinancialReportsTab'
 import { SubscriptionsTab } from './components/SubscriptionsTab'
 import { UsageMeteringTab } from './components/UsageMeteringTab'
 import { CustomersTab } from './components/CustomersTab'
 import { PlanManagementTab } from './components/PlanManagementTab'
 import { BillingOperationsTab } from './components/BillingOperationsTab'
 import { PromoCodesTab } from './components/PromoCodesTab'
+import { ARAgingReport } from '@/components/admin/ARAgingReport'
+import { PaymentFailureReport } from '@/components/admin/PaymentFailureReport'
+import { TaxSummaryReport } from '@/components/admin/TaxSummaryReport'
+import {
+  fetchARAgingReport,
+  fetchPaymentFailureReport,
+  fetchTaxSummaryReport,
+} from '@/lib/admin/financial-report-queries'
+import type {
+  ARAgingSummary,
+  PaymentFailureReport as PaymentFailureData,
+  TaxSummaryReport as TaxSummaryData,
+} from '@/lib/admin/financial-report-queries'
 
 const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -58,15 +70,27 @@ const BILLING_MODES: { value: BillingMode; label: string; icon: typeof Power; co
 // ── Tab configuration (mirrors the support page pattern) ─────────────
 const billingTabs = [
   {
-    id: 'financial-reports',
-    label: 'Financial Reports',
+    id: 'revenue',
+    label: 'Revenue',
+    icon: TrendingUp,
+    ownerOnly: true,
+  },
+  {
+    id: 'ar-aging',
+    label: 'AR Aging',
     icon: FileBarChart,
     ownerOnly: true,
   },
   {
-    id: 'revenue',
-    label: 'Revenue',
-    icon: TrendingUp,
+    id: 'payment-failures',
+    label: 'Payment Failures',
+    icon: FileBarChart,
+    ownerOnly: true,
+  },
+  {
+    id: 'tax-summary',
+    label: 'Tax Summary',
+    icon: FileBarChart,
     ownerOnly: true,
   },
   {
@@ -127,6 +151,49 @@ export default function BillingAdministrationPage() {
   )
 }
 
+/** Self-loading AR Aging report panel */
+function ARAgingPanel() {
+  const [data, setData] = useState<ARAgingSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const supabase = createClient()
+    fetchARAgingReport(supabase)
+      .then(setData)
+      .catch((err) => { console.error('AR Aging load error', err); toast.error('Failed to load AR Aging report') })
+      .finally(() => setLoading(false))
+  }, [])
+  return <ARAgingReport data={data} loading={loading} />
+}
+
+/** Self-loading Payment Failures report panel */
+function PaymentFailuresPanel() {
+  const [data, setData] = useState<PaymentFailureData | null>(null)
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const supabase = createClient()
+    fetchPaymentFailureReport(supabase, 6)
+      .then(setData)
+      .catch((err) => { console.error('Payment Failures load error', err); toast.error('Failed to load Payment Failures report') })
+      .finally(() => setLoading(false))
+  }, [])
+  return <PaymentFailureReport data={data} loading={loading} />
+}
+
+/** Self-loading Tax Summary report panel */
+function TaxSummaryPanel() {
+  const [data, setData] = useState<TaxSummaryData | null>(null)
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const supabase = createClient()
+    const currentYear = new Date().getFullYear()
+    fetchTaxSummaryReport(supabase, currentYear)
+      .then(setData)
+      .catch((err) => { console.error('Tax Summary load error', err); toast.error('Failed to load Tax Summary report') })
+      .finally(() => setLoading(false))
+  }, [])
+  return <TaxSummaryReport data={data} loading={loading} />
+}
+
 function BillingAdminContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -137,9 +204,9 @@ function BillingAdminContent() {
   // URL-synced tab state (same pattern as support page)
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
-      return searchParams.get('tab') || 'financial-reports'
+      return searchParams.get('tab') || 'revenue'
     }
-    return 'financial-reports'
+    return 'revenue'
   })
 
   // Update activeTab when URL parameter changes
@@ -424,7 +491,7 @@ function BillingAdminContent() {
       <Tabs
         value={(() => {
           const groupMap: Record<string, string> = {
-            'financial-reports': 'reports', revenue: 'reports',
+            revenue: 'reports', 'ar-aging': 'reports', 'payment-failures': 'reports', 'tax-summary': 'reports',
             invoices: 'transactions', payments: 'transactions',
             subscriptions: 'management', usage: 'management', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
@@ -433,7 +500,7 @@ function BillingAdminContent() {
         })()}
         onValueChange={(group) => {
           const defaults: Record<string, string> = {
-            reports: 'financial-reports', transactions: 'invoices',
+            reports: 'revenue', transactions: 'invoices',
             management: 'subscriptions', operations: 'plan-management',
           }
           handleTabChange(defaults[group] || 'financial-reports')
@@ -459,24 +526,38 @@ function BillingAdminContent() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Reports & Analytics — Financial Reports + Revenue */}
+        {/* Reports & Analytics — Revenue + AR Aging + Payment Failures + Tax Summary */}
         <TabsContent value="reports">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="financial-reports" className="flex items-center gap-2">
-                <FileBarChart className="h-4 w-4" />
-                Financial Reports
-              </TabsTrigger>
               <TabsTrigger value="revenue" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Revenue
               </TabsTrigger>
+              <TabsTrigger value="ar-aging" className="flex items-center gap-2">
+                <FileBarChart className="h-4 w-4" />
+                AR Aging
+              </TabsTrigger>
+              <TabsTrigger value="payment-failures" className="flex items-center gap-2">
+                <FileBarChart className="h-4 w-4" />
+                Payment Failures
+              </TabsTrigger>
+              <TabsTrigger value="tax-summary" className="flex items-center gap-2">
+                <FileBarChart className="h-4 w-4" />
+                Tax Summary
+              </TabsTrigger>
             </TabsList>
-            <TabsContent value="financial-reports" className="mt-6">
-              <FinancialReportsTab />
-            </TabsContent>
             <TabsContent value="revenue" className="mt-6">
               <RevenueTab />
+            </TabsContent>
+            <TabsContent value="ar-aging" className="mt-6">
+              <ARAgingPanel />
+            </TabsContent>
+            <TabsContent value="payment-failures" className="mt-6">
+              <PaymentFailuresPanel />
+            </TabsContent>
+            <TabsContent value="tax-summary" className="mt-6">
+              <TaxSummaryPanel />
             </TabsContent>
           </Tabs>
         </TabsContent>

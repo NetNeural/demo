@@ -334,7 +334,7 @@ serve(async (req) => {
 
     // Platform launch readiness — % of launch blockers resolved
     // Launch blockers: Billing ✅, Auth ✅, 3 Environments ✅, Stripe Integration ✅,
-    // Privacy Policy, Cookie Consent, Security Headers, MFA, Remove CI continue-on-error
+    // Privacy Policy, Cookie Consent ✅, Security Headers, MFA ✅, Remove CI continue-on-error
     const launchBlockers = [
       { name: 'Stripe Billing Integration', done: hasStripePriceIds },
       { name: 'Multi-tenant Auth & Roles', done: uniqueUsers > 0 },
@@ -345,7 +345,7 @@ serve(async (req) => {
       { name: 'Security Headers (CSP)', done: true }, // #252 — CSP meta tags implemented
       { name: 'Signup & Registration', done: true }, // 3-step signup with plan selection
       { name: 'Plans & Pricing Admin', done: true }, // owner-only admin page
-      { name: 'Cookie Consent (GDPR)', done: false }, // #250
+      { name: 'Cookie Consent (GDPR)', done: true }, // #250 — implemented 2026-03-01
       { name: 'MFA Enforcement', done: true }, // Forced MFA setup on login — shipped 2026-03-01
       { name: 'CI Quality Gates (remove continue-on-error)', done: false }, // #253
     ]
@@ -460,7 +460,7 @@ serve(async (req) => {
       risk: 'Compliance readiness (SOC 2)',
       severity: 'Medium',
       color: '#f59e0b',
-      mitigation: 'Privacy policy ✅, CSP headers ✅. Still need: MFA enforcement, cookie consent, IRP.',
+      mitigation: 'Privacy policy ✅, CSP headers ✅, cookie consent ✅. Still need: IRP.',
     })
 
     if (totalOpen > 100) {

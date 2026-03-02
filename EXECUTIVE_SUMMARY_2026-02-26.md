@@ -182,6 +182,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 
 ### Testing & CI/CD (Epic 2 — 90% Complete)
 - 875+ passing unit tests + 96 Edge Function tests + 80+ E2E tests + 50 regression tests
+- Current test inventory: **90 strict test/spec files**, or **152 full testing inventory** (includes 27 script tests, 12 fixtures, CI workflow, and test helpers across 5 locations)
 - GitHub Actions: type-check, lint, build validation, coverage enforcement
 - `continue-on-error` removed from CI (#253) — tests now block deploys ✅ **NEW**
 - 3-environment deployment pipeline operational ✅ **NEW**
@@ -369,6 +370,7 @@ Core Web Vitals: LCP 2.1s ✅ · FID 78ms ✅ · CLS 0.08 ✅
 | Secrets Governance | `development/docs/SECRETS_GOVERNANCE.md` |
 | Supabase GitHub Strategy | `development/docs/SUPABASE_GITHUB_SECRETS_STRATEGY.md` |
 | Testing Guide | `development/docs/TESTING.md` |
+| Testing Locations (Assessment) | `development/docs/TESTING_LOCATIONS_FOR_REPORT.md` |
 | API Documentation | `development/docs/API_DOCUMENTATION.md` |
 | Changelog | `development/CHANGELOG.md` |
 | Branch Protection | `docs/BRANCH_PROTECTION.md` |

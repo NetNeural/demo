@@ -141,7 +141,37 @@ const nextConfig = {
               name: 'supabase-vendor',
               priority: 15,
             },
-            // Other vendor libraries
+            // Recharts (charting library)
+            recharts: {
+              test: /[\\/]node_modules[\\/]recharts[\\/]/,
+              name: 'recharts-vendor',
+              priority: 15,
+            },
+            // Lucide icons
+            lucide: {
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              name: 'lucide-vendor',
+              priority: 15,
+            },
+            // TanStack React Query
+            tanstack: {
+              test: /[\\/]node_modules[\\/]@tanstack[\\/]/,
+              name: 'tanstack-vendor',
+              priority: 15,
+            },
+            // Date-fns
+            datefns: {
+              test: /[\\/]node_modules[\\/]date-fns[\\/]/,
+              name: 'datefns-vendor',
+              priority: 15,
+            },
+            // Sentry
+            sentry: {
+              test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              name: 'sentry-vendor',
+              priority: 15,
+            },
+            // Other vendor libraries (catch-all — should now be much smaller)
             vendors: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',

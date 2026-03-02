@@ -357,6 +357,7 @@ serve(async (req) => {
     let edgeFnTestFileCount = 0
     let e2eTestFileCount = 0
     let integrationTestFileCount = 0
+    let scriptTestFileCount = 0
     let docMdFileCount = 0
     let docTotalBytes = 0
     let workflowFileCount = 0
@@ -432,6 +433,15 @@ serve(async (req) => {
 
           integrationTestFileCount = blobs.filter(
             (f: any) => f.path.startsWith('development/tests/integration/')
+          ).length
+
+          scriptTestFileCount = blobs.filter(
+            (f: any) =>
+              (f.path.startsWith('development/scripts/') ||
+                f.path.startsWith('scripts/')) &&
+              (f.path.includes('test-') ||
+                f.path.includes('cleanup-test') ||
+                f.path.includes('create-test'))
           ).length
 
           // Documentation
@@ -544,7 +554,7 @@ serve(async (req) => {
           )
 
           console.log(
-            `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
+            `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${scriptTestFileCount} scripts, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
           )
           console.log(
             `[assessment-report] Path-detect: escalation=${hasEscalation}, snooze=${hasSnooze}, timeline=${hasAlertTimeline}, darkMode=${hasDarkMode}, shortcuts=${hasKeyboardShortcuts}, slack=${hasSlackCode}, email=${hasEmailCode}, sms=${hasSmsCode}, mfa=${hasMfaCode}, golioth=${hasGoliothCode}, mqtt=${hasMqttCode}`
@@ -602,7 +612,8 @@ serve(async (req) => {
       unitTestFileCount +
       edgeFnTestFileCount +
       e2eTestFileCount +
-      integrationTestFileCount
+      integrationTestFileCount +
+      scriptTestFileCount
     const estimatedDocWords = Math.round(docTotalBytes / 6) // ~6 bytes per word for markdown
     const alertFeatureCount =
       (hasEscalation ? 1 : 0) +
@@ -784,34 +795,42 @@ serve(async (req) => {
 
     // --- 7. Testing ---
     {
-      let score = 20
+      let score = 25
       // Unit test files (from repo tree)
       if (unitTestFileCount >= 10) score += 5
+      if (unitTestFileCount >= 25) score += 5
       if (unitTestFileCount >= 50) score += 5
       if (unitTestFileCount >= 100) score += 5
-      if (unitTestFileCount >= 200) score += 5
+      if (unitTestFileCount >= 200) score += 3
       // Edge function tests
+      if (edgeFnTestFileCount >= 1) score += 3
       if (edgeFnTestFileCount >= 5) score += 5
-      if (edgeFnTestFileCount >= 20) score += 5
+      if (edgeFnTestFileCount >= 20) score += 2
       // E2E tests (Playwright)
-      if (e2eTestFileCount >= 5) score += 5
-      if (e2eTestFileCount >= 20) score += 5
-      if (e2eTestFileCount >= 50) score += 5
+      if (e2eTestFileCount >= 1) score += 3
+      if (e2eTestFileCount >= 4) score += 4
+      if (e2eTestFileCount >= 10) score += 3
       // Integration tests
+      if (integrationTestFileCount >= 1) score += 2
       if (integrationTestFileCount >= 3) score += 3
       if (integrationTestFileCount >= 10) score += 2
+      // Script tests (test-*.js, test-*.sh in scripts/)
+      if (scriptTestFileCount >= 5) score += 3
+      if (scriptTestFileCount >= 15) score += 3
+      if (scriptTestFileCount >= 25) score += 2
       // Quality signals from GitHub
-      if (ghClosedIssues > 100) score += 5
-      if (ghClosedIssues > 200) score += 5
+      if (ghClosedIssues > 100) score += 3
+      if (ghClosedIssues > 200) score += 2
       // Breadth bonus
+      if (totalTestFiles >= 50) score += 5
       if (totalTestFiles >= 100) score += 5
-      if (totalTestFiles >= 300) score += 5
+      if (totalTestFiles >= 300) score += 3
       score = clamp(score)
       dimensions.push({
         name: 'Testing',
         score,
         grade: calcGrade(score),
-        notes: `${unitTestFileCount} unit test files, ${edgeFnTestFileCount} edge fn test files, ${e2eTestFileCount} E2E test files, ${integrationTestFileCount} integration test files (${totalTestFiles} total). ${ghClosedIssues}+ issues closed.`,
+        notes: `${unitTestFileCount} unit test files, ${edgeFnTestFileCount} edge fn tests, ${e2eTestFileCount} E2E tests, ${integrationTestFileCount} integration tests, ${scriptTestFileCount} script tests (${totalTestFiles} total). Locations: __tests__/, tests/, e2e/, supabase/functions/, scripts/. ${ghClosedIssues}+ issues closed.`,
       })
     }
 

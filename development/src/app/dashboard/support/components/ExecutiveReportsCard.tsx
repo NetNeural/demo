@@ -48,6 +48,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { edgeFunctions } from '@/lib/edge-functions'
+// printHtmlAsPdf loaded dynamically on click to keep jspdf out of vendor bundle
 import { toast } from 'sonner'
 import {
   Mail,
@@ -87,6 +88,7 @@ import {
   Radio,
   Gauge,
   CreditCard,
+  FileDown,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -1505,10 +1507,25 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
             <DialogTitle>{previewTitle} — Preview</DialogTitle>
           </DialogHeader>
           {previewHtml && (
-            <div
-              className="rounded border bg-white p-4"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
+            <>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const { printHtmlAsPdf } = await import('@/lib/pdf-export')
+                    printHtmlAsPdf(previewHtml, previewTitle)
+                  }}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
+              <div
+                className="rounded border bg-white p-4"
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            </>
           )}
         </DialogContent>
       </Dialog>

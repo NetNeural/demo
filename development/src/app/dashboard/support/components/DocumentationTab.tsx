@@ -260,6 +260,18 @@ const DOCS: DocEntry[] = [
     audience: ['Super Admins', 'Compliance Officers'],
     lastUpdated: '2025-12-15',
   },
+  {
+    id: 'incident-response',
+    title: 'Incident Response Plan',
+    filename: 'INCIDENT_RESPONSE_PLAN.md',
+    description:
+      'Formal IRP for SOC 2 / FISMA compliance — severity classification (P1-P4), response SLAs, escalation matrix, containment procedures, recovery runbooks, post-mortem templates, customer notification templates, Supabase-specific procedures.',
+    icon: AlertTriangle,
+    category: 'operations',
+    lines: 680,
+    audience: ['Super Admins', 'DevOps', 'Security'],
+    lastUpdated: '2026-03-01',
+  },
 ]
 
 const CATEGORIES = [
