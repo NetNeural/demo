@@ -272,9 +272,13 @@ export async function resolveOrganizationId(
   // User is requesting a DIFFERENT org than their default — verify membership
   console.log(`🔵 resolveOrganizationId: checking membership for ${requestedOrgId}`)
   const serviceClient = createServiceClient()
+  // Bug #374 fix: only select columns that actually exist in organization_members.
+  // Previously selected 'is_temporary, expires_at' which don't exist, causing a
+  // 400 error that silently fell through to the default-org fallback — so every
+  // multi-org user always got their default org's data regardless of selection.
   const { data: membership, error: membershipError } = await serviceClient
     .from('organization_members')
-    .select('organization_id, is_temporary, expires_at')
+    .select('organization_id, role')
     .eq('user_id', userContext.userId)
     .eq('organization_id', requestedOrgId)
     .maybeSingle()
@@ -287,24 +291,7 @@ export async function resolveOrganizationId(
   }
 
   if (membership) {
-    // Check if temporary membership has expired
-    if (membership.is_temporary && membership.expires_at) {
-      const expiresAt = new Date(membership.expires_at)
-      if (expiresAt < new Date()) {
-        console.warn(
-          `User ${userContext.email} temporary access to org ${requestedOrgId} has expired.`
-        )
-        // Clean up expired membership
-        await serviceClient
-          .from('organization_members')
-          .delete()
-          .eq('user_id', userContext.userId)
-          .eq('organization_id', requestedOrgId)
-          .eq('is_temporary', true)
-        return userContext.organizationId
-      }
-    }
-    console.log(`🔵 resolveOrganizationId: membership confirmed → returning ${requestedOrgId}`)
+    console.log(`🔵 resolveOrganizationId: membership confirmed (role=${membership.role}) → returning ${requestedOrgId}`)
     return requestedOrgId
   }
 
