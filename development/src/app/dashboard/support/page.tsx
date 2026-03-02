@@ -147,7 +147,7 @@ function SupportPageContent() {
   const isSuperAdmin = user?.isSuperAdmin || false
 
   // Sub-orgs (customer orgs) don't see Reports or Data & Operations
-  const isSubOrg = !!currentOrganization?.parentOrganizationId
+  const isSubOrg = !!currentOrganization?.parent_organization_id
 
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
   const canAccessPlatformTabs = isSuperAdmin

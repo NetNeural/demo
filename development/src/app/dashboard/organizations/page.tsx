@@ -16,6 +16,7 @@ import {
   Key,
   Briefcase,
   Network,
+  FolderOpen,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -33,6 +34,7 @@ import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 import { BillingTab } from './components/BillingTab'
 import { ApiKeysTab } from './components/ApiKeysTab'
+import { DocumentsTab } from './components/DocumentsTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function OrganizationsPage() {
@@ -171,6 +173,7 @@ function OrganizationsPageContent() {
             members: 'people',
             locations: 'infrastructure', integrations: 'infrastructure', 'api-keys': 'infrastructure',
             billing: 'business', customers: 'business',
+            documents: 'documents',
             settings: 'settings',
           }
           return groupMap[activeTab] || 'overview'
@@ -179,7 +182,7 @@ function OrganizationsPageContent() {
           // When switching groups, navigate to default sub-tab
           const defaults: Record<string, string> = {
             overview: 'overview', people: 'members', infrastructure: 'locations',
-            business: 'billing', settings: 'settings',
+            business: 'billing', documents: 'documents', settings: 'settings',
           }
           handleTabChange(defaults[group] || 'overview')
         }}
@@ -205,6 +208,13 @@ function OrganizationsPageContent() {
             <TabsTrigger value="business" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               <span>Business</span>
+            </TabsTrigger>
+          )}
+
+          {(isSuperAdmin || isOwner || isAdmin) && (
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              <span>Documents</span>
             </TabsTrigger>
           )}
 
@@ -287,6 +297,13 @@ function OrganizationsPageContent() {
         {(isSuperAdmin || isOwner) && (
           <TabsContent value="settings">
             <OrganizationSettingsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+          </TabsContent>
+        )}
+
+        {/* Documents — Data Room */}
+        {(isSuperAdmin || isOwner || isAdmin) && (
+          <TabsContent value="documents">
+            <DocumentsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
           </TabsContent>
         )}
       </Tabs>
