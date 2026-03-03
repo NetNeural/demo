@@ -1352,3 +1352,92 @@ curl https://api.netneural.io/openapi.json -o netneural-api.json
 **API Version:** v1  
 **Last Reviewed By:** Platform Engineering Team  
 **Next Review Date:** March 17, 2026
+
+
+================================================================================
+SECTION 12: CUSTOMER DATA EXPORT API (#383)
+================================================================================
+The Customer Export API lets organisations pull data into external systems.
+Base path: /functions/v1/export
+
+All endpoints require: Authorization: Bearer nn_live_<key>
+Full interactive docs: GET /functions/v1/export/openapi (Swagger UI)
+OpenAPI 3.0 spec:      GET /functions/v1/export/openapi.json
+
+ENDPOINTS:
+  GET /export/telemetry            — paginated time-series sensor data
+  GET /export/devices              — device inventory list
+  GET /export/devices/:id          — single device detail
+  GET /export/devices/:id/status-history — connection state history
+  GET /export/alerts               — alert events
+  GET /export/openapi              — Swagger UI (no auth)
+  GET /export/openapi.json         — OpenAPI 3.0 spec (no auth)
+
+RATE LIMIT HEADERS (on every response):
+  X-RateLimit-Limit:     requests allowed per 60-second window
+  X-RateLimit-Remaining: requests remaining in current window
+  X-RateLimit-Reset:     Unix epoch when window resets
+  X-RateLimit-Window:    always "60"
+
+  HTTP 429 is returned when the limit is exceeded.
+
+CSV EXPORT: Add Accept: text/csv to any collection endpoint request.
+
+PAGINATION: All collection endpoints use keyset cursors.
+  Pass next_cursor from the response as cursor= in the next request.
+  When next_cursor is null, you have reached the last page.
+
+For full parameter documentation and examples see: EXPORT_API_GUIDE.txt
+
+================================================================================
+SECTION 13: WEBHOOK SUBSCRIPTIONS API (#388)
+================================================================================
+Push real-time event notifications to your HTTPS endpoints.
+Base path: /functions/v1/webhook-subscriptions
+Auth: session JWT (Authorization: Bearer <session_token>)
+
+SUPPORTED EVENTS:
+  alert.created, alert.resolved, device.online, device.offline, device.warning
+
+ENDPOINTS:
+  GET    /webhook-subscriptions?organization_id=<id>  — list subscriptions
+  GET    /webhook-subscriptions?organization_id=<id>&id=<id> — detail + log
+  POST   /webhook-subscriptions                       — create
+  PATCH  /webhook-subscriptions?id=<id>              — update
+  DELETE /webhook-subscriptions?id=<id>              — delete
+  POST   /webhook-subscriptions?id=<id>&action=test  — send test ping
+
+CREATE BODY:
+  {
+    "organization_id": "uuid",
+    "name":            "Optional display name",
+    "url":             "https://your-server.com/webhook",  (HTTPS required)
+    "event_types":     ["alert.created", "alert.resolved"]
+  }
+
+CREATE RESPONSE includes "secret" field — shown only once at creation.
+Use this secret to verify HMAC-SHA256 signatures on incoming events.
+
+DELIVERY HEADERS:
+  X-NetNeural-Signature: sha256=<hex>   (verify with your secret)
+  X-NetNeural-Event:     alert.created
+  X-NetNeural-Delivery:  <uuid>
+  User-Agent:            NetNeural-Webhooks/1.0
+
+PAYLOAD ENVELOPE:
+  {
+    "event":     "alert.created",
+    "timestamp": "2026-03-03T10:00:00.000Z",
+    "data":      { ...event-specific fields... }
+  }
+
+SIGNATURE VERIFICATION (Python):
+  import hmac, hashlib
+  signature_ok = hmac.compare_digest(
+    'sha256=' + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest(),
+    request.headers['X-NetNeural-Signature']
+  )
+
+For full documentation see: EXPORT_API_GUIDE.txt (Section 7)
+
+Document Version: 1.0 — Updated 2026-03-03
