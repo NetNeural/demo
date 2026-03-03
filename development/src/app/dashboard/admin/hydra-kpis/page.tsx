@@ -132,7 +132,7 @@ export default function HydraKPIDashboardPage() {
   if (loading || !kpis) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-sm text-gray-500">Loading Hydra KPIs…</div>
+        <div className="text-sm text-muted-foreground">Loading Hydra KPIs…</div>
       </div>
     )
   }
@@ -142,8 +142,8 @@ export default function HydraKPIDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Project Hydra KPIs</h1>
-          <p className="mt-1 text-sm text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Project Hydra KPIs</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Reseller network health, sensor velocity, and revenue metrics.
           </p>
         </div>
@@ -152,7 +152,7 @@ export default function HydraKPIDashboardPage() {
             variant="outline"
             size="sm"
             onClick={loadKPIs}
-            className="border-white/[0.08] text-xs"
+            className="text-xs"
           >
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
           </Button>
@@ -178,11 +178,11 @@ export default function HydraKPIDashboardPage() {
           { icon: DollarSign,label: 'Payouts Pending',   value: `$${kpis.total_payouts_pending.toFixed(2)}`, color: 'text-cyan-400' },
           { icon: Activity,  label: 'Grace Periods',     value: kpis.pending_grace_periods,                 color: 'text-red-400' },
         ].map(({ icon: Icon, label, value, color }) => (
-          <Card key={label} className="border-white/[0.08] bg-gray-900/60">
+          <Card key={label}>
             <CardContent className="p-4">
               <Icon className={cn('mb-2 h-4 w-4', color)} />
-              <p className="text-2xl font-bold text-white">{value}</p>
-              <p className="text-xs text-gray-400">{label}</p>
+              <p className="text-2xl font-bold text-foreground">{value}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
             </CardContent>
           </Card>
         ))}
@@ -191,9 +191,9 @@ export default function HydraKPIDashboardPage() {
       {/* Tier distribution + Top resellers */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Tier distribution */}
-        <Card className="border-white/[0.08] bg-gray-900/60">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-white">Tier Distribution</CardTitle>
+            <CardTitle className="text-sm font-semibold">Tier Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -210,11 +210,11 @@ export default function HydraKPIDashboardPage() {
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: TIER_COLORS[tier] ?? '#6b7280' }}
                           />
-                          <span className="text-gray-300">{tier}</span>
+                          <span className="text-foreground">{tier}</span>
                         </span>
-                        <span className="text-gray-400">{count} orgs ({pct}%)</span>
+                        <span className="text-muted-foreground">{count} orgs ({pct}%)</span>
                       </div>
-                      <div className="h-2 rounded-full bg-gray-800">
+                      <div className="h-2 rounded-full bg-muted">
                         <div
                           className="h-2 rounded-full transition-all"
                           style={{
@@ -231,31 +231,31 @@ export default function HydraKPIDashboardPage() {
         </Card>
 
         {/* Top resellers */}
-        <Card className="border-white/[0.08] bg-gray-900/60">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-white">Top 10 Resellers by Sensors</CardTitle>
+            <CardTitle className="text-sm font-semibold">Top 10 Resellers by Sensors</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow className="border-white/[0.08] hover:bg-transparent">
-                  <TableHead className="text-xs text-gray-400">#</TableHead>
-                  <TableHead className="text-xs text-gray-400">Organization</TableHead>
-                  <TableHead className="text-xs text-gray-400">Tier</TableHead>
-                  <TableHead className="text-xs text-gray-400 text-right">Sensors</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs text-muted-foreground">#</TableHead>
+                  <TableHead className="text-xs text-muted-foreground">Organization</TableHead>
+                  <TableHead className="text-xs text-muted-foreground">Tier</TableHead>
+                  <TableHead className="text-xs text-muted-foreground text-right">Sensors</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {kpis.top_resellers.map((r, i) => (
-                  <TableRow key={r.slug} className="border-white/[0.06] hover:bg-white/[0.02]">
-                    <TableCell className="text-xs text-gray-500">{i + 1}</TableCell>
-                    <TableCell className="text-sm text-gray-200">{r.name}</TableCell>
+                  <TableRow key={r.slug} className="hover:bg-muted/30">
+                    <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="text-sm text-foreground">{r.name}</TableCell>
                     <TableCell>
                       <Badge className={cn('text-xs', TIER_BG_COLORS[r.tier] ?? 'bg-gray-700 text-gray-300')}>
                         {r.tier}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-white text-sm">
+                    <TableCell className="text-right font-semibold text-foreground text-sm">
                       {r.sensor_count.toLocaleString()}
                     </TableCell>
                   </TableRow>
@@ -268,9 +268,9 @@ export default function HydraKPIDashboardPage() {
 
       {/* Invitation stats + Last sync */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-white/[0.08] bg-gray-900/60">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-white">Partner Recruitment</CardTitle>
+            <CardTitle className="text-sm font-semibold">Partner Recruitment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
@@ -284,17 +284,17 @@ export default function HydraKPIDashboardPage() {
                 color: 'text-cyan-400',
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-4 py-3">
-                <span className="text-sm text-gray-400">{label}</span>
+              <div key={label} className="flex items-center justify-between rounded-lg bg-muted/40 px-4 py-3">
+                <span className="text-sm text-muted-foreground">{label}</span>
                 <span className={cn('text-lg font-bold', color)}>{value}</span>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="border-white/[0.08] bg-gray-900/60">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-white">Last Sensor Sync</CardTitle>
+            <CardTitle className="text-sm font-semibold">Last Sensor Sync</CardTitle>
           </CardHeader>
           <CardContent>
             {kpis.sync_log_last ? (
@@ -307,7 +307,7 @@ export default function HydraKPIDashboardPage() {
                   { label: 'Run At',         value: new Date(kpis.sync_log_last.created_at).toLocaleString() },
                 ].map(({ label, value, badge }) => (
                   <div key={label} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">{label}</span>
+                    <span className="text-sm text-muted-foreground">{label}</span>
                     {badge ? (
                       <Badge className={
                         value === 'completed' ? 'bg-emerald-500/15 text-emerald-400' :
@@ -315,13 +315,13 @@ export default function HydraKPIDashboardPage() {
                         'bg-red-500/15 text-red-400'
                       }>{String(value)}</Badge>
                     ) : (
-                      <span className="text-sm font-semibold text-gray-200">{value}</span>
+                      <span className="text-sm font-semibold text-foreground">{value}</span>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="py-4 text-center text-sm text-gray-500">No syncs run yet.</p>
+              <p className="py-4 text-center text-sm text-muted-foreground">No syncs run yet.</p>
             )}
           </CardContent>
         </Card>
