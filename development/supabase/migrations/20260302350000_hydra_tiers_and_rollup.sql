@@ -109,7 +109,7 @@ AS $$
     FROM downline dl
     LEFT JOIN devices d ON d.organization_id = dl.id
       AND d.deleted_at IS NULL
-      AND (d.status = 'online' OR d.last_heartbeat > NOW() - INTERVAL '48 hours')
+      AND (d.status = 'online' OR d.last_seen > NOW() - INTERVAL '48 hours')
     GROUP BY dl.id
   )
   SELECT
