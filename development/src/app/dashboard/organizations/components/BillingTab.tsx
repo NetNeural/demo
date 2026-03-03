@@ -40,6 +40,8 @@ import {
 } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
+import { PaymentMethodsCard } from '@/components/billing/PaymentMethodsCard'
+import { BillingContactCard } from '@/components/billing/BillingContactCard'
 import type {
   BillingPlan,
   SubscriptionStatus,
@@ -500,6 +502,16 @@ export function BillingTab({ organizationId }: BillingTabProps) {
           fetchBillingData()
         }}
       />
+
+      {/* Billing Contact + Payment Methods */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <BillingContactCard organizationId={organizationId} />
+        <PaymentMethodsCard
+          organizationId={organizationId}
+          onManageSubscription={handleManageSubscription}
+          portalLoading={portalLoading}
+        />
+      </div>
 
       {/* Invoice History */}
       <Card>
