@@ -418,6 +418,10 @@ serve(async (req) => {
     let hasModerateImage = false
     let hasGenerateReportSummary = false
     let hasEmailBroadcastAi = false
+    let hasThresholdAiRecommend = false
+    // Customer API / Export feature flags
+    let hasExportApi = false
+    let hasApiKeyFunction = false
 
     if (githubToken) {
       const repo = 'NetNeural/MonoRepo-Staging'
@@ -624,9 +628,24 @@ serve(async (req) => {
           hasEmailBroadcastAi = blobs.some((f: any) =>
             f.path.includes('email-broadcast')
           )
+          hasThresholdAiRecommend = blobs.some((f: any) =>
+            f.path.includes('threshold-ai-recommend')
+          )
+          // Customer API / Export detection
+          hasExportApi = blobs.some(
+            (f: any) =>
+              f.path.startsWith('development/supabase/functions/export') &&
+              f.path.endsWith('/index.ts')
+          )
+          hasApiKeyFunction = blobs.some((f: any) =>
+            f.path.includes('api-key')
+          )
 
           console.log(
-            `[assessment-report] Mercury/AI-detect: mercuryChat=${hasMercuryChat}, aiInsights=${hasAiInsights}, moderateImage=${hasModerateImage}, reportSummary=${hasGenerateReportSummary}, emailBroadcastAi=${hasEmailBroadcastAi}, chatSessions=${supportChatSessionCount}, tickets=${supportTicketCount}`
+            `[assessment-report] Mercury/AI-detect: mercuryChat=${hasMercuryChat}, aiInsights=${hasAiInsights}, moderateImage=${hasModerateImage}, reportSummary=${hasGenerateReportSummary}, emailBroadcastAi=${hasEmailBroadcastAi}, thresholdAi=${hasThresholdAiRecommend}, chatSessions=${supportChatSessionCount}, tickets=${supportTicketCount}`
+          )
+          console.log(
+            `[assessment-report] API-detect: exportApi=${hasExportApi}, apiKeyFn=${hasApiKeyFunction}`
           )
           console.log(
             `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${scriptTestFileCount} scripts, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
@@ -835,7 +854,12 @@ serve(async (req) => {
       if (hasEmailCode) score += 10
       if (hasSmsCode) score += 10
       if (hasStripePriceIds) score += 10
+      // Customer-facing REST API (Export API + API Key management)
+      if (hasExportApi) score += 8
+      if (hasApiKeyFunction) score += 7
       score = clamp(score)
+      if (hasExportApi) detectedIntegrations.push('Export REST API')
+      if (hasApiKeyFunction) detectedIntegrations.push('API Keys')
       dimensions.push({
         name: 'Integration Layer',
         score,
@@ -1032,33 +1056,36 @@ serve(async (req) => {
       })
     }
 
-    // --- 12. AI Features (Mercury, Insights, Moderation, Broadcast) ---
+    // --- 12. AI Features (Mercury, Insights, Moderation, Broadcast, Threshold AI) ---
     {
       let score = 0
       // Mercury AI support chatbot (crown jewel)
-      if (hasMercuryChat)           score += 30  // GPT-4o-mini chat engine deployed
-      if (supportChatSessionCount >= 0) score += 10  // DB schema live (table exists)
-      if (supportTicketCount >= 0)      score += 5   // Ticket system live
+      if (hasMercuryChat)               score += 25  // GPT-4o-mini chat engine deployed
+      if (supportChatSessionCount >= 0)  score += 8   // DB schema live (table exists)
+      if (supportTicketCount >= 0)       score += 5   // Ticket system live
       // Predictive IoT analytics
-      if (hasAiInsights)            score += 20  // AI-powered sensor analysis
+      if (hasAiInsights)                 score += 20  // AI-powered sensor analysis
+      // Smart threshold recommendations
+      if (hasThresholdAiRecommend)       score += 12  // AI-driven alert threshold tuning
       // Content moderation
-      if (hasModerateImage)         score += 15  // Vision-based image moderation
+      if (hasModerateImage)              score += 12  // Vision-based image moderation
       // AI-generated executive reports
-      if (hasGenerateReportSummary) score += 10  // Report narrative generation
+      if (hasGenerateReportSummary)      score += 10  // Report narrative generation
       // AI-enhanced email broadcast
-      if (hasEmailBroadcastAi)      score += 10  // Smart email composition
+      if (hasEmailBroadcastAi)           score += 8   // Smart email composition
       score = clamp(score)
       const aiFns: string[] = []
-      if (hasMercuryChat)           aiFns.push('mercury-chat')
-      if (hasAiInsights)            aiFns.push('ai-insights')
-      if (hasModerateImage)         aiFns.push('moderate-image')
-      if (hasGenerateReportSummary) aiFns.push('generate-report-summary')
-      if (hasEmailBroadcastAi)      aiFns.push('email-broadcast')
+      if (hasMercuryChat)            aiFns.push('mercury-chat')
+      if (hasAiInsights)             aiFns.push('ai-insights')
+      if (hasThresholdAiRecommend)   aiFns.push('threshold-ai-recommend')
+      if (hasModerateImage)          aiFns.push('moderate-image')
+      if (hasGenerateReportSummary)  aiFns.push('generate-report-summary')
+      if (hasEmailBroadcastAi)       aiFns.push('email-broadcast')
       dimensions.push({
         name: 'AI Features',
         score,
         grade: calcGrade(score),
-        notes: `${aiFns.length} AI-powered edge functions (${aiFns.join(', ')}), all on GPT-4o-mini. Mercury support chatbot with ${supportChatSessionCount} sessions, ${supportTicketCount} tickets. Predictive IoT analytics, image moderation, executive summaries, smart email broadcast.`,
+        notes: `${aiFns.length} AI-powered edge functions (${aiFns.join(', ')}), all on GPT-4o-mini. Mercury support chatbot: ${supportChatSessionCount} sessions, ${supportTicketCount} tickets. Predictive IoT analytics, smart threshold AI, image moderation, executive summaries, smart email broadcast.`,
       })
     }
 
@@ -1081,8 +1108,11 @@ serve(async (req) => {
       { label: 'Total Devices', value: String(deviceCount) },
       { label: 'Reseller Tiers', value: String(resellerTierCount) },
       { label: 'Hydra Tables', value: String(hydraTableCount) },
-      { label: 'AI Functions', value: String([hasMercuryChat, hasAiInsights, hasModerateImage, hasGenerateReportSummary, hasEmailBroadcastAi].filter(Boolean).length) },
+      { label: 'AI Functions', value: String([hasMercuryChat, hasAiInsights, hasThresholdAiRecommend, hasModerateImage, hasGenerateReportSummary, hasEmailBroadcastAi].filter(Boolean).length) },
       { label: 'Edge Functions', value: String(edgeFunctionCount) },
+      { label: 'Support Sessions', value: String(supportChatSessionCount) },
+      { label: 'Support Tickets', value: String(supportTicketCount) },
+      { label: 'Test Files', value: String(totalTestFiles) },
       { label: 'Issues Closed', value: `${ghClosedIssues}+` },
       { label: 'Open Bugs', value: String(ghOpenBugs) },
       { label: 'Total Commits', value: `${ghTotalCommits || 'N/A'}` },
@@ -1137,32 +1167,36 @@ serve(async (req) => {
       done: boolean
     }
 
+    // Top 25: mix of recently shipped (closed issues) + current open priorities
+    // Issues verified against NetNeural/MonoRepo-Staging — all numbers exist in this repo
     const featureDefs = [
-      { rank: 1, issues: ['241', '243'], name: 'Stripe Integration', effort: '3-5 days', impact: 'Enables ALL revenue.' },
-      { rank: 2, issues: ['242'], name: 'Billing Plans Table', effort: '1 day', impact: 'Foundation for pricing tiers.' },
-      { rank: 3, issues: ['243'], name: 'Subscriptions & Invoices', effort: '1 day', impact: 'DB layer for billing.' },
-      { rank: 4, issues: ['244'], name: 'Usage Metering System', effort: '2-3 days', impact: 'Pay-per-device pricing.' },
-      { rank: 5, issues: ['245'], name: 'Plan Comparison Page', effort: '2-3 days', impact: 'Sales conversion page.' },
-      { rank: 6, issues: ['246'], name: 'Org Billing Dashboard', effort: '2-3 days', impact: 'Self-service billing.' },
-      { rank: 7, issues: ['247'], name: 'Fix Dashboard Display Bug', effort: '0.5 day', impact: 'Broken dashboard kills trust.' },
-      { rank: 8, issues: ['248'], name: 'Fix Acknowledging Alerts Bug', effort: '0.5 day', impact: 'Core workflow must work.' },
-      { rank: 9, issues: ['249'], name: 'Privacy Policy & Consent', effort: '0.5 day', impact: 'Legal requirement.' },
-      { rank: 10, issues: ['250'], name: 'Cookie Consent (GDPR)', effort: '0.5 day', impact: 'Legal EU requirement.' },
-      { rank: 11, issues: ['251'], name: 'Strengthen Password Policy', effort: '0.5 day', impact: 'Compliance checklist item.' },
-      { rank: 12, issues: ['252'], name: 'Security Headers', effort: '1 day', impact: 'Blocks every security audit.' },
-      { rank: 13, issues: ['253'], name: 'Remove continue-on-error CI', effort: '0.5 day', impact: 'Stop shipping broken code.' },
-      { rank: 14, issues: ['254'], name: 'MFA Enforcement', effort: '2-3 days', impact: 'Unlocks enterprise contracts.' },
-      { rank: 15, issues: ['255'], name: 'PDF Report Export', effort: '2-3 days', impact: 'Enterprise managers need PDFs.' },
-      { rank: 16, issues: ['256'], name: 'Zod Validation', effort: '2-3 days', impact: 'Prevents data corruption.' },
-      { rank: 17, issues: ['257'], name: 'Edit User Accounts', effort: '1-2 days', impact: 'Basic admin capability.' },
-      { rank: 18, issues: ['258'], name: 'Incident Response Plan', effort: '1-2 days', impact: 'SOC 2 requirement.' },
-      { rank: 19, issues: ['259'], name: 'Copy Device ID', effort: '2 hrs', impact: 'Reduces support tickets.' },
-      { rank: 20, issues: ['260'], name: 'Smart Threshold AI', effort: '3-5 days', impact: 'Reduces alert fatigue.' },
-      { rank: 21, issues: ['261'], name: 'Predictive Maintenance AI', effort: '5-7 days', impact: 'Premium feature worth $$$$.' },
-      { rank: 22, issues: ['262'], name: 'Anomaly Detection Upgrade', effort: '3-5 days', impact: 'Competitive differentiator.' },
-      { rank: 23, issues: ['263'], name: 'Export This View', effort: '0.5 day', impact: 'CSV/Excel export everywhere.' },
-      { rank: 24, issues: ['264'], name: 'Keyboard Shortcuts', effort: '1 day', impact: 'Power user polish.' },
-      { rank: 25, issues: ['265'], name: 'Assign Devices to Orgs', effort: '2-3 days', impact: 'Core multi-tenant workflow.' },
+      // ── Recently Shipped ──────────────────────────────────────────────────────
+      { rank: 1,  issues: ['360'], name: 'Mercury AI Support Chatbot',        effort: '✅ Delivered', impact: 'GPT-4o-mini first-line support, duty system, tickets.' },
+      { rank: 2,  issues: ['384'], name: 'API Key Management',                 effort: '✅ Delivered', impact: 'Customer-issued API keys for data export.' },
+      { rank: 3,  issues: ['385', '386', '387'], name: 'Customer Data Export API (telemetry/devices/alerts)', effort: '✅ Delivered', impact: 'REST API: GET /v1/telemetry, /v1/devices, /v1/alerts.' },
+      { rank: 4,  issues: ['341'], name: 'Stripe Webhook E2E Test',            effort: '✅ Delivered', impact: 'Production billing pipeline verified.' },
+      { rank: 5,  issues: ['342'], name: 'Customer Billing Portal',            effort: '✅ Delivered', impact: 'Self-service subscription & invoice management.' },
+      { rank: 6,  issues: ['344'], name: 'Production Smoke Test Suite',        effort: '✅ Delivered', impact: 'Critical user journeys covered by automated tests.' },
+      { rank: 7,  issues: ['345'], name: 'Load Testing (k6)',                  effort: '✅ Delivered', impact: 'Scalability verified against production environment.' },
+      { rank: 8,  issues: ['349'], name: 'Customer Onboarding Checklist',      effort: '✅ Delivered', impact: 'First-login experience guided and audited.' },
+      { rank: 9,  issues: ['348'], name: 'Go-Live Runbook & Rollback Plan',    effort: '✅ Delivered', impact: 'Production launch playbook + rollback steps.' },
+      { rank: 10, issues: ['337'], name: 'Reseller Onboarding Flow (Hydra)',   effort: '✅ Delivered', impact: 'Partner invitation, agreement, and sensor sync.' },
+      { rank: 11, issues: ['338'], name: 'Reseller KPI Dashboard',             effort: '✅ Delivered', impact: 'Partner performance visibility and commission tracking.' },
+      { rank: 12, issues: ['399'], name: 'Reseller White-Label Attribution',   effort: '✅ Delivered', impact: 'Branded reseller sign-up URLs and attribution.' },
+      // ── Current Open Priorities ───────────────────────────────────────────────
+      { rank: 13, issues: ['391'], name: 'API Keys Management UI',             effort: '2-3 days', impact: 'Self-service portal: generate, rotate, revoke keys.' },
+      { rank: 14, issues: ['390'], name: 'OpenAPI Spec & Developer Docs',      effort: '2-3 days', impact: 'Unlocks developer integration and adoption.' },
+      { rank: 15, issues: ['389'], name: 'Rate Limiting & Plan Quotas',        effort: '2-3 days', impact: 'Protects platform, enforces tier limits.' },
+      { rank: 16, issues: ['388'], name: 'Webhook Push Subscriptions',         effort: '3-5 days', impact: 'Real-time data push to customer endpoints.' },
+      { rank: 17, issues: ['141'], name: 'PDF Report Export',                  effort: '2-3 days', impact: 'Enterprise managers need downloadable reports.' },
+      { rank: 18, issues: ['140'], name: 'Smart Alert Prioritization AI',      effort: '3-5 days', impact: 'ML ranking reduces alert fatigue dramatically.' },
+      { rank: 19, issues: ['110'], name: 'i18n — Extract English Strings',     effort: '3-5 days', impact: 'Foundation required for multi-language UI.' },
+      { rank: 20, issues: ['109'], name: 'i18n — Install next-intl & Routing', effort: '1-2 days', impact: 'Enables Spanish, French, German, Chinese markets.' },
+      { rank: 21, issues: ['87'],  name: 'Cookie Consent Banner (GDPR)',       effort: '1 day',    impact: 'Legal EU requirement, blocks enterprise sales.' },
+      { rank: 22, issues: ['84'],  name: 'User Data Deletion (GDPR)',          effort: '2-3 days', impact: 'Right to erasure — GDPR compliance.' },
+      { rank: 23, issues: ['305'], name: 'SSO Integration (SAML/OIDC)',        effort: '5-7 days', impact: 'Unlocks enterprise contracts; deal-breaker without it.' },
+      { rank: 24, issues: ['79'],  name: 'SOC 2 Incident Response Plan',       effort: '2-3 days', impact: 'Required for SOC 2 Type II audit.' },
+      { rank: 25, issues: ['80'],  name: 'SOC 2 Disaster Recovery Plan',       effort: '2-3 days', impact: 'Required for SOC 2 Type II audit.' },
     ]
 
     // Check issue states via GitHub API
