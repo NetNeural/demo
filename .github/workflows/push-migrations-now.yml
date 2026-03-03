@@ -47,8 +47,7 @@ jobs:
             20260302370000 \
             20260303100000 20260303200000 20260303220000 \
             20260303230000 20260303250000 20260303260000 \
-            20260304000000 \
-            --project-ref atgbmxicqikmapfqouco 2>/dev/null || true
+            20260304000000 2>/dev/null || true
           npx supabase db push --linked --yes
           echo "✅ Staging migrations done"
 
@@ -60,6 +59,21 @@ jobs:
         run: |
           echo "Pushing migrations to dev (tsomafkalaoarnuwgdyu)..."
           npx supabase link --project-ref tsomafkalaoarnuwgdyu
+          # Repair: mark remote-only migration records as reverted so push can proceed
+          npx supabase migration repair --status reverted \
+            20260228335000 20260228390000 \
+            20260301000000 20260301100000 20260301120000 20260301130000 \
+            20260301160000 20260301171000 20260301173840 \
+            20260301204301 20260301204654 \
+            20260302000000 20260302000001 20260302100000 \
+            20260302200000 20260302210000 20260302220000 20260302230000 \
+            20260302250000 20260302260000 20260302270000 20260302280000 \
+            20260302290000 20260302300000 20260302310000 20260302320000 \
+            20260302330000 20260302340000 20260302350000 20260302360000 \
+            20260302370000 \
+            20260303100000 20260303200000 20260303220000 \
+            20260303230000 20260303250000 20260303260000 \
+            20260304000000 2>/dev/null || true
           npx supabase db push --linked --yes
           echo "✅ Dev migrations done"
 
@@ -71,8 +85,20 @@ jobs:
         run: |
           echo "Pushing migrations to prod (bldojxpockljyivldxwf)..."
           npx supabase link --project-ref bldojxpockljyivldxwf
-          npx supabase db push --linked --yes
-          echo "Pushing migrations to prod (bldojxpockljyivldxwf)..."
-          npx supabase link --project-ref bldojxpockljyivldxwf
+          # Repair: mark remote-only migration records as reverted so push can proceed
+          npx supabase migration repair --status reverted \
+            20260228335000 20260228390000 \
+            20260301000000 20260301100000 20260301120000 20260301130000 \
+            20260301160000 20260301171000 20260301173840 \
+            20260301204301 20260301204654 \
+            20260302000000 20260302000001 20260302100000 \
+            20260302200000 20260302210000 20260302220000 20260302230000 \
+            20260302250000 20260302260000 20260302270000 20260302280000 \
+            20260302290000 20260302300000 20260302310000 20260302320000 \
+            20260302330000 20260302340000 20260302350000 20260302360000 \
+            20260302370000 \
+            20260303100000 20260303200000 20260303220000 \
+            20260303230000 20260303250000 20260303260000 \
+            20260304000000 2>/dev/null || true
           npx supabase db push --linked --yes
           echo "✅ Prod migrations done"
