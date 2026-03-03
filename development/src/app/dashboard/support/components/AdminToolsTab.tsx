@@ -33,9 +33,11 @@ import {
   FileBarChart,
   Mail,
   Wrench,
+  ShieldAlert,
 } from 'lucide-react'
 import ExecutiveReportsCard from './ExecutiveReportsCard'
 import { EmailBroadcastCard } from './EmailBroadcastCard'
+import { LoginSecurityCard } from './LoginSecurityCard'
 import { useUser } from '@/contexts/UserContext'
 
 interface Props {
@@ -205,6 +207,12 @@ export default function AdminToolsTab({ organizationId }: Props) {
           <Wrench className="h-4 w-4" />
           Data & Operations
         </TabsTrigger>
+        {isSuperAdmin && (
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" />
+            Login Security
+          </TabsTrigger>
+        )}
       </TabsList>
 
       {/* Reports */}
@@ -315,6 +323,13 @@ export default function AdminToolsTab({ organizationId }: Props) {
         </CardContent>
       </Card>
       </TabsContent>
+
+      {/* Login Security — Super Admin only */}
+      {isSuperAdmin && (
+        <TabsContent value="security">
+          <LoginSecurityCard />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }

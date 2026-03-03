@@ -1,0 +1,162 @@
+# =============================================================================
+# Uptime Monitor — SOC 2 A1.1 Availability Monitoring
+# =============================================================================
+# Runs every 5 minutes to check all 3 environment domains and Supabase projects.
+# On downtime: stores results in Supabase uptime_checks table and alerts
+# super_admin users via email.
+#
+# Endpoints monitored:
+#   📡 sentinel.netneural.ai         (Production)
+#   📡 demo-stage.netneural.ai       (Staging)
+#   📡 demo.netneural.ai             (Development)
+#   📡 bldojxpockljyivldxwf.supabase.co/health  (Supabase Prod)
+#   📡 atgbmxicqikmapfqouco.supabase.co/health  (Supabase Staging)
+#   📡 tsomafkalaoarnuwgdyu.supabase.co/health   (Supabase Dev)
+
+name: Uptime Monitor
+
+on:
+  schedule:
+    # Every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  uptime-check:
+    name: Check Service Availability
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Check all endpoints
+        id: checks
+        env:
+          PROD_URL: https://sentinel.netneural.ai
+          STAGING_URL: https://demo-stage.netneural.ai
+          DEV_URL: https://demo.netneural.ai
+          SUPABASE_PROD: https://bldojxpockljyivldxwf.supabase.co
+          SUPABASE_STAGING: https://atgbmxicqikmapfqouco.supabase.co
+          SUPABASE_DEV: https://tsomafkalaoarnuwgdyu.supabase.co
+        run: |
+          echo "🔍 Running uptime checks at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          check_endpoint() {
+            local service="$1"
+            local url="$2"
+            local start_ms end_ms response_ms http_code status error_msg
+
+            start_ms=$(date +%s%3N)
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 10 --connect-timeout 5 "$url" 2>&1) || http_code="0"
+            end_ms=$(date +%s%3N)
+            response_ms=$((end_ms - start_ms))
+
+            if [[ "$http_code" =~ ^(200|301|302|304)$ ]]; then
+              status="up"
+              error_msg=""
+              echo "  ✅ $service — HTTP $http_code (${response_ms}ms)"
+            elif [[ "$http_code" == "0" ]]; then
+              status="down"
+              error_msg="connection refused or timeout"
+              echo "  ❌ $service — UNREACHABLE (${response_ms}ms)"
+            else
+              status="degraded"
+              error_msg="unexpected HTTP $http_code"
+              echo "  ⚠️  $service — HTTP $http_code (${response_ms}ms)"
+            fi
+
+            # Append to RESULTS json array
+            echo "{\"service\":\"$service\",\"url\":\"$url\",\"status\":\"$status\",\"http_code\":$http_code,\"response_ms\":$response_ms,\"error_msg\":\"$error_msg\",\"checked_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >> /tmp/results.jsonl
+          }
+
+          # Check all 6 endpoints
+          check_endpoint "sentinel"        "$PROD_URL"
+          check_endpoint "demo-stage"      "$STAGING_URL"
+          check_endpoint "demo"            "$DEV_URL"
+          check_endpoint "supabase-prod"   "$SUPABASE_PROD/rest/v1/"
+          check_endpoint "supabase-stage"  "$SUPABASE_STAGING/rest/v1/"
+          check_endpoint "supabase-dev"    "$SUPABASE_DEV/rest/v1/"
+
+          # Build JSON array from jsonl
+          RESULTS="[$(paste -sd',' /tmp/results.jsonl)]"
+          echo "results=$RESULTS" >> $GITHUB_OUTPUT
+
+          # Check if any service is down
+          if grep -q '"status":"down"' /tmp/results.jsonl; then
+            echo "has_downtime=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_downtime=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo ""
+          echo "📊 Summary: $(grep -c '"status":"up"' /tmp/results.jsonl) up, $(grep -c '"status":"down"' /tmp/results.jsonl) down, $(grep -c '"status":"degraded"' /tmp/results.jsonl) degraded"
+
+      - name: Store results in Supabase
+        env:
+          PROD_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          PROD_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PROD_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          RESULTS='${{ steps.checks.outputs.results }}'
+
+          response=$(curl -s -o /tmp/store_response.json -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $PROD_SUPABASE_SERVICE_ROLE_KEY" \
+            "$PROD_SUPABASE_URL/functions/v1/uptime-monitor" \
+            -d "{\"results\": $RESULTS}")
+
+          echo "Store response: HTTP $response"
+          cat /tmp/store_response.json
+
+          if [[ "$response" != "200" ]]; then
+            echo "⚠️ Warning: Failed to store uptime results (HTTP $response) — continuing"
+          fi
+
+      - name: Create GitHub Issue on sustained downtime
+        if: steps.checks.outputs.has_downtime == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = JSON.parse('${{ steps.checks.outputs.results }}');
+            const downServices = results.filter(r => r.status === 'down');
+
+            // Check for recent open downtime issues to avoid duplicates
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'downtime',
+              per_page: 5,
+            });
+
+            const recentDowntime = issues.find(i =>
+              i.title.includes('[DOWNTIME]') &&
+              new Date(i.created_at) > new Date(Date.now() - 30 * 60 * 1000)
+            );
+
+            if (!recentDowntime) {
+              const serviceList = downServices
+                .map(s => `- **${s.service}**: ${s.url} — ${s.error_msg || 'HTTP ' + s.http_code}`)
+                .join('\n');
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[DOWNTIME] ${downServices.length} service(s) unreachable — ${new Date().toUTCString()}`,
+                body: `## 🚨 Service Downtime Detected\n\n**Detected at:** ${new Date().toUTCString()}\n\n### Down Services\n${serviceList}\n\n### All Check Results\n\`\`\`json\n${JSON.stringify(results, null, 2)}\n\`\`\`\n\n_Auto-created by [Uptime Monitor workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/uptime-monitor.yml)_`,
+                labels: ['downtime', 'bug'],
+              });
+
+              console.log('Created downtime issue');
+            } else {
+              console.log('Skipping issue creation — recent downtime issue already exists:', recentDowntime.number);
+            }

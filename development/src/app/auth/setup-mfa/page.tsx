@@ -163,6 +163,19 @@ export default function SetupMfaPage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) {
+        // SOC 2 CC6.3: Log MFA enrollment to audit trail
+        void supabase.from('user_audit_log').insert({
+          user_id: user.id,
+          user_email: user.email ?? '',
+          action_category: 'auth',
+          action_type: 'mfa_enrolled',
+          resource_type: 'mfa_factor',
+          method: 'POST',
+          endpoint: '/auth/setup-mfa',
+          status: 'success',
+          changes: { method: 'totp' },
+        })
+
         const { data: userRecord } = await supabase
           .from('users')
           .select('password_change_required')

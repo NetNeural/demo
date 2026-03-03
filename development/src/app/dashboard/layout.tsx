@@ -16,6 +16,8 @@ import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/Keyboard
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { useSessionTimeout } from '@/hooks/useSessionTimeout'
+import { SessionTimeoutModal } from '@/components/session/SessionTimeoutModal'
 import {
   LayoutDashboard,
   Smartphone,
@@ -57,6 +59,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isSuperAdmin = user?.isSuperAdmin || false
+
+  // SOC 2 CC6.2: idle session timeout
+  const { showWarning, secondsRemaining, extendSession, signOutNow } = useSessionTimeout()
 
   // Always show sentinel logo from root NetNeural org, regardless of selected org
   const sentinelLogoUrl = (() => {
@@ -332,6 +337,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <SessionTimeoutModal
+        open={showWarning}
+        secondsRemaining={secondsRemaining}
+        onExtend={extendSession}
+        onSignOut={signOutNow}
+      />
     </>
   )
 }
