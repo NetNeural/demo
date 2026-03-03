@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/metric-tooltip'
 import { DataFreshness } from '@/components/ui/data-freshness'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import {
   Smartphone,
@@ -94,6 +95,9 @@ export default function DashboardPage() {
           {/* Quick Actions lives in dashboard layout â€” no duplicate here */}
         </div>
       </div>
+
+      {/* Onboarding checklist — shows for new accounts, dismissible */}
+      {(stats?.totalDevices ?? 0) === 0 && <OnboardingChecklist />}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

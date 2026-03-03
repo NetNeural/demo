@@ -32,6 +32,11 @@ import {
   DollarSign,
   UsersRound,
   FileBarChart,
+  Activity,
+  ShieldCheck,
+  Rocket,
+  BookOpen,
+  UserCheck,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -122,6 +127,26 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/customers',
             label: 'Customers',
             icon: UsersRound,
+          },
+          {
+            href: '/dashboard/admin/platform-health',
+            label: 'Platform Health',
+            icon: Activity,
+          },
+          {
+            href: '/dashboard/admin/security-audit',
+            label: 'Security Audit',
+            icon: ShieldCheck,
+          },
+          {
+            href: '/dashboard/admin/go-live-runbook',
+            label: 'Go-Live Runbook',
+            icon: Rocket,
+          },
+          {
+            href: '/dashboard/admin/onboarding',
+            label: 'Onboarding',
+            icon: UserCheck,
           },
         ]
       : []),
