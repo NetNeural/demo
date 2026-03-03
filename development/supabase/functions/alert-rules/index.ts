@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { validateBody, alertRuleSchemas, ValidationError } from '../_shared/validation.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -138,56 +139,32 @@ serve(async (req) => {
 
     // POST /alert-rules - Create new rule
     if (req.method === 'POST') {
-      const body: AlertRule = await req.json()
-
-      // Validation
-      if (!body.organization_id || !body.name || !body.rule_type) {
-        return new Response(
-          JSON.stringify({
-            error: 'organization_id, name, and rule_type are required',
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-
-      if (!body.actions || body.actions.length === 0) {
-        return new Response(
-          JSON.stringify({ error: 'At least one action is required' }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-
-      // Validate rule_type specific fields
-      if (body.rule_type === 'telemetry') {
-        if (
-          !body.condition.metric ||
-          !body.condition.operator ||
-          body.condition.value === undefined
-        ) {
+      let body
+      try {
+        body = await validateBody(req, alertRuleSchemas.create)
+      } catch (err) {
+        if (err instanceof ValidationError) {
           return new Response(
-            JSON.stringify({
-              error: 'Telemetry rules require metric, operator, and value',
-            }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
+            JSON.stringify({ error: 'Validation failed', details: err.errors }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        throw err
+      }
+
+      // rule_type-specific condition validation
+      if (body.rule_type === 'telemetry') {
+        if (!body.condition.metric || !body.condition.operator || body.condition.value === undefined) {
+          return new Response(
+            JSON.stringify({ error: 'Telemetry rules require metric, operator, and value' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
       } else if (body.rule_type === 'offline') {
         if (!body.condition.offline_minutes) {
           return new Response(
             JSON.stringify({ error: 'Offline rules require offline_minutes' }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
       }

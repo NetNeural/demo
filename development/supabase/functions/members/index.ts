@@ -5,6 +5,7 @@ import {
 } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { getUserContext } from '../_shared/auth.ts'
+import { validateBody, memberSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -136,7 +137,7 @@ export default createEdgeFunction(
         throw new DatabaseError('Insufficient permissions to add members', 403)
       }
 
-      const body = await req.json()
+      const body = await validateBody(req, memberSchemas.add)
       console.log('📥 Request body:', {
         hasEmail: !!body.email,
         hasUserId: !!body.userId,
@@ -148,18 +149,6 @@ export default createEdgeFunction(
       // Accept either email or userId
       if (!email && !userId) {
         throw new Error('Either email or userId is required')
-      }
-
-      if (!role) {
-        throw new Error('role is required')
-      }
-
-      // Validate role (only roles that exist in database)
-      const validRoles = ['member', 'admin', 'billing', 'viewer', 'owner']
-      if (!validRoles.includes(role)) {
-        throw new Error(
-          `Invalid role. Must be one of: ${validRoles.join(', ')}`
-        )
       }
 
       // Only owners can add other owners

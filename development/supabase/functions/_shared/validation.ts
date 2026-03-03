@@ -61,13 +61,22 @@ export const schemas = {
 export const deviceSchemas = {
   create: z.object({
     name: z.string().min(1, 'Device name is required'),
-    device_type: z.string().optional(),
-    organization_id: schemas.organizationId,
-    location_id: schemas.uuid.optional(),
+    device_type: z.string().min(1, 'Device type is required'),
+    organization_id: schemas.organizationId.optional(),
+    device_id: z.string().optional(), // external_device_id alias
+    device_type_id: schemas.uuid.optional(),
+    model: z.string().optional(),
+    serial_number: z.string().optional(),
+    firmware_version: z.string().optional(),
+    location_id: schemas.uuid.nullable().optional(),
+    location: z.string().optional(),
     department_id: schemas.uuid.optional(),
     integration_id: schemas.uuid.optional(),
-    external_device_id: z.string().optional(),
     metadata: z.record(z.unknown()).optional(),
+    is_test_device: z.boolean().optional(),
+    status: schemas.deviceStatus.optional(),
+    battery_level: z.number().min(0).max(100).optional(),
+    signal_strength: z.number().optional(),
   }),
 
   update: z.object({
@@ -123,6 +132,8 @@ export const userSchemas = {
     password: schemas.password,
     fullName: z.string().min(1, 'Full name is required'),
     role: schemas.userRole.optional(),
+    organizationRole: z.string().optional(),
+    organizationId: schemas.organizationId.optional(),
     organization_id: schemas.organizationId.optional(),
   }),
 
@@ -143,8 +154,9 @@ export const alertSchemas = {
     message: z.string().min(1, 'Alert message is required'),
     severity: z.enum(['info', 'warning', 'error', 'critical']),
     alert_type: z.string(),
-    device_id: schemas.deviceId.optional(),
+    device_id: schemas.deviceId,
     organization_id: schemas.organizationId,
+    category: z.string().optional(),
     metadata: z.record(z.unknown()).optional(),
   }),
 
@@ -152,6 +164,221 @@ export const alertSchemas = {
     is_resolved: z.boolean().optional(),
     resolved_at: z.string().datetime().optional(),
     resolved_by: schemas.userId.optional(),
+  }),
+}
+
+// ===========================================================================
+// Organization Schemas
+// ===========================================================================
+
+export const organizationSchemas = {
+  create: z.object({
+    name: z.string().min(1, 'name is required'),
+    slug: z
+      .string()
+      .min(1, 'slug is required')
+      .regex(
+        /^[a-z0-9-]+$/,
+        'Slug can only contain lowercase letters, numbers, and hyphens'
+      ),
+    description: z.string().optional(),
+    subscriptionTier: z.string().optional(),
+    parentOrganizationId: z.string().uuid().optional(),
+    ownerEmail: z.string().email().optional(),
+    ownerFullName: z.string().optional(),
+    sendWelcomeEmail: z.boolean().optional(),
+  }),
+
+  update: z.object({
+    name: z.string().min(1).optional(),
+    slug: z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
+    description: z.string().nullable().optional(),
+    subscriptionTier: z.string().optional(),
+  }),
+}
+
+// ===========================================================================
+// Member Schemas
+// ===========================================================================
+
+export const memberSchemas = {
+  add: z.object({
+    email: z.string().email('Invalid email format').optional(),
+    userId: z.string().uuid('Invalid user UUID').optional(),
+    role: z.enum(['member', 'admin', 'billing', 'viewer', 'owner'], {
+      errorMap: () => ({
+        message: 'role must be one of: member, admin, billing, viewer, owner',
+      }),
+    }),
+  }),
+
+  update: z.object({
+    role: z.enum(['member', 'admin', 'billing', 'viewer', 'owner']).optional(),
+  }),
+}
+
+// ===========================================================================
+// Location Schemas
+// ===========================================================================
+
+export const locationSchemas = {
+  create: z.object({
+    organization_id: schemas.organizationId,
+    name: z.string().min(1, 'name is required'),
+    description: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().optional(),
+    postal_code: z.string().optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+  }),
+
+  update: z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    state: z.string().nullable().optional(),
+    country: z.string().nullable().optional(),
+    postal_code: z.string().nullable().optional(),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
+  }),
+}
+
+// ===========================================================================
+// Threshold Schemas
+// ===========================================================================
+
+export const thresholdSchemas = {
+  create: z.object({
+    device_id: schemas.deviceId,
+    sensor_type: z.string().min(1, 'sensor_type is required'),
+    min_value: z.number().nullable().optional(),
+    max_value: z.number().nullable().optional(),
+    critical_min: z.number().nullable().optional(),
+    critical_max: z.number().nullable().optional(),
+    temperature_unit: z.enum(['celsius', 'fahrenheit']).default('celsius'),
+    alert_enabled: z.boolean().default(true),
+    alert_severity: z
+      .enum(['low', 'medium', 'high', 'critical'])
+      .default('medium'),
+    alert_message: z.string().nullable().optional(),
+    notify_on_breach: z.boolean().default(true),
+    notification_cooldown_minutes: z.number().int().min(0).default(15),
+    notify_user_ids: z.array(z.string()).default([]),
+    notify_emails: z.array(z.string().email()).default([]),
+    notification_channels: z.array(z.string()).default([]),
+  }),
+
+  update: z.object({
+    min_value: z.number().nullable().optional(),
+    max_value: z.number().nullable().optional(),
+    critical_min: z.number().nullable().optional(),
+    critical_max: z.number().nullable().optional(),
+    temperature_unit: z.enum(['celsius', 'fahrenheit']).optional(),
+    alert_enabled: z.boolean().optional(),
+    alert_severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    alert_message: z.string().nullable().optional(),
+    notify_on_breach: z.boolean().optional(),
+    notification_cooldown_minutes: z.number().int().min(0).optional(),
+    notify_user_ids: z.array(z.string()).optional(),
+    notify_emails: z.array(z.string().email()).optional(),
+    notification_channels: z.array(z.string()).optional(),
+  }),
+}
+
+// ===========================================================================
+// Feedback Schemas
+// ===========================================================================
+
+export const feedbackSchemas = {
+  submit: z.object({
+    organizationId: schemas.organizationId,
+    type: z.enum(['bug_report', 'feature_request'], {
+      errorMap: () => ({
+        message: 'type must be "bug_report" or "feature_request"',
+      }),
+    }),
+    title: z.string().min(1, 'title is required'),
+    description: z.string().min(1, 'description is required'),
+    severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+    bugOccurredDate: z.string().optional(),
+    bugOccurredTime: z.string().optional(),
+    bugTimezone: z.string().optional(),
+    screenshotUrls: z.array(z.string().url()).optional(),
+    browserInfo: z.string().optional(),
+    pageUrl: z.string().optional(),
+  }),
+}
+
+// ===========================================================================
+// Reseller Schemas
+// ===========================================================================
+
+export const resellerSchemas = {
+  apply: z.object({
+    organizationId: schemas.organizationId,
+    applicantName: z.string().min(1, 'applicantName is required'),
+    applicantEmail: z.string().email('Invalid applicant email'),
+    applicantTitle: z.string().optional(),
+    applicantPhone: z.string().optional(),
+    companyLegalName: z.string().min(1, 'companyLegalName is required'),
+    companyAddress: z.string().min(1, 'companyAddress is required'),
+    companyWebsite: z.string().url().optional().or(z.literal('')),
+    companyTaxId: z.string().optional(),
+    estimatedCustomers: z
+      .number()
+      .int()
+      .min(1, 'estimatedCustomers must be at least 1'),
+    targetMarket: z.string().optional(),
+    businessModel: z.string().optional(),
+    preferredBilling: z.string().optional(),
+    additionalNotes: z.string().optional(),
+  }),
+}
+
+// ===========================================================================
+// Alert Rule Schemas
+// ===========================================================================
+
+export const alertRuleSchemas = {
+  create: z.object({
+    organization_id: schemas.organizationId,
+    name: z.string().min(1, 'name is required'),
+    description: z.string().optional(),
+    rule_type: z.enum(['telemetry', 'offline'], {
+      errorMap: () => ({ message: 'rule_type must be "telemetry" or "offline"' }),
+    }),
+    condition: z.object({
+      metric: z.string().optional(),
+      operator: z.string().optional(),
+      value: z.number().optional(),
+      duration_minutes: z.number().int().optional(),
+      offline_minutes: z.number().int().optional(),
+      grace_period_hours: z.number().optional(),
+    }),
+    device_scope: z.object({
+      type: z.enum(['all', 'groups', 'tags', 'specific']),
+      values: z.array(z.string()).optional(),
+    }),
+    actions: z
+      .array(
+        z.object({
+          type: z.enum(['email', 'sms', 'webhook']),
+          recipients: z.array(z.string()).optional(),
+          webhook_url: z.string().url().optional(),
+          message_template: z.string().optional(),
+        })
+      )
+      .min(1, 'At least one action is required'),
+    enabled: z.boolean().default(true),
+    cooldown_minutes: z.number().int().min(0).default(60),
   }),
 }
 

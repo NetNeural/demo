@@ -9,6 +9,7 @@ import {
   getTargetOrganizationId,
   createServiceClient,
 } from '../_shared/auth.ts'
+import { validateBody, alertSchemas } from '../_shared/validation.ts'
 
 // ─── Multi-Org Membership Check (Bug #221 fix) ──────────────────────
 // Checks if a user is a member of a given organization via organization_members.
@@ -268,7 +269,7 @@ export default createEdgeFunction(
       req.method === 'POST' &&
       !action
     ) {
-      const body = await req.json()
+      const body = await validateBody(req, alertSchemas.create)
       const {
         organization_id,
         device_id,
@@ -279,10 +280,6 @@ export default createEdgeFunction(
         severity,
         metadata,
       } = body
-
-      if (!organization_id || !device_id || !title) {
-        throw new Error('organization_id, device_id, and title are required')
-      }
 
       // Verify user has access to the organization
       const orgId = await resolveOrganizationId(userContext, organization_id)

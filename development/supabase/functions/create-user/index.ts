@@ -5,6 +5,7 @@ import {
 } from '../_shared/request-handler.ts'
 import { getUserContext, createAuthenticatedClient } from '../_shared/auth.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { validateBody, userSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -47,7 +48,7 @@ export default createEdgeFunction(
       throw new Error('Method not allowed')
     }
 
-    const body = await req.json()
+    const body = await validateBody(req, userSchemas.create)
     console.log('📥 Create user request received:', {
       email: body.email,
       hasFullName: !!body.fullName,
@@ -65,26 +66,6 @@ export default createEdgeFunction(
       organizationRole,
       organizationId: targetOrganizationId,
     } = body
-
-    if (!email || !fullName || !password) {
-      console.error('❌ Missing required fields:', {
-        hasEmail: !!email,
-        hasFullName: !!fullName,
-        hasPassword: !!password,
-      })
-      throw new Error('email, fullName, and password are required')
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email format')
-    }
-
-    // Password validation (min 6 characters)
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters')
-    }
 
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin

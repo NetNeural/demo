@@ -17,6 +17,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createServiceClient } from '../_shared/auth.ts'
+import { validateBody, feedbackSchemas } from '../_shared/validation.ts'
 
 interface FeedbackRequest {
   organizationId: string
@@ -39,7 +40,7 @@ export default createEdgeFunction(
     }
 
     const user = userContext!
-    const body: FeedbackRequest = await req.json()
+    const body = await validateBody(req, feedbackSchemas.submit)
     const {
       organizationId,
       type,
@@ -53,20 +54,6 @@ export default createEdgeFunction(
       browserInfo,
       pageUrl,
     } = body
-
-    // Validate required fields
-    if (!organizationId)
-      throw new DatabaseError('organizationId is required', 400)
-    if (!type || !['bug_report', 'feature_request'].includes(type)) {
-      throw new DatabaseError(
-        'type must be "bug_report" or "feature_request"',
-        400
-      )
-    }
-    if (!title || title.trim().length === 0)
-      throw new DatabaseError('title is required', 400)
-    if (!description || description.trim().length === 0)
-      throw new DatabaseError('description is required', 400)
 
     const serviceClient = createServiceClient()
 

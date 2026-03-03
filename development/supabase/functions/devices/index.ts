@@ -9,6 +9,7 @@ import {
   getUserContext,
 } from '../_shared/auth.ts'
 import { enforceQuota, QuotaExceededError } from '../_shared/quota-check.ts'
+import { validateBody, deviceSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -479,7 +480,7 @@ export default createEdgeFunction(
     }
 
     if (req.method === 'POST') {
-      const body = await req.json()
+      const body = await validateBody(req, deviceSchemas.create)
       const {
         organization_id,
         device_id,
@@ -497,11 +498,6 @@ export default createEdgeFunction(
         battery_level,
         signal_strength,
       } = body
-
-      // Verify required fields
-      if (!name || !device_type) {
-        throw new Error('Name and device type are required')
-      }
 
       // Verify user has access to this organization
       const targetOrgId = await getTargetOrganizationId(

@@ -5,6 +5,7 @@ import {
 } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { getUserContext } from '../_shared/auth.ts'
+import { validateBody, thresholdSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(async ({ req }) => {
   const userContext = await getUserContext(req)
@@ -42,7 +43,7 @@ export default createEdgeFunction(async ({ req }) => {
 
   // POST - Create new threshold
   if (method === 'POST') {
-    const body = await req.json()
+    const body = await validateBody(req, thresholdSchemas.create)
     const {
       device_id,
       sensor_type,
@@ -50,20 +51,16 @@ export default createEdgeFunction(async ({ req }) => {
       max_value,
       critical_min,
       critical_max,
-      temperature_unit = 'celsius',
-      alert_enabled = true,
-      alert_severity = 'medium',
+      temperature_unit,
+      alert_enabled,
+      alert_severity,
       alert_message,
-      notify_on_breach = true,
-      notification_cooldown_minutes = 15,
-      notify_user_ids = [],
-      notify_emails = [],
-      notification_channels = [],
+      notify_on_breach,
+      notification_cooldown_minutes,
+      notify_user_ids,
+      notify_emails,
+      notification_channels,
     } = body
-
-    if (!device_id || !sensor_type) {
-      throw new Error('device_id and sensor_type are required')
-    }
 
     // Validate threshold hierarchy: critical_min ≤ min_value ≤ max_value ≤ critical_max
     if (min_value != null && max_value != null && min_value >= max_value) {
@@ -134,7 +131,7 @@ export default createEdgeFunction(async ({ req }) => {
 
   // PATCH - Update existing threshold
   if (method === 'PATCH' && thresholdId) {
-    const body = await req.json()
+    const body = await validateBody(req, thresholdSchemas.update)
     const {
       min_value,
       max_value,

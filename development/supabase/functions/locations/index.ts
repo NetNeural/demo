@@ -5,6 +5,7 @@ import {
 } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getUserContext } from '../_shared/auth.ts'
+import { validateBody, locationSchemas } from '../_shared/validation.ts'
 
 // ─── Org Membership Check ────────────────────────────────────────────
 // Verifies the user belongs to the target organization (or is super_admin).
@@ -72,7 +73,7 @@ export default createEdgeFunction(
 
     // POST - Create new location
     if (req.method === 'POST') {
-      const body = await req.json()
+      const body = await validateBody(req, locationSchemas.create)
       const {
         organization_id,
         name,
@@ -85,10 +86,6 @@ export default createEdgeFunction(
         latitude,
         longitude,
       } = body
-
-      if (!organization_id || !name) {
-        throw new Error('organization_id and name are required')
-      }
 
       await verifyOrgAccess(
         supabaseAdmin,
@@ -147,7 +144,7 @@ export default createEdgeFunction(
         userContext.isSuperAdmin
       )
 
-      const body = await req.json()
+      const body = await validateBody(req, locationSchemas.update)
       const {
         name,
         description,

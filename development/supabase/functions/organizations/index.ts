@@ -12,6 +12,7 @@ import {
   createServiceClient,
   corsHeaders,
 } from '../_shared/auth.ts'
+import { validateBody, organizationSchemas } from '../_shared/validation.ts'
 
 // This function handles its own auth internally
 // (service role detection, JWT fallback, manual token parsing)
@@ -395,13 +396,7 @@ export default createEdgeFunction(
         console.log('=== POST /organizations - Creating organization ===')
         console.log('User context:', JSON.stringify(userContext, null, 2))
 
-        let body
-        try {
-          body = await req.json()
-        } catch (jsonError) {
-          console.error('Failed to parse JSON body:', jsonError)
-          throw new Error('Invalid JSON in request body')
-        }
+        const body = await validateBody(req, organizationSchemas.create)
 
         const {
           name,
@@ -423,23 +418,6 @@ export default createEdgeFunction(
           hasOwnerFullName: !!ownerFullName,
           sendWelcomeEmail,
         })
-
-        // Validate required fields
-        if (!name || !slug) {
-          console.error('Missing required fields:', {
-            name: !!name,
-            slug: !!slug,
-          })
-          throw new Error('Name and slug are required')
-        }
-
-        // Validate slug format
-        if (!/^[a-z0-9-]+$/.test(slug)) {
-          console.error('Invalid slug format:', slug)
-          throw new Error(
-            'Slug can only contain lowercase letters, numbers, and hyphens'
-          )
-        }
 
         // If creating a child org, validate the parent is a reseller-tier org
         if (parentOrganizationId) {

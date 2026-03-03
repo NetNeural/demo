@@ -13,6 +13,7 @@ import {
   type UserContext,
 } from './auth.ts'
 import { IntegrationError } from './base-integration-client.ts'
+import { ValidationError } from './validation.ts'
 
 export interface EdgeFunctionOptions {
   requireAuth?: boolean
@@ -154,6 +155,14 @@ export function handleEdgeFunctionError(error: unknown): Response {
     return createErrorResponse(error.message, error.status, {
       error: getErrorType(error.status),
       ...(error.details && { details: error.details }),
+    })
+  }
+
+  // Handle ValidationError (Zod) — structured field-level errors
+  if (error instanceof ValidationError) {
+    return createErrorResponse('Validation failed', 400, {
+      error: 'Bad Request',
+      details: error.errors,
     })
   }
 
