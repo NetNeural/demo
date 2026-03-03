@@ -375,7 +375,7 @@ serve(async (req) => {
       { name: 'Plans & Pricing Admin', done: true }, // owner-only admin page
       { name: 'Cookie Consent (GDPR)', done: true }, // #250 — implemented 2026-03-01
       { name: 'MFA Enforcement', done: true }, // Forced MFA setup on login — shipped 2026-03-01
-      { name: 'CI Quality Gates (remove continue-on-error)', done: false }, // #253
+      { name: 'CI Quality Gates (remove continue-on-error)', done: true }, // #253 — fixed 2026-03-03
     ]
     const launchDone = launchBlockers.filter((b) => b.done).length
     const launchTotal = launchBlockers.length
