@@ -34,8 +34,18 @@ import {
   AlertTriangle,
   XCircle,
   Download,
+  FileDown,
   ExternalLink,
+  Info,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import type { SubscriptionStatus } from '@/types/billing'
 import { formatSubscriptionStatus, isSubscriptionActive, formatPlanPrice } from '@/types/billing'
@@ -237,6 +247,33 @@ export function SubscriptionsTab() {
     URL.revokeObjectURL(url)
   }
 
+  const handleExportPdf = () => {
+    const doc = new jsPDF({ orientation: 'landscape' })
+    doc.setFontSize(16)
+    doc.text('Subscriptions Report', 14, 16)
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Exported: ${new Date().toLocaleDateString()} • ${filteredSubscriptions.length} subscriptions`, 14, 22)
+    doc.setTextColor(0, 0, 0)
+    autoTable(doc, {
+      startY: 28,
+      head: [['Organization', 'Plan', 'Status', 'MRR', 'Devices', 'Period End', 'Stripe ID']],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      body: filteredSubscriptions.map((s): any[] => [
+        s.organization_name,
+        s.plan_name,
+        s.status ?? '',
+        `$${(s.mrr / 100).toFixed(2)}`,
+        String(s.device_count),
+        s.current_period_end ? new Date(s.current_period_end).toISOString().split('T')[0] : '—',
+        s.stripe_subscription_id ?? '—',
+      ]),
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [30, 64, 175] },
+    })
+    doc.save(`subscriptions-${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
   // Filter
   const filteredSubscriptions = subscriptions.filter((s) => {
     if (statusFilter !== 'all' && s.status !== statusFilter) return false
@@ -352,6 +389,10 @@ export function SubscriptionsTab() {
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={filteredSubscriptions.length === 0}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
         </div>
       </div>
 
@@ -374,7 +415,25 @@ export function SubscriptionsTab() {
                 <TableHead>Organization</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Devices</TableHead>
+                <TableHead className="text-right">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1 cursor-default">
+                          Devices
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">
+                          Live count of non-deleted devices for this organization.
+                          The navigation panel displays a cached count refreshed
+                          at login.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
                 <TableHead className="text-right">MRR</TableHead>
                 <TableHead>Period End</TableHead>
                 <TableHead>Stripe</TableHead>

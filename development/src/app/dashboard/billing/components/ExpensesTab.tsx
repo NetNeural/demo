@@ -55,7 +55,10 @@ import {
   Wrench,
   Package,
   Download,
+  FileDown,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -246,6 +249,37 @@ export function ExpensesTab() {
 
   // ── CSV Export ────────────────────────────────────────────────────────────
 
+  const exportPdf = () => {
+    const doc = new jsPDF()
+    doc.setFontSize(16)
+    doc.text('NetNeural Platform Expenses', 14, 16)
+    doc.setFontSize(10)
+    doc.text(
+      `Monthly Total: ${fmt(totalMonthlyCents)}  |  Annual: ${fmt(totalAnnualCents)}`,
+      14,
+      24
+    )
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Exported: ${new Date().toLocaleDateString()}`, 14, 30)
+    doc.setTextColor(0, 0, 0)
+    autoTable(doc, {
+      startY: 36,
+      head: [['Name', 'Category', 'Vendor', 'Amount', 'Cycle', 'Active']],
+      body: expenses.map((e) => [
+        e.name,
+        CATEGORY_META[e.category].label,
+        e.vendor || '—',
+        fmt(e.amount_cents),
+        BILLING_CYCLE_LABELS[e.billing_cycle],
+        e.is_active ? 'Active' : 'Inactive',
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 64, 175] },
+    })
+    doc.save(`netneural-expenses-${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
   const exportCsv = () => {
     const header = 'Name,Category,Vendor,Monthly Cost,Billing Cycle,Active,Notes'
     const rows = expenses.map((e) =>
@@ -289,13 +323,17 @@ export function ExpensesTab() {
           <p className="text-sm text-muted-foreground">NetNeural operating costs — SaaS tools, hosting, and services</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
+          <Button variant="outline" size="sm" onClick={exportPdf}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
           <Button size="sm" onClick={openAdd}>
             <Plus className="mr-2 h-4 w-4" />

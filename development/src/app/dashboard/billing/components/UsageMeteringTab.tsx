@@ -28,6 +28,7 @@ import {
   Search,
   Inbox,
   Download,
+  FileDown,
   Cpu,
   Users,
   Zap,
@@ -37,6 +38,8 @@ import {
   CheckCircle2,
   BarChart3,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import type { UsageMetricType } from '@/types/billing'
 import { formatStorageBytes, formatLimit } from '@/types/billing'
 
@@ -240,6 +243,49 @@ export function UsageMeteringTab() {
     URL.revokeObjectURL(url)
   }
 
+  const handleExportPdf = () => {
+    const doc = new jsPDF({ orientation: 'landscape' })
+    doc.setFontSize(16)
+    doc.text('Usage Metering Report', 14, 16)
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(
+      `Exported: ${new Date().toLocaleDateString()} • Period: ${new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString()}`,
+      14,
+      22
+    )
+    doc.setTextColor(0, 0, 0)
+    const rows: string[][] = []
+    for (const org of filteredOrgs) {
+      for (const m of org.metrics) {
+        rows.push([
+          org.organization_name,
+          org.plan_name,
+          METRIC_LABELS[m.metric_type],
+          String(m.current_value),
+          m.is_unlimited ? 'Unlimited' : String(m.plan_limit),
+          `${m.usage_percent}%`,
+          m.is_exceeded ? 'Exceeded' : m.is_warning ? 'Warning' : 'OK',
+        ])
+      }
+    }
+    autoTable(doc, {
+      startY: 28,
+      head: [['Organization', 'Plan', 'Metric', 'Current', 'Limit', 'Usage %', 'Status']],
+      body: rows,
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [30, 64, 175] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 6) {
+          const val = data.cell.raw as string
+          if (val === 'Exceeded') data.cell.styles.textColor = [220, 38, 38]
+          else if (val === 'Warning') data.cell.styles.textColor = [217, 119, 6]
+        }
+      },
+    })
+    doc.save(`usage-metering-${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
   // Filter
   const filteredOrgs = orgUsage.filter((org) => {
     if (searchQuery) {
@@ -359,6 +405,10 @@ export function UsageMeteringTab() {
           <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filteredOrgs.length === 0}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={filteredOrgs.length === 0}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
         </div>
       </div>
