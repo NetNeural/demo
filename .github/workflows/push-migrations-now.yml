@@ -1,0 +1,56 @@
+name: Push DB Migrations (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to push migrations to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - dev
+          - prod
+          - all
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations to Staging
+        if: inputs.environment == 'staging' || inputs.environment == 'all'
+        working-directory: development
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Pushing migrations to staging (atgbmxicqikmapfqouco)..."
+          echo "y" | npx supabase db push --project-ref atgbmxicqikmapfqouco
+          echo "✅ Staging migrations done"
+
+      - name: Push migrations to Dev
+        if: inputs.environment == 'dev' || inputs.environment == 'all'
+        working-directory: development
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Pushing migrations to dev (tsomafkalaoarnuwgdyu)..."
+          echo "y" | npx supabase db push --project-ref tsomafkalaoarnuwgdyu
+          echo "✅ Dev migrations done"
+
+      - name: Push migrations to Prod
+        if: inputs.environment == 'prod' || inputs.environment == 'all'
+        working-directory: development
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Pushing migrations to prod (bldojxpockljyivldxwf)..."
+          echo "y" | npx supabase db push --project-ref bldojxpockljyivldxwf
+          echo "✅ Prod migrations done"
