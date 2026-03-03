@@ -264,15 +264,10 @@ export function CreateOrganizationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="starter">
-                    Starter (Up to 50 devices)
-                  </SelectItem>
-                  <SelectItem value="professional">
-                    Professional (Up to 500 devices)
-                  </SelectItem>
-                  <SelectItem value="enterprise">
-                    Enterprise (Unlimited)
-                  </SelectItem>
+                  <SelectItem value="starter">Starter</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                  <SelectItem value="unlimited">Unlimited (NetNeural)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

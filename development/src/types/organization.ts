@@ -48,6 +48,7 @@ export type SubscriptionTier =
   | 'professional'
   | 'reseller'
   | 'enterprise'
+  | 'unlimited'
 
 export const RESELLER_TIERS: SubscriptionTier[] = ['reseller', 'enterprise']
 
