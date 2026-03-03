@@ -377,3 +377,5 @@ export default function SecurityAuditPage() {
     </div>
   )
 }
+
+export { SecurityAuditPage }

@@ -137,6 +137,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             icon: UsersRound,
           },
           {
+            href: '/dashboard/admin/platform-health',
+            label: 'Platform Health',
+            icon: Activity,
+          },
+          {
+            href: '/dashboard/admin/security-audit',
+            label: 'Security Audit',
+            icon: ShieldCheck,
+          },
+          {
+            href: '/dashboard/admin/permissions',
+            label: 'Permissions',
+            icon: KeyRound,
+          },
+          {
             href: '/dashboard/admin/go-live-runbook',
             label: 'Go-Live Runbook',
             icon: Rocket,
@@ -162,25 +177,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]
-      : []),
-    ...(isSuperAdmin
-      ? [
-          {
-            href: '/dashboard/admin/platform-health',
-            label: 'Platform Health',
-            icon: Activity,
-          },
-          {
-            href: '/dashboard/admin/security-audit',
-            label: 'Security Audit',
-            icon: ShieldCheck,
-          },
-          {
-            href: '/dashboard/admin/permissions',
-            label: 'Permissions',
-            icon: KeyRound,
-          },
-        ]
       : []),
     { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
   ]

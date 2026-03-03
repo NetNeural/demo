@@ -12,6 +12,8 @@ import {
   FlaskConical,
   BookOpen,
   Shield,
+  ShieldCheck,
+  KeyRound,
   UserCheck,
   Bot,
 } from 'lucide-react'
@@ -34,6 +36,9 @@ import { AccessRequestsTab } from '@/app/dashboard/organizations/components/Acce
 import MercuryChat from './components/MercuryChat'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
+import { PlatformHealthPage } from '@/app/dashboard/admin/platform-health/page'
+import { SecurityAuditPage } from '@/app/dashboard/admin/security-audit/page'
+import { PermissionsPage } from '@/app/dashboard/admin/permissions/page'
 
 const tabs = [
   // Org-admin tabs — visible to all org admins
@@ -187,6 +192,7 @@ function SupportPageContent() {
             communication: 'customer-support',
             documentation: 'resources',
             troubleshooting: 'platform', 'system-health': 'platform', tests: 'platform',
+            'platform-health': 'platform', 'security-audit': 'platform', permissions: 'platform',
           }
           return groupMap[activeTab] || 'customer-support'
         })()}
@@ -290,6 +296,18 @@ function SupportPageContent() {
                   <FlaskConical className="h-4 w-4" />
                   Tests & Validation
                 </TabsTrigger>
+                <TabsTrigger value="platform-health" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Platform Health
+                </TabsTrigger>
+                <TabsTrigger value="security-audit" className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  Security Audit
+                </TabsTrigger>
+                <TabsTrigger value="permissions" className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4" />
+                  Permissions
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="troubleshooting" className="mt-6">
                 <TroubleshootingTab key={orgId} organizationId={orgId} />
@@ -303,6 +321,15 @@ function SupportPageContent() {
               </TabsContent>
               <TabsContent value="tests" className="mt-6">
                 <TestsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+              <TabsContent value="platform-health" className="mt-6">
+                <PlatformHealthPage />
+              </TabsContent>
+              <TabsContent value="security-audit" className="mt-6">
+                <SecurityAuditPage />
+              </TabsContent>
+              <TabsContent value="permissions" className="mt-6">
+                <PermissionsPage />
               </TabsContent>
             </Tabs>
           </TabsContent>

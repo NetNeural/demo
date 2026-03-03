@@ -388,6 +388,8 @@ export default function PlatformHealthPage() {
   )
 }
 
+export { PlatformHealthPage }
+
 // Fix missing import
 function Bell(props: React.SVGProps<SVGSVGElement>) {
   return (

@@ -928,3 +928,4 @@ export default function PermissionsPage() {
     </div>
   )
 }
+export { PermissionsPage }
