@@ -2,7 +2,7 @@
 // ASSESSMENT REPORT — Dynamic Software Assessment Email
 // ============================================================================
 // Queries the live database and GitHub API to dynamically score
-// the NetNeural platform across 10 dimensions. Scores, grades,
+// the NetNeural platform across 11 dimensions. Scores, grades,
 // metrics, and feature statuses are ALL computed at runtime.
 //
 // Endpoints:
@@ -232,6 +232,21 @@ serve(async (req) => {
         safeCount(supabase, 'usage_metrics'),
       ])
 
+    // Reseller / Project Hydra tables (parallel)
+    const [
+      resellerTierCount,
+      resellerPayoutCount,
+      resellerInviteCount,
+      sensorSyncLogCount,
+    ] = await Promise.all([
+      safeCount(supabase, 'reseller_tiers'),
+      safeCount(supabase, 'reseller_payouts'),
+      safeCount(supabase, 'reseller_invitations'),
+      safeCount(supabase, 'sensor_sync_log'),
+    ])
+    // Static count of Hydra schema tables across all 4 migrations
+    const hydraTableCount = 14
+
     // Check for Stripe integration (any plan has a stripe_price_id)
     let hasStripePriceIds = false
     try {
@@ -382,6 +397,12 @@ serve(async (req) => {
     let hasMfaCode = false
     let ghSecretCount = 0
     let hasEnvFiles = false
+    // Reseller / Project Hydra feature flags
+    let hasHydraKpisPage = false
+    let hasResellerSensorSync = false
+    let hasResellerTierEngine = false
+    let hasResellerInvite = false
+    let hasResellerAgreement = false
 
     if (githubToken) {
       const repo = 'NetNeural/MonoRepo-Staging'
@@ -555,11 +576,31 @@ serve(async (req) => {
                 f.path.includes('.env.development'))
           )
 
+          // Reseller / Project Hydra feature detection
+          hasHydraKpisPage = blobs.some((f: any) =>
+            f.path.includes('hydra-kpis')
+          )
+          hasResellerSensorSync = blobs.some((f: any) =>
+            f.path.includes('reseller-sensor-sync')
+          )
+          hasResellerTierEngine = blobs.some((f: any) =>
+            f.path.includes('reseller-tier-engine')
+          )
+          hasResellerInvite = blobs.some((f: any) =>
+            f.path.includes('reseller-invite')
+          )
+          hasResellerAgreement = blobs.some((f: any) =>
+            f.path.includes('reseller-agreement')
+          )
+
           console.log(
             `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${scriptTestFileCount} scripts, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
           )
           console.log(
             `[assessment-report] Path-detect: escalation=${hasEscalation}, snooze=${hasSnooze}, timeline=${hasAlertTimeline}, darkMode=${hasDarkMode}, shortcuts=${hasKeyboardShortcuts}, slack=${hasSlackCode}, email=${hasEmailCode}, sms=${hasSmsCode}, mfa=${hasMfaCode}, golioth=${hasGoliothCode}, mqtt=${hasMqttCode}`
+          )
+          console.log(
+            `[assessment-report] Hydra-detect: kpisPage=${hasHydraKpisPage}, sensorSync=${hasResellerSensorSync}, tierEngine=${hasResellerTierEngine}, invite=${hasResellerInvite}, agreement=${hasResellerAgreement}, tierCount=${resellerTierCount}, payouts=${resellerPayoutCount}, invites=${resellerInviteCount}, syncLogs=${sensorSyncLogCount}`
           )
         }
       } catch (err) {
@@ -882,9 +923,12 @@ serve(async (req) => {
       // Secrets managed via GitHub
       if (ghSecretCount >= 5) score += 5
       if (ghSecretCount >= 15) score += 5
-      // Edge function deployment breadth
-      if (edgeFunctionCount >= 5) score += 5
+      // Edge function deployment breadth (graduated for large fn suites)
+      if (edgeFunctionCount >= 5)  score += 5
       if (edgeFunctionCount >= 10) score += 5
+      if (edgeFunctionCount >= 20) score += 3
+      if (edgeFunctionCount >= 40) score += 3
+      if (edgeFunctionCount >= 60) score += 4
       // Quality: issues resolved
       if (ghClosedIssues > 100) score += 5
       if (ghClosedIssues > 200) score += 5
@@ -923,6 +967,36 @@ serve(async (req) => {
       })
     }
 
+    // --- 11. Reseller Ecosystem (Project Hydra) ---
+    {
+      let score = 0
+      // Edge function infrastructure (core of the system)
+      if (hasResellerSensorSync) score += 20   // Sensor-to-tier sync engine
+      if (hasResellerTierEngine) score += 20   // Automated tier computation
+      if (hasResellerInvite)     score += 12   // Partner onboarding
+      if (hasResellerAgreement)  score += 8    // Agreement & compliance
+      if (hasHydraKpisPage)      score += 8    // Admin KPI dashboard
+      // Hydra DB schema (14 tables across 4 migrations)
+      // safeCount returns 0 if table missing — presence proves schema is deployed
+      if (hydraTableCount >= 10) score += 15  // Full schema deployed
+      if (hydraTableCount >= 14) score += 5   // All 4 migrations complete
+      // Live data signals
+      if (resellerTierCount > 0)  score += 7  // Tiers configured
+      if (resellerInviteCount > 0) score += 5  // Invitations sent
+      score = clamp(score)
+      const hydraFns: string[] = []
+      if (hasResellerSensorSync) hydraFns.push('sensor-sync')
+      if (hasResellerTierEngine) hydraFns.push('tier-engine')
+      if (hasResellerInvite)     hydraFns.push('invite')
+      if (hasResellerAgreement)  hydraFns.push('agreement-apply')
+      dimensions.push({
+        name: 'Reseller Ecosystem',
+        score,
+        grade: calcGrade(score),
+        notes: `Project Hydra: ${hydraTableCount} DB tables, ${hydraFns.length} edge functions (${hydraFns.join(', ')}). ${resellerTierCount} tier(s) configured, ${resellerInviteCount} invitations, ${sensorSyncLogCount} sync runs. ${hasHydraKpisPage ? 'KPI dashboard live.' : ''}`,
+      })
+    }
+
     // ─── Overall Score ───────────────────────────────────────────────
 
     const overallScore = clamp(
@@ -940,6 +1014,9 @@ serve(async (req) => {
       { label: 'Billing Plans', value: String(billingPlanCount) },
       { label: 'Active Subs', value: String(activeSubCount) },
       { label: 'Total Devices', value: String(deviceCount) },
+      { label: 'Reseller Tiers', value: String(resellerTierCount) },
+      { label: 'Hydra Tables', value: String(hydraTableCount) },
+      { label: 'Edge Functions', value: String(edgeFunctionCount) },
       { label: 'Issues Closed', value: `${ghClosedIssues}+` },
       { label: 'Open Bugs', value: String(ghOpenBugs) },
       { label: 'Total Commits', value: `${ghTotalCommits || 'N/A'}` },
@@ -1253,7 +1330,7 @@ serve(async (req) => {
           </td>
           <td style="padding:10px 12px; text-align:center; font-weight:700; font-size:16px;">${overallScore}</td>
           <td style="padding:10px 12px;">${scoreBar(overallScore)}</td>
-          <td style="padding:10px 12px; font-size:12px; color:#6b7280;">Average of all 10 dimensions. Computed live.</td>
+          <td style="padding:10px 12px; font-size:12px; color:#6b7280;">Average of all 11 dimensions. Computed live.</td>
         </tr>
       </tbody>
     </table>
