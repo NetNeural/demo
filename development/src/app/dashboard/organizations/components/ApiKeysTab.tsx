@@ -37,6 +37,7 @@ import {
   ExternalLink,
   Clock,
   Shield,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -69,6 +70,7 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
   const [createdKey, setCreatedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [rotatingId, setRotatingId] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -185,6 +187,41 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
       toast.error(err instanceof Error ? err.message : 'Failed to revoke API key')
     } finally {
       setRevokingId(null)
+    }
+  }
+
+  const handleRotate = async (keyId: string) => {
+    if (!confirm('Rotate this API key? The current key will be immediately revoked and a new one issued. Update any systems using the current key.')) return
+
+    setRotatingId(keyId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/api-keys?organization_id=${organizationId}&key_id=${keyId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to rotate API key')
+      }
+
+      const data = await res.json()
+      setCreatedKey(data.data?.key || null)
+      setShowCreateDialog(true)
+      toast.success('API key rotated — copy your new key now')
+      fetchKeys()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to rotate API key')
+    } finally {
+      setRotatingId(null)
     }
   }
 
@@ -308,16 +345,29 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                         </span>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleRevoke(key.id)}
-                      disabled={revokingId === key.id}
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      {revokingId === key.id ? 'Revoking...' : 'Revoke'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => handleRotate(key.id)}
+                        disabled={rotatingId === key.id || revokingId === key.id}
+                        title="Rotate key — issues a new key and revokes this one"
+                      >
+                        <RefreshCw className={`mr-1 h-4 w-4 ${rotatingId === key.id ? 'animate-spin' : ''}`} />
+                        {rotatingId === key.id ? 'Rotating...' : 'Rotate'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRevoke(key.id)}
+                        disabled={revokingId === key.id || rotatingId === key.id}
+                      >
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        {revokingId === key.id ? 'Revoking...' : 'Revoke'}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

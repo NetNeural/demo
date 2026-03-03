@@ -196,6 +196,66 @@ export default createEdgeFunction(
       return createSuccessResponse({ revoked: true })
     }
 
+    // --- PATCH: Rotate an API key (invalidate old, issue new with same settings) ---
+    if (method === 'PATCH') {
+      const keyId = url.searchParams.get('key_id')
+      if (!keyId) throw new Error('key_id parameter is required')
+
+      // Fetch the existing key to copy its settings
+      const { data: existingKey, error: fetchError } = await supabaseAdmin
+        .from('organization_api_keys')
+        .select('id, name, scopes, rate_limit_per_minute, expires_at, organization_id')
+        .eq('id', keyId)
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .is('revoked_at', null)
+        .maybeSingle()
+
+      if (fetchError || !existingKey) {
+        throw new Error('API key not found or already revoked')
+      }
+
+      // Generate new key
+      const rawKey = generateApiKey()
+      const keyPrefix = rawKey.substring(0, 12)
+      const keyHash = await hashApiKey(rawKey)
+
+      // Revoke the old key
+      const { error: revokeError } = await supabaseAdmin
+        .from('organization_api_keys')
+        .update({ is_active: false, revoked_at: new Date().toISOString() })
+        .eq('id', keyId)
+        .eq('organization_id', organizationId)
+
+      if (revokeError) throw new Error(`Failed to revoke old key: ${revokeError.message}`)
+
+      // Insert new key with same settings
+      const { data: newKey, error: insertError } = await supabaseAdmin
+        .from('organization_api_keys')
+        .insert({
+          organization_id: organizationId,
+          name: existingKey.name,
+          key_prefix: keyPrefix,
+          key_hash: keyHash,
+          scopes: existingKey.scopes,
+          rate_limit_per_minute: existingKey.rate_limit_per_minute,
+          expires_at: existingKey.expires_at,
+          created_by: userContext.userId,
+        })
+        .select('id, name, key_prefix, scopes, rate_limit_per_minute, expires_at, created_at')
+        .single()
+
+      if (insertError) throw new Error(`Failed to create rotated key: ${insertError.message}`)
+
+      console.log(`🔄 Rotated API key "${existingKey.name}" for org ${organizationId}`)
+
+      return createSuccessResponse({
+        ...newKey,
+        key: rawKey, // Only returned on rotation
+        warning: 'Store this key securely. The old key has been revoked and this value will not be shown again.',
+      })
+    }
+
     throw new Error(`Method ${method} not supported`)
   }
 )
