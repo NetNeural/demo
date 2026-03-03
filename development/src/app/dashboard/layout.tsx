@@ -137,21 +137,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             icon: UsersRound,
           },
           {
-            href: '/dashboard/admin/platform-health',
-            label: 'Platform Health',
-            icon: Activity,
-          },
-          {
-            href: '/dashboard/admin/security-audit',
-            label: 'Security Audit',
-            icon: ShieldCheck,
-          },
-          {
-            href: '/dashboard/admin/permissions',
-            label: 'Permissions',
-            icon: KeyRound,
-          },
-          {
             href: '/dashboard/admin/go-live-runbook',
             label: 'Go-Live Runbook',
             icon: Rocket,
