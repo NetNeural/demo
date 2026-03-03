@@ -14,10 +14,8 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
         run: |
-          # Resolve to IPv4 — GitHub Actions runners lack IPv6
-          DB_HOST=$(dig +short A db.atgbmxicqikmapfqouco.supabase.co | head -1)
-          echo "Connecting to: ${DB_HOST}:5432"
-          psql "postgresql://postgres:${PGPASSWORD}@${DB_HOST}:5432/postgres?sslmode=require" \
+          # Use Supabase Session Pooler (IPv4) instead of direct DB (IPv6-only)
+          psql "postgresql://postgres.atgbmxicqikmapfqouco:${PGPASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require" \
             -f development/supabase/migrations/20260303220000_fix_access_requests_fk.sql
           echo "✅ Staging FK migration applied"
 
@@ -31,10 +29,8 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
         run: |
-          # Resolve to IPv4 — GitHub Actions runners lack IPv6
-          DB_HOST=$(dig +short A db.bldojxpockljyivldxwf.supabase.co | head -1)
-          echo "Connecting to: ${DB_HOST}:5432"
-          psql "postgresql://postgres:${PGPASSWORD}@${DB_HOST}:5432/postgres?sslmode=require" \
+          # Use Supabase Session Pooler (IPv4) instead of direct DB (IPv6-only)
+          psql "postgresql://postgres.bldojxpockljyivldxwf:${PGPASSWORD}@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require" \
             -f development/supabase/migrations/20260303220000_fix_access_requests_fk.sql
           echo "✅ Prod FK migration applied"
 
@@ -55,7 +51,7 @@ jobs:
             -d "{
               \"smtp_enabled\": true,
               \"smtp_host\": \"smtp.resend.com\",
-              \"smtp_port\": 465,
+              \"smtp_port\": \"465\",
               \"smtp_user\": \"resend\",
               \"smtp_pass\": \"${RESEND_KEY}\",
               \"smtp_sender_name\": \"NetNeural\",
@@ -71,7 +67,7 @@ jobs:
             -d "{
               \"smtp_enabled\": true,
               \"smtp_host\": \"smtp.resend.com\",
-              \"smtp_port\": 465,
+              \"smtp_port\": \"465\",
               \"smtp_user\": \"resend\",
               \"smtp_pass\": \"${RESEND_KEY}\",
               \"smtp_sender_name\": \"NetNeural\",
@@ -87,7 +83,7 @@ jobs:
             -d "{
               \"smtp_enabled\": true,
               \"smtp_host\": \"smtp.resend.com\",
-              \"smtp_port\": 465,
+              \"smtp_port\": \"465\",
               \"smtp_user\": \"resend\",
               \"smtp_pass\": \"${RESEND_KEY}\",
               \"smtp_sender_name\": \"NetNeural\",
