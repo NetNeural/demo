@@ -62,6 +62,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isUploadingSentinelLogo, setIsUploadingSentinelLogo] = useState(false)
   const [isUploadingBg, setIsUploadingBg] = useState(false)
+  const [isDeletingLogo, setIsDeletingLogo] = useState(false)
+  const [isDeletingSentinelLogo, setIsDeletingSentinelLogo] = useState(false)
   const [removeLogoBg, setRemoveLogoBg] = useState(false)
   const [removeSentinelBg, setRemoveSentinelBg] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -524,6 +526,62 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
     }
   }
 
+  const handleDeleteLogo = async () => {
+    if (!currentOrganization || !logoUrl) return
+    try {
+      setIsDeletingLogo(true)
+      const supabase = createClient()
+      const oldPath = logoUrl.split('/').slice(-2).join('/')
+      await supabase.storage.from('organization-assets').remove([oldPath])
+      const currentSettings: OrganizationSettings = currentOrganization.settings || {}
+      const updatedSettings: OrganizationSettings = {
+        ...currentSettings,
+        branding: { ...currentSettings.branding, logo_url: '' },
+      }
+      const response = await edgeFunctions.organizations.update(currentOrganization.id, {
+        name: currentOrganization.name,
+        settings: updatedSettings,
+      })
+      if (!response.success) throw new Error(typeof response.error === 'string' ? response.error : 'Failed to remove logo')
+      setLogoUrl('')
+      toast.success('Logo removed')
+      await refreshOrganizations()
+    } catch (error: any) {
+      console.error('Error deleting logo:', error)
+      toast.error(error?.message || 'Failed to remove logo')
+    } finally {
+      setIsDeletingLogo(false)
+    }
+  }
+
+  const handleDeleteSentinelLogo = async () => {
+    if (!currentOrganization || !sentinelLogoUrl) return
+    try {
+      setIsDeletingSentinelLogo(true)
+      const supabase = createClient()
+      const oldPath = sentinelLogoUrl.split('/').slice(-2).join('/')
+      await supabase.storage.from('organization-assets').remove([oldPath])
+      const currentSettings: OrganizationSettings = currentOrganization.settings || {}
+      const updatedSettings: OrganizationSettings = {
+        ...currentSettings,
+        branding: { ...currentSettings.branding, sentinel_logo_url: '' },
+      }
+      const response = await edgeFunctions.organizations.update(currentOrganization.id, {
+        name: currentOrganization.name,
+        settings: updatedSettings,
+      })
+      if (!response.success) throw new Error(typeof response.error === 'string' ? response.error : 'Failed to remove Sentinel logo')
+      setSentinelLogoUrl('')
+      toast.success('Sentinel logo removed')
+      await refreshOrganizations()
+    } catch (error: any) {
+      console.error('Error deleting Sentinel logo:', error)
+      toast.error(error?.message || 'Failed to remove Sentinel logo')
+    } finally {
+      setIsDeletingSentinelLogo(false)
+    }
+  }
+
   const handleBgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !currentOrganization) return
@@ -868,12 +926,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {logoUrl && (
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => setLogoUrl('')}
-                      className="text-red-600 hover:text-red-700 h-auto p-0"
+                      onClick={handleDeleteLogo}
+                      disabled={isDeletingLogo || isUploadingLogo}
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
                     >
-                      Remove Logo
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      {isDeletingLogo ? 'Removing...' : 'Delete Logo'}
                     </Button>
                   )}
                 </div>
@@ -940,12 +1000,14 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                     {sentinelLogoUrl && (
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => setSentinelLogoUrl('')}
-                        className="text-red-600 hover:text-red-700 h-auto p-0"
+                        onClick={handleDeleteSentinelLogo}
+                        disabled={isDeletingSentinelLogo || isUploadingSentinelLogo}
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
                       >
-                        Remove Sentinel Logo
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                        {isDeletingSentinelLogo ? 'Removing...' : 'Delete Sentinel Logo'}
                       </Button>
                     )}
                   </div>
