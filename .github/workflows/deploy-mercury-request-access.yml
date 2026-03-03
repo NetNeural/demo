@@ -1,0 +1,60 @@
+name: Deploy Mercury-Chat & Request-Access to All Envs
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment(s)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - staging
+          - dev
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy to Staging (atgbmxicqikmapfqouco)
+        if: inputs.environment == 'all' || inputs.environment == 'staging'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        working-directory: development
+        run: |
+          echo "→ Deploying to STAGING..."
+          npx supabase functions deploy mercury-chat   --project-ref atgbmxicqikmapfqouco --no-verify-jwt
+          npx supabase functions deploy request-access --project-ref atgbmxicqikmapfqouco --no-verify-jwt
+          echo "✓ Staging done"
+
+      - name: Deploy to Dev (tsomafkalaoarnuwgdyu)
+        if: inputs.environment == 'all' || inputs.environment == 'dev'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        working-directory: development
+        run: |
+          echo "→ Deploying to DEV..."
+          npx supabase functions deploy mercury-chat   --project-ref tsomafkalaoarnuwgdyu --no-verify-jwt
+          npx supabase functions deploy request-access --project-ref tsomafkalaoarnuwgdyu --no-verify-jwt
+          echo "✓ Dev done"
+
+      - name: Deploy to Production (bldojxpockljyivldxwf)
+        if: inputs.environment == 'all' || inputs.environment == 'production'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        working-directory: development
+        run: |
+          echo "→ Deploying to PRODUCTION..."
+          npx supabase functions deploy mercury-chat   --project-ref bldojxpockljyivldxwf --no-verify-jwt
+          npx supabase functions deploy request-access --project-ref bldojxpockljyivldxwf --no-verify-jwt
+          echo "✓ Production done"

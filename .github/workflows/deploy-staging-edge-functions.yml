@@ -31,6 +31,8 @@ on:
           - org-branding
           - reseller-agreement-apply
           - threshold-ai-recommend
+          - mercury-chat
+          - request-access
 
 jobs:
   deploy:
@@ -73,6 +75,8 @@ jobs:
             npx supabase functions deploy org-branding --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy reseller-agreement-apply --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
             npx supabase functions deploy threshold-ai-recommend --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy mercury-chat --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
+            npx supabase functions deploy request-access --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
           else
             echo "Deploying ${{ inputs.function }}..."
             npx supabase functions deploy ${{ inputs.function }} --project-ref $SUPABASE_PROJECT_ID --no-verify-jwt
