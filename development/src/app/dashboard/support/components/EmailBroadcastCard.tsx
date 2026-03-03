@@ -44,6 +44,9 @@ import {
   Wrench,
   Newspaper,
   Bell,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -54,6 +57,7 @@ type Tone = 'formal' | 'friendly' | 'urgent'
 interface BroadcastLog {
   id: string
   subject: string
+  html_body: string | null
   email_type: string
   target_tiers: string[]
   recipient_count: number
@@ -120,6 +124,7 @@ export function EmailBroadcastCard() {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
   const [broadcastHistory, setBroadcastHistory] = useState<BroadcastLog[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null)
 
   const getAuthHeaders = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -285,6 +290,15 @@ export function EmailBroadcastCard() {
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
+
+  const loadTemplate = (log: BroadcastLog) => {
+    setSubject(log.subject)
+    setHtmlBody(log.html_body || '')
+    setEmailType((log.email_type as EmailType) || 'announcement')
+    toast.success('Template loaded — review and send when ready')
+    // Scroll to top of compose form
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div className="space-y-6">
@@ -498,46 +512,73 @@ export function EmailBroadcastCard() {
           ) : (
             <div className="space-y-2">
               {broadcastHistory.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <Badge
-                      variant="outline"
-                      className={`flex-shrink-0 text-xs ${EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.color || ''}`}
-                    >
-                      {EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.label || log.email_type}
-                    </Badge>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {log.subject}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>{new Date(log.sent_at).toLocaleString()}</span>
-                        <span>·</span>
-                        <span>{log.target_tiers.join(', ')}</span>
-                        {log.error_message && (
-                          <>
-                            <span>·</span>
-                            <span className="text-red-500">{log.error_message}</span>
-                          </>
-                        )}
+                <div key={log.id} className="rounded-lg border">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <Badge
+                        variant="outline"
+                        className={`flex-shrink-0 text-xs ${EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.color || ''}`}
+                      >
+                        {EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.label || log.email_type}
+                      </Badge>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{log.subject}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>{new Date(log.sent_at).toLocaleString()}</span>
+                          <span>·</span>
+                          <span>{log.target_tiers.join(', ')}</span>
+                          <span>·</span>
+                          <Users className="h-3 w-3" />
+                          <span>{log.recipient_count} sent</span>
+                          {log.error_message && (
+                            <>
+                              <span>·</span>
+                              <span className="text-red-500">{log.error_message}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="ml-2 flex flex-shrink-0 items-center gap-2">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      <span>{log.recipient_count}</span>
+                    <div className="ml-2 flex flex-shrink-0 items-center gap-1">
+                      {log.status === 'sent' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => loadTemplate(log)}
+                        title="Load into compose form"
+                      >
+                        <RotateCcw className="mr-1 h-3 w-3" />
+                        Reuse
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setExpandedHistoryId(expandedHistoryId === log.id ? null : log.id)}
+                      >
+                        {expandedHistoryId === log.id
+                          ? <ChevronUp className="h-3 w-3" />
+                          : <ChevronDown className="h-3 w-3" />}
+                      </Button>
                     </div>
-                    {log.status === 'sent' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                    )}
                   </div>
+                  {/* Expanded body preview */}
+                  {expandedHistoryId === log.id && log.html_body && (
+                    <div className="border-t px-3 pb-3">
+                      <p className="mb-1 mt-2 text-xs font-medium text-muted-foreground">Email Body Preview</p>
+                      <div
+                        className="max-h-64 overflow-y-auto rounded border bg-white p-3 text-sm dark:bg-gray-950"
+                        dangerouslySetInnerHTML={{ __html: log.html_body }}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
