@@ -244,7 +244,7 @@ export default createEdgeFunction(
         .select(
           `
         *,
-        requester:users!requester_id(id, full_name, email, avatar_url),
+        requester:users!requester_id(id, full_name, email),
         requester_org:organizations!requester_org_id(id, name, slug),
         target_org:organizations!target_org_id(id, name, slug),
         approver:users!approved_by(id, full_name, email)
