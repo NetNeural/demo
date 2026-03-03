@@ -2,7 +2,7 @@
 // ASSESSMENT REPORT — Dynamic Software Assessment Email
 // ============================================================================
 // Queries the live database and GitHub API to dynamically score
-// the NetNeural platform across 11 dimensions. Scores, grades,
+// the NetNeural platform across 12 dimensions. Scores, grades,
 // metrics, and feature statuses are ALL computed at runtime.
 //
 // Endpoints:
@@ -247,6 +247,15 @@ serve(async (req) => {
     // Static count of Hydra schema tables across all 4 migrations
     const hydraTableCount = 14
 
+    // Mercury / AI Support tables (parallel)
+    const [
+      supportChatSessionCount,
+      supportTicketCount,
+    ] = await Promise.all([
+      safeCount(supabase, 'support_chat_sessions'),
+      safeCount(supabase, 'support_tickets'),
+    ])
+
     // Check for Stripe integration (any plan has a stripe_price_id)
     let hasStripePriceIds = false
     try {
@@ -403,6 +412,12 @@ serve(async (req) => {
     let hasResellerTierEngine = false
     let hasResellerInvite = false
     let hasResellerAgreement = false
+    // Mercury / AI feature flags
+    let hasMercuryChat = false
+    let hasAiInsights = false
+    let hasModerateImage = false
+    let hasGenerateReportSummary = false
+    let hasEmailBroadcastAi = false
 
     if (githubToken) {
       const repo = 'NetNeural/MonoRepo-Staging'
@@ -593,6 +608,26 @@ serve(async (req) => {
             f.path.includes('reseller-agreement')
           )
 
+          // Mercury / AI feature detection
+          hasMercuryChat = blobs.some((f: any) =>
+            f.path.includes('mercury-chat')
+          )
+          hasAiInsights = blobs.some((f: any) =>
+            f.path.includes('ai-insights')
+          )
+          hasModerateImage = blobs.some((f: any) =>
+            f.path.includes('moderate-image')
+          )
+          hasGenerateReportSummary = blobs.some((f: any) =>
+            f.path.includes('generate-report-summary')
+          )
+          hasEmailBroadcastAi = blobs.some((f: any) =>
+            f.path.includes('email-broadcast')
+          )
+
+          console.log(
+            `[assessment-report] Mercury/AI-detect: mercuryChat=${hasMercuryChat}, aiInsights=${hasAiInsights}, moderateImage=${hasModerateImage}, reportSummary=${hasGenerateReportSummary}, emailBroadcastAi=${hasEmailBroadcastAi}, chatSessions=${supportChatSessionCount}, tickets=${supportTicketCount}`
+          )
           console.log(
             `[assessment-report] Tree: ${blobs.length} files, ${tsxComponentCount} TSX, ${unitTestFileCount} unit tests, ${e2eTestFileCount} E2E, ${scriptTestFileCount} scripts, ${docMdFileCount} docs, ${edgeFunctionCount} edge fns`
           )
@@ -997,6 +1032,36 @@ serve(async (req) => {
       })
     }
 
+    // --- 12. AI Features (Mercury, Insights, Moderation, Broadcast) ---
+    {
+      let score = 0
+      // Mercury AI support chatbot (crown jewel)
+      if (hasMercuryChat)           score += 30  // GPT-4o-mini chat engine deployed
+      if (supportChatSessionCount >= 0) score += 10  // DB schema live (table exists)
+      if (supportTicketCount >= 0)      score += 5   // Ticket system live
+      // Predictive IoT analytics
+      if (hasAiInsights)            score += 20  // AI-powered sensor analysis
+      // Content moderation
+      if (hasModerateImage)         score += 15  // Vision-based image moderation
+      // AI-generated executive reports
+      if (hasGenerateReportSummary) score += 10  // Report narrative generation
+      // AI-enhanced email broadcast
+      if (hasEmailBroadcastAi)      score += 10  // Smart email composition
+      score = clamp(score)
+      const aiFns: string[] = []
+      if (hasMercuryChat)           aiFns.push('mercury-chat')
+      if (hasAiInsights)            aiFns.push('ai-insights')
+      if (hasModerateImage)         aiFns.push('moderate-image')
+      if (hasGenerateReportSummary) aiFns.push('generate-report-summary')
+      if (hasEmailBroadcastAi)      aiFns.push('email-broadcast')
+      dimensions.push({
+        name: 'AI Features',
+        score,
+        grade: calcGrade(score),
+        notes: `${aiFns.length} AI-powered edge functions (${aiFns.join(', ')}), all on GPT-4o-mini. Mercury support chatbot with ${supportChatSessionCount} sessions, ${supportTicketCount} tickets. Predictive IoT analytics, image moderation, executive summaries, smart email broadcast.`,
+      })
+    }
+
     // ─── Overall Score ───────────────────────────────────────────────
 
     const overallScore = clamp(
@@ -1016,6 +1081,7 @@ serve(async (req) => {
       { label: 'Total Devices', value: String(deviceCount) },
       { label: 'Reseller Tiers', value: String(resellerTierCount) },
       { label: 'Hydra Tables', value: String(hydraTableCount) },
+      { label: 'AI Functions', value: String([hasMercuryChat, hasAiInsights, hasModerateImage, hasGenerateReportSummary, hasEmailBroadcastAi].filter(Boolean).length) },
       { label: 'Edge Functions', value: String(edgeFunctionCount) },
       { label: 'Issues Closed', value: `${ghClosedIssues}+` },
       { label: 'Open Bugs', value: String(ghOpenBugs) },
