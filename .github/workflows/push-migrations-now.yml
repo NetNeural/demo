@@ -47,6 +47,7 @@ jobs:
             20260302370000 \
             20260303100000 20260303200000 20260303220000 \
             20260303230000 20260303250000 20260303260000 \
+            20260304000000 \
             --project-ref atgbmxicqikmapfqouco 2>/dev/null || true
           npx supabase db push --linked --yes
           echo "✅ Staging migrations done"
