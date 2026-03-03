@@ -247,8 +247,7 @@ function LoginForm() {
         if (loginError) {
           auditLoginFailed(email.trim(), loginError.message)
           if (!isMounted.current) return
-          // DEBUG: Show actual Supabase error to diagnose login failures
-          setError(`Login failed: ${loginError.message} (${loginError.status ?? 'no-status'})`)
+          setError('Invalid email or password. Please try again.')
           setIsLoading(false)
           return
         }
