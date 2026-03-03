@@ -19,6 +19,9 @@ const config = {
 
   // Module name mapping for CSS modules and static assets
   moduleNameMapper: {
+    // Vitest -> Jest compatibility shim (tests that import from 'vitest')
+    '^vitest$': '<rootDir>/__mocks__/vitest.js',
+
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     // Note: More specific patterns must come before general ones
     '^@/__tests__/(.*)$': '<rootDir>/__tests__/$1',

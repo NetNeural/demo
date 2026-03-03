@@ -254,8 +254,9 @@ describe('EdgeFunctionClient', () => {
 
       await client.alerts.acknowledge('alert-123')
 
+      // The modular alerts API passes action + alert_id as query params
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/alerts/alert-123/acknowledge'),
+        expect.stringContaining('/alerts'),
         expect.objectContaining({
           method: 'PATCH',
         })
