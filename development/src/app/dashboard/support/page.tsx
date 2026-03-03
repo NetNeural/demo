@@ -13,6 +13,7 @@ import {
   BookOpen,
   Shield,
   UserCheck,
+  Bot,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -30,6 +31,7 @@ import DataOperationsTab from './components/DataOperationsTab'
 import ExecutiveReportsCard from './components/ExecutiveReportsCard'
 import { EmailBroadcastCard } from './components/EmailBroadcastCard'
 import { AccessRequestsTab } from '@/app/dashboard/organizations/components/AccessRequestsTab'
+import MercuryChat from './components/MercuryChat'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
 
@@ -220,8 +222,8 @@ function SupportPageContent() {
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
               <TabsTrigger value="access-requests" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                Access Requests
+                <Bot className="h-4 w-4" />
+                Mercury Support
               </TabsTrigger>
               {!isSubOrg && (
                 <TabsTrigger value="executive-reports" className="flex items-center gap-2">
@@ -243,7 +245,10 @@ function SupportPageContent() {
               )}
             </TabsList>
             <TabsContent value="access-requests" className="mt-6">
-              <AccessRequestsTab key={orgId} organizationId={orgId} />
+              <div className="space-y-6">
+                <MercuryChat key={`mercury-${orgId}`} organizationId={orgId} />
+                <AccessRequestsTab key={`ar-${orgId}`} organizationId={orgId} />
+              </div>
             </TabsContent>
             {!isSubOrg && (
               <TabsContent value="executive-reports" className="mt-6">
