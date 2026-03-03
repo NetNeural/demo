@@ -233,7 +233,13 @@ export default createEdgeFunction(
       const status = params.status // 'pending' | 'approved' | 'denied' | 'expired' | 'all'
       const orgId = params.organization_id
 
-      let query = supabase
+      // Use service client so the FK-based joins to public.users succeed.
+      // The authenticated user client hits RLS on the users table and cannot
+      // read other users' rows needed for requester/approver joins → HTTP 500.
+      // Authorization is already enforced below via userContext filters.
+      const serviceClient = createServiceClient()
+
+      let query = serviceClient
         .from('access_requests')
         .select(
           `
@@ -274,7 +280,7 @@ export default createEdgeFunction(
       }
 
       // Also run cleanup of expired requests while we're at it
-      await supabase.rpc('cleanup_expired_access').catch(() => {
+      await serviceClient.rpc('cleanup_expired_access').catch(() => {
         // Non-critical, ignore errors
       })
 

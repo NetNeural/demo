@@ -74,8 +74,14 @@ const WELCOME_MSG: ChatMessage = {
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-function invoke(supabase: ReturnType<typeof createClient>, action: string, extra: Record<string, unknown> = {}) {
-  return supabase.functions.invoke('mercury-chat', { body: { action, ...extra } })
+async function invoke(supabase: ReturnType<typeof createClient>, action: string, extra: Record<string, unknown> = {}) {
+  // Explicitly include the session token — createBrowserClient doesn't always
+  // auto-attach the Authorization header when calling edge functions in App Router.
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers: Record<string, string> = session
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {}
+  return supabase.functions.invoke('mercury-chat', { body: { action, ...extra }, headers })
 }
 
 // ─── Component ────────────────────────────────────────────────────
