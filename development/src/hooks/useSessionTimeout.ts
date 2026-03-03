@@ -70,7 +70,7 @@ export function useSessionTimeout(): SessionTimeoutState {
       // Non-critical — don't block sign-out
     }
     await supabase.auth.signOut()
-    router.push('/login?reason=session_timeout')
+    router.push('/auth/login?reason=session_timeout')
   }, [supabase, router])
 
   const extendSession = useCallback(() => {
@@ -94,7 +94,9 @@ export function useSessionTimeout(): SessionTimeoutState {
   // Poll every second: check idleness
   useEffect(() => {
     checkRef.current = setInterval(() => {
-      const last = parseInt(sessionStorage.getItem(ACTIVITY_KEY) ?? '0', 10)
+      const stored = sessionStorage.getItem(ACTIVITY_KEY)
+      // If no timestamp stored yet, treat user as active right now
+      const last = stored ? parseInt(stored, 10) : Date.now()
       const idleMs = Date.now() - last
       const remaining = IDLE_MS - idleMs
 
