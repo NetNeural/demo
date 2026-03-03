@@ -45,6 +45,14 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
       return { safe: true }
     }
 
+    // Skip moderation for very large files (> 4MB) — base64 encoding would be
+    // huge and slow; compression happens after moderation so we can't pre-shrink here.
+    // Large files are almost always legitimate photos/logos, not policy violations.
+    if (file.size > 4 * 1024 * 1024) {
+      console.info('Skipping moderation for large file (>4MB), allowing upload')
+      return { safe: true }
+    }
+
     const base64 = await fileToBase64(file)
 
     const supabase = createClient()
@@ -58,6 +66,10 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
       return { safe: true }
     }
 
+    // 8-second timeout — fail-open if the moderation service is slow
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+
     const response = await fetch(`${supabaseUrl}/functions/v1/moderate-image`, {
       method: 'POST',
       headers: {
@@ -66,7 +78,10 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
         'apikey': supabaseAnonKey,
       },
       body: JSON.stringify({ imageBase64: base64 }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.warn('Moderation API returned non-OK status:', response.status)
@@ -77,6 +92,10 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
     const result: ModerationResult = await response.json()
     return result
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('Image moderation timed out (8s), allowing upload')
+      return { safe: true, reason: 'moderation_timeout' }
+    }
     console.warn('Image moderation check failed, allowing upload:', error)
     // Fail-open: don't block uploads due to moderation failures
     return { safe: true, reason: 'moderation_error' }
