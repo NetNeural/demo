@@ -7,8 +7,10 @@
  *  2. SHA-256 hash it
  *  3. Look up organization_api_keys by key_hash
  *  4. Validate: active, not revoked, not expired, scope check
- *  5. Update last_used_at (best-effort, non-blocking)
- *  6. Return org context for downstream handlers
+ *  5. Enforce rate limit via sliding 60-second window (api_usage_log) (#389)
+ *  6. Log request to api_usage_log (fire-and-forget)
+ *  7. Update last_used_at (best-effort, non-blocking)
+ *  8. Return org context for downstream handlers
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -18,6 +20,20 @@ export interface ApiKeyContext {
   scopes: string[]
   rateLimitPerMinute: number
   keyId: string
+  remaining: number
+  resetEpochSec: number
+}
+
+/**
+ * Build X-RateLimit-* response headers from a validated key context.
+ */
+export function rateLimitHeaders(ctx: ApiKeyContext): Record<string, string> {
+  return {
+    'X-RateLimit-Limit':     String(ctx.rateLimitPerMinute),
+    'X-RateLimit-Remaining': String(Math.max(0, ctx.remaining)),
+    'X-RateLimit-Reset':     String(ctx.resetEpochSec),
+    'X-RateLimit-Window':    '60',
+  }
 }
 
 async function sha256(message: string): Promise<string> {
@@ -70,6 +86,37 @@ export async function validateApiKey(
     throw new ApiKeyAuthError(`API key does not have required scope: ${requiredScope}`, 403)
   }
 
+  // ── Rate limiting (#389) — sliding 60-second window ──────────────────────
+  const limitPerMinute: number = keyRecord.rate_limit_per_minute || 60
+  const windowStart = new Date(Date.now() - 60_000).toISOString()
+  const resetEpochSec = Math.ceil((Date.now() + 60_000) / 1000)
+
+  const { count: usedThisWindow } = await supabase
+    .from('api_usage_log')
+    .select('*', { count: 'exact', head: true })
+    .eq('api_key_id', keyRecord.id)
+    .gte('created_at', windowStart)
+
+  const used     = usedThisWindow ?? 0
+  const remaining = limitPerMinute - used
+
+  if (remaining <= 0) {
+    throw new ApiKeyAuthError(
+      `Rate limit exceeded. Limit: ${limitPerMinute} requests/minute. Retry after ${resetEpochSec}.`,
+      429
+    )
+  }
+
+  // Log usage fire-and-forget (non-blocking)
+  const path = new URL(req.url).pathname
+  const endpoint = path.split('/').filter(Boolean).pop() || 'unknown'
+  supabase.from('api_usage_log').insert({
+    api_key_id:      keyRecord.id,
+    organization_id: keyRecord.organization_id,
+    endpoint,
+    status_code:     200,
+  }).then(() => {})
+
   // Update last_used_at (fire and forget — don't block the response)
   supabase
     .from('organization_api_keys')
@@ -78,10 +125,12 @@ export async function validateApiKey(
     .then(() => {})
 
   return {
-    organizationId: keyRecord.organization_id,
-    scopes: keyRecord.scopes,
-    rateLimitPerMinute: keyRecord.rate_limit_per_minute,
-    keyId: keyRecord.id,
+    organizationId:      keyRecord.organization_id,
+    scopes:              keyRecord.scopes,
+    rateLimitPerMinute:  limitPerMinute,
+    keyId:               keyRecord.id,
+    remaining,
+    resetEpochSec,
   }
 }
 

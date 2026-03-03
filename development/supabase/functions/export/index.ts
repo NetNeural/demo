@@ -19,7 +19,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   validateApiKey,
   ApiKeyAuthError,
+  ApiKeyContext,
   apiKeyCorsHeaders,
+  rateLimitHeaders,
 } from '../_shared/api-key-auth.ts'
 
 const corsHeaders = apiKeyCorsHeaders
@@ -42,6 +44,21 @@ Deno.serve(async (req: Request) => {
   const resource = exportIdx >= 0 ? pathParts[exportIdx + 1] : pathParts[pathParts.length - 1]
   const resourceId = exportIdx >= 0 ? pathParts[exportIdx + 2] : undefined
   const subResource = exportIdx >= 0 ? pathParts[exportIdx + 3] : undefined
+
+  // =========================================================================
+  // Route: GET /export/openapi  (public, no auth required)  (#390)
+  // =========================================================================
+  if (resource === 'openapi' || resource === 'openapi.json') {
+    const spec = buildOpenApiSpec(req)
+    if (resource === 'openapi' && req.headers.get('Accept')?.includes('text/html')) {
+      const html = swaggerUiHtml(new URL(req.url).origin + '/functions/v1/export/openapi.json')
+      return new Response(html, { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+    }
+    return new Response(JSON.stringify(spec, null, 2), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
 
   try {
     // Authenticate via API key
@@ -156,7 +173,7 @@ Deno.serve(async (req: Request) => {
       return jsonOk({
         data: records,
         pagination: { total: count ?? 0, limit, next_cursor: nextCursor },
-      }, apiKeyCtx.rateLimitPerMinute)
+      }, apiKeyCtx)
     }
 
     // =========================================================================
@@ -183,7 +200,7 @@ Deno.serve(async (req: Request) => {
         if (error) throw error
         if (!device) return jsonError('Device not found', 404)
 
-        return jsonOk({ data: formatDevice(device) }, apiKeyCtx.rateLimitPerMinute)
+        return jsonOk({ data: formatDevice(device) }, apiKeyCtx)
       }
 
       // Status history for a single device
@@ -213,7 +230,7 @@ Deno.serve(async (req: Request) => {
           ? btoa(JSON.stringify({ t: records[records.length - 1].timestamp }))
           : null
 
-        return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx.rateLimitPerMinute)
+        return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx)
       }
 
       // Device list
@@ -261,7 +278,7 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx.rateLimitPerMinute)
+      return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx)
     }
 
     // =========================================================================
@@ -328,10 +345,10 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx.rateLimitPerMinute)
+      return jsonOk({ data: records, pagination: { total: count ?? 0, limit, next_cursor: nextCursor } }, apiKeyCtx)
     }
 
-    return jsonError(`Unknown resource: ${resource}. Available: telemetry, devices, alerts`, 404)
+    return jsonError(`Unknown resource: ${resource}. Available: telemetry, devices, alerts, openapi`, 404)
 
   } catch (err) {
     if (err instanceof ApiKeyAuthError) {
@@ -368,13 +385,13 @@ function formatDevice(d: Record<string, unknown>) {
   }
 }
 
-function jsonOk(body: unknown, rateLimitPerMinute?: number): Response {
+function jsonOk(body: unknown, ctx?: ApiKeyContext): Response {
   const headers: Record<string, string> = {
     ...corsHeaders,
     'Content-Type': 'application/json',
   }
-  if (rateLimitPerMinute && rateLimitPerMinute > 0) {
-    headers['X-RateLimit-Limit'] = String(rateLimitPerMinute)
+  if (ctx) {
+    Object.assign(headers, rateLimitHeaders(ctx))
   }
   return new Response(JSON.stringify(body), { status: 200, headers })
 }
@@ -399,4 +416,165 @@ function toCsv(rows: Record<string, unknown>[], fields: string[]): string {
     }).join(',')
   )
   return [header, ...lines].join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// OpenAPI 3.0 spec builder (#390)
+// ---------------------------------------------------------------------------
+
+function buildOpenApiSpec(req: Request) {
+  const base = new URL(req.url).origin + '/functions/v1/export'
+  return {
+    openapi: '3.0.3',
+    info: {
+      title: 'NetNeural Customer Data Export API',
+      version: '1.0.0',
+      description: 'Export device telemetry, device inventory, and alert data for your organisation.',
+    },
+    servers: [{ url: base, description: 'Supabase Edge Function' }],
+    security: [{ bearerAuth: [] }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'nn_live_...' },
+      },
+      parameters: {
+        limit: { name: 'limit', in: 'query', schema: { type: 'integer', default: 100, maximum: 1000 } },
+        cursor: { name: 'cursor', in: 'query', description: 'Keyset pagination cursor from previous response', schema: { type: 'string' } },
+      },
+      schemas: {
+        Pagination: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer' },
+            limit: { type: 'integer' },
+            next_cursor: { type: 'string', nullable: true },
+          },
+        },
+      },
+    },
+    paths: {
+      '/telemetry': {
+        get: {
+          summary: 'Export telemetry data',
+          operationId: 'exportTelemetry',
+          parameters: [
+            { name: 'device_id', in: 'query', schema: { type: 'string' }, description: 'Comma-separated device IDs' },
+            { name: 'field', in: 'query', schema: { type: 'string' } },
+            { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { name: 'sort', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] } },
+            { $ref: '#/components/parameters/limit' },
+            { $ref: '#/components/parameters/cursor' },
+          ],
+          responses: {
+            200: { description: 'Telemetry records', content: { 'application/json': {}, 'text/csv': {} } },
+            401: { description: 'Unauthorized' },
+            429: { description: 'Rate limit exceeded' },
+          },
+        },
+      },
+      '/devices': {
+        get: {
+          summary: 'List all devices',
+          operationId: 'listDevices',
+          parameters: [
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['online', 'offline', 'warning'] } },
+            { name: 'device_type', in: 'query', schema: { type: 'string' } },
+            { name: 'location_id', in: 'query', schema: { type: 'string', format: 'uuid' } },
+            { name: 'department_id', in: 'query', schema: { type: 'string', format: 'uuid' } },
+            { $ref: '#/components/parameters/limit' },
+            { $ref: '#/components/parameters/cursor' },
+          ],
+          responses: {
+            200: { description: 'Device list', content: { 'application/json': {}, 'text/csv': {} } },
+            401: { description: 'Unauthorized' },
+            429: { description: 'Rate limit exceeded' },
+          },
+        },
+      },
+      '/devices/{id}': {
+        get: {
+          summary: 'Get a single device',
+          operationId: 'getDevice',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            200: { description: 'Device detail' },
+            401: { description: 'Unauthorized' },
+            404: { description: 'Not found' },
+          },
+        },
+      },
+      '/devices/{id}/status-history': {
+        get: {
+          summary: 'Status history for a device',
+          operationId: 'getDeviceStatusHistory',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { $ref: '#/components/parameters/limit' },
+            { $ref: '#/components/parameters/cursor' },
+          ],
+          responses: {
+            200: { description: 'Status history records' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/alerts': {
+        get: {
+          summary: 'Export alert data',
+          operationId: 'exportAlerts',
+          parameters: [
+            { name: 'severity', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] } },
+            { name: 'resolved', in: 'query', schema: { type: 'boolean' } },
+            { name: 'device_id', in: 'query', schema: { type: 'string' } },
+            { name: 'type', in: 'query', schema: { type: 'string' } },
+            { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { $ref: '#/components/parameters/limit' },
+            { $ref: '#/components/parameters/cursor' },
+          ],
+          responses: {
+            200: { description: 'Alert records', content: { 'application/json': {}, 'text/csv': {} } },
+            401: { description: 'Unauthorized' },
+            429: { description: 'Rate limit exceeded' },
+          },
+        },
+      },
+      '/openapi.json': {
+        get: {
+          summary: 'OpenAPI 3.0 specification (this document)',
+          operationId: 'getOpenApiSpec',
+          security: [],
+          responses: { 200: { description: 'OpenAPI JSON spec' } },
+        },
+      },
+    },
+  }
+}
+
+function swaggerUiHtml(specUrl: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>NetNeural Export API</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" >
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"> </script>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"> </script>
+  <script>
+    window.onload = function() {
+      SwaggerUIBundle({
+        url: "${specUrl}",
+        dom_id: '#swagger-ui',
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        layout: "StandaloneLayout"
+      })
+    }
+  </script>
+</body>
+</html>`
 }

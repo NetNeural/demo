@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { Resend } from 'npm:resend@2.0.0'
+import { dispatchWebhookEvent } from '../_shared/webhook-delivery.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -608,6 +609,26 @@ serve(async (req) => {
       )
       results.push(smsResult)
       console.log(`[send-alert-notifications] SMS result:`, smsResult)
+    }
+
+    // 7b. Dispatch webhook events (#388) — fire and forget
+    const alertOrgId = (alert as { organization_id?: string; devices?: { organization_id?: string } })
+      .organization_id
+      || (alert as { devices?: { organization_id?: string } }).devices?.organization_id
+    if (alertOrgId) {
+      dispatchWebhookEvent(alertOrgId, 'alert.created', {
+        id: (alert as { id: string }).id,
+        alert_type: (alert as { alert_type: string }).alert_type,
+        severity: (alert as { severity: string }).severity,
+        title: (alert as { title: string }).title,
+        message: (alert as { message: string }).message,
+        device_id: (alert as { device_id?: string }).device_id,
+        device_name: (alert as { devices?: { name?: string } }).devices?.name,
+        is_resolved: false,
+        created_at: (alert as { created_at: string }).created_at,
+      }).catch((err: unknown) => {
+        console.warn('[send-alert-notifications] Webhook dispatch failed:', err)
+      })
     }
 
     // 8. Summary
