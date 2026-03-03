@@ -48,7 +48,11 @@ export default function RootLayout({
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         {/* Referrer policy — don't leak full URLs to third parties */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
+        {/* Legacy XSS filter for older browsers */}
+        <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
         {/* Note: HSTS is provided by GitHub Pages automatically */}
+        {/* Note: X-Frame-Options and Permissions-Policy require HTTP headers — */}
+        {/* applied via next.config.js headers() in dynamic/server mode only.  */}
       </head>
       <body className={inter.className}>
         <WebVitalsReporter />

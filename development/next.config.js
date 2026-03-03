@@ -95,12 +95,47 @@ const nextConfig = {
     CUSTOM_KEY: 'netneural-iot-platform',
   },
 
-  // Note: Security headers and middleware don't work with static export
-  // Security is handled by:
-  // 1. Supabase Row Level Security (RLS) on all tables
-  // 2. Supabase Edge Functions for all API calls
-  // 3. Client-side authentication checks in components
-  // 4. GitHub Pages HTTPS by default
+  // Security headers: applied in dev/server (dynamic) mode only.
+  // Static export (GitHub Pages) cannot serve custom HTTP headers — security is
+  // instead provided by Supabase RLS, Edge Function auth, and GitHub Pages HTTPS.
+  // In dynamic mode (Codespaces, local dev, self-hosted) full HTTP headers are set.
+  async headers() {
+    if (isStaticExport) return []
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // Prevent MIME-type sniffing
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Block framing from external origins (clickjacking)
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Legacy XSS filter (belt-and-suspenders for old browsers)
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // Referrer policy: send origin only on same-origin, full URL cross-origin
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // HSTS: enforce HTTPS for 1 year including subdomains
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+          // Disable browser features we don't use
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https:",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.golioth.io",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+        ],
+      },
+    ]
+  },
 
   // Webpack configuration
   webpack: (config, { dev, isServer }) => {

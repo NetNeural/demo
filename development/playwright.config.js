@@ -21,9 +21,10 @@ module.exports = defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL:
-      process.env.NODE_ENV === 'production'
-        ? 'https://netneural.github.io/SoftwareMono'
-        : 'http://localhost:3000',
+      process.env.PLAYWRIGHT_BASE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://sentinel.netneural.ai'
+        : 'http://localhost:3000'),
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

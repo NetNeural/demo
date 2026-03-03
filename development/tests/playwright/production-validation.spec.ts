@@ -112,6 +112,65 @@ test.describe('Production Smoke Tests', () => {
     })
   })
 
+  test.describe('Billing / Administration Page', () => {
+    test.beforeEach(async ({ page }) => {
+      await login(page)
+      await page.goto('/dashboard/billing')
+      await page.waitForLoadState('networkidle')
+    })
+
+    test('billing page loads with tab navigation', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const tabs = page.locator('[role="tab"]')
+      await expect(tabs.first()).toBeVisible({ timeout: 10000 })
+    })
+
+    test('overview tab shows plan or billing information', async ({ page }) => {
+      await page.waitForTimeout(2000)
+      const content = page.locator('text=/plan|billing|subscription/i').first()
+      await expect(content).toBeVisible({ timeout: 10000 })
+    })
+  })
+
+  test.describe('Organization Management', () => {
+    test.beforeEach(async ({ page }) => {
+      await login(page)
+      await page.goto('/dashboard/settings')
+      await page.waitForLoadState('networkidle')
+    })
+
+    test('organizations tab is accessible', async ({ page }) => {
+      const orgTab = page.locator('[role="tab"]').filter({ hasText: 'Organizations' })
+      await expect(orgTab).toBeVisible({ timeout: 10000 })
+      await orgTab.click()
+      await page.waitForTimeout(1000)
+      const content = page.locator('text=/organization/i').first()
+      await expect(content).toBeVisible({ timeout: 10000 })
+    })
+  })
+
+  test.describe('Security — no mixed content', () => {
+    test('no HTTP requests in authenticated session', async ({ page }) => {
+      const insecureRequests: string[] = []
+      page.on('request', (req) => {
+        const url = req.url()
+        if (
+          url.startsWith('http://') &&
+          !url.startsWith('http://localhost') &&
+          !url.startsWith('http://127.')
+        ) {
+          insecureRequests.push(url)
+        }
+      })
+      await login(page)
+      await page.waitForTimeout(3000)
+      if (insecureRequests.length > 0) {
+        console.warn('Insecure HTTP requests detected:', insecureRequests)
+      }
+      expect(insecureRequests).toHaveLength(0)
+    })
+  })
+
   test.describe('Page Performance', () => {
     test('all key pages load within 10s', async ({ page }) => {
       const pages = [
@@ -120,6 +179,7 @@ test.describe('Production Smoke Tests', () => {
         '/dashboard/devices',
         '/dashboard/alerts',
         '/dashboard/settings',
+        '/dashboard/billing',
       ]
       for (const p of pages) {
         const start = Date.now()
