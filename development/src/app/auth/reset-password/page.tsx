@@ -34,12 +34,13 @@ export default function ResetPasswordPage() {
   const [hasSession, setHasSession] = useState(false)
   const router = useRouter()
 
-  // Supabase delivers the user here with a session via the recovery link.
-  // We need to wait for the auth state to settle before showing the form.
+  // Supabase delivers the user here via a recovery link.
+  // With PKCE flow, the URL contains ?code=XXX which must be exchanged for a session.
+  // With implicit flow (older links), the session is already in the URL hash.
   useEffect(() => {
     const supabase = createClient()
 
-    // Listen for PASSWORD_RECOVERY event (fired when user clicks the email link)
+    // Listen for PASSWORD_RECOVERY event (fired after code exchange or hash token)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -49,13 +50,30 @@ export default function ResetPasswordPage() {
       }
     })
 
-    // Also check if there's already a session (page refresh after recovery link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleRecovery = async () => {
+      // Check for PKCE code in URL query params (Supabase SSR / PKCE flow)
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          setChecking(false)
+          return
+        }
+        // onAuthStateChange above will fire PASSWORD_RECOVERY and set hasSession
+        return
+      }
+
+      // Fallback: check if there's already an active session (page refresh)
+      const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         setHasSession(true)
       }
       setChecking(false)
-    })
+    }
+
+    handleRecovery()
 
     return () => {
       subscription.unsubscribe()
