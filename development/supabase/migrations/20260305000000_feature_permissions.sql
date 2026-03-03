@@ -39,16 +39,16 @@ CREATE POLICY "super_admin_full_access"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.user_profiles
+      SELECT 1 FROM public.users
       WHERE id = auth.uid()
-        AND is_super_admin = true
+        AND role = 'super_admin'
     )
   )
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM public.user_profiles
+      SELECT 1 FROM public.users
       WHERE id = auth.uid()
-        AND is_super_admin = true
+        AND role = 'super_admin'
     )
   );
 
