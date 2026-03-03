@@ -1,5 +1,5 @@
 // AI Report Summary Generator Edge Function
-// Generates intelligent summaries for reports using OpenAI GPT-3.5-turbo
+// Generates intelligent summaries for reports using OpenAI GPT-4o-mini
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
@@ -97,7 +97,7 @@ serve(async (req) => {
           Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
