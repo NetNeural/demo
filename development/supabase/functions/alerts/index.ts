@@ -157,8 +157,13 @@ export default createEdgeFunction(
     // Use service_role client to bypass RLS — authorization handled by resolveOrganizationId
     const supabase = createServiceClient()
 
-    if (req.method === 'GET') {
-      const url = new URL(req.url)
+    // NOTE: Supabase deployed edge functions strip the URL path suffix from req.url.
+    // e.g. a call to /functions/v1/alerts/snooze arrives with req.url having no /snooze path.
+    // All routing must use query parameters (?action=snooze) instead of URL paths.
+    const url = new URL(req.url)
+    const action = url.searchParams.get('action')
+
+    if (req.method === 'GET' && !action) {
       const limit = Math.min(
         parseInt(url.searchParams.get('limit') || '50'),
         500
@@ -261,9 +266,7 @@ export default createEdgeFunction(
     // POST /alerts - Create a new alert (e.g., test alerts)
     if (
       req.method === 'POST' &&
-      !req.url.includes('/bulk-acknowledge') &&
-      !req.url.includes('/snooze') &&
-      !req.url.includes('/unsnooze')
+      !action
     ) {
       const body = await req.json()
       const {
@@ -315,8 +318,8 @@ export default createEdgeFunction(
       return createSuccessResponse({ alert })
     }
 
-    // POST /alerts/bulk-acknowledge - Bulk acknowledge multiple alerts (Issue #108)
-    if (req.method === 'POST' && req.url.includes('/bulk-acknowledge')) {
+    // POST /alerts?action=bulk-acknowledge - Bulk acknowledge multiple alerts (Issue #108)
+    if (req.method === 'POST' && action === 'bulk-acknowledge') {
       const body = await req.json()
       const { alert_ids, organization_id, acknowledgement_type, notes } = body
 
@@ -414,11 +417,9 @@ export default createEdgeFunction(
       })
     }
 
-    // ─── GET /alerts/timeline/{alertId} ────────────────────────────────
-    if (req.method === 'GET' && req.url.includes('/timeline/')) {
-      const url = new URL(req.url)
-      const pathParts = url.pathname.split('/')
-      const alertId = pathParts[pathParts.length - 1]
+    // ─── GET /alerts?action=timeline&alert_id={alertId} ──────────────────
+    if (req.method === 'GET' && action === 'timeline') {
+      const alertId = url.searchParams.get('alert_id')
 
       if (!alertId) throw new Error('Alert ID is required')
 
@@ -494,9 +495,8 @@ export default createEdgeFunction(
       return createSuccessResponse({ events: enrichedEvents })
     }
 
-    // ─── GET /alerts/stats ─────────────────────────────────────────────
-    if (req.method === 'GET' && req.url.includes('/stats')) {
-      const url = new URL(req.url)
+    // ─── GET /alerts?action=stats ────────────────────────────────────────
+    if (req.method === 'GET' && action === 'stats') {
       const requestedOrgId = url.searchParams.get('organization_id')
       const organizationId = await resolveOrganizationId(
         userContext,
@@ -528,8 +528,8 @@ export default createEdgeFunction(
       })
     }
 
-    // ─── POST /alerts/snooze ──────────────────────────────────────────
-    if (req.method === 'POST' && req.url.includes('/snooze')) {
+    // ─── POST /alerts?action=snooze ─────────────────────────────────────
+    if (req.method === 'POST' && action === 'snooze') {
       const body = await req.json()
       const { alert_id, duration_minutes } = body
 
@@ -581,8 +581,8 @@ export default createEdgeFunction(
       })
     }
 
-    // ─── POST /alerts/unsnooze ────────────────────────────────────────
-    if (req.method === 'POST' && req.url.includes('/unsnooze')) {
+    // ─── POST /alerts?action=unsnooze ──────────────────────────────────
+    if (req.method === 'POST' && action === 'unsnooze') {
       const body = await req.json()
       const { alert_id } = body
 
@@ -618,10 +618,8 @@ export default createEdgeFunction(
 
     if (req.method === 'PATCH' || req.method === 'PUT') {
       // Handle alert acknowledgement/update
-      const url = new URL(req.url)
-      const pathParts = url.pathname.split('/')
-      const alertId = pathParts[pathParts.length - 2] // .../alerts/{id}/acknowledge
-      const action = pathParts[pathParts.length - 1] // acknowledge, resolve, etc.
+      // alert_id and action come from query params: ?action=acknowledge&alert_id={id}
+      const alertId = url.searchParams.get('alert_id')
 
       if (!alertId) {
         throw new Error('Alert ID is required')
