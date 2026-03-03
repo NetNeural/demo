@@ -37,6 +37,8 @@ import {
   Rocket,
   BookOpen,
   UserCheck,
+  Network,
+  UserPlus,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -144,10 +146,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             icon: Rocket,
           },
           {
+            href: '/dashboard/admin/hydra-kpis',
+            label: 'Hydra KPIs',
+            icon: Network,
+          },
+          {
             href: '/dashboard/admin/onboarding',
             label: 'Onboarding',
             icon: UserCheck,
           },
+        ]
+      : []),
+    ...(currentOrganization?.subscription_tier === 'reseller'
+      ? [
+          { href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network },
+          { href: '/dashboard/reseller/invite', label: 'Invite Partners', icon: UserPlus },
         ]
       : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },

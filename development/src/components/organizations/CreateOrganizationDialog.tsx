@@ -266,8 +266,8 @@ export function CreateOrganizationDialog({
                 <SelectContent>
                   <SelectItem value="starter">Starter</SelectItem>
                   <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="reseller">Reseller</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
-                  <SelectItem value="unlimited">Unlimited (NetNeural)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

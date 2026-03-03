@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -215,6 +215,33 @@ const NODE_ICONS: LucideIcon[] = [Wifi, Radio, Cpu, Zap, Activity]
 // ─── Signup form component ────────────────────────────────────────────
 function SignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Reseller attribution: ?org=slug → parent reseller org
+  const resellerSlug = searchParams?.get('org')   || null
+  const inviteToken  = searchParams?.get('invite') || null
+  const [parentOrgId, setParentOrgId] = useState<string | null>(null)
+
+  // Resolve reseller slug → org id (public query, no auth required)
+  useEffect(() => {
+    if (!resellerSlug) return
+    const resolve = async () => {
+      try {
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from('organizations')
+          .select('id')
+          .eq('slug', resellerSlug)
+          .eq('is_reseller', true)
+          .eq('is_active', true)
+          .eq('reseller_slug_active', true)
+          .single()
+        if (data?.id) setParentOrgId(data.id)
+      } catch { /* non-fatal */ }
+    }
+    resolve()
+  }, [resellerSlug])
 
   // Step state: 1 = select plan, 2 = account details, 3 = success
   const [step, setStep] = useState(1)
@@ -383,6 +410,7 @@ function SignupForm() {
               name: orgName.trim(),
               slug,
               subscriptionTier: selectedPlan.slug,
+              ...(parentOrgId ? { parentOrganizationId: parentOrgId } : {}),
             }),
           })
 
@@ -391,7 +419,20 @@ function SignupForm() {
             console.error('Org provisioning error:', errBody)
             // Non-fatal — user is created, org can be provisioned later
           } else {
+            const orgResult = await response.json().catch(() => ({}))
             console.log('Organization provisioned successfully via edge function')
+
+            // Record signup attribution for reseller analytics (#399)
+            if (parentOrgId && resellerSlug) {
+              const { data: { user: newUser } } = await supabase.auth.getUser()
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ;(supabase as any).from('signup_attribution').insert({
+                reseller_org_id: parentOrgId,
+                reseller_slug:   resellerSlug,
+                new_org_id:      orgResult.data?.id ?? null,
+                new_user_id:     newUser?.id ?? null,
+              }).then(() => {}).catch(() => {}) // fire-and-forget, non-fatal
+            }
           }
         }
       } catch (provisionErr) {
@@ -406,7 +447,7 @@ function SignupForm() {
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
-  }, [selectedPlan, isStep2Valid, email, password, fullName, orgName])
+  }, [selectedPlan, isStep2Valid, email, password, fullName, orgName, parentOrgId, resellerSlug])
 
   // ── Plan card ───────────────────────────────────────────────────────
   const renderPlanCard = (plan: PlanTier) => {

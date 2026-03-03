@@ -11,6 +11,12 @@
  *   TEST_USER_PASSWORD        - Test user password (default: password123)
  */
 import { createClient } from '@supabase/supabase-js'
+import { authenticator } from 'otplib'
+import * as fs from 'fs'
+import * as path from 'path'
+
+/** File where the admin TOTP secret is persisted across test runs */
+const TOTP_SECRET_FILE = path.join(__dirname, 'playwright', '.playwright-admin-totp.json')
 
 // Well-known local Supabase CLI keys (safe to commit — only work on localhost)
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321'
@@ -81,5 +87,132 @@ export default async function globalSetup() {
   }
 
   console.log('   ✅ Sign-in verification passed')
+
+  // Ensure admin user has no pending requirements (password change, etc.) that
+  // would prevent reaching the dashboard during tests.
+  const adminUserId = existingUser?.id
+  if (adminUserId) {
+    await supabase.from('users').update({ password_change_required: false }).eq('id', adminUserId)
+    console.log('   ✅ Admin password_change_required cleared')
+  }
+
+  // ── Ensure admin has a TOTP factor enrolled ─────────────────────────────
+  // The app enforces MFA at the component level. Tests need to be able to
+  // complete the TOTP challenge on the login page. We enroll a factor with a
+  // known secret and store it so loginAs() can compute codes at runtime.
+  console.log('   🔐 Checking admin MFA (TOTP) enrollment...')
+
+  try {
+    // Build a fresh client that will hold the user session (not admin-only)
+    const userClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const { error: uSignInErr } = await userClient.auth.signInWithPassword({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    })
+
+    if (uSignInErr) {
+      console.warn('   ⚠️ Could not sign in for MFA enrollment:', uSignInErr.message)
+    } else {
+      const { data: factorsData } = await userClient.auth.mfa.listFactors()
+      const existingFactor = factorsData?.totp?.find((f) => f.status === 'verified')
+      const secretOnDisk = fs.existsSync(TOTP_SECRET_FILE)
+
+      if (existingFactor && secretOnDisk) {
+        console.log('   ✅ Admin TOTP already enrolled (saved secret found)')
+      } else {
+        // If a factor exists but the secret file is gone, delete the old factor
+        // and re-enroll so we have a known secret going forward.
+        if (existingFactor) {
+          const adminId = existingUser?.id
+          if (adminId) {
+            await fetch(
+              `${supabaseUrl}/auth/v1/admin/users/${adminId}/factors/${existingFactor.id}`,
+              {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${serviceRoleKey}`,
+                  apikey: serviceRoleKey,
+                },
+              }
+            )
+            console.log('   🗑️  Removed stale TOTP factor (no secret on disk)')
+          }
+        }
+
+        // Enroll a fresh TOTP factor
+        const { data: enrollData, error: enrollErr } =
+          await userClient.auth.mfa.enroll({
+            factorType: 'totp',
+            friendlyName: 'E2E Test Authenticator',
+          })
+
+        if (enrollErr || !enrollData) {
+          console.warn(
+            '   ⚠️ TOTP enrollment failed — admin login tests may fail:',
+            enrollErr?.message
+          )
+        } else {
+          const totpUri: string = enrollData.totp?.uri ?? ''
+          const secretMatch = totpUri.match(/[?&]secret=([A-Z2-7]+)/i)
+          const totpSecret = secretMatch?.[1]
+
+          if (!totpSecret) {
+            console.warn('   ⚠️ Could not parse TOTP secret from enrollment URI')
+          } else {
+            // Give the server a moment, then generate + verify the first code
+            await new Promise((r) => setTimeout(r, 500))
+            let code = authenticator.generate(totpSecret)
+            let { data: challenge } = await userClient.auth.mfa.challenge({
+              factorId: enrollData.id,
+            })
+
+            let verified = false
+            if (challenge) {
+              const { error: verifyErr } = await userClient.auth.mfa.verify({
+                factorId: enrollData.id,
+                challengeId: challenge.id,
+                code,
+              })
+              if (!verifyErr) {
+                verified = true
+              } else {
+                // Timing edge case — wait for next TOTP window and retry
+                await new Promise((r) => setTimeout(r, 5000))
+                code = authenticator.generate(totpSecret)
+                const { data: ch2 } = await userClient.auth.mfa.challenge({
+                  factorId: enrollData.id,
+                })
+                if (ch2) {
+                  const { error: v2 } = await userClient.auth.mfa.verify({
+                    factorId: enrollData.id,
+                    challengeId: ch2.id,
+                    code,
+                  })
+                  if (!v2) verified = true
+                }
+              }
+            }
+
+            if (verified) {
+              fs.writeFileSync(
+                TOTP_SECRET_FILE,
+                JSON.stringify({ secret: totpSecret, factorId: enrollData.id })
+              )
+              console.log(
+                `   ✅ Admin TOTP enrolled — secret saved to ${path.basename(TOTP_SECRET_FILE)}`
+              )
+            } else {
+              console.warn('   ⚠️ TOTP verification failed — admin login tests may fail')
+            }
+          }
+        }
+      }
+    }
+  } catch (mfaErr) {
+    console.warn('   ⚠️ MFA setup error (non-fatal):', mfaErr)
+  }
+
   console.log('   🚀 Global setup complete\n')
 }
