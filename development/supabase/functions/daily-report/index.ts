@@ -60,7 +60,6 @@ serve(async (req) => {
 
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -90,6 +89,9 @@ serve(async (req) => {
     } catch {
       /* no body — use defaults */
     }
+
+    // Only require RESEND_API_KEY when actually sending (not for preview)
+    if (!isPreview && !resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     // ─── Pass-Through Mode ───────────────────────────────────────────
     // If the caller provides pre-built HTML, skip report generation and

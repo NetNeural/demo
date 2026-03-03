@@ -55,7 +55,6 @@ serve(async (req) => {
 
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -76,6 +75,9 @@ serve(async (req) => {
     } catch {
       /* defaults */
     }
+
+    // Only require RESEND_API_KEY when actually sending (not for preview)
+    if (!isPreview && !resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
