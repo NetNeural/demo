@@ -84,10 +84,10 @@ serve(async (req) => {
   // Check if user is super admin
   const { data: profile } = await db
     .from('users')
-    .select('is_super_admin, organization_id, full_name')
+    .select('role, organization_id, full_name')
     .eq('id', user.id)
     .single()
-  const isSuperAdmin = profile?.is_super_admin === true
+  const isSuperAdmin = profile?.role === 'super_admin'
   const orgId = profile?.organization_id || null
   const displayName = profile?.full_name || user.email?.split('@')[0] || 'User'
 
