@@ -34,6 +34,8 @@ import {
   Power,
   FlaskConical,
   Zap,
+  Download,
+  FileDown,
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
@@ -51,7 +53,10 @@ import {
   fetchARAgingReport,
   fetchPaymentFailureReport,
   fetchTaxSummaryReport,
+  arAgingToCsv,
 } from '@/lib/admin/financial-report-queries'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import type {
   ARAgingSummary,
   PaymentFailureReport as PaymentFailureData,
@@ -169,7 +174,73 @@ function ARAgingPanel() {
       .catch((err) => { console.error('AR Aging load error', err); toast.error('Failed to load AR Aging report') })
       .finally(() => setLoading(false))
   }, [])
-  return <ARAgingReport data={data} loading={loading} />
+
+  const canExport = !loading && data && data.rows.length > 0
+
+  function handleExportCsv() {
+    if (!data) return
+    const csv = arAgingToCsv(data)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ar-aging-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleExportPdf() {
+    if (!data) return
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const date = new Date().toISOString().slice(0, 10)
+    doc.setFontSize(16)
+    doc.text('AR Aging Report', 14, 15)
+    doc.setFontSize(10)
+    doc.text(`Generated: ${date}`, 14, 22)
+    autoTable(doc, {
+      startY: 28,
+      head: [['Organization', 'Current', '1–30 Days', '31–60 Days', '61–90 Days', '90+ Days', 'Total']],
+      body: [
+        ...data.rows.map((r) => [
+          r.organizationName,
+          `$${r.current.toFixed(2)}`,
+          `$${r.days1to30.toFixed(2)}`,
+          `$${r.days31to60.toFixed(2)}`,
+          `$${r.days61to90.toFixed(2)}`,
+          `$${r.days90plus.toFixed(2)}`,
+          `$${r.total.toFixed(2)}`,
+        ]),
+        [
+          'TOTALS',
+          `$${data.totals.current.toFixed(2)}`,
+          `$${data.totals.days1to30.toFixed(2)}`,
+          `$${data.totals.days31to60.toFixed(2)}`,
+          `$${data.totals.days61to90.toFixed(2)}`,
+          `$${data.totals.days90plus.toFixed(2)}`,
+          `$${data.totals.total.toFixed(2)}`,
+        ],
+      ],
+      headStyles: { fillColor: [30, 64, 175] },
+      footStyles: { fontStyle: 'bold' },
+    })
+    doc.save(`ar-aging-${date}.pdf`)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!canExport}>
+          <Download className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!canExport}>
+          <FileDown className="mr-2 h-4 w-4" />
+          Export PDF
+        </Button>
+      </div>
+      <ARAgingReport data={data} loading={loading} />
+    </div>
+  )
 }
 
 /** Self-loading Payment Failures report panel */

@@ -29,7 +29,9 @@ import type {
   PlanCustomerCount,
   WaterfallDataPoint,
 } from '@/lib/admin/revenue-queries'
-import { Download, RefreshCw } from 'lucide-react'
+import { Download, RefreshCw, FileDown } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 let _supabase: ReturnType<typeof createClient> | null = null
 function getSupabase() {
@@ -87,6 +89,62 @@ export function RevenueTab() {
     loadData()
   }
 
+  const handleExportPdf = () => {
+    if (!summary) return
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const date = new Date().toISOString().slice(0, 10)
+    doc.setFontSize(16)
+    doc.text('Revenue Dashboard', 14, 15)
+    doc.setFontSize(10)
+    doc.text(`Generated: ${date} | Last ${dateRange} days`, 14, 22)
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total MRR', `$${summary.totalMrr.toFixed(2)}`],
+        ['Total ARR', `$${summary.totalArr.toFixed(2)}`],
+        ['Active Customers', String(summary.activeCount)],
+        ['Total Customers', String(summary.totalCustomers)],
+        ['Churn Rate', `${summary.churnRate.toFixed(1)}%`],
+        ['Churned This Month', String(summary.churnedCount)],
+        ['Trial → Paid Rate', `${summary.trialToPaidRate.toFixed(1)}%`],
+        ['MRR Change', `$${summary.netRevenueChange.toFixed(2)} (${summary.netRevenueChangePct.toFixed(1)}%)`],
+      ],
+      headStyles: { fillColor: [30, 64, 175] },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+      tableWidth: 130,
+    })
+
+    let yPos = (doc as any).lastAutoTable.finalY + 10
+
+    if (mrrTrend.length > 0) {
+      doc.setFontSize(12)
+      doc.text('MRR Trend', 14, yPos)
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Month', 'MRR', 'Active Subscriptions']],
+        body: mrrTrend.map((pt) => [pt.label, `$${pt.mrr.toFixed(2)}`, String(pt.activeSubscriptions)]),
+        headStyles: { fillColor: [30, 64, 175] },
+      })
+      yPos = (doc as any).lastAutoTable.finalY + 10
+    }
+
+    if (planRevenue.length > 0) {
+      if (yPos > 160) { doc.addPage(); yPos = 14 }
+      doc.setFontSize(12)
+      doc.text('Revenue by Plan', 14, yPos)
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Plan', 'MRR', 'Customers']],
+        body: planRevenue.map((p) => [p.planName, `$${p.mrr.toFixed(2)}`, String(p.customerCount)]),
+        headStyles: { fillColor: [30, 64, 175] },
+      })
+    }
+
+    doc.save(`revenue-dashboard-${date}.pdf`)
+  }
+
   const handleExportCsv = () => {
     if (!summary) return
     const csv = revenueDataToCsv(summary, mrrTrend, planRevenue)
@@ -126,6 +184,11 @@ export function RevenueTab() {
         <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!summary}>
           <Download className="mr-2 h-4 w-4" />
           Export CSV
+        </Button>
+
+        <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!summary}>
+          <FileDown className="mr-2 h-4 w-4" />
+          Export PDF
         </Button>
       </div>
 

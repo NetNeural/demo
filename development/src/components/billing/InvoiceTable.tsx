@@ -24,7 +24,10 @@ import {
   Search,
   RefreshCw,
   Inbox,
+  FileDown,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { InvoiceStatusBadge } from '@/components/billing/InvoiceStatusBadge'
 import { formatInvoiceAmount } from '@/types/billing'
@@ -145,6 +148,40 @@ export function InvoiceTable({
   const invoices = result?.data ?? []
   const totalPages = result?.totalPages ?? 1
 
+  function handleExportPdf() {
+    if (invoices.length === 0) return
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const date = new Date().toISOString().slice(0, 10)
+    doc.setFontSize(16)
+    doc.text('Invoices', 14, 15)
+    doc.setFontSize(10)
+    doc.text(`Generated: ${date} | Filter: ${activeTab}${dateFrom ? ` | From: ${dateFrom}` : ''}${dateTo ? ` | To: ${dateTo}` : ''}`, 14, 22)
+    autoTable(doc, {
+      startY: 28,
+      head: [['Invoice #', 'Date', 'Plan', 'Amount', 'Status', 'Due Date']],
+      body: invoices.map((inv) => [
+        inv.stripe_invoice_id
+          ? `#${inv.stripe_invoice_id.slice(-8).toUpperCase()}`
+          : `#${inv.id.slice(0, 8).toUpperCase()}`,
+        inv.created_at ? inv.created_at.slice(0, 10) : '—',
+        inv.subscription?.billing_plan?.name ?? '—',
+        `$${(inv.amount_cents / 100).toFixed(2)} ${inv.currency.toUpperCase()}`,
+        inv.status,
+        inv.period_end ? inv.period_end.slice(0, 10) : '—',
+      ]),
+      headStyles: { fillColor: [30, 64, 175] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const status = String(data.cell.raw)
+          if (status === 'overdue') data.cell.styles.textColor = [220, 38, 38]
+          else if (status === 'paid') data.cell.styles.textColor = [22, 163, 74]
+          else if (status === 'open') data.cell.styles.textColor = [37, 99, 235]
+        }
+      },
+    })
+    doc.save(`invoices-${activeTab}-${date}.pdf`)
+  }
+
   return (
     <div className="space-y-4">
       {/* Status filter tabs */}
@@ -176,7 +213,16 @@ export function InvoiceTable({
           )
         })}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={invoices.length === 0}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
           <Button
             variant="ghost"
             size="icon"
