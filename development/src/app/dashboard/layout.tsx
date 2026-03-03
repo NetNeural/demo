@@ -41,6 +41,7 @@ import {
   UserCheck,
   Network,
   UserPlus,
+  KeyRound,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -159,6 +160,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/onboarding',
             label: 'Onboarding',
             icon: UserCheck,
+          },
+          {
+            href: '/dashboard/admin/permissions',
+            label: 'Permissions',
+            icon: KeyRound,
           },
         ]
       : []),
