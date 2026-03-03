@@ -147,6 +147,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             icon: ShieldCheck,
           },
           {
+            href: '/dashboard/admin/permissions',
+            label: 'Permissions',
+            icon: KeyRound,
+          },
+          {
             href: '/dashboard/admin/go-live-runbook',
             label: 'Go-Live Runbook',
             icon: Rocket,
@@ -160,11 +165,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/onboarding',
             label: 'Onboarding',
             icon: UserCheck,
-          },
-          {
-            href: '/dashboard/admin/permissions',
-            label: 'Permissions',
-            icon: KeyRound,
           },
         ]
       : []),
