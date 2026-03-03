@@ -32,7 +32,8 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           echo "Pushing migrations to staging (atgbmxicqikmapfqouco)..."
-          echo "y" | npx supabase db push --project-ref atgbmxicqikmapfqouco
+          npx supabase link --project-ref atgbmxicqikmapfqouco
+          npx supabase db push --linked --yes
           echo "✅ Staging migrations done"
 
       - name: Push migrations to Dev
@@ -42,7 +43,8 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           echo "Pushing migrations to dev (tsomafkalaoarnuwgdyu)..."
-          echo "y" | npx supabase db push --project-ref tsomafkalaoarnuwgdyu
+          npx supabase link --project-ref tsomafkalaoarnuwgdyu
+          npx supabase db push --linked --yes
           echo "✅ Dev migrations done"
 
       - name: Push migrations to Prod
@@ -52,5 +54,9 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           echo "Pushing migrations to prod (bldojxpockljyivldxwf)..."
-          echo "y" | npx supabase db push --project-ref bldojxpockljyivldxwf
+          npx supabase link --project-ref bldojxpockljyivldxwf
+          npx supabase db push --linked --yes
+          echo "Pushing migrations to prod (bldojxpockljyivldxwf)..."
+          npx supabase link --project-ref bldojxpockljyivldxwf
+          npx supabase db push --linked --yes
           echo "✅ Prod migrations done"
