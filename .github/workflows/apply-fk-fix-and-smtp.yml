@@ -1,0 +1,84 @@
+name: Apply FK Fix and Configure SMTP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # ── 1. Apply FK migration to staging via direct psql ──────────────────────
+  fk-fix-staging:
+    name: FK fix – Staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply access_requests FK migration
+        env:
+          PGPASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: |
+          psql "postgresql://postgres:${PGPASSWORD}@db.atgbmxicqikmapfqouco.supabase.co:5432/postgres" \
+            -f development/supabase/migrations/20260303220000_fix_access_requests_fk.sql
+          echo "✅ Staging FK migration applied"
+
+  # ── 2. Apply FK migration to prod via direct psql ─────────────────────────
+  fk-fix-prod:
+    name: FK fix – Prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply access_requests FK migration
+        env:
+          PGPASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
+        run: |
+          psql "postgresql://postgres:${PGPASSWORD}@db.bldojxpockljyivldxwf.supabase.co:5432/postgres" \
+            -f development/supabase/migrations/20260303220000_fix_access_requests_fk.sql
+          echo "✅ Prod FK migration applied"
+
+  # ── 3. Configure Resend SMTP on all 3 projects via Management API ──────────
+  configure-smtp:
+    name: Configure Resend SMTP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set SMTP – Staging
+        run: |
+          curl -sf -X PATCH \
+            "https://api.supabase.com/v1/projects/atgbmxicqikmapfqouco/config/auth" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "smtp_enabled": true,
+              "smtp_host": "smtp.resend.com",
+              "smtp_port": 465,
+              "smtp_user": "resend",
+              "smtp_pass": "${{ secrets.RESEND_API_KEY }}",
+              "smtp_sender_name": "NetNeural",
+              "smtp_admin_email": "noreply@netneural.ai"
+            }' && echo "✅ Staging SMTP configured" || echo "❌ Staging SMTP failed"
+      - name: Set SMTP – Dev
+        run: |
+          curl -sf -X PATCH \
+            "https://api.supabase.com/v1/projects/tsomafkalaoarnuwgdyu/config/auth" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "smtp_enabled": true,
+              "smtp_host": "smtp.resend.com",
+              "smtp_port": 465,
+              "smtp_user": "resend",
+              "smtp_pass": "${{ secrets.RESEND_API_KEY }}",
+              "smtp_sender_name": "NetNeural",
+              "smtp_admin_email": "noreply@netneural.ai"
+            }' && echo "✅ Dev SMTP configured" || echo "❌ Dev SMTP failed"
+      - name: Set SMTP – Prod
+        run: |
+          curl -sf -X PATCH \
+            "https://api.supabase.com/v1/projects/bldojxpockljyivldxwf/config/auth" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "smtp_enabled": true,
+              "smtp_host": "smtp.resend.com",
+              "smtp_port": 465,
+              "smtp_user": "resend",
+              "smtp_pass": "${{ secrets.RESEND_API_KEY }}",
+              "smtp_sender_name": "NetNeural",
+              "smtp_admin_email": "noreply@netneural.ai"
+            }' && echo "✅ Prod SMTP configured" || echo "❌ Prod SMTP failed"
