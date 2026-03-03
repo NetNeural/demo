@@ -116,14 +116,27 @@ serve(async (req) => {
       const batchSize = 100  // Resend batch endpoint supports up to 100 per request
       const resendIds: string[] = []
 
-      for (let i = 0; i < recipients.length; i += batchSize) {
-        const batch = recipients.slice(i, i + batchSize)
+      // Strict email validation — Resend rejects the entire batch if any address is invalid
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const validRecipients = recipients.filter((email: string) => {
+        if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+          console.warn(`Skipping invalid email address: ${JSON.stringify(email)}`)
+          failCount++
+          return false
+        }
+        return true
+      }).map((email: string) => email.trim().toLowerCase())
+
+      console.log(`📬 ${validRecipients.length} valid / ${failCount} invalid of ${recipients.length} recipients`)
+
+      for (let i = 0; i < validRecipients.length; i += batchSize) {
+        const batch = validRecipients.slice(i, i + batchSize)
         const batchNum = Math.floor(i / batchSize) + 1
 
-        // Build individual email objects for each recipient
+        // Build individual email objects — use plain string (not array) for `to`
         const emailObjects = batch.map((recipientEmail: string) => ({
           from: fromAddress,
-          to: [recipientEmail],
+          to: recipientEmail,
           subject,
           html,
           ...(text ? { text } : {}),
