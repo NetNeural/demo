@@ -1091,30 +1091,38 @@ serve(async (req) => {
     // ─── Dynamic Valuation ───────────────────────────────────────────
 
     const hasBilling = billingPlanCount >= 3 && hasStripePriceIds
+    // Market comps: Samsara (IOT) ~11x ARR (public, $1.5B ARR); Software AG/Cumulocity acquired ~5.8x ARR;
+    // Particle Industries ~$200M valuation pre-profitability; private IoT SaaS 4–8x ARR or 1.5–3x replacement cost.
+    // Actual platform: 180K+ LOC, 68 edge functions, 183 DB migrations, 246 components, 12 AI features, billing live.
     const valuation = [
       {
-        method: 'Development Cost (85K+ LOC × $15-20/LOC)',
-        low: '$1.3M',
-        high: '$1.7M',
+        method: 'Development Cost (180K+ LOC × $20-25/LOC)',
+        low: '$3.6M',
+        high: '$4.5M',
       },
       {
-        method: 'Hours Invested (~4,000-5,500 hrs @ $150/hr)',
-        low: '$600K',
-        high: '$825K',
+        method: 'Engineering Hours (~6,000-8,000 hrs @ $150-200/hr)',
+        low: '$900K',
+        high: '$1.6M',
       },
       {
         method: hasBilling
-          ? 'SaaS Revenue Potential (billing live, 500 devices)'
+          ? 'SaaS Revenue Potential (billing live, 1K–5K devices @ $4–15/device/mo)'
           : 'SaaS Revenue Potential (pending billing activation)',
-        low: hasBilling ? '$600K' : '$400K',
-        high: hasBilling ? '$1.2M' : '$700K',
+        low: hasBilling ? '$1.2M' : '$600K',
+        high: hasBilling ? '$3.5M' : '$1.2M',
+      },
+      {
+        method: 'Comparable IoT SaaS (Particle ~$200M; Cumulocity 5.8× ARR; Losant/Datacake $5–15M ARR range)',
+        low: '$2.0M',
+        high: '$6.0M',
       },
       {
         method: hasBilling
-          ? 'Realistic Fair Market Value (billing enabled)'
-          : 'Realistic Fair Market Value (pre-revenue)',
-        low: hasBilling ? '$600K' : '$400K',
-        high: hasBilling ? '$1.0M' : '$700K',
+          ? 'Realistic Fair Market Value (billing enabled, pre-revenue, 12 AI features)'
+          : 'Realistic Fair Market Value (pre-revenue, full platform)',
+        low: hasBilling ? '$2.0M' : '$1.2M',
+        high: hasBilling ? '$5.0M' : '$3.0M',
       },
     ]
 
@@ -1351,8 +1359,8 @@ serve(async (req) => {
       .join('')
 
     const valuationNote = hasBilling
-      ? `<strong>Billing is LIVE.</strong> With 1,000 devices at Protect tier ($4/device): <strong>$48K ARR → $1M–$2M+ valuation</strong> at standard SaaS multiples.`
-      : `<strong>With billing live + 1,000 devices:</strong> Platform reaches <strong>$1M – $2M+</strong> valuation at standard early-stage SaaS multiples.`
+      ? `<strong>Billing is LIVE.</strong> 180K+ LOC platform. With 5,000 devices at avg $8/device/mo: <strong>$480K ARR → $2M–$4M+ valuation</strong> at 4–8× IoT SaaS multiples (Samsara 11×, Cumulocity 5.8×). Comparable: Particle Industries ~$200M pre-profitability.`
+      : `<strong>With billing live + 5,000 devices:</strong> Platform reaches <strong>$2M–$5M+</strong> valuation. 180K+ LOC replacement cost: $3.6M–$4.5M. Comparable IoT SaaS (Particle, Losant, Datacake) range $2M–$15M at comparable stage.`
 
     const html = `<!DOCTYPE html>
 <html>
