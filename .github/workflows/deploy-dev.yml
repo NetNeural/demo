@@ -42,6 +42,7 @@ jobs:
   quality-gate:
     name: ✅ Quality Gate
     runs-on: ubuntu-latest
+    if: github.repository == 'NetNeural/MonoRepo-Staging'
     defaults:
       run:
         working-directory: ./development
