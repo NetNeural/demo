@@ -339,9 +339,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         try {
           toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
           const { removeBackground } = await import('@imgly/background-removal')
-          const bgRemovedBlob = await removeBackground(file, {
-            publicPath: 'https://staticimgly.com/@imgly/background-removal@1.7.0/dist/',
-          })
+          const bgRemovedBlob = await removeBackground(file)
           processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
           toast.success('Background removed successfully')
         } catch (bgError: any) {
@@ -472,9 +470,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         try {
           toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
           const { removeBackground } = await import('@imgly/background-removal')
-          const bgRemovedBlob = await removeBackground(file, {
-            publicPath: 'https://staticimgly.com/@imgly/background-removal@1.7.0/dist/',
-          })
+          const bgRemovedBlob = await removeBackground(file)
           processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
           toast.success('Background removed successfully')
         } catch (bgError: any) {
