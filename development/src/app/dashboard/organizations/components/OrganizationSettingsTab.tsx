@@ -366,13 +366,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/logo-${Date.now()}.${fileExt}`
 
-      // Delete old logo if exists
-      if (logoUrl) {
-        const oldPath = logoUrl.split('/').slice(-2).join('/')
-        await supabase.storage.from('organization-assets').remove([oldPath])
-      }
-
-      // Upload compressed logo
+      // Upload new logo FIRST — delete old only after success so the preview
+      // never shows a broken image if the upload fails or takes time
       const { data, error } = await supabase.storage
         .from('organization-assets')
         .upload(fileName, compressedBlob, {
@@ -383,6 +378,12 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
         })
 
       if (error) throw error
+
+      // Delete old logo AFTER new upload succeeds
+      if (logoUrl) {
+        const oldPath = logoUrl.split('/').slice(-2).join('/')
+        await supabase.storage.from('organization-assets').remove([oldPath])
+      }
 
       // Get public URL
       const {
@@ -395,6 +396,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       )
     } catch (error: any) {
       console.error('Error uploading logo:', error)
+
+      // Clear stale URL so the preview doesn't keep pointing at a deleted file
+      setLogoUrl('')
 
       // Provide specific error messages
       let errorMessage = 'Failed to upload logo'
@@ -486,12 +490,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const fileExt = file.type === 'image/svg+xml' ? 'svg' : 'webp'
       const fileName = `${currentOrganization.id}/sentinel-logo-${Date.now()}.${fileExt}`
 
-      // Delete old sentinel logo if exists
-      if (sentinelLogoUrl) {
-        const oldPath = sentinelLogoUrl.split('/').slice(-2).join('/')
-        await supabase.storage.from('organization-assets').remove([oldPath])
-      }
-
+      // Upload new sentinel logo FIRST — delete old only after success
       const { data, error } = await supabase.storage
         .from('organization-assets')
         .upload(fileName, compressedBlob, {
@@ -503,6 +502,12 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       if (error) throw error
 
+      // Delete old sentinel logo AFTER new upload succeeds
+      if (sentinelLogoUrl) {
+        const oldPath = sentinelLogoUrl.split('/').slice(-2).join('/')
+        await supabase.storage.from('organization-assets').remove([oldPath])
+      }
+
       const {
         data: { publicUrl },
       } = supabase.storage.from('organization-assets').getPublicUrl(data.path)
@@ -513,6 +518,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       )
     } catch (error: any) {
       console.error('Error uploading Sentinel logo:', error)
+      setSentinelLogoUrl('')
       let errorMessage = 'Failed to upload Sentinel logo'
       if (error?.message?.includes('row-level security')) {
         errorMessage =
@@ -618,12 +624,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const fileExt = 'webp'
       const fileName = `${currentOrganization.id}/login-bg-${Date.now()}.${fileExt}`
 
-      // Delete old background if exists
-      if (loginBgUrl) {
-        const oldPath = loginBgUrl.split('/').slice(-2).join('/')
-        await supabase.storage.from('organization-assets').remove([oldPath])
-      }
-
+      // Upload new background FIRST — delete old only after success
       const { data, error } = await supabase.storage
         .from('organization-assets')
         .upload(fileName, compressedBlob, {
@@ -634,6 +635,12 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       if (error) throw error
 
+      // Delete old background AFTER new upload succeeds
+      if (loginBgUrl) {
+        const oldPath = loginBgUrl.split('/').slice(-2).join('/')
+        await supabase.storage.from('organization-assets').remove([oldPath])
+      }
+
       const {
         data: { publicUrl },
       } = supabase.storage.from('organization-assets').getPublicUrl(data.path)
@@ -642,6 +649,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       toast.success('Background uploaded! Click "Save All Changes" to apply.')
     } catch (error: any) {
       console.error('Error uploading background:', error)
+      setLoginBgUrl('')
       toast.error(error?.message || 'Failed to upload background image')
     } finally {
       setIsUploadingBg(false)
