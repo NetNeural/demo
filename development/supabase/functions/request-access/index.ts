@@ -233,24 +233,14 @@ export default createEdgeFunction(
       const status = params.status // 'pending' | 'approved' | 'denied' | 'expired' | 'all'
       const orgId = params.organization_id
 
-      // Use service client so the FK-based joins to public.users succeed.
-      // The authenticated user client hits RLS on the users table and cannot
-      // read other users' rows needed for requester/approver joins → HTTP 500.
-      // Authorization is already enforced below via userContext filters.
+      // Use service client so we can read other users' profiles for the join.
+      // Avoid FK-based PostgREST joins (constraint names can fail on cache miss);
+      // instead fetch access_requests bare then enrich with separate lookups.
       const serviceClient = createServiceClient()
 
       let query = serviceClient
         .from('access_requests')
-        .select(
-          `
-        *,
-        requester:users!access_requests_requester_id_fkey(id, full_name, email),
-        requester_org:organizations!access_requests_requester_org_id_fkey(id, name, slug),
-        target_org:organizations!access_requests_target_org_id_fkey(id, name, slug),
-        approver:users!access_requests_approved_by_fkey(id, full_name, email),
-        denier:users!access_requests_denied_by_fkey(id, full_name, email)
-      `
-        )
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (view === 'sent') {
@@ -273,19 +263,56 @@ export default createEdgeFunction(
         query = query.eq('status', status)
       }
 
-      const { data: requests, error: listError } = await query
+      const { data: rawRequests, error: listError } = await query
 
       if (listError) {
-        console.error('Error listing access requests:', listError)
-        throw new DatabaseError('Failed to fetch access requests', 500)
+        console.error('Error listing access requests:', JSON.stringify(listError))
+        throw new DatabaseError('Failed to fetch access requests', 500, {
+          pgCode: listError.code,
+          pgMessage: listError.message,
+          pgDetails: listError.details,
+          pgHint: listError.hint,
+        })
       }
+
+      const rows = rawRequests || []
+
+      // ── Enrich with user + org info via separate lookups ─────────────
+      // Collect unique IDs to look up
+      const userIds = [...new Set(
+        rows.flatMap(r => [r.requester_id, r.approved_by, r.denied_by].filter(Boolean))
+      )] as string[]
+      const orgIds = [...new Set(
+        rows.flatMap(r => [r.requester_org_id, r.target_org_id].filter(Boolean))
+      )] as string[]
+
+      const [usersResult, orgsResult] = await Promise.all([
+        userIds.length
+          ? serviceClient.from('users').select('id, full_name, email').in('id', userIds)
+          : Promise.resolve({ data: [], error: null }),
+        orgIds.length
+          ? serviceClient.from('organizations').select('id, name, slug').in('id', orgIds)
+          : Promise.resolve({ data: [], error: null }),
+      ])
+
+      const usersMap = Object.fromEntries((usersResult.data || []).map(u => [u.id, u]))
+      const orgsMap  = Object.fromEntries((orgsResult.data  || []).map(o => [o.id, o]))
+
+      const requests = rows.map(r => ({
+        ...r,
+        requester:     usersMap[r.requester_id]  || null,
+        requester_org: orgsMap[r.requester_org_id] || null,
+        target_org:    orgsMap[r.target_org_id]    || null,
+        approver:      r.approved_by ? (usersMap[r.approved_by] || null) : null,
+        denier:        r.denied_by   ? (usersMap[r.denied_by]   || null) : null,
+      }))
 
       // Also run cleanup of expired requests while we're at it
       await serviceClient.rpc('cleanup_expired_access').catch(() => {
         // Non-critical, ignore errors
       })
 
-      return createSuccessResponse({ requests: requests || [] })
+      return createSuccessResponse({ requests })
     }
 
     // ─── PATCH: Approve or Deny Request ─────────────────────────────────
