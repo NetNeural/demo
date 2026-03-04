@@ -1,9 +1,11 @@
 name: Fix Null Auth Identities
 
 on:
-  schedule:
-    # Every 6 hours — catches recurring null-identity regressions
-    - cron: '0 */6 * * *'
+  # Schedule DISABLED — the paginated admin API returns identities:null for all
+  # users regardless of actual state, causing mass password resets every run.
+  # Re-enable only after fix-null-identities logic is corrected.
+  # schedule:
+  #   - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       environment:
