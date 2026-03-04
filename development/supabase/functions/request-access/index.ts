@@ -399,9 +399,11 @@ export default createEdgeFunction(
       }))
 
       // Also run cleanup of expired requests while we're at it
-      await serviceClient.rpc('cleanup_expired_access').catch(() => {
+      try {
+        await serviceClient.rpc('cleanup_expired_access')
+      } catch {
         // Non-critical, ignore errors
-      })
+      }
 
       return createSuccessResponse({ requests })
     }
