@@ -58,6 +58,7 @@ export interface Organization {
   slug: string
   description?: string
   subscription_tier?: SubscriptionTier
+  is_reseller?: boolean
   is_active: boolean
   settings?: OrganizationSettings
   parent_organization_id?: string | null

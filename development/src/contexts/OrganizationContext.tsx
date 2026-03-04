@@ -28,6 +28,7 @@ interface OrgApiItem {
   slug: string
   description: string | null
   subscriptionTier: string
+  isReseller: boolean
   isActive: boolean
   settings: Record<string, unknown> | null
   parentOrganizationId: string | null
@@ -156,6 +157,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           slug: org.slug,
           description: org.description ?? undefined,
           subscription_tier: org.subscriptionTier as SubscriptionTier,
+          is_reseller: org.isReseller ?? false,
           is_active: org.isActive,
           settings: (org.settings as OrganizationSettings) ?? undefined,
           parent_organization_id: org.parentOrganizationId || null,
@@ -347,7 +349,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const isViewer = userRole === 'viewer'
 
   // Reseller checks
-  const isReseller = isResellerOrg(currentOrganization)
+  const isReseller = currentOrganization?.is_reseller === true
   const canCreateChildOrgs = isReseller && (isOwner || isAdmin)
 
   const value: OrganizationContextType = {

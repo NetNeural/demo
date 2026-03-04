@@ -281,17 +281,21 @@ function OrganizationsPageContent() {
                   <CreditCard className="h-4 w-4" />
                   Billing
                 </TabsTrigger>
-                <TabsTrigger value="customers" className="flex items-center gap-2">
-                  <Crown className="h-4 w-4" />
-                  Customer Orgs
-                </TabsTrigger>
+                {(isSuperAdmin || canCreateChildOrgs) && (
+                  <TabsTrigger value="customers" className="flex items-center gap-2">
+                    <Crown className="h-4 w-4" />
+                    Customer Orgs
+                  </TabsTrigger>
+                )}
               </TabsList>
               <TabsContent value="billing" className="mt-6">
                 <BillingTab key={currentOrganization.id} organizationId={currentOrganization.id} />
               </TabsContent>
-              <TabsContent value="customers" className="mt-6">
-                <ChildOrganizationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
-              </TabsContent>
+              {(isSuperAdmin || canCreateChildOrgs) && (
+                <TabsContent value="customers" className="mt-6">
+                  <ChildOrganizationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+                </TabsContent>
+              )}
             </Tabs>
           </TabsContent>
         )}
