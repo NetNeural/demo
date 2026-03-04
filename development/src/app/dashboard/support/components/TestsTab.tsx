@@ -1326,9 +1326,9 @@ export default function TestsTab({ organizationId }: Props) {
     },
     {
       id: 'integration-netneural-hub',
-      name: 'NetNeural Hub Integration',
+      name: 'Neuralink Integration',
       description:
-        'Test connection to configured NetNeural Hub integration (CoAP, MQTT, HTTPS)',
+        'Test connection to configured Neuralink integration (CoAP, MQTT, HTTPS)',
       icon: Network,
       category: 'integration',
       run: async () => {
@@ -1348,12 +1348,12 @@ export default function TestsTab({ organizationId }: Props) {
             return {
               success: false,
               message:
-                'No active NetNeural Hub integration found. Configure one in Organizations → Integrations.',
+                'No active Neuralink integration found. Configure one in Organizations → Integrations.',
               durationMs,
             }
           }
 
-          // Import and instantiate the NetNeural Hub provider
+          // Import and instantiate the Neuralink provider
           const { NetNeuralHubIntegrationProvider } =
             await import('@/lib/integrations/netneural-hub-integration-provider')
 

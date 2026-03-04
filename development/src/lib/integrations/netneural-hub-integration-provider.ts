@@ -1,5 +1,5 @@
 /**
- * NetNeural Hub Integration Provider
+ * Neuralink Integration Provider
  * ====================================
  * Multi-protocol device management system supporting CoAP, MQTT, and HTTPS.
  *
@@ -22,7 +22,7 @@
  * - Falls back to alternative protocols on failure
  *
  * Date: 2026-02-19
- * Story: #101 - NetNeural Hub Provider Implementation
+ * Story: #101 - Neuralink Provider Implementation
  * Epic: #95 - Revive NetNeural Integration Hub
  */
 
@@ -43,7 +43,7 @@ import {
 import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger'
 
 // ============================================================================
-// NetNeural Hub Types
+// Neuralink Types
 // ============================================================================
 
 export interface NetNeuralHubConfig {
@@ -90,13 +90,13 @@ interface CachedDevice {
 }
 
 // ============================================================================
-// NetNeural Hub Integration Provider
+// Neuralink Integration Provider
 // ============================================================================
 
 export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
   override providerId: string
   override providerType = 'netneural_hub'
-  override providerName = 'NetNeural Hub'
+  override providerName = 'Neuralink'
 
   private config: NetNeuralHubConfig
   private organizationId: string
@@ -120,7 +120,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
     this.providerId = this.integrationId
     this.activityLogger = new FrontendActivityLogger()
 
-    // Extract NetNeural Hub config from ProviderConfig
+    // Extract Neuralink config from ProviderConfig
     const hubConfig =
       (config.credentials?.config as NetNeuralHubConfig) ||
       this.getDefaultConfig()
@@ -132,7 +132,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
 
   private getDefaultConfig(): NetNeuralHubConfig {
     return {
-      name: 'NetNeural Hub Integration',
+      name: 'Neuralink Integration',
       protocols: {
         coap: {
           enabled: true,
@@ -175,14 +175,14 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
 
       // Set up MQTT event handlers
       this.mqttClient.on('connect', () => {
-        console.log('[NetNeural Hub] MQTT connected')
+        console.log('[Neuralink] MQTT connected')
         if (this.config.global_settings.device_discovery_enabled) {
           this.setupMqttDiscovery()
         }
       })
 
       this.mqttClient.on('error', (error) => {
-        console.error('[NetNeural Hub] MQTT error:', error)
+        console.error('[Neuralink] MQTT error:', error)
       })
     }
 
@@ -203,9 +203,9 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
     discoveryTopics.forEach((topic) => {
       this.mqttClient?.subscribe(topic, (err) => {
         if (err) {
-          console.error(`[NetNeural Hub] Failed to subscribe to ${topic}:`, err)
+          console.error(`[Neuralink] Failed to subscribe to ${topic}:`, err)
         } else {
-          console.log(`[NetNeural Hub] Subscribed to discovery topic: ${topic}`)
+          console.log(`[Neuralink] Subscribed to discovery topic: ${topic}`)
         }
       })
     })
@@ -217,7 +217,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
         this.handleDeviceDiscovery('mqtt', topic, payload)
       } catch (error) {
         console.error(
-          '[NetNeural Hub] Failed to parse discovery message:',
+          '[Neuralink] Failed to parse discovery message:',
           error
         )
       }
@@ -272,7 +272,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
     })
 
     console.log(
-      `[NetNeural Hub] Device discovered via ${protocol}: ${deviceId}`
+      `[Neuralink] Device discovered via ${protocol}: ${deviceId}`
     )
   }
 
@@ -481,7 +481,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
 
       return response.ok
     } catch (error) {
-      console.error('[NetNeural Hub] HTTPS test failed:', error)
+      console.error('[Neuralink] HTTPS test failed:', error)
       return false
     }
   }
@@ -576,7 +576,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
   ): Promise<TelemetryData[]> {
     // In production, this would query the database or protocol-specific storage
     // For now, return empty array as telemetry is stored in Supabase
-    console.log('[NetNeural Hub] Telemetry query:', query)
+    console.log('[Neuralink] Telemetry query:', query)
     return []
   }
 

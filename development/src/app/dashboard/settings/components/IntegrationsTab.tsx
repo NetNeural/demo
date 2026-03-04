@@ -42,7 +42,7 @@ import { FeatureGate } from '@/components/FeatureGate'
 const INTEGRATION_TYPES = [
   {
     value: 'netneural_hub',
-    label: '🚀 NetNeural Hub',
+    label: '🚀 Neuralink',
     icon: '🚀',
     category: 'device',
     recommended: true,
@@ -142,7 +142,7 @@ const INTEGRATION_TYPES = [
 const INTEGRATION_GUIDES = [
   {
     id: 'netneural',
-    name: 'NetNeural Hub',
+    name: 'Neuralink',
     icon: '🌟',
     recommended: true,
     description: 'Multi-protocol IoT hub supporting CoAP, MQTT, and HTTPS for any compatible device',
@@ -160,9 +160,9 @@ const INTEGRATION_GUIDES = [
       'Additional infrastructure cost',
     ],
     quickStart: [
-      'Set up NetNeural Hub instance (optional)',
+      'Set up Neuralink instance (optional)',
       'Get Hub URL and authentication credentials',
-      'Click "Add Integration" → Select NetNeural Hub',
+      'Click "Add Integration" → Select Neuralink',
       'Configure protocols (CoAP, MQTT, HTTPS)',
       'Set device routing rules per device type',
       'Enable auto-discovery and test connection',
