@@ -35,6 +35,9 @@ export function AccessRequestNotifier() {
   const resellerToastShown = useRef(false)
 
   const canApprove = user?.isSuperAdmin || isOwner || isAdmin
+  // Reseller: all three roles see the alert; only owner/super admin can approve
+  const canSeeResellerAlerts = user?.isSuperAdmin || isOwner || isAdmin
+  const canApproveReseller = user?.isSuperAdmin || isOwner
 
   // ── Approve / Deny handler (called from toast button clicks) ─────────────
   const handleRespond = async (
@@ -119,9 +122,9 @@ export function AccessRequestNotifier() {
     )
   }
 
-  // ── Reseller applications: check for pending on mount (super admin only) ──
+  // ── Reseller applications: check for pending on mount (owner/admin/super admin) ──
   useEffect(() => {
-    if (!user?.isSuperAdmin) return
+    if (!canSeeResellerAlerts) return
 
     const checkReseller = async () => {
       const supabase = createClient()
@@ -154,7 +157,7 @@ export function AccessRequestNotifier() {
                 router.push('/dashboard/admin/reseller-applications')
               }}
             >
-              Review Applications
+              {canApproveReseller ? 'Review & Approve' : 'View Applications'}
             </button>
           </div>
         ),
@@ -164,11 +167,11 @@ export function AccessRequestNotifier() {
 
     checkReseller()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.isSuperAdmin])
+  }, [canSeeResellerAlerts])
 
   // ── Reseller applications: realtime for new submissions ──────────────────
   useEffect(() => {
-    if (!user?.isSuperAdmin) return
+    if (!canSeeResellerAlerts) return
 
     const supabase = createClient()
 
@@ -214,7 +217,7 @@ export function AccessRequestNotifier() {
       supabase.removeChannel(channel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.isSuperAdmin])
+  }, [canSeeResellerAlerts])
 
   // ── Poll for pending received requests (fallback + initial load) ─────────
   useEffect(() => {
