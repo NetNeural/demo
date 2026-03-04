@@ -244,10 +244,11 @@ export default createEdgeFunction(
         .select(
           `
         *,
-        requester:users!requester_id(id, full_name, email),
-        requester_org:organizations!requester_org_id(id, name, slug),
-        target_org:organizations!target_org_id(id, name, slug),
-        approver:users!approved_by(id, full_name, email)
+        requester:users!access_requests_requester_id_fkey(id, full_name, email),
+        requester_org:organizations!access_requests_requester_org_id_fkey(id, name, slug),
+        target_org:organizations!access_requests_target_org_id_fkey(id, name, slug),
+        approver:users!access_requests_approved_by_fkey(id, full_name, email),
+        denier:users!access_requests_denied_by_fkey(id, full_name, email)
       `
         )
         .order('created_at', { ascending: false })
