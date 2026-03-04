@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/contexts/UserContext'
+import { edgeFunctions } from '@/lib/edge-functions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -144,46 +145,16 @@ export default function ResellerApplicationsPage() {
     if (!approveApp || !user) return
     setApproving(true)
     try {
-      const now = new Date().toISOString()
-      const today = now.split('T')[0]
-
-      // 1. Mark application approved
-      const { error: appErr } = await supabase
-        .from('reseller_agreement_applications')
-        .update({
-          status: 'approved',
-          reviewed_at: now,
-          reviewed_by: user.id,
-        })
-        .eq('id', approveApp.id)
-      if (appErr) throw appErr
-
-      // 2. Create active reseller agreement
-      const { error: agrErr } = await supabase
-        .from('reseller_agreements')
-        .insert({
-          organization_id: approveApp.organization_id,
-          status: 'active',
-          agreement_type: 'standard',
-          agreement_version: '1.0',
-          effective_date: today,
-          revenue_share_percent: parseFloat(revenueShare) || 20,
-          max_child_organizations: parseInt(maxChildOrgs) || 10,
-          billing_model: approveApp.preferred_billing || 'invoice',
-          accepted_at: now,
-          accepted_by: user.id,
-        })
-      if (agrErr) throw agrErr
-
-      // 3. Promote org to reseller (is_reseller not in generated types — cast required)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: orgErr } = await (supabase as any)
-        .from('organizations')
-        .update({ is_reseller: true })
-        .eq('id', approveApp.organization_id)
-      if (orgErr) throw orgErr
-
-      toast.success(`${approveApp.company_legal_name} approved as a reseller`)
+      await edgeFunctions.call('reseller-agreement-review', {
+        method: 'POST',
+        body: {
+          applicationId: approveApp.id,
+          action: 'approve',
+          revenueShare: parseFloat(revenueShare) || 20,
+          maxChildOrgs: parseInt(maxChildOrgs) || 10,
+        },
+      })
+      toast.success(`${approveApp.company_legal_name} approved — account upgraded, email sent`)
       setApproveApp(null)
       await loadApplications()
     } catch (err) {
@@ -192,24 +163,21 @@ export default function ResellerApplicationsPage() {
     } finally {
       setApproving(false)
     }
-  }, [approveApp, user, revenueShare, maxChildOrgs, supabase, loadApplications])
+  }, [approveApp, user, revenueShare, maxChildOrgs, loadApplications])
 
   const handleReject = useCallback(async () => {
     if (!rejectApp || !user) return
     setRejecting(true)
     try {
-      const { error } = await supabase
-        .from('reseller_agreement_applications')
-        .update({
-          status: 'rejected',
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user.id,
-          review_notes: rejectNotes.trim() || null,
-        })
-        .eq('id', rejectApp.id)
-      if (error) throw error
-
-      toast.success(`Application from ${rejectApp.company_legal_name} rejected`)
+      await edgeFunctions.call('reseller-agreement-review', {
+        method: 'POST',
+        body: {
+          applicationId: rejectApp.id,
+          action: 'reject',
+          reviewNotes: rejectNotes.trim() || undefined,
+        },
+      })
+      toast.success(`Application from ${rejectApp.company_legal_name} rejected — email sent`)
       setRejectApp(null)
       setRejectNotes('')
       await loadApplications()
@@ -219,7 +187,7 @@ export default function ResellerApplicationsPage() {
     } finally {
       setRejecting(false)
     }
-  }, [rejectApp, rejectNotes, user, supabase, loadApplications])
+  }, [rejectApp, rejectNotes, user, loadApplications])
 
   if (!isSuperAdmin) {
     return (
