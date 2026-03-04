@@ -54,6 +54,9 @@ serve(async (req) => {
       (siteUrl ? `${siteUrl}/auth/reset-password` : '')
 
     // 1. Generate a recovery link via admin API (no SMTP involved)
+    // NOTE: GoTrue expects `redirect_to` at the TOP LEVEL of the body,
+    //       NOT nested inside `options`. Nesting it causes GoTrue to ignore
+    //       the redirect and fall back to site_url (the login page).
     const genRes = await fetch(
       `${supabaseUrl}/auth/v1/admin/generate_link`,
       {
@@ -66,7 +69,7 @@ serve(async (req) => {
         body: JSON.stringify({
           type: 'recovery',
           email: email.trim().toLowerCase(),
-          ...(resetRedirect ? { options: { redirect_to: resetRedirect } } : {}),
+          ...(resetRedirect ? { redirect_to: resetRedirect } : {}),
         }),
       }
     )
