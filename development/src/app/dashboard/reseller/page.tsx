@@ -7,6 +7,7 @@ import { FleetProgressBar } from '@/components/reseller/FleetProgressBar'
 import { DownlineTreeMap } from '@/components/reseller/DownlineTreeMap'
 import { SupportSlider } from '@/components/reseller/SupportSlider'
 import { TierManagement } from '@/components/reseller/TierManagement'
+import { InvitesPanel } from '@/components/reseller/InvitesPanel'
 import { useResellerTier } from '@/hooks/useResellerTier'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,7 +22,7 @@ import {
 } from '@/components/ui/tabs'
 import {
   DollarSign, Wifi, TrendingUp, Users, Link2, Copy, Check,
-  Bell, ExternalLink, Layers,
+  Bell, ExternalLink, Layers, UserPlus,
 } from 'lucide-react'
 import type { ResellerPayout, SupportModel } from '@/types/reseller'
 import { cn } from '@/lib/utils'
@@ -37,28 +38,28 @@ function ResellerSignupLinkCard({ orgSlug }: { orgSlug: string }) {
   }
 
   return (
-    <Card className="border-white/[0.08] bg-gray-900/60">
+    <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Link2 className="h-4 w-4 text-cyan-400" />
           Your Signup Link
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2">
-          <span className="flex-1 truncate font-mono text-xs text-gray-300">{signupUrl}</span>
-          <button onClick={copy} className="shrink-0 rounded p-1 hover:bg-white/[0.08] transition-colors">
+        <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+          <span className="flex-1 truncate font-mono text-xs text-muted-foreground">{signupUrl}</span>
+          <button onClick={copy} className="shrink-0 rounded p-1 hover:bg-muted transition-colors">
             {copied
               ? <Check className="h-3.5 w-3.5 text-emerald-400" />
-              : <Copy className="h-3.5 w-3.5 text-gray-400" />
+              : <Copy className="h-3.5 w-3.5 text-muted-foreground" />
             }
           </button>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Share this link. New customers who sign up will automatically be placed under your account.
           Your branding (logo, colors) will appear on their signup page.
         </p>
-        <Button asChild size="sm" variant="outline" className="w-full border-white/[0.08] text-xs">
+        <Button asChild size="sm" variant="outline" className="w-full text-xs">
           <a href={signupUrl} target="_blank" rel="noreferrer">
             Preview Signup Page <ExternalLink className="ml-1.5 h-3 w-3" />
           </a>
@@ -151,8 +152,8 @@ function ResellerDashboardContent() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Reseller Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-foreground">Reseller Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage your reseller network, track sensor counts, and monitor payouts.
         </p>
       </div>
@@ -189,12 +190,12 @@ function ResellerDashboardContent() {
             color: 'text-violet-400',
           },
         ].map(({ icon: Icon, label, value, sub, color }) => (
-          <Card key={label} className="border-white/[0.08] bg-gray-900/60">
+          <Card key={label} className="border-border bg-card">
             <CardContent className="p-4">
               <Icon className={cn('mb-2 h-4 w-4', color)} />
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs font-medium text-gray-400">{label}</p>
-              {sub && <p className="mt-0.5 text-xs text-gray-600">{sub}</p>}
+              <p className="text-xl font-bold text-foreground">{value}</p>
+              <p className="text-xs font-medium text-muted-foreground">{label}</p>
+              {sub && <p className="mt-0.5 text-xs text-muted-foreground/60">{sub}</p>}
             </CardContent>
           </Card>
         ))}
@@ -206,16 +207,18 @@ function ResellerDashboardContent() {
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="payouts">
-        <TabsList className="border-b border-white/[0.08] bg-transparent">
-          {['payouts', 'downline', 'support', 'notifications', ...(isPlatformAdmin ? ['tiers'] : [])].map(tab => (
+      <Tabs defaultValue={searchParams.get('tab') || 'payouts'}>
+        <TabsList className="border-b border-border bg-transparent">
+          {['payouts', 'downline', 'invites', 'support', 'notifications', ...(isPlatformAdmin ? ['tiers'] : [])].map(tab => (
             <TabsTrigger
               key={tab}
               value={tab}
-              className="capitalize data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-white"
+              className="capitalize data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-foreground"
             >
               {tab === 'tiers' ? (
                 <span className="flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />Tiers</span>
+              ) : tab === 'invites' ? (
+                <span className="flex items-center gap-1.5"><UserPlus className="h-3.5 w-3.5" />Invites</span>
               ) : tab}
             </TabsTrigger>
           ))}
@@ -223,37 +226,37 @@ function ResellerDashboardContent() {
 
         {/* Payouts tab */}
         <TabsContent value="payouts" className="mt-4">
-          <Card className="border-white/[0.08] bg-gray-900/60">
+          <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold text-white">Payout History</CardTitle>
+              <CardTitle className="text-sm font-semibold text-foreground">Payout History</CardTitle>
             </CardHeader>
             <CardContent>
               {payouts.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-500">No payouts recorded yet.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No payouts recorded yet.</p>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/[0.08] hover:bg-transparent">
-                      <TableHead className="text-gray-400">Date</TableHead>
-                      <TableHead className="text-gray-400">Amount</TableHead>
-                      <TableHead className="text-gray-400">Spread %</TableHead>
-                      <TableHead className="text-gray-400">Sensors</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="text-muted-foreground">Date</TableHead>
+                      <TableHead className="text-muted-foreground">Amount</TableHead>
+                      <TableHead className="text-muted-foreground">Spread %</TableHead>
+                      <TableHead className="text-muted-foreground">Sensors</TableHead>
+                      <TableHead className="text-muted-foreground">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {payouts.map(p => (
-                      <TableRow key={p.id} className="border-white/[0.06] hover:bg-white/[0.02]">
-                        <TableCell className="text-sm text-gray-300">
+                      <TableRow key={p.id} className="border-border/60 hover:bg-muted/30">
+                        <TableCell className="text-sm text-muted-foreground">
                           {new Date(p.calculated_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="font-semibold text-white">
+                        <TableCell className="font-semibold text-foreground">
                           ${p.payout_amount.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-300">
+                        <TableCell className="text-sm text-muted-foreground">
                           {(p.spread_pct * 100).toFixed(1)}%
                         </TableCell>
-                        <TableCell className="text-sm text-gray-300">
+                        <TableCell className="text-sm text-muted-foreground">
                           {p.sensor_count.toLocaleString()}
                         </TableCell>
                         <TableCell>
@@ -274,6 +277,11 @@ function ResellerDashboardContent() {
           <ResellerSignupLinkCard orgSlug={orgSlug} />
         </TabsContent>
 
+        {/* Invites tab */}
+        <TabsContent value="invites" className="mt-4">
+          <InvitesPanel orgId={orgId} orgSlug={orgSlug} />
+        </TabsContent>
+
         {/* Support tab */}
         <TabsContent value="support" className="mt-4">
           <SupportSlider
@@ -289,26 +297,26 @@ function ResellerDashboardContent() {
 
         {/* Notifications tab */}
         <TabsContent value="notifications" className="mt-4">
-          <Card className="border-white/[0.08] bg-gray-900/60">
+          <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-white">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Bell className="h-4 w-4 text-cyan-400" />
                 Notifications
               </CardTitle>
             </CardHeader>
             <CardContent>
               {notifications.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-500">No notifications.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No notifications.</p>
               ) : (
                 <div className="space-y-2">
                   {notifications.map(n => (
-                    <div key={n.id} className="flex items-start gap-3 rounded-lg bg-white/[0.03] p-3">
+                    <div key={n.id} className="flex items-start gap-3 rounded-lg bg-muted/30 p-3">
                       <Bell className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
                       <div>
-                        <p className="text-sm text-gray-200 capitalize">
+                        <p className="text-sm text-foreground capitalize">
                           {n.notification_type.replace(/_/g, ' ')}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {new Date(n.sent_at).toLocaleString()}
                         </p>
                       </div>

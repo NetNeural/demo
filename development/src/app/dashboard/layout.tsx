@@ -35,7 +35,6 @@ import {
   Activity,
   ShieldCheck,
   Network,
-  UserPlus,
   KeyRound,
   Code,
   Cpu,
@@ -129,7 +128,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     ...(currentOrganization?.subscription_tier === 'reseller' || currentOrganization?.is_reseller === true
       ? [
           { href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network },
-          { href: '/dashboard/reseller/invite', label: 'Invite Partners', icon: UserPlus },
         ]
       : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
