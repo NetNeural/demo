@@ -15,21 +15,24 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
-import { CheckCircle2, XCircle, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, ShieldCheck, PackageSearch } from 'lucide-react'
 import type { AccessRequest } from '@/types/access-request'
 
 export function AccessRequestNotifier() {
   const { currentOrganization, isOwner, isAdmin, refreshOrganizations } =
     useOrganization()
   const { user } = useUser()
+  const router = useRouter()
 
   // Track which request IDs have already had toasts shown to avoid duplicates
   const shownIds = useRef<Set<string>>(new Set())
+  const resellerToastShown = useRef(false)
 
   const canApprove = user?.isSuperAdmin || isOwner || isAdmin
 
@@ -115,6 +118,103 @@ export function AccessRequestNotifier() {
       { id: toastId, duration: Infinity }
     )
   }
+
+  // ── Reseller applications: check for pending on mount (super admin only) ──
+  useEffect(() => {
+    if (!user?.isSuperAdmin) return
+
+    const checkReseller = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('reseller_agreement_applications')
+        .select('id')
+        .in('status', ['submitted', 'under_review'])
+        .limit(50)
+
+      if (error || !data?.length || resellerToastShown.current) return
+      resellerToastShown.current = true
+
+      const count = data.length
+      const label = count === 1 ? '1 pending reseller application' : `${count} pending reseller applications`
+
+      toast.custom(
+        () => (
+          <div className="w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg">
+            <div className="mb-2 flex items-center gap-2">
+              <PackageSearch className="h-4 w-4 shrink-0 text-violet-500" />
+              <span className="text-sm font-semibold">Reseller Applications</span>
+            </div>
+            <p className="mb-3 text-sm text-muted-foreground">
+              You have <span className="font-medium text-foreground">{label}</span> waiting for review.
+            </p>
+            <button
+              className="w-full rounded-md bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 active:bg-violet-800"
+              onClick={() => {
+                toast.dismiss('reseller-apps')
+                router.push('/dashboard/admin/reseller-applications')
+              }}
+            >
+              Review Applications
+            </button>
+          </div>
+        ),
+        { id: 'reseller-apps', duration: Infinity }
+      )
+    }
+
+    checkReseller()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.isSuperAdmin])
+
+  // ── Reseller applications: realtime for new submissions ──────────────────
+  useEffect(() => {
+    if (!user?.isSuperAdmin) return
+
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel('reseller-apps-notifier')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reseller_agreement_applications' },
+        () => {
+          // Dismiss stale toast so it re-shows with refreshed count
+          resellerToastShown.current = false
+          toast.dismiss('reseller-apps')
+
+          const toastId = 'reseller-apps'
+          toast.custom(
+            () => (
+              <div className="w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg">
+                <div className="mb-2 flex items-center gap-2">
+                  <PackageSearch className="h-4 w-4 shrink-0 text-violet-500" />
+                  <span className="text-sm font-semibold">New Reseller Application</span>
+                </div>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  A new reseller agreement application has been submitted.
+                </p>
+                <button
+                  className="w-full rounded-md bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 active:bg-violet-800"
+                  onClick={() => {
+                    toast.dismiss(toastId)
+                    router.push('/dashboard/admin/reseller-applications')
+                  }}
+                >
+                  Review Applications
+                </button>
+              </div>
+            ),
+            { id: toastId, duration: Infinity }
+          )
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.isSuperAdmin])
 
   // ── Poll for pending received requests (fallback + initial load) ─────────
   useEffect(() => {
