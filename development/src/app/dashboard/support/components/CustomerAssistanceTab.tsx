@@ -151,10 +151,21 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
   const handleResetPassword = async (memberEmail: string) => {
     setActionLoading('reset-password')
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-      if (error) throw error
+      // Use admin edge function + Resend to bypass Supabase SMTP rate limit
+      await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/request-password-reset`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          body: JSON.stringify({
+            email: memberEmail.toLowerCase(),
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+          }),
+        }
+      )
       toast.success(`Password reset email sent to ${memberEmail}`)
     } catch (err) {
       console.error('Reset password failed:', err)

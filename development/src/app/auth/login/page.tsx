@@ -424,24 +424,21 @@ function LoginForm() {
       setResetLoading(true)
       setError('')
       try {
-        const supabase = createClient()
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          trimmedEmail,
+        // Use admin edge function + Resend to bypass Supabase SMTP rate limit
+        await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/request-password-reset`,
           {
-            redirectTo: `${window.location.origin}/auth/reset-password`,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({
+              email: trimmedEmail.toLowerCase(),
+              redirectTo: `${window.location.origin}/auth/reset-password`,
+            }),
           }
         )
-        if (resetError) {
-          if (!isMounted.current) return
-          const rateLimitMatch = resetError.message.match(/after\s+(\d+)\s+second/i)
-          if (rateLimitMatch && rateLimitMatch[1]) {
-            setRateLimitSeconds(parseInt(rateLimitMatch[1], 10))
-          } else {
-            setError(resetError.message)
-          }
-          setResetLoading(false)
-          return
-        }
         if (!isMounted.current) return
         setResetSent(true)
       } catch {

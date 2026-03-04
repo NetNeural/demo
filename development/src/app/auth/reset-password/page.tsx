@@ -32,6 +32,10 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
   const [checking, setChecking] = useState(true)
   const [hasSession, setHasSession] = useState(false)
+  const [linkExpiredError, setLinkExpiredError] = useState<string | null>(null)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendSent, setResendSent] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
   const router = useRouter()
 
   // Supabase delivers the user here via a recovery link.
@@ -51,13 +55,40 @@ export default function ResetPasswordPage() {
     })
 
     const handleRecovery = async () => {
+      // Check for error in URL hash (e.g. #error=access_denied&error_code=otp_expired)
+      const hash = window.location.hash.slice(1)
+      if (hash) {
+        const hashParams = new URLSearchParams(hash)
+        const hashError = hashParams.get('error')
+        const hashErrorCode = hashParams.get('error_code')
+        if (hashError || hashErrorCode) {
+          const description =
+            hashParams.get('error_description')?.replace(/\+/g, ' ') ??
+            'This password reset link is invalid or has expired.'
+          setLinkExpiredError(description)
+          setChecking(false)
+          return
+        }
+      }
+
       // Check for PKCE code in URL query params (Supabase SSR / PKCE flow)
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
+      // Also check query string for error (some flows put it there)
+      const queryError = params.get('error_code') ?? params.get('error')
+      if (queryError) {
+        const description =
+          params.get('error_description')?.replace(/\+/g, ' ') ??
+          'This password reset link is invalid or has expired.'
+        setLinkExpiredError(description)
+        setChecking(false)
+        return
+      }
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
+          setLinkExpiredError(error.message ?? 'This password reset link is invalid or has expired.')
           setChecking(false)
           return
         }
@@ -151,6 +182,37 @@ export default function ResetPasswordPage() {
     )
   }
 
+  const handleResend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resendEmail) return
+    setResendLoading(true)
+    try {
+      // Use our admin edge function so we never hit Supabase's built-in email
+      // rate limit. The function uses generate_link + Resend instead of SMTP.
+      const supabase = createClient()
+      // Get the Supabase URL to derive the edge function endpoint
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      await fetch(`${supabaseUrl}/functions/v1/request-password-reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({
+          email: resendEmail.trim().toLowerCase(),
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        }),
+      })
+      // Always show success (edge function always returns 200)
+      setResendSent(true)
+    } catch (_err) {
+      // Always show success to prevent email enumeration
+      setResendSent(true)
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   // No session — invalid or expired link
   if (!hasSession) {
     return (
@@ -166,17 +228,52 @@ export default function ResetPasswordPage() {
               Invalid or Expired Link
             </CardTitle>
             <CardDescription className="text-center">
-              This password reset link is invalid or has expired. Please request
-              a new one from the login page.
+              {linkExpiredError ?? 'This password reset link is invalid or has expired.'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full"
-              onClick={() => router.push('/auth/login')}
-            >
-              Back to Login
-            </Button>
+          <CardContent className="space-y-4">
+            {resendSent ? (
+              <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700 dark:text-green-300">
+                  If that email is registered, a new reset link has been sent.
+                  Check your inbox (and spam folder).
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <form onSubmit={handleResend} className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Enter your email to receive a fresh reset link:
+                </p>
+                <Input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <Button type="submit" className="w-full" disabled={resendLoading}>
+                  {resendLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send New Reset Link'
+                  )}
+                </Button>
+              </form>
+            )}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => router.push('/auth/login')}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
+              >
+                ← Back to login
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
