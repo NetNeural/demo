@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FleetProgressBar } from '@/components/reseller/FleetProgressBar'
 import { DownlineTreeMap } from '@/components/reseller/DownlineTreeMap'
 import { SupportSlider } from '@/components/reseller/SupportSlider'
+import { TierManagement } from '@/components/reseller/TierManagement'
 import { useResellerTier } from '@/hooks/useResellerTier'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/tabs'
 import {
   DollarSign, Wifi, TrendingUp, Users, Link2, Copy, Check,
-  Bell, ExternalLink,
+  Bell, ExternalLink, Layers,
 } from 'lucide-react'
 import type { ResellerPayout, SupportModel } from '@/types/reseller'
 import { cn } from '@/lib/utils'
@@ -129,6 +130,10 @@ function ResellerDashboardContent() {
     loadOrg()
   }, [])
 
+  // Platform admin = NetNeural org (can manage global tier config)
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+  const isPlatformAdmin = orgId === NETNEURAL_ORG_ID
+
   if (!orgId) {
     return (
       <div className="flex min-h-[400px] items-center justify-center text-gray-500">
@@ -203,13 +208,15 @@ function ResellerDashboardContent() {
       {/* Tabs */}
       <Tabs defaultValue="payouts">
         <TabsList className="border-b border-white/[0.08] bg-transparent">
-          {['payouts', 'downline', 'support', 'notifications'].map(tab => (
+          {['payouts', 'downline', 'support', 'notifications', ...(isPlatformAdmin ? ['tiers'] : [])].map(tab => (
             <TabsTrigger
               key={tab}
               value={tab}
               className="capitalize data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-white"
             >
-              {tab}
+              {tab === 'tiers' ? (
+                <span className="flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />Tiers</span>
+              ) : tab}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -312,6 +319,12 @@ function ResellerDashboardContent() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* Tiers tab (platform admin only) */}
+        {isPlatformAdmin && (
+          <TabsContent value="tiers" className="mt-4">
+            <TierManagement />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
