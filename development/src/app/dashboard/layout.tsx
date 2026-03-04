@@ -110,16 +110,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: Building2,
     },
     ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
-      (isSuperAdmin || userRole === 'owner')
-      ? [
-          {
-            href: '/dashboard/plans-pricing',
-            label: 'Plans & Pricing',
-            icon: DollarSign,
-          },
-        ]
-      : []),
-    ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
       (isSuperAdmin || userRole === 'owner' || userRole === 'billing')
       ? [
           {
@@ -140,11 +130,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/admin/go-live-runbook',
             label: 'Go-Live Runbook',
             icon: Rocket,
-          },
-          {
-            href: '/dashboard/admin/hydra-kpis',
-            label: 'Hydra KPIs',
-            icon: Network,
           },
           {
             href: '/dashboard/admin/onboarding',

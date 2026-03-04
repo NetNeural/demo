@@ -36,6 +36,7 @@ import {
   Zap,
   Download,
   FileDown,
+  Network,
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
@@ -46,6 +47,8 @@ import { CustomersTab } from './components/CustomersTab'
 import { PlanManagementTab } from './components/PlanManagementTab'
 import { BillingOperationsTab } from './components/BillingOperationsTab'
 import { PromoCodesTab } from './components/PromoCodesTab'
+import { HydraKPIDashboardPage } from '@/app/dashboard/admin/hydra-kpis/page'
+import { PlansPricingContent } from '@/app/dashboard/plans-pricing/page'
 import { ARAgingReport } from '@/components/admin/ARAgingReport'
 import { PaymentFailureReport } from '@/components/admin/PaymentFailureReport'
 import { TaxSummaryReport } from '@/components/admin/TaxSummaryReport'
@@ -573,6 +576,7 @@ function BillingAdminContent() {
             invoices: 'transactions', payments: 'transactions',
             subscriptions: 'reports', usage: 'reports', expenses: 'reports', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
+            plans: 'reseller', 'hydra-kpis': 'reseller',
           }
           return groupMap[activeTab] || 'reports'
         })()}
@@ -580,6 +584,7 @@ function BillingAdminContent() {
           const defaults: Record<string, string> = {
             reports: 'revenue', transactions: 'invoices',
             management: 'customers', operations: 'plan-management',
+            reseller: 'plans',
           }
           handleTabChange(defaults[group] || 'financial-reports')
         }}
@@ -601,6 +606,10 @@ function BillingAdminContent() {
           <TabsTrigger value="operations" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             <span>Operations</span>
+          </TabsTrigger>
+          <TabsTrigger value="reseller" className="flex items-center gap-2">
+            <Network className="h-4 w-4" />
+            <span>Reseller</span>
           </TabsTrigger>
         </TabsList>
 
@@ -700,6 +709,28 @@ function BillingAdminContent() {
             </TabsList>
             <TabsContent value="customers" className="mt-6">
               <CustomersTab />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Reseller — Plans & Pricing + Hydra KPIs */}
+        <TabsContent value="reseller">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="plans" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Plans & Pricing
+              </TabsTrigger>
+              <TabsTrigger value="hydra-kpis" className="flex items-center gap-2">
+                <Network className="h-4 w-4" />
+                Hydra KPIs
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="plans" className="mt-6">
+              <PlansPricingContent />
+            </TabsContent>
+            <TabsContent value="hydra-kpis" className="mt-6">
+              <HydraKPIDashboardPage />
             </TabsContent>
           </Tabs>
         </TabsContent>

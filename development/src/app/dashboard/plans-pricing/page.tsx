@@ -1400,6 +1400,8 @@ function PlansPricingContent() {
   )
 }
 
+export { PlansPricingContent }
+
 export default function PlansPricingPage() {
   return (
     <Suspense fallback={<LoadingSpinner />}>

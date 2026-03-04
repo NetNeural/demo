@@ -329,3 +329,5 @@ export default function HydraKPIDashboardPage() {
     </div>
   )
 }
+
+export { HydraKPIDashboardPage }
