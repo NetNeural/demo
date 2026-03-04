@@ -174,7 +174,7 @@ export function TransferDeviceDialog({
         onTransferComplete()
       } else if (mode === 'move') {
         // For move: redirect since device is no longer in this org
-        window.location.href = '/dashboard/devices'
+        window.location.href = '/dashboard/hardware-provisioning'
       }
     } catch (error) {
       console.error('Error transferring device:', error)

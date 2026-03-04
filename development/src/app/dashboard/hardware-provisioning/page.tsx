@@ -1,10 +1,12 @@
 /**
  * Hardware Provisioning Page
  *
- * Three main sections:
- * 1. Barcode Scanner — ALL accounts can scan barcodes to add devices
- * 2. Barcode Generator — NetNeural-only: create & print barcodes for NN devices
- * 3. Firmware Management — NetNeural-only: upload, manage, and push firmware
+ * Unified hub for all device hardware management:
+ * 1. Devices — view, monitor and manage all IoT devices (with facility map)
+ * 2. Device Types — configure device types, ranges, and thresholds
+ * 3. Scan & Add — scan barcodes/QR codes to quickly add devices
+ * 4. Generate Barcodes — NetNeural-only: create & print barcodes
+ * 5. Firmware — NetNeural-only: upload, manage, and push firmware
  */
 'use client'
 
@@ -16,14 +18,28 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   BarcodeScannerPanel,
   BarcodeGeneratorPanel,
   FirmwareManagementPanel,
 } from '@/components/hardware-provisioning'
-import { isPlatformAdmin, NETNEURAL_ORG_ID } from '@/lib/permissions'
+import { DevicesList } from '@/components/devices/DevicesList'
+import { DevicesHeader } from '@/components/devices/DevicesHeader'
+import { DeviceTypesList } from '@/components/device-types/DeviceTypesList'
+import { DeviceTypeFormDialog } from '@/components/device-types/DeviceTypeFormDialog'
+import { FacilityMapView } from '@/components/facility-map'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
-import { ScanBarcode, QrCode, HardDrive, Cpu } from 'lucide-react'
+import {
+  ScanBarcode,
+  QrCode,
+  HardDrive,
+  Cpu,
+  Smartphone,
+  SlidersHorizontal,
+  Plus,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import type { DeviceType } from '@/types/device-types'
 
@@ -32,6 +48,7 @@ export default function HardwareProvisioningPage() {
   const { user } = useUser()
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([])
   const [loadingTypes, setLoadingTypes] = useState(false)
+  const [createTypeDialogOpen, setCreateTypeDialogOpen] = useState(false)
 
   const isNetNeuralAdmin = isPlatformAdmin(
     user,
@@ -81,7 +98,7 @@ export default function HardwareProvisioningPage() {
           <div className="space-y-3 text-center">
             <p className="text-muted-foreground">No organization selected</p>
             <p className="text-sm text-muted-foreground">
-              Please select an organization to manage hardware provisioning
+              Please select an organization to manage hardware
             </p>
           </div>
         </div>
@@ -106,19 +123,28 @@ export default function HardwareProvisioningPage() {
             </h2>
           </div>
           <p className="text-muted-foreground">
-            Scan barcodes to add devices
-            {isNetNeuralAdmin &&
-              ', generate barcodes for NetNeural hardware, and manage firmware'}
+            Manage devices, device types, and hardware provisioning
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="scan">
-        <TabsList>
+      <Tabs defaultValue="devices">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="devices" className="flex items-center gap-1.5">
+            <Smartphone className="h-4 w-4" />
+            Devices
+          </TabsTrigger>
+          <TabsTrigger
+            value="device-types"
+            className="flex items-center gap-1.5"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Device Types
+          </TabsTrigger>
           <TabsTrigger value="scan" className="flex items-center gap-1.5">
             <ScanBarcode className="h-4 w-4" />
-            Scan & Add Devices
+            Scan &amp; Add
           </TabsTrigger>
           {isNetNeuralAdmin && (
             <TabsTrigger value="generate" className="flex items-center gap-1.5">
@@ -140,6 +166,44 @@ export default function HardwareProvisioningPage() {
           )}
         </TabsList>
 
+        {/* Tab: Devices — full device list with facility map */}
+        <TabsContent value="devices" className="mt-4 space-y-6">
+          <DevicesHeader />
+          <Suspense fallback={<LoadingSpinner />}>
+            <FacilityMapView
+              key={`map-${currentOrganization.id}`}
+              organizationId={currentOrganization.id}
+            />
+          </Suspense>
+          <Suspense fallback={<LoadingSpinner />}>
+            <DevicesList key={currentOrganization.id} />
+          </Suspense>
+        </TabsContent>
+
+        {/* Tab: Device Types — configuration & thresholds */}
+        <TabsContent value="device-types" className="mt-4 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold">Device Types</h3>
+              <p className="text-sm text-muted-foreground">
+                Manage device type configurations, normal operating ranges, and
+                alert thresholds
+              </p>
+            </div>
+            <Button onClick={() => setCreateTypeDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Device Type
+            </Button>
+          </div>
+          <Suspense fallback={<LoadingSpinner />}>
+            <DeviceTypesList />
+          </Suspense>
+          <DeviceTypeFormDialog
+            open={createTypeDialogOpen}
+            onOpenChange={setCreateTypeDialogOpen}
+          />
+        </TabsContent>
+
         {/* Tab: Scan & Add Devices — available to ALL accounts */}
         <TabsContent value="scan" className="mt-4">
           <Suspense fallback={<LoadingSpinner />}>
@@ -149,7 +213,9 @@ export default function HardwareProvisioningPage() {
               <BarcodeScannerPanel
                 deviceTypes={deviceTypes}
                 onDeviceAdded={() => {
-                  toast.success('Device added — refresh your devices page to see it')
+                  toast.success(
+                    'Device added — switch to the Devices tab to see it'
+                  )
                 }}
               />
             )}

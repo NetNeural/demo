@@ -44,7 +44,7 @@ const STEPS: OnboardingStep[] = [
     icon: Smartphone,
     title: 'Add your first device',
     description: 'Connect a sensor or IoT device to start monitoring.',
-    href: '/dashboard/devices',
+    href: '/dashboard/hardware-provisioning',
     cta: 'Add a Device',
   },
   {

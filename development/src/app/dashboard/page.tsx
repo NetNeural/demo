@@ -124,7 +124,7 @@ export default function DashboardPage() {
         {/* Total Devices */}
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => router.push('/dashboard/devices')}
+          onClick={() => router.push('/dashboard/hardware-provisioning')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
@@ -147,7 +147,7 @@ export default function DashboardPage() {
         {/* Online Devices */}
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => router.push('/dashboard/devices')}
+          onClick={() => router.push('/dashboard/hardware-provisioning')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
@@ -451,7 +451,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               className="mt-4 w-full"
-              onClick={() => router.push('/dashboard/devices')}
+              onClick={() => router.push('/dashboard/hardware-provisioning')}
             >
               View All Devices
             </Button>

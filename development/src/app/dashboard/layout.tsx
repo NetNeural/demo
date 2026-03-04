@@ -21,7 +21,6 @@ import { SessionTimeoutModal } from '@/components/session/SessionTimeoutModal'
 import { AccessRequestNotifier } from '@/components/access/AccessRequestNotifier'
 import {
   LayoutDashboard,
-  Smartphone,
   Bell,
   BarChart3,
   Building2,
@@ -31,7 +30,6 @@ import {
   X,
   MessageSquarePlus,
   LifeBuoy,
-  SlidersHorizontal,
   DollarSign,
   FileBarChart,
   Activity,
@@ -96,19 +94,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: LayoutDashboard,
       exact: true,
     },
-    { href: '/dashboard/devices', label: 'Devices', icon: Smartphone },
     {
-      href: '/dashboard/device-types',
-      label: 'Device Types',
-      icon: SlidersHorizontal,
+      href: '/dashboard/hardware-provisioning',
+      label: 'Hardware Provisioning',
+      icon: Cpu,
     },
     ...(isSuperAdmin || isPlAdmin
       ? [
-          {
-            href: '/dashboard/hardware-provisioning',
-            label: 'Hardware Provisioning',
-            icon: Cpu,
-          },
           {
             href: '/dashboard/inventory-control',
             label: 'Inventory Control',

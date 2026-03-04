@@ -83,7 +83,7 @@ function DeviceViewContent() {
   const loadDevice = useCallback(async () => {
     if (!deviceId) {
       toast.error('Device ID is required')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
       return
     }
 
@@ -94,7 +94,7 @@ function DeviceViewContent() {
       const response = await edgeFunctions.devices.get(deviceId)
       if (!response.success || !response.data) {
         toast.error('Device not found')
-        router.push('/dashboard/devices')
+        router.push('/dashboard/hardware-provisioning')
         return
       }
 
@@ -148,7 +148,7 @@ function DeviceViewContent() {
     } catch (error) {
       console.error('Error loading device:', error)
       toast.error('Failed to load device')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
     } finally {
       setLoading(false)
     }
@@ -204,7 +204,7 @@ function DeviceViewContent() {
         return
       }
       toast.success('Device deleted successfully')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
     } catch (error) {
       console.error('Error deleting device:', error)
       toast.error('Failed to delete device')
@@ -232,7 +232,7 @@ function DeviceViewContent() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Device not found</p>
-        <Button onClick={() => router.push('/dashboard/devices')}>
+        <Button onClick={() => router.push('/dashboard/hardware-provisioning')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Devices
         </Button>
@@ -275,10 +275,10 @@ function DeviceViewContent() {
                   organization_id: device.organization_id,
                 }}
                 currentOrgId={currentOrganization.id}
-                onTransferComplete={() => router.push('/dashboard/devices')}
+                onTransferComplete={() => router.push('/dashboard/hardware-provisioning')}
               />
             )}
-            <Button variant="ghost" onClick={() => router.push('/dashboard/devices')}>
+            <Button variant="ghost" onClick={() => router.push('/dashboard/hardware-provisioning')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Devices
             </Button>
