@@ -14,7 +14,7 @@ interface User {
   id: string
   name: string
   email: string
-  role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
   lastLogin?: string
   department?: string
@@ -185,6 +185,8 @@ export function UsersList() {
     switch (role) {
       case 'super_admin':
         return 'text-purple-600 bg-purple-100'
+      case 'platform_admin':
+        return 'text-purple-500 bg-purple-50'
       case 'org_admin':
         return 'text-blue-600 bg-blue-100'
       case 'org_owner':

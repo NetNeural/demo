@@ -11,7 +11,7 @@ const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
 export interface UserContext {
   userId: string
   organizationId: string | null
-  role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
   /** Platform admin = super_admin OR NetNeural org owner.
    *  Has admin feature access but NOT organic cross-org access. */

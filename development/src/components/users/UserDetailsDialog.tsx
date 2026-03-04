@@ -14,7 +14,7 @@ interface User {
   id: string
   name: string
   email: string
-  role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
   lastLogin?: string
   department?: string

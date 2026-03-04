@@ -56,8 +56,9 @@ All 9 edge functions deployed to production:
    ```
 
 2. **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**
-   - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api
-   - Copy the `anon` `public` key
+   ```
+   YOUR_SUPABASE_ANON_KEY
+   ```
 
 3. **`SUPABASE_SERVICE_ROLE_KEY`**
    - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api

@@ -34,7 +34,7 @@ export default createEdgeFunction(
     })
 
     // Check if user is super_admin (has global access)
-    const isSuperAdmin = userContext.role === 'super_admin'
+    const isSuperAdmin = userContext.role === 'super_admin' || userContext.role === 'platform_admin'
 
     let userRole = 'viewer' // default role
 
@@ -105,7 +105,7 @@ export default createEdgeFunction(
         // Hide super_admin accounts from non-super_admin users
         .filter((member: any) => {
           if (isSuperAdmin) return true // Super admins see everyone
-          return member.users?.role !== 'super_admin'
+          return member.users?.role !== 'super_admin' && member.users?.role !== 'platform_admin'
         })
         .map((member: any) => ({
           id: member.user_id, // Use user_id as the primary ID (matches auth.users)

@@ -77,8 +77,9 @@ The current deployment will work, but for future automated deployments, you need
    ```
 
 2. **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**
-   - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api
-   - Copy the `anon` `public` key
+   ```
+   YOUR_SUPABASE_ANON_KEY
+   ```
 
 3. **`SUPABASE_SERVICE_ROLE_KEY`**
    - Go to: https://supabase.com/dashboard/project/bldojxpockljyivldxwf/settings/api

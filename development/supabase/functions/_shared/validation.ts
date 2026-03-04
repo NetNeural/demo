@@ -51,7 +51,7 @@ export const schemas = {
   integrationStatus: z.enum(['active', 'inactive', 'error', 'testing']),
 
   // User roles
-  userRole: z.enum(['super_admin', 'org_owner', 'org_admin', 'user', 'viewer']),
+  userRole: z.enum(['super_admin', 'platform_admin', 'org_owner', 'org_admin', 'user', 'viewer']),
 }
 
 // ===========================================================================

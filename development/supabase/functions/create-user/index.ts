@@ -24,6 +24,7 @@ export default createEdgeFunction(
     // Check global role first, then fall back to organization_members for sub-org owners
     const hasGlobalPermission = [
       'super_admin',
+      'platform_admin',
       'org_owner',
       'org_admin',
     ].includes(userContext.role)

@@ -281,7 +281,7 @@ async function handleRecordAction(
     .select('role, organization_id')
     .eq('id', userId)
     .single()
-  const isSuperAdmin = userProfile?.role === 'super_admin' ||
+  const isSuperAdmin = userProfile?.role === 'super_admin' || userProfile?.role === 'platform_admin' ||
     (userProfile?.role === 'org_owner' && userProfile?.organization_id === NETNEURAL_ORG_ID)
 
   // Get user's organization

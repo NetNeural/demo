@@ -292,7 +292,7 @@ export default createEdgeFunction(
         // If not super admin, get all orgs the user is a member of
         // deno-lint-ignore no-explicit-any
         let membershipMap: Record<string, string> = {}
-        if (!userContext.isSuperAdmin) {
+        if (userContext.role !== 'super_admin') {
           // Get user's org memberships WITH role
           const { data: memberships } = await supabaseAdmin
             .from('organization_members')

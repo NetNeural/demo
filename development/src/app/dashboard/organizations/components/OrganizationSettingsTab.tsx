@@ -834,7 +834,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   }
 
   // Allow super_admin or organization owner to access settings
-  const canAccessSettings = isOwner || user?.role === 'super_admin'
+  const canAccessSettings = isOwner || user?.role === 'super_admin' || user?.role === 'platform_admin'
 
   // NetNeural root org — only root org gets Sentinel logo upload
   const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'

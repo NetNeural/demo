@@ -495,7 +495,8 @@ export default function CustomerAssistanceTab({ organizationId }: Props) {
 
                                   {/* Role Change Dropdown */}
                                   {availableRoles.length > 0 &&
-                                    member.role !== 'super_admin' && (
+                                    member.role !== 'super_admin' &&
+                                    member.role !== 'platform_admin' && (
                                       <Select
                                         value={member.role}
                                         onValueChange={(newRole) => {

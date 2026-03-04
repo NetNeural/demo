@@ -179,3 +179,4 @@ If you encounter issues:
 1. Check the detailed [Deployment Guide](./DEPLOYMENT_GUIDE.md)
 2. Review the [Environment Setup](./ENVIRONMENT_SETUP.md)
 3. Look at GitHub Actions logs for specific errors
+YOUR_SUPABASE_ACCESS_TOKEN./scripts/setup-staging-secrets.sh

@@ -40,7 +40,7 @@ export function isPlatformAdmin(
 // NOTE: canViewAllOrganizations is for organic cross-org listing.
 // It stays super_admin-only. Platform admins use Cross-Org feature instead.
 export function canViewAllOrganizations(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+  return user?.role === 'super_admin' || false
 }
 
 export function canCreateOrganization(
@@ -100,7 +100,7 @@ export function canViewChildOrganizations(
 // NOTE: canViewAllUsers is for cross-org user listing.
 // It stays super_admin-only. Platform admins see their own org users.
 export function canViewAllUsers(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+  return user?.role === 'super_admin' || false
 }
 
 export function canManageUser(
@@ -201,7 +201,7 @@ export function getAccessibleOrganizations(
   user: UserProfile | null
 ): 'all' | string | null {
   if (!user) return null
-  if (user.isSuperAdmin) return 'all'
+  if (user.role === 'super_admin') return 'all'
   return user.organizationId
 }
 
@@ -226,6 +226,7 @@ export function hasMinimumRole(
     'user',
     'org_admin',
     'org_owner',
+    'platform_admin',
     'super_admin',
   ]
 
