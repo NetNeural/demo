@@ -1,0 +1,599 @@
+================================================================================
+NETNEURAL — CUSTOMER DATA EXPORT API GUIDE
+================================================================================
+Version: 1.0  |  Last Updated: 2026-03-03
+Audience: Developers, System Integrators, Data Engineers
+Base URL: https://[your-project].supabase.co/functions/v1/export
+Live API Docs (Swagger UI): /functions/v1/export/openapi
+OpenAPI Spec: /functions/v1/export/openapi.json
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Overview
+2. Authentication
+3. Rate Limiting
+4. Endpoints
+   4.1 Telemetry Data
+   4.2 Device Inventory
+   4.3 Single Device
+   4.4 Device Status History
+   4.5 Alerts
+   4.6 OpenAPI Specification
+5. Pagination
+6. CSV Export
+7. Webhook Subscriptions
+   7.1 Supported Events
+   7.2 Managing Subscriptions
+   7.3 Payload Signature Verification
+   7.4 Webhook Payload Format
+8. Error Codes
+9. Integration Examples
+   9.1 Python
+   9.2 JavaScript / Node.js
+   9.3 Grafana
+   9.4 PagerDuty
+
+================================================================================
+1. OVERVIEW
+================================================================================
+The NetNeural Export API lets you pull your organisation's IoT data into
+external systems — monitoring platforms, data warehouses, dashboards, alerting
+pipelines, and custom applications.
+
+Key capabilities:
+  • All 3 data types: telemetry readings, device inventory, alert events
+  • API key authentication scoped to your organisation
+  • Keyset (cursor) pagination — handles millions of rows efficiently
+  • CSV export for spreadsheets and ETL pipelines
+  • Rate limiting with standard X-RateLimit-* headers
+  • Webhook push notifications for real-time event delivery
+
+All endpoints require:
+  - HTTPS
+  - Authorization: Bearer <api_key>
+  - GET method (POST for webhooks management)
+
+================================================================================
+2. AUTHENTICATION
+================================================================================
+The Export API uses API keys of the form:
+
+  nn_live_<40-character random string>
+
+OBTAINING AN API KEY
+  1. Go to Settings → Developer tab
+  2. Under "API Keys", click "Create API Key"
+  3. Give the key a name and select scopes (use "read" for export)
+  4. The full key is shown ONCE — copy it immediately
+  5. Keys are stored as SHA-256 hashes; the plaintext cannot be recovered
+
+USING YOUR API KEY
+  Include the key in the Authorization header:
+
+    Authorization: Bearer nn_live_AbCdEfGhIj...
+
+SCOPES
+  read    — Can call all GET export endpoints (recommended for integrations)
+  admin   — Full access including write operations
+
+KEY LIFECYCLE
+  - Keys can be revoked at any time from Settings → Developer
+  - Keys can be rotated (a new key is issued, old key immediately revoked)
+  - Optional expiry dates supported at creation
+  - last_used_at tracked per key
+
+================================================================================
+3. RATE LIMITING
+================================================================================
+Each API key has a rate limit (requests per minute) set by your subscription
+tier. The limit is enforced using a 60-second sliding window.
+
+RESPONSE HEADERS (on every export response):
+  X-RateLimit-Limit     — your key's limit (requests/minute)
+  X-RateLimit-Remaining — requests remaining in the current window
+  X-RateLimit-Reset     — Unix timestamp when the window resets
+  X-RateLimit-Window    — window size in seconds (always 60)
+
+Example:
+  X-RateLimit-Limit: 120
+  X-RateLimit-Remaining: 87
+  X-RateLimit-Reset: 1741046460
+  X-RateLimit-Window: 60
+
+WHEN RATE LIMITED (HTTP 429):
+  {
+    "error": "Rate limit exceeded. Limit: 120 requests/minute. Retry after 1741046460."
+  }
+
+Best practices:
+  - Check X-RateLimit-Remaining before bulk requests
+  - Implement exponential back-off on 429 responses
+  - Use keyset pagination (cursor) rather than polling all records repeatedly
+  - Request a limit increase: sales@netneural.ai
+
+================================================================================
+4. ENDPOINTS
+================================================================================
+
+------------------------------------------------------------------------
+4.1 TELEMETRY DATA   GET /telemetry
+------------------------------------------------------------------------
+Returns time-series sensor readings from your devices.
+
+QUERY PARAMETERS:
+  device_id     string   Comma-separated device IDs (optional)
+  field         string   Sensor type filter, e.g. "temperature" (optional)
+  from          ISO8601  Start timestamp (default: 24h ago)
+  to            ISO8601  End timestamp (default: now)
+  location_id   UUID     Filter by location (optional)
+  department_id UUID     Filter by department (optional)
+  sort          string   "asc" or "desc" (default: "desc")
+  limit         integer  Max records per page, 1–1000 (default: 100)
+  cursor        string   Keyset pagination cursor from previous response
+
+RESPONSE:
+  {
+    "data": [
+      {
+        "id": "uuid",
+        "device_id": "uuid",
+        "device_name": "Temperature Sensor 1",
+        "timestamp": "2026-03-03T10:00:00Z",
+        "field": "temperature",
+        "value": 22.4,
+        "unit": "°C",
+        "quality": "good"
+      }
+    ],
+    "pagination": {
+      "total": 5280,
+      "limit": 100,
+      "next_cursor": "eyJ0IjoiMjAyNi0wMy0wM1QwOTowMDowMFoiLCJpZCI6InV1aWQifQ=="
+    }
+  }
+
+EXAMPLE:
+  curl -H "Authorization: Bearer nn_live_..." \
+    "https://.../export/telemetry?device_id=abc&field=temperature&limit=500"
+
+------------------------------------------------------------------------
+4.2 DEVICE INVENTORY   GET /devices
+------------------------------------------------------------------------
+Returns all devices in your organisation with their current status.
+
+QUERY PARAMETERS:
+  status        string   "online", "offline", or "warning" (optional)
+  device_type   string   Filter by device type (optional)
+  location_id   UUID     Filter by location (optional)
+  department_id UUID     Filter by department (optional)
+  limit         integer  Max per page (default: 100, max: 1000)
+  cursor        string   Pagination cursor
+
+RESPONSE:
+  {
+    "data": [
+      {
+        "id": "uuid",
+        "name": "Freezer Monitor A",
+        "device_type": "temperature_sensor",
+        "model": "TMP-200",
+        "serial_number": "SN-001234",
+        "status": "online",
+        "last_seen": "2026-03-03T10:01:00Z",
+        "battery_level": 87,
+        "signal_strength": -65,
+        "firmware_version": "2.1.0",
+        "location": "Building A - Floor 2",
+        "department": "Facilities",
+        "metadata": {},
+        "created_at": "2025-11-01T08:00:00Z"
+      }
+    ],
+    "pagination": { "total": 142, "limit": 100, "next_cursor": null }
+  }
+
+CSV EXPORT:
+  curl -H "Authorization: Bearer nn_live_..." \
+    -H "Accept: text/csv" \
+    "https://.../export/devices" -o devices.csv
+
+------------------------------------------------------------------------
+4.3 SINGLE DEVICE   GET /devices/:id
+------------------------------------------------------------------------
+Returns detailed information for one device.
+
+  GET /export/devices/550e8400-e29b-41d4-a716-446655440000
+
+RESPONSE:
+  { "data": { ...same fields as device inventory + updated_at... } }
+
+------------------------------------------------------------------------
+4.4 DEVICE STATUS HISTORY   GET /devices/:id/status-history
+------------------------------------------------------------------------
+Returns the connection_state / status / online telemetry events for
+a specific device, useful for uptime analysis.
+
+QUERY PARAMETERS:
+  limit   integer  Max records (default: 100, max: 1000)
+  cursor  string   Pagination cursor
+
+  GET /export/devices/550e8400.../status-history?limit=200
+
+------------------------------------------------------------------------
+4.5 ALERTS   GET /alerts
+------------------------------------------------------------------------
+Returns alert events from your organisation.
+
+QUERY PARAMETERS:
+  severity    string   "low", "medium", "high", or "critical"
+  resolved    boolean  "true" or "false"
+  device_id   UUID     Filter by device
+  type        string   Alert type filter
+  from        ISO8601  Start timestamp
+  to          ISO8601  End timestamp
+  limit       integer  Max per page (default: 100, max: 1000)
+  cursor      string   Pagination cursor
+
+RESPONSE:
+  {
+    "data": [
+      {
+        "id": "uuid",
+        "type": "high_temperature",
+        "severity": "critical",
+        "title": "Temperature threshold exceeded",
+        "message": "Device reading 45°C, threshold is 30°C",
+        "device_id": "uuid",
+        "device_name": "Freezer Monitor A",
+        "is_resolved": false,
+        "resolved_at": null,
+        "created_at": "2026-03-03T09:45:00Z"
+      }
+    ],
+    "pagination": { "total": 18, "limit": 100, "next_cursor": null }
+  }
+
+CSV EXPORT:
+  curl -H "Authorization: Bearer nn_live_..." \
+    -H "Accept: text/csv" \
+    "https://.../export/alerts?severity=critical&resolved=false" -o alerts.csv
+
+------------------------------------------------------------------------
+4.6 OPENAPI SPECIFICATION   GET /openapi  or  GET /openapi.json
+------------------------------------------------------------------------
+Interactive API documentation — no authentication required.
+
+  • /export/openapi         — Swagger UI (browser, try-it-out)
+  • /export/openapi.json    — Machine-readable OpenAPI 3.0 spec
+
+Use the JSON spec to:
+  - Auto-generate client SDKs (openapi-generator)
+  - Import into Postman / Insomnia
+  - Set up automated API contract testing
+
+================================================================================
+5. PAGINATION
+================================================================================
+All collection endpoints use keyset (cursor) pagination for efficiency:
+
+  1. First request — no cursor:
+     GET /export/telemetry?limit=100
+
+  2. Response includes next_cursor if more records exist:
+     { "data": [...], "pagination": { "total": 5000, "limit": 100,
+       "next_cursor": "eyJ0IjoiMjAyNi0wM..." } }
+
+  3. Next page — pass the cursor:
+     GET /export/telemetry?limit=100&cursor=eyJ0IjoiMjAyNi0wM...
+
+  4. Repeat until next_cursor is null (last page)
+
+IMPORTANT:
+  - Cursors are opaque base64 strings — do not parse or construct them
+  - Cursors become invalid if the underlying data changes significantly
+  - For large exports, run at off-peak hours and cache locally
+
+================================================================================
+6. CSV EXPORT
+================================================================================
+Any collection endpoint supports CSV format:
+
+  curl -H "Authorization: Bearer nn_live_..." \
+    -H "Accept: text/csv" \
+    "https://.../export/telemetry?from=2026-03-01" -o march-telemetry.csv
+
+CSV fields per endpoint:
+  telemetry:    id, device_id, device_name, timestamp, field, value, unit, quality
+  devices:      id, name, device_type, status, last_seen, location, firmware_version
+  alerts:       id, type, severity, title, device_name, is_resolved, created_at
+
+CSV notes:
+  - UTF-8 encoded, comma-separated
+  - Values with commas or quotes are properly escaped with double-quoting
+  - Headers are included in the first row
+  - Pagination applies — loop with cursor to export all records
+
+================================================================================
+7. WEBHOOK SUBSCRIPTIONS
+================================================================================
+Webhooks deliver real-time event notifications to your HTTPS endpoint
+as JSON POST requests, signed with HMAC-SHA256.
+
+You can manage subscriptions in Settings → Developer → Webhook Subscriptions
+or via the API.
+
+------------------------------------------------------------------------
+7.1 SUPPORTED EVENTS
+------------------------------------------------------------------------
+  alert.created    — A new alert was triggered on any device
+  alert.resolved   — An alert was marked as resolved
+  device.online    — A device came online
+  device.offline   — A device went offline
+  device.warning   — A device entered a warning state
+
+------------------------------------------------------------------------
+7.2 MANAGING SUBSCRIPTIONS (API)
+------------------------------------------------------------------------
+All webhook management routes require your session JWT (user login),
+not an API key. Use the dashboard or the following endpoints:
+
+LIST SUBSCRIPTIONS:
+  GET /functions/v1/webhook-subscriptions?organization_id=<org_id>
+  Headers: Authorization: Bearer <session_jwt>
+
+CREATE SUBSCRIPTION:
+  POST /functions/v1/webhook-subscriptions
+  Headers: Authorization: Bearer <session_jwt>
+           Content-Type: application/json
+  Body:
+  {
+    "organization_id": "your-org-id",
+    "name": "PagerDuty Alerts Webhook",
+    "url": "https://events.pagerduty.com/integration/...",
+    "event_types": ["alert.created", "alert.resolved"]
+  }
+
+  Response includes the signing "secret" — SAVE THIS, it is shown only once.
+
+UPDATE SUBSCRIPTION:
+  PATCH /functions/v1/webhook-subscriptions?id=<sub_id>
+  Body: { "is_active": false }          (pause delivery)
+  Body: { "event_types": [...] }        (change subscribed events)
+  Body: { "url": "https://..." }        (update endpoint URL)
+
+DELETE SUBSCRIPTION:
+  DELETE /functions/v1/webhook-subscriptions?id=<sub_id>
+
+SEND TEST PING:
+  POST /functions/v1/webhook-subscriptions?id=<sub_id>&action=test
+
+------------------------------------------------------------------------
+7.3 PAYLOAD SIGNATURE VERIFICATION
+------------------------------------------------------------------------
+Every webhook request includes an HMAC-SHA256 signature in the header:
+
+  X-NetNeural-Signature: sha256=<hex_digest>
+
+Use the signing secret (returned at creation) to verify:
+
+PYTHON:
+  import hmac, hashlib
+
+  def verify_signature(secret: str, raw_body: bytes, signature_header: str) -> bool:
+      expected = 'sha256=' + hmac.new(
+          secret.encode(), raw_body, hashlib.sha256
+      ).hexdigest()
+      return hmac.compare_digest(expected, signature_header)
+
+NODE.JS:
+  const crypto = require('crypto')
+
+  function verifySignature(secret, rawBody, signatureHeader) {
+    const expected = 'sha256=' + crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('hex')
+    return crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signatureHeader)
+    )
+  }
+
+IMPORTANT:
+  - Always verify signatures before processing payloads
+  - Use constant-time comparison (compare_digest / timingSafeEqual) to prevent
+    timing attacks
+  - Validate the body BEFORE parsing JSON
+
+------------------------------------------------------------------------
+7.4 WEBHOOK PAYLOAD FORMAT
+------------------------------------------------------------------------
+All webhook events follow this envelope format:
+
+  {
+    "event": "alert.created",
+    "timestamp": "2026-03-03T10:05:00.000Z",
+    "data": {
+      ... event-specific fields ...
+    }
+  }
+
+alert.created / alert.resolved data:
+  {
+    "id": "uuid",
+    "alert_type": "high_temperature",
+    "severity": "critical",
+    "title": "Temperature threshold exceeded",
+    "message": "Sensor reading 45°C, threshold is 30°C",
+    "device_id": "uuid",
+    "device_name": "Freezer Monitor A",
+    "is_resolved": false,
+    "created_at": "2026-03-03T10:05:00Z"
+  }
+
+Additional headers on every webhook request:
+  Content-Type:              application/json
+  X-NetNeural-Event:         alert.created
+  X-NetNeural-Signature:     sha256=...
+  X-NetNeural-Delivery:      <unique-delivery-uuid>
+  User-Agent:                NetNeural-Webhooks/1.0
+
+RETRY POLICY:
+  - 10-second timeout per delivery attempt
+  - Failed deliveries are logged but NOT automatically retried currently
+  - Delivery log visible in Settings → Developer → Webhook Subscriptions (detail view)
+  - failure_count tracked per subscription; use this to detect broken endpoints
+
+================================================================================
+8. ERROR CODES
+================================================================================
+  200 OK           — Success
+  400 Bad Request  — Invalid parameter (e.g. invalid cursor, missing required field)
+  401 Unauthorized — Missing/invalid API key, expired key, or revoked key
+  403 Forbidden    — Key does not have required scope for this operation
+  404 Not Found    — Resource not found (device ID doesn't exist or not in your org)
+  405 Method Not Allowed — Use GET for all export endpoints
+  429 Too Many Requests  — Rate limit exceeded (see X-RateLimit-Reset header)
+  500 Internal Server Error — Unexpected server error; retry with exponential back-off
+
+Error response format:
+  { "error": "Human-readable error message" }
+
+================================================================================
+9. INTEGRATION EXAMPLES
+================================================================================
+
+------------------------------------------------------------------------
+9.1 PYTHON — Export all critical alerts to CSV
+------------------------------------------------------------------------
+  import requests
+  import time
+
+  API_KEY = "nn_live_..."
+  BASE_URL = "https://[project].supabase.co/functions/v1/export"
+  HEADERS = {"Authorization": f"Bearer {API_KEY}", "Accept": "text/csv"}
+
+  def export_critical_alerts():
+      cursor = None
+      with open("critical_alerts.csv", "w") as f:
+          first = True
+          while True:
+              params = {"severity": "critical", "limit": 1000}
+              if cursor:
+                  params["cursor"] = cursor
+
+              r = requests.get(f"{BASE_URL}/alerts", headers=HEADERS, params=params)
+              if r.status_code == 429:
+                  retry_at = int(r.headers.get("X-RateLimit-Reset", time.time() + 60))
+                  time.sleep(max(0, retry_at - time.time()))
+                  continue
+
+              r.raise_for_status()
+              lines = r.text.splitlines()
+              if first:
+                  f.write(r.text)
+                  first = False
+              else:
+                  f.write("\n" + "\n".join(lines[1:]))  # skip header row
+
+              # For JSON pagination cursor — use JSON endpoint for cursor logic
+              break
+
+  export_critical_alerts()
+
+------------------------------------------------------------------------
+9.2 JAVASCRIPT / NODE.JS — Stream all telemetry with pagination
+------------------------------------------------------------------------
+  const BASE = 'https://[project].supabase.co/functions/v1/export'
+  const KEY  = 'nn_live_...'
+
+  async function* streamTelemetry(deviceId, from) {
+    let cursor = null
+    do {
+      const params = new URLSearchParams({ device_id: deviceId, from, limit: '1000' })
+      if (cursor) params.set('cursor', cursor)
+
+      const res = await fetch(`${BASE}/telemetry?${params}`, {
+        headers: { Authorization: `Bearer ${KEY}` }
+      })
+
+      if (res.status === 429) {
+        const resetAt = parseInt(res.headers.get('X-RateLimit-Reset'))
+        await new Promise(r => setTimeout(r, (resetAt * 1000) - Date.now() + 100))
+        continue
+      }
+
+      const { data, pagination } = await res.json()
+      yield* data
+      cursor = pagination.next_cursor
+    } while (cursor)
+  }
+
+  for await (const reading of streamTelemetry('device-uuid', '2026-03-01')) {
+    console.log(reading.timestamp, reading.field, reading.value)
+  }
+
+------------------------------------------------------------------------
+9.3 GRAFANA — JSON datasource for telemetry
+------------------------------------------------------------------------
+  Use the Infinity datasource plugin (or JSON API plugin):
+
+  URL:    https://[project].supabase.co/functions/v1/export/telemetry
+  Method: GET
+  Headers:
+    Authorization: Bearer nn_live_...
+  Query params:
+    device_id: ${device_id}     (Grafana variable)
+    field:     temperature
+    from:      ${__from:date:iso}
+    to:        ${__to:date:iso}
+    limit:     1000
+
+  Map response:
+    $.data[*].timestamp → time
+    $.data[*].value     → value
+
+------------------------------------------------------------------------
+9.4 PAGERDUTY — Webhook integration for alert.created
+------------------------------------------------------------------------
+  1. In PagerDuty: Create a new "Generic Events API V2" integration
+     Copy the "Integration URL" (https://events.pagerduty.com/integration/...)
+
+  2. In NetNeural Settings → Developer → Webhook Subscriptions:
+     Click "Add Webhook"
+     URL:    https://events.pagerduty.com/integration/...
+     Events: alert.created
+
+  3. Create a transformation function or middleware that converts the
+     NetNeural webhook payload to PagerDuty Events API v2 format:
+
+     NetNeural payload:
+       { "event": "alert.created", "data": { "severity": "critical", "title": "..." } }
+
+     PagerDuty Events API v2:
+       {
+         "routing_key":  "<integration_key>",
+         "event_action": "trigger",
+         "payload": {
+           "summary":   data.title,
+           "severity":  data.severity === "critical" ? "critical" : "warning",
+           "source":    data.device_name,
+           "timestamp": data.created_at
+         },
+         "dedup_key": data.id
+       }
+
+     Alternatively, wire a Zapier, n8n, or Make.com workflow between
+     the NetNeural webhook and PagerDuty.
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+© 2026 NetNeural. Platform Engineering.
+Document: EXPORT_API_GUIDE.txt
+API Version: 1.0
+Last Updated: 2026-03-03
+Related: API_DOCUMENTATION.txt, INTEGRATIONS_GUIDE.txt
+Interactive Docs: /functions/v1/export/openapi
+================================================================================

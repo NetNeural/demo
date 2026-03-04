@@ -22,6 +22,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Base URL where public/docs/ files are served (GitHub Pages static export)
+const DOCS_BASE_URL = 'https://sentinel.netneural.ai/docs'
+
+// Map keyword patterns to documentation files
+const DOC_ROUTING: Array<{ keywords: RegExp; file: string }> = [
+  { keywords: /api|endpoint|rest|curl|rate.?limit|authentication.*api|api.?key|webhook.*api|export.?api/i, file: 'API_DOCUMENTATION.txt' },
+  { keywords: /export|webhook|hmac|pagination|csv|python.*export|grafana|pagerduty/i, file: 'EXPORT_API_GUIDE.txt' },
+  { keywords: /integrat|mqtt|golioth|slack.*notif|azure.?iot|aws.?iot|coap|netneural.?link/i, file: 'INTEGRATIONS_GUIDE.txt' },
+  { keywords: /admin|role|member|owner|permission|sub.?org|billing|subscription|invite|reseller/i, file: 'ADMINISTRATOR_GUIDE.txt' },
+  { keywords: /error|broken|not.?work|troubleshoot|fail|problem|issue|can't|cannot|wrong|bug/i, file: 'troubleshooting.txt' },
+  { keywords: /device|sensor|dashboard|alert|threshold|monitoring|getting.?start|quick.?start|login|setup/i, file: 'USER_QUICK_START.txt' },
+]
+
+async function fetchRelevantDoc(message: string): Promise<string | null> {
+  const match = DOC_ROUTING.find(r => r.keywords.test(message))
+  if (!match) return null
+  try {
+    const res = await fetch(`${DOCS_BASE_URL}/${match.file}`, { signal: AbortSignal.timeout(4000) })
+    if (!res.ok) return null
+    const text = await res.text()
+    // Truncate to ~15 000 chars (~4 000 tokens) to stay within context budget
+    return text.length > 15000 ? text.slice(0, 15000) + '\n[...truncated...]' : text
+  } catch {
+    return null
+  }
+}
+
 const MERCURY_SYSTEM_PROMPT = `You are Mercury, the AI support assistant for NetNeural — an enterprise IoT monitoring and management platform.
 
 You help users with:
@@ -229,6 +256,12 @@ serve(async (req) => {
         content: m.content,
       }))
 
+    // Fetch relevant documentation for this query (RAG-lite)
+    const docContext = await fetchRelevantDoc(userMessage)
+    const docMessage = docContext
+      ? { role: 'system' as const, content: `Relevant NetNeural documentation (use this as your primary source of truth for answering the user's question):\n\n${docContext}` }
+      : null
+
     // Call OpenAI
     let mercuryResponse = ''
     if (openaiKey) {
@@ -243,6 +276,7 @@ serve(async (req) => {
             model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: MERCURY_SYSTEM_PROMPT },
+              ...(docMessage ? [docMessage] : []),
               ...historyMessages,
             ],
             temperature: 0.7,
