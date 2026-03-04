@@ -5,6 +5,9 @@ import * as Sentry from '@sentry/nextjs'
 
 export function SentryInit() {
   useEffect(() => {
+    // Skip Sentry init entirely when no DSN is configured
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return
+
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 

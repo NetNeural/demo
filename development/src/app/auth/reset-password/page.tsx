@@ -45,6 +45,11 @@ export default function ResetPasswordPage() {
   const [resendEmail, setResendEmail] = useState('')
   const [resendSent, setResendSent] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaVerifying, setMfaVerifying] = useState(false)
+  const [mfaError, setMfaError] = useState('')
   const router = useRouter()
 
   // Supabase delivers the user here via a recovery link.
@@ -60,8 +65,25 @@ export default function ResetPasswordPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
-        setHasSession(true)
-        setChecking(false)
+        // Check if MFA is enrolled — if so, we need AAL2 before updateUser
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+          if (data && data.nextLevel === 'aal2' && data.currentLevel === 'aal1') {
+            // MFA is enrolled; get the TOTP factor ID
+            supabase.auth.mfa.listFactors().then(({ data: factors }) => {
+              const totp = factors?.totp?.[0]
+              if (totp) {
+                setMfaFactorId(totp.id)
+                setMfaRequired(true)
+              }
+              setHasSession(true)
+              setChecking(false)
+            })
+          } else {
+            setHasSession(true)
+            setChecking(false)
+          }
+        })
+        return
       }
     })
 
@@ -151,6 +173,39 @@ export default function ResetPasswordPage() {
     }
   }, [])
 
+  // Handle MFA verification
+  const handleMfaVerify = async () => {
+    if (!mfaFactorId || !mfaCode) return
+    setMfaVerifying(true)
+    setMfaError('')
+    try {
+      const supabase = createClient()
+      const { data: challenge, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId: mfaFactorId })
+      if (challengeError) {
+        setMfaError(challengeError.message)
+        return
+      }
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaCode,
+      })
+      if (verifyError) {
+        setMfaError(verifyError.message)
+        return
+      }
+      // AAL2 achieved — clear MFA requirement
+      setMfaRequired(false)
+      setMfaCode('')
+      setError('')
+    } catch (err) {
+      setMfaError('Failed to verify authenticator code. Please try again.')
+    } finally {
+      setMfaVerifying(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -173,11 +228,34 @@ export default function ResetPasswordPage() {
       setIsSubmitting(true)
       const supabase = createClient()
 
+      // If MFA is required but not yet verified, block the update
+      if (mfaRequired && mfaFactorId) {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aalData?.currentLevel !== 'aal2') {
+          setError('Please verify your authenticator code first.')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       })
 
       if (updateError) {
+        // Handle AAL2 requirement that we may not have caught earlier
+        if (updateError.message?.includes('AAL2')) {
+          const supabase2 = createClient()
+          const { data: factors } = await supabase2.auth.mfa.listFactors()
+          const totp = factors?.totp?.[0]
+          if (totp) {
+            setMfaFactorId(totp.id)
+            setMfaRequired(true)
+            setError('Your account has multi-factor authentication enabled. Please enter your authenticator code below.')
+            setIsSubmitting(false)
+            return
+          }
+        }
         throw updateError
       }
 
@@ -370,6 +448,53 @@ export default function ResetPasswordPage() {
         </CardHeader>
 
         <CardContent>
+          {/* MFA verification step — shown when account has MFA enrolled */}
+          {mfaRequired && mfaFactorId && (
+            <div className="mb-6 space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Multi-Factor Authentication Required
+                </span>
+              </div>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                Your account has MFA enabled. Enter the 6-digit code from your
+                authenticator app to continue.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={mfaCode}
+                  onChange={(e) =>
+                    setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  disabled={mfaVerifying}
+                  className="font-mono tracking-widest"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  onClick={handleMfaVerify}
+                  disabled={mfaVerifying || mfaCode.length !== 6}
+                  size="default"
+                >
+                  {mfaVerifying ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Verify'
+                  )}
+                </Button>
+              </div>
+              {mfaError && (
+                <p className="text-xs text-red-600 dark:text-red-400">{mfaError}</p>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -521,7 +646,7 @@ export default function ResetPasswordPage() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting || mfaRequired}>
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
