@@ -139,13 +139,15 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // Check if user is super admin
+  // Check if user is platform admin (super_admin or NetNeural org owner)
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
   const { data: profile } = await db
     .from('users')
     .select('role, organization_id, full_name')
     .eq('id', user.id)
     .single()
-  const isSuperAdmin = profile?.role === 'super_admin'
+  const isSuperAdmin = profile?.role === 'super_admin' ||
+    (profile?.role === 'org_owner' && profile?.organization_id === NETNEURAL_ORG_ID)
   const orgId = profile?.organization_id || null
   const displayName = profile?.full_name || user.email?.split('@')[0] || 'User'
 
@@ -359,7 +361,7 @@ serve(async (req) => {
 
   // ─── clock_in ─────────────────────────────────────────────────────
   if (action === 'clock_in') {
-    if (!isSuperAdmin) return err('Super admin required', 403)
+    if (!isSuperAdmin) return err('Platform admin required', 403)
 
     // End any existing open shift for this admin
     await db
@@ -379,7 +381,7 @@ serve(async (req) => {
 
   // ─── clock_out ────────────────────────────────────────────────────
   if (action === 'clock_out') {
-    if (!isSuperAdmin) return err('Super admin required', 403)
+    if (!isSuperAdmin) return err('Platform admin required', 403)
 
     const { data: shift } = await db
       .from('admin_support_shifts')

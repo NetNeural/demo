@@ -84,8 +84,8 @@ export default createEdgeFunction(
   async ({ req, userContext }) => {
     const user = userContext!
 
-    if (!user.isSuperAdmin) {
-      throw new DatabaseError('Super admin access required', 403)
+    if (!user.isPlatformAdmin) {
+      throw new DatabaseError('Platform admin access required', 403)
     }
 
     if (req.method !== 'POST') {

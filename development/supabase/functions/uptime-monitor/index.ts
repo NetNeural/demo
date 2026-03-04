@@ -8,11 +8,13 @@
 //         Inserts results into uptime_checks table; alerts on new downtime
 //
 // GET    — returns current status per service (last check per service)
-//          authenticated: super_admin only
+//          authenticated: platform admin (super_admin or NetNeural org owner)
 // ===========================================================================
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+
+const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,10 +65,12 @@ serve(async (req) => {
       }
       const { data: profile } = await serviceClient
         .from('users')
-        .select('role')
+        .select('role, organization_id')
         .eq('id', user.id)
         .single()
-      if (profile?.role !== 'super_admin') {
+      const isPlAdmin = profile?.role === 'super_admin' ||
+        (profile?.role === 'org_owner' && profile?.organization_id === NETNEURAL_ORG_ID)
+      if (!isPlAdmin) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -177,8 +181,10 @@ serve(async (req) => {
       })
     }
 
-    const { data: profile } = await serviceClient.from('users').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'super_admin') {
+    const { data: profile } = await serviceClient.from('users').select('role, organization_id').eq('id', user.id).single()
+    const isPlAdmin = profile?.role === 'super_admin' ||
+      (profile?.role === 'org_owner' && profile?.organization_id === NETNEURAL_ORG_ID)
+    if (!isPlAdmin) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import {
   CheckCircle,
   Circle,
@@ -218,7 +219,7 @@ const SEVERITY_COLORS = {
 
 export default function SecurityAuditPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
 
   const allIds = AUDIT_SECTIONS.flatMap(s => s.items.map(i => i.id))
   const [checked, setChecked] = useState<Set<string>>(new Set())

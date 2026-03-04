@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import {
   AlertTriangle,
   ArrowRight,
@@ -182,7 +183,7 @@ const ALL_SECTIONS = [...PRE_LAUNCH, ...DNS_CUTOVER, ...SMOKE_TEST, ...POST_LAUN
 
 export default function RunbookPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   // Persist to localStorage

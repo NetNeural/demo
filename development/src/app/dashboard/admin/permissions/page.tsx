@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import {
   Shield,
@@ -616,7 +617,7 @@ function PermissionMatrix({
 
 export default function PermissionsPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
 
   const [overrides, setOverrides] = useState<Record<string, Record<AllRole, AccessLevel>>>({})
   const [originalOverrides, setOriginalOverrides] = useState<Record<string, Record<AllRole, AccessLevel>>>({})

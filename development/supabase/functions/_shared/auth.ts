@@ -5,11 +5,17 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import type { Database } from './database.ts'
 
+/** NetNeural platform org — owners get platform-admin rights */
+const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
 export interface UserContext {
   userId: string
   organizationId: string | null
   role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
+  /** Platform admin = super_admin OR NetNeural org owner.
+   *  Has admin feature access but NOT organic cross-org access. */
+  isPlatformAdmin: boolean
   email: string
 }
 
@@ -133,11 +139,13 @@ export async function getUserContext(req: Request): Promise<UserContext> {
               fallbackOrgId = membership.organization_id
             }
           }
+          const isSA = profile.role === 'super_admin'
           return {
             userId: payload.sub,
             organizationId: fallbackOrgId,
             role: profile.role as UserContext['role'],
-            isSuperAdmin: profile.role === 'super_admin',
+            isSuperAdmin: isSA,
+            isPlatformAdmin: isSA || (profile.role === 'org_owner' && fallbackOrgId === NETNEURAL_ORG_ID),
             email: profile.email || payload.email || '',
           }
         }
@@ -193,6 +201,7 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     organizationId: resolvedOrgId,
     role: userProfile.role as UserContext['role'],
     isSuperAdmin: userProfile.role === 'super_admin',
+    isPlatformAdmin: userProfile.role === 'super_admin' || (userProfile.role === 'org_owner' && resolvedOrgId === NETNEURAL_ORG_ID),
     email: userProfile.email || user.email || '',
   }
 }

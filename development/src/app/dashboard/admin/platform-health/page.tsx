@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import {
   Activity,
@@ -58,7 +59,7 @@ function StatusIcon({ status }: { status: HealthCheck['status'] }) {
 
 export default function PlatformHealthPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
   const [checks, setChecks] = useState<HealthCheck[]>([])
   const [stats, setStats] = useState<PlatformStats | null>(null)
   const [isChecking, setIsChecking] = useState(false)

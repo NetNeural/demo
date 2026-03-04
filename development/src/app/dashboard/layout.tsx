@@ -41,7 +41,7 @@ import {
   KeyRound,
   Code,
 } from 'lucide-react'
-import { canAccessSupport } from '@/lib/permissions'
+import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
 import { Badge } from '@/components/ui/badge'
 
@@ -58,6 +58,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isSuperAdmin = user?.isSuperAdmin || false
+  const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
 
   // SOC 2 CC6.2: idle session timeout
   const { showWarning, secondsRemaining, extendSession, signOutNow } = useSessionTimeout()
@@ -108,7 +109,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: Building2,
     },
     ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
-      (isSuperAdmin || userRole === 'owner' || userRole === 'billing')
+      (isSuperAdmin || isPlAdmin || userRole === 'owner' || userRole === 'billing')
       ? [
           {
             href: '/dashboard/billing',
@@ -255,6 +256,25 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
                   </svg>
                   <span className="hidden sm:inline">Super Admin</span>
+                </Badge>
+              ) : isPlAdmin ? (
+                <Badge
+                  className="flex items-center gap-1 bg-purple-600 text-white hover:bg-purple-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                  </svg>
+                  <span className="hidden sm:inline">Platform Admin</span>
                 </Badge>
               ) : currentOrganization?.role ? (
                 (() => {

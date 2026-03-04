@@ -88,8 +88,8 @@ export function createEdgeFunction(
           ctx.userContext = await getUserContext(req)
           ctx.supabase = createAuthenticatedClient(req)
 
-          if (allowSuperAdminOnly && !ctx.userContext.isSuperAdmin) {
-            return createErrorResponse('Super admin access required', 403)
+          if (allowSuperAdminOnly && !ctx.userContext.isPlatformAdmin) {
+            return createErrorResponse('Platform admin access required', 403)
           }
         } catch (authError) {
           console.error('Authentication error:', authError)

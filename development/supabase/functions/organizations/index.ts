@@ -491,11 +491,11 @@ export default createEdgeFunction(
           )
         }
 
-        // Only super_admins can set reseller/enterprise tiers
+        // Only platform admins can set reseller/enterprise tiers
         if (
           subscriptionTier &&
           ['reseller', 'enterprise'].includes(subscriptionTier) &&
-          !userContext.isSuperAdmin
+          !userContext.isPlatformAdmin
         ) {
           throw new DatabaseError(
             'Only platform administrators can create reseller or enterprise organizations',

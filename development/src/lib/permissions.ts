@@ -1,10 +1,45 @@
 import { UserProfile } from './auth'
 
 /**
+ * The NetNeural platform org ID. Owners of this org get platform-admin
+ * privileges (same as super_admin) EXCEPT organic cross-org access.
+ * They can only access other orgs through the Cross-Org / request-access feature.
+ */
+export const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
+/**
+ * Platform admin = super_admin OR an owner of the NetNeural org.
+ * Grants access to all admin features (customers, revenue, analytics,
+ * global settings, etc.) but does NOT grant organic cross-org data access.
+ *
+ * @param orgRole  The user's role within the *current* organization context
+ *                 (from OrganizationContext.userRole — 'owner' | 'admin' | …).
+ *                 If omitted, falls back to checking UserProfile.role.
+ */
+export function isPlatformAdmin(
+  user: UserProfile | null,
+  currentOrgId?: string | null,
+  orgRole?: string | null
+): boolean {
+  if (!user) return false
+  if (user.isSuperAdmin) return true
+  // NetNeural org owner check — supports both membership role ('owner')
+  // and global role ('org_owner')
+  const isNetNeuralOrg =
+    currentOrgId === NETNEURAL_ORG_ID ||
+    user.organizationId === NETNEURAL_ORG_ID
+  const isOwnerRole =
+    orgRole === 'owner' || user.role === 'org_owner'
+  return isNetNeuralOrg && isOwnerRole
+}
+
+/**
  * Permission helpers for role-based access control
  */
 
 // Organization Management
+// NOTE: canViewAllOrganizations is for organic cross-org listing.
+// It stays super_admin-only. Platform admins use Cross-Org feature instead.
 export function canViewAllOrganizations(user: UserProfile | null): boolean {
   return user?.isSuperAdmin || false
 }
@@ -31,8 +66,12 @@ export function canManageOrganization(
   return user.isSuperAdmin || user.organizationId === orgId
 }
 
-export function canDeleteOrganization(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+export function canDeleteOrganization(
+  user: UserProfile | null,
+  currentOrgId?: string | null,
+  orgRole?: string | null
+): boolean {
+  return isPlatformAdmin(user, currentOrgId, orgRole)
 }
 
 // Reseller Management
@@ -59,6 +98,8 @@ export function canViewChildOrganizations(
 }
 
 // User Management
+// NOTE: canViewAllUsers is for cross-org user listing.
+// It stays super_admin-only. Platform admins see their own org users.
 export function canViewAllUsers(user: UserProfile | null): boolean {
   return user?.isSuperAdmin || false
 }
@@ -112,8 +153,12 @@ export function canDeleteDevice(user: UserProfile | null): boolean {
 }
 
 // Analytics & Reporting
-export function canViewPlatformAnalytics(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+export function canViewPlatformAnalytics(
+  user: UserProfile | null,
+  currentOrgId?: string | null,
+  orgRole?: string | null
+): boolean {
+  return isPlatformAdmin(user, currentOrgId, orgRole)
 }
 
 export function canViewOrganizationAnalytics(
@@ -124,8 +169,12 @@ export function canViewOrganizationAnalytics(
 }
 
 // Settings
-export function canConfigureGlobalSettings(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+export function canConfigureGlobalSettings(
+  user: UserProfile | null,
+  currentOrgId?: string | null,
+  orgRole?: string | null
+): boolean {
+  return isPlatformAdmin(user, currentOrgId, orgRole)
 }
 
 export function canConfigureOrganizationSettings(

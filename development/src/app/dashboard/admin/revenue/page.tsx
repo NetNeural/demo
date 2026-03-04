@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { RevenueSummaryCards } from '@/components/admin/RevenueSummaryCards'
@@ -60,7 +61,7 @@ export default function RevenueAdminPage() {
 function RevenuePageContent() {
   const router = useRouter()
   const { user, loading: userLoading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
 
   const [dateRange, setDateRange] = useState<DateRange>('365')
   const [loading, setLoading] = useState(true)

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import {
   Bell,
@@ -40,7 +41,7 @@ const ONBOARDING_STEPS = [
 
 export default function OnboardingPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
   const [users, setUsers] = useState<OnboardingUser[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [stats, setStats] = useState({ total: 0, stuck: 0, complete: 0 })

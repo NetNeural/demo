@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { CustomerTable } from '@/components/admin/CustomerTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import {
@@ -23,7 +24,7 @@ export default function CustomersAdminPage() {
 function CustomersPageContent() {
   const router = useRouter()
   const { user, loading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
 
   // Loading state
   if (loading) {

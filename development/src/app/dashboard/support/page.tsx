@@ -22,7 +22,7 @@ import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { canAccessSupport } from '@/lib/permissions'
+import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { toast } from 'sonner'
 
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -158,7 +158,8 @@ function SupportPageContent() {
   const isSubOrg = !!currentOrganization?.parent_organization_id
 
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
-  const canAccessPlatformTabs = isSuperAdmin
+  // Platform admins (NetNeural org owners) also get access
+  const canAccessPlatformTabs = isPlatformAdmin(user, currentOrganization?.id, userRole)
 
   const visibleTabs = tabs.filter(
     (tab) => !tab.superAdminOnly || canAccessPlatformTabs

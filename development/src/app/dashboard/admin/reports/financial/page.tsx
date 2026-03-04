@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ARAgingReport } from '@/components/admin/ARAgingReport'
@@ -58,7 +59,7 @@ export default function FinancialReportsPage() {
 function FinancialReportsContent() {
   const router = useRouter()
   const { user, loading: userLoading } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
   const supabase = getSupabase()
 
   // Tab state

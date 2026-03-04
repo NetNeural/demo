@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/contexts/UserContext'
+import { isPlatformAdmin } from '@/lib/permissions'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -103,7 +104,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ResellerApplicationsPage() {
   const supabase = createClient()
   const { user } = useUser()
-  const isSuperAdmin = user?.isSuperAdmin || false
+  const isSuperAdmin = isPlatformAdmin(user)
 
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)

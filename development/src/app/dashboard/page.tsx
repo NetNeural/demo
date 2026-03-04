@@ -21,6 +21,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { isPlatformAdmin } from '@/lib/permissions'
 import {
   Smartphone,
   Users,
@@ -55,7 +56,8 @@ export default function DashboardPage() {
   const { user } = useUser()
 
   const isSuperAdmin = user?.isSuperAdmin ?? false
-  const canManage = isSuperAdmin || isOwner || isAdmin
+  const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, currentOrganization?.role)
+  const canManage = isPlAdmin || isOwner || isAdmin
 
   if (isLoadingOrg) {
     return (
@@ -311,8 +313,8 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {/* Super Admin only */}
-                {isSuperAdmin && (
+                {/* Platform Admin (super_admin + NetNeural org owners) */}
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/admin/reseller-applications')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
@@ -323,7 +325,7 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {isSuperAdmin && (
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/admin/customers')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
@@ -334,7 +336,7 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {isSuperAdmin && (
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/admin/revenue')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
@@ -345,7 +347,7 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {isSuperAdmin && (
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/plans-pricing')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
@@ -356,7 +358,7 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {isSuperAdmin && (
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/admin/security-audit')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
@@ -367,7 +369,7 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {isSuperAdmin && (
+                {isPlAdmin && (
                   <button
                     onClick={() => router.push('/dashboard/admin/platform-health')}
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"

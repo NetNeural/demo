@@ -51,11 +51,11 @@ export default createEdgeFunction(
     const subId = url.searchParams.get('id')
     const action = url.searchParams.get('action')
 
-    const isSuperAdmin = userContext.role === 'super_admin'
+    const isPlatformAdmin = userContext.isPlatformAdmin
 
     // Verify user is admin/owner of the target org
     async function assertOrgAdmin(orgId: string) {
-      if (isSuperAdmin) return
+      if (isPlatformAdmin) return
       const { data: member } = await supabaseAdmin
         .from('organization_members')
         .select('role')

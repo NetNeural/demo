@@ -274,13 +274,15 @@ async function handleRecordAction(
     throw new Error('Missing required fields: action_type, action_category')
   }
 
-  // Check if user is super_admin (can act without org membership)
+  // Check if user is platform admin (can act without org membership)
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
   const { data: userProfile } = await supabase
     .from('users')
-    .select('role')
+    .select('role, organization_id')
     .eq('id', userId)
     .single()
-  const isSuperAdmin = userProfile?.role === 'super_admin'
+  const isSuperAdmin = userProfile?.role === 'super_admin' ||
+    (userProfile?.role === 'org_owner' && userProfile?.organization_id === NETNEURAL_ORG_ID)
 
   // Get user's organization
   const { data: orgMember, error: orgError } = await supabase
