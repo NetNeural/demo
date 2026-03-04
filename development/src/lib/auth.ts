@@ -97,18 +97,19 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     }
   }
 
-  // Regular users must have an organization
+  // Regular users without an org: return profile with null org
+  // instead of returning null (which triggers profile_load_failed signOut).
+  // The dashboard can show a "select organization" prompt.
   if (!organization) {
-    console.error('User has no organization assigned')
-    return null
+    console.warn('User has no organization assigned — returning profile with null org')
   }
 
   return {
     id: user.id,
     email: user.email || '',
     fullName: profile.full_name || null,
-    organizationId: organization.id,
-    organizationName: organization.name,
+    organizationId: organization?.id ?? null,
+    organizationName: organization?.name ?? null,
     role: (profile.role || 'viewer') as UserProfile['role'],
     isSuperAdmin,
     isPlatformAdmin,
