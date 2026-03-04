@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState, useCallback } from 'react'
 import {
   Card,
   CardContent,
@@ -8,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import {
   Smartphone,
@@ -16,9 +18,48 @@ import {
   Plug,
   TrendingUp,
   Activity,
+  UserCircle,
+  Settings,
+  Bell,
+  Cpu,
+  LogIn,
+  ShieldCheck,
 } from 'lucide-react'
 import { ResellerAgreementSection } from './ResellerAgreementSection'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { createClient } from '@/lib/supabase/client'
+
+interface AuditEntry {
+  id: string
+  action_type: string
+  action_category: string
+  resource_type: string | null
+  resource_name: string | null
+  user_email: string | null
+  status: string
+  created_at: string
+}
+
+function activityIcon(category: string, resourceType: string | null) {
+  if (resourceType === 'device' || resourceType === 'sensor') return <Cpu className="h-4 w-4" />
+  if (resourceType === 'alert') return <Bell className="h-4 w-4" />
+  if (category === 'auth') return <LogIn className="h-4 w-4" />
+  if (category === 'security') return <ShieldCheck className="h-4 w-4" />
+  if (category === 'user') return <UserCircle className="h-4 w-4" />
+  return <Settings className="h-4 w-4" />
+}
+
+function activityColor(status: string) {
+  if (status === 'failure' || status === 'error') return 'text-red-500 bg-red-50 dark:bg-red-950'
+  if (status === 'warning') return 'text-amber-500 bg-amber-50 dark:bg-amber-950'
+  return 'text-blue-500 bg-blue-50 dark:bg-blue-950'
+}
+
+function formatAction(entry: AuditEntry) {
+  const a = entry.action_type.replace(/_/g, ' ')
+  const r = entry.resource_name ? `"${entry.resource_name}"` : entry.resource_type || ''
+  return r ? `${a}: ${r}` : a
+}
 
 interface OverviewTabProps {
   organizationId: string
@@ -27,6 +68,29 @@ interface OverviewTabProps {
 export function OverviewTab({ organizationId }: OverviewTabProps) {
   const { fmt } = useDateFormatter()
   const { currentOrganization, stats, userRole } = useOrganization()
+  const supabase = createClient()
+
+  const [activities, setActivities] = useState<AuditEntry[]>([])
+  const [activityLoading, setActivityLoading] = useState(true)
+
+  const loadActivity = useCallback(async () => {
+    setActivityLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('user_audit_log')
+        .select('id, action_type, action_category, resource_type, resource_name, user_email, status, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (!error) setActivities((data || []) as AuditEntry[])
+    } catch (err) {
+      console.error('Failed to load activity:', err)
+    } finally {
+      setActivityLoading(false)
+    }
+  }, [organizationId, supabase])
+
+  useEffect(() => { loadActivity() }, [loadActivity])
 
   if (!currentOrganization) {
     return <div>No organization selected</div>
@@ -156,9 +220,38 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           <CardDescription>Latest events in your organization</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center p-8 text-muted-foreground">
-            <p className="text-sm">Activity tracking will be available soon</p>
-          </div>
+          {activityLoading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No activity recorded yet
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activities.map((entry) => (
+                <div key={entry.id} className="flex items-start gap-3 rounded-lg p-2 hover:bg-muted/50">
+                  <div className={`mt-0.5 rounded-full p-1.5 ${activityColor(entry.status)}`}>
+                    {activityIcon(entry.action_category, entry.resource_type)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium capitalize">{formatAction(entry)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.user_email ?? 'System'} &middot; {fmt.relativeTime(entry.created_at)}
+                    </p>
+                  </div>
+                  {entry.status !== 'success' && (
+                    <Badge variant={entry.status === 'failure' ? 'destructive' : 'outline'} className="shrink-0 text-[10px]">
+                      {entry.status}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

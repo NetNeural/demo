@@ -2,7 +2,10 @@
 
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useEffect, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { useEffect, useState, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 interface ActivityItem {
   id: string
@@ -21,30 +24,53 @@ interface ActivityItem {
 }
 
 export function RecentActivityCard() {
+  const supabase = createClient()
+  const { currentOrganization } = useOrganization()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        // TODO: Create audit-logs edge function to query audit_logs table
-        // audit_logs table exists with: action, resource_type, resource_id, user_id, created_at, metadata
-        // For now, show empty state until edge function is implemented
-        console.info(
-          'Activity tracking not yet implemented. Need to create audit-logs edge function.'
-        )
-        setActivities([])
-      } catch (error) {
-        console.error('Failed to fetch activities:', error)
-        // Show empty state on error instead of mock data
-        setActivities([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  const fetchActivities = useCallback(async () => {
+    if (!currentOrganization?.id) { setLoading(false); return }
+    try {
+      const { data, error } = await supabase
+        .from('user_audit_log')
+        .select('id, action_type, action_category, resource_type, resource_name, user_email, status, created_at')
+        .eq('organization_id', currentOrganization.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
 
-    fetchActivities()
-  }, [])
+      if (error) throw error
+
+      const mapped: ActivityItem[] = (data || []).map((row) => {
+        const rt = row.resource_type ?? ''
+        let type: ActivityItem['type'] = 'system_event'
+        if (rt === 'device' || rt === 'sensor') {
+          type = row.action_type.includes('creat') || row.action_type.includes('add') ? 'device_added' : 'device_updated'
+        } else if (rt === 'alert') {
+          type = row.action_type.includes('resolv') || row.action_type.includes('close') ? 'alert_resolved' : 'alert_created'
+        } else if (row.action_category === 'auth' || row.action_category === 'user') {
+          type = 'user_action'
+        }
+        const title = `${row.action_type.replace(/_/g, ' ')}${row.resource_name ? `: ${row.resource_name}` : ''}`
+        return {
+          id: row.id,
+          type,
+          title: title.charAt(0).toUpperCase() + title.slice(1),
+          description: row.resource_type ? `${row.resource_type} · ${row.status}` : row.status,
+          user: row.user_email ?? undefined,
+          timestamp: new Date(row.created_at).toLocaleString(),
+        }
+      })
+      setActivities(mapped)
+    } catch (error) {
+      console.error('Failed to fetch activities:', error)
+      setActivities([])
+    } finally {
+      setLoading(false)
+    }
+  }, [currentOrganization?.id, supabase])
+
+  useEffect(() => { fetchActivities() }, [fetchActivities])
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -92,10 +118,10 @@ export function RecentActivityCard() {
           <Button
             variant="outline"
             size="sm"
-            disabled
-            title="Activity tracking will be available soon"
+            onClick={fetchActivities}
+            title="Refresh activity"
           >
-            View Activity Log
+            Refresh
           </Button>
         </div>
       </CardHeader>
