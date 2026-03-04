@@ -21,12 +21,21 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Wand2,
+  Check,
+  X,
 } from 'lucide-react'
+import {
+  PASSWORD_REQUIREMENTS,
+  getPasswordStrength,
+  generateStrongPassword,
+} from '@/lib/password-utils'
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -115,26 +124,17 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError('')
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long')
-      return
-    }
-
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
-    // Check password strength
-    const hasUpperCase = /[A-Z]/.test(newPassword)
-    const hasLowerCase = /[a-z]/.test(newPassword)
-    const hasNumber = /[0-9]/.test(newPassword)
-    const hasSpecialChar = /[^a-zA-Z0-9\s]/.test(newPassword)
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-      setError(
-        'Password must contain uppercase, lowercase, number, and special character'
-      )
+    // Require all password rules to pass
+    const failedRules = PASSWORD_REQUIREMENTS.filter(
+      (r) => !r.test(newPassword)
+    )
+    if (failedRules.length > 0) {
+      setError(`Missing: ${failedRules.map((r) => r.label).join(', ')}`)
       return
     }
 
@@ -332,17 +332,26 @@ export default function ResetPasswordPage() {
         </CardHeader>
 
         <CardContent>
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Password must be at least 8 characters and include uppercase,
-              lowercase, numbers, and special characters.
-            </AlertDescription>
-          </Alert>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="new-password">New Password</Label>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={() => {
+                    const pw = generateStrongPassword()
+                    setNewPassword(pw)
+                    setConfirmPassword(pw)
+                    setShowPassword(true)
+                    setShowConfirmPassword(true)
+                    navigator.clipboard.writeText(pw)
+                  }}
+                >
+                  <Wand2 className="h-3 w-3" />
+                  Generate Strong Password
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="new-password"
@@ -367,41 +376,101 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
+
+              {/* Password strength meter */}
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${getPasswordStrength(newPassword).color}`}
+                        style={{
+                          width: `${(getPasswordStrength(newPassword).score / 5) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`min-w-[70px] text-right text-xs font-medium ${
+                        getPasswordStrength(newPassword).score <= 2
+                          ? 'text-red-500'
+                          : getPasswordStrength(newPassword).score <= 3
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
+                      }`}
+                    >
+                      {getPasswordStrength(newPassword).label}
+                    </span>
+                  </div>
+
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    {PASSWORD_REQUIREMENTS.map((req) => {
+                      const met = req.test(newPassword)
+                      return (
+                        <div
+                          key={req.label}
+                          className={`flex items-center gap-1.5 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}
+                        >
+                          {met ? (
+                            <Check className="h-3 w-3 flex-shrink-0" />
+                          ) : (
+                            <X className="h-3 w-3 flex-shrink-0" />
+                          )}
+                          {req.label}
+                        </div>
+                      )
+                    })}
+                    <div
+                      className={`flex items-center gap-1.5 text-xs ${newPassword.length >= 16 ? 'text-green-600' : 'text-muted-foreground'}`}
+                    >
+                      {newPassword.length >= 16 ? (
+                        <Check className="h-3 w-3 flex-shrink-0" />
+                      ) : (
+                        <X className="h-3 w-3 flex-shrink-0" />
+                      )}
+                      16+ characters (bonus)
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-
-            {/* Password strength indicators */}
-            {newPassword.length > 0 && (
-              <div className="space-y-1 text-xs">
-                <div className={newPassword.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
-                  {newPassword.length >= 8 ? '✓' : '○'} At least 8 characters
-                </div>
-                <div className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[A-Z]/.test(newPassword) ? '✓' : '○'} Uppercase letter
-                </div>
-                <div className={/[a-z]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[a-z]/.test(newPassword) ? '✓' : '○'} Lowercase letter
-                </div>
-                <div className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[0-9]/.test(newPassword) ? '✓' : '○'} Number
-                </div>
-                <div className={/[^a-zA-Z0-9\s]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[^a-zA-Z0-9\s]/.test(newPassword) ? '✓' : '○'} Special character
-                </div>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={isSubmitting}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-            )}
+              {confirmPassword && newPassword && confirmPassword !== newPassword && (
+                <p className="flex items-center gap-1 text-xs text-red-500">
+                  <X className="h-3 w-3" /> Passwords do not match
+                </p>
+              )}
+              {confirmPassword && newPassword && confirmPassword === newPassword && (
+                <p className="flex items-center gap-1 text-xs text-green-600">
+                  <Check className="h-3 w-3" /> Passwords match
+                </p>
+              )}
+            </div>
 
             {error && (
               <Alert variant="destructive">
