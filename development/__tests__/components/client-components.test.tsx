@@ -7,7 +7,7 @@ import React from 'react'
 import { render, waitFor } from '@testing-library/react'
 
 // Mock contexts
-const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' }
+const mockUser = { id: '1', email: 'test@example.com', name: 'Test User', isSuperAdmin: false }
 const mockOrg = { id: '1', name: 'Test Org' }
 
 jest.mock('@/contexts/UserContext', () => ({
@@ -21,6 +21,11 @@ jest.mock('@/contexts/OrganizationContext', () => ({
     setCurrentOrganization: jest.fn(),
     isLoading: false,
     refreshOrganizations: jest.fn(),
+    isOwner: false,
+    isAdmin: true,
+    isReseller: false,
+    canSeeResellerAlerts: true,
+    canApproveReseller: false,
     permissions: {
       canManageMembers: true,
       canManageDevices: true,
@@ -59,29 +64,86 @@ jest.mock('@/lib/auth/user-context', () => ({
   }),
 }))
 
-// Mock supabase client used by ProfileTab and SecurityTab
-jest.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    auth: {
-      getUser: async () => ({
-        data: {
-          user: { id: 'user1', email: 'admin@netneural.ai', user_metadata: {} },
-        },
-      }),
-      getSession: async () => ({
-        data: { session: { access_token: 'tok12345', expires_at: Date.now() } },
-      }),
-      updateUser: async () => ({ data: null, error: null }),
-      signInWithPassword: async () => ({ error: null }),
+// Mock edge-functions client (used by AlertsCard, SystemStatsCard, LocationsCard)
+jest.mock('@/lib/edge-functions/client', () => ({
+  edgeFunctions: {
+    alerts: {
+      list: jest.fn(() => Promise.resolve({ success: true, data: { alerts: [] } })),
     },
-    from: (table: string) => ({
-      select: (s: string) => ({
-        eq: (col: string, val: any) => ({
-          single: async () => ({ data: { full_name: 'NetNeural Admin' } }),
+    organizations: {
+      stats: jest.fn(() =>
+        Promise.resolve({
+          success: true,
+          data: {
+            totalDevices: 0, onlineDevices: 0, offlineDevices: 0,
+            activeAlerts: 0, totalOrganizations: 0, totalUsers: 0, dataPoints: 0,
+          },
+        })
+      ),
+    },
+    locations: {
+      list: jest.fn(() => Promise.resolve({ success: true, data: [] })),
+    },
+    accessRequests: {
+      list: jest.fn(() => Promise.resolve({ success: true, data: { requests: [] } })),
+    },
+  },
+}))
+// Mock @/lib/edge-functions (used by DashboardOverview — different import path)
+jest.mock('@/lib/edge-functions', () => ({
+  edgeFunctions: {
+    alerts: {
+      list: jest.fn(() => Promise.resolve({ success: true, data: { alerts: [] } })),
+    },
+    organizations: {
+      stats: jest.fn(() =>
+        Promise.resolve({
+          success: true,
+          data: {
+            totalDevices: 0, onlineDevices: 0, offlineDevices: 0,
+            activeAlerts: 0, totalOrganizations: 0, totalUsers: 0,
+          },
+        })
+      ),
+    },
+  },
+}))
+// Mock @/lib/auth fetchEdgeFunction (used by DeviceStatusCard)
+jest.mock('@/lib/auth', () => ({
+  fetchEdgeFunction: jest.fn(() => Promise.resolve({ devices: [] })),
+}))
+
+// Mock supabase client — fully chainable + thenable for any query chain
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: () => {
+    const makeChain = (): any => {
+      const chain: any = {}
+      ;[
+        'select', 'eq', 'neq', 'not', 'gt', 'gte', 'lt', 'lte',
+        'in', 'is', 'like', 'ilike', 'or', 'and', 'filter',
+        'order', 'limit', 'range', 'match',
+        'insert', 'update', 'upsert', 'delete',
+      ].forEach((m) => { chain[m] = () => chain })
+      chain.single = () => Promise.resolve({ data: { full_name: 'NetNeural Admin' }, error: null })
+      chain.then = (resolve: any, reject?: any) =>
+        Promise.resolve({ data: [], error: null }).then(resolve, reject)
+      chain.catch = (reject: any) => Promise.resolve({ data: [], error: null }).catch(reject)
+      return chain
+    }
+    return {
+      auth: {
+        getUser: async () => ({
+          data: { user: { id: 'user1', email: 'admin@netneural.ai', user_metadata: {} } },
         }),
-      }),
-    }),
-  }),
+        getSession: async () => ({
+          data: { session: { access_token: 'tok12345', expires_at: Date.now() } },
+        }),
+        updateUser: async () => ({ data: null, error: null }),
+        signInWithPassword: async () => ({ error: null }),
+      },
+      from: (_table: string) => makeChain(),
+    }
+  },
 }))
 
 jest.mock('next/navigation', () => ({
