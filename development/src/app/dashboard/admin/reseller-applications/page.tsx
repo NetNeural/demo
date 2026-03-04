@@ -459,17 +459,6 @@ function ApplicationCard({
           </p>
         )}
 
-        {app.github_issue_url && (
-          <a
-            href={app.github_issue_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-500 hover:underline"
-          >
-            GitHub Issue ↗
-          </a>
-        )}
-
         {isPending && onApprove && onReject && (
           <div className="flex gap-2 pt-1">
             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={onApprove}>
