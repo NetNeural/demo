@@ -48,6 +48,8 @@ export default function ResetPasswordPage() {
   const router = useRouter()
 
   // Supabase delivers the user here via a recovery link.
+  // With token_hash flow (preferred), the URL contains ?token_hash=XXX&type=recovery
+  // which is verified via POST (immune to email scanner prefetching).
   // With PKCE flow, the URL contains ?code=XXX which must be exchanged for a session.
   // With implicit flow (older links), the session is already in the URL hash.
   useEffect(() => {
@@ -80,9 +82,9 @@ export default function ResetPasswordPage() {
         }
       }
 
-      // Check for PKCE code in URL query params (Supabase SSR / PKCE flow)
+      // Check URL query params
       const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
+
       // Also check query string for error (some flows put it there)
       const queryError = params.get('error_code') ?? params.get('error')
       if (queryError) {
@@ -94,6 +96,30 @@ export default function ResetPasswordPage() {
         return
       }
 
+      // ── Token hash flow (preferred — POST-based, immune to email scanners) ──
+      const tokenHash = params.get('token_hash')
+      const tokenType = params.get('type')
+      if (tokenHash && tokenType === 'recovery') {
+        // Clean URL immediately so token_hash isn't visible / bookmarkable
+        window.history.replaceState({}, '', window.location.pathname)
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        })
+        if (error) {
+          setLinkExpiredError(
+            error.message ??
+              'This password reset link is invalid or has expired.'
+          )
+          setChecking(false)
+          return
+        }
+        // verifyOtp fires onAuthStateChange → PASSWORD_RECOVERY, which sets hasSession
+        return
+      }
+
+      // ── PKCE flow (Supabase SSR / PKCE code exchange) ──
+      const code = params.get('code')
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
@@ -207,7 +233,7 @@ export default function ResetPasswordPage() {
         },
         body: JSON.stringify({
           email: resendEmail.trim().toLowerCase(),
-          redirectTo: `${window.location.origin}/auth/reset-password`,
+          redirectTo: `${window.location.origin}/auth/reset-password/`,
         }),
       })
       // Always show success (edge function always returns 200)

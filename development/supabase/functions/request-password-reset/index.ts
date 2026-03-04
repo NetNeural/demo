@@ -82,14 +82,31 @@ serve(async (req) => {
     }
 
     const genData = await genRes.json()
+
+    // Strategy: instead of using action_link (which hits GoTrue's GET-based
+    // /auth/v1/verify endpoint and is vulnerable to email-scanner prefetching),
+    // we extract the hashed_token and send the user directly to our app with
+    // the token as a query param. The app then calls verifyOtp() via POST,
+    // which is immune to email scanners (they only do GET requests).
+    const hashedToken: string | undefined = genData?.hashed_token
     const actionLink: string = genData?.action_link || genData?.properties?.action_link
 
-    if (!actionLink) {
-      console.error('[request-password-reset] No action_link in response', JSON.stringify(genData))
+    if (!hashedToken && !actionLink) {
+      console.error('[request-password-reset] No hashed_token or action_link in response', JSON.stringify(genData))
       return ok()
     }
 
-    console.log(`[request-password-reset] Sending reset link to ${email}`)
+    // Build the reset URL: prefer direct token_hash approach (POST-verified,
+    // scanner-proof) with trailing slash to match Next.js trailingSlash config
+    const baseRedirect = resetRedirect.endsWith('/')
+      ? resetRedirect
+      : `${resetRedirect}/`
+
+    const resetUrl = hashedToken
+      ? `${baseRedirect}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`
+      : actionLink // Fallback to legacy action_link if no hashed_token
+
+    console.log(`[request-password-reset] Sending reset link to ${email} (mode: ${hashedToken ? 'token_hash' : 'action_link'})`)
 
     // 2. Send via Resend — no Supabase SMTP rate limits
     const emailRes = await fetch('https://api.resend.com/emails', {
@@ -111,7 +128,7 @@ serve(async (req) => {
               <p style="color:#374151;margin:0 0 16px">You requested a password reset for your NetNeural account.</p>
               <p style="color:#374151;margin:0 0 24px">Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
               <div style="text-align:center;margin-bottom:24px">
-                <a href="${actionLink}"
+                <a href="${resetUrl}"
                    style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:15px">
                   Reset Password
                 </a>

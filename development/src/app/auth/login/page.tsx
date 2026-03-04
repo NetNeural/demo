@@ -435,7 +435,7 @@ function LoginForm() {
             },
             body: JSON.stringify({
               email: trimmedEmail.toLowerCase(),
-              redirectTo: `${window.location.origin}/auth/reset-password`,
+              redirectTo: `${window.location.origin}/auth/reset-password/`,
             }),
           }
         )

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
-// Ensure this runs on the client side only
-if (typeof window !== 'undefined') {
+// Ensure this runs on the client side only — skip entirely if no DSN configured
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
