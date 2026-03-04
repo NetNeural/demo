@@ -14,8 +14,8 @@ import {
   Shield,
   ShieldCheck,
   KeyRound,
-  UserCheck,
   Bot,
+  Rocket,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -39,6 +39,7 @@ import DocumentationTab from './components/DocumentationTab'
 import { PlatformHealthPage } from '@/app/dashboard/admin/platform-health/page'
 import { SecurityAuditPage } from '@/app/dashboard/admin/security-audit/page'
 import { PermissionsPage } from '@/app/dashboard/admin/permissions/page'
+import RunbookPage from '@/app/dashboard/admin/go-live-runbook/page'
 
 const tabs = [
   // Org-admin tabs — visible to all org admins
@@ -193,6 +194,7 @@ function SupportPageContent() {
             documentation: 'resources',
             troubleshooting: 'platform', 'system-health': 'platform', tests: 'platform',
             'platform-health': 'platform', 'security-audit': 'platform', permissions: 'platform',
+            'go-live-runbook': 'platform',
           }
           return groupMap[activeTab] || 'customer-support'
         })()}
@@ -308,6 +310,10 @@ function SupportPageContent() {
                   <KeyRound className="h-4 w-4" />
                   Permissions
                 </TabsTrigger>
+                <TabsTrigger value="go-live-runbook" className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Go-Live Runbook
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="troubleshooting" className="mt-6">
                 <TroubleshootingTab key={orgId} organizationId={orgId} />
@@ -330,6 +336,9 @@ function SupportPageContent() {
               </TabsContent>
               <TabsContent value="permissions" className="mt-6">
                 <PermissionsPage />
+              </TabsContent>
+              <TabsContent value="go-live-runbook" className="mt-6">
+                <RunbookPage />
               </TabsContent>
             </Tabs>
           </TabsContent>

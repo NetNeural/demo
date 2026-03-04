@@ -35,7 +35,6 @@ import {
   FileBarChart,
   Activity,
   ShieldCheck,
-  Rocket,
   Network,
   UserPlus,
   KeyRound,
@@ -113,15 +112,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/billing',
             label: 'Billing Administration',
             icon: FileBarChart,
-          },
-        ]
-      : []),
-    ...(isSuperAdmin
-      ? [
-          {
-            href: '/dashboard/admin/go-live-runbook',
-            label: 'Go-Live Runbook',
-            icon: Rocket,
           },
         ]
       : []),
