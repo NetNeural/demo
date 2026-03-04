@@ -22,6 +22,7 @@ import {
   Settings,
   Shield,
   SlidersHorizontal,
+  Cpu,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -64,6 +65,11 @@ export default function DashboardShell({
       name: 'Organizations',
       href: '/dashboard/organizations',
       icon: Building2,
+    },
+    {
+      name: 'Hardware Provisioning',
+      href: '/dashboard/hardware-provisioning',
+      icon: Cpu,
     },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },

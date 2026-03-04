@@ -40,6 +40,7 @@ import {
   UserPlus,
   KeyRound,
   Code,
+  Cpu,
 } from 'lucide-react'
 import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -100,6 +101,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       label: 'Device Types',
       icon: SlidersHorizontal,
     },
+    ...(isSuperAdmin || isPlAdmin
+      ? [
+          {
+            href: '/dashboard/hardware-provisioning',
+            label: 'Hardware Provisioning',
+            icon: Cpu,
+          },
+        ]
+      : []),
     { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
     { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
