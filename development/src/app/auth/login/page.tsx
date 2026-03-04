@@ -97,6 +97,7 @@ function LoginForm() {
   const [forgotMode, setForgotMode] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(0)
   const hasCheckedAuth = useRef(false)
   // Issue #275: Prevent state updates on unmounted component
   const isMounted = useRef(true)
@@ -107,6 +108,13 @@ function LoginForm() {
       isMounted.current = false
     }
   }, [])
+
+  // Rate-limit countdown
+  useEffect(() => {
+    if (rateLimitSeconds <= 0) return
+    const t = setTimeout(() => setRateLimitSeconds((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [rateLimitSeconds])
 
   // MFA challenge state
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -425,7 +433,12 @@ function LoginForm() {
         )
         if (resetError) {
           if (!isMounted.current) return
-          setError(resetError.message)
+          const rateLimitMatch = resetError.message.match(/after\s+(\d+)\s+second/i)
+          if (rateLimitMatch && rateLimitMatch[1]) {
+            setRateLimitSeconds(parseInt(rateLimitMatch[1], 10))
+          } else {
+            setError(resetError.message)
+          }
           setResetLoading(false)
           return
         }
@@ -814,10 +827,19 @@ function LoginForm() {
                   />
                 </div>
 
+                {/* Rate limit countdown */}
+                {rateLimitSeconds > 0 && (
+                  <p className="mb-4 text-sm text-amber-400">
+                    Please wait{' '}
+                    <strong>{rateLimitSeconds}s</strong>{' '}
+                    before requesting another reset email.
+                  </p>
+                )}
+
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={resetLoading}
+                  disabled={resetLoading || rateLimitSeconds > 0}
                   className="h-12 w-full rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
                   style={{
                     background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
@@ -829,6 +851,8 @@ function LoginForm() {
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       Sending...
                     </span>
+                  ) : rateLimitSeconds > 0 ? (
+                    `Try again in ${rateLimitSeconds}s`
                   ) : (
                     'Send reset link'
                   )}
