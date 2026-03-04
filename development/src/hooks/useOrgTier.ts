@@ -72,8 +72,8 @@ const TIER_DISPLAY: Record<string, TierDisplayInfo> = {
     badge: 'bg-blue-100 text-blue-700',
     description: 'Essential IoT monitoring',
   },
-  professional: {
-    label: 'Professional',
+  business: {
+    label: 'Business',
     color: 'purple',
     badge: 'bg-purple-100 text-purple-700',
     description: 'Advanced protection & analytics',

@@ -58,7 +58,7 @@ export interface PlanCustomerCount {
 
 const PLAN_COLORS: Record<string, string> = {
   starter: '#3b82f6',
-  professional: '#8b5cf6',
+  business: '#8b5cf6',
   enterprise: '#f59e0b',
   free: '#94a3b8',
 }

@@ -213,8 +213,8 @@ export function CreateOrganizationDialog({
       description: 'Standard features, default tier',
     },
     {
-      value: 'professional',
-      label: 'Professional',
+      value: 'business',
+      label: 'Business',
       description: 'Advanced features, priority support',
     },
     {

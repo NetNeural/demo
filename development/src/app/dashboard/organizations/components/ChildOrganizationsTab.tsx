@@ -168,7 +168,7 @@ export function ChildOrganizationsTab({
     const displayTier = tier === 'reseller' ? 'starter' : tier
     const colors: Record<string, string> = {
       starter: 'bg-blue-100 text-blue-700',
-      professional: 'bg-purple-100 text-purple-700',
+      business: 'bg-purple-100 text-purple-700',
       enterprise: 'bg-emerald-100 text-emerald-700',
     }
     return (

@@ -111,7 +111,7 @@ const STATIC_TIER_FEATURES: { [tier: string]: TierFeaturesMap } = {
     white_label: false,
     dedicated_infra: false,
   },
-  professional: {
+  business: {
     device_monitoring: true,
     alert_notifications: true,
     dashboard_analytics: true,

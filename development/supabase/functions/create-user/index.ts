@@ -233,7 +233,7 @@ export default createEdgeFunction(
             const tierLimits: Record<string, string> = {
               free: '5',
               starter: '50',
-              professional: '500',
+              business: '500',
               enterprise: 'Unlimited',
             }
             deviceLimit = tierLimits[orgData.subscription_tier] || '50'

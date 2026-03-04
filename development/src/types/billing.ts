@@ -64,7 +64,7 @@ export interface BillingPlan {
 }
 
 /** Slugs matching the active seed data (per-sensor pricing model) */
-export type BillingPlanSlug = 'starter' | 'professional' | 'enterprise'
+export type BillingPlanSlug = 'starter' | 'business' | 'enterprise'
 
 /** Legacy slugs (deactivated, kept for historical subscription references) */
 export type LegacyBillingPlanSlug =
@@ -113,7 +113,7 @@ export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
     label: 'Report Export',
     description: 'Manual data export and reporting',
   },
-  // Professional
+  // Business
   {
     key: 'ai_analytics',
     label: 'AI Anomaly Detection',

@@ -84,7 +84,7 @@ export default createEdgeFunction(
       if (plan && !plan.features?.api_access) {
         return new Response(
           JSON.stringify({
-            error: 'API key management requires Professional or Enterprise plan',
+            error: 'API key management requires Business or Enterprise plan',
             upgrade_required: true,
           }),
           { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }

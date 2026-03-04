@@ -84,7 +84,7 @@ function getPlanIcon(slug: string) {
   switch (slug) {
     case 'starter':
       return BarChart3
-    case 'professional':
+    case 'business':
       return Brain
     case 'enterprise':
       return Building2
@@ -97,7 +97,7 @@ function getPlanColor(slug: string) {
   switch (slug) {
     case 'starter':
       return '#06b6d4'
-    case 'professional':
+    case 'business':
       return '#8b5cf6'
     case 'enterprise':
       return '#10b981'

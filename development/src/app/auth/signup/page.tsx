@@ -46,7 +46,7 @@ function getPlanIcon(slug: string): LucideIcon {
   switch (slug) {
     case 'starter':
       return BarChart3
-    case 'professional':
+    case 'business':
       return Brain
     case 'enterprise':
       return Building2
@@ -59,7 +59,7 @@ function getPlanColor(slug: string): string {
   switch (slug) {
     case 'starter':
       return '#06b6d4'
-    case 'professional':
+    case 'business':
       return '#8b5cf6'
     case 'enterprise':
       return '#10b981'
@@ -118,7 +118,7 @@ function billingPlanToTier(plan: BillingPlan, allPlans: BillingPlan[]): PlanTier
     pricePerSensor: plan.price_per_device,
     icon: getPlanIcon(plan.slug),
     color: getPlanColor(plan.slug),
-    popular: plan.slug === 'professional',
+    popular: plan.slug === 'business',
     features: buildFeatureList(plan, allPlans),
     limits: {
       users: formatUserLimit(plan.max_users),
@@ -147,8 +147,8 @@ const FALLBACK_PLANS: PlanTier[] = [
     limits: { users: '3 users', integrations: '1 integration', retention: '90-day retention' },
   },
   {
-    slug: 'professional',
-    name: 'Professional',
+    slug: 'business',
+    name: 'Business',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
     icon: Brain,
@@ -174,7 +174,7 @@ const FALLBACK_PLANS: PlanTier[] = [
     icon: Building2,
     color: '#10b981',
     features: [
-      'Everything in Professional, plus:',
+      'Everything in Business, plus:',,
       'AI optimization insights',
       'Chain benchmarking',
       'ESG & carbon reporting',

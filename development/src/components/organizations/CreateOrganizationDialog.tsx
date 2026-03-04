@@ -43,7 +43,7 @@ export function CreateOrganizationDialog({
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [subscriptionTier, setSubscriptionTier] = useState<
-    'starter' | 'professional' | 'enterprise' | 'unlimited'
+    'starter' | 'business' | 'enterprise' | 'unlimited'
   >('starter')
 
   // Validation errors
@@ -265,7 +265,7 @@ export function CreateOrganizationDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
                   <SelectItem value="reseller">Reseller</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
                 </SelectContent>

@@ -32,7 +32,7 @@ function getSupabase() {
 /** Tier sort order — higher = more features */
 const TIER_RANK: Record<string, number> = {
   starter: 1,
-  professional: 2,
+  business: 2,
   enterprise: 3,
 }
 
@@ -45,7 +45,7 @@ const TIER_HIGHLIGHTS: Record<string, string[]> = {
     'Up to 3 team members',
     '90-day data retention',
   ],
-  professional: [
+  business: [
     'AI anomaly detection',
     'Predictive failure alerts',
     'Multi-site dashboard',
@@ -266,7 +266,7 @@ export function ChangePlanModal({
                         Current
                       </Badge>
                     )}
-                    {plan.slug === 'professional' && !isCurrent && (
+                    {plan.slug === 'business' && !isCurrent && (
                       <Badge className="absolute -top-2 right-2 text-xs bg-primary">
                         Popular
                       </Badge>

@@ -55,7 +55,7 @@ export function EditOrganizationDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [subscriptionTier, setSubscriptionTier] = useState<
-    'starter' | 'professional' | 'reseller' | 'enterprise' | 'unlimited'
+    'starter' | 'business' | 'reseller' | 'enterprise' | 'unlimited'
   >('starter')
   const [isActive, setIsActive] = useState(true)
 
@@ -241,7 +241,7 @@ export function EditOrganizationDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
                   <SelectItem value="reseller">Reseller</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
                   <SelectItem value="unlimited">Unlimited (NetNeural)</SelectItem>

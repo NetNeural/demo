@@ -177,7 +177,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               Telemetry data is retained according to your subscription tier:
-              Starter (90 days), Professional (1 year), Enterprise (unlimited).
+              Starter (90 days), Business (1 year), Enterprise (unlimited).
               Account information is retained for the duration of your active
               account. Audit logs are retained for a minimum of 3 years. You may
               request data export or deletion at any time.

@@ -46,7 +46,7 @@ function getPlanIcon(slug: string) {
   switch (slug) {
     case 'starter':
       return BarChart3
-    case 'professional':
+    case 'business':
       return Brain
     case 'enterprise':
       return Building2

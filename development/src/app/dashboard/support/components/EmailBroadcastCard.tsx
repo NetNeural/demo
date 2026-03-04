@@ -99,7 +99,7 @@ const EMAIL_TYPE_CONFIG: Record<
 const TIER_OPTIONS = [
   { value: 'all', label: 'All Users', description: 'Every user on the platform' },
   { value: 'starter', label: 'Starter', description: 'Starter tier organizations' },
-  { value: 'professional', label: 'Professional', description: 'Professional tier organizations' },
+  { value: 'business', label: 'Business', description: 'Business tier organizations' },
   { value: 'enterprise', label: 'Enterprise', description: 'Enterprise tier organizations' },
 ]
 

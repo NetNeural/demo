@@ -60,7 +60,7 @@ import Link from 'next/link'
 const SEAT_LIMITS: Record<string, number> = {
   free: 1,
   starter: 3,
-  professional: 25,
+  business: 25,
   enterprise: -1,
   unlimited: -1,
   reseller: -1,

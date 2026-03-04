@@ -122,6 +122,7 @@ export function BillingTab({ organizationId }: BillingTabProps) {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(
     null
   )
+  const [orgTier, setOrgTier] = useState<string | null>(null)
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
   const [usage, setUsage] = useState<UsageData[]>([])
   const [loading, setLoading] = useState(true)
@@ -133,6 +134,16 @@ export function BillingTab({ organizationId }: BillingTabProps) {
     try {
       setLoading(true)
       const supabase = getSupabase()
+
+      // Fetch org's subscription_tier directly (source of truth)
+      const { data: orgData } = await (supabase as any)
+        .from('organizations')
+        .select('subscription_tier')
+        .eq('id', organizationId)
+        .single()
+      if (orgData?.subscription_tier) {
+        setOrgTier(orgData.subscription_tier)
+      }
 
       // Fetch subscription + plan (cast: tables not in generated types yet)
       const { data: subData } = await (supabase as any)
@@ -358,10 +369,14 @@ export function BillingTab({ organizationId }: BillingTabProps) {
               </>
             ) : (
               <div className="space-y-3">
-                <p className="text-2xl font-bold">Free Tier</p>
+                <p className="text-2xl font-bold">
+                  {orgTier
+                    ? orgTier.charAt(0).toUpperCase() + orgTier.slice(1)
+                    : 'Starter'}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  You are on the free tier. Upgrade to unlock more sensors,
-                  features, and support.
+                  No active subscription on record. Contact support or upgrade
+                  to unlock more sensors, features, and support.
                 </p>
                 <Button size="sm" onClick={() => router.push('/pricing')}>
                   <ArrowUpRight className="mr-2 h-4 w-4" />
@@ -477,8 +492,8 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                   <p>Starter</p>
                   <p className="mt-0.5 text-muted-foreground">90 days</p>
                 </div>
-                <div className={`rounded-md p-2 ${plan.slug === 'professional' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
-                  <p>Professional</p>
+                <div className={`rounded-md p-2 ${plan.slug === 'business' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                  <p>Business</p>
                   <p className="mt-0.5 text-muted-foreground">1 year</p>
                 </div>
                 <div className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>

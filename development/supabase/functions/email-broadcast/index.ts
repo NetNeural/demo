@@ -17,7 +17,7 @@ interface BroadcastRequest {
   html: string
   text?: string
   email_type: 'announcement' | 'maintenance' | 'newsletter' | 'update'
-  target_tiers: string[] // ['all'] or ['starter', 'professional', 'enterprise']
+  target_tiers: string[] // ['all'] or ['starter', 'business', 'enterprise']
 }
 
 interface AIDraftRequest {
