@@ -1,0 +1,154 @@
+================================================================================
+NETNEURAL PLATFORM — CHANGELOG
+================================================================================
+All notable changes to the NetNeural IoT Platform are documented here.
+Format: [Unreleased] → [Major.Minor.Patch] — YYYY-MM-DD
+
+================================================================================
+[2.2.0] — 2026-03-03
+================================================================================
+Epic #383 — Customer Data Export API (complete)
+
+NEW FEATURES
+  - Customer Export API (#384–387)
+    • GET /functions/v1/export/telemetry   — paginated telemetry with cursor
+    • GET /functions/v1/export/devices     — device inventory with filters
+    • GET /functions/v1/export/devices/:id — single device + status history
+    • GET /functions/v1/export/alerts      — alert data with severity filters
+    • Bearer token auth (nn_live_ API keys), org-scoped queries
+    • CSV export via Accept: text/csv on all routes
+    • Keyset pagination with base64 cursor for all collection endpoints
+
+  - Rate Limiting (#389)
+    • Sliding 60-second window enforced per API key via api_usage_log table
+    • 429 response when limit exceeded with Retry-After info
+    • X-RateLimit-Limit / X-RateLimit-Remaining / X-RateLimit-Reset /
+      X-RateLimit-Window response headers on every export request
+    • Usage auto-pruned after 7 days
+
+  - Webhook Subscriptions (#388)
+    • POST/GET/PATCH/DELETE /functions/v1/webhook-subscriptions
+    • HMAC-SHA256 payload signing (X-NetNeural-Signature header)
+    • Supports events: alert.created, alert.resolved, device.online/offline/warning
+    • HTTPS-only endpoint enforcement
+    • Test-ping action to validate endpoint connectivity
+    • Delivery log with status code, duration, success/fail tracking
+    • Auto-dispatch on alert.created via send-alert-notifications function
+
+  - OpenAPI Documentation (#390)
+    • GET /functions/v1/export/openapi.json — OpenAPI 3.0 machine-readable spec
+    • GET /functions/v1/export/openapi — Swagger UI (browser, try-it-out)
+    • No auth required for spec endpoints
+    • Documents all routes, parameters, pagination, security schemes, CSV responses
+
+  - Developer Settings UI (#391)
+    • New "Developer" tab group in Settings (alongside Account/Security/Organization)
+    • API Keys section — create, copy, revoke, rotate keys with scope selection
+    • Webhook Subscriptions section — create/delete/test-ping, event-type checkboxes
+    • Secret shown once at creation, copy-to-clipboard button
+    • Link to live Swagger UI from settings page
+
+NEW DATABASE TABLES (migration 20260303230000)
+  - api_usage_log           — per-request rate-limit tracking, 7-day TTL
+  - webhook_subscriptions   — org-owned webhook endpoints with signing secret
+  - webhook_delivery_log    — delivery attempt history, 30-day TTL
+
+Epic #325 — Project Hydra (closed)
+  All 13 stories confirmed complete (#326–338)
+
+================================================================================
+[2.1.2] — 2026-03-02
+================================================================================
+  - Incident Response Plan added to platform docs (SOC 2 / FISMA compliance)
+  - Assessment report updated with current platform metrics
+  - Admin user roles fixed across all 3 environments
+
+================================================================================
+[2.1.1] — 2026-03-01
+================================================================================
+  - MQTT Architecture documentation updated
+  - Integrations Guide updated with V-Mark ACK protocol details
+  - Troubleshooting Guide expanded with MQTT external broker diagnostics
+  - Changelog format standardised
+
+================================================================================
+[2.1.0] — 2026-02-28
+================================================================================
+  - 3-repo / 3-domain deployment architecture documented
+    • Production:  sentinel.netneural.ai   (NetNeural/MonoRepo)
+    • Staging:     demo-stage.netneural.ai (NetNeural/MonoRepo-Staging)
+    • Development: demo.netneural.ai       (NetNeural/demo)
+  - Admin user super_admin + org owner roles set across all environments
+  - All GitHub secrets verified and updated for all 3 repos (22 total)
+  - Copilot instructions updated to reflect 3-repo architecture
+
+================================================================================
+[2.0.0] — 2026-02-24
+================================================================================
+  - 3-environment setup fully implemented (Dev / Staging / Production)
+    • 3 Supabase projects: tsomafkalaoarnuwgdyu, atgbmxicqikmapfqouco, bldojxpockljyivldxwf
+    • 3 GitHub Actions workflows: deploy-dev.yml, deploy-staging.yml, deploy-production.yml
+    • 22 GitHub Secrets (DEV_*, STAGING_*, PROD_* prefixes)
+    • Git branch strategy: develop → staging → main
+  - Secrets management overhaul — all hardcoded secrets removed from codebase
+  - SECRETS_INVENTORY, SECRETS_GOVERNANCE, SECRETS_CLEANUP_AUDIT docs created
+  - Multi-root VS Code workspace implemented (hides 31 microservices)
+
+================================================================================
+[1.9.0] — 2026-02-21
+================================================================================
+  - Assessment report published (EXECUTIVE_SUMMARY_2026-02-21.md)
+  - MVP completion tracking: 78% at time of report
+  - Mercury Chat 401 error fixed
+  - request-access 500 error fixed
+  - Feature report expanded to 191 features across 18 categories
+
+================================================================================
+[1.8.0] — 2026-02-19
+================================================================================
+  - MQTT external broker persistent connection support (mqtt_external type)
+  - V-Mark ACK protocol implemented for device confirmations
+  - MQTT subscriber service infrastructure notes documented
+  - Executive Summary 2026-02-19 published
+
+================================================================================
+[1.7.0] — 2026-02-17
+================================================================================
+  - Golioth integration fully implemented
+    • Device management, telemetry ingestion, OTA updates
+    • Webhook configuration, API key management
+  - Executive Summary 2026-02-17 published
+  - Golioth integration architecture documented
+
+================================================================================
+[1.6.0] — 2026-02-01 to 2026-02-16
+================================================================================
+  - AWS IoT Core integration
+  - Azure IoT Hub integration
+  - AI insights and report summary edge functions
+  - Alert escalation checker and auto-sync cron
+  - Database optimization pass
+  - SOC 2 compliance checklist created
+
+================================================================================
+[1.5.0] — 2025-12-01 to 2026-01-31
+================================================================================
+  - SMS notifications via Twilio
+  - Sentry error tracking integration
+  - FISMA compliance planning
+  - SOC 2 Type II audit report skeleton
+
+================================================================================
+[1.0.0] — 2025-11-13
+================================================================================
+  - Initial production release
+  - Core platform: devices, telemetry, alerts, organizations, members
+  - VS Code debugging fully integrated (.vscode/launch.json)
+  - GitHub CLI secrets management verified
+  - Next.js 15 + Supabase Architecture B established as primary stack
+
+================================================================================
+Document Version: 1.0
+Last Updated: 2026-03-03
+Maintained By: Platform Engineering
+================================================================================

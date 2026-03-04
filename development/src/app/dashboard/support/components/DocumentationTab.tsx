@@ -339,10 +339,7 @@ export default function DocumentationTab() {
   const totalLines = DOCS.reduce((acc, d) => acc + d.lines, 0)
 
   const handleOpenDoc = (filename: string) => {
-    // Link to the documentation file in the GitHub repository
-    const repoUrl =
-      'https://github.com/NetNeural/MonoRepo-Staging/blob/main/development/docs'
-    window.open(`${repoUrl}/${filename}`, '_blank')
+    window.open(`/docs/${filename}`, '_blank')
   }
 
   return (
