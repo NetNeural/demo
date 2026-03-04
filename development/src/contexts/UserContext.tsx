@@ -35,6 +35,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const hasRedirected = useRef(false)
+  const retryCount = useRef(0)
 
   const loadUser = async () => {
     try {
@@ -73,24 +74,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // We have a valid session, try to get user profile
       const userProfile = await getCurrentUser()
 
-      // If getCurrentUser fails but we have a session, the API might be down
-      // or the user doesn't have proper permissions/profile
+      // If getCurrentUser fails but we have a session, the API might be temporarily down.
+      // Retry up to 2 times before giving up — don't destroy the session on transient errors.
       if (!userProfile) {
-        console.error('Failed to load user profile despite valid session')
-
-        // Clear the session since we can't get a valid user profile
-        await supabase.auth.signOut()
-
-        const isPublicRoute = PUBLIC_ROUTES.some((route) =>
-          pathname?.startsWith(route)
-        )
-        if (!isPublicRoute && !hasRedirected.current) {
-          hasRedirected.current = true
-          router.push('/auth/login?error=profile_load_failed')
+        if (retryCount.current < 2) {
+          retryCount.current += 1
+          console.warn(
+            `getCurrentUser returned null (attempt ${retryCount.current}/2), retrying in 2s...`
+          )
+          setTimeout(() => loadUser(), 2000)
+          return
         }
+
+        console.error(
+          'Failed to load user profile after 2 retries — session still valid, NOT signing out.'
+        )
+
+        // Don't sign out — the session is valid, the API is just unreachable.
+        // Set user null so the UI can show a loading/error state.
         setUser(null)
         return
       }
+
+      // Success — reset retry counter
+      retryCount.current = 0
 
       // Success! We have both a valid session and user profile
       setUser(userProfile)
@@ -125,20 +132,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to load user:', error)
 
-      // Clear session on any error
-      try {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-      } catch (signOutError) {
-        console.error('Failed to sign out:', signOutError)
-      }
-
+      // Don't sign out on transient errors — the session may still be valid.
+      // Only clear state so the UI shows a loading/error state.
       setUser(null)
 
+      // If this is a persistent/hard error (not a network blip), let the
+      // user see the auth-error page — but still don't destroy the session.
       const isPublicRoute = PUBLIC_ROUTES.some((route) =>
         pathname?.startsWith(route)
       )
-      if (!isPublicRoute && !hasRedirected.current) {
+      if (!isPublicRoute && !hasRedirected.current && retryCount.current >= 2) {
         hasRedirected.current = true
         router.push('/auth/login?error=auth_error')
       }
