@@ -32,13 +32,10 @@ import {
   LifeBuoy,
   SlidersHorizontal,
   DollarSign,
-  UsersRound,
   FileBarChart,
   Activity,
   ShieldCheck,
   Rocket,
-  BookOpen,
-  UserCheck,
   Network,
   UserPlus,
   KeyRound,
@@ -122,19 +119,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     ...(isSuperAdmin
       ? [
           {
-            href: '/dashboard/admin/customers',
-            label: 'Customers',
-            icon: UsersRound,
-          },
-          {
             href: '/dashboard/admin/go-live-runbook',
             label: 'Go-Live Runbook',
             icon: Rocket,
-          },
-          {
-            href: '/dashboard/admin/onboarding',
-            label: 'Onboarding',
-            icon: UserCheck,
           },
         ]
       : []),

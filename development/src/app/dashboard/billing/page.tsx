@@ -37,6 +37,8 @@ import {
   Download,
   FileDown,
   Network,
+  UserCheck,
+  UsersRound,
 } from 'lucide-react'
 
 import { RevenueTab } from './components/RevenueTab'
@@ -49,6 +51,8 @@ import { BillingOperationsTab } from './components/BillingOperationsTab'
 import { PromoCodesTab } from './components/PromoCodesTab'
 import { HydraKPIDashboardPage } from '@/app/dashboard/admin/hydra-kpis/page'
 import { PlansPricingContent } from '@/app/dashboard/plans-pricing/page'
+import CustomersAdminPage from '@/app/dashboard/admin/customers/page'
+import OnboardingPage from '@/app/dashboard/admin/onboarding/page'
 import { ARAgingReport } from '@/components/admin/ARAgingReport'
 import { PaymentFailureReport } from '@/components/admin/PaymentFailureReport'
 import { TaxSummaryReport } from '@/components/admin/TaxSummaryReport'
@@ -577,6 +581,7 @@ function BillingAdminContent() {
             subscriptions: 'reports', usage: 'reports', expenses: 'reports', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
             plans: 'reseller', 'hydra-kpis': 'reseller',
+            'admin-customers': 'administration', onboarding: 'administration',
           }
           return groupMap[activeTab] || 'reports'
         })()}
@@ -584,7 +589,7 @@ function BillingAdminContent() {
           const defaults: Record<string, string> = {
             reports: 'revenue', transactions: 'invoices',
             management: 'customers', operations: 'plan-management',
-            reseller: 'plans',
+            reseller: 'plans', administration: 'admin-customers',
           }
           handleTabChange(defaults[group] || 'financial-reports')
         }}
@@ -610,6 +615,10 @@ function BillingAdminContent() {
           <TabsTrigger value="reseller" className="flex items-center gap-2">
             <Network className="h-4 w-4" />
             <span>Reseller</span>
+          </TabsTrigger>
+          <TabsTrigger value="administration" className="flex items-center gap-2">
+            <UsersRound className="h-4 w-4" />
+            <span>Administration</span>
           </TabsTrigger>
         </TabsList>
 
@@ -731,6 +740,28 @@ function BillingAdminContent() {
             </TabsContent>
             <TabsContent value="hydra-kpis" className="mt-6">
               <HydraKPIDashboardPage />
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Administration — Customers (admin) + Onboarding */}
+        <TabsContent value="administration">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="admin-customers" className="flex items-center gap-2">
+                <UsersRound className="h-4 w-4" />
+                Customers
+              </TabsTrigger>
+              <TabsTrigger value="onboarding" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Onboarding
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="admin-customers" className="mt-6">
+              <CustomersAdminPage />
+            </TabsContent>
+            <TabsContent value="onboarding" className="mt-6">
+              <OnboardingPage />
             </TabsContent>
           </Tabs>
         </TabsContent>
