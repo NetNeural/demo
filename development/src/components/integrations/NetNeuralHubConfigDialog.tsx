@@ -98,7 +98,7 @@ interface NetNeuralHubConfig {
 }
 
 const DEFAULT_CONFIG: NetNeuralHubConfig = {
-  name: 'Neuralink Integration',
+  name: 'NetNeural-Link Integration',
   protocols: {
     coap: {
       enabled: true,
@@ -273,7 +273,7 @@ export function NetNeuralHubConfigDialog({
             parsedConfig.global_settings || DEFAULT_CONFIG.global_settings,
         })
       } catch (error) {
-        console.warn('Failed to parse saved Neuralink config:', error)
+        console.warn('Failed to parse saved NetNeural-Link config:', error)
       }
     }
   }, [])
@@ -306,7 +306,7 @@ export function NetNeuralHubConfigDialog({
             }
           }
         } catch (error) {
-          console.warn('Failed to load existing Neuralink config:', error)
+          console.warn('Failed to load existing NetNeural-Link config:', error)
         }
       }
     }
@@ -418,14 +418,14 @@ export function NetNeuralHubConfigDialog({
       // Also store in localStorage for quick access
       localStorage.setItem('netneural-hub-config', JSON.stringify(config))
 
-      toast.success('Neuralink configuration saved successfully')
+      toast.success('NetNeural-Link configuration saved successfully')
       onSaved()
       onOpenChange(false)
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to save configuration'
       toast.error(errorMessage)
-      console.error('Failed to save Neuralink config:', error)
+      console.error('Failed to save NetNeural-Link config:', error)
     } finally {
       setIsSaving(false)
     }
@@ -439,7 +439,7 @@ export function NetNeuralHubConfigDialog({
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <strong>Neuralink:</strong> Auto-discovers devices via CoAP,
+            <strong>NetNeural-Link:</strong> Auto-discovers devices via CoAP,
             MQTT, or HTTPS. No manual registration required.
           </AlertDescription>
         </Alert>
@@ -975,7 +975,7 @@ export function NetNeuralHubConfigDialog({
                     onChange={(e) =>
                       setConfig((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    placeholder="Enter a name for this Neuralink integration"
+                    placeholder="Enter a name for this NetNeural-Link integration"
                     required
                   />
                 </div>
@@ -1066,7 +1066,7 @@ export function NetNeuralHubConfigDialog({
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Neuralink supports seamless addition of new device types and
+                NetNeural-Link supports seamless addition of new device types and
                 protocols. Contact support for assistance with custom device
                 integrations.
               </AlertDescription>
@@ -1111,7 +1111,7 @@ export function NetNeuralHubConfigDialog({
           <Settings className="h-8 w-8" />
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
-              {integrationId ? 'Edit' : 'Configure'} Neuralink
+              {integrationId ? 'Edit' : 'Configure'} NetNeural-Link
             </h2>
             <p className="text-muted-foreground">
               Auto-discover devices via CoAP, MQTT, or HTTPS
@@ -1132,7 +1132,7 @@ export function NetNeuralHubConfigDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Neuralink Configuration
+            NetNeural-Link Configuration
           </DialogTitle>
         </DialogHeader>
 

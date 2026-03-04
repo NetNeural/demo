@@ -153,8 +153,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     { id: 'webhook', label: '🔗 Webhook', name: 'Webhook Integration' },
     {
       id: 'netneural_hub',
-      label: '🚀 Neuralink',
-      name: 'Neuralink Integration',
+      label: '🚀 NetNeural-Link',
+      name: 'NetNeural-Link Integration',
     },
   ]
 

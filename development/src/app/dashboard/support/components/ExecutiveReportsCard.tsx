@@ -371,7 +371,7 @@ const PLATFORM_FEATURES: FeatureSection[] = [
     icon: Globe,
     color: 'text-indigo-500',
     features: [
-      '9 integration types (MQTT, Golioth, AWS IoT, Azure IoT, Email, Slack, Webhook, Neuralink, Google IoT)',
+      '9 integration types (MQTT, Golioth, AWS IoT, Azure IoT, Email, Slack, Webhook, NetNeural-Link, Google IoT)',
       'Create/edit/delete integration configs',
       'Per-device sync triggers',
       'Auto-sync scheduling',
