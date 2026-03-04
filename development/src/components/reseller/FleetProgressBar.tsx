@@ -52,7 +52,9 @@ export function FleetProgressBar({
     tier_locked_until,
   } = tierData
 
-  const isMaxTier = !next_tier_name
+  // Only show "Maximum Tier" if there truly is no next tier AND they have
+  // enough sensors to be in the top tier (prevents 0-sensor orgs showing Platinum)
+  const isMaxTier = !next_tier_name && effective_total > 0
 
   // Progress percentage toward next tier
   const progressPct = useMemo(() => {

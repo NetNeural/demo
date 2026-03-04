@@ -76,7 +76,13 @@ Deno.serve(async (req: Request) => {
           return t
         }
       }
+      // Default to lowest tier (Starter) when count is below all min_sensors
       return tiers[0]
+    }
+
+    const nextTierForCount = (count: number) => {
+      const current = tierForCount(count)
+      return tiers.find(t => t.min_sensors > (current.max_sensors ?? count)) ?? null
     }
 
     let orgsProcessed = 0

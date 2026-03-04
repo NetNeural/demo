@@ -77,7 +77,8 @@ Deno.serve(async (req: Request) => {
 
     // 4. Determine current tier by effective sensor count
     let currentTier = tiers[0]
-    let nextTier: typeof tiers[0] | null = null
+    let nextTier: typeof tiers[0] | null = tiers[1] ?? null
+    let matched = false
 
     for (let i = 0; i < tiers.length; i++) {
       const t = tiers[i]
@@ -85,8 +86,15 @@ Deno.serve(async (req: Request) => {
       if (inRange) {
         currentTier = t
         nextTier = tiers[i + 1] ?? null
+        matched = true
         break
       }
+    }
+
+    // If no tier matched (e.g. 0 sensors below Starter min), default to Starter
+    if (!matched) {
+      currentTier = tiers[0]
+      nextTier = tiers[1] ?? null
     }
 
     // 5. Grace period check — if tier_locked_until is in future, use the locked tier
