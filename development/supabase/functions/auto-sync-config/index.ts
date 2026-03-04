@@ -35,7 +35,7 @@ serve(async (req) => {
       .select('role')
       .eq('id', user.id)
       .single()
-    const isSuperAdmin = userProfile?.role === 'super_admin'
+    const isSuperAdmin = userProfile?.role === 'super_admin' || userProfile?.role === 'platform_admin'
 
     const url = new URL(req.url)
     const params = new URLSearchParams(url.search)

@@ -24,7 +24,7 @@ interface User {
   id: string
   name: string
   email: string
-  role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
   department?: string
 }
@@ -142,6 +142,7 @@ export function EditUserDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="platform_admin">Platform Admin</SelectItem>
                 <SelectItem value="org_admin">Org Admin</SelectItem>
                 <SelectItem value="org_owner">Org Owner</SelectItem>
                 <SelectItem value="user">User</SelectItem>

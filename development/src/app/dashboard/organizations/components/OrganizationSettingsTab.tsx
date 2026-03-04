@@ -584,7 +584,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
   }
 
   // Allow super_admin or organization owner to access settings
-  const canAccessSettings = isOwner || user?.role === 'super_admin'
+  const canAccessSettings = isOwner || user?.role === 'super_admin' || user?.role === 'platform_admin'
 
   if (!canAccessSettings) {
     return (

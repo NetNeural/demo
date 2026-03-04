@@ -17,7 +17,7 @@ export default createEdgeFunction(
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
     // Only admins, owners, and super admins can reset passwords
-    if (!['super_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
+    if (!['super_admin', 'platform_admin', 'org_owner', 'org_admin'].includes(userContext.role)) {
       throw new DatabaseError(
         'Insufficient permissions to reset passwords',
         403
@@ -63,7 +63,7 @@ export default createEdgeFunction(
     console.log('✅ Target user found:', { userId, email: targetUser.email })
 
     // Check if requester has permission to reset this user's password
-    const isSuperAdmin = userContext.role === 'super_admin'
+    const isSuperAdmin = userContext.role === 'super_admin' || userContext.role === 'platform_admin'
 
     if (!isSuperAdmin) {
       // Check if target user is in the same organization

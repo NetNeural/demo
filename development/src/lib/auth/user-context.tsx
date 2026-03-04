@@ -468,7 +468,8 @@ export function useCanManageSettings() {
   const { profile, currentOrganization } = useUser()
   return (
     profile?.role === 'super_admin' ||
-    profile?.role === 'org_admin' ||
+    profile?.role === 'platform_admin' ||
+        profile?.role === 'org_admin' ||
     currentOrganization?.role === 'owner' ||
     currentOrganization?.role === 'admin'
   )

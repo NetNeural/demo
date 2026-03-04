@@ -6,9 +6,10 @@ export interface UserProfile {
   fullName: string | null
   organizationId: string | null // NULL for super admins
   organizationName: string | null
-  role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
-  isSuperAdmin: boolean
-  passwordChangeRequired: boolean // True if user has temp password and must change it
+  role: 'super_admin' | 'platform_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
+  isSuperAdmin: boolean // True for both super_admin and platform_admin
+  isPlatformAdmin: boolean // True only for platform_admin (no cross-org visibility)
+    passwordChangeRequired: boolean // True if user has temp password and must change it
 }
 
 /**
@@ -63,7 +64,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
 
   // Fallback: if organization_id is null on the users row (e.g. created by a
   // super admin who has no org), look up the first active membership instead.
-  if (!organization && profile.role !== 'super_admin') {
+  if (!organization && profile.role !== 'super_admin' && profile.role !== 'platform_admin') {
     const { data: membership } = await supabase
       .from('organization_members')
       .select('organization_id, organizations(id, name)')
@@ -76,24 +77,22 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     }
   }
 
-  const isSuperAdmin = profile.role === 'super_admin'
-  const passwordChangeRequired = profile.password_change_required === true
+  const isSuperAdmin = profile.role === 'super_admin' || profile.role === 'platform_admin'
+  const isPlatformAdmin = profile.role === 'platform_admin'
+    const passwordChangeRequired = profile.password_change_required === true
 
   // Super admins don't need an organization (organization_id is NULL)
-  if (isSuperAdmin) {
+  // platform_admin MUST have an organization - goes through normal org resolution
+  if (profile.role === 'super_admin') {
     return {
       id: user.id,
       email: user.email || '',
       fullName: profile.full_name || null,
       organizationId: null,
       organizationName: null,
-      role: (profile.role || 'viewer') as
-        | 'super_admin'
-        | 'org_admin'
-        | 'org_owner'
-        | 'user'
-        | 'viewer',
+      role: 'super_admin' as UserProfile['role'],
       isSuperAdmin: true,
+      isPlatformAdmin: false,
       passwordChangeRequired,
     }
   }
@@ -110,13 +109,9 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     fullName: profile.full_name || null,
     organizationId: organization.id,
     organizationName: organization.name,
-    role: (profile.role || 'viewer') as
-      | 'super_admin'
-      | 'org_admin'
-      | 'org_owner'
-      | 'user'
-      | 'viewer',
-    isSuperAdmin: false,
+    role: (profile.role || 'viewer') as UserProfile['role'],
+    isSuperAdmin,
+    isPlatformAdmin,
     passwordChangeRequired,
   }
 }

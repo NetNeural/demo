@@ -59,7 +59,7 @@ export function TransferDeviceDialog({
   const fetchOrganizations = useCallback(async () => {
     try {
       setLoadingOrgs(true)
-      const isSuperAdmin = user?.isSuperAdmin || user?.role === 'super_admin'
+      const isSuperAdmin = user?.isSuperAdmin || user?.role === 'super_admin' || user?.role === 'platform_admin'
 
       // Use organizations from context — already fetched via edge function
       // which handles permissions (super_admin sees all, others see their memberships).

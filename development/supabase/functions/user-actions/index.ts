@@ -280,7 +280,7 @@ async function handleRecordAction(
     .select('role')
     .eq('id', userId)
     .single()
-  const isSuperAdmin = userProfile?.role === 'super_admin'
+  const isSuperAdmin = userProfile?.role === 'super_admin' || userProfile?.role === 'platform_admin'
 
   // Get user's organization
   const { data: orgMember, error: orgError } = await supabase

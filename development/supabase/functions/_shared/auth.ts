@@ -8,7 +8,7 @@ import type { Database } from './database.ts'
 export interface UserContext {
   userId: string
   organizationId: string | null
-  role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
   email: string
 }

@@ -73,7 +73,7 @@ export default createEdgeFunction(async ({ req }) => {
   console.log('✅ Target user found:', { userId, email: targetUser.email })
 
   // Check if requester has permission
-  const isSuperAdmin = userContext.role === 'super_admin'
+  const isSuperAdmin = userContext.role === 'super_admin' || userContext.role === 'platform_admin'
 
   if (!isSuperAdmin) {
     // Check if target user is in the same organization

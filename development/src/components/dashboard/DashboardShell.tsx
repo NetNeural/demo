@@ -41,7 +41,7 @@ export default function DashboardShell({
   const { user, profile } = useUser()
   const { currentOrganization } = useOrganization()
 
-  const isSuperAdmin = profile?.role === 'super_admin'
+  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'platform_admin'
 
   // Debug logging
   console.log('🔍 DashboardShell Debug:', {

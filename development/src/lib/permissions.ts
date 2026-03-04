@@ -6,7 +6,7 @@ import { UserProfile } from './auth'
 
 // Organization Management
 export function canViewAllOrganizations(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+  return user?.role === 'super_admin' || false
 }
 
 export function canCreateOrganization(
@@ -60,7 +60,7 @@ export function canViewChildOrganizations(
 
 // User Management
 export function canViewAllUsers(user: UserProfile | null): boolean {
-  return user?.isSuperAdmin || false
+  return user?.role === 'super_admin' || false
 }
 
 export function canManageUser(
@@ -153,7 +153,7 @@ export function getAccessibleOrganizations(
   user: UserProfile | null
 ): 'all' | string | null {
   if (!user) return null
-  if (user.isSuperAdmin) return 'all'
+  if (user.role === 'super_admin') return 'all'
   return user.organizationId
 }
 
@@ -178,6 +178,7 @@ export function hasMinimumRole(
     'user',
     'org_admin',
     'org_owner',
+    'platform_admin',
     'super_admin',
   ]
 

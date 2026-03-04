@@ -257,7 +257,7 @@ export function AuditLogReport() {
   const isAdmin = useMemo(() => {
     if (!currentUser) return false
     // Super admin always has access
-    if (currentUser.role === 'super_admin') return true
+    if (currentUser.role === 'super_admin' || currentUser.role === 'platform_admin') return true
     // Check global org owner/admin roles
     if (currentUser.role === 'org_owner' || currentUser.role === 'org_admin')
       return true

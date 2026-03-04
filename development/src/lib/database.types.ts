@@ -3434,7 +3434,7 @@ export type Database = {
       integration_broker_type: 'hosted' | 'external'
       notification_method: 'email' | 'sms' | 'webhook' | 'in_app'
       notification_status: 'pending' | 'sent' | 'delivered' | 'failed'
-      user_role: 'super_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
+      user_role: 'super_admin' | 'platform_admin' | 'org_admin' | 'org_owner' | 'user' | 'viewer'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3579,7 +3579,7 @@ export const Constants = {
       integration_broker_type: ['hosted', 'external'],
       notification_method: ['email', 'sms', 'webhook', 'in_app'],
       notification_status: ['pending', 'sent', 'delivered', 'failed'],
-      user_role: ['super_admin', 'org_admin', 'org_owner', 'user', 'viewer'],
+      user_role: ['super_admin', 'platform_admin', 'org_admin', 'org_owner', 'user', 'viewer'],
     },
   },
 } as const

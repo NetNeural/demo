@@ -72,7 +72,7 @@ export default createEdgeFunction(
           | 'org_admin'
           | 'user'
           | 'viewer',
-        isSuperAdmin: profile.role === 'super_admin',
+        isSuperAdmin: profile.role === 'super_admin' || profile.role === 'platform_admin',
         email: profile.email || payload.email || '',
       }
 
