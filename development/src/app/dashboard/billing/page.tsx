@@ -53,6 +53,7 @@ import { HydraKPIDashboardPage } from '@/app/dashboard/admin/hydra-kpis/page'
 import { PlansPricingContent } from '@/app/dashboard/plans-pricing/page'
 import CustomersAdminPage from '@/app/dashboard/admin/customers/page'
 import OnboardingPage from '@/app/dashboard/admin/onboarding/page'
+import ResellerApplicationsPage from '@/app/dashboard/admin/reseller-applications/page'
 import { ARAgingReport } from '@/components/admin/ARAgingReport'
 import { PaymentFailureReport } from '@/components/admin/PaymentFailureReport'
 import { TaxSummaryReport } from '@/components/admin/TaxSummaryReport'
@@ -580,7 +581,7 @@ function BillingAdminContent() {
             invoices: 'transactions', payments: 'transactions',
             subscriptions: 'reports', usage: 'reports', expenses: 'reports', customers: 'management',
             'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
-            plans: 'reseller', 'hydra-kpis': 'reseller',
+            plans: 'reseller', 'hydra-kpis': 'reseller', 'reseller-applications': 'reseller',
             'admin-customers': 'administration', onboarding: 'administration',
           }
           return groupMap[activeTab] || 'reports'
@@ -722,7 +723,7 @@ function BillingAdminContent() {
           </Tabs>
         </TabsContent>
 
-        {/* Reseller — Plans & Pricing + Hydra KPIs */}
+        {/* Reseller — Plans & Pricing + Hydra KPIs + Applications */}
         <TabsContent value="reseller">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
@@ -734,12 +735,19 @@ function BillingAdminContent() {
                 <Network className="h-4 w-4" />
                 Hydra KPIs
               </TabsTrigger>
+              <TabsTrigger value="reseller-applications" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Applications
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="plans" className="mt-6">
               <PlansPricingContent />
             </TabsContent>
             <TabsContent value="hydra-kpis" className="mt-6">
               <HydraKPIDashboardPage />
+            </TabsContent>
+            <TabsContent value="reseller-applications" className="mt-6">
+              <ResellerApplicationsPage />
             </TabsContent>
           </Tabs>
         </TabsContent>
