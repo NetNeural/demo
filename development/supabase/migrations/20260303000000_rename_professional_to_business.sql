@@ -19,20 +19,22 @@ UPDATE organizations
 SET subscription_tier = 'business', updated_at = now()
 WHERE subscription_tier = 'professional';
 
--- 4. tier_features table (if it has a tier_slug column)
+-- 4. tier_features table (tier column)
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'tier_features'
   ) THEN
-    EXECUTE 'UPDATE tier_features SET tier_slug = ''business'' WHERE tier_slug = ''professional''';
+    EXECUTE 'UPDATE tier_features SET tier = ''business'' WHERE tier = ''professional''';
   END IF;
 END $$;
 
 -- 5. Notify PostgREST to reload schema cache
 NOTIFY pgrst, 'reload schema';
 
-RAISE NOTICE 'Renamed professional → business in billing_plans, organizations, and tier_features';
+DO $$ BEGIN
+  RAISE NOTICE 'Renamed professional -> business in billing_plans, organizations, and tier_features';
+END $$;
 
 COMMIT;
