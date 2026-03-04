@@ -62,6 +62,27 @@ async function fetchAllUsers(): Promise<AuthUser[]> {
   return users
 }
 
+/**
+ * IMPORTANT: The paginated admin users list endpoint (/admin/users?per_page=N)
+ * always returns `identities: null` regardless of actual identity state (a
+ * known Supabase API behaviour — identities are omitted for performance).
+ * To reliably detect users with truly missing identity rows, we must either:
+ *   (a) Fetch each user individually via GET /admin/users/:id, or
+ *   (b) Query auth.identities directly via postgres.
+ *
+ * We use option (a): only treat a user as broken if their individual record
+ * also shows no identities. This costs one extra HTTP call per user but
+ * prevents mass-resetting passwords for users who are perfectly fine.
+ */
+async function userHasIdentity(userId: string): Promise<boolean> {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    headers: ADMIN_HEADERS,
+  })
+  if (!res.ok) return true // assume OK on error to avoid false positives
+  const user: AuthUser = await res.json()
+  return Array.isArray(user.identities) && user.identities.length > 0
+}
+
 async function repairUser(user: AuthUser): Promise<boolean> {
   // Set a cryptographically random temp password — forces identity creation.
   // The user will get a reset email so they never need to know this value.
@@ -126,9 +147,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const allUsers = await fetchAllUsers()
     console.log(`[fix-null-identities] Total users: ${allUsers.length}`)
 
-    const broken = allUsers.filter(
+    // The paginated list always returns identities:null — we must individually
+    // verify each user before treating them as broken. See note above.
+    const candidatesWithNullInList = allUsers.filter(
       (u) => u.identities === null || (Array.isArray(u.identities) && u.identities.length === 0)
     )
+
+    // Verify individually — only repair those that truly have no identity
+    const broken: AuthUser[] = []
+    for (const user of candidatesWithNullInList) {
+      const hasIdentity = await userHasIdentity(user.id)
+      if (!hasIdentity) {
+        broken.push(user)
+      }
+      // Small delay to avoid hammering the admin API
+      await new Promise((r) => setTimeout(r, 50))
+    }
 
     if (broken.length === 0) {
       console.log('[fix-null-identities] No broken identities found. All clear.')
@@ -138,7 +172,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       )
     }
 
-    console.log(`[fix-null-identities] Found ${broken.length} users with null identities`)
+    console.log(`[fix-null-identities] Found ${broken.length} truly broken users (verified individually)`)
 
     const results = { fixed: [] as string[], failed: [] as string[] }
 
@@ -147,7 +181,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (ok) {
         results.fixed.push(user.email)
         console.log(`[fix-null-identities] FIXED: ${user.email}`)
-        // Send reset email so they can set their own password
+        // Send a password-reset email so the user can regain access with their
+        // own credentials.  This is safe because we only reach here for users
+        // whose identity was JUST created (they were in the broken list); users
+        // who already have an identity are filtered out above and will never
+        // receive a spurious reset email that would invalidate an in-flight token.
         await sendPasswordReset(user.email)
       } else {
         results.failed.push(user.email)
