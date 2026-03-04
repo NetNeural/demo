@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { User, Settings, Shield, Building2, CreditCard, ArrowUpRight, Code } from 'lucide-react'
+import { User, Settings, Shield, Building2, CreditCard, ArrowUpRight } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
@@ -10,7 +10,6 @@ import { ProfileTab } from './components/ProfileTab'
 import { PreferencesTab } from './components/PreferencesTab'
 import { SecurityTab } from './components/SecurityTab'
 import { UserOrganizationsTab } from './components/UserOrganizationsTab'
-import { DeveloperTab } from './components/DeveloperTab'
 import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
@@ -81,13 +80,12 @@ function SettingsPageContent() {
             profile: 'account', preferences: 'account',
             security: 'security',
             organizations: 'organization', subscription: 'organization',
-            developer: 'developer',
           }
           return groupMap[activeTab] || 'account'
         })()}
         onValueChange={(group) => {
           const defaults: Record<string, string> = {
-            account: 'profile', security: 'security', organization: 'organizations', developer: 'developer',
+            account: 'profile', security: 'security', organization: 'organizations',
           }
           handleTabChange(defaults[group] || 'profile')
         }}
@@ -105,10 +103,6 @@ function SettingsPageContent() {
           <TabsTrigger value="organization" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span>Organization</span>
-          </TabsTrigger>
-          <TabsTrigger value="developer" className="flex items-center gap-2">
-            <Code className="h-4 w-4" />
-            <span>Developer</span>
           </TabsTrigger>
         </TabsList>
 
@@ -192,10 +186,7 @@ function SettingsPageContent() {
           )}
         </TabsContent>
 
-        {/* Developer — API Keys + Webhooks */}
-        <TabsContent value="developer">
-          <DeveloperTab />
-        </TabsContent>
+        {/* Developer moved to /dashboard/developer */}
       </Tabs>
     </div>
   )

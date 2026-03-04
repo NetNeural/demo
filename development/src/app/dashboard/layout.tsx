@@ -38,6 +38,7 @@ import {
   Network,
   UserPlus,
   KeyRound,
+  Code,
 } from 'lucide-react'
 import { canAccessSupport } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -125,6 +126,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]
       : []),
+    { href: '/dashboard/developer', label: 'Developer', icon: Code },
     { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
   ]
 
