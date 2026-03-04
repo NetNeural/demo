@@ -75,6 +75,7 @@ export default createEdgeFunction(
           organizationId: null,
           role: 'super_admin',
           isSuperAdmin: true,
+          isPlatformAdmin: true,
           email: 'system@service',
         }
       } else {
@@ -123,11 +124,13 @@ export default createEdgeFunction(
                 }
 
                 if (profile) {
+                  const isSA = profile.role === 'super_admin' || profile.role === 'platform_admin'
                   userContext = {
                     userId: payload.sub,
                     organizationId: profile.organization_id,
                     role: profile.role,
-                    isSuperAdmin: profile.role === 'super_admin',
+                    isSuperAdmin: isSA,
+                    isPlatformAdmin: isSA || (profile.role === 'org_owner' && profile.organization_id === '00000000-0000-0000-0000-000000000001'),
                     email: profile.email || payload.email || '',
                   }
                   console.log(

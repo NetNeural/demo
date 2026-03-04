@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS public.api_usage_log (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_api_usage_key_time
+CREATE INDEX IF NOT EXISTS idx_api_usage_key_time
   ON public.api_usage_log(api_key_id, created_at DESC);
 
-CREATE INDEX idx_api_usage_org_time
+CREATE INDEX IF NOT EXISTS idx_api_usage_org_time
   ON public.api_usage_log(organization_id, created_at DESC);
 
 -- Auto-purge rows older than 7 days (keep table small)
@@ -32,6 +32,7 @@ $$;
 -- RLS
 ALTER TABLE public.api_usage_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Org admins can view API usage" ON public.api_usage_log;
 CREATE POLICY "Org admins can view API usage"
   ON public.api_usage_log FOR SELECT
   USING (
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_webhook_subs_org
+CREATE INDEX IF NOT EXISTS idx_webhook_subs_org
   ON public.webhook_subscriptions(organization_id, is_active);
 
 -- Delivery log — keep last 500 deliveries per subscription
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_delivery_log (
   success             BOOLEAN     NOT NULL DEFAULT false
 );
 
-CREATE INDEX idx_webhook_delivery_sub
+CREATE INDEX IF NOT EXISTS idx_webhook_delivery_sub
   ON public.webhook_delivery_log(subscription_id, delivered_at DESC);
 
 -- Auto-purge delivery log older than 30 days
@@ -96,6 +97,7 @@ $$;
 ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhook_delivery_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Org admins can manage webhooks" ON public.webhook_subscriptions;
 CREATE POLICY "Org admins can manage webhooks"
   ON public.webhook_subscriptions FOR ALL
   USING (
@@ -110,6 +112,7 @@ CREATE POLICY "Org admins can manage webhooks"
     )
   );
 
+DROP POLICY IF EXISTS "Org admins can view delivery log" ON public.webhook_delivery_log;
 CREATE POLICY "Org admins can view delivery log"
   ON public.webhook_delivery_log FOR SELECT
   USING (

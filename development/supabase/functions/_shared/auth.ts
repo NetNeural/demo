@@ -139,7 +139,7 @@ export async function getUserContext(req: Request): Promise<UserContext> {
               fallbackOrgId = membership.organization_id
             }
           }
-          const isSA = profile.role === 'super_admin'
+          const isSA = profile.role === 'super_admin' || profile.role === 'platform_admin'
           return {
             userId: payload.sub,
             organizationId: fallbackOrgId,
@@ -200,8 +200,8 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     userId: user.id,
     organizationId: resolvedOrgId,
     role: userProfile.role as UserContext['role'],
-    isSuperAdmin: userProfile.role === 'super_admin',
-    isPlatformAdmin: userProfile.role === 'super_admin' || (userProfile.role === 'org_owner' && resolvedOrgId === NETNEURAL_ORG_ID),
+    isSuperAdmin: userProfile.role === 'super_admin' || userProfile.role === 'platform_admin',
+    isPlatformAdmin: userProfile.role === 'super_admin' || userProfile.role === 'platform_admin' || (userProfile.role === 'org_owner' && resolvedOrgId === NETNEURAL_ORG_ID),
     email: userProfile.email || user.email || '',
   }
 }

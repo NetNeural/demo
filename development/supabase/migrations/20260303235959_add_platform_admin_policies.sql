@@ -1,11 +1,7 @@
-﻿-- Migration: Add platform_admin role
+-- Migration: Add platform_admin RLS policies and helper function
 -- Platform admins have same powers as super_admin EXCEPT cross-org visibility
--- They can only see/manage organizations they are members of
 
--- Step 1: Add platform_admin to user_role enum
-ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'platform_admin' AFTER 'super_admin';
-
--- Step 2: Create helper function to check if a user is a platform-level admin
+-- Helper function to check if a user is a platform-level admin
 CREATE OR REPLACE FUNCTION is_platform_level_user()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -19,7 +15,17 @@ AS $$
   );
 $$;
 
--- Step 3: Add RLS policies for platform_admin
+-- Drop existing policies first to make idempotent
+DROP POLICY IF EXISTS "platform_admin_view_org_users" ON users;
+DROP POLICY IF EXISTS "platform_admin_update_org_users" ON users;
+DROP POLICY IF EXISTS "platform_admin_view_org_devices" ON devices;
+DROP POLICY IF EXISTS "platform_admin_manage_org_devices" ON devices;
+DROP POLICY IF EXISTS "platform_admin_view_org_alerts" ON alerts;
+DROP POLICY IF EXISTS "platform_admin_manage_org_alerts" ON alerts;
+DROP POLICY IF EXISTS "platform_admin_view_member_orgs" ON organizations;
+DROP POLICY IF EXISTS "platform_admin_manage_member_orgs" ON organizations;
+DROP POLICY IF EXISTS "platform_admin_view_org_members" ON organization_members;
+
 -- Platform admins can see users in their member organizations
 CREATE POLICY "platform_admin_view_org_users" ON users
   FOR SELECT
