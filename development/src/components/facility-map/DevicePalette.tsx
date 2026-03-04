@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils'
 import {
   Smartphone,
   Search,
-  MapPin,
   Plus,
   Wifi,
   WifiOff,
@@ -25,6 +24,7 @@ import {
   Wrench,
   X,
   GripVertical,
+  CheckCircle2,
 } from 'lucide-react'
 import type { PlacedDevice, DeviceMapPlacement } from '@/types/facility-map'
 
@@ -162,41 +162,13 @@ export function DevicePalette({
                 </div>
               )}
 
-              {/* Placed devices */}
-              {placed.length > 0 && (
-                <div>
-                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-                    On Map ({placed.length})
-                  </p>
-                  <div className="space-y-1">
-                    {placed.map((device) => {
-                      const placement = placements.find((p) => p.device_id === device.id)
-                      return (
-                        <div
-                          key={device.id}
-                          className="flex items-center gap-2 rounded-lg p-2.5 hover:bg-accent"
-                        >
-                          <StatusIcon status={device.status} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{device.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-green-600" />
-                            {placement && (
-                              <button
-                                className="rounded p-1 hover:bg-destructive/10"
-                                title="Remove from map"
-                                onClick={() => onRemovePlacement(placement.id)}
-                              >
-                                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+              {/* All devices placed on this map */}
+              {unplaced.length === 0 && placed.length > 0 && !search && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <CheckCircle2 className="mx-auto mb-2 h-5 w-5 text-green-500" />
+                  All devices are on this map.
+                  <br />
+                  <span className="text-xs">Select a device on the map to move or remove it.</span>
                 </div>
               )}
 

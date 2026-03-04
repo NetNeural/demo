@@ -225,6 +225,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       setPlacements([])
       return
     }
+    // Clear immediately so switching maps removes stale "placed" state in the palette
+    setPlacements([])
 
     try {
       const { data, error } = await supabaseRef.current
@@ -654,6 +656,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const handlePlaceDevice = useCallback(
     async (deviceId: string, xPercent: number, yPercent: number) => {
       if (!selectedMapId) return
+
+      // Prevent placing the same device twice on the same map
+      if (placements.some((p) => p.device_id === deviceId)) {
+        toast.error('This device is already placed on this map')
+        return
+      }
 
       try {
         const { data, error } = await supabaseRef.current
