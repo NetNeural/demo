@@ -252,7 +252,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="sticky top-0 z-50 flex items-center justify-between border-b bg-background/95 px-4 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-8">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
-              {isSuperAdmin ? (
+              {user?.role === 'super_admin' ? (
                 <Badge
                   variant="destructive"
                   className="flex items-center gap-1"
@@ -272,7 +272,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </svg>
                   <span className="hidden sm:inline">Super Admin</span>
                 </Badge>
-              ) : isPlAdmin ? (
+              ) : (user?.role === 'platform_admin' || isPlAdmin) ? (
                 <Badge className="flex items-center gap-1 bg-purple-600 text-white hover:bg-purple-600">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
