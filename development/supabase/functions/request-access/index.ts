@@ -34,6 +34,87 @@ interface RevokeBody {
   request_id: string
 }
 
+// Survey email HTML builder
+async function sendSurveyEmail(
+  supabase: ReturnType<typeof createServiceClient>,
+  requestId: string,
+  targetOrgId: string,
+  requesterName: string,
+  requesterOrgName: string,
+  targetOrgName: string,
+) {
+  const resendApiKey = Deno.env.get('RESEND_API_KEY')
+  if (!resendApiKey) return
+
+  // Get target org owner emails
+  const { data: owners } = await supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', targetOrgId)
+    .in('role', ['owner', 'admin'])
+
+  if (!owners || owners.length === 0) return
+
+  const userIds = owners.map((o: { user_id: string }) => o.user_id)
+  const { data: userProfiles } = await supabase
+    .from('users')
+    .select('email, full_name')
+    .in('id', userIds)
+
+  if (!userProfiles || userProfiles.length === 0) return
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:24px">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <img src="https://sentinel.netneural.ai/icon.svg" alt="NetNeural" style="height:36px;margin-bottom:24px">
+    <h2 style="color:#111;margin:0 0 8px">How was your support session?</h2>
+    <p style="color:#555;font-size:15px;margin:0 0 16px">
+      <strong>${requesterName}</strong> from <strong>${requesterOrgName}</strong> just completed a temporary admin session on your <strong>${targetOrgName}</strong> organization.
+    </p>
+    <p style="color:#555;font-size:15px;margin:0 0 24px">We&apos;d love to know how it went. Please rate your experience:</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+      <tr>
+        <td style="text-align:center;padding:8px">
+          <a href="https://sentinel.netneural.ai/dashboard/feedback?rating=5&session=${requestId}" style="display:inline-block;padding:10px 18px;background:#16a34a;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">⭐⭐⭐⭐⭐<br><span style="font-size:12px;font-weight:normal">Excellent</span></a>
+        </td>
+        <td style="text-align:center;padding:8px">
+          <a href="https://sentinel.netneural.ai/dashboard/feedback?rating=4&session=${requestId}" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">⭐⭐⭐⭐<br><span style="font-size:12px;font-weight:normal">Good</span></a>
+        </td>
+        <td style="text-align:center;padding:8px">
+          <a href="https://sentinel.netneural.ai/dashboard/feedback?rating=3&session=${requestId}" style="display:inline-block;padding:10px 18px;background:#d97706;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">⭐⭐⭐<br><span style="font-size:12px;font-weight:normal">Okay</span></a>
+        </td>
+        <td style="text-align:center;padding:8px">
+          <a href="https://sentinel.netneural.ai/dashboard/feedback?rating=2&session=${requestId}" style="display:inline-block;padding:10px 18px;background:#dc2626;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">⭐⭐<br><span style="font-size:12px;font-weight:normal">Poor</span></a>
+        </td>
+      </tr>
+    </table>
+    <p style="color:#888;font-size:13px;margin:0 0 8px">You can also <a href="https://sentinel.netneural.ai/dashboard/feedback" style="color:#2563eb">leave detailed feedback</a> or simply reply to this email with any comments.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+    <p style="color:#aaa;font-size:12px;margin:0">NetNeural IoT Platform &bull; All admin access sessions are logged in your audit trail.</p>
+  </div>
+</body>
+</html>`
+
+  for (const profile of userProfiles) {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'NetNeural <noreply@netneural.ai>',
+        to: [profile.email],
+        subject: `How was your support session? — Rate your experience`,
+        html,
+      }),
+    }).catch((e: unknown) => console.error('[survey-email] Send failed:', e))
+  }
+}
+
 // Map shorthand durations to PostgreSQL intervals
 const DURATION_MAP: Record<string, string> = {
   '1h': '1 hour',
@@ -238,6 +319,16 @@ export default createEdgeFunction(
       // instead fetch access_requests bare then enrich with separate lookups.
       const serviceClient = createServiceClient()
 
+      // ── org_list: return all orgs for the target dropdown ───────────
+      if (view === 'org_list') {
+        const { data: allOrgs } = await serviceClient
+          .from('organizations')
+          .select('id, name, slug')
+          .eq('is_active', true)
+          .order('name')
+        return createSuccessResponse({ organizations: allOrgs || [] })
+      }
+
       let query = serviceClient
         .from('access_requests')
         .select('*')
@@ -389,7 +480,7 @@ export default createEdgeFunction(
           .insert({
             organization_id: request.target_org_id,
             user_id: request.requester_id,
-            role: 'member', // Temporary access is always member-level
+            role: 'admin', // Temporary admin access for support session
             is_temporary: true,
             expires_at: expiresAt.toISOString(),
             invited_by: userContext.userId,
@@ -594,6 +685,25 @@ export default createEdgeFunction(
           },
           status: 'success',
         })
+
+        // Get names for the survey email
+        const [requesterRes, requesterOrgRes, targetOrgRes] = await Promise.all([
+          supabase.from('users').select('full_name, email').eq('id', request.requester_id).single(),
+          supabase.from('organizations').select('name').eq('id', request.requester_org_id).single(),
+          supabase.from('organizations').select('name').eq('id', request.target_org_id).single(),
+        ])
+        const requesterName = requesterRes.data?.full_name || requesterRes.data?.email || 'The NetNeural admin'
+        const requesterOrgName = requesterOrgRes.data?.name || 'NetNeural'
+        const targetOrgName = targetOrgRes.data?.name || 'your organization'
+
+        await sendSurveyEmail(
+          supabase as ReturnType<typeof createServiceClient>,
+          request_id,
+          request.target_org_id,
+          requesterName,
+          requesterOrgName,
+          targetOrgName,
+        ).catch((e: unknown) => console.error('[request-access] Survey email error:', e))
 
         return createSuccessResponse(
           { request_id, status: 'revoked' },

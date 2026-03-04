@@ -18,6 +18,7 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { SessionTimeoutModal } from '@/components/session/SessionTimeoutModal'
+import { AccessRequestNotifier } from '@/components/access/AccessRequestNotifier'
 import {
   LayoutDashboard,
   Smartphone,
@@ -134,6 +135,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <>
       <ThemeBranding />
       <KeyboardShortcutsModal />
+      <AccessRequestNotifier />
       <div className="dashboard-container">
         {/* Mobile Menu Toggle — visible only on < 1024px via CSS */}
         <button
