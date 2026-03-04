@@ -64,14 +64,10 @@ export interface BillingPlan {
 }
 
 /** Slugs matching the active seed data (per-sensor pricing model) */
-export type BillingPlanSlug = 'starter' | 'professional' | 'enterprise'
+export type BillingPlanSlug = 'starter' | 'business' | 'enterprise'
 
 /** Legacy slugs (deactivated, kept for historical subscription references) */
-export type LegacyBillingPlanSlug =
-  | 'free'
-  | 'monitor'
-  | 'protect'
-  | 'command'
+export type LegacyBillingPlanSlug = 'free' | 'monitor' | 'protect' | 'command'
 
 /** Feature display metadata for plan comparison UI */
 export interface PlanFeatureDisplay {
@@ -113,7 +109,7 @@ export const PLAN_FEATURE_DISPLAY: PlanFeatureDisplay[] = [
     label: 'Report Export',
     description: 'Manual data export and reporting',
   },
-  // Professional
+  // Business
   {
     key: 'ai_analytics',
     label: 'AI Anomaly Detection',
@@ -373,6 +369,70 @@ export function isSubscriptionActive(status: SubscriptionStatus): boolean {
 }
 
 // ============================================================================
+// Payment History (#55)
+// ============================================================================
+
+/** Payment status enum matching DB */
+export type PaymentStatus =
+  | 'succeeded'
+  | 'failed'
+  | 'pending'
+  | 'refunded'
+  | 'requires_action'
+
+/** Database row from payment_history table */
+export interface PaymentRecord {
+  id: string
+  organization_id: string
+  invoice_id: string | null
+  stripe_payment_intent: string | null
+  stripe_charge_id: string | null
+  amount_cents: number
+  currency: string
+  status: PaymentStatus
+  payment_method_type: string | null
+  card_brand: string | null
+  card_last4: string | null
+  receipt_url: string | null
+  failure_code: string | null
+  failure_message: string | null
+  retry_count: number
+  last_retry_at: string | null
+  created_at: string
+}
+
+/**
+ * Human-readable payment status label
+ */
+export function formatPaymentStatus(status: PaymentStatus): string {
+  const labels: Record<PaymentStatus, string> = {
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    pending: 'Pending',
+    refunded: 'Refunded',
+    requires_action: 'Action Required',
+  }
+  return labels[status]
+}
+
+/**
+ * Format card brand for display
+ */
+export function formatCardBrand(brand: string | null): string {
+  if (!brand) return 'Card'
+  const map: Record<string, string> = {
+    visa: 'Visa',
+    mastercard: 'Mastercard',
+    amex: 'Amex',
+    discover: 'Discover',
+    diners: 'Diners',
+    jcb: 'JCB',
+    unionpay: 'UnionPay',
+  }
+  return map[brand.toLowerCase()] ?? brand
+}
+
+// ============================================================================
 // Usage Metering (#244)
 // ============================================================================
 
@@ -516,6 +576,156 @@ export interface PlanDraft {
   is_public: boolean
   sort_order: number
   description: string
+}
+
+// ==========================================================================
+// Customer / Health Score types (#56)
+// ==========================================================================
+
+/** Health score status derived from numeric score */
+export type HealthStatus = 'healthy' | 'at_risk' | 'critical'
+
+/** Lifecycle stage for a customer (matches customer_lifecycle_stage DB enum) */
+export type LifecycleStage =
+  | 'trial'
+  | 'onboarding'
+  | 'active'
+  | 'at_risk'
+  | 'churned'
+  | 'reactivated'
+
+/** Trigger type for lifecycle transitions */
+export type LifecycleTriggerType = 'automatic' | 'manual' | 'system'
+
+/** Row from customer_lifecycle_events table */
+export interface LifecycleEvent {
+  id: string
+  organization_id: string
+  from_stage: LifecycleStage | null
+  to_stage: LifecycleStage
+  trigger_type: LifecycleTriggerType
+  trigger_reason: string | null
+  metadata: Record<string, unknown>
+  created_by: string | null
+  created_at: string
+}
+
+/** Activity timeline entry (unified across multiple tables) */
+export interface TimelineEntry {
+  id: string
+  type:
+    | 'lifecycle'
+    | 'device'
+    | 'payment'
+    | 'subscription'
+    | 'member'
+    | 'alert'
+    | 'login'
+  title: string
+  description: string | null
+  timestamp: string
+  metadata?: Record<string, unknown>
+  icon?: string
+}
+
+/** Row from admin_customer_overview view */
+export interface CustomerOverviewRow {
+  id: string
+  name: string
+  slug: string
+  subscription_tier: string | null
+  is_active: boolean
+  created_at: string
+  last_updated: string
+  parent_organization_id: string | null
+  is_reseller: boolean
+  device_count: number
+  member_count: number
+  active_device_count: number
+  subscription_id: string | null
+  subscription_status: string | null
+  current_period_end: string | null
+  cancel_at_period_end: boolean | null
+  plan_name: string | null
+  plan_slug: string | null
+  mrr: number | null
+  health_score: number
+  login_frequency_score: number | null
+  device_activity_score: number | null
+  feature_adoption_score: number | null
+  support_ticket_score: number | null
+  payment_health_score: number | null
+  health_computed_at: string | null
+  last_active: string | null
+}
+
+/** Summary stats for the customer overview dashboard */
+export interface CustomerSummaryStats {
+  totalCustomers: number
+  activeCustomers: number
+  totalMrr: number
+  avgHealth: number
+  churnRate: number
+  atRiskCount: number
+}
+
+/** Get health status from numeric score */
+export function getHealthStatus(score: number): HealthStatus {
+  if (score >= 80) return 'healthy'
+  if (score >= 50) return 'at_risk'
+  return 'critical'
+}
+
+/** Human-readable health status label */
+export function formatHealthStatus(status: HealthStatus): string {
+  switch (status) {
+    case 'healthy':
+      return 'Healthy'
+    case 'at_risk':
+      return 'At Risk'
+    case 'critical':
+      return 'Critical'
+  }
+}
+
+/** Derive lifecycle stage from customer data (client-side fallback when DB column not yet populated) */
+export function getLifecycleStage(
+  customer: CustomerOverviewRow
+): LifecycleStage {
+  // Churned: subscription canceled and past end date
+  if (customer.subscription_status === 'canceled') return 'churned'
+  // At risk: health score < 50 or past_due or canceling
+  if (
+    customer.cancel_at_period_end ||
+    customer.health_score < 50 ||
+    customer.subscription_status === 'past_due'
+  )
+    return 'at_risk'
+  // Trial: created within last 14 days with no subscription
+  const created = new Date(customer.created_at)
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  if (created > twoWeeksAgo && !customer.subscription_id) return 'trial'
+  // Onboarding: no devices yet
+  if (customer.device_count === 0) return 'onboarding'
+  return 'active'
+}
+
+/** Human-readable lifecycle label */
+export function formatLifecycleStage(stage: LifecycleStage): string {
+  switch (stage) {
+    case 'trial':
+      return 'Trial'
+    case 'onboarding':
+      return 'Onboarding'
+    case 'active':
+      return 'Active'
+    case 'at_risk':
+      return 'At Risk'
+    case 'churned':
+      return 'Churned'
+    case 'reactivated':
+      return 'Reactivated'
+  }
 }
 
 /** Empty feature set (all off) */

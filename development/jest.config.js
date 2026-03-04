@@ -19,6 +19,9 @@ const config = {
 
   // Module name mapping for CSS modules and static assets
   moduleNameMapper: {
+    // Vitest -> Jest compatibility shim (tests that import from 'vitest')
+    '^vitest$': '<rootDir>/__mocks__/vitest.js',
+
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     // Note: More specific patterns must come before general ones
     '^@/__tests__/(.*)$': '<rootDir>/__tests__/$1',
@@ -74,7 +77,11 @@ const config = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
 
-  // Coverage thresholds - set to current achievable levels, increase as coverage improves
+  // Coverage thresholds — enforced in CI. Raise each week:
+  // Week 1 (2026-03-02): 20/20/20/50 — baseline enforcement enabled
+  // Week 2 target: statements/lines/functions → 30%
+  // Week 3 target: statements/lines/functions → 50%
+  // Week 4 target: statements/lines/functions → 70%
   coverageThreshold: {
     global: {
       branches: 5,

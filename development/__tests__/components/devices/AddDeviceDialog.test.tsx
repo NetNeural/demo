@@ -51,7 +51,8 @@ describe('AddDeviceDialog', () => {
     )
 
     expect(screen.getByText('Add New Device')).toBeInTheDocument()
-    expect(screen.getByText(/Register a new IoT device/)).toBeInTheDocument()
+    // Mode chooser shown by default
+    expect(screen.getByText('Manual Entry')).toBeInTheDocument()
   })
 
   it('does not render when closed', () => {
@@ -105,6 +106,9 @@ describe('AddDeviceDialog', () => {
       />
     )
 
+    // Click Manual Entry to show the form
+    fireEvent.click(screen.getByText('Manual Entry'))
+
     const addButton = screen.getByRole('button', { name: /Add Device/i })
     expect(addButton).toBeDisabled()
   })
@@ -117,6 +121,9 @@ describe('AddDeviceDialog', () => {
         onSuccess={mockOnSuccess}
       />
     )
+
+    // Click Manual Entry to show the form
+    fireEvent.click(screen.getByText('Manual Entry'))
 
     const nameInput = screen.getByLabelText(/Device Name/i)
     fireEvent.change(nameInput, { target: { value: 'Test Device' } })
@@ -156,6 +163,9 @@ describe('AddDeviceDialog', () => {
       />
     )
 
+    // Click Manual Entry to show the form
+    fireEvent.click(screen.getByText('Manual Entry'))
+
     // Wait for device types to load
     await waitFor(() => {
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('device_types')
@@ -179,6 +189,9 @@ describe('AddDeviceDialog', () => {
         onSuccess={mockOnSuccess}
       />
     )
+
+    // Click Manual Entry to show Cancel button
+    fireEvent.click(screen.getByText('Manual Entry'))
 
     const cancelButton = screen.getByRole('button', { name: /Cancel/i })
     fireEvent.click(cancelButton)
@@ -230,6 +243,9 @@ describe('AddDeviceDialog', () => {
       />
     )
 
+    // Click Manual Entry to show the form (loading state is inside the form)
+    fireEvent.click(screen.getByText('Manual Entry'))
+
     expect(screen.getByText(/Loading device types/i)).toBeInTheDocument()
   })
 
@@ -254,6 +270,9 @@ describe('AddDeviceDialog', () => {
         onSuccess={mockOnSuccess}
       />
     )
+
+    // Click Manual Entry to show the form fields
+    fireEvent.click(screen.getByText('Manual Entry'))
 
     const modelInput = screen.getByLabelText(/Model/i)
     const serialInput = screen.getByLabelText(/Serial Number/i)

@@ -13,8 +13,10 @@ import {
   Crown,
   Plus,
   CreditCard,
-  BarChart3,
   Key,
+  Briefcase,
+  Network,
+  FolderOpen,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -31,8 +33,8 @@ import { AccessRequestsTab } from './components/AccessRequestsTab'
 import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 import { BillingTab } from './components/BillingTab'
-import { BillingAdminTab } from './components/BillingAdminTab'
 import { ApiKeysTab } from './components/ApiKeysTab'
+import { DocumentsTab } from './components/DocumentsTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function OrganizationsPage() {
@@ -80,6 +82,10 @@ function OrganizationsPageContent() {
   } = useOrganization()
   const { user } = useUser()
   const isSuperAdmin = user?.isSuperAdmin || false
+
+  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+  const isNetNeuralOwner =
+    isOwner && currentOrganization?.id === NETNEURAL_ORG_ID
 
   // Show loading state while fetching organizations
   if (isLoading) {
@@ -164,8 +170,33 @@ function OrganizationsPageContent() {
       </div>
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+        value={(() => {
+          // Map flat tab IDs to group IDs
+          const groupMap: Record<string, string> = {
+            overview: 'overview',
+            members: 'people',
+            locations: 'infrastructure',
+            integrations: 'infrastructure',
+            'api-keys': 'infrastructure',
+            billing: 'business',
+            customers: 'business',
+            documents: 'documents',
+            settings: 'settings',
+          }
+          return groupMap[activeTab] || 'overview'
+        })()}
+        onValueChange={(group) => {
+          // When switching groups, navigate to default sub-tab
+          const defaults: Record<string, string> = {
+            overview: 'overview',
+            people: 'members',
+            infrastructure: 'locations',
+            business: 'billing',
+            documents: 'documents',
+            settings: 'settings',
+          }
+          handleTabChange(defaults[group] || 'overview')
+        }}
         className="space-y-6"
       >
         <TabsList className="w-full justify-start">
@@ -174,56 +205,30 @@ function OrganizationsPageContent() {
             <span>Overview</span>
           </TabsTrigger>
 
-          <TabsTrigger value="members" className="flex items-center gap-2">
+          <TabsTrigger value="people" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span>Members</span>
+            <span>People</span>
           </TabsTrigger>
 
-          <TabsTrigger value="locations" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span>Locations</span>
+          <TabsTrigger
+            value="infrastructure"
+            className="flex items-center gap-2"
+          >
+            <Network className="h-4 w-4" />
+            <span>Infrastructure</span>
           </TabsTrigger>
 
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Plug className="h-4 w-4" />
-            <span>Integrations</span>
-          </TabsTrigger>
-
           {(isSuperAdmin || isOwner || isAdmin) && (
-            <TabsTrigger value="api-keys" className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              <span>API Keys</span>
+            <TabsTrigger value="business" className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4" />
+              <span>Business</span>
             </TabsTrigger>
           )}
 
-          {(isSuperAdmin || isOwner || isAdmin) && (
-            <TabsTrigger value="billing" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              <span>Billing</span>
-            </TabsTrigger>
-          )}
-
-          {(isSuperAdmin || canCreateChildOrgs) && (
-            <TabsTrigger
-              value="billing-admin"
-              className="flex items-center gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Billing Admin</span>
-            </TabsTrigger>
-          )}
-
-          {(isSuperAdmin || isOwner || isAdmin) && (
-            <TabsTrigger value="access" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span>Access Requests</span>
-            </TabsTrigger>
-          )}
-
-          {(isSuperAdmin || isOwner || isAdmin) && (
-            <TabsTrigger value="customers" className="flex items-center gap-2">
-              <Crown className="h-4 w-4" />
-              <span>Customer Orgs</span>
+          {(isSuperAdmin || isNetNeuralOwner) && (
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              <span>Documents</span>
             </TabsTrigger>
           )}
 
@@ -235,57 +240,130 @@ function OrganizationsPageContent() {
           )}
         </TabsList>
 
+        {/* Overview — single tab, no sub-tabs */}
         <TabsContent value="overview">
-          <OverviewTab organizationId={currentOrganization.id} />
-        </TabsContent>
-
-        <TabsContent value="members">
-          <MembersTab organizationId={currentOrganization.id} />
-        </TabsContent>
-
-        <TabsContent value="locations">
-          <LocationsTab organizationId={currentOrganization.id} />
-        </TabsContent>
-
-        <TabsContent value="integrations">
-          <OrganizationIntegrationsTab
+          <OverviewTab
+            key={currentOrganization.id}
             organizationId={currentOrganization.id}
           />
         </TabsContent>
 
+        {/* People — Members */}
+        <TabsContent value="people">
+          <MembersTab
+            key={currentOrganization.id}
+            organizationId={currentOrganization.id}
+          />
+        </TabsContent>
+
+        {/* Infrastructure — Locations + Integrations + API Keys */}
+        <TabsContent value="infrastructure">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger
+                value="locations"
+                className="flex items-center gap-2"
+              >
+                <MapPin className="h-4 w-4" />
+                Locations
+              </TabsTrigger>
+              <TabsTrigger
+                value="integrations"
+                className="flex items-center gap-2"
+              >
+                <Plug className="h-4 w-4" />
+                Integrations
+              </TabsTrigger>
+              {(isSuperAdmin || isOwner || isAdmin) && (
+                <TabsTrigger
+                  value="api-keys"
+                  className="flex items-center gap-2"
+                >
+                  <Key className="h-4 w-4" />
+                  API Keys
+                </TabsTrigger>
+              )}
+            </TabsList>
+            <TabsContent value="locations" className="mt-6">
+              <LocationsTab
+                key={currentOrganization.id}
+                organizationId={currentOrganization.id}
+              />
+            </TabsContent>
+            <TabsContent value="integrations" className="mt-6">
+              <OrganizationIntegrationsTab
+                key={currentOrganization.id}
+                organizationId={currentOrganization.id}
+              />
+            </TabsContent>
+            {(isSuperAdmin || isOwner || isAdmin) && (
+              <TabsContent value="api-keys" className="mt-6">
+                <ApiKeysTab
+                  key={currentOrganization.id}
+                  organizationId={currentOrganization.id}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
+        </TabsContent>
+
+        {/* Business — Billing + Customer Orgs */}
         {(isSuperAdmin || isOwner || isAdmin) && (
-          <TabsContent value="api-keys">
-            <ApiKeysTab organizationId={currentOrganization.id} />
+          <TabsContent value="business">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger
+                  value="billing"
+                  className="flex items-center gap-2"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Billing
+                </TabsTrigger>
+                {(isSuperAdmin || canCreateChildOrgs) && (
+                  <TabsTrigger
+                    value="customers"
+                    className="flex items-center gap-2"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Customer Orgs
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              <TabsContent value="billing" className="mt-6">
+                <BillingTab
+                  key={currentOrganization.id}
+                  organizationId={currentOrganization.id}
+                />
+              </TabsContent>
+              {(isSuperAdmin || canCreateChildOrgs) && (
+                <TabsContent value="customers" className="mt-6">
+                  <ChildOrganizationsTab
+                    key={currentOrganization.id}
+                    organizationId={currentOrganization.id}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
         )}
 
-        {(isSuperAdmin || isOwner || isAdmin) && (
-          <TabsContent value="billing">
-            <BillingTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
-
-        {(isSuperAdmin || canCreateChildOrgs) && (
-          <TabsContent value="billing-admin">
-            <BillingAdminTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
-
-        {(isSuperAdmin || isOwner || isAdmin) && (
-          <TabsContent value="access">
-            <AccessRequestsTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
-
-        {(isSuperAdmin || isOwner || isAdmin) && (
-          <TabsContent value="customers">
-            <ChildOrganizationsTab organizationId={currentOrganization.id} />
-          </TabsContent>
-        )}
-
+        {/* Settings — single tab, no sub-tabs */}
         {(isSuperAdmin || isOwner) && (
           <TabsContent value="settings">
-            <OrganizationSettingsTab organizationId={currentOrganization.id} />
+            <OrganizationSettingsTab
+              key={currentOrganization.id}
+              organizationId={currentOrganization.id}
+            />
+          </TabsContent>
+        )}
+
+        {/* Documents — Data Room (NetNeural super admins + NetNeural org owners only) */}
+        {(isSuperAdmin || isNetNeuralOwner) && (
+          <TabsContent value="documents">
+            <DocumentsTab
+              key={currentOrganization.id}
+              organizationId={currentOrganization.id}
+            />
           </TabsContent>
         )}
       </Tabs>

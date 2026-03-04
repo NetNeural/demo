@@ -298,8 +298,15 @@ export class AwsIotIntegrationProvider extends DeviceIntegrationProvider {
 
   /**
    * Query telemetry (from shadow history - limited in AWS IoT)
-   * AWS IoT doesn't provide built-in telemetry history
-   * This would require integration with AWS IoT Analytics or custom storage
+   *
+   * AWS IoT Core does not provide built-in telemetry history via the Things API.
+   * Historical telemetry requires one of:
+   *  - AWS IoT Analytics (managed pipeline + data store)
+   *  - AWS IoT Rules → Timestream / DynamoDB / S3 for custom storage
+   *  - MQTT topic subscriptions with external processing
+   *
+   * Current device state IS available via Thing Shadows (see getDeviceStatus).
+   * Returns empty array to signal "not supported" without throwing.
    */
   override async queryTelemetry(): Promise<TelemetryData[]> {
     return []

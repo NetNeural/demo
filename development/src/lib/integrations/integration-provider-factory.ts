@@ -17,27 +17,25 @@ import {
   ProviderConfig,
 } from './base-integration-provider'
 import { GoliothIntegrationProvider } from './golioth-integration-provider'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AwsIotIntegrationProvider } from './aws-iot-integration-provider'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AzureIotIntegrationProvider } from './azure-iot-integration-provider'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { MqttIntegrationProvider } from './mqtt-integration-provider'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { NetNeuralHubIntegrationProvider } from './netneural-hub-integration-provider'
 import { OrganizationIntegration } from './organization-integrations'
 
 type ProviderConstructor = new (
   config: ProviderConfig
 ) => DeviceIntegrationProvider
 
-/**
- * Registry of available integration providers
- */
-const providerRegistry = new Map<string, ProviderConstructor>()
+type LazyProviderLoader = () => Promise<ProviderConstructor>
 
 /**
- * Register a provider type
+ * Registry of available integration providers
+ * Supports both eager (ProviderConstructor) and lazy (dynamic import) registration
+ */
+const providerRegistry = new Map<
+  string,
+  ProviderConstructor | LazyProviderLoader
+>()
+
+/**
+ * Register a provider type (eager — class already loaded)
  */
 export function registerProvider(
   type: string,
@@ -47,22 +45,42 @@ export function registerProvider(
 }
 
 /**
+ * Register a provider type lazily (dynamic import — only loaded when first used)
+ * This keeps heavy SDKs (AWS, Azure, MQTT) out of the initial client bundle.
+ */
+export function registerLazyProvider(
+  type: string,
+  loader: LazyProviderLoader
+): void {
+  providerRegistry.set(type, loader)
+}
+
+/**
  * Integration Provider Factory
  */
 export class IntegrationProviderFactory {
   /**
    * Create a provider instance from an integration record
    */
-  static create(
+  static async create(
     integration: OrganizationIntegration
-  ): DeviceIntegrationProvider {
-    const ProviderClass = providerRegistry.get(integration.integration_type)
+  ): Promise<DeviceIntegrationProvider> {
+    const entry = providerRegistry.get(integration.integration_type)
 
-    if (!ProviderClass) {
+    if (!entry) {
       throw new Error(
         `Unknown integration type: ${integration.integration_type}. ` +
           `Available types: ${Array.from(providerRegistry.keys()).join(', ')}`
       )
+    }
+
+    // Resolve lazy providers (dynamic imports) on first use
+    let ProviderClass: ProviderConstructor
+    if (typeof entry === 'function' && !entry.prototype) {
+      // It's a lazy loader, not a constructor
+      ProviderClass = await (entry as LazyProviderLoader)()
+    } else {
+      ProviderClass = entry as ProviderConstructor
     }
 
     // Extract configuration from integration
@@ -131,12 +149,31 @@ export class IntegrationProviderFactory {
 // ============================================================================
 
 // Register all device integration providers
-// All providers now accept ProviderConfig for type safety
+// Golioth is eagerly loaded (lightweight, most commonly used)
 registerProvider('golioth', GoliothIntegrationProvider)
-registerProvider('aws_iot', AwsIotIntegrationProvider)
-registerProvider('azure_iot', AzureIotIntegrationProvider)
-registerProvider('mqtt', MqttIntegrationProvider)
-registerProvider('netneural_hub', NetNeuralHubIntegrationProvider)
 
-// Note: Google IoT Core was discontinued by Google in August 2023
-// Legacy 'google_iot' type entries should be migrated to alternative providers
+// Heavy SDK providers are lazily loaded via dynamic import to keep them
+// out of the initial client bundle (~500-700 KB savings)
+registerLazyProvider('aws_iot', async () => {
+  const { AwsIotIntegrationProvider } =
+    await import('./aws-iot-integration-provider')
+  return AwsIotIntegrationProvider
+})
+registerLazyProvider('azure_iot', async () => {
+  const { AzureIotIntegrationProvider } =
+    await import('./azure-iot-integration-provider')
+  return AzureIotIntegrationProvider
+})
+registerLazyProvider('mqtt', async () => {
+  const { MqttIntegrationProvider } =
+    await import('./mqtt-integration-provider')
+  return MqttIntegrationProvider
+})
+registerLazyProvider('netneural_hub', async () => {
+  const { NetNeuralLinkIntegrationProvider } =
+    await import('./netneural-link-integration-provider')
+  return NetNeuralLinkIntegrationProvider
+})
+
+// Note: Google IoT Core was removed (discontinued by Google Aug 2023).
+// Legacy 'google_iot' DB entries can be ignored or migrated to other providers.

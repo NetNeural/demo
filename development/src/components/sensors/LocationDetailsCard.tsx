@@ -116,10 +116,16 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
       const response = await edgeFunctions.devices.update(device.id, updates)
 
       if (!response.success) {
-        throw new Error((response.error as { message?: string })?.message || 'Failed to update location')
+        throw new Error(
+          (response.error as { message?: string })?.message ||
+            'Failed to update location'
+        )
       }
 
-      console.log('✅ [LocationDetailsCard] Location saved for device:', device.id)
+      console.log(
+        '✅ [LocationDetailsCard] Location saved for device:',
+        device.id
+      )
 
       toast.success('Location details updated successfully')
 
@@ -149,12 +155,19 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
 
   // Detect stale cross-org location_id (device was transferred but location_id wasn't cleared)
   // Only check after locations have actually loaded (length > 0 or loading finished with empty list)
-  const isStaleLocation = !!(selectedLocationId && !loadingLocations && locations.length > 0 && !selectedLocation)
+  const isStaleLocation = !!(
+    selectedLocationId &&
+    !loadingLocations &&
+    locations.length > 0 &&
+    !selectedLocation
+  )
 
   // If the location_id is stale (cross-org), don't show the old location name
   const displayLocationName = isStaleLocation
     ? 'Not assigned'
-    : selectedLocation?.name || (selectedLocationId ? device.location : null) || 'Not assigned'
+    : selectedLocation?.name ||
+      (selectedLocationId ? device.location : null) ||
+      'Not assigned'
 
   // Auto-clear stale location_id so the UI isn't stuck
   // Also persist the null to the database so it doesn't keep showing the old location
@@ -177,7 +190,10 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
           if (!response.success) {
             console.error('Failed to clear stale location_id:', response.error)
           } else {
-            console.log('✅ [LocationDetailsCard] Cleared stale location_id from database for device:', device.id)
+            console.log(
+              '✅ [LocationDetailsCard] Cleared stale location_id from database for device:',
+              device.id
+            )
           }
         } catch (err) {
           console.error('Error clearing stale location_id:', err)
@@ -325,7 +341,9 @@ export function LocationDetailsCard({ device }: LocationDetailsCardProps) {
             {device.metadata?.placement && (
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="font-medium">{String(device.metadata.placement)}</p>
+                <p className="font-medium">
+                  {String(device.metadata.placement)}
+                </p>
               </div>
             )}
 

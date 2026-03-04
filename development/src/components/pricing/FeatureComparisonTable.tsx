@@ -24,7 +24,7 @@ const FEATURE_GROUPS = [
     ],
   },
   {
-    title: 'Advanced — Professional',
+    title: 'Advanced — Business',
     description: 'Operational intelligence',
     keys: [
       'ai_analytics',
@@ -73,7 +73,7 @@ export function FeatureComparisonTable({ plans }: FeatureComparisonTableProps) {
                 key={plan.id}
                 className={cn(
                   'px-4 py-4 text-center text-sm font-semibold',
-                  plan.slug === 'professional' && 'text-blue-600'
+                  plan.slug === 'business' && 'text-blue-600'
                 )}
               >
                 {plan.name}

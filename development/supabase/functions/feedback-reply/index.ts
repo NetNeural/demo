@@ -62,7 +62,7 @@ export default createEdgeFunction(
 
     // Verify org membership
     let memberRole: string | null = null
-    if (user.role === 'super_admin') {
+    if (user.role === 'super_admin' || user.role === 'platform_admin') {
       memberRole = 'super_admin'
     } else {
       const { data: membership } = await serviceClient
@@ -96,7 +96,7 @@ export default createEdgeFunction(
     }
 
     const isSubmitter = feedback.user_id === user.userId
-    const isAdminOrAbove = ['owner', 'admin', 'super_admin'].includes(
+    const isAdminOrAbove = ['owner', 'admin', 'super_admin', 'platform_admin'].includes(
       memberRole || ''
     )
 

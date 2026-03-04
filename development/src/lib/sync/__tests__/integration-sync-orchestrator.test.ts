@@ -55,7 +55,7 @@ describe('IntegrationSyncOrchestrator', () => {
       getDeviceStatus: jest.fn(),
       getCapabilities: jest.fn(),
     }
-    ;(IntegrationProviderFactory.create as jest.Mock).mockReturnValue(
+    ;(IntegrationProviderFactory.create as jest.Mock).mockResolvedValue(
       mockProvider
     )
   })

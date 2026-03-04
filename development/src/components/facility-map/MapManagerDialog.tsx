@@ -111,7 +111,9 @@ export function MapManagerDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Map' : 'Add Facility Map'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Edit Map' : 'Add Facility Map'}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
               ? 'Update the map settings and floor plan image.'
@@ -197,7 +199,7 @@ export function MapManagerDialog({
                 <img
                   src={imageUrl}
                   alt="Floor plan preview"
-                  className="h-32 w-full object-contain bg-muted"
+                  className="h-32 w-full bg-muted object-contain"
                 />
               </div>
             )}

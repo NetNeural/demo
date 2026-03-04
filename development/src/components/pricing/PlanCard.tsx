@@ -26,7 +26,7 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     '90-day data retention',
     'Up to 3 team members',
   ],
-  professional: [
+  business: [
     'Everything in Starter, plus:',
     'AI anomaly detection',
     'Predictive failure alerts',
@@ -36,7 +36,7 @@ const PLAN_HIGHLIGHTS: Record<string, string[]> = {
     'Up to 25 team members',
   ],
   enterprise: [
-    'Everything in Professional, plus:',
+    'Everything in Business, plus:',
     'AI energy optimization',
     'Chain benchmarking',
     'ESG & carbon analytics',
@@ -151,7 +151,8 @@ export function PlanCard({
       <ul className="mt-6 flex-1 space-y-3">
         {highlights.map((feature, i) => (
           <li key={i} className="flex items-start gap-2 text-sm">
-            {i === 0 && (plan.slug === 'professional' || plan.slug === 'enterprise') ? (
+            {i === 0 &&
+            (plan.slug === 'business' || plan.slug === 'enterprise') ? (
               <span className="font-medium text-muted-foreground">
                 {feature}
               </span>

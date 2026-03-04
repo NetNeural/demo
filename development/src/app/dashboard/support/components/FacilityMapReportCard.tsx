@@ -51,85 +51,174 @@ const COMPONENTS = [
     name: 'FacilityMapView',
     file: 'src/components/facility-map/FacilityMapView.tsx',
     lines: 731,
-    description: 'Main orchestrator — loads maps, devices, placements, telemetry; manages real-time subscriptions',
+    description:
+      'Main orchestrator — loads maps, devices, placements, telemetry; manages real-time subscriptions',
     icon: Map,
   },
   {
     name: 'FacilityMapCanvas',
     file: 'src/components/facility-map/FacilityMapCanvas.tsx',
     lines: 310,
-    description: 'Interactive canvas — renders floor plan with device markers, click-to-place, export/fullscreen tools',
+    description:
+      'Interactive canvas — renders floor plan with device markers, click-to-place, export/fullscreen tools',
     icon: Layers,
   },
   {
     name: 'DeviceMarker',
     file: 'src/components/facility-map/DeviceMarker.tsx',
     lines: 265,
-    description: 'Device dot — status colours, pulse animation, rich tooltip with telemetry, click-to-navigate',
+    description:
+      'Device dot — status colours, pulse animation, rich tooltip with telemetry, click-to-navigate',
     icon: Navigation,
   },
   {
     name: 'DevicePalette',
     file: 'src/components/facility-map/DevicePalette.tsx',
     lines: 191,
-    description: 'Side panel — lists org devices, search filter, placed/unplaced badges, placement trigger',
+    description:
+      'Side panel — lists org devices, search filter, placed/unplaced badges, placement trigger',
     icon: Search,
   },
   {
     name: 'MapManagerDialog',
     file: 'src/components/facility-map/MapManagerDialog.tsx',
     lines: 220,
-    description: 'CRUD dialog — create/edit map name, description, floor level, location, and image',
+    description:
+      'CRUD dialog — create/edit map name, description, floor level, location, and image',
     icon: FileCode2,
   },
   {
     name: 'FacilityMapUploader',
     file: 'src/components/facility-map/FacilityMapUploader.tsx',
     lines: 258,
-    description: 'Image upload — drag-and-drop, file picker, camera capture, Supabase Storage upload',
+    description:
+      'Image upload — drag-and-drop, file picker, camera capture, Supabase Storage upload',
     icon: Camera,
   },
 ]
 
 const CORE_FEATURES = [
-  { name: 'Map CRUD', description: 'Create, edit, and delete facility maps with metadata', icon: Map },
-  { name: 'Image Upload', description: 'Drag-and-drop, file picker, and mobile camera capture', icon: Image },
-  { name: 'Click-to-Place', description: 'Click anywhere on map to position a device', icon: MousePointer2 },
-  { name: 'Drag-to-Reposition', description: 'Drag device dots to new positions in edit mode', icon: Move },
-  { name: 'Real-Time Status', description: 'Live device status via Supabase postgres_changes', icon: Zap },
-  { name: 'Responsive Positioning', description: 'Percentage-based (0–100) coordinates for any screen size', icon: Maximize2 },
-  { name: 'Touch Support', description: 'Touch events for mobile and tablet devices', icon: Smartphone },
-  { name: 'Multiple Maps', description: 'Horizontal scrolling thumbnail strip with selection', icon: Layers },
-  { name: 'Mode Switching', description: 'View / Place / Edit modes for the canvas toolbar', icon: Eye },
+  {
+    name: 'Map CRUD',
+    description: 'Create, edit, and delete facility maps with metadata',
+    icon: Map,
+  },
+  {
+    name: 'Image Upload',
+    description: 'Drag-and-drop, file picker, and mobile camera capture',
+    icon: Image,
+  },
+  {
+    name: 'Click-to-Place',
+    description: 'Click anywhere on map to position a device',
+    icon: MousePointer2,
+  },
+  {
+    name: 'Drag-to-Reposition',
+    description: 'Drag device dots to new positions in edit mode',
+    icon: Move,
+  },
+  {
+    name: 'Real-Time Status',
+    description: 'Live device status via Supabase postgres_changes',
+    icon: Zap,
+  },
+  {
+    name: 'Responsive Positioning',
+    description: 'Percentage-based (0–100) coordinates for any screen size',
+    icon: Maximize2,
+  },
+  {
+    name: 'Touch Support',
+    description: 'Touch events for mobile and tablet devices',
+    icon: Smartphone,
+  },
+  {
+    name: 'Multiple Maps',
+    description: 'Horizontal scrolling thumbnail strip with selection',
+    icon: Layers,
+  },
+  {
+    name: 'Mode Switching',
+    description: 'View / Place / Edit modes for the canvas toolbar',
+    icon: Eye,
+  },
 ]
 
 const ENHANCED_FEATURES = [
-  { name: 'Device Count Badges', description: 'Badge showing placement count on each map thumbnail', icon: BarChart3 },
-  { name: 'Click-to-Navigate', description: 'Click a device dot to open the device detail page', icon: Navigation },
-  { name: 'Status Summary Bar', description: 'Online / offline / warning / error / maintenance counts', icon: Activity },
-  { name: 'Search Filter', description: 'Filter devices by name in the side palette', icon: Search },
-  { name: 'Export PNG', description: 'Download map as a PNG image with device markers and labels', icon: Download },
-  { name: 'Telemetry Tooltips', description: 'Hover a device to see latest sensor readings (up to 6 values)', icon: Activity },
-  { name: 'Bulk Placement', description: 'Auto-selects next unplaced device after placing one', icon: Layers },
-  { name: 'Fullscreen Toggle', description: 'Full-screen canvas via the Browser Fullscreen API', icon: Maximize2 },
+  {
+    name: 'Device Count Badges',
+    description: 'Badge showing placement count on each map thumbnail',
+    icon: BarChart3,
+  },
+  {
+    name: 'Click-to-Navigate',
+    description: 'Click a device dot to open the device detail page',
+    icon: Navigation,
+  },
+  {
+    name: 'Status Summary Bar',
+    description: 'Online / offline / warning / error / maintenance counts',
+    icon: Activity,
+  },
+  {
+    name: 'Search Filter',
+    description: 'Filter devices by name in the side palette',
+    icon: Search,
+  },
+  {
+    name: 'Export PNG',
+    description: 'Download map as a PNG image with device markers and labels',
+    icon: Download,
+  },
+  {
+    name: 'Telemetry Tooltips',
+    description:
+      'Hover a device to see latest sensor readings (up to 6 values)',
+    icon: Activity,
+  },
+  {
+    name: 'Bulk Placement',
+    description: 'Auto-selects next unplaced device after placing one',
+    icon: Layers,
+  },
+  {
+    name: 'Fullscreen Toggle',
+    description: 'Full-screen canvas via the Browser Fullscreen API',
+    icon: Maximize2,
+  },
 ]
 
 const PLANNED_FEATURES = [
-  { issue: '#302', name: 'Map Annotations & Zones', description: 'Draw zones, add labels, create named areas on maps' },
-  { issue: '#303', name: 'Heatmap Overlay', description: 'Gradient heatmap based on telemetry values' },
-  { issue: '#304', name: 'Device Type Filters', description: 'Toggle device types on/off for map visibility' },
+  {
+    issue: '#302',
+    name: 'Map Annotations & Zones',
+    description: 'Draw zones, add labels, create named areas on maps',
+  },
+  {
+    issue: '#303',
+    name: 'Heatmap Overlay',
+    description: 'Gradient heatmap based on telemetry values',
+  },
+  {
+    issue: '#304',
+    name: 'Device Type Filters',
+    description: 'Toggle device types on/off for map visibility',
+  },
 ]
 
 const DB_TABLES = [
   {
     name: 'facility_maps',
     description: 'Map records with image metadata, org/location refs, settings',
-    columns: '17 columns — id, organization_id, location_id, name, description, floor_level, image_url, image_path, image_width, image_height, is_active, sort_order, settings, created_at, updated_at, created_by',
+    columns:
+      '17 columns — id, organization_id, location_id, name, description, floor_level, image_url, image_path, image_width, image_height, is_active, sort_order, settings, created_at, updated_at, created_by',
   },
   {
     name: 'device_map_placements',
     description: 'Device positions on maps with percentage-based coordinates',
-    columns: '10 columns — id, facility_map_id, device_id, x_percent, y_percent, label, icon_size, rotation, settings, created_at, updated_at',
+    columns:
+      '10 columns — id, facility_map_id, device_id, x_percent, y_percent, label, icon_size, rotation, settings, created_at, updated_at',
   },
 ]
 
@@ -138,16 +227,42 @@ const RLS_POLICIES = [
   { table: 'facility_maps', operation: 'INSERT', rule: 'Admin/Owner only' },
   { table: 'facility_maps', operation: 'UPDATE', rule: 'Admin/Owner only' },
   { table: 'facility_maps', operation: 'DELETE', rule: 'Admin/Owner only' },
-  { table: 'device_map_placements', operation: 'SELECT', rule: 'Org members can view' },
-  { table: 'device_map_placements', operation: 'INSERT', rule: 'Admin/Owner only' },
-  { table: 'device_map_placements', operation: 'UPDATE', rule: 'Admin/Owner only' },
-  { table: 'device_map_placements', operation: 'DELETE', rule: 'Admin/Owner only' },
+  {
+    table: 'device_map_placements',
+    operation: 'SELECT',
+    rule: 'Org members can view',
+  },
+  {
+    table: 'device_map_placements',
+    operation: 'INSERT',
+    rule: 'Admin/Owner only',
+  },
+  {
+    table: 'device_map_placements',
+    operation: 'UPDATE',
+    rule: 'Admin/Owner only',
+  },
+  {
+    table: 'device_map_placements',
+    operation: 'DELETE',
+    rule: 'Admin/Owner only',
+  },
 ]
 
 const DEPLOYMENT = [
-  { env: 'Development', ref: 'tsomafkalaoarnuwgdyu', code: true, migration: true },
+  {
+    env: 'Development',
+    ref: 'tsomafkalaoarnuwgdyu',
+    code: true,
+    migration: true,
+  },
   { env: 'Staging', ref: 'atgbmxicqikmapfqouco', code: true, migration: false },
-  { env: 'Production', ref: 'bldojxpockljyivldxwf', code: false, migration: false },
+  {
+    env: 'Production',
+    ref: 'bldojxpockljyivldxwf',
+    code: false,
+    migration: false,
+  },
 ]
 
 // ---------------------------------------------------------------------------
@@ -331,7 +446,7 @@ export default function FacilityMapReportCard() {
             <div className="space-y-3">
               {DB_TABLES.map((table) => (
                 <div key={table.name} className="rounded-lg border p-3">
-                  <p className="text-sm font-medium font-mono">{table.name}</p>
+                  <p className="font-mono text-sm font-medium">{table.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {table.description}
                   </p>
@@ -341,7 +456,7 @@ export default function FacilityMapReportCard() {
                 </div>
               ))}
               <div className="rounded-lg border p-3">
-                <p className="text-sm font-medium font-mono">
+                <p className="font-mono text-sm font-medium">
                   facility-maps{' '}
                   <Badge variant="secondary" className="ml-1 text-[10px]">
                     Storage Bucket

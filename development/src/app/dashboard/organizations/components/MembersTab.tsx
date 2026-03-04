@@ -46,6 +46,7 @@ import {
   Pencil,
   Lock,
   ArrowUpCircle,
+  ShieldOff,
 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { useToast } from '@/hooks/use-toast'
@@ -59,7 +60,7 @@ import Link from 'next/link'
 const SEAT_LIMITS: Record<string, number> = {
   free: 1,
   starter: 3,
-  professional: 25,
+  business: 25,
   enterprise: -1,
   unlimited: -1,
   reseller: -1,
@@ -101,6 +102,10 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [generatedPassword, setGeneratedPassword] = useState<string>('')
   const [passwordCopied, setPasswordCopied] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
+  const [resettingMfa, setResettingMfa] = useState(false)
+  const [showMfaResetDialog, setShowMfaResetDialog] = useState(false)
+  const [mfaResetMember, setMfaResetMember] =
+    useState<OrganizationMember | null>(null)
 
   // ── Seat limit logic (#318) ────────────────────────────────────
   const { tier } = useOrgTier()
@@ -108,7 +113,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const isUnlimitedSeats = seatLimit === -1
   const memberCount = members.length
   const seatLimitReached = !isUnlimitedSeats && memberCount >= seatLimit
-  const seatUsagePercent = isUnlimitedSeats ? 0 : Math.min(100, Math.round((memberCount / seatLimit) * 100))
+  const seatUsagePercent = isUnlimitedSeats
+    ? 0
+    : Math.min(100, Math.round((memberCount / seatLimit) * 100))
 
   // Debug logging
   console.log('📋 MembersTab context:', {
@@ -352,6 +359,36 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     setTimeout(() => setPasswordCopied(false), 2000)
   }
 
+  const handleResetMfa = async (member: OrganizationMember) => {
+    try {
+      setResettingMfa(true)
+      const response = await edgeFunctions.members.resetMfa(member.userId)
+
+      if (!response.success) {
+        const errorMsg =
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to reset MFA'
+        throw new Error(errorMsg)
+      }
+
+      toast({
+        title: '2FA Reset',
+        description: `MFA has been cleared for ${member.name}. They will be prompted to re-enroll on next login.`,
+      })
+      setShowMfaResetDialog(false)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error ? error.message : 'Failed to reset MFA',
+        variant: 'destructive',
+      })
+    } finally {
+      setResettingMfa(false)
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -370,8 +407,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-3">
-                Organization Members ({members.length})
-                {/* Seat usage badge */}
+                Organization Members ({members.length}){/* Seat usage badge */}
                 {!isUnlimitedSeats && (
                   <Badge
                     variant={seatLimitReached ? 'destructive' : 'outline'}
@@ -403,8 +439,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                 </div>
               )}
             </div>
-            {canManageMembers && (
-              seatLimitReached ? (
+            {canManageMembers &&
+              (seatLimitReached ? (
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Lock className="h-4 w-4" />
@@ -422,8 +458,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   <UserPlus className="mr-2 h-4 w-4" />
                   Add Member
                 </Button>
-              )
-            )}
+              ))}
           </div>
         </CardHeader>
         <CardContent>
@@ -533,6 +568,20 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                               <KeyRound className="h-3 w-3" />
                             </Button>
                           )}
+                          {canModifyThisMember && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setMfaResetMember(member)
+                                setShowMfaResetDialog(true)
+                              }}
+                              title="Reset 2FA / MFA"
+                              className="text-amber-600 hover:text-amber-700"
+                            >
+                              <ShieldOff className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -586,7 +635,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           )}
         </CardContent>
       </Card>
-
       {/* Add Member Dialog */}
       <AddMemberDialog
         organizationId={organizationId}
@@ -596,7 +644,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         userRole={userRole || 'member'}
         isSuperAdmin={isSuperAdmin}
       />
-
       {/* Edit Member Dialog */}
       <EditMemberDialog
         organizationId={organizationId}
@@ -605,8 +652,42 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         member={editingMember}
         onMemberUpdated={fetchMembers}
       />
-
-      {/* Reset Password Dialog */}
+      {/* MFA Reset Confirmation Dialog */}
+      <Dialog open={showMfaResetDialog} onOpenChange={setShowMfaResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              This will remove all 2FA factors for{' '}
+              <strong>{mfaResetMember?.name}</strong> ({mfaResetMember?.email}).
+              They will be required to set up 2FA again on their next login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              ⚠️ Use this when a user has lost access to their authenticator app
+              or is locked out due to a 2FA issue.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowMfaResetDialog(false)}
+              disabled={resettingMfa}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => mfaResetMember && handleResetMfa(mfaResetMember)}
+              disabled={resettingMfa}
+            >
+              {resettingMfa ? 'Resetting...' : 'Reset 2FA'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Reset Password Dialog */}{' '}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent>
           <DialogHeader>

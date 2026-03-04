@@ -153,8 +153,8 @@ export default function TroubleshootingTab({ organizationId }: Props) {
     { id: 'webhook', label: '🔗 Webhook', name: 'Webhook Integration' },
     {
       id: 'netneural_hub',
-      label: '🚀 NetNeural Hub',
-      name: 'NetNeural Hub Integration',
+      label: '🚀 NetNeural-Link',
+      name: 'NetNeural-Link Integration',
     },
   ]
 
@@ -800,17 +800,13 @@ export default function TroubleshootingTab({ organizationId }: Props) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  window.open(
-                    'https://github.com/NetNeural/MonoRepo-Staging/actions/workflows/deploy-staging.yml',
-                    '_blank'
-                  )
                   toast.info(
-                    'Opening GitHub Actions - use "Run workflow" button'
+                    'Contact NetNeural support to trigger a deployment'
                   )
                 }}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                Deploy via GitHub
+                Request Deployment
               </Button>
             </div>
 

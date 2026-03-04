@@ -76,9 +76,21 @@ const DOCS: DocEntry[] = [
       'Full REST and Edge Function API reference — authentication, endpoints, request/response schemas, error codes, rate limits.',
     icon: Code2,
     category: 'developer',
-    lines: 1354,
+    lines: 1443,
     audience: ['Developers', 'Integrators'],
-    lastUpdated: '2026-02-18',
+    lastUpdated: '2026-03-03',
+  },
+  {
+    id: 'export-api',
+    title: 'Export API & Webhooks Guide',
+    filename: 'EXPORT_API_GUIDE.txt',
+    description:
+      'Customer Data Export API — authentication with nn_live_ API keys, rate limiting, keyset pagination, CSV export, webhook subscriptions with HMAC-SHA256 signing, and integration examples (Python, Node.js, Grafana, PagerDuty).',
+    icon: Code2,
+    category: 'developer',
+    lines: 599,
+    audience: ['Developers', 'Integrators'],
+    lastUpdated: '2026-03-03',
   },
   {
     id: 'dev-setup',
@@ -97,24 +109,24 @@ const DOCS: DocEntry[] = [
     title: 'Integrations Guide',
     filename: 'INTEGRATIONS_GUIDE.txt',
     description:
-      'Setting up and managing integrations — MQTT brokers, webhooks, Golioth, custom endpoints, testing connections.',
+      'Setting up and managing integrations — MQTT brokers, mqtt_external persistent connections, webhooks, Golioth, V-Mark ACK protocol, testing connections.',
     icon: Network,
     category: 'admin',
-    lines: 603,
+    lines: 649,
     audience: ['Org Admins', 'Developers'],
-    lastUpdated: '2026-02-18',
+    lastUpdated: '2026-03-01',
   },
   {
     id: 'troubleshooting',
     title: 'Troubleshooting Guide',
     filename: 'troubleshooting.txt',
     description:
-      'Common issues and solutions — device connectivity, alert failures, integration errors, authentication problems, performance.',
+      'Common issues and solutions — MQTT external broker diagnostics, V-Mark ACK, device connectivity, alert failures, integration errors, OOM crashes.',
     icon: Wrench,
     category: 'operations',
-    lines: 738,
+    lines: 813,
     audience: ['All Roles'],
-    lastUpdated: '2026-02-18',
+    lastUpdated: '2026-03-01',
   },
   {
     id: 'triage',
@@ -157,24 +169,24 @@ const DOCS: DocEntry[] = [
     title: 'Changelog',
     filename: 'CHANGELOG.txt',
     description:
-      'Release history and version notes — features, bug fixes, breaking changes, migration steps.',
+      'Release history — v2.2.0 Export API, webhooks, rate limiting, developer UI; v2.1.x MQTT, 3-repo deployment; v2.0.0 3-environment setup; v1.0.0 initial release.',
     icon: History,
     category: 'developer',
-    lines: 537,
+    lines: 154,
     audience: ['All Roles'],
-    lastUpdated: '2026-02-18',
+    lastUpdated: '2026-03-03',
   },
   {
     id: 'mqtt-architecture',
     title: 'MQTT Integration Architecture',
     filename: 'MQTT_ARCHITECTURE.txt',
     description:
-      'MQTT integration design — stateless Edge Functions, HTTP ingestion with PGMQ, external broker support, topic structure, security.',
+      'MQTT integration design — stateless Edge Functions, persistent mqtt-subscriber service, V-Mark ACK protocol, external broker support, infrastructure notes.',
     icon: Network,
     category: 'developer',
-    lines: 561,
+    lines: 688,
     audience: ['Developers', 'Integrators', 'Org Admins'],
-    lastUpdated: '2026-02-19',
+    lastUpdated: '2026-03-01',
   },
   {
     id: 'azure-iot-architecture',
@@ -260,6 +272,18 @@ const DOCS: DocEntry[] = [
     audience: ['Super Admins', 'Compliance Officers'],
     lastUpdated: '2025-12-15',
   },
+  {
+    id: 'incident-response',
+    title: 'Incident Response Plan',
+    filename: 'INCIDENT_RESPONSE_PLAN.md',
+    description:
+      'Formal IRP for SOC 2 / FISMA compliance — severity classification (P1-P4), response SLAs, escalation matrix, containment procedures, recovery runbooks, post-mortem templates, customer notification templates, Supabase-specific procedures.',
+    icon: AlertTriangle,
+    category: 'operations',
+    lines: 680,
+    audience: ['Super Admins', 'DevOps', 'Security'],
+    lastUpdated: '2026-03-01',
+  },
 ]
 
 const CATEGORIES = [
@@ -315,10 +339,7 @@ export default function DocumentationTab() {
   const totalLines = DOCS.reduce((acc, d) => acc + d.lines, 0)
 
   const handleOpenDoc = (filename: string) => {
-    // Link to the documentation file in the GitHub repository
-    const repoUrl =
-      'https://github.com/NetNeural/MonoRepo-Staging/blob/main/development/docs'
-    window.open(`${repoUrl}/${filename}`, '_blank')
+    window.open(`/docs/${filename}`, '_blank')
   }
 
   return (

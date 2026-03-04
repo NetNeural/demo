@@ -43,7 +43,7 @@ export function CreateOrganizationDialog({
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [subscriptionTier, setSubscriptionTier] = useState<
-    'free' | 'starter' | 'professional' | 'enterprise'
+    'starter' | 'business' | 'enterprise' | 'unlimited'
   >('starter')
 
   // Validation errors
@@ -139,8 +139,6 @@ export function CreateOrganizationDialog({
       setSubscriptionTier('starter')
       setErrors({})
       setOpen(false)
-
-      // Call success callback with organization ID
       if (onSuccess && response.data) {
         const orgData = response.data as { organization?: { id: string } }
         if (orgData.organization?.id) {
@@ -266,16 +264,10 @@ export function CreateOrganizationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free">Free (Up to 5 devices)</SelectItem>
-                  <SelectItem value="starter">
-                    Starter (Up to 50 devices)
-                  </SelectItem>
-                  <SelectItem value="professional">
-                    Professional (Up to 500 devices)
-                  </SelectItem>
-                  <SelectItem value="enterprise">
-                    Enterprise (Unlimited)
-                  </SelectItem>
+                  <SelectItem value="starter">Starter</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                  <SelectItem value="reseller">Reseller</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
                 </SelectContent>
               </Select>
             </div>

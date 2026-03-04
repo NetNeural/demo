@@ -25,19 +25,25 @@ test.describe('Device Management', () => {
   test.describe('Device Listing', () => {
     test('should load devices page', async ({ page }) => {
       // DevicesHeader renders page title
-      await expect(page.locator('text=/devices/i').first()).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('text=/devices/i').first()).toBeVisible({
+        timeout: 10000,
+      })
     })
 
     test('should show device cards or empty state', async ({ page }) => {
       await page.waitForTimeout(3000)
       // Either device cards or "No organization selected" / "no devices" message
-      const content = page.locator('[class*="card"], text=/no.*device/i, text=/no.*organization/i')
+      const content = page.locator(
+        '[class*="card"], text=/no.*device/i, text=/no.*organization/i'
+      )
       await expect(content.first()).toBeVisible({ timeout: 10000 })
     })
 
     test('should show search input', async ({ page }) => {
       await page.waitForTimeout(2000)
-      const searchInput = page.locator('input[placeholder*="Search"], input[type="search"]')
+      const searchInput = page.locator(
+        'input[placeholder*="Search"], input[type="search"]'
+      )
       if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await searchInput.fill('sensor')
         await page.waitForTimeout(1000)
@@ -49,23 +55,31 @@ test.describe('Device Management', () => {
     test('should navigate to device detail on click', async ({ page }) => {
       await page.waitForTimeout(3000)
       // Click first device link/card
-      const deviceLink = page.locator('a[href*="/dashboard/devices/view"]').first()
+      const deviceLink = page
+        .locator('a[href*="/dashboard/devices/view"]')
+        .first()
       if (await deviceLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await deviceLink.click()
         await page.waitForURL('**/devices/view**', { timeout: 10000 })
         // Should show device name in header
-        await expect(page.locator('h1, h2, h3').first()).toBeVisible({ timeout: 10000 })
+        await expect(page.locator('h1, h2, h3').first()).toBeVisible({
+          timeout: 10000,
+        })
       }
     })
 
     test('should show tabbed interface on device detail', async ({ page }) => {
       await page.waitForTimeout(3000)
-      const deviceLink = page.locator('a[href*="/dashboard/devices/view"]').first()
+      const deviceLink = page
+        .locator('a[href*="/dashboard/devices/view"]')
+        .first()
       if (await deviceLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await deviceLink.click()
         await page.waitForURL('**/devices/view**', { timeout: 10000 })
         // Story #270: Consolidated tabs
-        await expect(page.locator('[role="tab"]').first()).toBeVisible({ timeout: 10000 })
+        await expect(page.locator('[role="tab"]').first()).toBeVisible({
+          timeout: 10000,
+        })
         // Check tab names exist
         const tabNames = ['Overview', 'Telemetry', 'Config', 'Alerts', 'System']
         for (const name of tabNames) {
@@ -79,13 +93,17 @@ test.describe('Device Management', () => {
 
     test('should switch between tabs on device detail', async ({ page }) => {
       await page.waitForTimeout(3000)
-      const deviceLink = page.locator('a[href*="/dashboard/devices/view"]').first()
+      const deviceLink = page
+        .locator('a[href*="/dashboard/devices/view"]')
+        .first()
       if (await deviceLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await deviceLink.click()
         await page.waitForURL('**/devices/view**', { timeout: 10000 })
         // Click Telemetry tab
         const telemetryTab = page.locator('[role="tab"]:has-text("Telemetry")')
-        if (await telemetryTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        if (
+          await telemetryTab.isVisible({ timeout: 5000 }).catch(() => false)
+        ) {
           await telemetryTab.click()
           await page.waitForTimeout(1000)
           expect(page.url()).toContain('tab=telemetry')
@@ -95,11 +113,15 @@ test.describe('Device Management', () => {
 
     test('should have back button on device detail', async ({ page }) => {
       await page.waitForTimeout(3000)
-      const deviceLink = page.locator('a[href*="/dashboard/devices/view"]').first()
+      const deviceLink = page
+        .locator('a[href*="/dashboard/devices/view"]')
+        .first()
       if (await deviceLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await deviceLink.click()
         await page.waitForURL('**/devices/view**', { timeout: 10000 })
-        const backButton = page.locator('button:has-text("Back"), button:has(svg.lucide-arrow-left)')
+        const backButton = page.locator(
+          'button:has-text("Back"), button:has(svg.lucide-arrow-left)'
+        )
         await expect(backButton.first()).toBeVisible({ timeout: 5000 })
       }
     })
@@ -111,7 +133,12 @@ test.describe('Device Management', () => {
       await page.reload()
       await page.waitForTimeout(3000)
       const errorContent = page.locator('text=/error|failed|cached|offline/i')
-      if (await errorContent.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (
+        await errorContent
+          .first()
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
         console.log('Error state shown correctly')
       }
       await page.context().setOffline(false)

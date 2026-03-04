@@ -21,71 +21,206 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Wand2,
+  Check,
+  X,
 } from 'lucide-react'
+import {
+  PASSWORD_REQUIREMENTS,
+  getPasswordStrength,
+  generateStrongPassword,
+} from '@/lib/password-utils'
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [checking, setChecking] = useState(true)
   const [hasSession, setHasSession] = useState(false)
+  const [linkExpiredError, setLinkExpiredError] = useState<string | null>(null)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendSent, setResendSent] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaVerifying, setMfaVerifying] = useState(false)
+  const [mfaError, setMfaError] = useState('')
   const router = useRouter()
 
-  // Supabase delivers the user here with a session via the recovery link.
-  // We need to wait for the auth state to settle before showing the form.
+  // Supabase delivers the user here via a recovery link.
+  // With token_hash flow (preferred), the URL contains ?token_hash=XXX&type=recovery
+  // which is verified via POST (immune to email scanner prefetching).
+  // With PKCE flow, the URL contains ?code=XXX which must be exchanged for a session.
+  // With implicit flow (older links), the session is already in the URL hash.
   useEffect(() => {
     const supabase = createClient()
 
-    // Listen for PASSWORD_RECOVERY event (fired when user clicks the email link)
+    // Listen for PASSWORD_RECOVERY event (fired after code exchange or hash token)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
-        setHasSession(true)
-        setChecking(false)
+        // Check if MFA is enrolled — if so, we need AAL2 before updateUser
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+          if (data && data.nextLevel === 'aal2' && data.currentLevel === 'aal1') {
+            // MFA is enrolled; get the TOTP factor ID
+            supabase.auth.mfa.listFactors().then(({ data: factors }) => {
+              const totp = factors?.totp?.[0]
+              if (totp) {
+                setMfaFactorId(totp.id)
+                setMfaRequired(true)
+              }
+              setHasSession(true)
+              setChecking(false)
+            })
+          } else {
+            setHasSession(true)
+            setChecking(false)
+          }
+        })
+        return
       }
     })
 
-    // Also check if there's already a session (page refresh after recovery link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleRecovery = async () => {
+      // Check for error in URL hash (e.g. #error=access_denied&error_code=otp_expired)
+      const hash = window.location.hash.slice(1)
+      if (hash) {
+        const hashParams = new URLSearchParams(hash)
+        const hashError = hashParams.get('error')
+        const hashErrorCode = hashParams.get('error_code')
+        if (hashError || hashErrorCode) {
+          const description =
+            hashParams.get('error_description')?.replace(/\+/g, ' ') ??
+            'This password reset link is invalid or has expired.'
+          setLinkExpiredError(description)
+          setChecking(false)
+          return
+        }
+      }
+
+      // Check URL query params
+      const params = new URLSearchParams(window.location.search)
+
+      // Also check query string for error (some flows put it there)
+      const queryError = params.get('error_code') ?? params.get('error')
+      if (queryError) {
+        const description =
+          params.get('error_description')?.replace(/\+/g, ' ') ??
+          'This password reset link is invalid or has expired.'
+        setLinkExpiredError(description)
+        setChecking(false)
+        return
+      }
+
+      // ── Token hash flow (preferred — POST-based, immune to email scanners) ──
+      const tokenHash = params.get('token_hash')
+      const tokenType = params.get('type')
+      if (tokenHash && tokenType === 'recovery') {
+        // Clean URL immediately so token_hash isn't visible / bookmarkable
+        window.history.replaceState({}, '', window.location.pathname)
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        })
+        if (error) {
+          setLinkExpiredError(
+            error.message ??
+              'This password reset link is invalid or has expired.'
+          )
+          setChecking(false)
+          return
+        }
+        // verifyOtp fires onAuthStateChange → PASSWORD_RECOVERY, which sets hasSession
+        return
+      }
+
+      // ── PKCE flow (Supabase SSR / PKCE code exchange) ──
+      const code = params.get('code')
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          setLinkExpiredError(
+            error.message ??
+              'This password reset link is invalid or has expired.'
+          )
+          setChecking(false)
+          return
+        }
+        // onAuthStateChange above will fire PASSWORD_RECOVERY and set hasSession
+        return
+      }
+
+      // Fallback: check if there's already an active session (page refresh)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (session) {
         setHasSession(true)
       }
       setChecking(false)
-    })
+    }
+
+    handleRecovery()
 
     return () => {
       subscription.unsubscribe()
     }
   }, [])
 
+  // Handle MFA verification
+  const handleMfaVerify = async () => {
+    if (!mfaFactorId || !mfaCode) return
+    setMfaVerifying(true)
+    setMfaError('')
+    try {
+      const supabase = createClient()
+      const { data: challenge, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId: mfaFactorId })
+      if (challengeError) {
+        setMfaError(challengeError.message)
+        return
+      }
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaCode,
+      })
+      if (verifyError) {
+        setMfaError(verifyError.message)
+        return
+      }
+      // AAL2 achieved — clear MFA requirement
+      setMfaRequired(false)
+      setMfaCode('')
+      setError('')
+    } catch (err) {
+      setMfaError('Failed to verify authenticator code. Please try again.')
+    } finally {
+      setMfaVerifying(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long')
-      return
-    }
 
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
-    // Check password strength
-    const hasUpperCase = /[A-Z]/.test(newPassword)
-    const hasLowerCase = /[a-z]/.test(newPassword)
-    const hasNumber = /[0-9]/.test(newPassword)
-    const hasSpecialChar = /[^a-zA-Z0-9\s]/.test(newPassword)
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-      setError(
-        'Password must contain uppercase, lowercase, number, and special character'
-      )
+    // Require all password rules to pass
+    const failedRules = PASSWORD_REQUIREMENTS.filter(
+      (r) => !r.test(newPassword)
+    )
+    if (failedRules.length > 0) {
+      setError(`Missing: ${failedRules.map((r) => r.label).join(', ')}`)
       return
     }
 
@@ -93,11 +228,34 @@ export default function ResetPasswordPage() {
       setIsSubmitting(true)
       const supabase = createClient()
 
+      // If MFA is required but not yet verified, block the update
+      if (mfaRequired && mfaFactorId) {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aalData?.currentLevel !== 'aal2') {
+          setError('Please verify your authenticator code first.')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       })
 
       if (updateError) {
+        // Handle AAL2 requirement that we may not have caught earlier
+        if (updateError.message?.includes('AAL2')) {
+          const supabase2 = createClient()
+          const { data: factors } = await supabase2.auth.mfa.listFactors()
+          const totp = factors?.totp?.[0]
+          if (totp) {
+            setMfaFactorId(totp.id)
+            setMfaRequired(true)
+            setError('Your account has multi-factor authentication enabled. Please enter your authenticator code below.')
+            setIsSubmitting(false)
+            return
+          }
+        }
         throw updateError
       }
 
@@ -119,7 +277,9 @@ export default function ResetPasswordPage() {
       setSuccess(true)
     } catch (err) {
       console.error('Password reset error:', err)
-      setError('Failed to reset password. The link may have expired. Please request a new one.')
+      setError(
+        'Failed to reset password. The link may have expired. Please request a new one.'
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -131,6 +291,37 @@ export default function ResetPasswordPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
+  }
+
+  const handleResend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resendEmail) return
+    setResendLoading(true)
+    try {
+      // Use our admin edge function so we never hit Supabase's built-in email
+      // rate limit. The function uses generate_link + Resend instead of SMTP.
+      const supabase = createClient()
+      // Get the Supabase URL to derive the edge function endpoint
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      await fetch(`${supabaseUrl}/functions/v1/request-password-reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({
+          email: resendEmail.trim().toLowerCase(),
+          redirectTo: `${window.location.origin}/auth/reset-password/`,
+        }),
+      })
+      // Always show success (edge function always returns 200)
+      setResendSent(true)
+    } catch (_err) {
+      // Always show success to prevent email enumeration
+      setResendSent(true)
+    } finally {
+      setResendLoading(false)
+    }
   }
 
   // No session — invalid or expired link
@@ -148,17 +339,57 @@ export default function ResetPasswordPage() {
               Invalid or Expired Link
             </CardTitle>
             <CardDescription className="text-center">
-              This password reset link is invalid or has expired. Please request
-              a new one from the login page.
+              {linkExpiredError ??
+                'This password reset link is invalid or has expired.'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full"
-              onClick={() => router.push('/auth/login')}
-            >
-              Back to Login
-            </Button>
+          <CardContent className="space-y-4">
+            {resendSent ? (
+              <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700 dark:text-green-300">
+                  If that email is registered, a new reset link has been sent.
+                  Check your inbox (and spam folder).
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <form onSubmit={handleResend} className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Enter your email to receive a fresh reset link:
+                </p>
+                <Input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send New Reset Link'
+                  )}
+                </Button>
+              </form>
+            )}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => router.push('/auth/login')}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
+              >
+                ← Back to login
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -217,17 +448,73 @@ export default function ResetPasswordPage() {
         </CardHeader>
 
         <CardContent>
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Password must be at least 8 characters and include uppercase,
-              lowercase, numbers, and special characters.
-            </AlertDescription>
-          </Alert>
+          {/* MFA verification step — shown when account has MFA enrolled */}
+          {mfaRequired && mfaFactorId && (
+            <div className="mb-6 space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Multi-Factor Authentication Required
+                </span>
+              </div>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                Your account has MFA enabled. Enter the 6-digit code from your
+                authenticator app to continue.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={mfaCode}
+                  onChange={(e) =>
+                    setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  disabled={mfaVerifying}
+                  className="font-mono tracking-widest"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  onClick={handleMfaVerify}
+                  disabled={mfaVerifying || mfaCode.length !== 6}
+                  size="default"
+                >
+                  {mfaVerifying ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Verify'
+                  )}
+                </Button>
+              </div>
+              {mfaError && (
+                <p className="text-xs text-red-600 dark:text-red-400">{mfaError}</p>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="new-password">New Password</Label>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={() => {
+                    const pw = generateStrongPassword()
+                    setNewPassword(pw)
+                    setConfirmPassword(pw)
+                    setShowPassword(true)
+                    setShowConfirmPassword(true)
+                    navigator.clipboard.writeText(pw)
+                  }}
+                >
+                  <Wand2 className="h-3 w-3" />
+                  Generate Strong Password
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="new-password"
@@ -252,41 +539,105 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
+
+              {/* Password strength meter */}
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${getPasswordStrength(newPassword).color}`}
+                        style={{
+                          width: `${(getPasswordStrength(newPassword).score / 5) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`min-w-[70px] text-right text-xs font-medium ${
+                        getPasswordStrength(newPassword).score <= 2
+                          ? 'text-red-500'
+                          : getPasswordStrength(newPassword).score <= 3
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
+                      }`}
+                    >
+                      {getPasswordStrength(newPassword).label}
+                    </span>
+                  </div>
+
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    {PASSWORD_REQUIREMENTS.map((req) => {
+                      const met = req.test(newPassword)
+                      return (
+                        <div
+                          key={req.label}
+                          className={`flex items-center gap-1.5 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}
+                        >
+                          {met ? (
+                            <Check className="h-3 w-3 flex-shrink-0" />
+                          ) : (
+                            <X className="h-3 w-3 flex-shrink-0" />
+                          )}
+                          {req.label}
+                        </div>
+                      )
+                    })}
+                    <div
+                      className={`flex items-center gap-1.5 text-xs ${newPassword.length >= 16 ? 'text-green-600' : 'text-muted-foreground'}`}
+                    >
+                      {newPassword.length >= 16 ? (
+                        <Check className="h-3 w-3 flex-shrink-0" />
+                      ) : (
+                        <X className="h-3 w-3 flex-shrink-0" />
+                      )}
+                      16+ characters (bonus)
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-
-            {/* Password strength indicators */}
-            {newPassword.length > 0 && (
-              <div className="space-y-1 text-xs">
-                <div className={newPassword.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
-                  {newPassword.length >= 8 ? '✓' : '○'} At least 8 characters
-                </div>
-                <div className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[A-Z]/.test(newPassword) ? '✓' : '○'} Uppercase letter
-                </div>
-                <div className={/[a-z]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[a-z]/.test(newPassword) ? '✓' : '○'} Lowercase letter
-                </div>
-                <div className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[0-9]/.test(newPassword) ? '✓' : '○'} Number
-                </div>
-                <div className={/[^a-zA-Z0-9\s]/.test(newPassword) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[^a-zA-Z0-9\s]/.test(newPassword) ? '✓' : '○'} Special character
-                </div>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={isSubmitting}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-            )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword !== newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-red-500">
+                    <X className="h-3 w-3" /> Passwords do not match
+                  </p>
+                )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword === newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-green-600">
+                    <Check className="h-3 w-3" /> Passwords match
+                  </p>
+                )}
+            </div>
 
             {error && (
               <Alert variant="destructive">
@@ -295,7 +646,7 @@ export default function ResetPasswordPage() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting || mfaRequired}>
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />

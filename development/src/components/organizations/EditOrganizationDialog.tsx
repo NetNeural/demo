@@ -55,7 +55,7 @@ export function EditOrganizationDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [subscriptionTier, setSubscriptionTier] = useState<
-    'free' | 'starter' | 'professional' | 'enterprise'
+    'starter' | 'business' | 'reseller' | 'enterprise' | 'unlimited'
   >('starter')
   const [isActive, setIsActive] = useState(true)
 
@@ -74,7 +74,9 @@ export function EditOrganizationDialog({
       )
       setSubscriptionTier(
         ('subscriptionTier' in organization
-          ? organization.subscriptionTier
+          ? organization.subscriptionTier === 'free'
+            ? 'starter'
+            : organization.subscriptionTier
           : 'starter') as typeof subscriptionTier
       )
       setIsActive(organization.is_active)
@@ -240,15 +242,12 @@ export function EditOrganizationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free">Free (Up to 5 devices)</SelectItem>
-                  <SelectItem value="starter">
-                    Starter (Up to 50 devices)
-                  </SelectItem>
-                  <SelectItem value="professional">
-                    Professional (Up to 500 devices)
-                  </SelectItem>
-                  <SelectItem value="enterprise">
-                    Enterprise (Unlimited)
+                  <SelectItem value="starter">Starter</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                  <SelectItem value="reseller">Reseller</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                  <SelectItem value="unlimited">
+                    Unlimited (NetNeural)
                   </SelectItem>
                 </SelectContent>
               </Select>

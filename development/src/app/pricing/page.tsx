@@ -103,7 +103,8 @@ export default function PricingPage() {
   const handleSelectPlan = async (plan: BillingPlan) => {
     // Enterprise → contact sales
     if (plan.slug === 'enterprise') {
-      window.location.href = 'mailto:sales@netneural.ai?subject=Enterprise%20Plan%20Inquiry'
+      window.location.href =
+        'mailto:sales@netneural.ai?subject=Enterprise%20Plan%20Inquiry'
       return
     }
 
@@ -156,7 +157,7 @@ export default function PricingPage() {
 
   const planIcons: Record<string, React.ReactNode> = {
     starter: <Thermometer className="h-8 w-8 text-emerald-600" />,
-    professional: <Shield className="h-8 w-8 text-blue-600" />,
+    business: <Shield className="h-8 w-8 text-blue-600" />,
     enterprise: <Zap className="h-8 w-8 text-purple-600" />,
   }
 
@@ -201,7 +202,6 @@ export default function PricingPage() {
           >
             Annual
           </span>
-
         </div>
 
         {/* Sensor count slider */}
@@ -233,7 +233,7 @@ export default function PricingPage() {
             <PlanCard
               key={plan.id}
               plan={plan}
-              isPopular={plan.slug === 'professional'}
+              isPopular={plan.slug === 'business'}
               isCurrentPlan={plan.slug === currentPlanSlug}
               isLoading={checkoutLoading === plan.id}
               billingInterval={billingInterval}

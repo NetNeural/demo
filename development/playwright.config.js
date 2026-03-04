@@ -6,7 +6,11 @@ const { defineConfig } = require('@playwright/test')
 module.exports = defineConfig({
   testDir: '.',
   /* Match tests in e2e/, tests/playwright/, and root-level spec files */
-  testMatch: ['e2e/**/*.spec.ts', 'tests/playwright/**/*.spec.ts', 'test-app.spec.ts'],
+  testMatch: [
+    'e2e/**/*.spec.ts',
+    'tests/playwright/**/*.spec.ts',
+    'test-app.spec.ts',
+  ],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -21,9 +25,10 @@ module.exports = defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL:
-      process.env.NODE_ENV === 'production'
-        ? 'https://netneural.github.io/SoftwareMono'
-        : 'http://localhost:3000',
+      process.env.PLAYWRIGHT_BASE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://sentinel.netneural.ai'
+        : 'http://localhost:3000'),
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -83,13 +88,16 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  /* Run your local dev server before starting the tests.
+   * Skipped when PLAYWRIGHT_BASE_URL is set (remote testing against dev/staging/prod). */
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 
   /* Global test timeout */
   timeout: 30000,

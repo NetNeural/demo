@@ -68,7 +68,7 @@ export class IntegrationSyncOrchestrator {
       }
 
       // 2. Create provider (works for ANY integration type)
-      const provider = IntegrationProviderFactory.create(
+      const provider = await IntegrationProviderFactory.create(
         integration as DeviceIntegration
       )
 

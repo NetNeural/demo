@@ -16,9 +16,11 @@ import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/Keyboard
 import { ThemeBranding } from '@/components/branding/ThemeBranding'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { useSessionTimeout } from '@/hooks/useSessionTimeout'
+import { SessionTimeoutModal } from '@/components/session/SessionTimeoutModal'
+import { AccessRequestNotifier } from '@/components/access/AccessRequestNotifier'
 import {
   LayoutDashboard,
-  Smartphone,
   Bell,
   BarChart3,
   Building2,
@@ -28,10 +30,17 @@ import {
   X,
   MessageSquarePlus,
   LifeBuoy,
-  SlidersHorizontal,
   DollarSign,
+  FileBarChart,
+  Activity,
+  ShieldCheck,
+  Network,
+  KeyRound,
+  Code,
+  Cpu,
+  Warehouse,
 } from 'lucide-react'
-import { canAccessSupport } from '@/lib/permissions'
+import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
 import { Badge } from '@/components/ui/badge'
 
@@ -44,10 +53,28 @@ function getSupabase() {
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
-  const { currentOrganization, userRole } = useOrganization()
+  const { currentOrganization, userOrganizations, userRole } = useOrganization()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isSuperAdmin = user?.isSuperAdmin || false
+  const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
+
+  // SOC 2 CC6.2: idle session timeout
+  const { showWarning, secondsRemaining, extendSession, signOutNow } =
+    useSessionTimeout()
+
+  // Always show sentinel logo from root NetNeural org, regardless of selected org
+  const sentinelLogoUrl = (() => {
+    const rootOrg = userOrganizations.find(
+      (org) =>
+        org.id === '00000000-0000-0000-0000-000000000001' ||
+        (!org.parent_organization_id && org.name === 'NetNeural')
+    )
+    return (
+      rootOrg?.settings?.branding?.sentinel_logo_url ||
+      currentOrganization?.settings?.branding?.sentinel_logo_url
+    )
+  })()
 
   // Keep browser tab title in sync with current page + org
   usePageTitle()
@@ -72,12 +99,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: LayoutDashboard,
       exact: true,
     },
-    { href: '/dashboard/devices', label: 'Devices', icon: Smartphone },
     {
-      href: '/dashboard/device-types',
-      label: 'Device Types',
-      icon: SlidersHorizontal,
+      href: '/dashboard/hardware-provisioning',
+      label: 'Hardware Provisioning',
+      icon: Cpu,
     },
+    ...(isSuperAdmin || isPlAdmin
+      ? [
+          {
+            href: '/dashboard/inventory-control',
+            label: 'Inventory Control',
+            icon: Warehouse,
+          },
+        ]
+      : []),
     { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
     { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
@@ -86,19 +121,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       label: 'Organization',
       icon: Building2,
     },
-    ...(isSuperAdmin || userRole === 'owner'
+    ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
+    (isSuperAdmin ||
+      isPlAdmin ||
+      userRole === 'owner' ||
+      userRole === 'billing')
       ? [
           {
-            href: '/dashboard/plans-pricing',
-            label: 'Plans & Pricing',
-            icon: DollarSign,
+            href: '/dashboard/billing',
+            label: 'Billing Administration',
+            icon: FileBarChart,
           },
         ]
+      : []),
+    ...(currentOrganization?.subscription_tier === 'reseller' ||
+    currentOrganization?.is_reseller === true
+      ? [{ href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network }]
       : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     ...(canAccessSupport(user, userRole)
       ? [{ href: '/dashboard/support', label: 'Support', icon: LifeBuoy }]
       : []),
+    { href: '/dashboard/developer', label: 'Developer', icon: Code },
     { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
   ]
 
@@ -106,6 +150,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <>
       <ThemeBranding />
       <KeyboardShortcutsModal />
+      <AccessRequestNotifier />
       <div className="dashboard-container">
         {/* Mobile Menu Toggle — visible only on < 1024px via CSS */}
         <button
@@ -132,11 +177,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
         <nav className={`nav-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="nav-header">
-            <h1 className="nav-brand">
-              {currentOrganization?.name === 'NetNeural' || !currentOrganization
-                ? 'Sentinel by NetNeural'
-                : `Sentinel for ${currentOrganization.name}`}
-            </h1>
+            <div className="flex items-center gap-2">
+              {sentinelLogoUrl && (
+                <img
+                  src={sentinelLogoUrl}
+                  alt="Sentinel logo"
+                  className="h-16 w-16 flex-shrink-0 object-contain"
+                />
+              )}
+              <h1 className="nav-brand">
+                {currentOrganization?.name === 'NetNeural' ||
+                !currentOrganization
+                  ? 'Sentinel by NetNeural'
+                  : `Sentinel for ${currentOrganization.name}`}
+              </h1>
+            </div>
           </div>
 
           {/* Organization Switcher */}
@@ -165,7 +220,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="nav-user">
             <div className="user-info">
               <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              <p className="text-xs text-gray-500">{user.organizationName}</p>
             </div>
             <button
               onClick={async () => {
@@ -218,6 +272,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </svg>
                   <span className="hidden sm:inline">Super Admin</span>
                 </Badge>
+              ) : isPlAdmin ? (
+                <Badge className="flex items-center gap-1 bg-purple-600 text-white hover:bg-purple-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                  </svg>
+                  <span className="hidden sm:inline">Platform Admin</span>
+                </Badge>
               ) : currentOrganization?.role ? (
                 (() => {
                   const roleInfo = getRoleDisplayInfo(currentOrganization.role)
@@ -256,6 +327,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <SessionTimeoutModal
+        open={showWarning}
+        secondsRemaining={secondsRemaining}
+        onExtend={extendSession}
+        onSignOut={signOutNow}
+      />
     </>
   )
 }

@@ -1,0 +1,39 @@
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Coverage
+coverage/
+
+# Test outputs / artifacts
+pw-results.json
+pw-results2.json
+playwright-report/
+
+# Build logs
+build_stdout.txt
+build_stderr.txt
+build_err.txt
+build_log.txt
+prettier_output.txt
+
+# Environment files
+.env*
+
+# Generated files
+next-env.d.ts
+package-lock.json
+
+# Supabase
+supabase/
+
+# SQL files
+*.sql
+
+# Dump files
+dump.sql

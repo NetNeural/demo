@@ -28,7 +28,7 @@ function DeviceDetailsRedirect() {
     if (deviceId) {
       router.replace(`/dashboard/devices/view?id=${deviceId}&tab=overview`)
     } else {
-      router.replace('/dashboard/devices')
+      router.replace('/dashboard/hardware-provisioning')
     }
   }, [router, searchParams])
 

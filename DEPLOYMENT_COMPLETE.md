@@ -78,7 +78,7 @@ The current deployment will work, but for future automated deployments, you need
 
 2. **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**
    ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZG9qeHBvY2tsanlpdmxkeHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjY5NTUsImV4cCI6MjA3MDYwMjk1NX0.qkvYx-8ucC5BsqzLcXxIW9TQqc94_dFbGYz5rVSwyRQ
+   YOUR_SUPABASE_ANON_KEY
    ```
 
 3. **`SUPABASE_SERVICE_ROLE_KEY`**

@@ -63,9 +63,9 @@ test-stripe-backend/
 # Integration Services
 cloud-device-admin-mqtt/
 core-mdns-site-local-broadcast/
-Onboarding/
+/Onboarding/
 ot-commissioner/
-Policies/
+/Policies/
 
 # =============================================================================
 # ALLOW THESE FILES/FOLDERS (Monorepo Management)

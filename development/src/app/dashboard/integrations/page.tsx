@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Settings, Trash2, AlertTriangle } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Plus, Settings, Trash2, AlertTriangle, Send } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { ConflictResolutionDialog } from '@/components/integrations/ConflictResolutionDialog'
+import { NotificationHistory } from '@/components/integrations/NotificationHistory'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { integrationSyncService } from '@/services/integration-sync.service'
 import { useExportable } from '@/hooks/useExportable'
@@ -195,134 +197,158 @@ export default function IntegrationsPage() {
         </Button>
       </div>
 
-      {/* Pending Conflicts Alert */}
-      {pendingConflicts > 0 && (
-        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <CardTitle className="text-amber-900 dark:text-amber-100">
-                  Pending Conflicts
-                </CardTitle>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConflictOpen(true)}
-              >
-                Resolve Conflicts
-              </Button>
-            </div>
-            <CardDescription className="text-amber-800 dark:text-amber-200">
-              {pendingConflicts} device conflict
-              {pendingConflicts > 1 ? 's' : ''} need
-              {pendingConflicts === 1 ? 's' : ''} resolution
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
+      {/* Tabs: Integrations + Notification Log */}
+      <Tabs defaultValue="integrations" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Send className="h-4 w-4" />
+            Notification Log
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Integrations List */}
-      <div className="grid gap-4">
-        {loading ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Loading...</p>
-            </CardContent>
-          </Card>
-        ) : integrations.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3 text-center">
-                <p className="text-muted-foreground">
-                  No integrations configured
-                </p>
-                <Button onClick={handleAdd} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Your First Integration
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          integrations.map((integration) => (
-            <Card key={integration.id}>
+        <TabsContent value="integrations">
+          {/* Pending Conflicts Alert */}
+          {pendingConflicts > 0 && (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle>{integration.name}</CardTitle>
-                      <Badge
-                        variant={
-                          integration.status === 'active'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {integration.status === 'active'
-                          ? 'Active'
-                          : integration.status || 'Inactive'}
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      {integration.last_sync_at ? (
-                        <>
-                          Last synced: {fmt.dateTime(integration.last_sync_at)}
-                          {integration.last_sync_status && (
-                            <Badge
-                              variant={
-                                integration.last_sync_status === 'completed'
-                                  ? 'default'
-                                  : 'destructive'
-                              }
-                              className="ml-2"
-                            >
-                              {integration.last_sync_status}
-                            </Badge>
-                          )}
-                        </>
-                      ) : (
-                        'Never synced'
-                      )}
-                    </CardDescription>
-                  </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(integration)}
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configure
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(integration.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    <CardTitle className="text-amber-900 dark:text-amber-100">
+                      Pending Conflicts
+                    </CardTitle>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConflictOpen(true)}
+                  >
+                    Resolve Conflicts
+                  </Button>
                 </div>
+                <CardDescription className="text-amber-800 dark:text-amber-200">
+                  {pendingConflicts} device conflict
+                  {pendingConflicts > 1 ? 's' : ''} need
+                  {pendingConflicts === 1 ? 's' : ''} resolution
+                </CardDescription>
               </CardHeader>
             </Card>
-          ))
-        )}
-      </div>
+          )}
 
-      {/* Dialogs */}
-      {currentOrganization && (
-        <ConflictResolutionDialog
-          open={conflictOpen}
-          onOpenChange={setConflictOpen}
-          organizationId={currentOrganization.id}
-          onResolved={() => {
-            loadPendingConflicts()
-            setConflictOpen(false)
-          }}
-        />
-      )}
+          {/* Integrations List */}
+          <div className="grid gap-4">
+            {loading ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-muted-foreground">
+                    Loading...
+                  </p>
+                </CardContent>
+              </Card>
+            ) : integrations.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-3 text-center">
+                    <p className="text-muted-foreground">
+                      No integrations configured
+                    </p>
+                    <Button onClick={handleAdd} variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Your First Integration
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              integrations.map((integration) => (
+                <Card key={integration.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle>{integration.name}</CardTitle>
+                          <Badge
+                            variant={
+                              integration.status === 'active'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                          >
+                            {integration.status === 'active'
+                              ? 'Active'
+                              : integration.status || 'Inactive'}
+                          </Badge>
+                        </div>
+                        <CardDescription>
+                          {integration.last_sync_at ? (
+                            <>
+                              Last synced:{' '}
+                              {fmt.dateTime(integration.last_sync_at)}
+                              {integration.last_sync_status && (
+                                <Badge
+                                  variant={
+                                    integration.last_sync_status === 'completed'
+                                      ? 'default'
+                                      : 'destructive'
+                                  }
+                                  className="ml-2"
+                                >
+                                  {integration.last_sync_status}
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            'Never synced'
+                          )}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(integration)}
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Configure
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(integration.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Dialogs */}
+          {currentOrganization && (
+            <>
+              <ConflictResolutionDialog
+                open={conflictOpen}
+                onOpenChange={setConflictOpen}
+                organizationId={currentOrganization.id}
+                onResolved={() => {
+                  loadPendingConflicts()
+                  setConflictOpen(false)
+                }}
+              />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          {currentOrganization && (
+            <NotificationHistory organizationId={currentOrganization.id} />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

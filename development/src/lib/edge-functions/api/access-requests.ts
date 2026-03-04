@@ -18,6 +18,13 @@ export interface AccessRequestsAPI {
     organizationId?: string
   }) => Promise<EdgeFunctionResponse<{ requests: AccessRequest[] }>>
 
+  /** Fetch all organizations available for the request-access target dropdown */
+  listAllOrgs: () => Promise<
+    EdgeFunctionResponse<{
+      organizations: { id: string; name: string; slug: string }[]
+    }>
+  >
+
   /** Create a new access request */
   create: (
     data: CreateAccessRequestData
@@ -53,6 +60,12 @@ export function createAccessRequestsAPI(
           }),
         },
       }),
+
+    listAllOrgs: () =>
+      call<{ organizations: { id: string; name: string; slug: string }[] }>(
+        'request-access',
+        { params: { view: 'org_list' } }
+      ),
 
     create: (data) =>
       call<{ request: AccessRequest; target_org_name: string }>(

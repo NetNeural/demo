@@ -6,7 +6,6 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CreateOrganizationDialog } from '@/components/organizations/CreateOrganizationDialog'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import {
   DropdownMenu,
@@ -21,7 +20,7 @@ import { cn } from '@/lib/utils'
 
 interface OrganizationSwitcherProps {
   className?: string
-  showCreateButton?: boolean
+  showCreateButton?: boolean // deprecated, no longer used
   compact?: boolean
 }
 
@@ -48,7 +47,7 @@ export function OrganizationSwitcher({
     isSuperAdminFromUser: user?.isSuperAdmin,
     calculatedIsSuperAdmin: isSuperAdmin,
     showCreateButton: showCreateButton,
-    willShowCreateOrg: showCreateButton && isSuperAdmin,
+    willShowCreateOrg: false, // create org button removed
   })
 
   const [open, setOpen] = useState(false)
@@ -114,28 +113,6 @@ export function OrganizationSwitcher({
           <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
             Get Started
           </DropdownMenuLabel>
-
-          {showCreateButton && (
-            <div className="px-2 py-2">
-              <CreateOrganizationDialog
-                onSuccess={(newOrgId) => {
-                  setOpen(false)
-                  refreshOrganizations().then(() => {
-                    switchOrganization(newOrgId)
-                  })
-                }}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Create Organization
-                  </Button>
-                }
-              />
-            </div>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     )
@@ -220,100 +197,90 @@ export function OrganizationSwitcher({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="z-[200] w-[320px]">
+      <DropdownMenuContent
+        align="start"
+        className="z-[200] max-h-[400px] w-[320px] overflow-y-auto"
+      >
         <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
           Your Organizations
         </DropdownMenuLabel>
 
-        {userOrganizations.map((org) => {
-          const isSelected = org.id === currentOrganization.id
-          const orgRoleInfo = getRoleDisplayInfo(org.role)
+        {[...userOrganizations]
+          .sort((a, b) => {
+            // NetNeural (root org) always first
+            const aIsRoot =
+              a.id === '00000000-0000-0000-0000-000000000001' ||
+              (!a.parent_organization_id && a.name === 'NetNeural')
+            const bIsRoot =
+              b.id === '00000000-0000-0000-0000-000000000001' ||
+              (!b.parent_organization_id && b.name === 'NetNeural')
+            if (aIsRoot && !bIsRoot) return -1
+            if (!aIsRoot && bIsRoot) return 1
+            return a.name.localeCompare(b.name)
+          })
+          .map((org) => {
+            const isSelected = org.id === currentOrganization.id
+            const orgRoleInfo = getRoleDisplayInfo(org.role)
 
-          return (
-            <DropdownMenuItem
-              key={org.id}
-              onClick={() => {
-                switchOrganization(org.id)
-                setOpen(false)
-              }}
-              className="flex cursor-pointer items-start gap-3 p-3"
-            >
-              <OrganizationLogo
-                settings={org.settings}
-                name={org.name}
-                size="xl"
-                className={cn(
-                  !org.settings?.branding?.logo_url &&
-                    (isSelected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground')
-                )}
-              />
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-medium text-foreground">
-                    {org.name}
-                  </span>
-                  {isSelected && (
-                    <Check className="h-4 w-4 flex-shrink-0 text-primary" />
-                  )}
-                </div>
-
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      'text-xs capitalize',
-                      orgRoleInfo.color === 'purple' &&
-                        'bg-purple-100 text-purple-700',
-                      orgRoleInfo.color === 'blue' &&
-                        'bg-blue-100 text-blue-700',
-                      orgRoleInfo.color === 'green' &&
-                        'bg-green-100 text-green-700',
-                      orgRoleInfo.color === 'gray' &&
-                        'bg-gray-100 text-gray-700'
-                    )}
-                  >
-                    {orgRoleInfo.label}
-                  </Badge>
-
-                  {org.deviceCount !== undefined && (
-                    <span className="text-xs text-muted-foreground">
-                      {org.deviceCount} devices
-                    </span>
-                  )}
-                </div>
-              </div>
-            </DropdownMenuItem>
-          )
-        })}
-
-        {showCreateButton && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-2">
-              <CreateOrganizationDialog
-                onSuccess={(newOrgId) => {
+            return (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => {
+                  switchOrganization(org.id)
                   setOpen(false)
-                  // Refresh organizations and switch to new one
-                  refreshOrganizations().then(() => {
-                    switchOrganization(newOrgId)
-                  })
                 }}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Create Organization
-                  </Button>
-                }
-              />
-            </div>
-          </>
-        )}
+                className="flex cursor-pointer items-start gap-3 p-3"
+              >
+                <OrganizationLogo
+                  settings={org.settings}
+                  name={org.name}
+                  size="xl"
+                  className={cn(
+                    !org.settings?.branding?.logo_url &&
+                      (isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground')
+                  )}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium text-foreground">
+                      {org.name}
+                    </span>
+                    {isSelected && (
+                      <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                    )}
+                  </div>
+
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'text-xs capitalize',
+                        orgRoleInfo.color === 'purple' &&
+                          'bg-purple-100 text-purple-700',
+                        orgRoleInfo.color === 'blue' &&
+                          'bg-blue-100 text-blue-700',
+                        orgRoleInfo.color === 'green' &&
+                          'bg-green-100 text-green-700',
+                        orgRoleInfo.color === 'gray' &&
+                          'bg-gray-100 text-gray-700'
+                      )}
+                    >
+                      {orgRoleInfo.label}
+                    </Badge>
+
+                    {org.deviceCount !== undefined && (
+                      <span className="text-xs text-muted-foreground">
+                        {org.deviceCount} devices
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            )
+          })}
       </DropdownMenuContent>
     </DropdownMenu>
   )

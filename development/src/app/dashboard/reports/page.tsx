@@ -118,7 +118,8 @@ export default function ReportsIndexPage() {
     return () => {
       cancelled = true
     }
-  }, [currentOrganization])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrganization?.id])
 
   const reports = [
     {

@@ -65,18 +65,27 @@ export default createEdgeFunction(
         .is('deleted_at', null)
         .eq('organization_id', organizationId)
 
-      // Build alerts query (last 24 hours)
+      // Build alerts queries:
+      // - recent (last 24h) for totalAlerts / criticalAlerts / highAlerts display
+      // - all-time unresolved for the activeAlerts count shown on dashboard
       const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      let alertsQuery = supabase
+      const recentAlertsQuery = supabase
         .from('alerts')
         .select('id, severity, is_resolved')
         .gte('created_at', last24h)
         .eq('organization_id', organizationId)
 
+      const unresolvedAlertsQuery = supabase
+        .from('alerts')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_resolved', false)
+        .eq('organization_id', organizationId)
+
       // Execute queries in parallel
-      const [devicesResult, alertsResult] = await Promise.all([
+      const [devicesResult, alertsResult, unresolvedResult] = await Promise.all([
         deviceQuery,
-        alertsQuery,
+        recentAlertsQuery,
+        unresolvedAlertsQuery,
       ])
 
       if (devicesResult.error) {
@@ -90,6 +99,13 @@ export default createEdgeFunction(
         console.error('Database error fetching alerts:', alertsResult.error)
         throw new DatabaseError(
           `Failed to fetch alerts: ${alertsResult.error.message}`
+        )
+      }
+
+      if (unresolvedResult.error) {
+        console.error('Database error fetching unresolved alerts:', unresolvedResult.error)
+        throw new DatabaseError(
+          `Failed to fetch unresolved alerts: ${unresolvedResult.error.message}`
         )
       }
 
@@ -120,8 +136,8 @@ export default createEdgeFunction(
       ).length
       // deno-lint-ignore no-explicit-any
       const highAlerts = alerts.filter((a: any) => a.severity === 'high').length
-      // deno-lint-ignore no-explicit-any
-      const unresolvedAlerts = alerts.filter((a: any) => !a.is_resolved).length
+      // All-time unresolved count (not limited to 24h)
+      const unresolvedAlerts = unresolvedResult.count ?? 0
 
       // Calculate uptime percentage
       const uptimePercentage =

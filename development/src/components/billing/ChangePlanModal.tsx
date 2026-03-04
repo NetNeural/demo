@@ -32,7 +32,7 @@ function getSupabase() {
 /** Tier sort order — higher = more features */
 const TIER_RANK: Record<string, number> = {
   starter: 1,
-  professional: 2,
+  business: 2,
   enterprise: 3,
 }
 
@@ -45,7 +45,7 @@ const TIER_HIGHLIGHTS: Record<string, string[]> = {
     'Up to 3 team members',
     '90-day data retention',
   ],
-  professional: [
+  business: [
     'AI anomaly detection',
     'Predictive failure alerts',
     'Multi-site dashboard',
@@ -184,7 +184,9 @@ export function ChangePlanModal({
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}))
         throw new Error(
-          errBody?.error || errBody?.message || 'Failed to create checkout session'
+          errBody?.error ||
+            errBody?.message ||
+            'Failed to create checkout session'
         )
       }
 
@@ -199,7 +201,9 @@ export function ChangePlanModal({
       await logClientAction({
         organizationId,
         actionCategory: 'organization_management',
-        actionType: isUpgrade ? 'plan_upgrade_initiated' : 'plan_downgrade_initiated',
+        actionType: isUpgrade
+          ? 'plan_upgrade_initiated'
+          : 'plan_downgrade_initiated',
         resourceType: 'subscription',
         resourceName: selectedPlan.name,
         changes: {
@@ -212,9 +216,7 @@ export function ChangePlanModal({
       // Redirect to Stripe Checkout
       window.location.href = checkoutUrl
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong'
-      )
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setActionLoading(false)
     }
@@ -266,8 +268,8 @@ export function ChangePlanModal({
                         Current
                       </Badge>
                     )}
-                    {plan.slug === 'professional' && !isCurrent && (
-                      <Badge className="absolute -top-2 right-2 text-xs bg-primary">
+                    {plan.slug === 'business' && !isCurrent && (
+                      <Badge className="absolute -top-2 right-2 bg-primary text-xs">
                         Popular
                       </Badge>
                     )}
@@ -340,9 +342,7 @@ export function ChangePlanModal({
                 <div>
                   <p className="text-sm font-medium">
                     {isUpgrade ? 'Upgrade' : 'Switch'} to{' '}
-                    <span className="font-bold">
-                      {selectedPlan?.name}
-                    </span>
+                    <span className="font-bold">{selectedPlan?.name}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {selectedPlan?.slug === 'enterprise'

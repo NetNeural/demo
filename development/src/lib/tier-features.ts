@@ -1,10 +1,10 @@
 /**
  * Tier Features - Feature Flag System
- * 
+ *
  * Provides utilities for checking what features are enabled for a given
  * subscription tier or organization. This is the single source of truth
  * for feature gating across the platform.
- * 
+ *
  * @see #314 - Subscription Tier Data Model & Feature Flag System
  */
 
@@ -111,6 +111,29 @@ const STATIC_TIER_FEATURES: { [tier: string]: TierFeaturesMap } = {
     white_label: false,
     dedicated_infra: false,
   },
+  business: {
+    device_monitoring: true,
+    alert_notifications: true,
+    dashboard_analytics: true,
+    data_export: true,
+    custom_branding: true,
+    api_access: true,
+    ai_detection: true,
+    predictive_ai: false,
+    fleet_analytics: true,
+    advanced_alerts: true,
+    sso: false,
+    audit_logs: true,
+    data_retention_extended: true,
+    multi_location: true,
+    firmware_management: true,
+    priority_support: false,
+    unlimited_users: false,
+    custom_integrations: true,
+    white_label: false,
+    dedicated_infra: false,
+  },
+  // 'professional' is an alias for 'business' (legacy name used in tests and some UI)
   professional: {
     device_monitoring: true,
     alert_notifications: true,
@@ -177,6 +200,28 @@ const STATIC_TIER_FEATURES: { [tier: string]: TierFeaturesMap } = {
     white_label: true,
     dedicated_infra: true,
   },
+  unlimited: {
+    device_monitoring: true,
+    alert_notifications: true,
+    dashboard_analytics: true,
+    data_export: true,
+    custom_branding: true,
+    api_access: true,
+    ai_detection: true,
+    predictive_ai: true,
+    fleet_analytics: true,
+    advanced_alerts: true,
+    sso: true,
+    audit_logs: true,
+    data_retention_extended: true,
+    multi_location: true,
+    firmware_management: true,
+    priority_support: true,
+    unlimited_users: true,
+    custom_integrations: true,
+    white_label: true,
+    dedicated_infra: true,
+  },
 }
 
 // ============================================================================
@@ -193,10 +238,13 @@ export async function getTierFeatures(
   try {
     const supabase = createClient()
     // Cast to 'any' until types are regenerated with tier_features table
-    const { data, error } = await (supabase as any)
+    const { data, error } = (await (supabase as any)
       .from('tier_features')
       .select('feature_key, enabled')
-      .eq('tier', tier) as { data: { feature_key: string; enabled: boolean }[] | null; error: any }
+      .eq('tier', tier)) as {
+      data: { feature_key: string; enabled: boolean }[] | null
+      error: any
+    }
 
     if (error || !data || data.length === 0) {
       console.warn(
@@ -275,14 +323,19 @@ export async function getAllTierFeatures(): Promise<
   try {
     const supabase = createClient()
     // Cast to 'any' until types are regenerated with tier_features table
-    const { data, error } = await (supabase as any)
+    const { data, error } = (await (supabase as any)
       .from('tier_features')
       .select('tier, feature_key, enabled')
       .order('tier')
-      .order('feature_key') as { data: { tier: string; feature_key: string; enabled: boolean }[] | null; error: any }
+      .order('feature_key')) as {
+      data: { tier: string; feature_key: string; enabled: boolean }[] | null
+      error: any
+    }
 
     if (error || !data) {
-      console.warn('[getAllTierFeatures] DB lookup failed, using static fallback')
+      console.warn(
+        '[getAllTierFeatures] DB lookup failed, using static fallback'
+      )
       return { ...STATIC_TIER_FEATURES }
     }
 
@@ -350,7 +403,5 @@ export function getUpgradeFeatures(
   const current = STATIC_TIER_FEATURES[currentTier] || {}
   const upgrade = STATIC_TIER_FEATURES[upgradeTier] || {}
 
-  return Object.keys(upgrade).filter(
-    (key) => upgrade[key] && !current[key]
-  )
+  return Object.keys(upgrade).filter((key) => upgrade[key] && !current[key])
 }

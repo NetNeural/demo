@@ -15,12 +15,29 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Wand2,
+  Check,
+  X,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import {
+  PASSWORD_REQUIREMENTS,
+  getPasswordStrength,
+  generateStrongPassword,
+} from '@/lib/password-utils'
 
 export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
   const [phoneNumberSecondary, setPhoneNumberSecondary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,9 +70,12 @@ export default function ChangePasswordPage() {
     e.preventDefault()
     setError('')
 
-    // Validation
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long')
+    // Require all password rules to pass
+    const failedRules = PASSWORD_REQUIREMENTS.filter(
+      (r) => !r.test(newPassword)
+    )
+    if (failedRules.length > 0) {
+      setError(`Missing: ${failedRules.map((r) => r.label).join(', ')}`)
       return
     }
 
@@ -82,33 +102,45 @@ export default function ChangePasswordPage() {
       return
     }
 
-    // Check password strength
-    const hasUpperCase = /[A-Z]/.test(newPassword)
-    const hasLowerCase = /[a-z]/.test(newPassword)
-    const hasNumber = /[0-9]/.test(newPassword)
-    const hasSpecialChar = /[^a-zA-Z0-9\s]/.test(newPassword)
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-      setError(
-        'Password must contain uppercase, lowercase, number, and special character'
-      )
-      return
-    }
-
     try {
       setIsSubmitting(true)
       const supabase = createClient()
 
-      // Update password in Supabase Auth
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
+      // Use change-password edge function with forceChange mode
+      // (admin API bypass — the client-side supabase.auth.updateUser silently
+      // fails when "Secure password change" is enabled in Supabase settings)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-      if (updateError) {
-        throw updateError
+      if (!session?.access_token) {
+        setError('Session expired. Please log in again.')
+        setIsSubmitting(false)
+        return
       }
 
-      // Update password_change_required flag in public.users table
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const res = await fetch(`${supabaseUrl}/functions/v1/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          newPassword,
+          forceChange: true, // Skip current password — user has temp password
+        }),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(
+          result?.error || result?.message || 'Failed to change password'
+        )
+      }
+
+      // Update phone numbers in public.users table
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -134,7 +166,6 @@ export default function ChangePasswordPage() {
         const { error: dbError } = await supabase
           .from('users')
           .update({
-            password_change_required: false,
             phone_number: normalizedPrimary,
             phone_sms_enabled: true,
             phone_number_secondary: normalizedSecondary,
@@ -144,11 +175,8 @@ export default function ChangePasswordPage() {
           .eq('id', user.id)
 
         if (dbError) {
-          console.error(
-            'Failed to update password_change_required flag:',
-            dbError
-          )
-          // Don't fail the operation, password was still changed
+          console.error('Failed to update phone numbers:', dbError)
+          // Don't fail — password was already changed
         }
       }
 
@@ -189,37 +217,158 @@ export default function ChangePasswordPage() {
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Your password must be at least 8 characters and include uppercase,
-              lowercase, numbers, and special characters. A primary SMS phone
-              number is required to continue.
+              Your password must be at least 12 characters and include
+              uppercase, lowercase, numbers, and special characters. A primary
+              SMS phone number is required to continue.
             </AlertDescription>
           </Alert>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
-                disabled={isSubmitting}
-                required
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="new-password">New Password</Label>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={() => {
+                    const pw = generateStrongPassword()
+                    setNewPassword(pw)
+                    setConfirmPassword(pw)
+                    setShowPassword(true)
+                    setShowConfirmPassword(true)
+                    navigator.clipboard.writeText(pw)
+                    toast({
+                      title: 'Password generated',
+                      description:
+                        'Strong password generated and copied to clipboard. Save it in your password manager!',
+                    })
+                  }}
+                >
+                  <Wand2 className="h-3 w-3" />
+                  Generate Strong Password
+                </button>
+              </div>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  disabled={isSubmitting}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Password strength meter */}
+              {newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${getPasswordStrength(newPassword).color}`}
+                        style={{
+                          width: `${(getPasswordStrength(newPassword).score / 5) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`min-w-[70px] text-right text-xs font-medium ${
+                        getPasswordStrength(newPassword).score <= 2
+                          ? 'text-red-500'
+                          : getPasswordStrength(newPassword).score <= 3
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
+                      }`}
+                    >
+                      {getPasswordStrength(newPassword).label}
+                    </span>
+                  </div>
+
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    {PASSWORD_REQUIREMENTS.map((req) => {
+                      const met = req.test(newPassword)
+                      return (
+                        <div
+                          key={req.label}
+                          className={`flex items-center gap-1.5 text-xs ${met ? 'text-green-600' : 'text-muted-foreground'}`}
+                        >
+                          {met ? (
+                            <Check className="h-3 w-3 flex-shrink-0" />
+                          ) : (
+                            <X className="h-3 w-3 flex-shrink-0" />
+                          )}
+                          {req.label}
+                        </div>
+                      )
+                    })}
+                    <div
+                      className={`flex items-center gap-1.5 text-xs ${newPassword.length >= 16 ? 'text-green-600' : 'text-muted-foreground'}`}
+                    >
+                      {newPassword.length >= 16 ? (
+                        <Check className="h-3 w-3 flex-shrink-0" />
+                      ) : (
+                        <X className="h-3 w-3 flex-shrink-0" />
+                      )}
+                      16+ characters (bonus)
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                disabled={isSubmitting}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={isSubmitting}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword !== newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-red-500">
+                    <X className="h-3 w-3" /> Passwords do not match
+                  </p>
+                )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword === newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-green-600">
+                    <Check className="h-3 w-3" /> Passwords match
+                  </p>
+                )}
             </div>
 
             <div className="space-y-2">

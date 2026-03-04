@@ -114,6 +114,21 @@ export class MessageProcessor {
       // Try to parse as JSON
       const payload = JSON.parse(messageStr)
 
+      // Filter out ACK echo messages — payloads that only contain { result: N }
+      // are ACK responses, not real telemetry data
+      const payloadKeys = Object.keys(payload)
+      if (
+        payloadKeys.length === 1 &&
+        payloadKeys[0] === 'result' &&
+        typeof payload.result === 'number'
+      ) {
+        this.logger.debug(
+          { topic, result: payload.result },
+          'Skipping ACK echo message (result-only payload)'
+        )
+        return null
+      }
+
       // Extract device ID from topic or payload
       const deviceId = this.extractDeviceId(topic, payload, integration)
 

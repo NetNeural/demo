@@ -1,0 +1,94 @@
+name: Fix Null Auth Identities
+
+on:
+  # Schedule DISABLED — the paginated admin API returns identities:null for all
+  # users regardless of actual state, causing mass password resets every run.
+  # Re-enable only after fix-null-identities logic is corrected.
+  # schedule:
+  #   - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to fix (or "all")'
+        required: false
+        default: 'all'
+        type: choice
+        options: [all, production, staging, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  fix-production:
+    name: Fix Production
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || inputs.environment == 'all' || inputs.environment == 'production' }}
+    steps:
+      - name: Invoke fix-null-identities (production)
+        env:
+          SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.PROD_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "$SUPABASE_URL/functions/v1/fix-null-identities" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+          echo "HTTP $code"
+          echo "$body" | jq .
+          if [ "$code" != "200" ]; then
+            echo "::error::fix-null-identities failed on production with HTTP $code"
+            exit 1
+          fi
+          fixed=$(echo "$body" | jq -r '.fixed // 0')
+          echo "Fixed $fixed accounts on production"
+
+  fix-staging:
+    name: Fix Staging
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || inputs.environment == 'all' || inputs.environment == 'staging' }}
+    steps:
+      - name: Invoke fix-null-identities (staging)
+        env:
+          SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "$SUPABASE_URL/functions/v1/fix-null-identities" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+          echo "HTTP $code"
+          echo "$body" | jq .
+          if [ "$code" != "200" ]; then
+            echo "::error::fix-null-identities failed on staging with HTTP $code"
+            exit 1
+          fi
+
+  fix-dev:
+    name: Fix Dev
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || inputs.environment == 'all' || inputs.environment == 'dev' }}
+    steps:
+      - name: Invoke fix-null-identities (dev)
+        env:
+          SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.DEV_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "$SUPABASE_URL/functions/v1/fix-null-identities" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+          echo "HTTP $code"
+          echo "$body" | jq .
+          if [ "$code" != "200" ]; then
+            echo "::error::fix-null-identities failed on dev with HTTP $code"
+            exit 1
+          fi

@@ -12,6 +12,7 @@ import {
   createServiceClient,
   corsHeaders,
 } from '../_shared/auth.ts'
+import { validateBody, organizationSchemas } from '../_shared/validation.ts'
 
 // This function handles its own auth internally
 // (service role detection, JWT fallback, manual token parsing)
@@ -74,6 +75,7 @@ export default createEdgeFunction(
           organizationId: null,
           role: 'super_admin',
           isSuperAdmin: true,
+          isPlatformAdmin: true,
           email: 'system@service',
         }
       } else {
@@ -122,11 +124,13 @@ export default createEdgeFunction(
                 }
 
                 if (profile) {
+                  const isSA = profile.role === 'super_admin' || profile.role === 'platform_admin'
                   userContext = {
                     userId: payload.sub,
                     organizationId: profile.organization_id,
                     role: profile.role,
-                    isSuperAdmin: profile.role === 'super_admin',
+                    isSuperAdmin: isSA,
+                    isPlatformAdmin: isSA || (profile.role === 'org_owner' && profile.organization_id === '00000000-0000-0000-0000-000000000001'),
                     email: profile.email || payload.email || '',
                   }
                   console.log(
@@ -172,6 +176,7 @@ export default createEdgeFunction(
           slug,
           description,
           subscription_tier,
+          is_reseller,
           is_active,
           settings,
           parent_organization_id,
@@ -244,11 +249,12 @@ export default createEdgeFunction(
                 .select('id', { count: 'exact', head: true })
                 .eq('organization_id', org.id)
 
-              // Get device count
+              // Get device count (exclude soft-deleted devices — Bug #356)
               const { count: deviceCount } = await supabaseAdmin
                 .from('devices')
                 .select('id', { count: 'exact', head: true })
                 .eq('organization_id', org.id)
+                .is('deleted_at', null)
 
               // Get unresolved alert count
               const { count: alertCount } = await supabaseAdmin
@@ -263,6 +269,7 @@ export default createEdgeFunction(
                 slug: org.slug,
                 description: org.description,
                 subscriptionTier: org.subscription_tier,
+                isReseller: org.is_reseller ?? false,
                 isActive: org.is_active,
                 settings: org.settings || {},
                 parentOrganizationId: org.parent_organization_id || null,
@@ -288,7 +295,7 @@ export default createEdgeFunction(
         // If not super admin, get all orgs the user is a member of
         // deno-lint-ignore no-explicit-any
         let membershipMap: Record<string, string> = {}
-        if (!userContext.isSuperAdmin) {
+        if (userContext.role !== 'super_admin') {
           // Get user's org memberships WITH role
           const { data: memberships } = await supabaseAdmin
             .from('organization_members')
@@ -343,11 +350,12 @@ export default createEdgeFunction(
               .select('id', { count: 'exact', head: true })
               .eq('organization_id', org.id)
 
-            // Get device count (use admin client to bypass RLS)
+            // Get device count (use admin client to bypass RLS, exclude soft-deleted — Bug #356)
             const { count: deviceCount } = await supabaseAdmin
               .from('devices')
               .select('id', { count: 'exact', head: true })
               .eq('organization_id', org.id)
+              .is('deleted_at', null)
 
             // Get unresolved alert count (use admin client to bypass RLS)
             const { count: alertCount } = await supabaseAdmin
@@ -362,6 +370,7 @@ export default createEdgeFunction(
               slug: org.slug,
               description: org.description,
               subscriptionTier: org.subscription_tier,
+              isReseller: org.is_reseller ?? false,
               isActive: org.is_active,
               settings: org.settings || {},
               parentOrganizationId: org.parent_organization_id || null,
@@ -393,13 +402,7 @@ export default createEdgeFunction(
         console.log('=== POST /organizations - Creating organization ===')
         console.log('User context:', JSON.stringify(userContext, null, 2))
 
-        let body
-        try {
-          body = await req.json()
-        } catch (jsonError) {
-          console.error('Failed to parse JSON body:', jsonError)
-          throw new Error('Invalid JSON in request body')
-        }
+        const body = await validateBody(req, organizationSchemas.create)
 
         const {
           name,
@@ -421,23 +424,6 @@ export default createEdgeFunction(
           hasOwnerFullName: !!ownerFullName,
           sendWelcomeEmail,
         })
-
-        // Validate required fields
-        if (!name || !slug) {
-          console.error('Missing required fields:', {
-            name: !!name,
-            slug: !!slug,
-          })
-          throw new Error('Name and slug are required')
-        }
-
-        // Validate slug format
-        if (!/^[a-z0-9-]+$/.test(slug)) {
-          console.error('Invalid slug format:', slug)
-          throw new Error(
-            'Slug can only contain lowercase letters, numbers, and hyphens'
-          )
-        }
 
         // If creating a child org, validate the parent is a reseller-tier org
         if (parentOrganizationId) {
@@ -508,11 +494,11 @@ export default createEdgeFunction(
           )
         }
 
-        // Only super_admins can set reseller/enterprise tiers
+        // Only platform admins can set reseller/enterprise tiers
         if (
           subscriptionTier &&
           ['reseller', 'enterprise'].includes(subscriptionTier) &&
-          !userContext.isSuperAdmin
+          !userContext.isPlatformAdmin
         ) {
           throw new DatabaseError(
             'Only platform administrators can create reseller or enterprise organizations',
@@ -708,40 +694,42 @@ export default createEdgeFunction(
               )
             }
 
-            // Reset password for existing user so the welcome email credentials work
-            if (temporaryPassword) {
-              try {
-                const resetResponse = await fetch(
-                  `${supabaseUrl}/auth/v1/admin/users/${authUserId}`,
-                  {
-                    method: 'PUT',
-                    headers: {
-                      Authorization: `Bearer ${supabaseServiceKey}`,
-                      'Content-Type': 'application/json',
-                      apikey: supabaseServiceKey,
+            // For existing users: do NOT reset their password or send temp
+            // credentials. They already have a working login. The org creation
+            // just adds them as owner of the new org via organization_members.
+            // Only update metadata (full_name) if not already set.
+            try {
+              const metaResponse = await fetch(
+                `${supabaseUrl}/auth/v1/admin/users/${authUserId}`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `Bearer ${supabaseServiceKey}`,
+                    'Content-Type': 'application/json',
+                    apikey: supabaseServiceKey,
+                  },
+                  body: JSON.stringify({
+                    email_confirm: true,
+                    user_metadata: {
+                      full_name: ownerFullName,
                     },
-                    body: JSON.stringify({
-                      password: temporaryPassword,
-                      email_confirm: true,
-                      user_metadata: {
-                        full_name: ownerFullName,
-                      },
-                    }),
-                  }
-                )
-
-                if (!resetResponse.ok) {
-                  const resetError = await resetResponse.text()
-                  console.error(
-                    'Failed to reset auth user password:',
-                    resetError
-                  )
-                  // Non-fatal — user can still log in with their old password
+                  }),
                 }
-              } catch (resetErr) {
-                console.error('Password reset fetch failed:', resetErr)
+              )
+
+              if (!metaResponse.ok) {
+                const metaError = await metaResponse.text()
+                console.error(
+                  'Failed to update auth user metadata:',
+                  metaError
+                )
               }
+            } catch (metaErr) {
+              console.error('Metadata update fetch failed:', metaErr)
             }
+
+            // Clear temporaryPassword so welcome email is NOT sent for existing users
+            temporaryPassword = null
           }
 
           ownerUserId = authUserId!
@@ -749,21 +737,44 @@ export default createEdgeFunction(
           // Upsert user in public.users — the on_auth_user_created trigger
           // may have already inserted a skeleton row, so we always upsert to
           // set organization_id, full_name, etc.
+          // BUG FIX: Check if user already exists — if so, do NOT overwrite
+          // their organization_id. Overwriting caused multi-org users to lose
+          // access to their original org's devices (the devices edge function
+          // falls back to users.organization_id when organization_members
+          // lookup fails).
+          const { data: existingUser } = await supabaseAdmin
+            .from('users')
+            .select('id, organization_id')
+            .eq('id', ownerUserId)
+            .maybeSingle()
+
+          const userRecord: Record<string, unknown> = {
+            id: ownerUserId,
+            email: ownerEmail,
+            full_name: ownerFullName,
+            role: 'user',
+            password_change_required: isNewAuthUser ? true : (existingUser ? undefined : true),
+            updated_at: new Date().toISOString(),
+          }
+
+          // Only set organization_id for NEW users (no existing record).
+          // Existing users keep their current primary org.
+          if (!existingUser || !existingUser.organization_id) {
+            // @ts-expect-error - id exists
+            userRecord.organization_id = newOrg.id
+            console.log(`Setting organization_id to ${newOrg.id} for new user ${ownerEmail}`)
+          } else {
+            console.log(`Preserving existing organization_id ${existingUser.organization_id} for user ${ownerEmail}`)
+          }
+
+          // Remove undefined values before upsert
+          Object.keys(userRecord).forEach(key => {
+            if (userRecord[key] === undefined) delete userRecord[key]
+          })
+
           const { error: userUpsertError } = await supabaseAdmin
             .from('users')
-            .upsert(
-              {
-                id: ownerUserId,
-                email: ownerEmail,
-                full_name: ownerFullName,
-                role: 'user',
-                // @ts-expect-error - id exists
-                organization_id: newOrg.id,
-                password_change_required: true,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: 'id' }
-            )
+            .upsert(userRecord, { onConflict: 'id' })
 
           if (userUpsertError) {
             console.error('Failed to upsert user record:', userUpsertError)
@@ -1076,10 +1087,14 @@ export default createEdgeFunction(
           throw new DatabaseError('Organization not found', 404)
         }
 
-        // Root organizations (no parent) cannot be deleted
+        // Root organizations (no parent) cannot be deleted by non-super-admins
+        // Super admins can delete root/test organizations
         // @ts-expect-error - parent_organization_id exists
-        if (!org.parent_organization_id) {
-          throw new DatabaseError('Root organizations cannot be deleted', 403)
+        if (!org.parent_organization_id && !userContext.isSuperAdmin) {
+          throw new DatabaseError(
+            'Root organizations cannot be deleted',
+            403
+          )
         }
 
         // Perform actual deletion (CASCADE will handle related records)

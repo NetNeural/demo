@@ -6,41 +6,60 @@ import {
   Users,
   Wrench,
   Activity,
-  Settings2,
+  FileBarChart,
+  Download,
+  Mail,
   FlaskConical,
   BookOpen,
   Shield,
+  ShieldCheck,
+  KeyRound,
+  Bot,
+  Rocket,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
-import { canAccessSupport } from '@/lib/permissions'
+import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { toast } from 'sonner'
 
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
-import CustomerAssistanceTab from './components/CustomerAssistanceTab'
 import TroubleshootingTab from './components/TroubleshootingTab'
 import SystemHealthTab from './components/SystemHealthTab'
-import AdminToolsTab from './components/AdminToolsTab'
+import DataOperationsTab from './components/DataOperationsTab'
+import ExecutiveReportsCard from './components/ExecutiveReportsCard'
+import { EmailBroadcastCard } from './components/EmailBroadcastCard'
+import { AccessRequestsTab } from '@/app/dashboard/organizations/components/AccessRequestsTab'
+import MercuryChat from './components/MercuryChat'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
+import { PlatformHealthPage } from '@/app/dashboard/admin/platform-health/page'
+import { SecurityAuditPage } from '@/app/dashboard/admin/security-audit/page'
+import { PermissionsPage } from '@/app/dashboard/admin/permissions/page'
+import RunbookPage from '@/app/dashboard/admin/go-live-runbook/page'
 
 const tabs = [
   // Org-admin tabs — visible to all org admins
   {
-    id: 'customer-assistance',
-    label: 'Customer Assistance',
-    icon: Users,
+    id: 'executive-reports',
+    label: 'Reports',
+    icon: FileBarChart,
     superAdminOnly: false,
   },
   {
-    id: 'admin-tools',
-    label: 'Admin Tools',
-    icon: Settings2,
+    id: 'data-operations',
+    label: 'Data & Operations',
+    icon: Download,
     superAdminOnly: false,
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    icon: Mail,
+    superAdminOnly: true,
   },
   {
     id: 'documentation',
@@ -86,9 +105,9 @@ function SupportPageContent() {
   // Initialize activeTab from URL parameter or default
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
-      return searchParams.get('tab') || 'customer-assistance'
+      return searchParams.get('tab') || 'access-requests'
     }
-    return 'customer-assistance'
+    return 'access-requests'
   })
 
   // Update activeTab when URL parameter changes
@@ -135,8 +154,16 @@ function SupportPageContent() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
+  // Sub-orgs (customer orgs) don't see Reports or Data & Operations
+  const isSubOrg = !!currentOrganization?.parent_organization_id
+
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
-  const canAccessPlatformTabs = isSuperAdmin
+  // Platform admins (NetNeural org owners) also get access
+  const canAccessPlatformTabs = isPlatformAdmin(
+    user,
+    currentOrganization?.id,
+    userRole
+  )
 
   const visibleTabs = tabs.filter(
     (tab) => !tab.superAdminOnly || canAccessPlatformTabs
@@ -163,54 +190,199 @@ function SupportPageContent() {
       </div>
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+        value={(() => {
+          const groupMap: Record<string, string> = {
+            'access-requests': 'customer-support',
+            'executive-reports': 'customer-support',
+            'data-operations': 'customer-support',
+            communication: 'customer-support',
+            documentation: 'resources',
+            troubleshooting: 'platform',
+            'system-health': 'platform',
+            tests: 'platform',
+            'platform-health': 'platform',
+            'security-audit': 'platform',
+            permissions: 'platform',
+            'go-live-runbook': 'platform',
+          }
+          return groupMap[activeTab] || 'customer-support'
+        })()}
+        onValueChange={(group) => {
+          const defaults: Record<string, string> = {
+            'customer-support': 'access-requests',
+            resources: 'documentation',
+            platform: 'troubleshooting',
+          }
+          handleTabChange(defaults[group] || 'access-requests')
+        }}
         className="space-y-6"
       >
-        <TabsList className="w-full flex-wrap justify-start">
-          {visibleTabs.map(({ id, label, icon: Icon, superAdminOnly }) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              className="flex items-center gap-2"
-            >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{label}</span>
-              {superAdminOnly && <Shield className="h-3 w-3 text-red-400" />}
+        <TabsList className="w-full justify-start">
+          <TabsTrigger
+            value="customer-support"
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            <span>Customer Support</span>
+          </TabsTrigger>
+          <TabsTrigger value="resources" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span>Resources</span>
+          </TabsTrigger>
+          {canAccessPlatformTabs && (
+            <TabsTrigger value="platform" className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-red-400" />
+              <span>Platform</span>
             </TabsTrigger>
-          ))}
+          )}
         </TabsList>
 
-        <TabsContent value="customer-assistance">
-          <CustomerAssistanceTab organizationId={orgId} />
+        {/* Customer Support — Customer Assistance + Reports + Data & Ops + Communication */}
+        <TabsContent value="customer-support">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger
+                value="access-requests"
+                className="flex items-center gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                Mercury Support
+              </TabsTrigger>
+              {!isSubOrg && (
+                <TabsTrigger
+                  value="executive-reports"
+                  className="flex items-center gap-2"
+                >
+                  <FileBarChart className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
+              )}
+              {!isSubOrg && (
+                <TabsTrigger
+                  value="data-operations"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Data & Operations
+                </TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger
+                  value="communication"
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Communication
+                </TabsTrigger>
+              )}
+            </TabsList>
+            <TabsContent value="access-requests" className="mt-6">
+              <div className="space-y-6">
+                <MercuryChat key={`mercury-${orgId}`} organizationId={orgId} />
+                <AccessRequestsTab key={`ar-${orgId}`} organizationId={orgId} />
+              </div>
+            </TabsContent>
+            {!isSubOrg && (
+              <TabsContent value="executive-reports" className="mt-6">
+                <ExecutiveReportsCard key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
+            {!isSubOrg && (
+              <TabsContent value="data-operations" className="mt-6">
+                <DataOperationsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
+            {isSuperAdmin && (
+              <TabsContent value="communication" className="mt-6">
+                <EmailBroadcastCard />
+              </TabsContent>
+            )}
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="admin-tools">
-          <AdminToolsTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="documentation">
+        {/* Resources — Documentation (single tab, no sub-tabs) */}
+        <TabsContent value="resources">
           <DocumentationTab />
         </TabsContent>
 
+        {/* Platform — Troubleshooting + System Health + Tests (super admin) */}
         {canAccessPlatformTabs && (
-          <TabsContent value="troubleshooting">
-            <TroubleshootingTab organizationId={orgId} />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="system-health">
-            <SystemHealthTab
-              organizationId={orgId}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="tests">
-            <TestsTab organizationId={orgId} />
+          <TabsContent value="platform">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger
+                  value="troubleshooting"
+                  className="flex items-center gap-2"
+                >
+                  <Wrench className="h-4 w-4" />
+                  Troubleshooting
+                </TabsTrigger>
+                <TabsTrigger
+                  value="system-health"
+                  className="flex items-center gap-2"
+                >
+                  <Activity className="h-4 w-4" />
+                  System Health
+                </TabsTrigger>
+                <TabsTrigger value="tests" className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4" />
+                  Tests & Validation
+                </TabsTrigger>
+                <TabsTrigger
+                  value="platform-health"
+                  className="flex items-center gap-2"
+                >
+                  <Activity className="h-4 w-4" />
+                  Platform Health
+                </TabsTrigger>
+                <TabsTrigger
+                  value="security-audit"
+                  className="flex items-center gap-2"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Security Audit
+                </TabsTrigger>
+                <TabsTrigger
+                  value="permissions"
+                  className="flex items-center gap-2"
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Permissions
+                </TabsTrigger>
+                <TabsTrigger
+                  value="go-live-runbook"
+                  className="flex items-center gap-2"
+                >
+                  <Rocket className="h-4 w-4" />
+                  Go-Live Runbook
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="troubleshooting" className="mt-6">
+                <TroubleshootingTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+              <TabsContent value="system-health" className="mt-6">
+                <SystemHealthTab
+                  key={orgId}
+                  organizationId={orgId}
+                  isSuperAdmin={isSuperAdmin}
+                />
+              </TabsContent>
+              <TabsContent value="tests" className="mt-6">
+                <TestsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+              <TabsContent value="platform-health" className="mt-6">
+                <PlatformHealthPage />
+              </TabsContent>
+              <TabsContent value="security-audit" className="mt-6">
+                <SecurityAuditPage />
+              </TabsContent>
+              <TabsContent value="permissions" className="mt-6">
+                <PermissionsPage />
+              </TabsContent>
+              <TabsContent value="go-live-runbook" className="mt-6">
+                <RunbookPage />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
       </Tabs>

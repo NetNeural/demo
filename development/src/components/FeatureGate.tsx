@@ -2,28 +2,35 @@
 
 /**
  * FeatureGate - Conditional rendering based on subscription tier features
- * 
+ *
  * Wraps children that should only render when a feature is enabled
  * for the current organization's tier. Optionally shows an upgrade
  * prompt when the feature is gated.
- * 
+ *
  * @example
  * ```tsx
  * <FeatureGate feature="ai_detection">
  *   <AIDetectionPanel />
  * </FeatureGate>
- * 
+ *
  * <FeatureGate feature="sso" fallback={<UpgradeBanner feature="sso" />}>
  *   <SSOSettings />
  * </FeatureGate>
  * ```
- * 
+ *
  * @see #314 - Subscription Tier Data Model & Feature Flag System
  */
 
 import React from 'react'
-import { useOrgTier, getTierDisplayInfo, type FeatureKey } from '@/hooks/useOrgTier'
-import { getFeatureDisplayName, getStaticTierFeatures } from '@/lib/tier-features'
+import {
+  useOrgTier,
+  getTierDisplayInfo,
+  type FeatureKey,
+} from '@/hooks/useOrgTier'
+import {
+  getFeatureDisplayName,
+  getStaticTierFeatures,
+} from '@/lib/tier-features'
 import { Lock, ArrowUpRight } from 'lucide-react'
 
 // ============================================================================
@@ -81,7 +88,7 @@ function DefaultUpgradePrompt({
   const tierInfo = getTierDisplayInfo(currentTier)
 
   // Determine which tier unlocks this feature
-  const tierOrder = ['free', 'starter', 'professional', 'enterprise']
+  const tierOrder = ['starter', 'business', 'enterprise', 'unlimited']
   let requiredTier = 'enterprise'
   for (const t of tierOrder) {
     const features = getStaticTierFeatures(t)
@@ -97,21 +104,24 @@ function DefaultUpgradePrompt({
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Lock className="h-5 w-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold">
-        {featureName}
-      </h3>
+      <h3 className="text-sm font-semibold">{featureName}</h3>
       <p className="mt-1 text-sm text-muted-foreground">
         Available on the{' '}
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${requiredTierInfo.badge}`}>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${requiredTierInfo.badge}`}
+        >
           {requiredTierInfo.label}
         </span>{' '}
         plan.{' '}
         {currentTier !== requiredTier && (
           <>
             You&apos;re on{' '}
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tierInfo.badge}`}>
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tierInfo.badge}`}
+            >
               {tierInfo.label}
-            </span>.
+            </span>
+            .
           </>
         )}
       </p>

@@ -59,7 +59,7 @@ export default createEdgeFunction(
     const serviceClient = createServiceClient()
 
     // Super admins have global organization access (virtual membership)
-    if (user.role !== 'super_admin') {
+    if (user.role !== 'super_admin' && user.role !== 'platform_admin') {
       const { data: membership } = await serviceClient
         .from('organization_members')
         .select('role')

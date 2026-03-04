@@ -174,7 +174,7 @@ serve(async (req) => {
           Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo', // Cost-efficient model
+          model: 'gpt-4o-mini', // Cost-efficient model
           messages: [
             {
               role: 'system',

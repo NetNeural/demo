@@ -57,7 +57,8 @@ export default function AlertRulesPage() {
       activeOrgRef.current = currentOrganization.id
       fetchRules()
     }
-  }, [currentOrganization, filter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrganization?.id, filter])
 
   const fetchRules = async () => {
     if (!currentOrganization) return

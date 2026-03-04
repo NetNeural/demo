@@ -5,6 +5,7 @@ import {
 } from '../_shared/request-handler.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { getUserContext } from '../_shared/auth.ts'
+import { validateBody, memberSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -33,7 +34,7 @@ export default createEdgeFunction(
     })
 
     // Check if user is super_admin (has global access)
-    const isSuperAdmin = userContext.role === 'super_admin'
+    const isSuperAdmin = userContext.role === 'super_admin' || userContext.role === 'platform_admin'
 
     let userRole = 'viewer' // default role
 
@@ -104,7 +105,7 @@ export default createEdgeFunction(
         // Hide super_admin accounts from non-super_admin users
         .filter((member: any) => {
           if (isSuperAdmin) return true // Super admins see everyone
-          return member.users?.role !== 'super_admin'
+          return member.users?.role !== 'super_admin' && member.users?.role !== 'platform_admin'
         })
         .map((member: any) => ({
           id: member.user_id, // Use user_id as the primary ID (matches auth.users)
@@ -136,7 +137,7 @@ export default createEdgeFunction(
         throw new DatabaseError('Insufficient permissions to add members', 403)
       }
 
-      const body = await req.json()
+      const body = await validateBody(req, memberSchemas.add)
       console.log('📥 Request body:', {
         hasEmail: !!body.email,
         hasUserId: !!body.userId,
@@ -148,18 +149,6 @@ export default createEdgeFunction(
       // Accept either email or userId
       if (!email && !userId) {
         throw new Error('Either email or userId is required')
-      }
-
-      if (!role) {
-        throw new Error('role is required')
-      }
-
-      // Validate role (only roles that exist in database)
-      const validRoles = ['member', 'admin', 'billing', 'viewer', 'owner']
-      if (!validRoles.includes(role)) {
-        throw new Error(
-          `Invalid role. Must be one of: ${validRoles.join(', ')}`
-        )
       }
 
       // Only owners can add other owners
@@ -315,6 +304,23 @@ export default createEdgeFunction(
       }
 
       console.log('✅ Member added successfully:', newMember.id)
+
+      // If the user has no default organization_id, set it to this org.
+      // This prevents the "null organization_id" bug where users added via
+      // the members flow never get their users.organization_id populated.
+      const { data: memberUser } = await supabaseAdmin
+        .from('users')
+        .select('organization_id')
+        .eq('id', targetUserId)
+        .maybeSingle()
+
+      if (memberUser && !memberUser.organization_id) {
+        console.log(`🔧 User ${targetUserId} has null organization_id — setting to ${organizationId}`)
+        await supabaseAdmin
+          .from('users')
+          .update({ organization_id: organizationId, updated_at: new Date().toISOString() })
+          .eq('id', targetUserId)
+      }
 
       return createSuccessResponse(
         {

@@ -14,14 +14,14 @@ import { getRoleDisplayInfo } from '@/types/organization'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
-  Smartphone,
   Building2,
   Bell,
   BarChart3,
   FileText,
   Settings,
   Shield,
-  SlidersHorizontal,
+  Cpu,
+  Warehouse,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,7 +41,7 @@ export default function DashboardShell({
   const { user, profile } = useUser()
   const { currentOrganization } = useOrganization()
 
-  const isSuperAdmin = profile?.role === 'super_admin'
+  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'platform_admin'
 
   // Debug logging
   console.log('🔍 DashboardShell Debug:', {
@@ -54,16 +54,20 @@ export default function DashboardShell({
 
   const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Devices', href: '/dashboard/devices', icon: Smartphone },
     {
-      name: 'Device Types',
-      href: '/dashboard/device-types',
-      icon: SlidersHorizontal,
+      name: 'Hardware Provisioning',
+      href: '/dashboard/hardware-provisioning',
+      icon: Cpu,
     },
     {
       name: 'Organizations',
       href: '/dashboard/organizations',
       icon: Building2,
+    },
+    {
+      name: 'Inventory Control',
+      href: '/dashboard/inventory-control',
+      icon: Warehouse,
     },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
@@ -75,7 +79,7 @@ export default function DashboardShell({
   if (typeof window !== 'undefined') {
     console.log('🔍 Navigation Icons Debug:', {
       dashboardIcon: typeof LayoutDashboard,
-      devicesIcon: typeof Smartphone,
+      provisioningIcon: typeof Cpu,
       iconIsFunction: typeof LayoutDashboard === 'function',
     })
   }

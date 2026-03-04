@@ -55,7 +55,6 @@ serve(async (req) => {
 
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -76,6 +75,9 @@ serve(async (req) => {
     } catch {
       /* defaults */
     }
+
+    // Only require RESEND_API_KEY when actually sending (not for preview)
+    if (!isPreview && !resendApiKey) throw new Error('RESEND_API_KEY not configured')
 
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -148,6 +150,24 @@ serve(async (req) => {
     const resolvedAlerts = (resolved24h || []).length
     const uniqueUsers = new Set((members || []).map((m: any) => m.user_id)).size
 
+    // Per-organization device breakdown
+    const orgDeviceMap = new Map<string, { total: number; online: number; name: string }>()
+    for (const org of (orgs || [])) {
+      orgDeviceMap.set(org.id, { total: 0, online: 0, name: org.name })
+    }
+    for (const d of (allDevices || [])) {
+      const entry = orgDeviceMap.get(d.organization_id)
+      if (entry) {
+        entry.total++
+        if (d.status === 'online') entry.online++
+      }
+    }
+    const orgBreakdownRows = Array.from(orgDeviceMap.values())
+      .filter(o => o.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map(o => `<tr><td style="padding:4px 8px; font-size:12px; color:#374151;">${o.name}</td><td style="padding:4px 8px; font-size:12px; color:#374151; text-align:center;">${o.total}</td><td style="padding:4px 8px; font-size:12px; color:${o.online === o.total ? '#16a34a' : '#d97706'}; text-align:center;">${o.online}</td></tr>`)
+      .join('\n')
+
     // ─── Additional Executive Metrics ────────────────────────────────
 
     // Billing / Revenue readiness
@@ -201,6 +221,32 @@ serve(async (req) => {
       } else {
         migrationCount = mc
       }
+    }
+
+    // Platform expenses — from platform_expenses table
+    interface PlatformExpense {
+      name: string
+      amount_cents: number
+      billing_cycle: 'monthly' | 'annual' | 'one-time'
+      is_active: boolean
+    }
+    let platformExpenses: PlatformExpense[] = []
+    let expenseTotalCents = 0
+    try {
+      const { data: expData } = await supabase
+        .from('platform_expenses')
+        .select('name, amount_cents, billing_cycle, is_active')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('name')
+      platformExpenses = (expData || []) as PlatformExpense[]
+      expenseTotalCents = platformExpenses.reduce((sum, e) => {
+        if (e.billing_cycle === 'annual') return sum + Math.round(e.amount_cents / 12)
+        if (e.billing_cycle === 'one-time') return sum
+        return sum + e.amount_cents
+      }, 0)
+    } catch {
+      // fallback: keep empty, table will show fallback message
     }
 
     // Edge function count (from filesystem)
@@ -302,10 +348,11 @@ serve(async (req) => {
     // MVP completion — based on core feature milestones, NOT raw issue closure
     // Core features: Auth ✅, Devices ✅, Alerts ✅, Orgs ✅, Billing ✅,
     // Edge Functions ✅, CI/CD ✅, Reports ✅, Roles ✅, Dashboard ✅,
-    // Signup/Registration ✅, Plans & Pricing Admin ✅
+    // Signup/Registration ✅, Plans & Pricing Admin ✅,
+    // Billing Admin (10-tab) ✅, Forced MFA Enrollment ✅
     // Remaining gaps: test coverage (~22% vs 70% target)
-    const coreFeaturesDone = 12 // count of shipped feature areas
-    const coreFeaturesTotal = 12
+    const coreFeaturesDone = 14 // count of shipped feature areas
+    const coreFeaturesTotal = 14
     const coreFeaturePct = Math.round((coreFeaturesDone / coreFeaturesTotal) * 100)
     // Apply small deductions for known gaps
     const gapDeductions = [
@@ -315,7 +362,7 @@ serve(async (req) => {
 
     // Platform launch readiness — % of launch blockers resolved
     // Launch blockers: Billing ✅, Auth ✅, 3 Environments ✅, Stripe Integration ✅,
-    // Privacy Policy, Cookie Consent, Security Headers, MFA, Remove CI continue-on-error
+    // Privacy Policy, Cookie Consent ✅, Security Headers, MFA ✅, Remove CI continue-on-error
     const launchBlockers = [
       { name: 'Stripe Billing Integration', done: hasStripePriceIds },
       { name: 'Multi-tenant Auth & Roles', done: uniqueUsers > 0 },
@@ -326,9 +373,9 @@ serve(async (req) => {
       { name: 'Security Headers (CSP)', done: true }, // #252 — CSP meta tags implemented
       { name: 'Signup & Registration', done: true }, // 3-step signup with plan selection
       { name: 'Plans & Pricing Admin', done: true }, // owner-only admin page
-      { name: 'Cookie Consent (GDPR)', done: false }, // #250
-      { name: 'MFA Enforcement', done: false }, // #254
-      { name: 'CI Quality Gates (remove continue-on-error)', done: false }, // #253
+      { name: 'Cookie Consent (GDPR)', done: true }, // #250 — implemented 2026-03-01
+      { name: 'MFA Enforcement', done: true }, // Forced MFA setup on login — shipped 2026-03-01
+      { name: 'CI Quality Gates (remove continue-on-error)', done: true }, // #253 — fixed 2026-03-03
     ]
     const launchDone = launchBlockers.filter((b) => b.done).length
     const launchTotal = launchBlockers.length
@@ -441,7 +488,7 @@ serve(async (req) => {
       risk: 'Compliance readiness (SOC 2)',
       severity: 'Medium',
       color: '#f59e0b',
-      mitigation: 'Privacy policy ✅, CSP headers ✅. Still need: MFA enforcement, cookie consent, IRP.',
+      mitigation: 'Privacy policy ✅, CSP headers ✅, cookie consent ✅. Still need: IRP.',
     })
 
     if (totalOpen > 100) {
@@ -509,13 +556,28 @@ serve(async (req) => {
   <!-- Platform Health Cards -->
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:16px 24px;">
     <tr>
-    ${statCard(String(totalDevices), 'Devices', `${uptimePct}% uptime`)}
-    ${statCard(String(onlineDevices), 'Online', `${offlineDevices} offline`, onlineDevices === totalDevices ? '#10b981' : '#f59e0b')}
+    ${statCard(String(totalDevices), 'Total Devices', `across ${totalOrgs} orgs`)}
+    ${statCard(String(onlineDevices), 'Online', `${offlineDevices} offline · ${uptimePct}% uptime`, onlineDevices === totalDevices ? '#10b981' : '#f59e0b')}
     ${statCard(String(totalUnresolved), 'Active Alerts', `${totalCritical} crit · ${totalHigh} high`, totalUnresolved > 0 ? '#ef4444' : '#10b981')}
     ${statCard(String(uniqueUsers), 'Users', `${totalOrgs} organizations`)}
     ${statCard(String(resolvedAlerts), 'Resolved 24h', `${newAlerts} new`, '#10b981')}
     </tr>
   </table>
+
+  <!-- Per-Organization Device Breakdown -->
+  ${orgBreakdownRows.length > 0 ? `
+  <div style="padding:0 24px 16px;">
+    <h2 style="font-size:14px; color:#0f172a; border-bottom:2px solid #e5e7eb; padding-bottom:6px; margin:20px 0 10px; text-transform:uppercase; letter-spacing:0.3px;">📊 Devices by Organization</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <tr style="background:#f8fafc;">
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:left; text-transform:uppercase;">Organization</th>
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:center; text-transform:uppercase;">Devices</th>
+        <th style="padding:6px 8px; font-size:11px; color:#6b7280; text-align:center; text-transform:uppercase;">Online</th>
+      </tr>
+      ${orgBreakdownRows}
+    </table>
+  </div>
+  ` : ''}
 
   <!-- Revenue & Business Readiness -->
   <div style="padding:0 24px 16px;">
@@ -689,11 +751,16 @@ serve(async (req) => {
         <tr><th style="background:#f3f4f6; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb;">Service</th><th style="background:#f3f4f6; padding:7px 10px; text-align:right; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; border-bottom:2px solid #e5e7eb; width:90px;">Monthly</th></tr>
       </thead>
       <tbody>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Supabase Pro (×3 envs)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$120</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">OpenAI API</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$90</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">Sentry Team</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">$26</td></tr>
-        <tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">GitHub (Actions + Pages)</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">Free</td></tr>
-        <tr style="background:#f9fafb;"><td style="padding:6px 10px; font-weight:700;">Total</td><td style="padding:6px 10px; text-align:right; font-weight:700; font-size:15px; color:#059669;">$236/mo</td></tr>
+        ${platformExpenses.length > 0
+          ? platformExpenses.map(e => {
+              const monthlyCents = e.billing_cycle === 'annual' ? Math.round(e.amount_cents / 12) : e.amount_cents
+              const display = (monthlyCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+              const suffix = e.billing_cycle === 'annual' ? '/mo' : ''
+              return `<tr><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb;">${e.name}</td><td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">${display}${suffix}</td></tr>`
+            }).join('\n        ')
+          : '<tr><td colspan="2" style="padding:8px 10px; color:#9ca3af; font-size:12px;">No expense data available</td></tr>'
+        }
+        <tr style="background:#f9fafb;"><td style="padding:6px 10px; font-weight:700;">Total</td><td style="padding:6px 10px; text-align:right; font-weight:700; font-size:15px; color:#059669;">${(expenseTotalCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}/mo</td></tr>
       </tbody>
     </table>
   </div>

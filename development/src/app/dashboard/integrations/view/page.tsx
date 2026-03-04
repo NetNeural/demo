@@ -11,7 +11,7 @@ import { AzureIotConfigDialog } from '@/components/integrations/AzureIotConfigDi
 import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog'
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog'
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog'
-import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog'
+import { NetNeuralLinkConfigDialog } from '@/components/integrations/NetNeuralLinkConfigDialog'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function IntegrationViewPage() {
@@ -103,7 +103,7 @@ function IntegrationViewContent() {
       return <WebhookConfigDialog {...commonProps} />
 
     case 'netneural_hub':
-      return <NetNeuralHubConfigDialog {...commonProps} />
+      return <NetNeuralLinkConfigDialog {...commonProps} />
 
     default:
       return (

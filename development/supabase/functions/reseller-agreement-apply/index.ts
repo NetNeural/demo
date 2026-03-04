@@ -20,6 +20,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createServiceClient } from '../_shared/auth.ts'
+import { validateBody, resellerSchemas } from '../_shared/validation.ts'
 
 interface ApplicationRequest {
   organizationId: string
@@ -105,7 +106,7 @@ export default createEdgeFunction(
       return createErrorResponse('Only GET and POST methods are supported', 405)
     }
 
-    const body: ApplicationRequest = await req.json()
+    const body = await validateBody(req, resellerSchemas.apply)
     const {
       organizationId,
       applicantName,
@@ -122,21 +123,6 @@ export default createEdgeFunction(
       preferredBilling,
       additionalNotes,
     } = body
-
-    // Validate required fields
-    if (!organizationId)
-      throw new DatabaseError('organizationId is required', 400)
-    if (!applicantName?.trim())
-      throw new DatabaseError('applicantName is required', 400)
-    if (!applicantEmail?.trim())
-      throw new DatabaseError('applicantEmail is required', 400)
-    if (!companyLegalName?.trim())
-      throw new DatabaseError('companyLegalName is required', 400)
-    if (!companyAddress?.trim())
-      throw new DatabaseError('companyAddress is required', 400)
-    if (!estimatedCustomers || estimatedCustomers < 1) {
-      throw new DatabaseError('estimatedCustomers must be at least 1', 400)
-    }
 
     // Verify user is an owner of the organization (super_admins bypass)
     if (!user.isSuperAdmin) {

@@ -198,6 +198,199 @@ export default createEdgeFunction(
 )
 
 // ===========================================================================
+// Integration Linking: Ensure target org has a matching integration
+// ===========================================================================
+// When a device is transferred, its integration_id points to the source org's
+// integration record. The target org needs its own integration record (or the
+// same integration moved over) so that webhooks/auto-sync continue to work.
+//
+// Strategy depends on integration type:
+//   - External webhook integrations (mqtt_external): MOVE the integration
+//     record to the target org. External brokers send webhooks using the
+//     integration's UUID — cloning creates a new UUID that the broker
+//     doesn't know about, breaking webhook routing.
+//   - Platform integrations (golioth, aws_iot, etc.): CLONE is fine because
+//     our system initiates sync using the integration record.
+//
+// For move mode: Move the integration when it's external-webhook-based and
+//   no other devices in the source org still reference it.
+// For copy mode: Always clone (caller passes mode).
+// ===========================================================================
+
+// Integration types where the external system sends webhooks using our
+// integration UUID. These must be MOVED, not cloned, to preserve the UUID.
+const EXTERNAL_WEBHOOK_TYPES = ['mqtt_external']
+
+async function resolveIntegrationForTargetOrg(
+  // deno-lint-ignore no-explicit-any
+  serviceClient: any,
+  sourceIntegrationId: string | null,
+  targetOrgId: string,
+  transferMode: 'move' | 'copy' = 'copy',
+  movingDeviceId?: string
+): Promise<string | null> {
+  if (!sourceIntegrationId) return null
+
+  // Fetch the source integration
+  const { data: sourceIntegration, error: srcError } = await serviceClient
+    .from('device_integrations')
+    .select('*')
+    .eq('id', sourceIntegrationId)
+    .single()
+
+  if (srcError || !sourceIntegration) {
+    console.log('Source integration not found, clearing integration_id')
+    return null
+  }
+
+  // Check if target org already has a matching integration type
+  const { data: existingIntegration } = await serviceClient
+    .from('device_integrations')
+    .select('id')
+    .eq('organization_id', targetOrgId)
+    .eq('integration_type', sourceIntegration.integration_type)
+    .eq('status', 'active')
+    .limit(1)
+    .single()
+
+  if (existingIntegration) {
+    console.log(`Target org already has ${sourceIntegration.integration_type} integration: ${existingIntegration.id}`)
+    return existingIntegration.id
+  }
+
+  // -----------------------------------------------------------------------
+  // For external webhook integrations in MOVE mode: move the integration
+  // record itself (preserves UUID for external broker webhook routing)
+  // -----------------------------------------------------------------------
+  const isExternalWebhook = EXTERNAL_WEBHOOK_TYPES.includes(
+    sourceIntegration.integration_type
+  )
+
+  if (isExternalWebhook && transferMode === 'move') {
+    // Check if other devices in the source org still use this integration
+    let otherDevicesUsingIntegration = 0
+    if (movingDeviceId) {
+      const { count } = await serviceClient
+        .from('devices')
+        .select('id', { count: 'exact', head: true })
+        .eq('integration_id', sourceIntegrationId)
+        .eq('organization_id', sourceIntegration.organization_id)
+        .neq('id', movingDeviceId)
+        .is('deleted_at', null)
+
+      otherDevicesUsingIntegration = count ?? 0
+    }
+
+    if (otherDevicesUsingIntegration === 0) {
+      // Safe to move: no other devices in source org use this integration
+      console.log(
+        `Moving ${sourceIntegration.integration_type} integration ${sourceIntegrationId} to target org (preserves UUID for external webhooks)`
+      )
+      const { error: moveError } = await serviceClient
+        .from('device_integrations')
+        .update({
+          organization_id: targetOrgId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sourceIntegrationId)
+
+      if (moveError) {
+        console.error('Failed to move integration:', moveError)
+        // Fall through to clone as fallback
+      } else {
+        // Also move auto_sync_schedules
+        try {
+          await serviceClient
+            .from('auto_sync_schedules')
+            .update({
+              organization_id: targetOrgId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('integration_id', sourceIntegrationId)
+        } catch (err) {
+          console.log('Auto-sync schedule move skipped:', err)
+        }
+
+        console.log(
+          `Integration ${sourceIntegrationId} moved to target org (UUID preserved)`
+        )
+        return sourceIntegrationId // Same UUID — external broker webhooks keep working
+      }
+    } else {
+      console.log(
+        `Cannot move integration ${sourceIntegrationId}: ${otherDevicesUsingIntegration} other device(s) in source org still use it. Will clone instead.`
+      )
+      // Fall through to clone below
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Clone the source integration to target org (default for platform integrations)
+  // -----------------------------------------------------------------------
+  console.log(`Cloning ${sourceIntegration.integration_type} integration to target org`)
+  const {
+    id: _id,
+    organization_id: _orgId,
+    created_at: _createdAt,
+    updated_at: _updatedAt,
+    ...integrationFields
+  } = sourceIntegration
+
+  const { data: newIntegration, error: cloneError } = await serviceClient
+    .from('device_integrations')
+    .insert({
+      ...integrationFields,
+      organization_id: targetOrgId,
+      name: `${sourceIntegration.name} (transferred)`,
+    })
+    .select('id')
+    .single()
+
+  if (cloneError || !newIntegration) {
+    console.error('Failed to clone integration:', cloneError)
+    // Non-fatal: device still transfers, just without integration
+    return null
+  }
+
+  console.log(`Created integration ${newIntegration.id} in target org`)
+
+  // Also clone auto_sync_schedules if any exist for the source integration
+  try {
+    const { data: schedules } = await serviceClient
+      .from('auto_sync_schedules')
+      .select('*')
+      .eq('integration_id', sourceIntegrationId)
+
+    if (schedules && schedules.length > 0) {
+      for (const schedule of schedules) {
+        const {
+          id: _sId,
+          integration_id: _sIntId,
+          organization_id: _sOrgId,
+          created_at: _sCreated,
+          updated_at: _sUpdated,
+          last_run_at: _sLastRun,
+          next_run_at: _sNextRun,
+          ...scheduleFields
+        } = schedule
+
+        await serviceClient.from('auto_sync_schedules').insert({
+          ...scheduleFields,
+          integration_id: newIntegration.id,
+          organization_id: targetOrgId,
+          next_run_at: new Date().toISOString(), // Run immediately
+        })
+      }
+      console.log(`Cloned ${schedules.length} auto-sync schedule(s) to target org`)
+    }
+  } catch (err) {
+    console.log('Auto-sync schedule clone skipped:', err)
+  }
+
+  return newIntegration.id
+}
+
+// ===========================================================================
 // Move Device: Update organization_id on device + related records
 // ===========================================================================
 async function moveDevice(
@@ -288,11 +481,29 @@ async function moveDevice(
     console.log('Notifications update skipped')
   }
 
-  // 4. Move the device itself
+  // 4. Resolve integration for target org
+  //    If the device has an integration, ensure the target org has one too
+  //    For external webhook integrations (mqtt_external), MOVE the integration
+  //    record to preserve the UUID that external brokers use for webhooks.
+  let targetIntegrationId = device.integration_id
+  if (device.integration_id) {
+    const resolvedId = await resolveIntegrationForTargetOrg(
+      serviceClient,
+      device.integration_id,
+      targetOrgId,
+      'move',
+      deviceId
+    )
+    targetIntegrationId = resolvedId
+    console.log(`Integration resolved for target org: ${targetIntegrationId}`)
+  }
+
+  // 5. Move the device itself (with updated integration_id)
   const { error: updateError } = await serviceClient
     .from('devices')
     .update({
       organization_id: targetOrgId,
+      integration_id: targetIntegrationId,
       updated_at: new Date().toISOString(),
     })
     .eq('id', deviceId)
@@ -305,7 +516,7 @@ async function moveDevice(
     )
   }
 
-  // 5. Touch sensor thresholds (these reference device_id, not org directly)
+  // 6. Touch sensor thresholds (these reference device_id, not org directly)
   try {
     const { count: thresholdCount, error: thresholdError } = await serviceClient
       .from('sensor_thresholds')
@@ -320,7 +531,7 @@ async function moveDevice(
     console.log('Sensor thresholds update skipped (table may not exist)')
   }
 
-  // 6. Final safety net: ensure all telemetry records match the device's org
+  // 7. Final safety net: ensure all telemetry records match the device's org
   //    This catches any records missed by the targeted update above.
   if (includeTelemetry) {
     try {
@@ -373,6 +584,18 @@ async function copyDevice(
   let telemetryCount = 0
   let thresholdsCount = 0
 
+  // Resolve integration for target org (copy mode always clones)
+  let targetIntegrationId: string | null = null
+  if (device.integration_id) {
+    targetIntegrationId = await resolveIntegrationForTargetOrg(
+      serviceClient,
+      device.integration_id,
+      targetOrgId,
+      'copy'
+    )
+    console.log(`Copy: integration resolved for target org: ${targetIntegrationId}`)
+  }
+
   // Build new device record (strip fields that should be unique or auto-generated)
   const {
     id: _oldId,
@@ -393,6 +616,7 @@ async function copyDevice(
   const newDevice = {
     ...deviceFields,
     organization_id: targetOrgId,
+    integration_id: targetIntegrationId,
     name: `${device.name} (Copy)`,
     status: 'offline', // Reset status for copied device
     // Clear location/department since they belong to source org

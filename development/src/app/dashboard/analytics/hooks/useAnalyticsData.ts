@@ -292,7 +292,8 @@ export function useAnalyticsData(timeRange: TimeRange) {
     return () => {
       cancelled = true
     }
-  }, [currentOrganization, timeRange, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrganization?.id, timeRange, supabase])
 
   // Real-time subscription
   useEffect(() => {
@@ -317,7 +318,8 @@ export function useAnalyticsData(timeRange: TimeRange) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [currentOrganization, data, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrganization?.id, data, supabase])
 
   // CSV export
   const exportToCSV = useCallback(() => {

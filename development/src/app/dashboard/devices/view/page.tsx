@@ -11,7 +11,12 @@ import { createClient } from '@/lib/supabase/client'
 import { testTelemetryFrom } from '@/lib/supabase/test-telemetry'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { TransferDeviceDialog } from '@/components/devices/TransferDeviceDialog'
-import { mapDeviceData, isGatewayDevice, isTestDevice, normalizeTelemetryReadings } from '@/lib/device-utils'
+import {
+  mapDeviceData,
+  isGatewayDevice,
+  isTestDevice,
+  normalizeTelemetryReadings,
+} from '@/lib/device-utils'
 import { DeviceOverviewTab } from '@/components/devices/detail/DeviceOverviewTab'
 import { DeviceTelemetryTab } from '@/components/devices/detail/DeviceTelemetryTab'
 import { DeviceConfigTab } from '@/components/devices/detail/DeviceConfigTab'
@@ -48,10 +53,16 @@ function DeviceViewContent() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [device, setDevice] = useState<Device | null>(null)
-  const [telemetryReadings, setTelemetryReadings] = useState<TelemetryReading[]>([])
+  const [telemetryReadings, setTelemetryReadings] = useState<
+    TelemetryReading[]
+  >([])
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
-  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
-  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(() => {
+  const [locations, setLocations] = useState<
+    Array<{ id: string; name: string }>
+  >([])
+  const [temperatureUnit, setTemperatureUnit] = useState<
+    'celsius' | 'fahrenheit'
+  >(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('temperatureUnit')
       if (stored === 'C') return 'celsius'
@@ -60,7 +71,9 @@ function DeviceViewContent() {
   })
 
   // Tab routing via URL
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview')
+  const [activeTab, setActiveTab] = useState(
+    () => searchParams.get('tab') || 'overview'
+  )
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
@@ -75,15 +88,21 @@ function DeviceViewContent() {
   }
 
   // Derived state
-  const isGateway = useMemo(() => (device ? isGatewayDevice(device) : false), [device])
-  const testDevice = useMemo(() => (device ? isTestDevice(device) : false), [device])
+  const isGateway = useMemo(
+    () => (device ? isGatewayDevice(device) : false),
+    [device]
+  )
+  const testDevice = useMemo(
+    () => (device ? isTestDevice(device) : false),
+    [device]
+  )
 
   // -- Data Loading --
 
   const loadDevice = useCallback(async () => {
     if (!deviceId) {
       toast.error('Device ID is required')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
       return
     }
 
@@ -94,7 +113,7 @@ function DeviceViewContent() {
       const response = await edgeFunctions.devices.get(deviceId)
       if (!response.success || !response.data) {
         toast.error('Device not found')
-        router.push('/dashboard/devices')
+        router.push('/dashboard/hardware-provisioning')
         return
       }
 
@@ -103,7 +122,9 @@ function DeviceViewContent() {
 
       // Fetch telemetry readings (48 hours from both primary + test tables)
       const supabase = createClient()
-      const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+      const fortyEightHoursAgo = new Date(
+        Date.now() - 48 * 60 * 60 * 1000
+      ).toISOString()
 
       const [primaryResult, testResult] = await Promise.all([
         supabase
@@ -127,9 +148,16 @@ function DeviceViewContent() {
       if (testResult.error) throw testResult.error
 
       const combined = (
-        [...(primaryResult.data || []), ...((testResult.data as TelemetryReading[] | null) || [])] as TelemetryReading[]
+        [
+          ...(primaryResult.data || []),
+          ...((testResult.data as TelemetryReading[] | null) || []),
+        ] as TelemetryReading[]
       )
-        .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.received_at).getTime() -
+            new Date(a.received_at).getTime()
+        )
         .slice(0, 500)
 
       setTelemetryReadings(normalizeTelemetryReadings(combined))
@@ -141,14 +169,18 @@ function DeviceViewContent() {
         .eq('device_id', deviceId)
         .limit(1)
 
-      const firstThreshold = (thresholds as Array<{ temperature_unit?: string }> | null)?.[0]
+      const firstThreshold = (
+        thresholds as Array<{ temperature_unit?: string }> | null
+      )?.[0]
       if (firstThreshold?.temperature_unit) {
-        setTemperatureUnit(firstThreshold.temperature_unit as 'celsius' | 'fahrenheit')
+        setTemperatureUnit(
+          firstThreshold.temperature_unit as 'celsius' | 'fahrenheit'
+        )
       }
     } catch (error) {
       console.error('Error loading device:', error)
       toast.error('Failed to load device')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
     } finally {
       setLoading(false)
     }
@@ -157,10 +189,14 @@ function DeviceViewContent() {
   const loadLocations = useCallback(async () => {
     if (!currentOrganization?.id) return
     try {
-      const response = await edgeFunctions.locations.list(currentOrganization.id)
+      const response = await edgeFunctions.locations.list(
+        currentOrganization.id
+      )
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setLocations(response.data.map((loc: any) => ({ id: loc.id, name: loc.name })))
+        setLocations(
+          response.data.map((loc: any) => ({ id: loc.id, name: loc.name }))
+        )
       }
     } catch (error) {
       console.error('Error loading locations:', error)
@@ -180,7 +216,10 @@ function DeviceViewContent() {
       setSaving(true)
       const response = await edgeFunctions.devices.update(deviceId, updates)
       if (!response.success) {
-        toast.error((response.error as { message?: string })?.message || 'Failed to update device')
+        toast.error(
+          (response.error as { message?: string })?.message ||
+            'Failed to update device'
+        )
         return
       }
       toast.success('Device updated successfully')
@@ -195,16 +234,24 @@ function DeviceViewContent() {
 
   const handleDelete = async () => {
     if (!deviceId) return
-    if (!confirm(`Are you sure you want to delete "${device?.name}"? This action cannot be undone.`)) return
+    if (
+      !confirm(
+        `Are you sure you want to delete "${device?.name}"? This action cannot be undone.`
+      )
+    )
+      return
     try {
       setDeleting(true)
       const response = await edgeFunctions.devices.delete(deviceId)
       if (!response.success) {
-        toast.error((response.error as { message?: string })?.message || 'Failed to delete device')
+        toast.error(
+          (response.error as { message?: string })?.message ||
+            'Failed to delete device'
+        )
         return
       }
       toast.success('Device deleted successfully')
-      router.push('/dashboard/devices')
+      router.push('/dashboard/hardware-provisioning')
     } catch (error) {
       console.error('Error deleting device:', error)
       toast.error('Failed to delete device')
@@ -232,7 +279,7 @@ function DeviceViewContent() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Device not found</p>
-        <Button onClick={() => router.push('/dashboard/devices')}>
+        <Button onClick={() => router.push('/dashboard/hardware-provisioning')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Devices
         </Button>
@@ -247,8 +294,11 @@ function DeviceViewContent() {
         description={`${device.device_type || 'Unknown'} \u2022 ID: ${device.id?.substring(0, 8) || 'N/A'}`}
         icon={(() => {
           const typeName = device.device_type || ''
-          const settings = currentOrganization?.settings as Record<string, unknown> | undefined
-          const rawImages = (settings?.device_type_images as Record<string, string>) || {}
+          const settings = currentOrganization?.settings as
+            | Record<string, unknown>
+            | undefined
+          const rawImages =
+            (settings?.device_type_images as Record<string, string>) || {}
           const imgUrl = Object.entries(rawImages).find(
             ([k]) => k.toLowerCase() === typeName.toLowerCase()
           )?.[1]
@@ -275,10 +325,15 @@ function DeviceViewContent() {
                   organization_id: device.organization_id,
                 }}
                 currentOrgId={currentOrganization.id}
-                onTransferComplete={() => router.push('/dashboard/devices')}
+                onTransferComplete={() =>
+                  router.push('/dashboard/hardware-provisioning')
+                }
               />
             )}
-            <Button variant="ghost" onClick={() => router.push('/dashboard/devices')}>
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/dashboard/hardware-provisioning')}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Devices
             </Button>
@@ -286,7 +341,11 @@ function DeviceViewContent() {
         }
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-4"
+      >
         <TabsList className="w-full justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
@@ -296,7 +355,11 @@ function DeviceViewContent() {
         </TabsList>
 
         <TabsContent value="overview">
-          <DeviceOverviewTab device={device} telemetryReadings={telemetryReadings} isGateway={isGateway} />
+          <DeviceOverviewTab
+            device={device}
+            telemetryReadings={telemetryReadings}
+            isGateway={isGateway}
+          />
         </TabsContent>
 
         <TabsContent value="telemetry">

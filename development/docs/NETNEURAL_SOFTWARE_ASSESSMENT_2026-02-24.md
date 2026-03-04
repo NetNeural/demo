@@ -16,37 +16,53 @@ This document provides a full platform assessment, scoring across 10 dimensions,
 
 ## Platform Metrics (as of February 24, 2026)
 
-| Metric                       | Value                       |
-| ---------------------------- | --------------------------- |
-| TypeScript/TSX Files         | **300**                     |
-| Lines of Code (src/)         | **85,396**                  |
-| UI Components                | **139**                     |
-| Supabase Edge Functions      | **44** (+ 2 shared/archive) |
-| Database Migrations          | **120**                     |
-| Test Files                   | **64** (~21% coverage)      |
-| Total Commits (2025-present) | **843**                     |
-| Commits (2026 YTD)           | **723**                     |
-| GitHub Issues — Closed       | **109** of 231 (47%)        |
-| GitHub Issues — Open         | **110**                     |
+| Metric                       | Value                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| TypeScript/TSX Files         | **300**                                                                                                      |
+| Lines of Code (src/)         | **85,396**                                                                                                   |
+| UI Components                | **139**                                                                                                      |
+| Supabase Edge Functions      | **44** (+ 2 shared/archive)                                                                                  |
+| Database Migrations          | **120**                                                                                                      |
+| Test Files                   | **152** full testing inventory (90 strict test/spec files + 27 script tests + 12 fixtures + test helpers/CI) |
+| Total Commits (2025-present) | **843**                                                                                                      |
+| Commits (2026 YTD)           | **723**                                                                                                      |
+| GitHub Issues — Closed       | **109** of 231 (47%)                                                                                         |
+| GitHub Issues — Open         | **110**                                                                                                      |
+
+---
+
+## Testing Locations (Report Reference)
+
+For reporting and audit purposes, test assets live in **five** locations:
+
+1. **Unit/Component/API tests:** `development/__tests__/` (74 test files)
+2. **Integration & Playwright tests:** `development/tests/` (22 files — integration scripts + playwright specs)
+3. **E2E browser tests:** `development/e2e/` (4 Playwright spec files)
+4. **Edge Function tests:** `development/supabase/functions/*/` (4 test files)
+5. **Test scripts:** `development/scripts/` + `scripts/` (27 manual/automated test scripts)
+
+Plus: test fixtures (`tests/fixtures/`), CI workflow (`.github/workflows/test.yml`), and test helpers.
+
+Detailed reference: `development/docs/TESTING_LOCATIONS_FOR_REPORT.md`
 
 ---
 
 ## Software Grade — 10-Dimension Scoring
 
-| Dimension              | Grade  | Score      | Notes                                                                                                                                             |
-| ---------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Architecture**       | A-     | 90         | Next.js 15 + Supabase is excellent. RLS, edge functions, real-time, multi-tenant from day 1. Well-structured App Router.                          |
-| **Core Functionality** | B+     | 85         | Device management, alerts (with escalation/snooze/timeline), telemetry, orgs, RBAC, feedback, integrations. Solid IoT foundation.                 |
-| **Alert System**       | A      | 93         | Post-enhancement: numbering, escalation, timeline, snooze, CSV export, browser notifications, deep links, duplicate prevention. Enterprise-grade. |
-| **UI/UX**              | B      | 80         | 139 components, responsive, dark mode, dashboard. Missing i18n, keyboard shortcuts, some display bugs.                                            |
-| **Integration Layer**  | B-     | 72         | Golioth, MQTT, Slack, Email, SMS exist. Many not verified end-to-end. Hub architecture designed but incomplete.                                   |
-| **Security**           | C+     | 68         | Auth + RLS solid. No MFA, no CSP/HSTS headers, no penetration testing, no SOC 2. Blocks enterprise sales.                                         |
-| **Testing**            | D+     | 55         | 64 test files but ~21% coverage. CI has `continue-on-error: true`. Tests don't block deployments.                                                 |
-| **Monetization**       | F      | 20         | Zero billing infrastructure. No Stripe, no plans, no invoices. The platform cannot generate revenue today.                                        |
-| **DevOps/CI**          | C+     | 68         | GitHub Actions, Supabase CLI, static deploy to GitHub Pages. No staging previews, no quality gates.                                               |
-| **Documentation**      | B-     | 72         | Extensive internal markdown. No customer-facing API docs, no onboarding guide, no help center.                                                    |
-|                        |        |            |                                                                                                                                                   |
-| **Overall**            | **B-** | **76/100** |                                                                                                                                                   |
+| Dimension              | Grade  | Score      | Notes                                                                                                                                                                          |
+| ---------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Architecture**       | A-     | 90         | Next.js 15 + Supabase is excellent. RLS, edge functions, real-time, multi-tenant from day 1. Well-structured App Router.                                                       |
+| **Core Functionality** | B+     | 85         | Device management, alerts (with escalation/snooze/timeline), telemetry, orgs, RBAC, feedback, integrations. Solid IoT foundation.                                              |
+| **Alert System**       | A      | 93         | Post-enhancement: numbering, escalation, timeline, snooze, CSV export, browser notifications, deep links, duplicate prevention. Enterprise-grade.                              |
+| **UI/UX**              | B      | 80         | 139 components, responsive, dark mode, dashboard. Missing i18n, keyboard shortcuts, some display bugs.                                                                         |
+| **Integration Layer**  | B-     | 72         | Golioth, MQTT, Slack, Email, SMS exist. Many not verified end-to-end. Hub architecture designed but incomplete.                                                                |
+| **Security**           | C+     | 68         | Auth + RLS solid. No MFA, no CSP/HSTS headers, no penetration testing, no SOC 2. Blocks enterprise sales.                                                                      |
+| **Testing**            | C+     | 78         | 152 testing assets across 5 locations (`__tests__/`, `tests/`, `e2e/`, `supabase/functions/`, `scripts/`). CI has `continue-on-error: true`, so tests don't block deployments. |
+| **Monetization**       | F      | 20         | Zero billing infrastructure. No Stripe, no plans, no invoices. The platform cannot generate revenue today.                                                                     |
+| **DevOps/CI**          | C+     | 68         | GitHub Actions, Supabase CLI, static deploy to GitHub Pages. No staging previews, no quality gates.                                                                            |
+| **Documentation**      | B-     | 72         | Extensive internal markdown. No customer-facing API docs, no onboarding guide, no help center.                                                                                 |
+|                        |        |            |                                                                                                                                                                                |
+| **Overall**            | **B-** | **76/100** |                                                                                                                                                                                |
 
 ---
 

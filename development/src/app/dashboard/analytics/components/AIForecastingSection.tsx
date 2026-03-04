@@ -467,71 +467,71 @@ export function AIForecastingSection({
 
         {/* Battery Depletion Forecast — Enterprise only (predictive_ai) */}
         <FeatureGate feature="predictive_ai" showUpgradePrompt>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BatteryWarning className="h-4 w-4 text-yellow-500" />
-              Battery Depletion Forecast
-            </CardTitle>
-            <CardDescription>
-              Devices predicted to run low based on current drain rate
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {batteryPredictions.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                No battery drain detected — fleet batteries are stable
-              </p>
-            ) : (
-              <div className="max-h-[240px] space-y-2 overflow-y-auto">
-                {batteryPredictions.slice(0, 8).map((pred) => {
-                  const isUrgent =
-                    pred.depletionHours !== null && pred.depletionHours < 48
-                  const isCritical =
-                    pred.depletionHours !== null && pred.depletionHours < 12
-                  return (
-                    <div
-                      key={pred.deviceId}
-                      className={`flex items-center justify-between rounded-lg border p-3 ${
-                        isCritical
-                          ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20'
-                          : isUrgent
-                            ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20'
-                            : ''
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {pred.deviceName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Currently {pred.currentBattery.toFixed(0)}% · draining{' '}
-                          {Math.abs(pred.ratePerHour).toFixed(2)}%/hr
-                        </p>
-                      </div>
-                      <Badge
-                        variant={
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BatteryWarning className="h-4 w-4 text-yellow-500" />
+                Battery Depletion Forecast
+              </CardTitle>
+              <CardDescription>
+                Devices predicted to run low based on current drain rate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {batteryPredictions.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  No battery drain detected — fleet batteries are stable
+                </p>
+              ) : (
+                <div className="max-h-[240px] space-y-2 overflow-y-auto">
+                  {batteryPredictions.slice(0, 8).map((pred) => {
+                    const isUrgent =
+                      pred.depletionHours !== null && pred.depletionHours < 48
+                    const isCritical =
+                      pred.depletionHours !== null && pred.depletionHours < 12
+                    return (
+                      <div
+                        key={pred.deviceId}
+                        className={`flex items-center justify-between rounded-lg border p-3 ${
                           isCritical
-                            ? 'destructive'
+                            ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20'
                             : isUrgent
-                              ? 'secondary'
-                              : 'outline'
-                        }
-                        className="ml-2 flex-shrink-0 text-xs"
+                              ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20'
+                              : ''
+                        }`}
                       >
-                        {pred.depletionHours !== null
-                          ? pred.depletionHours < 1
-                            ? '< 1 hr'
-                            : `~${Math.round(pred.depletionHours)} hrs`
-                          : 'Stable'}
-                      </Badge>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {pred.deviceName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Currently {pred.currentBattery.toFixed(0)}% ·
+                            draining {Math.abs(pred.ratePerHour).toFixed(2)}%/hr
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            isCritical
+                              ? 'destructive'
+                              : isUrgent
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                          className="ml-2 flex-shrink-0 text-xs"
+                        >
+                          {pred.depletionHours !== null
+                            ? pred.depletionHours < 1
+                              ? '< 1 hr'
+                              : `~${Math.round(pred.depletionHours)} hrs`
+                            : 'Stable'}
+                        </Badge>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </FeatureGate>
       </div>
     </div>

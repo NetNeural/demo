@@ -33,6 +33,11 @@ import {
   X,
 } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import {
+  PASSWORD_REQUIREMENTS,
+  getPasswordStrength,
+  generateStrongPassword,
+} from '@/lib/password-utils'
 
 interface Session {
   id: string
@@ -48,63 +53,6 @@ interface ApiKey {
   key: string
   created: string
   lastUsed: string
-}
-
-// ─── Password strength utilities ────────────────────────────────────
-interface PasswordRequirement {
-  label: string
-  test: (pw: string) => boolean
-}
-
-const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
-  { label: 'At least 12 characters', test: (pw) => pw.length >= 12 },
-  { label: 'Uppercase letter (A-Z)', test: (pw) => /[A-Z]/.test(pw) },
-  { label: 'Lowercase letter (a-z)', test: (pw) => /[a-z]/.test(pw) },
-  { label: 'Number (0-9)', test: (pw) => /[0-9]/.test(pw) },
-  {
-    label: 'Special character (!@#$...)',
-    test: (pw) => /[^A-Za-z0-9]/.test(pw),
-  },
-]
-
-function getPasswordStrength(pw: string): {
-  score: number
-  label: string
-  color: string
-} {
-  if (!pw) return { score: 0, label: '', color: '' }
-  const passed = PASSWORD_REQUIREMENTS.filter((r) => r.test(pw)).length
-  // Bonus for length
-  const lengthBonus = pw.length >= 16 ? 1 : 0
-  const total = passed + lengthBonus
-  if (total <= 1) return { score: 1, label: 'Very Weak', color: 'bg-red-500' }
-  if (total <= 2) return { score: 2, label: 'Weak', color: 'bg-orange-500' }
-  if (total <= 3) return { score: 3, label: 'Fair', color: 'bg-yellow-500' }
-  if (total <= 4) return { score: 4, label: 'Strong', color: 'bg-blue-500' }
-  return { score: 5, label: 'Very Strong', color: 'bg-green-500' }
-}
-
-function generateStrongPassword(): string {
-  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
-  const lower = 'abcdefghjkmnpqrstuvwxyz'
-  const digits = '23456789'
-  const special = '!@#$%&*_+-='
-  const all = upper + lower + digits + special
-
-  // Guarantee at least one of each category
-  const pick = (s: string) => s[Math.floor(Math.random() * s.length)]!
-  const required = [pick(upper), pick(lower), pick(digits), pick(special)]
-
-  // Fill to 20 characters
-  const remaining = Array.from({ length: 16 }, () => pick(all))
-  const chars = [...required, ...remaining]
-
-  // Fisher-Yates shuffle
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[chars[i], chars[j]] = [chars[j]!, chars[i]!]
-  }
-  return chars.join('')
 }
 
 export function SecurityTab() {
@@ -264,32 +212,46 @@ export function SecurityTab() {
 
     try {
       setChangingPassword(true)
+
+      // Use edge function with admin API to bypass Supabase's
+      // "Secure password change" email confirmation requirement
       const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-      // First verify current password by attempting to sign in
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: (await supabase.auth.getUser()).data.user?.email || '',
-        password: currentPassword,
-      })
-
-      if (verifyError) {
+      if (!session?.access_token) {
         toast({
           title: 'Error',
-          description: 'Current password is incorrect',
+          description: 'Session expired. Please log in again.',
           variant: 'destructive',
         })
         return
       }
 
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const res = await fetch(`${supabaseUrl}/functions/v1/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
       })
 
-      if (updateError) {
+      const result = await res.json()
+
+      if (!res.ok) {
+        const message =
+          result?.error || result?.message || 'Failed to update password'
         toast({
           title: 'Error',
-          description: 'Failed to update password: ' + updateError.message,
+          description: message.includes('incorrect')
+            ? 'Current password is incorrect'
+            : message,
           variant: 'destructive',
         })
         return
@@ -363,6 +325,25 @@ export function SecurityTab() {
       try {
         setEnrolling(true)
         const supabase = createClient()
+
+        // Clean up ALL existing TOTP factors before enrolling a new one.
+        // Supabase returns 422 if any factor (verified or unverified) already exists.
+        // This handles: re-enrollment after disable, stale unverified factors, etc.
+        const { data: existingFactors } = await supabase.auth.mfa.listFactors()
+        if (existingFactors?.totp && existingFactors.totp.length > 0) {
+          for (const factor of existingFactors.totp) {
+            try {
+              await supabase.auth.mfa.unenroll({ factorId: factor.id })
+            } catch {
+              // Continue cleaning up remaining factors even if one fails
+              console.warn(`Failed to clean up factor ${factor.id}`)
+            }
+          }
+          // Update local state since we removed everything
+          setMfaEnrolled(false)
+          setMfaFactorId(null)
+        }
+
         const { data, error } = await supabase.auth.mfa.enroll({
           factorType: 'totp',
           friendlyName: 'Authenticator App',
@@ -389,22 +370,55 @@ export function SecurityTab() {
         setEnrolling(false)
       }
     } else {
-      // Unenroll MFA
-      if (!mfaFactorId) return
+      // Unenroll MFA — remove ALL TOTP factors to ensure clean state
       try {
         setUnenrolling(true)
         const supabase = createClient()
-        const { error } = await supabase.auth.mfa.unenroll({
-          factorId: mfaFactorId,
-        })
-        if (error) {
+
+        // List and remove all TOTP factors, not just the one in state
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        const totpFactors = factors?.totp || []
+
+        if (totpFactors.length === 0 && !mfaFactorId) {
+          // Nothing to unenroll
+          setMfaEnrolled(false)
+          setMfaFactorId(null)
+          toast({
+            title: '2FA Disabled',
+            description:
+              'Two-factor authentication has been removed from your account.',
+          })
+          return
+        }
+
+        let anyError: Error | null = null
+        for (const factor of totpFactors) {
+          const { error } = await supabase.auth.mfa.unenroll({
+            factorId: factor.id,
+          })
+          if (error) {
+            anyError = error
+            console.error(`Failed to unenroll factor ${factor.id}:`, error)
+          }
+        }
+
+        // Also try the tracked factor if it wasn't in the list
+        if (mfaFactorId && !totpFactors.some((f) => f.id === mfaFactorId)) {
+          const { error } = await supabase.auth.mfa.unenroll({
+            factorId: mfaFactorId,
+          })
+          if (error) anyError = error
+        }
+
+        if (anyError && totpFactors.length > 0) {
           toast({
             title: 'Error',
-            description: `Failed to disable 2FA: ${error.message}`,
+            description: `Failed to disable 2FA: ${anyError.message}`,
             variant: 'destructive',
           })
           return
         }
+
         setMfaEnrolled(false)
         setMfaFactorId(null)
         toast({
@@ -460,10 +474,15 @@ export function SecurityTab() {
         code: verifyCode,
       })
       if (verifyError) {
+        const isCodeError =
+          verifyError.status === 422 ||
+          verifyError.message?.toLowerCase().includes('invalid') ||
+          verifyError.message?.toLowerCase().includes('code')
         toast({
-          title: 'Invalid Code',
-          description:
-            'The verification code was incorrect. Please check your authenticator app and try again.',
+          title: isCodeError ? 'Invalid Code' : 'Verification Failed',
+          description: isCodeError
+            ? "The code was incorrect. Make sure you scanned the NEW QR code above (not an old entry) and that the code hasn't expired. Codes refresh every 30 seconds."
+            : `Verification failed: ${verifyError.message}`,
           variant: 'destructive',
         })
         return

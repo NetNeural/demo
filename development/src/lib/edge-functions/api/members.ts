@@ -35,6 +35,10 @@ export interface MembersAPI {
     userId: string,
     password: string
   ) => Promise<EdgeFunctionResponse<unknown>>
+  /** Reset all MFA factors for a user (admin action) */
+  resetMfa: (
+    userId: string
+  ) => Promise<EdgeFunctionResponse<{ removed: number; message: string }>>
 }
 
 export function createMembersAPI(
@@ -108,6 +112,12 @@ export function createMembersAPI(
       call('email-password', {
         method: 'POST',
         body: { userId, password },
+      }),
+
+    resetMfa: (userId) =>
+      call('reset-mfa', {
+        method: 'POST',
+        body: { targetUserId: userId },
       }),
   }
 }

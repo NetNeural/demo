@@ -5,11 +5,17 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import type { Database } from './database.ts'
 
+/** NetNeural platform org — owners get platform-admin rights */
+const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
 export interface UserContext {
   userId: string
   organizationId: string | null
-  role: 'super_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
+  role: 'super_admin' | 'platform_admin' | 'org_owner' | 'org_admin' | 'user' | 'viewer'
   isSuperAdmin: boolean
+  /** Platform admin = super_admin OR NetNeural org owner.
+   *  Has admin feature access but NOT organic cross-org access. */
+  isPlatformAdmin: boolean
   email: string
 }
 
@@ -133,11 +139,13 @@ export async function getUserContext(req: Request): Promise<UserContext> {
               fallbackOrgId = membership.organization_id
             }
           }
+          const isSA = profile.role === 'super_admin' || profile.role === 'platform_admin'
           return {
             userId: payload.sub,
             organizationId: fallbackOrgId,
             role: profile.role as UserContext['role'],
-            isSuperAdmin: profile.role === 'super_admin',
+            isSuperAdmin: isSA,
+            isPlatformAdmin: isSA || (profile.role === 'org_owner' && fallbackOrgId === NETNEURAL_ORG_ID),
             email: profile.email || payload.email || '',
           }
         }
@@ -192,7 +200,8 @@ export async function getUserContext(req: Request): Promise<UserContext> {
     userId: user.id,
     organizationId: resolvedOrgId,
     role: userProfile.role as UserContext['role'],
-    isSuperAdmin: userProfile.role === 'super_admin',
+    isSuperAdmin: userProfile.role === 'super_admin' || userProfile.role === 'platform_admin',
+    isPlatformAdmin: userProfile.role === 'super_admin' || userProfile.role === 'platform_admin' || (userProfile.role === 'org_owner' && resolvedOrgId === NETNEURAL_ORG_ID),
     email: userProfile.email || user.email || '',
   }
 }
@@ -230,8 +239,17 @@ export async function resolveOrganizationId(
   userContext: UserContext,
   requestedOrgId?: string | null
 ): Promise<string | null> {
+  console.log('🔵 resolveOrganizationId called:', {
+    userId: userContext.userId,
+    email: userContext.email,
+    defaultOrgId: userContext.organizationId,
+    requestedOrgId: requestedOrgId || '(none)',
+    isSuperAdmin: userContext.isSuperAdmin,
+  })
+
   // Super admins can query any organization
   if (userContext.isSuperAdmin) {
+    console.log('🔵 resolveOrganizationId: super_admin → returning requestedOrgId')
     return requestedOrgId || null
   }
 
@@ -239,6 +257,7 @@ export async function resolveOrganizationId(
   if (!requestedOrgId || requestedOrgId === userContext.organizationId) {
     // If user has a default org, use it
     if (userContext.organizationId) {
+      console.log(`🔵 resolveOrganizationId: default/same org → ${userContext.organizationId}`)
       return userContext.organizationId
     }
     // No default org — try to find any membership
@@ -251,19 +270,24 @@ export async function resolveOrganizationId(
       .maybeSingle()
     if (anyMembership) {
       console.log(
-        `User ${userContext.email} has no default org, resolved via membership to ${anyMembership.organization_id}`
+        `🔵 resolveOrganizationId: no default org, resolved via membership to ${anyMembership.organization_id}`
       )
       return anyMembership.organization_id
     }
+    console.log('🔵 resolveOrganizationId: no default org, no membership found → null')
     return null
   }
 
-  // Check if user is a member of the requested org
-  // Also verify temporary memberships haven't expired
+  // User is requesting a DIFFERENT org than their default — verify membership
+  console.log(`🔵 resolveOrganizationId: checking membership for ${requestedOrgId}`)
   const serviceClient = createServiceClient()
+  // Bug #374 fix: only select columns that actually exist in organization_members.
+  // Previously selected 'is_temporary, expires_at' which don't exist, causing a
+  // 400 error that silently fell through to the default-org fallback — so every
+  // multi-org user always got their default org's data regardless of selection.
   const { data: membership, error: membershipError } = await serviceClient
     .from('organization_members')
-    .select('organization_id, is_temporary, expires_at')
+    .select('organization_id, role')
     .eq('user_id', userContext.userId)
     .eq('organization_id', requestedOrgId)
     .maybeSingle()
@@ -276,29 +300,29 @@ export async function resolveOrganizationId(
   }
 
   if (membership) {
-    // Check if temporary membership has expired
-    if (membership.is_temporary && membership.expires_at) {
-      const expiresAt = new Date(membership.expires_at)
-      if (expiresAt < new Date()) {
-        console.warn(
-          `User ${userContext.email} temporary access to org ${requestedOrgId} has expired.`
-        )
-        // Clean up expired membership
-        await serviceClient
-          .from('organization_members')
-          .delete()
-          .eq('user_id', userContext.userId)
-          .eq('organization_id', requestedOrgId)
-          .eq('is_temporary', true)
-        return userContext.organizationId
-      }
-    }
+    console.log(`🔵 resolveOrganizationId: membership confirmed (role=${membership.role}) → returning ${requestedOrgId}`)
     return requestedOrgId
   }
 
-  // Not a member of the requested org — fall back to default
+  // Not a member via organization_members — check additional access paths
+  // before falling back. The user might be the org creator or have access
+  // via the organizations table directly.
+  const { data: orgRecord } = await serviceClient
+    .from('organizations')
+    .select('id, created_by')
+    .eq('id', requestedOrgId)
+    .maybeSingle()
+
+  if (orgRecord?.created_by === userContext.userId) {
+    console.log(
+      `🔵 resolveOrganizationId: user is creator of org ${requestedOrgId} — granting access`
+    )
+    return requestedOrgId
+  }
+
+  // Final fallback to default org
   console.warn(
-    `User ${userContext.email} requested org ${requestedOrgId} but is not a member. Falling back to default org ${userContext.organizationId}.`
+    `⚠️ resolveOrganizationId: ${userContext.email} requested org ${requestedOrgId} but is NOT a member. Falling back to default org ${userContext.organizationId}.`
   )
   return userContext.organizationId
 }

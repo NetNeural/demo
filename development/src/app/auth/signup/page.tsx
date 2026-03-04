@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -22,12 +22,15 @@ import {
   Brain,
   Building2,
   Lock,
+  DollarSign,
   type LucideIcon,
 } from 'lucide-react'
+import type { BillingPlan, BillingPlanFeatures } from '@/types/billing'
+import { PLAN_FEATURE_DISPLAY } from '@/types/billing'
 
-// ─── Plan definitions (matches billing_plans seed data) ───────────────
+// ─── Plan display type ────────────────────────────────────────────────
 interface PlanTier {
-  slug: 'starter' | 'professional' | 'enterprise'
+  slug: string
   name: string
   tagline: string
   pricePerSensor: number
@@ -38,14 +41,108 @@ interface PlanTier {
   popular?: boolean
 }
 
-const PLANS: PlanTier[] = [
+// ─── Helpers: map DB billing_plans → UI PlanTier ──────────────────────
+function getPlanIcon(slug: string): LucideIcon {
+  switch (slug) {
+    case 'starter':
+      return BarChart3
+    case 'business':
+      return Brain
+    case 'enterprise':
+      return Building2
+    default:
+      return DollarSign
+  }
+}
+
+function getPlanColor(slug: string): string {
+  switch (slug) {
+    case 'starter':
+      return '#06b6d4'
+    case 'business':
+      return '#8b5cf6'
+    case 'enterprise':
+      return '#10b981'
+    default:
+      return '#06b6d4'
+  }
+}
+
+function formatRetention(days: number): string {
+  if (days === -1) return 'Unlimited retention'
+  if (days >= 365) return `${Math.round(days / 365)}-year retention`
+  return `${days}-day retention`
+}
+
+function formatUserLimit(max: number): string {
+  if (max === -1) return 'Unlimited users'
+  return `${max} user${max !== 1 ? 's' : ''}`
+}
+
+function formatIntegrationLimit(max: number): string {
+  if (max === -1) return 'Unlimited integrations'
+  return `${max} integration${max !== 1 ? 's' : ''}`
+}
+
+/** Build a human-readable feature list from the features JSONB flags */
+function buildFeatureList(
+  plan: BillingPlan,
+  allPlans: BillingPlan[]
+): string[] {
+  const features: string[] = []
+
+  // For non-starter plans, reference the tier below
+  const sortedPlans = [...allPlans].sort((a, b) => a.sort_order - b.sort_order)
+  const planIndex = sortedPlans.findIndex((p) => p.slug === plan.slug)
+  const prevPlan = planIndex > 0 ? sortedPlans[planIndex - 1] : null
+
+  if (prevPlan) {
+    features.push(`Everything in ${prevPlan.name}, plus:`)
+  }
+
+  // Add features that are enabled and (for non-starter) not in the previous tier
+  for (const fd of PLAN_FEATURE_DISPLAY) {
+    const enabled = plan.features[fd.key]
+    const enabledInPrev = prevPlan ? prevPlan.features[fd.key] : false
+    if (enabled && !enabledInPrev) {
+      features.push(fd.label)
+    }
+  }
+
+  return features
+}
+
+/** Convert a BillingPlan DB row into the PlanTier UI shape */
+function billingPlanToTier(
+  plan: BillingPlan,
+  allPlans: BillingPlan[]
+): PlanTier {
+  return {
+    slug: plan.slug,
+    name: plan.name,
+    tagline: plan.description || plan.name,
+    pricePerSensor: plan.price_per_device,
+    icon: getPlanIcon(plan.slug),
+    color: getPlanColor(plan.slug),
+    popular: plan.slug === 'business',
+    features: buildFeatureList(plan, allPlans),
+    limits: {
+      users: formatUserLimit(plan.max_users),
+      integrations: formatIntegrationLimit(plan.max_integrations),
+      retention: formatRetention(plan.telemetry_retention_days),
+    },
+  }
+}
+
+// ─── Static fallback (used while DB is loading or on error) ───────────
+const FALLBACK_PLANS: PlanTier[] = [
   {
     slug: 'starter',
     name: 'Starter',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
     icon: BarChart3,
-    color: '#06b6d4', // cyan
+    color: '#06b6d4',
     features: [
       'Real-time monitoring dashboard',
       'Automated compliance logs',
@@ -53,15 +150,19 @@ const PLANS: PlanTier[] = [
       'Email & SMS alerts',
       'Manual report export',
     ],
-    limits: { users: '3 users', integrations: '1 integration', retention: '90-day retention' },
+    limits: {
+      users: '3 users',
+      integrations: '1 integration',
+      retention: '90-day retention',
+    },
   },
   {
-    slug: 'professional',
-    name: 'Professional',
+    slug: 'business',
+    name: 'Business',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
     icon: Brain,
-    color: '#8b5cf6', // violet
+    color: '#8b5cf6',
     popular: true,
     features: [
       'Everything in Starter, plus:',
@@ -73,7 +174,11 @@ const PLANS: PlanTier[] = [
       'Automated audit reports',
       'PDF export & MFA',
     ],
-    limits: { users: '25 users', integrations: '5 integrations', retention: '1-year retention' },
+    limits: {
+      users: '25 users',
+      integrations: '5 integrations',
+      retention: '1-year retention',
+    },
   },
   {
     slug: 'enterprise',
@@ -81,9 +186,9 @@ const PLANS: PlanTier[] = [
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,
     icon: Building2,
-    color: '#10b981', // emerald
+    color: '#10b981',
     features: [
-      'Everything in Professional, plus:',
+      'Everything in Business, plus:',
       'AI optimization insights',
       'Chain benchmarking',
       'ESG & carbon reporting',
@@ -92,7 +197,11 @@ const PLANS: PlanTier[] = [
       'Custom branding',
       'Priority support',
     ],
-    limits: { users: 'Unlimited users', integrations: 'Unlimited integrations', retention: 'Unlimited retention' },
+    limits: {
+      users: 'Unlimited users',
+      integrations: 'Unlimited integrations',
+      retention: 'Unlimited retention',
+    },
   },
 ]
 
@@ -124,10 +233,72 @@ const NODE_ICONS: LucideIcon[] = [Wifi, Radio, Cpu, Zap, Activity]
 // ─── Signup form component ────────────────────────────────────────────
 function SignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Reseller attribution: ?org=slug → parent reseller org
+  const resellerSlug = searchParams?.get('org') || null
+  const inviteToken = searchParams?.get('invite') || null
+  const [parentOrgId, setParentOrgId] = useState<string | null>(null)
+
+  // Resolve reseller slug → org id (public query, no auth required)
+  useEffect(() => {
+    if (!resellerSlug) return
+    const resolve = async () => {
+      try {
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from('organizations')
+          .select('id')
+          .eq('slug', resellerSlug)
+          .eq('is_reseller', true)
+          .eq('is_active', true)
+          .eq('reseller_slug_active', true)
+          .single()
+        if (data?.id) setParentOrgId(data.id)
+      } catch {
+        /* non-fatal */
+      }
+    }
+    resolve()
+  }, [resellerSlug])
 
   // Step state: 1 = select plan, 2 = account details, 3 = success
   const [step, setStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null)
+
+  // Dynamic plans fetched from billing_plans table
+  const [plans, setPlans] = useState<PlanTier[]>(FALLBACK_PLANS)
+  const [plansLoading, setPlansLoading] = useState(true)
+
+  // Fetch active, public billing plans from Supabase on mount
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from('billing_plans')
+          .select('*')
+          .eq('is_active', true)
+          .eq('is_public', true)
+          .order('sort_order', { ascending: true })
+
+        if (error) throw error
+        if (data && data.length > 0) {
+          const dbPlans = data as unknown as BillingPlan[]
+          setPlans(dbPlans.map((p) => billingPlanToTier(p, dbPlans)))
+        }
+        // If no plans returned, keep FALLBACK_PLANS
+      } catch (err) {
+        console.error('Failed to load billing plans, using defaults:', err)
+        // Keep FALLBACK_PLANS on error
+      } finally {
+        setPlansLoading(false)
+      }
+    }
+    loadPlans()
+  }, [])
 
   // Form state
   const [fullName, setFullName] = useState('')
@@ -141,13 +312,17 @@ function SignupForm() {
   // Loading / error
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false)
 
   // Colors
-  const colors = useMemo(() => ({
-    primary: '#06b6d4',
-    secondary: '#8b5cf6',
-    accent: '#10b981',
-  }), [])
+  const colors = useMemo(
+    () => ({
+      primary: '#06b6d4',
+      secondary: '#8b5cf6',
+      accent: '#10b981',
+    }),
+    []
+  )
 
   // Background nodes
   const nodes = useMemo(() => generateNodes(10), [])
@@ -155,8 +330,10 @@ function SignupForm() {
   // ── Validation ──────────────────────────────────────────────────────
   const passwordErrors = useMemo(() => {
     const errs: string[] = []
-    if (password.length > 0 && password.length < 8) errs.push('At least 8 characters')
-    if (password.length > 0 && !/[A-Z]/.test(password)) errs.push('One uppercase letter')
+    if (password.length > 0 && password.length < 8)
+      errs.push('At least 8 characters')
+    if (password.length > 0 && !/[A-Z]/.test(password))
+      errs.push('One uppercase letter')
     if (password.length > 0 && !/[0-9]/.test(password)) errs.push('One number')
     return errs
   }, [password])
@@ -175,103 +352,150 @@ function SignupForm() {
   }, [fullName, orgName, email, password, confirmPassword, agreedToTerms])
 
   // ── Handle signup ───────────────────────────────────────────────────
-  const handleSignup = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedPlan || !isStep2Valid) return
+  const handleSignup = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!selectedPlan || !isStep2Valid) return
 
-    setIsLoading(true)
-    setError('')
+      setIsLoading(true)
+      setError('')
+      setNeedsEmailConfirmation(false)
 
-    try {
-      const supabase = createClient()
+      try {
+        const supabase = createClient()
 
-      // Generate organization slug from name
-      const slug = orgName
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
+        // Generate organization slug from name
+        const slug = orgName
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
 
-      // Create auth user with metadata
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            organization_name: orgName.trim(),
-            organization_slug: slug,
-            selected_plan: selectedPlan.slug,
+        // Create auth user with metadata
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              organization_name: orgName.trim(),
+              organization_slug: slug,
+              selected_plan: selectedPlan.slug,
+            },
           },
-        },
-      })
+        })
 
-      if (signUpError) {
-        setError(signUpError.message)
-        setIsLoading(false)
-        return
-      }
+        if (signUpError) {
+          setError(signUpError.message)
+          setIsLoading(false)
+          return
+        }
 
-      if (!data.user) {
-        setError('Registration failed. Please try again.')
-        setIsLoading(false)
-        return
-      }
+        if (!data.user) {
+          setError('Registration failed. Please try again.')
+          setIsLoading(false)
+          return
+        }
 
-      // If email confirmation is required, show success step
-      // If auto-confirmed, provision org + user record
-      if (data.session) {
-        // Auto-confirmed — create organization and user record
+        // Detect Supabase "fake success" for already-registered emails.
+        // Supabase returns a user object with an empty identities array
+        // to prevent email enumeration attacks — no user is actually created.
+        if (!data.user.identities || data.user.identities.length === 0) {
+          setError(
+            'An account with this email may already exist. ' +
+              'Please try signing in, or use a different email address.'
+          )
+          setIsLoading(false)
+          return
+        }
+
+        // If email confirmation is required (no session returned), the user
+        // must click the confirmation link before they can sign in.
+        if (!data.session) {
+          setNeedsEmailConfirmation(true)
+          setStep(3)
+          setIsLoading(false)
+          return
+        }
+
+        // Auto-confirmed — provision organization via edge function (uses
+        // admin client, bypasses RLS)
         try {
-          // Create organization
-          const { data: orgData, error: orgError } = await supabase
-            .from('organizations')
-            .insert({
-              name: orgName.trim(),
-              slug,
-              subscription_tier: selectedPlan.slug,
-              is_active: true,
-              settings: {},
-            })
-            .select('id')
-            .single()
+          const { data: sessionData } = await supabase.auth.getSession()
+          const accessToken = sessionData?.session?.access_token
 
-          if (orgError) {
-            console.error('Org creation error:', orgError)
-            // Still proceed — org can be set up later
-          }
+          if (accessToken) {
+            const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+            const response = await fetch(
+              `${apiUrl}/functions/v1/organizations`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                  name: orgName.trim(),
+                  slug,
+                  subscriptionTier: selectedPlan.slug,
+                  ...(parentOrgId ? { parentOrganizationId: parentOrgId } : {}),
+                }),
+              }
+            )
 
-          // Create user record in public.users
-          if (orgData) {
-            const { error: userError } = await supabase
-              .from('users')
-              .insert({
-                id: data.user.id,
-                email: data.user.email || email.trim(),
-                full_name: fullName.trim(),
-                role: 'org_owner',
-                organization_id: orgData.id,
-                is_active: true,
-              })
+            if (!response.ok) {
+              const errBody = await response.json().catch(() => ({}))
+              console.error('Org provisioning error:', errBody)
+              // Non-fatal — user is created, org can be provisioned later
+            } else {
+              const orgResult = await response.json().catch(() => ({}))
+              console.log(
+                'Organization provisioned successfully via edge function'
+              )
 
-            if (userError) {
-              console.error('User record creation error:', userError)
+              // Record signup attribution for reseller analytics (#399)
+              if (parentOrgId && resellerSlug) {
+                const {
+                  data: { user: newUser },
+                } = await supabase.auth.getUser()
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ;(supabase as any)
+                  .from('signup_attribution')
+                  .insert({
+                    reseller_org_id: parentOrgId,
+                    reseller_slug: resellerSlug,
+                    new_org_id: orgResult.data?.id ?? null,
+                    new_user_id: newUser?.id ?? null,
+                  })
+                  .then(() => {})
+                  .catch(() => {}) // fire-and-forget, non-fatal
+              }
             }
           }
         } catch (provisionErr) {
           console.error('Provisioning error:', provisionErr)
           // Auth user is created — provisioning can be retried
         }
-      }
 
-      // Move to success step
-      setStep(3)
-      setIsLoading(false)
-    } catch {
-      setError('An unexpected error occurred. Please try again.')
-      setIsLoading(false)
-    }
-  }, [selectedPlan, isStep2Valid, email, password, fullName, orgName])
+        // Move to success step
+        setStep(3)
+        setIsLoading(false)
+      } catch {
+        setError('An unexpected error occurred. Please try again.')
+        setIsLoading(false)
+      }
+    },
+    [
+      selectedPlan,
+      isStep2Valid,
+      email,
+      password,
+      fullName,
+      orgName,
+      parentOrgId,
+      resellerSlug,
+    ]
+  )
 
   // ── Plan card ───────────────────────────────────────────────────────
   const renderPlanCard = (plan: PlanTier) => {
@@ -322,7 +546,9 @@ function SignupForm() {
 
         {/* Price */}
         <div className="mb-4">
-          <span className="text-3xl font-bold text-white">${plan.pricePerSensor}</span>
+          <span className="text-3xl font-bold text-white">
+            ${plan.pricePerSensor}
+          </span>
           <span className="text-sm text-gray-400">/sensor/mo</span>
         </div>
 
@@ -341,11 +567,20 @@ function SignupForm() {
         {/* Features */}
         <ul className="mb-4 flex-1 space-y-2">
           {plan.features.map((feat) => (
-            <li key={feat} className="flex items-start gap-2 text-sm text-gray-300">
+            <li
+              key={feat}
+              className="flex items-start gap-2 text-sm text-gray-300"
+            >
               {feat.includes('Everything in') ? (
-                <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: plan.color }} />
+                <ArrowRight
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                  style={{ color: plan.color }}
+                />
               ) : (
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: plan.color }} />
+                <Check
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                  style={{ color: plan.color }}
+                />
               )}
               <span>{feat}</span>
             </li>
@@ -432,7 +667,7 @@ function SignupForm() {
           <p className="mt-2 text-gray-400">
             {step === 1 && 'Choose the plan that fits your operation'}
             {step === 2 && 'Create your account'}
-            {step === 3 && 'You\'re all set!'}
+            {step === 3 && "You're all set!"}
           </p>
 
           {/* Step indicator */}
@@ -470,21 +705,32 @@ function SignupForm() {
 
         {/* ── Step 1: Plan selection ──────────────────────────────── */}
         {step === 1 && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="grid gap-6 md:grid-cols-3">
-              {PLANS.map(renderPlanCard)}
-            </div>
+          <div className="duration-500 animate-in fade-in slide-in-from-bottom-4">
+            {plansLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-500" />
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-3">
+                {plans.map(renderPlanCard)}
+              </div>
+            )}
 
             <div className="mt-8 flex justify-center">
               <Button
-                onClick={() => { setError(''); setStep(2) }}
+                onClick={() => {
+                  setError('')
+                  setStep(2)
+                }}
                 disabled={!selectedPlan}
                 className="h-12 w-full max-w-sm rounded-lg px-8 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
                 style={{
                   background: selectedPlan
                     ? `linear-gradient(135deg, ${selectedPlan.color}, ${colors.secondary})`
                     : undefined,
-                  boxShadow: selectedPlan ? `0 4px 20px ${selectedPlan.color}30` : undefined,
+                  boxShadow: selectedPlan
+                    ? `0 4px 20px ${selectedPlan.color}30`
+                    : undefined,
                 }}
               >
                 <span className="flex items-center gap-2">
@@ -502,7 +748,7 @@ function SignupForm() {
 
         {/* ── Step 2: Account details ─────────────────────────────── */}
         {step === 2 && (
-          <div className="mx-auto max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mx-auto max-w-md duration-500 animate-in fade-in slide-in-from-bottom-4">
             <div
               className="rounded-2xl border border-gray-800/60 p-8 shadow-2xl backdrop-blur-xl"
               style={{ background: 'rgba(17, 24, 39, 0.7)' }}
@@ -511,8 +757,13 @@ function SignupForm() {
               {selectedPlan && (
                 <div className="mb-6 flex items-center justify-between rounded-lg border border-gray-700/50 bg-gray-800/40 px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <selectedPlan.icon className="h-4 w-4" style={{ color: selectedPlan.color }} />
-                    <span className="text-sm font-medium text-white">{selectedPlan.name}</span>
+                    <selectedPlan.icon
+                      className="h-4 w-4"
+                      style={{ color: selectedPlan.color }}
+                    />
+                    <span className="text-sm font-medium text-white">
+                      {selectedPlan.name}
+                    </span>
                     <span className="text-xs text-gray-400">
                       ${selectedPlan.pricePerSensor}/sensor/mo
                     </span>
@@ -528,15 +779,23 @@ function SignupForm() {
               )}
 
               {error && (
-                <Alert variant="destructive" className="mb-4 border-red-800/50 bg-red-900/20">
-                  <AlertDescription className="text-red-300">{error}</AlertDescription>
+                <Alert
+                  variant="destructive"
+                  className="mb-4 border-red-800/50 bg-red-900/20"
+                >
+                  <AlertDescription className="text-red-300">
+                    {error}
+                  </AlertDescription>
                 </Alert>
               )}
 
               <form onSubmit={handleSignup} className="space-y-4">
                 {/* Full Name */}
                 <div>
-                  <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="fullName"
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                  >
                     Full Name
                   </label>
                   <input
@@ -553,7 +812,10 @@ function SignupForm() {
 
                 {/* Organization Name */}
                 <div>
-                  <label htmlFor="orgName" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="orgName"
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                  >
                     Organization Name
                   </label>
                   <input
@@ -570,7 +832,10 @@ function SignupForm() {
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="email"
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                  >
                     Work Email
                   </label>
                   <input
@@ -587,7 +852,10 @@ function SignupForm() {
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="password"
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                  >
                     Password
                   </label>
                   <div className="relative">
@@ -606,13 +874,19 @@ function SignupForm() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-white"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   {passwordErrors.length > 0 && (
                     <ul className="mt-1.5 space-y-0.5">
                       {passwordErrors.map((err) => (
-                        <li key={err} className="text-xs text-amber-400">• {err}</li>
+                        <li key={err} className="text-xs text-amber-400">
+                          • {err}
+                        </li>
                       ))}
                     </ul>
                   )}
@@ -620,7 +894,10 @@ function SignupForm() {
 
                 {/* Confirm Password */}
                 <div>
-                  <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="mb-1.5 block text-sm font-medium text-gray-300"
+                  >
                     Confirm Password
                   </label>
                   <input
@@ -633,9 +910,12 @@ function SignupForm() {
                     autoComplete="new-password"
                     className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
                   />
-                  {confirmPassword.length > 0 && password !== confirmPassword && (
-                    <p className="mt-1 text-xs text-red-400">Passwords don&apos;t match</p>
-                  )}
+                  {confirmPassword.length > 0 &&
+                    password !== confirmPassword && (
+                      <p className="mt-1 text-xs text-red-400">
+                        Passwords don&apos;t match
+                      </p>
+                    )}
                 </div>
 
                 {/* Terms */}
@@ -648,11 +928,14 @@ function SignupForm() {
                   />
                   <span className="text-xs text-gray-400">
                     I agree to the{' '}
-                    <a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      className="text-cyan-400 underline hover:text-cyan-300"
+                    >
                       Privacy Policy
                     </a>{' '}
-                    and{' '}
-                    <span className="text-gray-400">Terms of Service</span>
+                    and <span className="text-gray-400">Terms of Service</span>
                   </span>
                 </label>
 
@@ -661,7 +944,10 @@ function SignupForm() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => { setError(''); setStep(1) }}
+                    onClick={() => {
+                      setError('')
+                      setStep(1)
+                    }}
                     className="h-11 flex-1 rounded-lg border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800"
                   >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -696,25 +982,35 @@ function SignupForm() {
 
         {/* ── Step 3: Success ─────────────────────────────────────── */}
         {step === 3 && (
-          <div className="mx-auto max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mx-auto max-w-md duration-500 animate-in fade-in slide-in-from-bottom-4">
             <div
               className="rounded-2xl border border-gray-800/60 p-8 text-center shadow-2xl backdrop-blur-xl"
               style={{ background: 'rgba(17, 24, 39, 0.7)' }}
             >
               <div
                 className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                style={{ background: `linear-gradient(135deg, ${colors.primary}20, ${colors.accent}20)` }}
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary}20, ${colors.accent}20)`,
+                }}
               >
                 <Check className="h-8 w-8 text-emerald-400" />
               </div>
 
-              <h2 className="mb-2 text-2xl font-bold text-white">Account Created!</h2>
+              <h2 className="mb-2 text-2xl font-bold text-white">
+                Account Created!
+              </h2>
               <p className="mb-6 text-sm text-gray-400">
                 Welcome to NetNeural. Your{' '}
-                <span className="font-semibold" style={{ color: selectedPlan?.color }}>
+                <span
+                  className="font-semibold"
+                  style={{ color: selectedPlan?.color }}
+                >
                   {selectedPlan?.name}
                 </span>{' '}
-                plan is ready. Check your email for a confirmation link, then sign in to get started.
+                plan is ready.{' '}
+                {needsEmailConfirmation
+                  ? 'Check your email for a confirmation link, then sign in to get started.'
+                  : 'You can now sign in to get started.'}
               </p>
 
               <Button
@@ -736,13 +1032,16 @@ function SignupForm() {
         )}
 
         {/* Security badge */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-500">
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/70">
           <Shield className="h-3.5 w-3.5" style={{ color: colors.accent }} />
           <span>Enterprise-grade security</span>
-          <span className="text-gray-700">•</span>
+          <span className="text-white/40">•</span>
           <span>256-bit encryption</span>
-          <span className="text-gray-700">•</span>
-          <a href="/privacy" className="underline transition-colors hover:text-gray-300">
+          <span className="text-white/40">•</span>
+          <a
+            href="/privacy"
+            className="underline transition-colors hover:text-white"
+          >
             Privacy Policy
           </a>
         </div>

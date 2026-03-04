@@ -1,0 +1,1138 @@
+{
+  "config": {
+    "configFile": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\playwright.config.js",
+    "rootDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\global-setup.ts",
+    "globalTeardown": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 7
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Demo-Stage/MonoRepo-Staging/development/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 7
+        },
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "C:/Demo-Stage/MonoRepo-Staging/development",
+        "testIgnore": [],
+        "testMatch": [
+          "e2e/**/*.spec.ts",
+          "tests/playwright/**/*.spec.ts",
+          "test-app.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      ["html", null],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "tests\\playwright\\customer-billing-signup.spec.ts",
+      "file": "tests/playwright/customer-billing-signup.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Customer Signup â€” UI Journey",
+          "file": "tests/playwright/customer-billing-signup.spec.ts",
+          "line": 163,
+          "column": 6,
+          "specs": [
+            {
+              "title": "signup page loads with plan selection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7519,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.196Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-1a48b91308d4bb1677f0",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 165,
+              "column": 7
+            },
+            {
+              "title": "Step 1 â€” select a plan and advance",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7048,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:19.468Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-22d5d786cadda2ee42bc",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 181,
+              "column": 7
+            },
+            {
+              "title": "Step 2 â€” password validation rules are enforced",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7333,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:26.527Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-1ac5f114ce65ed759a10",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 204,
+              "column": 7
+            },
+            {
+              "title": "Step 2 â€” fills account details and submits",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "interrupted",
+                      "duration": 22430,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "   listUsers attempt 1: 7 total users\n"
+                        },
+                        {
+                          "text": "   listUsers attempt 2: 7 total users\n"
+                        },
+                        {
+                          "text": "   listUsers attempt 3: 7 total users\n"
+                        },
+                        {
+                          "text": "   listUsers attempt 4: 7 total users\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.185Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\test-results\\tests-playwright-customer--1dc9b-account-details-and-submits-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\test-results\\tests-playwright-customer--1dc9b-account-details-and-submits-chromium\\video.webm"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-c6a64b62e3488d7520c1",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 226,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Customer Billing â€” DB Records Created",
+          "file": "tests/playwright/customer-billing-signup.spec.ts",
+          "line": 315,
+          "column": 6,
+          "specs": [
+            {
+              "title": "auth user was created with correct email",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-fef768447830aa0c86e1",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 330,
+              "column": 7
+            },
+            {
+              "title": "public.users profile was created by trigger",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-e0fbdf5b8101f3e7f46c",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 342,
+              "column": 7
+            },
+            {
+              "title": "organization was created with correct name and subscription_tier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 359,
+                        "column": 26
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "skipped",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.207Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 359,
+                            "column": 26
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-c148ed53c3fc67fcfa21",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 358,
+              "column": 7
+            },
+            {
+              "title": "subscription record exists for the organization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 395,
+                        "column": 25
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "skipped",
+                      "duration": 1,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.529Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 395,
+                            "column": 25
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-e32876c812e6629de919",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 394,
+              "column": 7
+            },
+            {
+              "title": "billing profile was auto-created by trigger",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 420,
+                        "column": 25
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.541Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 420,
+                            "column": 25
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-ec417ea725a57e5631df",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 419,
+              "column": 7
+            },
+            {
+              "title": "payment method table has no entries (expected â€” customer has not added card yet)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 441,
+                        "column": 25
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.158Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 441,
+                            "column": 25
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-ea5c0d52ef3c0cf0a278",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 440,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Customer Billing Tab â€” UI Completeness",
+          "file": "tests/playwright/customer-billing-signup.spec.ts",
+          "line": 459,
+          "column": 6,
+          "specs": [
+            {
+              "title": "dashboard loads after login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 924,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.728Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-b9242f173f3d900f656c",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 478,
+              "column": 7
+            },
+            {
+              "title": "billing tab is accessible from organization settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "skipped",
+                      "duration": 562,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:13.512Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-3cfbd8a3cd5a12db534d",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 486,
+              "column": 7
+            },
+            {
+              "title": "billing tab shows subscription plan name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "skipped",
+                      "duration": 1265,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.141Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-c94fc9b91f589832c50e",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 510,
+              "column": 7
+            },
+            {
+              "title": "billing tab shows payment methods card with empty state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "skipped",
+                      "duration": 523,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:13.280Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-5feca1272df6c35079bb",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 529,
+              "column": 7
+            },
+            {
+              "title": "billing tab shows billing contact card with empty state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "skipped",
+                      "duration": 566,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:13.821Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-77012c8ef103b19a4b01",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 556,
+              "column": 7
+            },
+            {
+              "title": "billing contact can be filled in and saved",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "skipped",
+                      "duration": 1244,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.172Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-3a6abbe4b5ce0270fd75",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 579,
+              "column": 7
+            },
+            {
+              "title": "billing contact is persisted in database after save",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "skipped",
+                      "duration": 498,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:13.216Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-307530c681d4eaca2db1",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 619,
+              "column": 7
+            },
+            {
+              "title": "manage subscription button opens Stripe portal or shows message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "line": 471,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "skipped",
+                      "duration": 601,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:13.738Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "line": 471,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-f6d664d4206c75bb4439",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 650,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Admin Billing â€” new customer appears in Customers tab",
+          "file": "tests/playwright/customer-billing-signup.spec.ts",
+          "line": 675,
+          "column": 6,
+          "specs": [
+            {
+              "title": "new customer appears in admin billing customers list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "interrupted",
+                      "duration": 22998,
+                      "error": {
+                        "message": "Error: page.goto: Target page, context or browser has been closed",
+                        "stack": "Error: page.goto: Target page, context or browser has been closed\n    at loginAs (C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts:141:16)\n    at C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts:681:5",
+                        "location": {
+                          "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                          "column": 16,
+                          "line": 141
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 139 |\u001b[39m   \u001b[90m// Ensure we end on the dashboard\u001b[39m\n \u001b[90m 140 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mpage\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/dashboard'\u001b[39m)) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 141 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/dashboard'\u001b[39m)\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 142 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m15000\u001b[39m })\n \u001b[90m 143 |\u001b[39m   }\n \u001b[90m 144 |\u001b[39m }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                            "column": 16,
+                            "line": 141
+                          },
+                          "message": "Error: page.goto: Target page, context or browser has been closed\n\n\u001b[0m \u001b[90m 139 |\u001b[39m   \u001b[90m// Ensure we end on the dashboard\u001b[39m\n \u001b[90m 140 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mpage\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/dashboard'\u001b[39m)) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 141 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/dashboard'\u001b[39m)\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 142 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m15000\u001b[39m })\n \u001b[90m 143 |\u001b[39m   }\n \u001b[90m 144 |\u001b[39m }\u001b[0m\n\u001b[2m    at loginAs (C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts:141:16)\u001b[22m\n\u001b[2m    at C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts:681:5\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-03T02:23:11.204Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\test-results\\tests-playwright-customer--e304a-dmin-billing-customers-list-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\test-results\\tests-playwright-customer--e304a-dmin-billing-customers-list-chromium\\video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Demo-Stage\\MonoRepo-Staging\\development\\tests\\playwright\\customer-billing-signup.spec.ts",
+                        "column": 16,
+                        "line": 141
+                      }
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-72fb25a8d501e7acacac",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 677,
+              "column": 7
+            },
+            {
+              "title": "new customer subscription appears in admin subscriptions tab",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a0a286803bfe94e2596f-bc847acd8ddee48cffc0",
+              "file": "tests/playwright/customer-billing-signup.spec.ts",
+              "line": 699,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-03T02:23:04.817Z",
+    "duration": 30311.271,
+    "expected": 3,
+    "skipped": 17,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

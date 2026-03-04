@@ -36,7 +36,9 @@ test.describe('Authentication Flows', () => {
       await expect(page.locator('#password')).toBeVisible()
       await expect(page.locator('button[type="submit"]')).toBeVisible()
       await expect(page.locator('#remember-me')).toBeVisible()
-      await expect(page.locator('label[for="remember-me"]')).toContainText('Keep me signed in')
+      await expect(page.locator('label[for="remember-me"]')).toContainText(
+        'Keep me signed in'
+      )
     })
 
     test('should show Sentinel branding', async ({ page }) => {
@@ -54,7 +56,9 @@ test.describe('Authentication Flows', () => {
     test('should show error for invalid credentials', async ({ page }) => {
       await navigateToLogin(page)
       await performLogin(page, 'nobody@example.com', 'wrongpassword')
-      await expect(page.locator('text=Invalid email or password')).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('text=Invalid email or password')).toBeVisible({
+        timeout: 10000,
+      })
     })
 
     test('should not submit with empty required fields', async ({ page }) => {
@@ -78,23 +82,35 @@ test.describe('Authentication Flows', () => {
       expect(page.url()).toMatch(/dashboard/)
     })
 
-    test('should redirect to dashboard when visiting login while authenticated', async ({ page }) => {
+    test('should redirect to dashboard when visiting login while authenticated', async ({
+      page,
+    }) => {
       await loginAndGo(page)
       await page.goto('/auth/login')
       await page.waitForLoadState('networkidle')
       await page.waitForURL('**/dashboard**', { timeout: 10000 })
     })
 
-    test('should maintain session across all protected routes', async ({ page }) => {
+    test('should maintain session across all protected routes', async ({
+      page,
+    }) => {
       await loginAndGo(page)
-      for (const route of ['/dashboard', '/dashboard/devices', '/dashboard/alerts', '/dashboard/settings']) {
+      for (const route of [
+        '/dashboard',
+        '/dashboard/devices',
+        '/dashboard/alerts',
+        '/dashboard/settings',
+      ]) {
         await page.goto(route)
         await page.waitForLoadState('networkidle')
         expect(page.url()).not.toMatch(/login/)
       }
     })
 
-    test('should redirect unauthenticated users to login', async ({ page, context }) => {
+    test('should redirect unauthenticated users to login', async ({
+      page,
+      context,
+    }) => {
       await context.clearCookies()
       await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')

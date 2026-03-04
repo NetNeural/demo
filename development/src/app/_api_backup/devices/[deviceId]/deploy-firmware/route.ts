@@ -68,7 +68,7 @@ export async function POST(
     }
 
     // Create provider
-    const provider = IntegrationProviderFactory.create(
+    const provider = await IntegrationProviderFactory.create(
       device.integration as unknown as OrganizationIntegration
     )
 

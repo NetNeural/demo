@@ -33,6 +33,7 @@ export default createEdgeFunction(
     const userContext = await getUserContext(req)
     const body = await req.json()
     const organizationId = body.organizationId || userContext.organizationId
+    const returnPath = body.returnPath || '/dashboard/organizations?tab=billing'
 
     if (!organizationId) {
       throw new DatabaseError('organizationId is required', 400)
@@ -83,15 +84,15 @@ export default createEdgeFunction(
         .update({ stripe_customer_id: sub.stripe_customer_id })
         .eq('id', organizationId)
 
-      return await createPortalSession(stripe, sub.stripe_customer_id)
+      return await createPortalSession(stripe, sub.stripe_customer_id, returnPath)
     }
 
-    return await createPortalSession(stripe, customerId)
+    return await createPortalSession(stripe, customerId, returnPath)
   },
   { requireAuth: true, allowedMethods: ['POST', 'OPTIONS'] }
 )
 
-async function createPortalSession(stripe: Stripe, customerId: string) {
+async function createPortalSession(stripe: Stripe, customerId: string, returnPath: string) {
   const origin =
     Deno.env.get('SITE_URL') ||
     Deno.env.get('NEXT_PUBLIC_SITE_URL') ||
@@ -99,7 +100,7 @@ async function createPortalSession(stripe: Stripe, customerId: string) {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${origin}/dashboard/organizations?tab=billing`,
+    return_url: `${origin}${returnPath}`,
   })
 
   return createSuccessResponse(

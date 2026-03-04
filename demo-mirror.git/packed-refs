@@ -1,0 +1,23 @@
+# pack-refs with: peeled fully-peeled sorted 
+243ba7dc8941a1b07232d10f92430f09c393395b refs/heads/dependabot/github_actions/actions/github-script-8
+6bbf55e83c999def609cc9360f357e7dc870d74e refs/heads/dependabot/github_actions/actions/setup-python-6
+7aad58f47a808bf19787a9bfaf2abd94db95d63d refs/heads/dependabot/github_actions/actions/upload-pages-artifact-4
+c1cd801ed5cff2b408231ce99345a2c4445bd33c refs/heads/dependabot/github_actions/peter-evans/create-pull-request-8
+aedfe6f485872ace5e8bd8de4d2c635a0f357511 refs/heads/dependabot/github_actions/treosh/lighthouse-ci-action-12
+9811a0e5eedb87f4292513cd8a06d67e04c9ba17 refs/heads/dependabot/npm_and_yarn/development/development-dependencies-ce7414f918
+63035e780f4714b5c2498472a720705f5b2b40ac refs/heads/dependabot/npm_and_yarn/development/production-dependencies-c15c8b6de5
+1dc62f46eb50693e7d16cac9a598a4a5bd8b7fec refs/heads/main
+6bbf55e83c999def609cc9360f357e7dc870d74e refs/pull/1/head
+07ffbf93501fe908ce517d6b4a7ee9fdb2b1e2ee refs/pull/1/merge
+243ba7dc8941a1b07232d10f92430f09c393395b refs/pull/2/head
+fe23614d051681ebc336ce5dc4730840df30665b refs/pull/2/merge
+aedfe6f485872ace5e8bd8de4d2c635a0f357511 refs/pull/3/head
+9cc1787fafaa87af3e991d57bfc868b0847f4a62 refs/pull/3/merge
+7aad58f47a808bf19787a9bfaf2abd94db95d63d refs/pull/4/head
+dac292541c17bffd608f8b30a6c60c74a64aa239 refs/pull/4/merge
+c1cd801ed5cff2b408231ce99345a2c4445bd33c refs/pull/5/head
+e500827c91ac316ede39962eacbcb153087a0b82 refs/pull/5/merge
+63035e780f4714b5c2498472a720705f5b2b40ac refs/pull/6/head
+f61796483ce5c156c79100c1a391a0f7f5fd40ba refs/pull/6/merge
+9811a0e5eedb87f4292513cd8a06d67e04c9ba17 refs/pull/7/head
+5edb62a209743db9d863bcd9254772928a4170fe refs/pull/7/merge

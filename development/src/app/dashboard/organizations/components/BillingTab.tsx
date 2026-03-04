@@ -40,6 +40,8 @@ import {
 } from 'lucide-react'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { ChangePlanModal } from '@/components/billing/ChangePlanModal'
+import { PaymentMethodsCard } from '@/components/billing/PaymentMethodsCard'
+import { BillingContactCard } from '@/components/billing/BillingContactCard'
 import type {
   BillingPlan,
   SubscriptionStatus,
@@ -120,6 +122,7 @@ export function BillingTab({ organizationId }: BillingTabProps) {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(
     null
   )
+  const [orgTier, setOrgTier] = useState<string | null>(null)
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
   const [usage, setUsage] = useState<UsageData[]>([])
   const [loading, setLoading] = useState(true)
@@ -131,6 +134,16 @@ export function BillingTab({ organizationId }: BillingTabProps) {
     try {
       setLoading(true)
       const supabase = getSupabase()
+
+      // Fetch org's subscription_tier directly (source of truth)
+      const { data: orgData } = await (supabase as any)
+        .from('organizations')
+        .select('subscription_tier')
+        .eq('id', organizationId)
+        .single()
+      if (orgData?.subscription_tier) {
+        setOrgTier(orgData.subscription_tier)
+      }
 
       // Fetch subscription + plan (cast: tables not in generated types yet)
       const { data: subData } = await (supabase as any)
@@ -356,10 +369,14 @@ export function BillingTab({ organizationId }: BillingTabProps) {
               </>
             ) : (
               <div className="space-y-3">
-                <p className="text-2xl font-bold">Free Tier</p>
+                <p className="text-2xl font-bold">
+                  {orgTier
+                    ? orgTier.charAt(0).toUpperCase() + orgTier.slice(1)
+                    : 'Starter'}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  You are on the free tier. Upgrade to unlock more sensors,
-                  features, and support.
+                  No active subscription on record. Contact support or upgrade
+                  to unlock more sensors, features, and support.
                 </p>
                 <Button size="sm" onClick={() => router.push('/pricing')}>
                   <ArrowUpRight className="mr-2 h-4 w-4" />
@@ -446,24 +463,30 @@ export function BillingTab({ organizationId }: BillingTabProps) {
             </div>
 
             {/* Retention warning for limited plans */}
-            {plan.telemetry_retention_days > 0 && plan.telemetry_retention_days <= 90 && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Limited Retention</AlertTitle>
-                <AlertDescription className="flex items-center justify-between">
-                  <span>
-                    Data older than {plan.telemetry_retention_days} days is removed daily.
-                    Export important data before it expires.
-                  </span>
-                  <Button variant="outline" size="sm" className="ml-3 shrink-0" asChild>
-                    <a href="/dashboard/reports">
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      Export
-                    </a>
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
+            {plan.telemetry_retention_days > 0 &&
+              plan.telemetry_retention_days <= 90 && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Limited Retention</AlertTitle>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>
+                      Data older than {plan.telemetry_retention_days} days is
+                      removed daily. Export important data before it expires.
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-3 shrink-0"
+                      asChild
+                    >
+                      <a href="/dashboard/reports">
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Export
+                      </a>
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
             {/* Retention tiers comparison */}
             <div className="rounded-lg border p-3">
@@ -471,15 +494,21 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                 Retention by Plan
               </p>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className={`rounded-md p-2 ${plan.slug === 'starter' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'starter' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
                   <p>Starter</p>
                   <p className="mt-0.5 text-muted-foreground">90 days</p>
                 </div>
-                <div className={`rounded-md p-2 ${plan.slug === 'professional' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
-                  <p>Professional</p>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'business' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
+                  <p>Business</p>
                   <p className="mt-0.5 text-muted-foreground">1 year</p>
                 </div>
-                <div className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
                   <p>Enterprise</p>
                   <p className="mt-0.5 text-muted-foreground">Unlimited</p>
                 </div>
@@ -501,11 +530,29 @@ export function BillingTab({ organizationId }: BillingTabProps) {
         }}
       />
 
+      {/* Billing Contact + Payment Methods */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <BillingContactCard organizationId={organizationId} />
+        <PaymentMethodsCard
+          organizationId={organizationId}
+          onManageSubscription={handleManageSubscription}
+          portalLoading={portalLoading}
+        />
+      </div>
+
       {/* Invoice History */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Invoice History</CardTitle>
-          <CardDescription>Recent invoices and payments</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-lg">Invoice History</CardTitle>
+            <CardDescription>Recent invoices and payments</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/dashboard/billing/invoices">
+              View All
+              <ExternalLink className="ml-1.5 h-3 w-3" />
+            </a>
+          </Button>
         </CardHeader>
         <CardContent>
           {invoices.length > 0 ? (

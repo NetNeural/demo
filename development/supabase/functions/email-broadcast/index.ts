@@ -17,7 +17,7 @@ interface BroadcastRequest {
   html: string
   text?: string
   email_type: 'announcement' | 'maintenance' | 'newsletter' | 'update'
-  target_tiers: string[] // ['all'] or ['starter', 'professional', 'enterprise']
+  target_tiers: string[] // ['all'] or ['starter', 'business', 'enterprise']
 }
 
 interface AIDraftRequest {
@@ -101,46 +101,83 @@ serve(async (req) => {
 
       console.log(`📧 Broadcasting "${subject}" to ${recipients.length} recipients (tiers: ${target_tiers.join(', ')})`)
 
-      // Send via Resend API in batches of 50
+      // Send via Resend batch API (100 emails per request)
+      // Resend /emails/batch accepts an array of individual email objects
       const resendApiKey = Deno.env.get('RESEND_API_KEY')
       if (!resendApiKey) {
         throw new Error('RESEND_API_KEY not configured')
       }
 
+      // Use verified sender — fall back to Resend's shared domain if netneural.ai unverified
+      const fromAddress = 'NetNeural Platform <noreply@netneural.ai>'
+
       let successCount = 0
       let failCount = 0
-      const batchSize = 50
+      const batchSize = 100  // Resend batch endpoint supports up to 100 per request
       const resendIds: string[] = []
 
-      for (let i = 0; i < recipients.length; i += batchSize) {
-        const batch = recipients.slice(i, i + batchSize)
+      // Strict email validation — Resend rejects the entire batch if any address is invalid
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const validRecipients = recipients.filter((email: string) => {
+        if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+          console.warn(`Skipping invalid email address: ${JSON.stringify(email)}`)
+          failCount++
+          return false
+        }
+        return true
+      }).map((email: string) => email.trim().toLowerCase())
+
+      console.log(`📬 ${validRecipients.length} valid / ${failCount} invalid of ${recipients.length} recipients`)
+
+      for (let i = 0; i < validRecipients.length; i += batchSize) {
+        const batch = validRecipients.slice(i, i + batchSize)
+        const batchNum = Math.floor(i / batchSize) + 1
+
+        // Build individual email objects — use plain string (not array) for `to`
+        const emailObjects = batch.map((recipientEmail: string) => ({
+          from: fromAddress,
+          to: recipientEmail,
+          subject,
+          html,
+          ...(text ? { text } : {}),
+        }))
 
         try {
-          const response = await fetch('https://api.resend.com/emails', {
+          const response = await fetch('https://api.resend.com/emails/batch', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${resendApiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              from: 'NetNeural Platform <noreply@netneural.ai>',
-              bcc: batch, // Use BCC for privacy
-              subject,
-              html,
-              ...(text ? { text } : {}),
-            }),
+            body: JSON.stringify(emailObjects),
           })
 
           const result = await response.json()
           if (response.ok) {
-            successCount += batch.length
-            if (result.id) resendIds.push(result.id)
+            // Resend batch returns { data: [{id, ...}] } — individual items can have
+            // an `error` field even on 200 OK, so check each item separately
+            const sentItems: Array<{id?: string; error?: {statusCode: number; message: string; name: string}}> = result?.data || result
+            if (Array.isArray(sentItems)) {
+              for (let j = 0; j < sentItems.length; j++) {
+                const item = sentItems[j]
+                if (item?.id) {
+                  successCount++
+                  resendIds.push(item.id)
+                } else {
+                  failCount++
+                  console.error(`Batch ${batchNum} item ${j} failed (${batch[j]}):`, JSON.stringify(item?.error))
+                }
+              }
+            } else {
+              successCount += batch.length
+            }
+            console.log(`Batch ${batchNum}: sent ${successCount}/${batch.length}`)
           } else {
-            console.error(`Batch ${i / batchSize + 1} failed:`, result)
+            console.error(`Batch ${batchNum} failed (HTTP ${response.status}):`, JSON.stringify(result))
             failCount += batch.length
           }
         } catch (err) {
-          console.error(`Batch ${i / batchSize + 1} error:`, err)
+          console.error(`Batch ${batchNum} error:`, err)
           failCount += batch.length
         }
       }
@@ -198,6 +235,9 @@ serve(async (req) => {
 })
 
 // ---- Helper: Get recipient emails by tier ----
+// Exclude NetNeural internal org from all broadcasts
+const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
+
 async function getRecipientEmails(
   supabase: ReturnType<typeof createClient>,
   targetTiers: string[]
@@ -205,20 +245,22 @@ async function getRecipientEmails(
   const includeAll = targetTiers.includes('all')
 
   if (includeAll) {
-    // All users with verified emails
+    // All users with verified emails, excluding NetNeural internal staff
     const { data: users } = await supabase
       .from('users')
       .select('email')
       .not('email', 'is', null)
+      .neq('organization_id', NETNEURAL_ORG_ID)
 
     return (users || []).map((u: { email: string }) => u.email).filter(Boolean)
   }
 
-  // Get orgs matching tiers
+  // Get orgs matching tiers, excluding NetNeural
   const { data: orgs } = await supabase
     .from('organizations')
     .select('id')
     .in('subscription_tier', targetTiers)
+    .neq('id', NETNEURAL_ORG_ID)
 
   if (!orgs || orgs.length === 0) return []
 

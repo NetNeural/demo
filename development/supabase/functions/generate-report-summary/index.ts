@@ -1,5 +1,5 @@
 // AI Report Summary Generator Edge Function
-// Generates intelligent summaries for reports using OpenAI GPT-3.5-turbo
+// Generates intelligent summaries for reports using OpenAI GPT-4o-mini
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
@@ -97,7 +97,7 @@ serve(async (req) => {
           Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -123,7 +123,22 @@ Be specific, actionable, and data-driven.`,
     )
 
     if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+      console.error(`OpenAI API error: ${openaiResponse.status}`)
+      // Return graceful fallback instead of crashing
+      const fallbackSummary: AISummary = {
+        keyFindings: [`Report covers ${reportData.totalRecords} records in ${reportData.dateRange}`],
+        redFlags: [],
+        recommendations: ['AI analysis temporarily unavailable — review data manually'],
+        trendAnalysis: `AI summary could not be generated (API error ${openaiResponse.status}). Please try again later.`,
+        confidence: 0,
+        generatedAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(fallbackSummary), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
     }
 
     const openaiData = await openaiResponse.json()

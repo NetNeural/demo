@@ -12,7 +12,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, CheckCircle, XCircle, Info } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 import { integrationService } from '@/services/integration.service'
@@ -20,13 +21,9 @@ import { integrationService } from '@/services/integration.service'
 interface EmailConfig {
   id?: string
   name: string
-  smtp_host: string
-  smtp_port: number
-  username: string
-  password: string
+  api_key: string
   from_email: string
-  from_name?: string
-  use_tls: boolean
+  from_name: string
 }
 
 interface Props {
@@ -55,13 +52,9 @@ export function EmailConfigDialog({
 
   const [config, setConfig] = useState<EmailConfig>({
     name: 'Email Notification Integration',
-    smtp_host: '',
-    smtp_port: 587,
-    username: '',
-    password: '',
+    api_key: '',
     from_email: '',
-    from_name: '',
-    use_tls: true,
+    from_name: 'NetNeural Alerts',
   })
 
   useEffect(() => {
@@ -94,13 +87,9 @@ export function EmailConfigDialog({
         setConfig({
           id: integration.id,
           name: integration.name,
-          smtp_host: cfg.smtpHost || '',
-          smtp_port: cfg.smtpPort || 587,
-          username: cfg.username || '',
-          password: cfg.password || '',
-          from_email: cfg.fromEmail || '',
-          from_name: cfg.fromName || '',
-          use_tls: cfg.useTls ?? true,
+          api_key: cfg.apiKey || cfg.password || '',
+          from_email: cfg.fromEmail || cfg.from_email || '',
+          from_name: cfg.fromName || cfg.from_name || 'NetNeural Alerts',
         })
       }
     } catch (error) {
@@ -127,7 +116,7 @@ export function EmailConfigDialog({
       )
       setTestResult({
         success: result.success,
-        message: result.message || 'Test email sent',
+        message: result.message || 'Test email sent successfully',
       })
 
       if (result.success) {
@@ -146,13 +135,7 @@ export function EmailConfigDialog({
   }
 
   const handleSave = async () => {
-    if (
-      !config.name ||
-      !config.smtp_host ||
-      !config.username ||
-      !config.password ||
-      !config.from_email
-    ) {
+    if (!config.name || !config.api_key || !config.from_email) {
       toast.error('Please fill in all required fields')
       return
     }
@@ -160,13 +143,10 @@ export function EmailConfigDialog({
     setLoading(true)
     try {
       const emailConfig = {
-        smtpHost: config.smtp_host,
-        smtpPort: config.smtp_port,
-        username: config.username,
-        password: config.password,
+        apiKey: config.api_key,
         fromEmail: config.from_email,
         fromName: config.from_name,
-        useTls: config.use_tls,
+        provider: 'resend',
       }
 
       let response
@@ -216,6 +196,25 @@ export function EmailConfigDialog({
   const renderContent = () => (
     <>
       <div className="space-y-4 py-4">
+        {/* Provider info banner */}
+        <div className="flex items-start gap-2 rounded-md bg-blue-50 p-3 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+          <Info className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          <div className="text-sm">
+            <strong>Provider: Resend</strong> — Email notifications are sent via
+            the{' '}
+            <a
+              href="https://resend.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Resend
+            </a>{' '}
+            email API. Enter your Resend API key and verified sender address
+            below.
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="name">Integration Name *</Label>
           <Input
@@ -226,55 +225,26 @@ export function EmailConfigDialog({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="smtp-host">SMTP Host *</Label>
-            <Input
-              id="smtp-host"
-              value={config.smtp_host}
-              onChange={(e) =>
-                setConfig({ ...config, smtp_host: e.target.value })
-              }
-              placeholder="smtp.gmail.com"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="smtp-port">SMTP Port *</Label>
-            <Input
-              id="smtp-port"
-              type="number"
-              value={config.smtp_port}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  smtp_port: parseInt(e.target.value) || 587,
-                })
-              }
-              placeholder="587"
-            />
-          </div>
-        </div>
-
         <div className="space-y-2">
-          <Label htmlFor="username">Username *</Label>
+          <Label htmlFor="api-key">Resend API Key *</Label>
           <Input
-            id="username"
-            value={config.username}
-            onChange={(e) => setConfig({ ...config, username: e.target.value })}
-            placeholder="your-email@example.com"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password">Password *</Label>
-          <Input
-            id="password"
+            id="api-key"
             type="password"
-            value={config.password}
-            onChange={(e) => setConfig({ ...config, password: e.target.value })}
-            placeholder="Enter SMTP password or app password"
+            value={config.api_key}
+            onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
+            placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxxx"
           />
+          <p className="text-xs text-muted-foreground">
+            Get your API key from{' '}
+            <a
+              href="https://resend.com/api-keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              resend.com/api-keys
+            </a>
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -287,12 +257,15 @@ export function EmailConfigDialog({
               onChange={(e) =>
                 setConfig({ ...config, from_email: e.target.value })
               }
-              placeholder="noreply@example.com"
+              placeholder="alerts@yourdomain.com"
             />
+            <p className="text-xs text-muted-foreground">
+              Must be a verified domain in Resend
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="from-name">From Name (Optional)</Label>
+            <Label htmlFor="from-name">From Name</Label>
             <Input
               id="from-name"
               value={config.from_name}
@@ -302,21 +275,6 @@ export function EmailConfigDialog({
               placeholder="NetNeural Alerts"
             />
           </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="use-tls"
-            checked={config.use_tls}
-            onChange={(e) =>
-              setConfig({ ...config, use_tls: e.target.checked })
-            }
-            className="h-4 w-4 rounded border-gray-300"
-          />
-          <Label htmlFor="use-tls" className="cursor-pointer">
-            Use TLS/SSL encryption
-          </Label>
         </div>
       </div>
 
@@ -366,12 +324,15 @@ export function EmailConfigDialog({
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
-              {integrationId ? 'Edit' : 'Add'} Email (SMTP) Integration
+              {integrationId ? 'Edit' : 'Add'} Email Integration
             </h2>
             <p className="text-muted-foreground">
-              Configure your email notification settings
+              Configure email notifications via Resend
             </p>
           </div>
+          <Badge variant="outline" className="gap-1">
+            Provider: Resend
+          </Badge>
         </div>
 
         <Card>
@@ -386,7 +347,7 @@ export function EmailConfigDialog({
       <DialogContent className="max-w-2xl bg-white dark:bg-white">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-900">
-            {integrationId ? 'Edit' : 'Add'} Email (SMTP) Integration
+            {integrationId ? 'Edit' : 'Add'} Email Integration
           </DialogTitle>
         </DialogHeader>
 

@@ -78,28 +78,37 @@ export class AwsIotClient extends BaseIntegrationClient {
   public async test(): Promise<TestResult> {
     return this.withActivityLog('test', async () => {
       try {
-        // Test endpoint reachability
-        const response = await fetch(this.endpoint, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
+        // Authenticate and list up to 1 thing to verify credentials + permissions
+        const url = `${this.endpoint}/things?maxResults=1`
+        const things = await this.requestAws<{ things?: AwsThing[] }>(url, 'GET')
 
-        // 401/403 = endpoint exists (needs proper AWS Signature V4)
-        if (response.status === 403 || response.status === 401) {
-          return this.createSuccessResult(
-            `AWS IoT Core endpoint reachable in ${this.region}`,
+        const thingCount = things.things?.length ?? 0
+        return this.createSuccessResult(
+          `Connected to AWS IoT Core in ${this.region} (${thingCount} thing${thingCount !== 1 ? 's' : ''} found)`,
+          { region: this.region, endpoint: this.endpoint, thingsFound: thingCount }
+        )
+      } catch (error) {
+        if (error instanceof IntegrationError) {
+          return this.createErrorResult(error.message, {
+            region: this.region,
+            endpoint: this.endpoint,
+            code: error.code,
+            statusCode: error.statusCode,
+          })
+        }
+
+        const msg = (error as Error).message || 'Unknown error'
+        // Network-level failures (DNS, timeout, connection refused)
+        if (msg.includes('fetch') || msg.includes('network') || msg.includes('ENOTFOUND')) {
+          return this.createErrorResult(
+            `Cannot reach AWS IoT endpoint. Check region (${this.region}) and endpoint URL.`,
             { region: this.region, endpoint: this.endpoint }
           )
         }
 
-        return this.createSuccessResult(
-          `AWS IoT Core configured for region ${this.region}`,
-          { region: this.region, endpoint: this.endpoint }
-        )
-      } catch (error) {
         return this.createErrorResult(
-          `AWS IoT API error: ${(error as Error).message}`,
-          { region: this.region }
+          `AWS IoT connection failed: ${msg}`,
+          { region: this.region, endpoint: this.endpoint }
         )
       }
     })
@@ -303,29 +312,200 @@ export class AwsIotClient extends BaseIntegrationClient {
   // ===========================================================================
 
   /**
-   * Sign AWS request using AWS Signature Version 4
-   * Simplified implementation - in production, use proper AWS SDK
+   * Compute HMAC-SHA256 using Web Crypto API (Deno-compatible)
+   */
+  private async hmacSha256(
+    key: ArrayBuffer | Uint8Array,
+    message: string
+  ): Promise<ArrayBuffer> {
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    return crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message))
+  }
+
+  /**
+   * Compute SHA-256 hash and return hex string
+   */
+  private async sha256Hex(message: string): Promise<string> {
+    const hash = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(message)
+    )
+    return this.toHex(hash)
+  }
+
+  /**
+   * Convert ArrayBuffer to lowercase hex string
+   */
+  private toHex(buffer: ArrayBuffer): string {
+    return Array.from(new Uint8Array(buffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
+  /**
+   * Derive the AWS SigV4 signing key
+   * signingKey = HMAC(HMAC(HMAC(HMAC("AWS4"+secret, date), region), service), "aws4_request")
+   */
+  private async deriveSigningKey(
+    dateStamp: string,
+    service: string
+  ): Promise<ArrayBuffer> {
+    const kDate = await this.hmacSha256(
+      new TextEncoder().encode('AWS4' + this.secretAccessKey),
+      dateStamp
+    )
+    const kRegion = await this.hmacSha256(kDate, this.region)
+    const kService = await this.hmacSha256(kRegion, service)
+    return this.hmacSha256(kService, 'aws4_request')
+  }
+
+  /**
+   * Sign AWS request using full AWS Signature Version 4
+   * Implements the complete signing algorithm using Web Crypto API.
+   * Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html
    */
   private async signAwsRequest(
     method: string,
-    url: string
+    url: string,
+    body?: string | null
   ): Promise<Record<string, string>> {
+    const parsedUrl = new URL(url)
     const date = new Date()
     const dateStamp = date.toISOString().slice(0, 10).replace(/-/g, '')
     const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '')
 
-    const headers: Record<string, string> = {
-      Host: new URL(url).host,
-      'X-Amz-Date': amzDate,
-      'Content-Type': 'application/json',
+    // Determine the correct AWS service from the URL
+    // IoT data-plane uses "iotdata", control-plane uses "iot"
+    // Custom endpoints (*.iot.*.amazonaws.com) use "iotdata"
+    const host = parsedUrl.host
+    let service = 'iot'
+    if (host.includes('.iot.') && host.includes('.amazonaws.com')) {
+      // Custom data-plane endpoint: <id>.iot.<region>.amazonaws.com
+      service = 'iotdata'
+    } else if (host === `iot.${this.region}.amazonaws.com`) {
+      // Control-plane endpoint
+      service = 'iot'
     }
 
-    // Simplified signature - in production, implement full AWS Signature V4
-    // This includes canonical request, string to sign, and signature calculation
-    const credential = `${this.accessKeyId}/${dateStamp}/${this.region}/iotdata/aws4_request`
-    headers['Authorization'] = `AWS4-HMAC-SHA256 Credential=${credential}`
+    // Payload hash (empty string for GET/DELETE, body for POST/PUT)
+    const payloadHash = await this.sha256Hex(body || '')
 
-    return headers
+    // Canonical headers (must be sorted by lowercase header name)
+    const canonicalHeaders =
+      `content-type:application/json\n` +
+      `host:${host}\n` +
+      `x-amz-content-sha256:${payloadHash}\n` +
+      `x-amz-date:${amzDate}\n`
+
+    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date'
+
+    // Canonical URI (path-encoded)
+    const canonicalUri = parsedUrl.pathname || '/'
+
+    // Canonical query string (sorted by parameter name)
+    const params = Array.from(parsedUrl.searchParams.entries()).sort(
+      ([a], [b]) => a.localeCompare(b)
+    )
+    const canonicalQueryString = params
+      .map(
+        ([k, v]) =>
+          `${encodeURIComponent(k)}=${encodeURIComponent(v)}`
+      )
+      .join('&')
+
+    // Canonical request
+    const canonicalRequest = [
+      method,
+      canonicalUri,
+      canonicalQueryString,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash,
+    ].join('\n')
+
+    // Credential scope
+    const credentialScope = `${dateStamp}/${this.region}/${service}/aws4_request`
+
+    // String to sign
+    const canonicalRequestHash = await this.sha256Hex(canonicalRequest)
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      canonicalRequestHash,
+    ].join('\n')
+
+    // Calculate signature
+    const signingKey = await this.deriveSigningKey(dateStamp, service)
+    const signatureBuffer = await this.hmacSha256(signingKey, stringToSign)
+    const signature = this.toHex(signatureBuffer)
+
+    // Build Authorization header
+    const authorization =
+      `AWS4-HMAC-SHA256 ` +
+      `Credential=${this.accessKeyId}/${credentialScope}, ` +
+      `SignedHeaders=${signedHeaders}, ` +
+      `Signature=${signature}`
+
+    return {
+      'Content-Type': 'application/json',
+      Host: host,
+      'X-Amz-Date': amzDate,
+      'X-Amz-Content-Sha256': payloadHash,
+      Authorization: authorization,
+    }
+  }
+
+  /**
+   * Categorize AWS error responses into specific error codes
+   */
+  private categorizeAwsError(
+    status: number,
+    errorData: Record<string, unknown>
+  ): { message: string; code: string } {
+    const awsCode = (errorData.__type as string) || (errorData.code as string) || ''
+    const awsMessage = (errorData.message as string) || (errorData.Message as string) || ''
+
+    switch (status) {
+      case 401:
+        return {
+          message: `AWS authentication failed: Invalid access key or secret key. ${awsMessage}`,
+          code: 'AWS_INVALID_CREDENTIALS',
+        }
+      case 403:
+        if (awsCode === 'ExpiredTokenException' || awsMessage.includes('expired')) {
+          return {
+            message: `AWS credentials have expired. Rotate your access keys in the AWS IAM console. ${awsMessage}`,
+            code: 'AWS_EXPIRED_CREDENTIALS',
+          }
+        }
+        if (awsCode === 'AccessDeniedException' || awsCode === 'UnauthorizedAccess') {
+          return {
+            message: `AWS IAM permissions insufficient. Ensure the IAM user/role has iot:* permissions. ${awsMessage}`,
+            code: 'AWS_ACCESS_DENIED',
+          }
+        }
+        return {
+          message: `AWS authorization failed: ${awsMessage || 'Check IAM permissions and credentials'}`,
+          code: 'AWS_FORBIDDEN',
+        }
+      case 404:
+        return {
+          message: `AWS IoT resource not found: ${awsMessage || 'Check region and endpoint configuration'}`,
+          code: 'AWS_NOT_FOUND',
+        }
+      default:
+        return {
+          message: awsMessage || `AWS IoT API error (HTTP ${status})`,
+          code: awsCode || 'AWS_API_ERROR',
+        }
+    }
   }
 
   /**
@@ -337,7 +517,7 @@ export class AwsIotClient extends BaseIntegrationClient {
     body?: Record<string, unknown>
   ): Promise<T> {
     const bodyString = body ? JSON.stringify(body) : null
-    const headers = await this.signAwsRequest(method, url)
+    const headers = await this.signAwsRequest(method, url, bodyString)
 
     const response = await fetch(url, {
       method,
@@ -350,9 +530,11 @@ export class AwsIotClient extends BaseIntegrationClient {
         message: response.statusText,
       }))
 
+      const categorized = this.categorizeAwsError(response.status, errorData)
+
       throw new IntegrationError(
-        errorData.message || `AWS IoT API error: ${response.statusText}`,
-        errorData.code || 'AWS_API_ERROR',
+        categorized.message,
+        categorized.code,
         response.status,
         errorData
       )

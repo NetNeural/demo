@@ -47,6 +47,7 @@ import {
   AlertTriangle,
   Loader2,
   Ban,
+  ShieldOff,
 } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
@@ -80,6 +81,12 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
   const [receivedRequests, setReceivedRequests] = useState<AccessRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState<'sent' | 'received'>('sent')
+
+  // All organizations for request target dropdown
+  const [allOrgs, setAllOrgs] = useState<
+    { id: string; name: string; slug: string }[]
+  >([])
+  const [loadingOrgs, setLoadingOrgs] = useState(false)
 
   // New request dialog
   const [showNewRequest, setShowNewRequest] = useState(false)
@@ -121,9 +128,23 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
     fetchRequests()
   }, [fetchRequests])
 
-  // Available orgs to request access to (exclude current)
-  const targetOrgs =
-    userOrganizations?.filter((o) => o.id !== organizationId) || []
+  // Fetch all orgs when the request dialog opens
+  const handleOpenRequestDialog = useCallback(async () => {
+    setShowNewRequest(true)
+    if (allOrgs.length > 0) return
+    setLoadingOrgs(true)
+    try {
+      const res = await edgeFunctions.accessRequests.listAllOrgs()
+      if (res.success && res.data?.organizations) {
+        const myOrgIds = new Set(userOrganizations.map((o) => o.id))
+        setAllOrgs(res.data.organizations.filter((o) => !myOrgIds.has(o.id)))
+      }
+    } catch (e) {
+      console.error('Failed to load orgs:', e)
+    } finally {
+      setLoadingOrgs(false)
+    }
+  }, [allOrgs.length, userOrganizations])
 
   const handleCreateRequest = async () => {
     if (!targetOrgId || !reason || reason.length < 10) {
@@ -292,17 +313,17 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Cross-Org Access Requests
+                Grant Admin/Owner Access
               </CardTitle>
               <CardDescription>
-                Request temporary access to other organizations or manage
-                incoming requests.
+                Request temporary admin access to a customer organization, or
+                manage incoming admin access requests.
               </CardDescription>
             </div>
             {(user?.isSuperAdmin || isOwner || isAdmin) && (
-              <Button onClick={() => setShowNewRequest(true)} className="gap-2">
+              <Button onClick={handleOpenRequestDialog} className="gap-2">
                 <Send className="h-4 w-4" />
-                Request Access
+                Request Admin Access
               </Button>
             )}
           </div>
@@ -338,10 +359,10 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
               ) : sentRequests.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Send className="mx-auto mb-2 h-8 w-8 opacity-50" />
-                  <p>No access requests sent yet.</p>
+                  <p>No admin access requests sent yet.</p>
                   <p className="mt-1 text-sm">
-                    Use &quot;Request Access&quot; to request temporary access
-                    to another organization.
+                    Use &quot;Request Admin Access&quot; to request temporary
+                    admin access to a customer organization.
                   </p>
                 </div>
               ) : (
@@ -497,8 +518,8 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                                 className="gap-1"
                                 onClick={() => handleRevokeRequest(request.id)}
                               >
-                                <Ban className="h-3 w-3" />
-                                Revoke
+                                <ShieldOff className="h-3 w-3" />
+                                Remove Admin Access
                               </Button>
                             )}
                         </TableCell>
@@ -520,7 +541,7 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <Clock className="h-5 w-5" />
-              Active Temporary Access
+              Active Admin Sessions
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -545,6 +566,15 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                         {request.expires_at &&
                           getTimeRemaining(request.expires_at)}
                       </span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="gap-1"
+                        onClick={() => handleRevokeRequest(request.id)}
+                      >
+                        <ShieldOff className="h-3 w-3" />
+                        Remove Admin Access
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -559,11 +589,11 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Request Cross-Org Access
+              Request Admin Access
             </DialogTitle>
             <DialogDescription>
-              Request temporary access to another organization. The org owner
-              will be notified and can approve or deny.
+              Request temporary admin access to a customer organization. The org
+              owner will be notified and can approve or deny via a pop-up.
             </DialogDescription>
           </DialogHeader>
 
@@ -575,12 +605,17 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                   <SelectValue placeholder="Select organization..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {targetOrgs.length === 0 ? (
+                  {loadingOrgs ? (
+                    <SelectItem value="_loading" disabled>
+                      <Loader2 className="mr-2 inline h-3 w-3 animate-spin" />
+                      Loading organizations...
+                    </SelectItem>
+                  ) : allOrgs.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      No other organizations available
+                      No organizations available
                     </SelectItem>
                   ) : (
-                    targetOrgs.map((org) => (
+                    allOrgs.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         {org.name}
                       </SelectItem>
@@ -631,8 +666,10 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 dark:bg-amber-950/30">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                Temporary access grants member-level permissions. All access is
-                logged in the audit trail.
+                This grants <strong>admin-level</strong> access for the
+                requested duration. The customer will receive a notification and
+                can remove access at any time. All activity is logged in the
+                audit trail.
               </p>
             </div>
           </div>
@@ -669,9 +706,11 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
       >
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>Review Access Request</DialogTitle>
+            <DialogTitle>Review Admin Access Request</DialogTitle>
             <DialogDescription>
-              Approve or deny this cross-org access request.
+              Approve or deny this admin access request. Approved admins will
+              appear in your organization as temporary admins and can be removed
+              at any time.
             </DialogDescription>
           </DialogHeader>
 

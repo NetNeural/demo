@@ -18,7 +18,7 @@ import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog'
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog'
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog'
 import { MqttConfigDialog } from '@/components/integrations/MqttConfigDialog'
-import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog'
+import { NetNeuralLinkConfigDialog } from '@/components/integrations/NetNeuralLinkConfigDialog'
 import { CopyIntegrationDialog } from '@/components/integrations/CopyIntegrationDialog'
 import {
   Select,
@@ -40,6 +40,19 @@ import { FeatureGate } from '@/components/FeatureGate'
 
 // Integration type definitions with descriptions
 const INTEGRATION_TYPES = [
+  {
+    value: 'netneural_hub',
+    label: '🚀 NetNeural-Link',
+    icon: '🚀',
+    category: 'device',
+    recommended: true,
+    description:
+      'Multi-protocol IoT hub supporting CoAP, MQTT, and HTTPS — works with any compatible device including NetNeural hardware, Nordic nRF series, and standard IoT devices',
+    purpose: 'Multi-Protocol Device Management',
+    requiredFields: ['Protocol Endpoints'],
+    useCases:
+      'Direct device communication, protocol optimization, custom firmware support, edge processing, any CoAP/MQTT/HTTPS device',
+  },
   {
     value: 'golioth',
     label: '🌐 Golioth',
@@ -123,22 +136,43 @@ const INTEGRATION_TYPES = [
     useCases:
       'Real-time device communication, telemetry streaming, command & control',
   },
-  {
-    value: 'netneural_hub',
-    label: '🚀 NetNeural Hub',
-    icon: '🚀',
-    category: 'device',
-    description:
-      'Multi-protocol hub for NetNeural custom devices (nRF9161, nRF52840, VMark, Universal Sensor)',
-    purpose: 'Custom Device Management',
-    requiredFields: ['Protocol Endpoints'],
-    useCases:
-      'Direct device communication, protocol optimization, custom firmware support, edge processing',
-  },
 ] as const
 
 // Integration Guides Data
 const INTEGRATION_GUIDES = [
+  {
+    id: 'netneural',
+    name: 'NetNeural-Link',
+    icon: '🌟',
+    recommended: true,
+    description:
+      'Multi-protocol IoT hub supporting CoAP, MQTT, and HTTPS for any compatible device',
+    pros: [
+      'Supports CoAP, MQTT, and HTTPS protocols',
+      'Auto-discovery of devices across protocols',
+      'Intelligent protocol routing and fallback',
+      'Compatible with any CoAP, MQTT, or HTTPS device',
+      'Built-in device capability detection',
+    ],
+    cons: [
+      'Requires protocol endpoint configuration',
+      'Requires hub instance or endpoint',
+      'More complex initial setup than single-protocol',
+      'Additional infrastructure cost',
+    ],
+    quickStart: [
+      'Set up NetNeural-Link instance (optional)',
+      'Get Hub URL and authentication credentials',
+      'Click "Add Integration" → Select NetNeural-Link',
+      'Configure protocols (CoAP, MQTT, HTTPS)',
+      'Set device routing rules per device type',
+      'Enable auto-discovery and test connection',
+    ],
+    bestFor: 'Multi-protocol IoT devices, edge hardware',
+    complexity: 'Low',
+    cost: '$$',
+    setupTime: '15 min',
+  },
   {
     id: 'golioth',
     name: 'Golioth IoT Platform',
@@ -373,37 +407,6 @@ const INTEGRATION_GUIDES = [
     cost: 'Free',
     setupTime: '1 hour',
   },
-  {
-    id: 'netneural',
-    name: 'NetNeural Hub',
-    icon: '🌟',
-    description: 'Multi-protocol hub for custom NetNeural devices',
-    pros: [
-      'Supports CoAP, MQTT, and HTTPS',
-      'Auto-discovery of devices',
-      'Protocol routing and fallback',
-      'Optimized for NetNeural hardware',
-      'Built-in device capability detection',
-    ],
-    cons: [
-      'Specific to NetNeural devices',
-      'Requires hub instance',
-      'More complex initial setup',
-      'Additional infrastructure cost',
-    ],
-    quickStart: [
-      'Set up NetNeural Hub instance (optional)',
-      'Get Hub URL and authentication credentials',
-      'Click "Add Integration" → Select NetNeural Hub',
-      'Configure protocols (CoAP, MQTT, HTTPS)',
-      'Set device routing rules',
-      'Enable auto-discovery and test',
-    ],
-    bestFor: 'Multi-instance sync',
-    complexity: 'Low',
-    cost: '$$',
-    setupTime: '15 min',
-  },
 ]
 
 interface Integration {
@@ -449,7 +452,7 @@ export default function IntegrationsTab({
   const [showSlackConfig, setShowSlackConfig] = useState(false)
   const [showWebhookConfig, setShowWebhookConfig] = useState(false)
   const [showMqttConfig, setShowMqttConfig] = useState(false)
-  const [showNetNeuralHubConfig, setShowNetNeuralHubConfig] = useState(false)
+  const [showNetNeuralLinkConfig, setShowNetNeuralLinkConfig] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [integrationToDelete, setIntegrationToDelete] =
     useState<Integration | null>(null)
@@ -979,8 +982,18 @@ export default function IntegrationsTab({
               <button
                 key={guide.id}
                 onClick={() => setSelectedGuide(guide.id)}
-                className="group relative flex flex-col items-center gap-3 rounded-lg border-2 border-border bg-card p-6 transition-all duration-200 hover:border-primary hover:bg-accent hover:shadow-lg"
+                className={`group relative flex flex-col items-center gap-3 rounded-lg border-2 bg-card p-6 transition-all duration-200 hover:bg-accent hover:shadow-lg ${'recommended' in guide && guide.recommended ? 'border-primary shadow-sm hover:border-primary' : 'border-border hover:border-primary'}`}
               >
+                {'recommended' in guide && guide.recommended && (
+                  <div className="absolute left-2 top-2">
+                    <Badge
+                      variant="default"
+                      className="px-1.5 py-0 text-[10px]"
+                    >
+                      ★ Recommended
+                    </Badge>
+                  </div>
+                )}
                 <span className="text-5xl transition-transform duration-200 group-hover:scale-110">
                   {guide.icon}
                 </span>
@@ -1025,12 +1038,20 @@ export default function IntegrationsTab({
                   {INTEGRATION_GUIDES.map((guide) => (
                     <tr
                       key={guide.id}
-                      className="cursor-pointer border-b border-border hover:bg-accent"
+                      className={`cursor-pointer border-b border-border hover:bg-accent ${'recommended' in guide && guide.recommended ? 'bg-primary/5' : ''}`}
                       onClick={() => setSelectedGuide(guide.id)}
                     >
                       <td className="px-3 py-2">
                         <span className="mr-2">{guide.icon}</span>
                         {guide.name}
+                        {'recommended' in guide && guide.recommended && (
+                          <Badge
+                            variant="default"
+                            className="ml-2 px-1.5 py-0 text-[10px]"
+                          >
+                            ★ Recommended
+                          </Badge>
+                        )}
                       </td>
                       <td className="px-3 py-2">{guide.bestFor}</td>
                       <td
@@ -1733,6 +1754,7 @@ export default function IntegrationsTab({
                     (type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
+                        {'recommended' in type && type.recommended ? ' ★' : ''}
                       </SelectItem>
                     )
                   )}
@@ -2026,13 +2048,13 @@ export default function IntegrationsTab({
             }}
           />
 
-          <NetNeuralHubConfigDialog
-            open={showNetNeuralHubConfig}
-            onOpenChange={setShowNetNeuralHubConfig}
+          <NetNeuralLinkConfigDialog
+            open={showNetNeuralLinkConfig}
+            onOpenChange={setShowNetNeuralLinkConfig}
             integrationId={selectedIntegration?.id}
             organizationId={selectedOrganization}
             onSaved={() => {
-              setShowNetNeuralHubConfig(false)
+              setShowNetNeuralLinkConfig(false)
               loadIntegrations()
             }}
           />

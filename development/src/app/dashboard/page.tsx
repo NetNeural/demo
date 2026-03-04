@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/metric-tooltip'
 import { DataFreshness } from '@/components/ui/data-freshness'
 import { useOrganization } from '@/contexts/OrganizationContext'
+import { useUser } from '@/contexts/UserContext'
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
+import { isPlatformAdmin } from '@/lib/permissions'
 import {
   Smartphone,
   Users,
@@ -27,6 +30,17 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Settings,
+  PackageSearch,
+  BarChart3,
+  FileText,
+  Network,
+  CreditCard,
+  ShieldCheck,
+  Building2,
+  TrendingUp,
+  Layers,
+  UserCog,
+  Wand2,
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -36,7 +50,18 @@ export default function DashboardPage() {
     currentOrganization,
     stats,
     isLoading: isLoadingOrg,
+    isOwner,
+    isAdmin,
   } = useOrganization()
+  const { user } = useUser()
+
+  const isSuperAdmin = user?.isSuperAdmin ?? false
+  const isPlAdmin = isPlatformAdmin(
+    user,
+    currentOrganization?.id,
+    currentOrganization?.role
+  )
+  const canManage = isPlAdmin || isOwner || isAdmin
 
   if (isLoadingOrg) {
     return (
@@ -95,12 +120,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Onboarding checklist — shows for new accounts, dismissible */}
+      {(stats?.totalDevices ?? 0) === 0 && <OnboardingChecklist />}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Devices */}
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => router.push('/dashboard/devices')}
+          onClick={() => router.push('/dashboard/hardware-provisioning')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
@@ -123,7 +151,7 @@ export default function DashboardPage() {
         {/* Online Devices */}
         <Card
           className="cursor-pointer transition-shadow hover:shadow-md"
-          onClick={() => router.push('/dashboard/devices')}
+          onClick={() => router.push('/dashboard/hardware-provisioning')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
@@ -206,6 +234,196 @@ export default function DashboardPage() {
 
       {/* Main Content - 2 Column Grid */}
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Quick Navigation */}
+        {canManage && (
+          <Card className="md:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Wand2 className="h-4 w-4" />
+                Quick Navigation
+              </CardTitle>
+              <CardDescription>
+                Shortcuts to key areas based on your role
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {/* Always visible to managers */}
+                <button
+                  onClick={() => router.push('/dashboard/reports')}
+                  className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium">Reports</span>
+                  <span className="text-xs text-muted-foreground">
+                    Device &amp; alert reports
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/analytics')}
+                  className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <BarChart3 className="h-4 w-4 text-violet-500" />
+                  <span className="text-sm font-medium">Analytics</span>
+                  <span className="text-xs text-muted-foreground">
+                    Trends &amp; insights
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/alert-rules')}
+                  className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-medium">Alert Rules</span>
+                  <span className="text-xs text-muted-foreground">
+                    Configure thresholds
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/users')}
+                  className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <Users className="h-4 w-4 text-cyan-500" />
+                  <span className="text-sm font-medium">Users</span>
+                  <span className="text-xs text-muted-foreground">
+                    Manage team members
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/integrations')}
+                  className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <Network className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-medium">Integrations</span>
+                  <span className="text-xs text-muted-foreground">
+                    MQTT &amp; connections
+                  </span>
+                </button>
+
+                {/* Owner + Super Admin */}
+                {(isSuperAdmin || isOwner) && (
+                  <button
+                    onClick={() => router.push('/dashboard/billing')}
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <CreditCard className="h-4 w-4 text-pink-500" />
+                    <span className="text-sm font-medium">Billing</span>
+                    <span className="text-xs text-muted-foreground">
+                      Plans &amp; invoices
+                    </span>
+                  </button>
+                )}
+
+                {(isSuperAdmin || isOwner) && (
+                  <button
+                    onClick={() => router.push('/dashboard/reseller')}
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <Building2 className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm font-medium">Resellers</span>
+                    <span className="text-xs text-muted-foreground">
+                      Reseller dashboard
+                    </span>
+                  </button>
+                )}
+
+                {/* Platform Admin (super_admin + NetNeural org owners) */}
+                {isPlAdmin && (
+                  <button
+                    onClick={() =>
+                      router.push('/dashboard/admin/reseller-applications')
+                    }
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <PackageSearch className="h-4 w-4 text-violet-500" />
+                    <span className="text-sm font-medium">
+                      Reseller Approvals
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Review applications
+                    </span>
+                  </button>
+                )}
+
+                {isPlAdmin && (
+                  <button
+                    onClick={() => router.push('/dashboard/admin/customers')}
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <UserCog className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium">Customers</span>
+                    <span className="text-xs text-muted-foreground">
+                      All orgs &amp; accounts
+                    </span>
+                  </button>
+                )}
+
+                {isPlAdmin && (
+                  <button
+                    onClick={() => router.push('/dashboard/admin/revenue')}
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium">Revenue</span>
+                    <span className="text-xs text-muted-foreground">
+                      Financial overview
+                    </span>
+                  </button>
+                )}
+
+                {isPlAdmin && (
+                  <button
+                    onClick={() => router.push('/dashboard/plans-pricing')}
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <Layers className="h-4 w-4 text-indigo-500" />
+                    <span className="text-sm font-medium">
+                      Plans &amp; Pricing
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Manage subscription tiers
+                    </span>
+                  </button>
+                )}
+
+                {isPlAdmin && (
+                  <button
+                    onClick={() =>
+                      router.push('/dashboard/admin/security-audit')
+                    }
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <ShieldCheck className="h-4 w-4 text-rose-500" />
+                    <span className="text-sm font-medium">Security Audit</span>
+                    <span className="text-xs text-muted-foreground">
+                      Logs &amp; access review
+                    </span>
+                  </button>
+                )}
+
+                {isPlAdmin && (
+                  <button
+                    onClick={() =>
+                      router.push('/dashboard/admin/platform-health')
+                    }
+                    className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <Activity className="h-4 w-4 text-teal-500" />
+                    <span className="text-sm font-medium">Platform Health</span>
+                    <span className="text-xs text-muted-foreground">
+                      System monitoring
+                    </span>
+                  </button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Locations Card - key forces remount on org switch (Bug #232) */}
         <LocationsCard key={currentOrganization.id} />
 
@@ -272,7 +490,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               className="mt-4 w-full"
-              onClick={() => router.push('/dashboard/devices')}
+              onClick={() => router.push('/dashboard/hardware-provisioning')}
             >
               View All Devices
             </Button>

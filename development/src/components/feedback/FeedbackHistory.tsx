@@ -404,16 +404,10 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
 
           <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
             <span>{fmt.shortDateTime(item.created_at)}</span>
-            {item.github_issue_url && (
-              <a
-                href={item.github_issue_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-3 w-3" />#{item.github_issue_number}
-              </a>
+            {item.github_issue_number && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                Ticket #{item.github_issue_number}
+              </span>
             )}
           </div>
         </div>

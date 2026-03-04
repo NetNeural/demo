@@ -146,8 +146,9 @@ export function createAlertsAPI(
      * Acknowledge an alert
      */
     acknowledge: (alertId) =>
-      call(`alerts/${alertId}/acknowledge`, {
+      call(`alerts`, {
         method: 'PATCH',
+        params: { action: 'acknowledge', alert_id: alertId },
       }),
 
     /**
@@ -159,8 +160,9 @@ export function createAlertsAPI(
       acknowledgementType = 'acknowledged',
       notes
     ) =>
-      call<{ acknowledged_count: number }>('alerts/bulk-acknowledge', {
+      call<{ acknowledged_count: number }>('alerts', {
         method: 'POST',
+        params: { action: 'bulk-acknowledge' },
         body: {
           alert_ids: alertIds,
           organization_id: organizationId,
@@ -173,16 +175,18 @@ export function createAlertsAPI(
      * Resolve an alert
      */
     resolve: (alertId) =>
-      call(`alerts/${alertId}/resolve`, {
+      call(`alerts`, {
         method: 'PATCH',
+        params: { action: 'resolve', alert_id: alertId },
       }),
 
     /**
      * Snooze an alert for a specified duration
      */
     snooze: (alertId, durationMinutes) =>
-      call<{ message: string; snoozedUntil: string }>('alerts/snooze', {
+      call<{ message: string; snoozedUntil: string }>('alerts', {
         method: 'POST',
+        params: { action: 'snooze' },
         body: { alert_id: alertId, duration_minutes: durationMinutes },
       }),
 
@@ -190,8 +194,9 @@ export function createAlertsAPI(
      * Remove snooze from an alert
      */
     unsnooze: (alertId) =>
-      call<{ message: string }>('alerts/unsnooze', {
+      call<{ message: string }>('alerts', {
         method: 'POST',
+        params: { action: 'unsnooze' },
         body: { alert_id: alertId },
       }),
 
@@ -199,17 +204,16 @@ export function createAlertsAPI(
      * Get timeline events for an alert
      */
     timeline: (alertId) =>
-      call<{ events: AlertTimelineEvent[] }>(`alerts/timeline/${alertId}`),
+      call<{ events: AlertTimelineEvent[] }>('alerts', {
+        params: { action: 'timeline', alert_id: alertId },
+      }),
 
     /**
      * Get alert statistics for an organization
      */
     stats: (organizationId) =>
-      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>(
-        'alerts/stats',
-        {
-          params: { organization_id: organizationId },
-        }
-      ),
+      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>('alerts', {
+        params: { action: 'stats', organization_id: organizationId },
+      }),
   }
 }

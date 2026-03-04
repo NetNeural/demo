@@ -27,10 +27,12 @@ import { AIReportSummary } from '@/components/reports/AIReportSummary'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
+import { toast } from 'sonner'
 import {
   LineChart as LineChartIcon,
   Table as TableIcon,
   Download,
+  FileDown,
   Calendar as CalendarIcon,
   Activity,
   AlertTriangle,
@@ -398,6 +400,37 @@ export function TelemetryTrendsReport() {
     URL.revokeObjectURL(url)
   }
 
+  // PDF Export
+  const exportToPDF = async () => {
+    const sensorInfo = SENSOR_TYPES.find((s) => s.value === selectedSensor)
+    const headers = [
+      'Timestamp',
+      ...statistics.map((s) => `${s.deviceName} (${sensorInfo?.unit || ''})`),
+    ]
+    const rows = telemetryData.map((point) => [
+      format(new Date(point.timestamp), 'yyyy-MM-dd HH:mm'),
+      ...selectedDevices.map((deviceId) => {
+        const value = point[deviceId]
+        return typeof value === 'number' ? value.toFixed(2) : ''
+      }),
+    ])
+    const { exportTableToPDF } = await import('@/lib/pdf-export')
+    exportTableToPDF({
+      title: 'Telemetry Trends Report',
+      subtitle: `Sensor: ${sensorInfo?.label || selectedSensor}`,
+      headers,
+      rows,
+      filename: `telemetry-trends-${selectedSensor}`,
+      organization: currentOrganization?.name,
+      orientation: 'landscape',
+      summary: statistics.slice(0, 5).map((s) => ({
+        label: s.deviceName,
+        value: `avg ${s.avg.toFixed(1)} ${sensorInfo?.unit || ''}`,
+      })),
+    })
+    toast.success('PDF exported successfully')
+  }
+
   // Build payload for SendReportDialog
   const getReportPayload = (): ReportPayload => {
     const rows: string[][] = [
@@ -646,6 +679,14 @@ export function TelemetryTrendsReport() {
             >
               <Send className="mr-2 h-4 w-4" />
               Send Report
+            </Button>
+            <Button
+              variant="outline"
+              onClick={exportToPDF}
+              disabled={telemetryData.length === 0}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Export PDF
             </Button>
             <Button
               variant="outline"

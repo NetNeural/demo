@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers/Providers'
 import { Toaster } from 'sonner'
 import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter'
+import { CookieConsent } from '@/components/ui/CookieConsent'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -42,18 +43,23 @@ export default function RootLayout({
         {/* GitHub Pages doesn't allow custom headers, so frame-ancestors is omitted here. */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com;"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://staticimgly.com; worker-src 'self' blob:;"
         />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         {/* Referrer policy — don't leak full URLs to third parties */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
+        {/* Legacy XSS filter for older browsers */}
+        <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
         {/* Note: HSTS is provided by GitHub Pages automatically */}
+        {/* Note: X-Frame-Options and Permissions-Policy require HTTP headers — */}
+        {/* applied via next.config.js headers() in dynamic/server mode only.  */}
       </head>
       <body className={inter.className}>
         <WebVitalsReporter />
         <Providers>
           {children}
           <Toaster theme="system" richColors />
+          <CookieConsent />
         </Providers>
       </body>
     </html>

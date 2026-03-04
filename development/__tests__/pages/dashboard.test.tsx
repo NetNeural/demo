@@ -15,6 +15,14 @@ jest.mock('@/lib/auth/user-context', () => ({
   }),
 }))
 
+jest.mock('@/contexts/UserContext', () => ({
+  useUser: () => ({
+    user: { id: '1', email: 'test@example.com', name: 'Test User' },
+    loading: false,
+    refreshUser: jest.fn(),
+  }),
+}))
+
 jest.mock('@/contexts/OrganizationContext', () => ({
   useOrganization: () => ({
     currentOrganization: { id: '1', name: 'Test Org' },

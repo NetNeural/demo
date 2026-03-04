@@ -76,14 +76,22 @@ test.describe('Device Location Save', () => {
     await page.goto(`/dashboard/devices/view?id=${deviceId}`)
     await page.waitForLoadState('networkidle')
 
-    const tabs = ['Overview', 'Telemetry', 'Configuration', 'Alerts', 'System Info']
+    const tabs = [
+      'Overview',
+      'Telemetry',
+      'Configuration',
+      'Alerts',
+      'System Info',
+    ]
     for (const tabName of tabs) {
       const tab = page.getByRole('tab', { name: tabName })
       if (await tab.isVisible({ timeout: 3000 }).catch(() => false)) {
         await tab.click()
         await page.waitForTimeout(1000)
         // Tab should become selected
-        await expect(tab).toHaveAttribute('data-state', 'active', { timeout: 5000 })
+        await expect(tab).toHaveAttribute('data-state', 'active', {
+          timeout: 5000,
+        })
         console.log(`✅ Tab accessible: ${tabName}`)
       }
     }

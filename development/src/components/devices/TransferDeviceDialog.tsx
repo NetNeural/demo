@@ -59,7 +59,7 @@ export function TransferDeviceDialog({
   const fetchOrganizations = useCallback(async () => {
     try {
       setLoadingOrgs(true)
-      const isSuperAdmin = user?.isSuperAdmin || user?.role === 'super_admin'
+      const isSuperAdmin = user?.isSuperAdmin || user?.role === 'super_admin' || user?.role === 'platform_admin'
 
       // Use organizations from context — already fetched via edge function
       // which handles permissions (super_admin sees all, others see their memberships).
@@ -174,7 +174,7 @@ export function TransferDeviceDialog({
         onTransferComplete()
       } else if (mode === 'move') {
         // For move: redirect since device is no longer in this org
-        window.location.href = '/dashboard/devices'
+        window.location.href = '/dashboard/hardware-provisioning'
       }
     } catch (error) {
       console.error('Error transferring device:', error)

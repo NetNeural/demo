@@ -4,8 +4,19 @@
 // Handles sending notifications via Email, Slack, and Custom Webhooks
 // Supports alert notifications, device status updates, and custom events
 //
-// Version: 1.0.0
-// Date: 2025-10-27
+// EMAIL ARCHITECTURE (consolidated):
+//   Provider: Resend (https://resend.com)
+//   Config:   Per-integration apiKey + fromEmail, or RESEND_API_KEY env var
+//   UI:       EmailConfigDialog.tsx collects Resend API key + from address
+//
+//   Related edge functions:
+//     send-notification/     → This file: general notification sending (email/slack/webhook)
+//     send-alert-email/      → Alert-specific emails with rich HTML (called by send-alert-notifications)
+//     send-alert-notifications/ → Alert orchestrator: email + Slack + SMS channels
+//     send-email/            → General-purpose email sender (reports, platform comms)
+//
+// Version: 2.0.0
+// Date: 2026-03-01
 // ============================================================================
 
 import {
@@ -31,13 +42,18 @@ interface NotificationPayload {
 }
 
 interface EmailConfig {
-  smtp_host: string
-  smtp_port: number
-  username: string
-  password: string
-  from_email: string
+  apiKey?: string
+  fromEmail?: string
+  fromName?: string
+  provider?: string
+  // Legacy SMTP fields (migrated to Resend API)
+  smtp_host?: string
+  smtp_port?: number
+  username?: string
+  password?: string
+  from_email?: string
   from_name?: string
-  use_tls: boolean
+  use_tls?: boolean
 }
 
 interface SlackConfig {
@@ -61,41 +77,64 @@ async function sendEmail(
   message: string,
   recipients: string[]
 ) {
-  // Use SMTP to send email
-  // For Deno, we'll use a simple fetch to a mail service API or SMTP relay
+  // Resolve API key: prefer config.apiKey, fall back to legacy password field, then env var
+  const apiKey =
+    config.apiKey ||
+    config.password ||
+    Deno.env.get('RESEND_API_KEY') ||
+    ''
 
-  console.log('Sending email:', {
+  if (!apiKey) {
+    throw new Error(
+      'Email not configured: No Resend API key found. Set apiKey in integration config or RESEND_API_KEY env var.'
+    )
+  }
+
+  const fromEmail = config.fromEmail || config.from_email || 'noreply@netneural.ai'
+  const fromName = config.fromName || config.from_name || 'NetNeural'
+
+  console.log('Sending email via Resend:', {
     subject,
     recipients,
-    config: { ...config, password: '[REDACTED]' },
+    from: `${fromName} <${fromEmail}>`,
   })
 
-  // TODO: Implement actual SMTP sending
-  // Options:
-  // 1. Use SendGrid/Mailgun API (recommended)
-  // 2. Use nodemailer equivalent for Deno
-  // 3. Use SMTP relay service
-
-  // Placeholder implementation using a hypothetical mail service
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${config.password}`, // Assuming password is API key
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      personalizations: recipients.map((email) => ({ to: [{ email }] })),
-      from: { email: config.from_email, name: config.from_name || 'NetNeural' },
+      from: `${fromName} <${fromEmail}>`,
+      to: recipients,
       subject,
-      content: [{ type: 'text/plain', value: message }],
+      html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #0ea5e9; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+      <h2 style="margin: 0;">${subject}</h2>
+    </div>
+    <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+      <p>${message.replace(/\n/g, '<br>')}</p>
+    </div>
+    <div style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px;">
+      NetNeural IoT Platform
+    </div>
+  </div>
+</div>`,
+      text: message,
     }),
   })
 
   if (!response.ok) {
-    throw new Error(`Email send failed: ${response.statusText}`)
+    const errorBody = await response.json().catch(() => ({}))
+    throw new Error(
+      `Email send failed: ${(errorBody as any).message || response.statusText}`
+    )
   }
 
-  return { success: true, sent_to: recipients }
+  const result = await response.json()
+  return { success: true, sent_to: recipients, id: (result as any).id }
 }
 
 async function sendSlack(
@@ -297,7 +336,7 @@ export default createEdgeFunction(
       method: 'POST',
       endpoint:
         integration_type === 'email'
-          ? 'smtp'
+          ? 'resend-api'
           : integration_type === 'slack'
             ? integrations.webhook_url || ''
             : integrations.webhook_url || '',
@@ -306,6 +345,9 @@ export default createEdgeFunction(
         recipient_count: recipients?.length || 0,
         has_subject: !!subject,
         is_test: isTest,
+        recipients: recipients || [],
+        subject: subject || '',
+        message: message,
       },
     })
 
@@ -327,9 +369,19 @@ export default createEdgeFunction(
             throw new Error('Recipients required for email notifications')
           }
 
-          const emailConfig: EmailConfig = JSON.parse(
-            integrations.api_key_encrypted || '{}'
-          )
+          // Build email config from integration settings (supports both new Resend and legacy SMTP shapes)
+          const rawConfig = integrations.api_key_encrypted
+            ? JSON.parse(integrations.api_key_encrypted)
+            : {}
+          const settingsConfig = integrations.settings || {}
+          const emailConfig: EmailConfig = {
+            apiKey: settingsConfig.apiKey || rawConfig.apiKey || rawConfig.password,
+            fromEmail:
+              settingsConfig.fromEmail || rawConfig.fromEmail || rawConfig.from_email,
+            fromName:
+              settingsConfig.fromName || rawConfig.fromName || rawConfig.from_name,
+            provider: settingsConfig.provider || 'resend',
+          }
           result = await sendEmail(
             emailConfig,
             testSubject || 'NetNeural Notification',

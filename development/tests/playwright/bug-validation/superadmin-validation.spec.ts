@@ -134,7 +134,10 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(2000)
 
-    const pageHeading = page.locator('h2').filter({ hasText: /organization/i }).first()
+    const pageHeading = page
+      .locator('h2')
+      .filter({ hasText: /organization/i })
+      .first()
     await expect(pageHeading).toBeVisible({ timeout: 10000 })
     console.log('✅ Bug #6: Organization management page is accessible')
   })
@@ -190,7 +193,10 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     await page.goto('/dashboard/organizations')
     await page.waitForLoadState('networkidle')
     await expect(
-      page.locator('h2').filter({ hasText: /organization/i }).first()
+      page
+        .locator('h2')
+        .filter({ hasText: /organization/i })
+        .first()
     ).toBeVisible({ timeout: 10000 })
     console.log('✅ Journey: Organizations page accessible')
   })

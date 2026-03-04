@@ -224,6 +224,16 @@ class MqttSubscriberService {
     message: Buffer,
     mqttClient: MqttClient
   ): Promise<void> {
+    // Filter out ACK echo messages — we subscribe to wildcard '#' which means
+    // we receive our own ACK replies (published to <topic>_reply). Skip them.
+    if (topic.endsWith('_reply')) {
+      logger.debug(
+        { topic, integration: integration.name },
+        'Skipping _reply topic (ACK echo)'
+      )
+      return
+    }
+
     const messageStr = message.toString()
 
     logger.debug(

@@ -2,19 +2,19 @@
 
 /**
  * useOrgTier - React hook for organization tier and feature flags
- * 
+ *
  * Provides the current organization's subscription tier, feature flags,
  * and helper functions for feature gating in UI components.
- * 
+ *
  * @example
  * ```tsx
  * const { tier, hasFeature, features, isLoading } = useOrgTier()
- * 
+ *
  * if (!hasFeature('ai_detection')) {
  *   return <UpgradePrompt feature="ai_detection" />
  * }
  * ```
- * 
+ *
  * @see #314 - Subscription Tier Data Model & Feature Flag System
  */
 
@@ -66,20 +66,14 @@ export interface TierDisplayInfo {
 }
 
 const TIER_DISPLAY: Record<string, TierDisplayInfo> = {
-  free: {
-    label: 'Free',
-    color: 'gray',
-    badge: 'bg-gray-100 text-gray-700',
-    description: 'Basic monitoring only',
-  },
   starter: {
     label: 'Starter',
     color: 'blue',
     badge: 'bg-blue-100 text-blue-700',
     description: 'Essential IoT monitoring',
   },
-  professional: {
-    label: 'Professional',
+  business: {
+    label: 'Business',
     color: 'purple',
     badge: 'bg-purple-100 text-purple-700',
     description: 'Advanced protection & analytics',
@@ -95,6 +89,12 @@ const TIER_DISPLAY: Record<string, TierDisplayInfo> = {
     color: 'emerald',
     badge: 'bg-emerald-100 text-emerald-700',
     description: 'Reseller partner tier',
+  },
+  unlimited: {
+    label: 'Unlimited',
+    color: 'violet',
+    badge: 'bg-violet-100 text-violet-700',
+    description: 'NetNeural internal — unlimited everything',
   },
 }
 

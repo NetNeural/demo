@@ -197,15 +197,17 @@ export function useExport() {
   )
 
   /**
-   * Generate PDF report via Edge Function
-   * This delegates to server-side PDF generation for complex reports
+   * Generate PDF report from table data using jspdf.
+   * For HTML reports, use printHtmlAsPdf from '@/lib/pdf-export' directly.
    */
   const exportToPDF = useCallback(
-    async (_reportConfig: {
+    async (reportConfig: {
       reportType: string
       title: string
       data: Record<string, unknown>
       organizationId: string
+      headers?: string[]
+      rows?: string[][]
     }) => {
       try {
         setProgress({
@@ -215,17 +217,19 @@ export function useExport() {
           currentRow: 0,
         })
 
-        toast.info('Generating PDF...', {
-          description: 'This may take a moment for large reports',
-        })
+        const { exportTableToPDF } = await import('@/lib/pdf-export')
 
-        // TODO: Implement Edge Function call for PDF generation
-        // const response = await edgeFunctions.reports.generatePDF(reportConfig)
-
-        // For now, show placeholder
-        toast.warning('PDF export coming soon', {
-          description: 'PDF generation will be available in the next update',
-        })
+        if (reportConfig.headers && reportConfig.rows) {
+          exportTableToPDF({
+            title: reportConfig.title,
+            headers: reportConfig.headers,
+            rows: reportConfig.rows,
+            filename: reportConfig.reportType,
+          })
+          toast.success('PDF exported successfully')
+        } else {
+          toast.warning('No table data provided for PDF export')
+        }
       } catch (error) {
         console.error('[useExport] PDF export error:', error)
         toast.error('PDF export failed')

@@ -1194,7 +1194,7 @@ export function DevicesList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 border-gray-400 bg-white text-gray-900 hover:bg-gray-100"
                     onClick={() => openDeviceDetailsPage(device.id)}
                   >
                     Details
@@ -1204,7 +1204,9 @@ export function DevicesList() {
                     size="sm"
                     className="flex-1"
                     onClick={() =>
-                      router.push(`/dashboard/devices/view?id=${device.id}&tab=telemetry`)
+                      router.push(
+                        `/dashboard/devices/view?id=${device.id}&tab=telemetry`
+                      )
                     }
                   >
                     {isGatewayDevice(device.device_type, device.name)
@@ -1305,6 +1307,7 @@ export function DevicesList() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="border-gray-400 bg-white text-gray-900 hover:bg-gray-100"
                           onClick={() => openDeviceDetailsPage(device.id)}
                         >
                           Details

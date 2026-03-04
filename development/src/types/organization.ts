@@ -13,6 +13,8 @@ export type OrganizationRole =
 export interface OrganizationSettings {
   branding?: {
     logo_url?: string
+    /** Sentinel product logo — only used by the NetNeural root org */
+    sentinel_logo_url?: string
     primary_color?: string
     secondary_color?: string
     accent_color?: string
@@ -42,11 +44,11 @@ export interface OrganizationSettings {
 }
 
 export type SubscriptionTier =
-  | 'free'
   | 'starter'
-  | 'professional'
+  | 'business'
   | 'reseller'
   | 'enterprise'
+  | 'unlimited'
 
 export const RESELLER_TIERS: SubscriptionTier[] = ['reseller', 'enterprise']
 
@@ -56,6 +58,7 @@ export interface Organization {
   slug: string
   description?: string
   subscription_tier?: SubscriptionTier
+  is_reseller?: boolean
   is_active: boolean
   settings?: OrganizationSettings
   parent_organization_id?: string | null

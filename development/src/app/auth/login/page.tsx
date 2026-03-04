@@ -97,6 +97,7 @@ function LoginForm() {
   const [forgotMode, setForgotMode] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(0)
   const hasCheckedAuth = useRef(false)
   // Issue #275: Prevent state updates on unmounted component
   const isMounted = useRef(true)
@@ -107,6 +108,13 @@ function LoginForm() {
       isMounted.current = false
     }
   }, [])
+
+  // Rate-limit countdown
+  useEffect(() => {
+    if (rateLimitSeconds <= 0) return
+    const t = setTimeout(() => setRateLimitSeconds((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [rateLimitSeconds])
 
   // MFA challenge state
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -209,6 +217,16 @@ function LoginForm() {
           return
         }
         if (session) {
+          // Check MFA enrollment before auto-redirecting to dashboard
+          const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
+          const hasVerifiedTotp = mfaFactors?.totp?.some(
+            (f) => f.status === 'verified'
+          )
+          if (!hasVerifiedTotp) {
+            hasCheckedAuth.current = true
+            router.replace('/auth/setup-mfa')
+            return
+          }
           hasCheckedAuth.current = true
           router.replace('/dashboard')
         }
@@ -267,6 +285,16 @@ function LoginForm() {
             setIsLoading(false)
             return
           }
+        }
+
+        // Force MFA setup if user has no enrolled TOTP factors
+        const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
+        const hasVerifiedTotp = mfaFactors?.totp?.some(
+          (f) => f.status === 'verified'
+        )
+        if (!hasVerifiedTotp) {
+          router.push('/auth/setup-mfa')
+          return
         }
 
         await new Promise((resolve) => setTimeout(resolve, 100))
@@ -380,6 +408,7 @@ function LoginForm() {
         setMfaVerifying(false)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mfaFactorId, mfaCode, router]
   )
 
@@ -395,19 +424,21 @@ function LoginForm() {
       setResetLoading(true)
       setError('')
       try {
-        const supabase = createClient()
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          trimmedEmail,
+        // Use admin edge function + Resend to bypass Supabase SMTP rate limit
+        await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/request-password-reset`,
           {
-            redirectTo: `${window.location.origin}/auth/reset-password`,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({
+              email: trimmedEmail.toLowerCase(),
+              redirectTo: `${window.location.origin}/auth/reset-password/`,
+            }),
           }
         )
-        if (resetError) {
-          if (!isMounted.current) return
-          setError(resetError.message)
-          setResetLoading(false)
-          return
-        }
         if (!isMounted.current) return
         setResetSent(true)
       } catch {
@@ -440,8 +471,8 @@ function LoginForm() {
           className="pointer-events-none absolute inset-0"
           aria-hidden="true"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Desktop background */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bgUrl}
             alt=""
@@ -464,6 +495,7 @@ function LoginForm() {
             }}
           />
           {/* Mobile background */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bgUrl}
             alt=""
@@ -737,11 +769,13 @@ function LoginForm() {
           ) : forgotMode ? (
             /* ── Forgot Password Form ── */
             resetSent ? (
-              <div className="text-center py-4">
+              <div className="py-4 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
                   <Lock className="h-6 w-6 text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-100">Check your email</h3>
+                <h3 className="text-lg font-semibold text-gray-100">
+                  Check your email
+                </h3>
                 <p className="mt-2 text-sm text-gray-400">
                   We sent a password reset link to{' '}
                   <span className="font-medium text-gray-200">{email}</span>.
@@ -766,7 +800,8 @@ function LoginForm() {
             ) : (
               <form onSubmit={handleForgotPassword}>
                 <p className="mb-4 text-sm text-gray-400">
-                  Enter your email address and we&apos;ll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to
+                  reset your password.
                 </p>
 
                 {/* Email */}
@@ -793,10 +828,18 @@ function LoginForm() {
                   />
                 </div>
 
+                {/* Rate limit countdown */}
+                {rateLimitSeconds > 0 && (
+                  <p className="mb-4 text-sm text-amber-400">
+                    Please wait <strong>{rateLimitSeconds}s</strong> before
+                    requesting another reset email.
+                  </p>
+                )}
+
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={resetLoading}
+                  disabled={resetLoading || rateLimitSeconds > 0}
                   className="h-12 w-full rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
                   style={{
                     background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
@@ -808,6 +851,8 @@ function LoginForm() {
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       Sending...
                     </span>
+                  ) : rateLimitSeconds > 0 ? (
+                    `Try again in ${rateLimitSeconds}s`
                   ) : (
                     'Send reset link'
                   )}
@@ -938,7 +983,7 @@ function LoginForm() {
                   setForgotMode(true)
                   setError('')
                 }}
-                className="text-gray-500 transition-colors hover:text-gray-300 hover:underline"
+                className="text-white/70 transition-colors hover:text-white hover:underline"
               >
                 Forgot your password?
               </button>
@@ -961,15 +1006,15 @@ function LoginForm() {
         </div>
 
         {/* Security badge */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-white/70">
           <Shield className="h-3.5 w-3.5" style={{ color: colors.accent }} />
           <span>Enterprise-grade security</span>
-          <span className="text-gray-700">•</span>
+          <span className="text-white/40">•</span>
           <span>256-bit encryption</span>
-          <span className="text-gray-700">•</span>
+          <span className="text-white/40">•</span>
           <a
             href="/privacy"
-            className="underline transition-colors hover:text-gray-300"
+            className="underline transition-colors hover:text-white"
           >
             Privacy Policy
           </a>

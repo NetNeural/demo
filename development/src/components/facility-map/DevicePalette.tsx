@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils'
 import {
   Smartphone,
   Search,
-  MapPin,
   Plus,
   Wifi,
   WifiOff,
@@ -25,6 +24,7 @@ import {
   Wrench,
   X,
   GripVertical,
+  CheckCircle2,
 } from 'lucide-react'
 import type { PlacedDevice, DeviceMapPlacement } from '@/types/facility-map'
 
@@ -39,16 +39,16 @@ const STATUS_ORDER: Record<string, number> = {
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'online':
-      return <Wifi className="h-3.5 w-3.5 text-green-500 shrink-0" />
+      return <Wifi className="h-3.5 w-3.5 shrink-0 text-green-500" />
     case 'offline':
-      return <WifiOff className="h-3.5 w-3.5 text-red-500 shrink-0" />
+      return <WifiOff className="h-3.5 w-3.5 shrink-0 text-red-500" />
     case 'warning':
     case 'error':
-      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+      return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
     case 'maintenance':
-      return <Wrench className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+      return <Wrench className="h-3.5 w-3.5 shrink-0 text-blue-500" />
     default:
-      return <WifiOff className="h-3.5 w-3.5 text-red-500 shrink-0" />
+      return <WifiOff className="h-3.5 w-3.5 shrink-0 text-red-500" />
   }
 }
 
@@ -84,7 +84,9 @@ export function DevicePalette({
         d.device_type.toLowerCase().includes(q)
     )
     // Sort: online first, then warning/error, then maintenance, then offline
-    return list.sort((a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4))
+    return list.sort(
+      (a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4)
+    )
   }, [devices, search])
 
   const unplaced = filtered.filter((d) => !placedDeviceIds.has(d.id))
@@ -116,7 +118,10 @@ export function DevicePalette({
           {loading ? (
             <div className="space-y-2 py-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+                <div
+                  key={i}
+                  className="h-12 animate-pulse rounded-lg bg-muted"
+                />
               ))}
             </div>
           ) : (
@@ -134,22 +139,32 @@ export function DevicePalette({
                         className={cn(
                           'flex w-full items-center gap-2 rounded-lg p-2.5 text-left transition-colors',
                           'hover:bg-accent',
-                          deviceToPlace === device.id && 'bg-primary/10 ring-1 ring-primary'
+                          deviceToPlace === device.id &&
+                            'bg-primary/10 ring-1 ring-primary'
                         )}
                         draggable
                         onDragStart={(e) => {
-                          e.dataTransfer.setData('application/x-device-id', device.id)
+                          e.dataTransfer.setData(
+                            'application/x-device-id',
+                            device.id
+                          )
                           e.dataTransfer.effectAllowed = 'copy'
                         }}
                         onClick={() =>
-                          onSelectToPlace(deviceToPlace === device.id ? null : device.id)
+                          onSelectToPlace(
+                            deviceToPlace === device.id ? null : device.id
+                          )
                         }
                       >
                         <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/50" />
                         <StatusIcon status={device.status} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{device.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>
+                          <p className="truncate text-sm font-medium">
+                            {device.name}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {device.device_type}
+                          </p>
                         </div>
                         {deviceToPlace === device.id ? (
                           <X className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -162,47 +177,23 @@ export function DevicePalette({
                 </div>
               )}
 
-              {/* Placed devices */}
-              {placed.length > 0 && (
-                <div>
-                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-                    On Map ({placed.length})
-                  </p>
-                  <div className="space-y-1">
-                    {placed.map((device) => {
-                      const placement = placements.find((p) => p.device_id === device.id)
-                      return (
-                        <div
-                          key={device.id}
-                          className="flex items-center gap-2 rounded-lg p-2.5 hover:bg-accent"
-                        >
-                          <StatusIcon status={device.status} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{device.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">{device.device_type}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-green-600" />
-                            {placement && (
-                              <button
-                                className="rounded p-1 hover:bg-destructive/10"
-                                title="Remove from map"
-                                onClick={() => onRemovePlacement(placement.id)}
-                              >
-                                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+              {/* All devices placed on this map */}
+              {unplaced.length === 0 && placed.length > 0 && !search && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <CheckCircle2 className="mx-auto mb-2 h-5 w-5 text-green-500" />
+                  All devices are on this map.
+                  <br />
+                  <span className="text-xs">
+                    Select a device on the map to move or remove it.
+                  </span>
                 </div>
               )}
 
               {filtered.length === 0 && (
                 <div className="py-8 text-center text-sm text-muted-foreground">
-                  {search ? 'No devices match your search' : 'No devices in this organization'}
+                  {search
+                    ? 'No devices match your search'
+                    : 'No devices in this organization'}
                 </div>
               )}
             </div>

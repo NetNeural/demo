@@ -9,6 +9,7 @@ import {
   getUserContext,
 } from '../_shared/auth.ts'
 import { enforceQuota, QuotaExceededError } from '../_shared/quota-check.ts'
+import { validateBody, deviceSchemas } from '../_shared/validation.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -72,7 +73,7 @@ export default createEdgeFunction(
           | 'org_admin'
           | 'user'
           | 'viewer',
-        isSuperAdmin: profile.role === 'super_admin',
+        isSuperAdmin: profile.role === 'super_admin' || profile.role === 'platform_admin',
         email: profile.email || payload.email || '',
       }
 
@@ -197,11 +198,24 @@ export default createEdgeFunction(
       // GET /devices - List all devices
       const requestedOrgId = url.searchParams.get('organization_id')
 
+      console.log('🔵 Device list request:', {
+        email: userContext.email,
+        requestedOrgId,
+        defaultOrgId: userContext.organizationId,
+        isSuperAdmin: userContext.isSuperAdmin,
+      })
+
       // Determine which organization to query — supports multi-org via organization_members
       const organizationId = await resolveOrganizationId(
         userContext,
         requestedOrgId
       )
+
+      console.log('🔵 Resolved organization:', {
+        resolvedOrgId: organizationId,
+        requestedOrgId,
+        defaultOrgId: userContext.organizationId,
+      })
 
       if (!organizationId && !userContext.isSuperAdmin) {
         throw new DatabaseError('User has no organization access', 403)
@@ -466,7 +480,7 @@ export default createEdgeFunction(
     }
 
     if (req.method === 'POST') {
-      const body = await req.json()
+      const body = await validateBody(req, deviceSchemas.create)
       const {
         organization_id,
         device_id,
@@ -484,11 +498,6 @@ export default createEdgeFunction(
         battery_level,
         signal_strength,
       } = body
-
-      // Verify required fields
-      if (!name || !device_type) {
-        throw new Error('Name and device type are required')
-      }
 
       // Verify user has access to this organization
       const targetOrgId = await getTargetOrganizationId(

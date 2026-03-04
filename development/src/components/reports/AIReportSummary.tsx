@@ -159,7 +159,14 @@ export function AIReportSummary({
     } finally {
       setLoading(false)
     }
-  }, [reportType, reportData, organizationId, supabase, supabaseUrl, generateRuleBasedSummary])
+  }, [
+    reportType,
+    reportData,
+    organizationId,
+    supabase,
+    supabaseUrl,
+    generateRuleBasedSummary,
+  ])
 
   // Auto-fetch on mount when we have data
   useEffect(() => {
@@ -199,7 +206,9 @@ export function AIReportSummary({
             <Brain className="h-5 w-5 text-purple-500" />
             <CardTitle className="text-base">AI-Powered Insights</CardTitle>
           </div>
-          <CardDescription>AI summary unavailable — using rule-based analysis</CardDescription>
+          <CardDescription>
+            AI summary unavailable — using rule-based analysis
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="outline" size="sm" onClick={fetchSummary}>
@@ -219,7 +228,9 @@ export function AIReportSummary({
             <Brain className="h-5 w-5 text-purple-500" />
             <CardTitle className="text-base">AI-Powered Insights</CardTitle>
           </div>
-          <CardDescription>Generate an intelligent summary of this report data</CardDescription>
+          <CardDescription>
+            Generate an intelligent summary of this report data
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="outline" size="sm" onClick={fetchSummary}>
@@ -247,8 +258,16 @@ export function AIReportSummary({
           <Badge variant="secondary" className="text-xs">
             {Math.round(summary.confidence * 100)}% confidence
           </Badge>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={fetchSummary} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={fetchSummary}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+            />
           </Button>
         </div>
         <CardDescription>

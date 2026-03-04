@@ -161,7 +161,26 @@ Provide executive summary as JSON:
     if (!openaiResponse.ok) {
       const error = await openaiResponse.text()
       console.error('OpenAI API error:', error)
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+      // Return graceful fallback instead of crashing
+      return new Response(
+        JSON.stringify({
+          summary: {
+            keyFindings: [`Report covers ${totalRecords} records in ${dateRange}`],
+            redFlags: [],
+            recommendations: ['AI analysis temporarily unavailable — review data manually'],
+            trendAnalysis: `AI summary could not be generated (API error ${openaiResponse.status}). Please try again later.`,
+          },
+          cached: false,
+          fallback: true,
+          generatedAt: new Date().toISOString(),
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      )
     }
 
     const openaiData = await openaiResponse.json()
