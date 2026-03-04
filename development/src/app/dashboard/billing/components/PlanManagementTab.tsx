@@ -31,6 +31,7 @@ import {
   DollarSign,
   Users,
   Layers,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { BillingPlan } from '@/types/billing'
@@ -109,6 +110,35 @@ export function PlanManagementTab() {
     setRefreshing(true)
     await loadPlans()
     setRefreshing(false)
+  }
+
+  const handleDelete = async (plan: PlanWithStats) => {
+    if (plan.subscriber_count > 0) {
+      toast.error(
+        `Cannot delete "${plan.name}" — it has ${plan.subscriber_count} active subscriber(s). Archive it first and migrate subscribers before deleting.`
+      )
+      return
+    }
+    if (
+      !window.confirm(
+        `Permanently delete "${plan.name}"? This cannot be undone.`
+      )
+    ) {
+      return
+    }
+    try {
+      const supabase = getSupabase() as any
+      const { error } = await supabase
+        .from('billing_plans')
+        .delete()
+        .eq('id', plan.id)
+      if (error) throw error
+      toast.success(`Plan "${plan.name}" deleted`)
+      await loadPlans()
+    } catch (err) {
+      console.error('Failed to delete plan:', err)
+      toast.error('Failed to delete plan')
+    }
   }
 
   const handleToggleArchive = async (plan: PlanWithStats) => {
@@ -310,6 +340,16 @@ export function PlanManagementTab() {
                                   Restore
                                 </>
                               )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(plan)}
+                              title={plan.subscriber_count > 0 ? `Cannot delete — ${plan.subscriber_count} active subscriber(s)` : 'Delete plan permanently'}
+                              className={plan.subscriber_count > 0 ? 'opacity-40 cursor-not-allowed text-destructive' : 'text-destructive hover:bg-destructive/10 hover:text-destructive'}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
                             </Button>
                           </div>
                         </TableCell>
