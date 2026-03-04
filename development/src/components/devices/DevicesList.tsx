@@ -1194,7 +1194,7 @@ export function DevicesList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 border-gray-400 bg-white text-gray-900 hover:bg-gray-100"
                     onClick={() => openDeviceDetailsPage(device.id)}
                   >
                     Details
@@ -1307,6 +1307,7 @@ export function DevicesList() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="border-gray-400 bg-white text-gray-900 hover:bg-gray-100"
                           onClick={() => openDeviceDetailsPage(device.id)}
                         >
                           Details

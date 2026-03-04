@@ -333,9 +333,7 @@ export function MqttBrokerConfig({
             </div>
             <div className="mt-3">
               <a
-                href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/dashboard/support"
                 className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 View Setup Documentation →

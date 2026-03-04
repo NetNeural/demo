@@ -415,15 +415,10 @@ export function ResellerAgreementSection({
 
             {application.github_issue_url && (
               <div className="border-t pt-2">
-                <a
-                  href={application.github_issue_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Track application progress
-                </a>
+                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Application submitted — our team will review and follow up via email
+                </p>
               </div>
             )}
           </div>

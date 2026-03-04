@@ -619,9 +619,7 @@ export function MqttConfigDialog({
                 subscriber service.
                 <span className="mt-1 block">
                   <a
-                    href="https://github.com/NetNeural/MonoRepo-Staging/tree/main/development/services/mqtt-subscriber"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/dashboard/support"
                     className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
                   >
                     Setup Guide →
