@@ -82,9 +82,9 @@ jobs:
           check_endpoint "sentinel"        "$PROD_URL"
           check_endpoint "demo-stage"      "$STAGING_URL"
           check_endpoint "demo"            "$DEV_URL"
-          check_endpoint "supabase-prod"   "$SUPABASE_PROD/rest/v1/"
-          check_endpoint "supabase-stage"  "$SUPABASE_STAGING/rest/v1/"
-          check_endpoint "supabase-dev"    "$SUPABASE_DEV/rest/v1/"
+          check_endpoint "supabase-prod"   "$SUPABASE_PROD/auth/v1/health"
+          check_endpoint "supabase-stage"  "$SUPABASE_STAGING/auth/v1/health"
+          check_endpoint "supabase-dev"    "$SUPABASE_DEV/auth/v1/health"
 
           # Build JSON array from jsonl
           RESULTS="[$(paste -sd',' /tmp/results.jsonl)]"
@@ -101,10 +101,18 @@ jobs:
           echo "📊 Summary: $(grep -c '"status":"up"' /tmp/results.jsonl) up, $(grep -c '"status":"down"' /tmp/results.jsonl) down, $(grep -c '"status":"degraded"' /tmp/results.jsonl) degraded"
 
       - name: Store results in Supabase
+        if: always()
+        continue-on-error: true
         env:
           PROD_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
           PROD_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PROD_SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          # Skip if secrets not configured
+          if [[ -z "$PROD_SUPABASE_URL" || -z "$PROD_SUPABASE_SERVICE_ROLE_KEY" ]]; then
+            echo "⚠️ Skipping store — PROD_SUPABASE_URL or PROD_SUPABASE_SERVICE_ROLE_KEY not set"
+            exit 0
+          fi
+
           RESULTS='${{ steps.checks.outputs.results }}'
 
           response=$(curl -s -o /tmp/store_response.json -w "%{http_code}" \
@@ -123,6 +131,7 @@ jobs:
 
       - name: Create GitHub Issue on sustained downtime
         if: steps.checks.outputs.has_downtime == 'true'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |

@@ -218,8 +218,7 @@ function LoginForm() {
         }
         if (session) {
           // Check MFA enrollment before auto-redirecting to dashboard
-          const { data: mfaFactors } =
-            await supabase.auth.mfa.listFactors()
+          const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
           const hasVerifiedTotp = mfaFactors?.totp?.some(
             (f) => f.status === 'verified'
           )
@@ -409,6 +408,7 @@ function LoginForm() {
         setMfaVerifying(false)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mfaFactorId, mfaCode, router]
   )
 
@@ -494,6 +494,7 @@ function LoginForm() {
               minWidth: '100vw',
             }}
           />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Mobile background */}
           <img
             src={bgUrl}
@@ -768,11 +769,13 @@ function LoginForm() {
           ) : forgotMode ? (
             /* ── Forgot Password Form ── */
             resetSent ? (
-              <div className="text-center py-4">
+              <div className="py-4 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
                   <Lock className="h-6 w-6 text-green-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-100">Check your email</h3>
+                <h3 className="text-lg font-semibold text-gray-100">
+                  Check your email
+                </h3>
                 <p className="mt-2 text-sm text-gray-400">
                   We sent a password reset link to{' '}
                   <span className="font-medium text-gray-200">{email}</span>.
@@ -797,7 +800,8 @@ function LoginForm() {
             ) : (
               <form onSubmit={handleForgotPassword}>
                 <p className="mb-4 text-sm text-gray-400">
-                  Enter your email address and we&apos;ll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to
+                  reset your password.
                 </p>
 
                 {/* Email */}
@@ -827,9 +831,8 @@ function LoginForm() {
                 {/* Rate limit countdown */}
                 {rateLimitSeconds > 0 && (
                   <p className="mb-4 text-sm text-amber-400">
-                    Please wait{' '}
-                    <strong>{rateLimitSeconds}s</strong>{' '}
-                    before requesting another reset email.
+                    Please wait <strong>{rateLimitSeconds}s</strong> before
+                    requesting another reset email.
                   </p>
                 )}
 
