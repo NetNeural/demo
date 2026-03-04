@@ -6,6 +6,7 @@
  * standard NetNeural format: NN|<device_type>|<model>|<serial>|<firmware>
  *
  * Supports both 1D barcodes (Code128 via JsBarcode) and QR codes.
+ * Includes "Add to Inventory" to push generated devices into Inventory Control.
  */
 'use client'
 
@@ -36,10 +37,14 @@ import {
   Barcode,
   Download,
   Copy,
+  PackagePlus,
+  Warehouse,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import JsBarcode from 'jsbarcode'
 import QRCode from 'qrcode'
+import type { InventoryItem, HardwareCategory } from '@/components/inventory-control/types'
+import { CATEGORY_LABELS } from '@/components/inventory-control/types'
 
 /** NetNeural device types for barcode generation */
 const NETNEURAL_DEVICE_TYPES = [
@@ -61,6 +66,89 @@ type BarcodeFormat = 'code128' | 'qrcode'
 
 function generateBarcodeValue(entry: Omit<BarcodeEntry, 'id' | 'barcodeValue'>) {
   return `NN|${entry.deviceType}|${entry.model}|${entry.serialNumber}|${entry.firmwareVersion}`
+}
+
+/** LocalStorage key matching inventory-control page */
+const LS_INVENTORY = 'nn_inventory_items'
+
+/** Add barcode entries to inventory as new InventoryItems */
+function addToInventory(entries: BarcodeEntry[]): number {
+  if (typeof window === 'undefined' || entries.length === 0) return 0
+
+  // Load existing inventory
+  let existing: InventoryItem[] = []
+  try {
+    const raw = localStorage.getItem(LS_INVENTORY)
+    existing = raw ? JSON.parse(raw) : []
+  } catch {
+    existing = []
+  }
+
+  // Build new items, skip duplicates by serial number
+  const existingSerials = new Set(
+    existing
+      .filter((it) => it.serial_prefix)
+      .map((it) => it.serial_prefix.toLowerCase())
+  )
+
+  const now = new Date().toISOString()
+  let addedCount = 0
+
+  for (const entry of entries) {
+    if (existingSerials.has(entry.serialNumber.toLowerCase())) continue
+
+    const category = (
+      ['modular_sensor', 'hub', 'cellular_hub'].includes(entry.deviceType)
+        ? entry.deviceType
+        : 'other'
+    ) as HardwareCategory
+
+    const typeLabel =
+      NETNEURAL_DEVICE_TYPES.find((t) => t.value === entry.deviceType)?.label ||
+      entry.deviceType
+
+    const newItem: InventoryItem = {
+      id: crypto.randomUUID(),
+      sku: `NN-${entry.model}-${entry.serialNumber}`,
+      name: `${typeLabel} ${entry.model}`,
+      description: `NetNeural ${typeLabel} — Model ${entry.model}, S/N ${entry.serialNumber}`,
+      category,
+      status: 'in_stock',
+      quantity_total: 1,
+      quantity_available: 1,
+      quantity_allocated: 0,
+      quantity_issued: 0,
+      quantity_defective: 0,
+      reorder_threshold: 5,
+      manufacturing_cost: 0,
+      wholesale_price: 0,
+      retail_price: 0,
+      currency: 'USD',
+      model_number: entry.model,
+      hardware_version: '',
+      firmware_version: entry.firmwareVersion,
+      serial_prefix: entry.serialNumber,
+      manufacturer_id: null,
+      manufacturer_name: 'NetNeural',
+      vendor_id: null,
+      vendor_name: '',
+      supplier: 'NetNeural',
+      warehouse_location: '',
+      batch_number: '',
+      manufacture_date: now.split('T')[0] ?? null,
+      created_at: now,
+      updated_at: now,
+      created_by: null,
+      notes: `Auto-added from barcode: ${entry.barcodeValue}`,
+    }
+
+    existing.push(newItem)
+    existingSerials.add(entry.serialNumber.toLowerCase())
+    addedCount++
+  }
+
+  localStorage.setItem(LS_INVENTORY, JSON.stringify(existing))
+  return addedCount
 }
 
 /** Renders a single barcode to a canvas */
@@ -251,6 +339,26 @@ export function BarcodeGeneratorPanel() {
     toast.success('Barcode value copied')
   }
 
+  const handleAddToInventory = (entry: BarcodeEntry) => {
+    const count = addToInventory([entry])
+    if (count > 0) {
+      toast.success(
+        `"${entry.model} (${entry.serialNumber})" added to inventory`
+      )
+    } else {
+      toast.info('This device is already in inventory')
+    }
+  }
+
+  const handleAddAllToInventory = () => {
+    const count = addToInventory(entries)
+    if (count > 0) {
+      toast.success(`${count} device${count > 1 ? 's' : ''} added to inventory`)
+    } else {
+      toast.info('All devices are already in inventory')
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -406,6 +514,10 @@ export function BarcodeGeneratorPanel() {
                   <Trash2 className="mr-1 h-3 w-3" />
                   Clear All
                 </Button>
+                <Button variant="outline" size="sm" onClick={handleAddAllToInventory}>
+                  <Warehouse className="mr-1 h-3 w-3" />
+                  Add All to Inventory
+                </Button>
                 <Button size="sm" onClick={handlePrint}>
                   <Printer className="mr-1 h-3 w-3" />
                   Print All
@@ -453,6 +565,15 @@ export function BarcodeGeneratorPanel() {
                   >
                     <Copy className="mr-1 h-3 w-3" />
                     Copy Value
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-primary"
+                    onClick={() => handleAddToInventory(entry)}
+                  >
+                    <PackagePlus className="mr-1 h-3 w-3" />
+                    Add to Inventory
                   </Button>
                 </div>
               ))}
