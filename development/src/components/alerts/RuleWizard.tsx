@@ -135,7 +135,12 @@ export function RuleWizard({
         )
         onSuccess()
       } else {
-        toast.error(`Failed to ${initialData ? 'update' : 'create'} rule`)
+        const errorMessage =
+          typeof response.error === 'string'
+            ? response.error
+            : response.error?.message ||
+              `Failed to ${initialData ? 'update' : 'create'} rule`
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('Error saving rule:', error)

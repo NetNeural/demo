@@ -81,7 +81,7 @@ export const alertRules = {
       params.append('enabled', String(filters.enabled))
     }
 
-    return edgeFunctions.call<AlertRule[]>('/alert-rules', {
+    return edgeFunctions.call<AlertRule[]>('alert-rules', {
       method: 'GET',
       params: Object.fromEntries(params),
     })
@@ -91,7 +91,7 @@ export const alertRules = {
    * Get a single alert rule by ID
    */
   async get(ruleId: string) {
-    return edgeFunctions.call<AlertRule>(`/alert-rules/${ruleId}`, {
+    return edgeFunctions.call<AlertRule>(`alert-rules/${ruleId}`, {
       method: 'GET',
     })
   },
@@ -100,7 +100,7 @@ export const alertRules = {
    * Create a new alert rule
    */
   async create(input: CreateAlertRuleInput) {
-    return edgeFunctions.call<AlertRule>('/alert-rules', {
+    return edgeFunctions.call<AlertRule>('alert-rules', {
       method: 'POST',
       body: input,
     })
@@ -110,7 +110,7 @@ export const alertRules = {
    * Update an existing alert rule
    */
   async update(ruleId: string, input: UpdateAlertRuleInput) {
-    return edgeFunctions.call<AlertRule>(`/alert-rules/${ruleId}`, {
+    return edgeFunctions.call<AlertRule>(`alert-rules/${ruleId}`, {
       method: 'PUT',
       body: input,
     })
@@ -120,7 +120,7 @@ export const alertRules = {
    * Delete an alert rule
    */
   async delete(ruleId: string) {
-    return edgeFunctions.call<void>(`/alert-rules/${ruleId}`, {
+    return edgeFunctions.call<void>(`alert-rules/${ruleId}`, {
       method: 'DELETE',
     })
   },
@@ -129,7 +129,7 @@ export const alertRules = {
    * Toggle enabled status of a rule
    */
   async toggle(ruleId: string, enabled: boolean) {
-    return edgeFunctions.call<AlertRule>(`/alert-rules/${ruleId}/toggle`, {
+    return edgeFunctions.call<AlertRule>(`alert-rules/${ruleId}/toggle`, {
       method: 'PATCH',
       body: { enabled },
     })
@@ -139,7 +139,7 @@ export const alertRules = {
    * Duplicate an existing rule
    */
   async duplicate(ruleId: string) {
-    return edgeFunctions.call<AlertRule>(`/alert-rules/${ruleId}/duplicate`, {
+    return edgeFunctions.call<AlertRule>(`alert-rules/${ruleId}/duplicate`, {
       method: 'POST',
     })
   },
