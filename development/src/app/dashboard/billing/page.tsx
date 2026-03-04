@@ -680,7 +680,7 @@ function BillingAdminContent() {
             payments: 'transactions',
             subscriptions: 'reports',
             usage: 'reports',
-            expenses: 'reports',
+            expenses: 'operations',
             customers: 'management',
             'plan-management': 'operations',
             operations: 'operations',
@@ -773,10 +773,6 @@ function BillingAdminContent() {
                 <BarChart3 className="h-4 w-4" />
                 Usage Metering
               </TabsTrigger>
-              <TabsTrigger value="expenses" className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Expenses
-              </TabsTrigger>
             </TabsList>
             <TabsContent value="revenue" className="mt-6">
               <RevenueTab />
@@ -795,9 +791,6 @@ function BillingAdminContent() {
             </TabsContent>
             <TabsContent value="usage" className="mt-6">
               <UsageMeteringTab />
-            </TabsContent>
-            <TabsContent value="expenses" className="mt-6">
-              <ExpensesTab />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -936,6 +929,10 @@ function BillingAdminContent() {
                 <Tag className="h-4 w-4" />
                 Promo Codes
               </TabsTrigger>
+              <TabsTrigger value="expenses" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Expenses
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="plan-management" className="mt-6">
               <PlanManagementTab />
@@ -945,6 +942,9 @@ function BillingAdminContent() {
             </TabsContent>
             <TabsContent value="promo-codes" className="mt-6">
               <PromoCodesTab />
+            </TabsContent>
+            <TabsContent value="expenses" className="mt-6">
+              <ExpensesTab />
             </TabsContent>
           </Tabs>
         </TabsContent>

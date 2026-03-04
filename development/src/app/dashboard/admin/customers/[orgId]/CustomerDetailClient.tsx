@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useCallback } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,7 +57,8 @@ export default function CustomerDetailClient() {
 function CustomerDetailContent() {
   const router = useRouter()
   const params = useParams()
-  const orgId = params.orgId as string
+  const searchParams = useSearchParams()
+  const orgId = (searchParams.get('orgId') || params.orgId) as string
   const { user, loading: userLoading } = useUser()
   const { fmt } = useDateFormatter()
   const isSuperAdmin = user?.isSuperAdmin || false

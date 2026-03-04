@@ -227,7 +227,8 @@ export async function fetchPaymentFailureReport(
       id,
       amount_cents,
       status,
-      failure_reason,
+      failure_code,
+      failure_message,
       created_at,
       organization_id,
       organizations:organization_id(name)
@@ -245,7 +246,7 @@ export async function fetchPaymentFailureReport(
   // 1. Group by failure reason
   const reasonMap = new Map<string, FailureByReason>()
   for (const p of failed) {
-    const reason = (p.failure_reason as string) || 'Unknown'
+    const reason = (p.failure_message as string) || (p.failure_code as string) || 'Unknown'
     if (!reasonMap.has(reason)) {
       reasonMap.set(reason, { reason, count: 0, totalAmount: 0 })
     }
@@ -363,7 +364,7 @@ export async function fetchTaxSummaryReport(
       organizations:organization_id(name, settings)
     `
     )
-    .in('status', ['paid', 'open', 'overdue', 'sent'])
+    .in('status', ['paid', 'open', 'draft'])
     .gte('created_at', startDate)
     .lt('created_at', endDate)
 

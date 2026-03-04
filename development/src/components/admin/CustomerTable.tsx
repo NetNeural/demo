@@ -418,7 +418,7 @@ export function CustomerTable() {
                           key={c.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            router.push(`/dashboard/admin/customers/${c.id}`)
+                            router.push(`/dashboard/admin/customers/detail?orgId=${c.id}`)
                           }
                         >
                           <TableCell>
@@ -514,7 +514,7 @@ export function CustomerTable() {
                       key={c.id}
                       className="cursor-pointer p-4 hover:bg-muted/50"
                       onClick={() =>
-                        router.push(`/dashboard/admin/customers/${c.id}`)
+                        router.push(`/dashboard/admin/customers/detail?orgId=${c.id}`)
                       }
                     >
                       <div className="mb-2 flex items-start justify-between">
