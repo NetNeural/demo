@@ -5,6 +5,15 @@
  * Set KEEP_TEST_USER=true to preserve the user between runs (faster iteration).
  */
 import { createClient } from '@supabase/supabase-js'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as dotenv from 'dotenv'
+
+// Load .env.test.local (if present) so it matches global-setup
+const envTestLocal = path.resolve(__dirname, '..', '.env.test.local')
+if (fs.existsSync(envTestLocal)) {
+  dotenv.config({ path: envTestLocal })
+}
 
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321'
 const LOCAL_SERVICE_ROLE_KEY =

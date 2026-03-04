@@ -88,13 +88,16 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  /* Run your local dev server before starting the tests.
+   * Skipped when PLAYWRIGHT_BASE_URL is set (remote testing against dev/staging/prod). */
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 
   /* Global test timeout */
   timeout: 30000,

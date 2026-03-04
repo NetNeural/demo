@@ -97,7 +97,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       hasRedirected.current = false
 
       // Check if user needs MFA setup (before password check so MFA is enforced first)
+      // MFA enforcement is disabled on dev (demo.netneural.ai) for E2E testing
+      const isMfaEnforced = !process.env.NEXT_PUBLIC_DISABLE_MFA_ENFORCEMENT
       if (
+        isMfaEnforced &&
         pathname !== '/auth/setup-mfa' &&
         pathname !== '/auth/change-password'
       ) {

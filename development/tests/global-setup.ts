@@ -14,6 +14,14 @@ import { createClient } from '@supabase/supabase-js'
 import { authenticator } from 'otplib'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as dotenv from 'dotenv'
+
+// Load .env.test.local (if present) so callers don't need to export vars manually
+const envTestLocal = path.resolve(__dirname, '..', '.env.test.local')
+if (fs.existsSync(envTestLocal)) {
+  dotenv.config({ path: envTestLocal })
+  console.log('   📄 Loaded env from .env.test.local')
+}
 
 /** File where the admin TOTP secret is persisted across test runs */
 const TOTP_SECRET_FILE = path.join(
@@ -123,6 +131,14 @@ export default async function globalSetup() {
   // The app enforces MFA at the component level. Tests need to be able to
   // complete the TOTP challenge on the login page. We enroll a factor with a
   // known secret and store it so loginAs() can compute codes at runtime.
+  //
+  // When MFA enforcement is disabled (e.g. dev environment) skip this entirely.
+  if (process.env.NEXT_PUBLIC_DISABLE_MFA_ENFORCEMENT) {
+    console.log('   ⏭️  MFA enforcement disabled — skipping TOTP enrollment')
+    console.log('   🚀 Global setup complete\n')
+    return
+  }
+
   console.log('   🔐 Checking admin MFA (TOTP) enrollment...')
 
   try {
