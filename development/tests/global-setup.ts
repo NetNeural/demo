@@ -161,18 +161,45 @@ export default async function globalSetup() {
       const existingFactor = factorsData?.totp?.find(
         (f) => f.status === 'verified'
       )
-      const secretOnDisk = fs.existsSync(TOTP_SECRET_FILE)
+      let secretOnDisk: string | null = null
+      try {
+        const saved = JSON.parse(fs.readFileSync(TOTP_SECRET_FILE, 'utf-8'))
+        secretOnDisk = saved.secret ?? null
+      } catch {
+        secretOnDisk = null
+      }
 
+      // Validate saved secret matches current factor by generating a test code
+      let secretValid = false
       if (existingFactor && secretOnDisk) {
-        console.log('   ✅ Admin TOTP already enrolled (saved secret found)')
+        try {
+          const { data: ch } = await userClient.auth.mfa.challenge({
+            factorId: existingFactor.id,
+          })
+          if (ch) {
+            const testCode = authenticator.generate(secretOnDisk)
+            const { error: vErr } = await userClient.auth.mfa.verify({
+              factorId: existingFactor.id,
+              challengeId: ch.id,
+              code: testCode,
+            })
+            secretValid = !vErr
+          }
+        } catch {
+          secretValid = false
+        }
+      }
+
+      if (existingFactor && secretValid) {
+        console.log('   ✅ Admin TOTP already enrolled (verified secret on disk)')
       } else {
-        // If a factor exists but the secret file is gone, delete the old factor
-        // and re-enroll so we have a known secret going forward.
-        if (existingFactor) {
-          const adminId = existingUser?.id
-          if (adminId) {
+        // Delete ALL existing TOTP factors (verified AND unverified) via admin API
+        // to ensure clean enrollment without "factor name conflict" errors.
+        const adminId = existingUser?.id
+        if (adminId && factorsData?.totp) {
+          for (const factor of factorsData.totp) {
             await fetch(
-              `${supabaseUrl}/auth/v1/admin/users/${adminId}/factors/${existingFactor.id}`,
+              `${supabaseUrl}/auth/v1/admin/users/${adminId}/factors/${factor.id}`,
               {
                 method: 'DELETE',
                 headers: {
@@ -181,7 +208,7 @@ export default async function globalSetup() {
                 },
               }
             )
-            console.log('   🗑️  Removed stale TOTP factor (no secret on disk)')
+            console.log(`   🗑️  Removed ${factor.status} TOTP factor (${factor.friendly_name})`)
           }
         }
 

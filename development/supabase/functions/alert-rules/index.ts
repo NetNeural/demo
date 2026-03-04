@@ -1,93 +1,85 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { validateBody, alertRuleSchemas, ValidationError } from '../_shared/validation.ts'
+import {
+  createEdgeFunction,
+  createSuccessResponse,
+  DatabaseError,
+} from '../_shared/request-handler.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getUserContext } from '../_shared/auth.ts'
+import {
+  validateBody,
+  alertRuleSchemas,
+  ValidationError,
+} from '../_shared/validation.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
+// ─── Org Membership Check ────────────────────────────────────────────
+// Verifies the user belongs to the target organization (or is super_admin).
+async function verifyOrgAccess(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  organizationId: string,
+  isSuperAdmin: boolean
+): Promise<void> {
+  if (isSuperAdmin) return
 
-interface AlertRule {
-  id?: string
-  organization_id: string
-  name: string
-  description?: string
-  rule_type: 'telemetry' | 'offline'
-  condition: {
-    metric?: string
-    operator?: string
-    value?: number
-    duration_minutes?: number
-    offline_minutes?: number
-    grace_period_hours?: number
-  }
-  device_scope: {
-    type: 'all' | 'groups' | 'tags' | 'specific'
-    values?: string[]
-  }
-  actions: Array<{
-    type: 'email' | 'sms' | 'webhook'
-    recipients?: string[]
-    webhook_url?: string
-    message_template?: string
-  }>
-  enabled: boolean
-  cooldown_minutes: number
-  created_by: string
-}
+  const { data: membership } = await supabaseAdmin
+    .from('organization_members')
+    .select('id, role')
+    .eq('user_id', userId)
+    .eq('organization_id', organizationId)
+    .limit(1)
+    .maybeSingle()
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+  if (!membership) {
+    throw new DatabaseError(
+      'You do not have access to this organization',
+      403
     )
+  }
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser()
+  // Only admin/owner roles can manage alert rules
+  if (!['owner', 'admin'].includes(membership.role)) {
+    throw new DatabaseError(
+      'You do not have permission to manage alert rules',
+      403
+    )
+  }
+}
 
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+export default createEdgeFunction(
+  async ({ req }) => {
+    // Authenticate user via JWT
+    const userContext = await getUserContext(req)
+
+    // Service-role client bypasses RLS — authorization enforced in function logic
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
 
     const url = new URL(req.url)
     const pathSegments = url.pathname.split('/').filter(Boolean)
-    const ruleId = pathSegments[pathSegments.length - 1]
+    // Last segment is the ruleId (if not 'alert-rules' itself)
+    const lastSegment = pathSegments[pathSegments.length - 1]
+    const ruleId = lastSegment !== 'alert-rules' ? lastSegment : null
 
-    // GET /alert-rules - List all rules for organization
+    // ─── GET /alert-rules — List all rules for organization ──────────
     if (req.method === 'GET' && !ruleId) {
       const organizationId = url.searchParams.get('organization_id')
       const ruleType = url.searchParams.get('rule_type')
       const enabled = url.searchParams.get('enabled')
 
       if (!organizationId) {
-        return new Response(
-          JSON.stringify({ error: 'organization_id is required' }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
+        throw new Error('organization_id is required')
       }
 
-      let query = supabaseClient
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        organizationId,
+        userContext.isSuperAdmin
+      )
+
+      let query = supabaseAdmin
         .from('alert_rules')
         .select('*')
         .eq('organization_id', organizationId)
@@ -105,20 +97,15 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] List error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse(data)
     }
 
-    // GET /alert-rules/:id - Get single rule
-    if (req.method === 'GET' && ruleId && ruleId !== 'alert-rules') {
-      const { data, error } = await supabaseClient
+    // ─── GET /alert-rules/:id — Get single rule ─────────────────────
+    if (req.method === 'GET' && ruleId) {
+      const { data, error } = await supabaseAdmin
         .from('alert_rules')
         .select('*')
         .eq('id', ruleId)
@@ -126,54 +113,61 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] Get error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError('Rule not found', 404)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      // Verify user has access to this rule's organization
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        data.organization_id,
+        userContext.isSuperAdmin
+      )
+
+      return createSuccessResponse(data)
     }
 
-    // POST /alert-rules - Create new rule
-    if (req.method === 'POST') {
+    // ─── POST /alert-rules — Create new rule ────────────────────────
+    if (req.method === 'POST' && !url.pathname.includes('/duplicate')) {
       let body
       try {
         body = await validateBody(req, alertRuleSchemas.create)
       } catch (err) {
         if (err instanceof ValidationError) {
-          return new Response(
-            JSON.stringify({ error: 'Validation failed', details: err.errors }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+          throw new Error(`Validation failed: ${JSON.stringify(err.errors)}`)
         }
         throw err
       }
 
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        body.organization_id,
+        userContext.isSuperAdmin
+      )
+
       // rule_type-specific condition validation
       if (body.rule_type === 'telemetry') {
-        if (!body.condition.metric || !body.condition.operator || body.condition.value === undefined) {
-          return new Response(
-            JSON.stringify({ error: 'Telemetry rules require metric, operator, and value' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        if (
+          !body.condition.metric ||
+          !body.condition.operator ||
+          body.condition.value === undefined
+        ) {
+          throw new Error(
+            'Telemetry rules require metric, operator, and value'
           )
         }
       } else if (body.rule_type === 'offline') {
         if (!body.condition.offline_minutes) {
-          return new Response(
-            JSON.stringify({ error: 'Offline rules require offline_minutes' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+          throw new Error('Offline rules require offline_minutes')
         }
       }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAdmin
         .from('alert_rules')
         .insert({
           ...body,
-          created_by: user.id,
+          created_by: userContext.userId,
           enabled: body.enabled ?? true,
           cooldown_minutes: body.cooldown_minutes ?? 60,
         })
@@ -182,28 +176,40 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] Create error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse(data, { status: 201 })
     }
 
-    // PUT /alert-rules/:id - Update rule
+    // ─── PUT /alert-rules/:id — Update rule ─────────────────────────
     if (req.method === 'PUT' && ruleId) {
-      const body: Partial<AlertRule> = await req.json()
+      // Fetch existing rule to verify org access
+      const { data: existing } = await supabaseAdmin
+        .from('alert_rules')
+        .select('organization_id')
+        .eq('id', ruleId)
+        .single()
+
+      if (!existing) {
+        throw new DatabaseError('Rule not found', 404)
+      }
+
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        existing.organization_id,
+        userContext.isSuperAdmin
+      )
+
+      const body = await req.json()
 
       // Remove fields that shouldn't be updated
       delete body.id
       delete body.created_by
       delete body.organization_id
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAdmin
         .from('alert_rules')
         .update({
           ...body,
@@ -215,42 +221,66 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] Update error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse(data)
     }
 
-    // DELETE /alert-rules/:id - Delete rule
+    // ─── DELETE /alert-rules/:id — Delete rule ──────────────────────
     if (req.method === 'DELETE' && ruleId) {
-      const { error } = await supabaseClient
+      const { data: existing } = await supabaseAdmin
+        .from('alert_rules')
+        .select('organization_id')
+        .eq('id', ruleId)
+        .single()
+
+      if (!existing) {
+        throw new DatabaseError('Rule not found', 404)
+      }
+
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        existing.organization_id,
+        userContext.isSuperAdmin
+      )
+
+      const { error } = await supabaseAdmin
         .from('alert_rules')
         .delete()
         .eq('id', ruleId)
 
       if (error) {
         console.error('[alert-rules] Delete error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse({ deleted: true })
     }
 
-    // PATCH /alert-rules/:id/toggle - Toggle enabled status
+    // ─── PATCH /alert-rules/:id/toggle — Toggle enabled status ──────
     if (req.method === 'PATCH' && ruleId && url.pathname.includes('/toggle')) {
+      const { data: existing } = await supabaseAdmin
+        .from('alert_rules')
+        .select('organization_id')
+        .eq('id', ruleId)
+        .single()
+
+      if (!existing) {
+        throw new DatabaseError('Rule not found', 404)
+      }
+
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        existing.organization_id,
+        userContext.isSuperAdmin
+      )
+
       const { enabled } = await req.json()
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAdmin
         .from('alert_rules')
         .update({ enabled, updated_at: new Date().toISOString() })
         .eq('id', ruleId)
@@ -259,43 +289,42 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] Toggle error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse(data)
     }
 
-    // POST /alert-rules/:id/duplicate - Duplicate rule
+    // ─── POST /alert-rules/:id/duplicate — Duplicate rule ───────────
     if (
       req.method === 'POST' &&
       ruleId &&
       url.pathname.includes('/duplicate')
     ) {
-      const { data: original, error: fetchError } = await supabaseClient
+      const { data: original, error: fetchError } = await supabaseAdmin
         .from('alert_rules')
         .select('*')
         .eq('id', ruleId)
         .single()
 
-      if (fetchError) {
-        return new Response(JSON.stringify({ error: 'Rule not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      if (fetchError || !original) {
+        throw new DatabaseError('Rule not found', 404)
       }
 
-      const { data, error } = await supabaseClient
+      await verifyOrgAccess(
+        supabaseAdmin,
+        userContext.userId,
+        original.organization_id,
+        userContext.isSuperAdmin
+      )
+
+      const { data, error } = await supabaseAdmin
         .from('alert_rules')
         .insert({
           ...original,
           id: undefined,
           name: `${original.name} (Copy)`,
-          created_by: user.id,
+          created_by: userContext.userId,
           created_at: undefined,
           updated_at: undefined,
         })
@@ -304,32 +333,13 @@ serve(async (req) => {
 
       if (error) {
         console.error('[alert-rules] Duplicate error:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        throw new DatabaseError(error.message)
       }
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return createSuccessResponse(data, { status: 201 })
     }
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    console.error('[alert-rules] Unexpected error:', error)
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Internal server error',
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
-  }
-})
+    throw new Error('Method not allowed')
+  },
+  { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] }
+)

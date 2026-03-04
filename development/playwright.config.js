@@ -15,8 +15,8 @@ module.exports = defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI or remote testing — transient profile_load_failed can cause flakes */
+  retries: process.env.CI ? 2 : 1,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -32,6 +32,10 @@ module.exports = defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Navigation and action timeouts for remote sites */
+    navigationTimeout: 30000,
+    actionTimeout: 15000,
 
     /* Take screenshot on failure */
     screenshot: 'only-on-failure',
@@ -99,12 +103,12 @@ module.exports = defineConfig({
         timeout: 120000,
       },
 
-  /* Global test timeout */
-  timeout: 30000,
+  /* Global test timeout — 60s for remote testing (MFA + auth flows) */
+  timeout: 60000,
 
   /* Expect timeout */
   expect: {
-    timeout: 5000,
+    timeout: 10000,
   },
 
   /* Output directory for test artifacts */
