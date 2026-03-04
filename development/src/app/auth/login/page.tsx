@@ -983,7 +983,7 @@ function LoginForm() {
                   setForgotMode(true)
                   setError('')
                 }}
-                className="text-gray-500 transition-colors hover:text-gray-300 hover:underline"
+                className="text-white/70 transition-colors hover:text-white hover:underline"
               >
                 Forgot your password?
               </button>
@@ -1006,15 +1006,15 @@ function LoginForm() {
         </div>
 
         {/* Security badge */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-white/70">
           <Shield className="h-3.5 w-3.5" style={{ color: colors.accent }} />
           <span>Enterprise-grade security</span>
-          <span className="text-gray-700">•</span>
+          <span className="text-white/40">•</span>
           <span>256-bit encryption</span>
-          <span className="text-gray-700">•</span>
+          <span className="text-white/40">•</span>
           <a
             href="/privacy"
-            className="underline transition-colors hover:text-gray-300"
+            className="underline transition-colors hover:text-white"
           >
             Privacy Policy
           </a>
