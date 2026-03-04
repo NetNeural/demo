@@ -113,7 +113,6 @@ export function OrganizationSwitcher({
           <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
             Get Started
           </DropdownMenuLabel>
-
         </DropdownMenuContent>
       </DropdownMenu>
     )
@@ -198,7 +197,10 @@ export function OrganizationSwitcher({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="z-[200] w-[320px] max-h-[400px] overflow-y-auto">
+      <DropdownMenuContent
+        align="start"
+        className="z-[200] max-h-[400px] w-[320px] overflow-y-auto"
+      >
         <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
           Your Organizations
         </DropdownMenuLabel>
@@ -206,76 +208,79 @@ export function OrganizationSwitcher({
         {[...userOrganizations]
           .sort((a, b) => {
             // NetNeural (root org) always first
-            const aIsRoot = a.id === '00000000-0000-0000-0000-000000000001' || (!a.parent_organization_id && a.name === 'NetNeural')
-            const bIsRoot = b.id === '00000000-0000-0000-0000-000000000001' || (!b.parent_organization_id && b.name === 'NetNeural')
+            const aIsRoot =
+              a.id === '00000000-0000-0000-0000-000000000001' ||
+              (!a.parent_organization_id && a.name === 'NetNeural')
+            const bIsRoot =
+              b.id === '00000000-0000-0000-0000-000000000001' ||
+              (!b.parent_organization_id && b.name === 'NetNeural')
             if (aIsRoot && !bIsRoot) return -1
             if (!aIsRoot && bIsRoot) return 1
             return a.name.localeCompare(b.name)
           })
           .map((org) => {
-          const isSelected = org.id === currentOrganization.id
-          const orgRoleInfo = getRoleDisplayInfo(org.role)
+            const isSelected = org.id === currentOrganization.id
+            const orgRoleInfo = getRoleDisplayInfo(org.role)
 
-          return (
-            <DropdownMenuItem
-              key={org.id}
-              onClick={() => {
-                switchOrganization(org.id)
-                setOpen(false)
-              }}
-              className="flex cursor-pointer items-start gap-3 p-3"
-            >
-              <OrganizationLogo
-                settings={org.settings}
-                name={org.name}
-                size="xl"
-                className={cn(
-                  !org.settings?.branding?.logo_url &&
-                    (isSelected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground')
-                )}
-              />
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-medium text-foreground">
-                    {org.name}
-                  </span>
-                  {isSelected && (
-                    <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+            return (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => {
+                  switchOrganization(org.id)
+                  setOpen(false)
+                }}
+                className="flex cursor-pointer items-start gap-3 p-3"
+              >
+                <OrganizationLogo
+                  settings={org.settings}
+                  name={org.name}
+                  size="xl"
+                  className={cn(
+                    !org.settings?.branding?.logo_url &&
+                      (isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground')
                   )}
-                </div>
+                />
 
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      'text-xs capitalize',
-                      orgRoleInfo.color === 'purple' &&
-                        'bg-purple-100 text-purple-700',
-                      orgRoleInfo.color === 'blue' &&
-                        'bg-blue-100 text-blue-700',
-                      orgRoleInfo.color === 'green' &&
-                        'bg-green-100 text-green-700',
-                      orgRoleInfo.color === 'gray' &&
-                        'bg-gray-100 text-gray-700'
-                    )}
-                  >
-                    {orgRoleInfo.label}
-                  </Badge>
-
-                  {org.deviceCount !== undefined && (
-                    <span className="text-xs text-muted-foreground">
-                      {org.deviceCount} devices
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium text-foreground">
+                      {org.name}
                     </span>
-                  )}
-                </div>
-              </div>
-            </DropdownMenuItem>
-          )
-        })}
+                    {isSelected && (
+                      <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                    )}
+                  </div>
 
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'text-xs capitalize',
+                        orgRoleInfo.color === 'purple' &&
+                          'bg-purple-100 text-purple-700',
+                        orgRoleInfo.color === 'blue' &&
+                          'bg-blue-100 text-blue-700',
+                        orgRoleInfo.color === 'green' &&
+                          'bg-green-100 text-green-700',
+                        orgRoleInfo.color === 'gray' &&
+                          'bg-gray-100 text-gray-700'
+                      )}
+                    >
+                      {orgRoleInfo.label}
+                    </Badge>
+
+                    {org.deviceCount !== undefined && (
+                      <span className="text-xs text-muted-foreground">
+                        {org.deviceCount} devices
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            )
+          })}
       </DropdownMenuContent>
     </DropdownMenu>
   )

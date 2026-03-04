@@ -28,8 +28,7 @@ export function isPlatformAdmin(
   const isNetNeuralOrg =
     currentOrgId === NETNEURAL_ORG_ID ||
     user.organizationId === NETNEURAL_ORG_ID
-  const isOwnerRole =
-    orgRole === 'owner' || user.role === 'org_owner'
+  const isOwnerRole = orgRole === 'owner' || user.role === 'org_owner'
   return isNetNeuralOrg && isOwnerRole
 }
 

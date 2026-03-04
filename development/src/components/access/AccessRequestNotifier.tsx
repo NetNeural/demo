@@ -74,9 +74,7 @@ export function AccessRequestNotifier() {
     shownIds.current.add(request.id)
 
     const requesterName =
-      request.requester?.full_name ||
-      request.requester?.email ||
-      'Someone'
+      request.requester?.full_name || request.requester?.email || 'Someone'
     const requesterOrg = request.requester_org?.name || 'an organization'
     const toastId = `access-req-${request.id}`
 
@@ -88,8 +86,8 @@ export function AccessRequestNotifier() {
             <span className="text-sm font-semibold">Admin Access Request</span>
           </div>
           <p className="mb-1 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{requesterName}</span>
-            {' '}({requesterOrg}) is requesting temporary admin access to{' '}
+            <span className="font-medium text-foreground">{requesterName}</span>{' '}
+            ({requesterOrg}) is requesting temporary admin access to{' '}
             <span className="font-medium text-foreground">
               {currentOrganization?.name || 'your organization'}
             </span>
@@ -138,17 +136,24 @@ export function AccessRequestNotifier() {
       resellerToastShown.current = true
 
       const count = data.length
-      const label = count === 1 ? '1 pending reseller application' : `${count} pending reseller applications`
+      const label =
+        count === 1
+          ? '1 pending reseller application'
+          : `${count} pending reseller applications`
 
       toast.custom(
         () => (
           <div className="w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg">
             <div className="mb-2 flex items-center gap-2">
               <PackageSearch className="h-4 w-4 shrink-0 text-violet-500" />
-              <span className="text-sm font-semibold">Reseller Applications</span>
+              <span className="text-sm font-semibold">
+                Reseller Applications
+              </span>
             </div>
             <p className="mb-3 text-sm text-muted-foreground">
-              You have <span className="font-medium text-foreground">{label}</span> waiting for review.
+              You have{' '}
+              <span className="font-medium text-foreground">{label}</span>{' '}
+              waiting for review.
             </p>
             <button
               className="w-full rounded-md bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 active:bg-violet-800"
@@ -166,7 +171,7 @@ export function AccessRequestNotifier() {
     }
 
     checkReseller()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSeeResellerAlerts])
 
   // ── Reseller applications: realtime for new submissions ──────────────────
@@ -179,7 +184,11 @@ export function AccessRequestNotifier() {
       .channel('reseller-apps-notifier')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'reseller_agreement_applications' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reseller_agreement_applications',
+        },
         () => {
           // Dismiss stale toast so it re-shows with refreshed count
           resellerToastShown.current = false
@@ -191,7 +200,9 @@ export function AccessRequestNotifier() {
               <div className="w-full max-w-sm rounded-lg border bg-background p-4 shadow-lg">
                 <div className="mb-2 flex items-center gap-2">
                   <PackageSearch className="h-4 w-4 shrink-0 text-violet-500" />
-                  <span className="text-sm font-semibold">New Reseller Application</span>
+                  <span className="text-sm font-semibold">
+                    New Reseller Application
+                  </span>
                 </div>
                 <p className="mb-3 text-sm text-muted-foreground">
                   A new reseller agreement application has been submitted.
@@ -216,7 +227,7 @@ export function AccessRequestNotifier() {
     return () => {
       supabase.removeChannel(channel)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSeeResellerAlerts])
 
   // ── Poll for pending received requests (fallback + initial load) ─────────

@@ -10,13 +10,17 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Trophy, AlertTriangle, TrendingUp } from 'lucide-react'
-import { TIER_BG_COLORS, TIER_COLORS, type ResellerTierEngineResult } from '@/types/reseller'
+import {
+  TIER_BG_COLORS,
+  TIER_COLORS,
+  type ResellerTierEngineResult,
+} from '@/types/reseller'
 import { cn } from '@/lib/utils'
 
 interface FleetProgressBarProps {
-  tierData:   ResellerTierEngineResult
+  tierData: ResellerTierEngineResult
   className?: string
-  compact?:   boolean   // compact mode for dashboard cards
+  compact?: boolean // compact mode for dashboard cards
 }
 
 function GracePeriodBadge({ lockedUntil }: { lockedUntil: string }) {
@@ -31,7 +35,11 @@ function GracePeriodBadge({ lockedUntil }: { lockedUntil: string }) {
   )
 }
 
-export function FleetProgressBar({ tierData, className, compact = false }: FleetProgressBarProps) {
+export function FleetProgressBar({
+  tierData,
+  className,
+  compact = false,
+}: FleetProgressBarProps) {
   const {
     current_tier,
     discount_pct,
@@ -56,7 +64,8 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
   }, [effective_total, sensors_to_next_tier, isMaxTier, next_tier_name])
 
   const tierColor = TIER_COLORS[current_tier] ?? '#6b7280'
-  const tierBadgeClass = TIER_BG_COLORS[current_tier] ?? 'bg-gray-100 text-gray-700'
+  const tierBadgeClass =
+    TIER_BG_COLORS[current_tier] ?? 'bg-gray-100 text-gray-700'
 
   if (compact) {
     return (
@@ -64,7 +73,9 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-gray-300">{current_tier}</span>
           {!isMaxTier && (
-            <span className="text-gray-500">{sensors_to_next_tier.toLocaleString()} to {next_tier_name}</span>
+            <span className="text-gray-500">
+              {sensors_to_next_tier.toLocaleString()} to {next_tier_name}
+            </span>
           )}
         </div>
         <Progress
@@ -77,7 +88,12 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
   }
 
   return (
-    <div className={cn('rounded-xl border border-white/[0.08] bg-gray-900/60 p-5', className)}>
+    <div
+      className={cn(
+        'rounded-xl border border-white/[0.08] bg-gray-900/60 p-5',
+        className
+      )}
+    >
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
@@ -86,7 +102,10 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
             <Badge className={cn('text-sm font-semibold', tierBadgeClass)}>
               {current_tier}
             </Badge>
-            <span className="text-sm font-semibold" style={{ color: tierColor }}>
+            <span
+              className="text-sm font-semibold"
+              style={{ color: tierColor }}
+            >
               {(discount_pct * 100).toFixed(0)}% Discount
             </span>
           </div>
@@ -109,22 +128,30 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
             <TooltipTrigger asChild>
               <p className="cursor-default text-3xl font-bold tabular-nums text-white">
                 {effective_total.toLocaleString()}
-                <span className="ml-1 text-sm font-normal text-gray-500">active sensors</span>
+                <span className="ml-1 text-sm font-normal text-gray-500">
+                  active sensors
+                </span>
               </p>
             </TooltipTrigger>
             <TooltipContent className="border-gray-700 bg-gray-900 text-gray-200">
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between gap-6">
                   <span>Direct sensors:</span>
-                  <span className="font-semibold">{direct_sensors.toLocaleString()}</span>
+                  <span className="font-semibold">
+                    {direct_sensors.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between gap-6">
                   <span>Downstream sensors:</span>
-                  <span className="font-semibold">{downstream_sensors.toLocaleString()}</span>
+                  <span className="font-semibold">
+                    {downstream_sensors.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between gap-6 border-t border-gray-700 pt-1">
                   <span>Effective total:</span>
-                  <span className="font-semibold">{effective_total.toLocaleString()}</span>
+                  <span className="font-semibold">
+                    {effective_total.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </TooltipContent>
@@ -145,8 +172,14 @@ export function FleetProgressBar({ tierData, className, compact = false }: Fleet
             <div className="flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               <span>
-                <strong className="text-gray-200">{sensors_to_next_tier.toLocaleString()}</strong> more to{' '}
-                <span className="font-semibold" style={{ color: TIER_COLORS[next_tier_name ?? ''] ?? '#fff' }}>
+                <strong className="text-gray-200">
+                  {sensors_to_next_tier.toLocaleString()}
+                </strong>{' '}
+                more to{' '}
+                <span
+                  className="font-semibold"
+                  style={{ color: TIER_COLORS[next_tier_name ?? ''] ?? '#fff' }}
+                >
                   {next_tier_name}
                 </span>
               </span>

@@ -198,7 +198,10 @@ export default function AdminToolsTab({ organizationId }: Props) {
           Reports
         </TabsTrigger>
         {isSuperAdmin && (
-          <TabsTrigger value="communication" className="flex items-center gap-2">
+          <TabsTrigger
+            value="communication"
+            className="flex items-center gap-2"
+          >
             <Mail className="h-4 w-4" />
             Communication
           </TabsTrigger>
@@ -231,97 +234,97 @@ export default function AdminToolsTab({ organizationId }: Props) {
       <TabsContent value="data-ops" className="space-y-6">
         {/* Data Export */}
         <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Data Export
-          </CardTitle>
-          <CardDescription>
-            Export organization data as CSV or JSON (up to 5,000 records)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Select value={exportType} onValueChange={setExportType}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="telemetry">Telemetry Data</SelectItem>
-                <SelectItem value="alerts">Alerts</SelectItem>
-                <SelectItem value="audit_logs">Audit Logs</SelectItem>
-                <SelectItem value="devices">Devices</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={exportFormat}
-              onValueChange={(v) => setExportFormat(v as 'csv' | 'json')}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="csv">
-                  <div className="flex items-center gap-1">
-                    <FileSpreadsheet className="h-4 w-4" /> CSV
-                  </div>
-                </SelectItem>
-                <SelectItem value="json">
-                  <div className="flex items-center gap-1">
-                    <FileJson className="h-4 w-4" /> JSON
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleExport} disabled={exporting}>
-              {exporting ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-1 h-4 w-4" />
-              )}
-              {exporting ? 'Exporting...' : 'Export'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bulk Operations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings2 className="h-5 w-5" />
-            Bulk Operations
-          </CardTitle>
-          <CardDescription>
-            Batch administrative actions (use with caution)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Archive Old Alerts</p>
-                <p className="text-xs text-muted-foreground">
-                  Archives acknowledged alerts older than 30 days
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkArchiveAlerts}
-                disabled={bulkAction === 'archive-alerts'}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Data Export
+            </CardTitle>
+            <CardDescription>
+              Export organization data as CSV or JSON (up to 5,000 records)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Select value={exportType} onValueChange={setExportType}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="telemetry">Telemetry Data</SelectItem>
+                  <SelectItem value="alerts">Alerts</SelectItem>
+                  <SelectItem value="audit_logs">Audit Logs</SelectItem>
+                  <SelectItem value="devices">Devices</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={exportFormat}
+                onValueChange={(v) => setExportFormat(v as 'csv' | 'json')}
               >
-                {bulkAction === 'archive-alerts' ? (
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">
+                    <div className="flex items-center gap-1">
+                      <FileSpreadsheet className="h-4 w-4" /> CSV
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="json">
+                    <div className="flex items-center gap-1">
+                      <FileJson className="h-4 w-4" /> JSON
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleExport} disabled={exporting}>
+                {exporting ? (
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                 ) : (
-                  <Archive className="mr-1 h-4 w-4" />
+                  <Download className="mr-1 h-4 w-4" />
                 )}
-                Archive
+                {exporting ? 'Exporting...' : 'Export'}
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Operations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Bulk Operations
+            </CardTitle>
+            <CardDescription>
+              Batch administrative actions (use with caution)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-medium">Archive Old Alerts</p>
+                  <p className="text-xs text-muted-foreground">
+                    Archives acknowledged alerts older than 30 days
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkArchiveAlerts}
+                  disabled={bulkAction === 'archive-alerts'}
+                >
+                  {bulkAction === 'archive-alerts' ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Archive className="mr-1 h-4 w-4" />
+                  )}
+                  Archive
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </TabsContent>
 
       {/* Login Security — Super Admin only */}

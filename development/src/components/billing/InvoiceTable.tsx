@@ -155,7 +155,11 @@ export function InvoiceTable({
     doc.setFontSize(16)
     doc.text('Invoices', 14, 15)
     doc.setFontSize(10)
-    doc.text(`Generated: ${date} | Filter: ${activeTab}${dateFrom ? ` | From: ${dateFrom}` : ''}${dateTo ? ` | To: ${dateTo}` : ''}`, 14, 22)
+    doc.text(
+      `Generated: ${date} | Filter: ${activeTab}${dateFrom ? ` | From: ${dateFrom}` : ''}${dateTo ? ` | To: ${dateTo}` : ''}`,
+      14,
+      22
+    )
     autoTable(doc, {
       startY: 28,
       head: [['Invoice #', 'Date', 'Plan', 'Amount', 'Status', 'Due Date']],

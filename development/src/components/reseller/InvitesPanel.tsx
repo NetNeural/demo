@@ -6,12 +6,31 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { Mail, UserPlus, Copy, X, Clock, Check, AlertCircle, Link2 } from 'lucide-react'
+import {
+  Mail,
+  UserPlus,
+  Copy,
+  X,
+  Clock,
+  Check,
+  AlertCircle,
+  Link2,
+} from 'lucide-react'
 import type { ResellerInvitation } from '@/types/reseller'
 
 interface InvitesPanelProps {
@@ -20,14 +39,14 @@ interface InvitesPanelProps {
 }
 
 export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
-  const [invites, setInvites]         = useState<ResellerInvitation[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [email, setEmail]             = useState('')
-  const [sending, setSending]         = useState(false)
-  const [error, setError]             = useState('')
-  const [success, setSuccess]         = useState('')
-  const [revokeId, setRevokeId]       = useState<string | null>(null)
-  const [copiedId, setCopiedId]       = useState<string | null>(null)
+  const [invites, setInvites] = useState<ResellerInvitation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [email, setEmail] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [revokeId, setRevokeId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     loadInvites()
@@ -38,13 +57,14 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
     setLoading(true)
     try {
       const supabase = createClient()
-      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const token = (await supabase.auth.getSession()).data.session
+        ?.access_token
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reseller-invite?inviter_org_id=${orgId}`,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       )
@@ -64,14 +84,22 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
     setSuccess('')
     try {
       const supabase = createClient()
-      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const token = (await supabase.auth.getSession()).data.session
+        ?.access_token
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reseller-invite`,
         {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'create', inviter_org_id: orgId, invitee_email: email }),
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create',
+            inviter_org_id: orgId,
+            invitee_email: email,
+          }),
         }
       )
       const json = await res.json()
@@ -101,13 +129,25 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
     const supabase = createClient()
     const token = (await supabase.auth.getSession()).data.session?.access_token
 
-    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reseller-invite`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'revoke', invitation_id: id, inviter_org_id: orgId }),
-    })
+    await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reseller-invite`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'revoke',
+          invitation_id: id,
+          inviter_org_id: orgId,
+        }),
+      }
+    )
 
-    setInvites(prev => prev.map(i => i.id === id ? { ...i, status: 'revoked' as const } : i))
+    setInvites((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, status: 'revoked' as const } : i))
+    )
     setRevokeId(null)
   }
 
@@ -118,18 +158,22 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const StatusBadge = ({ status }: { status: ResellerInvitation['status'] }) => {
+  const StatusBadge = ({
+    status,
+  }: {
+    status: ResellerInvitation['status']
+  }) => {
     const map: Record<string, string> = {
-      pending:  'bg-amber-500/15 text-amber-400',
+      pending: 'bg-amber-500/15 text-amber-400',
       accepted: 'bg-emerald-500/15 text-emerald-400',
-      expired:  'bg-gray-700 text-gray-400',
-      revoked:  'bg-red-500/15 text-red-400',
+      expired: 'bg-gray-700 text-gray-400',
+      revoked: 'bg-red-500/15 text-red-400',
     }
     const icons: Record<string, React.ReactNode> = {
-      pending:  <Clock className="h-3 w-3" />,
+      pending: <Clock className="h-3 w-3" />,
       accepted: <Check className="h-3 w-3" />,
-      expired:  <AlertCircle className="h-3 w-3" />,
-      revoked:  <X className="h-3 w-3" />,
+      expired: <AlertCircle className="h-3 w-3" />,
+      revoked: <X className="h-3 w-3" />,
     }
     return (
       <Badge className={`flex items-center gap-1 ${map[status]}`}>
@@ -157,7 +201,9 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
 
       {/* Invite form */}
       <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="mb-4 text-sm font-semibold text-foreground">Send Invitation</h2>
+        <h2 className="mb-4 text-sm font-semibold text-foreground">
+          Send Invitation
+        </h2>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -165,8 +211,8 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
               type="email"
               placeholder="partner@company.com"
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendInvite()}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendInvite()}
               className="pl-10"
             />
           </div>
@@ -179,7 +225,7 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
             {sending ? 'Sending…' : 'Send Invite'}
           </Button>
         </div>
-        {error   && <p className="mt-2 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
         {success && <p className="mt-2 text-xs text-emerald-400">{success}</p>}
       </div>
 
@@ -187,17 +233,20 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
       <div className="rounded-xl border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-sm font-semibold text-foreground">
-            Pending Invitations
-            {' '}
+            Pending Invitations{' '}
             <span className="ml-1 text-muted-foreground">
-              ({invites.filter(i => i.status === 'pending').length} / 50)
+              ({invites.filter((i) => i.status === 'pending').length} / 50)
             </span>
           </h2>
         </div>
         {loading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Loading…
+          </p>
         ) : invites.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No invitations yet.</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No invitations yet.
+          </p>
         ) : (
           <Table>
             <TableHeader>
@@ -210,10 +259,17 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invites.map(inv => (
-                <TableRow key={inv.id} className="border-border/60 hover:bg-muted/30">
-                  <TableCell className="text-sm text-foreground">{inv.invitee_email}</TableCell>
-                  <TableCell><StatusBadge status={inv.status} /></TableCell>
+              {invites.map((inv) => (
+                <TableRow
+                  key={inv.id}
+                  className="border-border/60 hover:bg-muted/30"
+                >
+                  <TableCell className="text-sm text-foreground">
+                    {inv.invitee_email}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={inv.status} />
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {new Date(inv.created_at).toLocaleDateString()}
                   </TableCell>
@@ -222,20 +278,21 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
                   </TableCell>
                   <TableCell>
                     {inv.status === 'pending' && (
-                      <div className="flex items-center gap-2 justify-end">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => copyInviteLink(inv.token, inv.id)}
-                          className="rounded p-1 text-muted-foreground hover:text-foreground transition-colors"
+                          className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
                           title="Copy invite link"
                         >
-                          {copiedId === inv.id
-                            ? <Check className="h-3.5 w-3.5 text-emerald-400" />
-                            : <Copy className="h-3.5 w-3.5" />
-                          }
+                          {copiedId === inv.id ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
                         </button>
                         <button
                           onClick={() => setRevokeId(inv.id)}
-                          className="rounded p-1 text-muted-foreground hover:text-red-400 transition-colors"
+                          className="rounded p-1 text-muted-foreground transition-colors hover:text-red-400"
                           title="Revoke invitation"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -260,8 +317,13 @@ export function InvitesPanel({ orgId, orgSlug }: InvitesPanelProps) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRevokeId(null)}>Cancel</Button>
-            <Button className="bg-red-600 hover:bg-red-500" onClick={() => revokeId && revokeInvite(revokeId)}>
+            <Button variant="ghost" onClick={() => setRevokeId(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-500"
+              onClick={() => revokeId && revokeInvite(revokeId)}
+            >
               Revoke
             </Button>
           </DialogFooter>

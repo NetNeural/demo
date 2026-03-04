@@ -78,7 +78,9 @@ export function ARAgingReport({ data, loading }: ARAgingReportProps) {
             <DollarSign className="h-5 w-5" />
             Accounts Receivable Aging
           </CardTitle>
-          <CardDescription>Outstanding invoices by aging bucket</CardDescription>
+          <CardDescription>
+            Outstanding invoices by aging bucket
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -103,9 +105,7 @@ export function ARAgingReport({ data, loading }: ARAgingReportProps) {
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
           Accounts Receivable Aging
-          {hasOverdue && (
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          )}
+          {hasOverdue && <AlertTriangle className="h-4 w-4 text-amber-500" />}
         </CardTitle>
         <CardDescription>
           Outstanding invoices by aging bucket &middot; {data.rows.length} org
@@ -123,10 +123,7 @@ export function ARAgingReport({ data, loading }: ARAgingReportProps) {
             { label: '90+ Days', value: data.totals.days90plus },
             { label: 'Total', value: data.totals.total },
           ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-lg border p-3 text-center"
-            >
+            <div key={label} className="rounded-lg border p-3 text-center">
               <p className="text-xs text-muted-foreground">{label}</p>
               <p className="mt-1 text-lg font-bold">{fmtUsd(value)}</p>
             </div>
@@ -176,12 +173,24 @@ export function ARAgingReport({ data, loading }: ARAgingReportProps) {
               {/* Totals row */}
               <TableRow className="bg-muted/50 font-bold">
                 <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.current)}</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.days1to30)}</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.days31to60)}</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.days61to90)}</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.days90plus)}</TableCell>
-                <TableCell className="text-right">{fmtUsd(data.totals.total)}</TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.current)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.days1to30)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.days31to60)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.days61to90)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.days90plus)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {fmtUsd(data.totals.total)}
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>

@@ -20,7 +20,9 @@ export interface AccessRequestsAPI {
 
   /** Fetch all organizations available for the request-access target dropdown */
   listAllOrgs: () => Promise<
-    EdgeFunctionResponse<{ organizations: { id: string; name: string; slug: string }[] }>
+    EdgeFunctionResponse<{
+      organizations: { id: string; name: string; slug: string }[]
+    }>
   >
 
   /** Create a new access request */

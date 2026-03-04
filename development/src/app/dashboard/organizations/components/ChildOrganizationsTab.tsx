@@ -177,9 +177,7 @@ export function ChildOrganizationsTab({
           {displayTier.charAt(0).toUpperCase() + displayTier.slice(1)}
         </Badge>
         {tier === 'reseller' && (
-          <Badge className="bg-amber-100 text-amber-700">
-            Reseller
-          </Badge>
+          <Badge className="bg-amber-100 text-amber-700">Reseller</Badge>
         )}
       </div>
     )

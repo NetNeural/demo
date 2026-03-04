@@ -27,17 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Truck, AlertCircle } from 'lucide-react'
-import type {
-  InventoryItem,
-  IssuanceFormValues,
-} from './types'
+import type { InventoryItem, IssuanceFormValues } from './types'
 import { DEFAULT_ISSUANCE_FORM, CATEGORY_LABELS } from './types'
 
 interface Organization {
@@ -107,7 +99,7 @@ export function IssueHardwareDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Issue Hardware to Customer</DialogTitle>
           <DialogDescription>
@@ -130,7 +122,7 @@ export function IssueHardwareDialog({
                   <p className="text-sm text-muted-foreground">
                     SKU: {item.sku} · Model: {item.model_number}
                   </p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="mt-1 flex gap-2">
                     <Badge variant="outline">
                       {CATEGORY_LABELS[item.category]}
                     </Badge>
@@ -142,7 +134,9 @@ export function IssueHardwareDialog({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">{item.quantity_available}</p>
+                  <p className="text-2xl font-bold">
+                    {item.quantity_available}
+                  </p>
                   <p className="text-xs text-muted-foreground">Available</p>
                 </div>
               </div>
@@ -185,7 +179,7 @@ export function IssueHardwareDialog({
                 onChange={(e) => update('quantity', e.target.value)}
               />
               {quantity > maxQty && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
+                <p className="flex items-center gap-1 text-xs text-red-500">
                   <AlertCircle className="h-3 w-3" />
                   Exceeds available ({maxQty})
                 </p>
@@ -204,7 +198,7 @@ export function IssueHardwareDialog({
             </div>
             <div className="space-y-2">
               <Label>Total</Label>
-              <div className="flex items-center h-10 px-3 rounded-md border bg-muted font-mono">
+              <div className="flex h-10 items-center rounded-md border bg-muted px-3 font-mono">
                 {formatCurrency(totalPrice, item.currency)}
               </div>
             </div>

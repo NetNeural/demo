@@ -10,12 +10,15 @@ import type { ResellerTierEngineResult } from '@/types/reseller'
  * Polls every 5 minutes or on manual refetch.
  */
 export function useResellerTier(orgId: string | null) {
-  const [data, setData]       = useState<ResellerTierEngineResult | null>(null)
+  const [data, setData] = useState<ResellerTierEngineResult | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const fetch = useCallback(async () => {
-    if (!orgId) { setLoading(false); return }
+    if (!orgId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,7 +26,7 @@ export function useResellerTier(orgId: string | null) {
         `${supabaseUrl}/functions/v1/reseller-tier-engine?org_id=${orgId}`,
         {
           headers: {
-            'Authorization': `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}`,
             'Content-Type': 'application/json',
           },
         }

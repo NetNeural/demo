@@ -211,40 +211,40 @@ The Facility Map feature provides an **interactive visual floor plan system** fo
 
 ### Table: `facility_maps`
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | UUID (PK) | Auto-generated primary key |
-| `organization_id` | UUID (FK) | References `organizations.id` |
-| `location_id` | UUID (FK, nullable) | References `locations.id` |
-| `name` | VARCHAR(255) | Map name (required) |
-| `description` | TEXT | Optional description |
-| `floor_level` | INTEGER | Floor number (default 0) |
-| `image_url` | TEXT | Public URL in Supabase Storage |
-| `image_path` | TEXT | Storage path for deletion |
-| `image_width` | INTEGER | Original pixel width |
-| `image_height` | INTEGER | Original pixel height |
-| `is_active` | BOOLEAN | Active flag (default true) |
-| `sort_order` | INTEGER | Display order (default 0) |
-| `settings` | JSONB | Additional config |
-| `created_at` | TIMESTAMPTZ | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | Last update timestamp |
-| `created_by` | UUID (FK) | References `auth.users.id` |
+| Column            | Type                | Description                    |
+| ----------------- | ------------------- | ------------------------------ |
+| `id`              | UUID (PK)           | Auto-generated primary key     |
+| `organization_id` | UUID (FK)           | References `organizations.id`  |
+| `location_id`     | UUID (FK, nullable) | References `locations.id`      |
+| `name`            | VARCHAR(255)        | Map name (required)            |
+| `description`     | TEXT                | Optional description           |
+| `floor_level`     | INTEGER             | Floor number (default 0)       |
+| `image_url`       | TEXT                | Public URL in Supabase Storage |
+| `image_path`      | TEXT                | Storage path for deletion      |
+| `image_width`     | INTEGER             | Original pixel width           |
+| `image_height`    | INTEGER             | Original pixel height          |
+| `is_active`       | BOOLEAN             | Active flag (default true)     |
+| `sort_order`      | INTEGER             | Display order (default 0)      |
+| `settings`        | JSONB               | Additional config              |
+| `created_at`      | TIMESTAMPTZ         | Creation timestamp             |
+| `updated_at`      | TIMESTAMPTZ         | Last update timestamp          |
+| `created_by`      | UUID (FK)           | References `auth.users.id`     |
 
 ### Table: `device_map_placements`
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | UUID (PK) | Auto-generated primary key |
-| `facility_map_id` | UUID (FK) | References `facility_maps.id` (CASCADE) |
-| `device_id` | UUID (FK) | References `devices.id` (CASCADE) |
-| `x_percent` | DECIMAL(6,3) | X position 0–100 (responsive) |
-| `y_percent` | DECIMAL(6,3) | Y position 0–100 (responsive) |
-| `label` | VARCHAR(255) | Custom label (defaults to device name) |
-| `icon_size` | VARCHAR(20) | `'small'`, `'medium'`, `'large'` |
-| `rotation` | DECIMAL(5,2) | Rotation in degrees (default 0) |
-| `settings` | JSONB | Additional display config |
-| `created_at` | TIMESTAMPTZ | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | Last update timestamp |
+| Column            | Type         | Description                             |
+| ----------------- | ------------ | --------------------------------------- |
+| `id`              | UUID (PK)    | Auto-generated primary key              |
+| `facility_map_id` | UUID (FK)    | References `facility_maps.id` (CASCADE) |
+| `device_id`       | UUID (FK)    | References `devices.id` (CASCADE)       |
+| `x_percent`       | DECIMAL(6,3) | X position 0–100 (responsive)           |
+| `y_percent`       | DECIMAL(6,3) | Y position 0–100 (responsive)           |
+| `label`           | VARCHAR(255) | Custom label (defaults to device name)  |
+| `icon_size`       | VARCHAR(20)  | `'small'`, `'medium'`, `'large'`        |
+| `rotation`        | DECIMAL(5,2) | Rotation in degrees (default 0)         |
+| `settings`        | JSONB        | Additional display config               |
+| `created_at`      | TIMESTAMPTZ  | Creation timestamp                      |
+| `updated_at`      | TIMESTAMPTZ  | Last update timestamp                   |
 
 **Constraint:** `UNIQUE(facility_map_id, device_id)` — each device appears once per map.
 
@@ -261,30 +261,30 @@ The Facility Map feature provides an **interactive visual floor plan system** fo
 
 ### facility_maps
 
-| Policy | Operation | Rule |
-|---|---|---|
-| Users can view their org maps | SELECT | `organization_id` in user's memberships |
-| Admins can insert maps | INSERT | User role is `owner` or `admin` |
-| Admins can update maps | UPDATE | User role is `owner` or `admin` |
-| Admins can delete maps | DELETE | User role is `owner` or `admin` |
+| Policy                        | Operation | Rule                                    |
+| ----------------------------- | --------- | --------------------------------------- |
+| Users can view their org maps | SELECT    | `organization_id` in user's memberships |
+| Admins can insert maps        | INSERT    | User role is `owner` or `admin`         |
+| Admins can update maps        | UPDATE    | User role is `owner` or `admin`         |
+| Admins can delete maps        | DELETE    | User role is `owner` or `admin`         |
 
 ### device_map_placements
 
-| Policy | Operation | Rule |
-|---|---|---|
-| Users can view placements | SELECT | Parent map's `organization_id` in user's memberships |
-| Admins can insert placements | INSERT | User role is `owner` or `admin` on parent map's org |
-| Admins can update placements | UPDATE | User role is `owner` or `admin` on parent map's org |
-| Admins can delete placements | DELETE | User role is `owner` or `admin` on parent map's org |
+| Policy                       | Operation | Rule                                                 |
+| ---------------------------- | --------- | ---------------------------------------------------- |
+| Users can view placements    | SELECT    | Parent map's `organization_id` in user's memberships |
+| Admins can insert placements | INSERT    | User role is `owner` or `admin` on parent map's org  |
+| Admins can update placements | UPDATE    | User role is `owner` or `admin` on parent map's org  |
+| Admins can delete placements | DELETE    | User role is `owner` or `admin` on parent map's org  |
 
 ### Storage Policies
 
-| Policy | Operation | Rule |
-|---|---|---|
-| Authenticated users can upload | INSERT | User is authenticated |
-| Anyone can view images | SELECT | Public access |
-| Authenticated users can update | UPDATE | User is authenticated |
-| Authenticated users can delete | DELETE | User is authenticated |
+| Policy                         | Operation | Rule                  |
+| ------------------------------ | --------- | --------------------- |
+| Authenticated users can upload | INSERT    | User is authenticated |
+| Anyone can view images         | SELECT    | Public access         |
+| Authenticated users can update | UPDATE    | User is authenticated |
+| Authenticated users can delete | DELETE    | User is authenticated |
 
 ---
 
@@ -292,57 +292,57 @@ The Facility Map feature provides an **interactive visual floor plan system** fo
 
 ### Core Features
 
-| # | Feature | Status | Description |
-|---|---|---|---|
-| 1 | Map CRUD | ✅ Done | Create, edit, delete facility maps with metadata |
-| 2 | Image Upload | ✅ Done | Drag-and-drop, file picker, camera capture |
-| 3 | Click-to-Place | ✅ Done | Click map canvas to position a device |
-| 4 | Drag-to-Reposition | ✅ Done | Drag placed devices to new positions |
-| 5 | Real-Time Status | ✅ Done | Live device status via Supabase subscriptions |
-| 6 | Responsive Positioning | ✅ Done | Percentage-based (0–100) coordinates |
-| 7 | Touch Support | ✅ Done | Touch events for mobile/tablet devices |
-| 8 | Multiple Maps | ✅ Done | Thumbnail strip with horizontal scrolling |
-| 9 | Mode Switching | ✅ Done | View / Place / Edit modes for the canvas |
+| #   | Feature                | Status  | Description                                      |
+| --- | ---------------------- | ------- | ------------------------------------------------ |
+| 1   | Map CRUD               | ✅ Done | Create, edit, delete facility maps with metadata |
+| 2   | Image Upload           | ✅ Done | Drag-and-drop, file picker, camera capture       |
+| 3   | Click-to-Place         | ✅ Done | Click map canvas to position a device            |
+| 4   | Drag-to-Reposition     | ✅ Done | Drag placed devices to new positions             |
+| 5   | Real-Time Status       | ✅ Done | Live device status via Supabase subscriptions    |
+| 6   | Responsive Positioning | ✅ Done | Percentage-based (0–100) coordinates             |
+| 7   | Touch Support          | ✅ Done | Touch events for mobile/tablet devices           |
+| 8   | Multiple Maps          | ✅ Done | Thumbnail strip with horizontal scrolling        |
+| 9   | Mode Switching         | ✅ Done | View / Place / Edit modes for the canvas         |
 
 ### Enhanced Features (Batch 2)
 
-| # | Feature | Status | Description |
-|---|---|---|---|
-| 10 | Device Count Badges | ✅ Done | Badge showing placement count on each map thumbnail |
-| 11 | Click-to-Navigate | ✅ Done | Click device dot → opens device detail page |
-| 12 | Status Summary Bar | ✅ Done | Online/offline/warning/error/maintenance counts |
-| 13 | Search Filter | ✅ Done | Filter devices by name in device palette |
-| 14 | Export PNG | ✅ Done | Download map as PNG with device markers + labels |
-| 15 | Telemetry Tooltips | ✅ Done | Hover device to see latest sensor readings |
-| 16 | Bulk Placement | ✅ Done | Auto-select next unplaced device after placing one |
-| 17 | Fullscreen Toggle | ✅ Done | Full-screen canvas via Browser Fullscreen API |
+| #   | Feature             | Status  | Description                                         |
+| --- | ------------------- | ------- | --------------------------------------------------- |
+| 10  | Device Count Badges | ✅ Done | Badge showing placement count on each map thumbnail |
+| 11  | Click-to-Navigate   | ✅ Done | Click device dot → opens device detail page         |
+| 12  | Status Summary Bar  | ✅ Done | Online/offline/warning/error/maintenance counts     |
+| 13  | Search Filter       | ✅ Done | Filter devices by name in device palette            |
+| 14  | Export PNG          | ✅ Done | Download map as PNG with device markers + labels    |
+| 15  | Telemetry Tooltips  | ✅ Done | Hover device to see latest sensor readings          |
+| 16  | Bulk Placement      | ✅ Done | Auto-select next unplaced device after placing one  |
+| 17  | Fullscreen Toggle   | ✅ Done | Full-screen canvas via Browser Fullscreen API       |
 
 ---
 
 ## 📋 Planned Features (GitHub Stories)
 
-| Issue | Feature | Status | Description |
-|---|---|---|---|
-| #302 | Map Annotations & Zones | 📋 Planned | Draw zones, add labels, create areas on maps |
-| #303 | Heatmap Overlay | 📋 Planned | Gradient heatmap based on telemetry values |
-| #304 | Device Type Filters | 📋 Planned | Toggle device types on/off for map visibility |
+| Issue | Feature                 | Status     | Description                                   |
+| ----- | ----------------------- | ---------- | --------------------------------------------- |
+| #302  | Map Annotations & Zones | 📋 Planned | Draw zones, add labels, create areas on maps  |
+| #303  | Heatmap Overlay         | 📋 Planned | Gradient heatmap based on telemetry values    |
+| #304  | Device Type Filters     | 📋 Planned | Toggle device types on/off for map visibility |
 
 ---
 
 ## 📁 File Manifest
 
-| File | Lines | Purpose |
-|---|---|---|
-| `src/types/facility-map.ts` | 61 | TypeScript type definitions |
-| `src/components/facility-map/index.ts` | 8 | Barrel export |
-| `src/components/facility-map/FacilityMapView.tsx` | 731 | Main orchestrator |
-| `src/components/facility-map/FacilityMapCanvas.tsx` | 310 | Canvas rendering + tools |
-| `src/components/facility-map/DeviceMarker.tsx` | 265 | Device dot + tooltip |
-| `src/components/facility-map/DevicePalette.tsx` | 191 | Device list + search |
-| `src/components/facility-map/MapManagerDialog.tsx` | 220 | Map CRUD dialog |
-| `src/components/facility-map/FacilityMapUploader.tsx` | 258 | Image upload + camera |
-| `supabase/migrations/20260227100000_facility_maps.sql` | 211 | Database migration |
-| `src/app/dashboard/devices/page.tsx` | — | Integration point |
+| File                                                   | Lines | Purpose                     |
+| ------------------------------------------------------ | ----- | --------------------------- |
+| `src/types/facility-map.ts`                            | 61    | TypeScript type definitions |
+| `src/components/facility-map/index.ts`                 | 8     | Barrel export               |
+| `src/components/facility-map/FacilityMapView.tsx`      | 731   | Main orchestrator           |
+| `src/components/facility-map/FacilityMapCanvas.tsx`    | 310   | Canvas rendering + tools    |
+| `src/components/facility-map/DeviceMarker.tsx`         | 265   | Device dot + tooltip        |
+| `src/components/facility-map/DevicePalette.tsx`        | 191   | Device list + search        |
+| `src/components/facility-map/MapManagerDialog.tsx`     | 220   | Map CRUD dialog             |
+| `src/components/facility-map/FacilityMapUploader.tsx`  | 258   | Image upload + camera       |
+| `supabase/migrations/20260227100000_facility_maps.sql` | 211   | Database migration          |
+| `src/app/dashboard/devices/page.tsx`                   | —     | Integration point           |
 
 **Total:** ~2,255 lines of code across 10 files
 
@@ -350,19 +350,19 @@ The Facility Map feature provides an **interactive visual floor plan system** fo
 
 ## 🚀 Deployment Status
 
-| Environment | Status | Details |
-|---|---|---|
-| **Development** (dev) | ✅ Deployed | Cherry-picked `f2f7bd4`, migration applied |
-| **Staging** | ✅ Deployed | Commit `eba00eb`, code deployed via GitHub Actions |
-| **Production** | ⏳ Pending | Awaiting promotion from staging |
+| Environment           | Status      | Details                                            |
+| --------------------- | ----------- | -------------------------------------------------- |
+| **Development** (dev) | ✅ Deployed | Cherry-picked `f2f7bd4`, migration applied         |
+| **Staging**           | ✅ Deployed | Commit `eba00eb`, code deployed via GitHub Actions |
+| **Production**        | ⏳ Pending  | Awaiting promotion from staging                    |
 
 ### Migration Status
 
-| Environment | Supabase Ref | Migration Applied |
-|---|---|---|
-| Dev | `tsomafkalaoarnuwgdyu` | ✅ Applied |
-| Staging | `atgbmxicqikmapfqouco` | ⏳ Pending |
-| Production | `bldojxpockljyivldxwf` | ⏳ Pending |
+| Environment | Supabase Ref           | Migration Applied |
+| ----------- | ---------------------- | ----------------- |
+| Dev         | `tsomafkalaoarnuwgdyu` | ✅ Applied        |
+| Staging     | `atgbmxicqikmapfqouco` | ⏳ Pending        |
+| Production  | `bldojxpockljyivldxwf` | ⏳ Pending        |
 
 ---
 

@@ -216,7 +216,9 @@ export function SecurityTab() {
       // Use edge function with admin API to bypass Supabase's
       // "Secure password change" email confirmation requirement
       const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
         toast({
@@ -243,7 +245,8 @@ export function SecurityTab() {
       const result = await res.json()
 
       if (!res.ok) {
-        const message = result?.error || result?.message || 'Failed to update password'
+        const message =
+          result?.error || result?.message || 'Failed to update password'
         toast({
           title: 'Error',
           description: message.includes('incorrect')
@@ -326,8 +329,7 @@ export function SecurityTab() {
         // Clean up ALL existing TOTP factors before enrolling a new one.
         // Supabase returns 422 if any factor (verified or unverified) already exists.
         // This handles: re-enrollment after disable, stale unverified factors, etc.
-        const { data: existingFactors } =
-          await supabase.auth.mfa.listFactors()
+        const { data: existingFactors } = await supabase.auth.mfa.listFactors()
         if (existingFactors?.totp && existingFactors.totp.length > 0) {
           for (const factor of existingFactors.totp) {
             try {
@@ -383,7 +385,8 @@ export function SecurityTab() {
           setMfaFactorId(null)
           toast({
             title: '2FA Disabled',
-            description: 'Two-factor authentication has been removed from your account.',
+            description:
+              'Two-factor authentication has been removed from your account.',
           })
           return
         }
@@ -478,7 +481,7 @@ export function SecurityTab() {
         toast({
           title: isCodeError ? 'Invalid Code' : 'Verification Failed',
           description: isCodeError
-            ? 'The code was incorrect. Make sure you scanned the NEW QR code above (not an old entry) and that the code hasn\'t expired. Codes refresh every 30 seconds.'
+            ? "The code was incorrect. Make sure you scanned the NEW QR code above (not an old entry) and that the code hasn't expired. Codes refresh every 30 seconds."
             : `Verification failed: ${verifyError.message}`,
           variant: 'destructive',
         })

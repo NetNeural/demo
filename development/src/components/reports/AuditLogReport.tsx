@@ -659,8 +659,13 @@ export function AuditLogReport() {
       return
     }
     const headers = [
-      'Timestamp', 'User', 'Category', 'Action',
-      'Resource Type', 'Resource Name', 'Status',
+      'Timestamp',
+      'User',
+      'Category',
+      'Action',
+      'Resource Type',
+      'Resource Name',
+      'Status',
     ]
     const rows = logs.map((log) => [
       format(new Date(log.created_at), 'yyyy-MM-dd HH:mm'),
@@ -681,7 +686,10 @@ export function AuditLogReport() {
       organization: currentOrganization?.name,
       summary: [
         { label: 'Total Actions', value: String(logs.length) },
-        { label: 'Unique Users', value: String(new Set(logs.map(l => l.user_email)).size) },
+        {
+          label: 'Unique Users',
+          value: String(new Set(logs.map((l) => l.user_email)).size),
+        },
       ],
     })
     toast.success('PDF exported successfully')

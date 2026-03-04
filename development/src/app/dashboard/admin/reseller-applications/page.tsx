@@ -10,7 +10,13 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -65,7 +71,15 @@ interface Application {
   organization?: { name: string; slug: string }
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className?: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string
+    variant: 'default' | 'secondary' | 'outline' | 'destructive'
+    className?: string
+    icon: React.ReactNode
+  }
+> = {
   submitted: {
     label: 'Submitted',
     variant: 'outline',
@@ -92,7 +106,11 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] || { label: status, variant: 'outline' as const, icon: null }
+  const cfg = STATUS_CONFIG[status] || {
+    label: status,
+    variant: 'outline' as const,
+    icon: null,
+  }
   return (
     <Badge variant={cfg.variant} className={`gap-1 ${cfg.className ?? ''}`}>
       {cfg.icon}
@@ -155,7 +173,9 @@ export default function ResellerApplicationsPage() {
           maxChildOrgs: parseInt(maxChildOrgs) || 10,
         },
       })
-      toast.success(`${approveApp.company_legal_name} approved — account upgraded, email sent`)
+      toast.success(
+        `${approveApp.company_legal_name} approved — account upgraded, email sent`
+      )
       setApproveApp(null)
       await loadApplications()
     } catch (err) {
@@ -178,7 +198,9 @@ export default function ResellerApplicationsPage() {
           reviewNotes: rejectNotes.trim() || undefined,
         },
       })
-      toast.success(`Application from ${rejectApp.company_legal_name} rejected — email sent`)
+      toast.success(
+        `Application from ${rejectApp.company_legal_name} rejected — email sent`
+      )
       setRejectApp(null)
       setRejectNotes('')
       await loadApplications()
@@ -196,14 +218,20 @@ export default function ResellerApplicationsPage() {
         <div className="space-y-3 text-center">
           <ShieldAlert className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="font-semibold">Super Admin Only</p>
-          <p className="text-sm text-muted-foreground">Reseller application review is restricted to platform super admins.</p>
+          <p className="text-sm text-muted-foreground">
+            Reseller application review is restricted to platform super admins.
+          </p>
         </div>
       </div>
     )
   }
 
-  const pending = applications.filter((a) => ['submitted', 'under_review'].includes(a.status))
-  const historical = applications.filter((a) => !['submitted', 'under_review'].includes(a.status))
+  const pending = applications.filter((a) =>
+    ['submitted', 'under_review'].includes(a.status)
+  )
+  const historical = applications.filter(
+    (a) => !['submitted', 'under_review'].includes(a.status)
+  )
 
   return (
     <div className="space-y-6">
@@ -220,7 +248,12 @@ export default function ResellerApplicationsPage() {
           <Clock className="h-4 w-4 text-amber-500" />
           <span className="text-sm font-medium">Pending Review</span>
           {pending.length > 0 && (
-            <Badge variant="outline" className="border-amber-500 text-amber-600">{pending.length}</Badge>
+            <Badge
+              variant="outline"
+              className="border-amber-500 text-amber-600"
+            >
+              {pending.length}
+            </Badge>
           )}
         </div>
 
@@ -243,8 +276,15 @@ export default function ResellerApplicationsPage() {
               <ApplicationCard
                 key={app.id}
                 app={app}
-                onApprove={() => { setApproveApp(app); setRevenueShare('20'); setMaxChildOrgs('10') }}
-                onReject={() => { setRejectApp(app); setRejectNotes('') }}
+                onApprove={() => {
+                  setApproveApp(app)
+                  setRevenueShare('20')
+                  setMaxChildOrgs('10')
+                }}
+                onReject={() => {
+                  setRejectApp(app)
+                  setRejectNotes('')
+                }}
               />
             ))}
           </div>
@@ -257,7 +297,9 @@ export default function ResellerApplicationsPage() {
           <Separator />
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">History</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              History
+            </span>
           </div>
           <div className="space-y-2">
             {historical.map((app) => (
@@ -268,17 +310,26 @@ export default function ResellerApplicationsPage() {
       )}
 
       {/* Approve Dialog */}
-      <Dialog open={!!approveApp} onOpenChange={(o) => !o && setApproveApp(null)}>
+      <Dialog
+        open={!!approveApp}
+        onOpenChange={(o) => !o && setApproveApp(null)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Approve Reseller Application</DialogTitle>
             <DialogDescription>
-              Set agreement terms for <strong>{approveApp?.company_legal_name}</strong>. An active reseller agreement will be created and the organization will be promoted to reseller status.
+              Set agreement terms for{' '}
+              <strong>{approveApp?.company_legal_name}</strong>. An active
+              reseller agreement will be created and the organization will be
+              promoted to reseller status.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="revenue-share" className="flex items-center gap-1.5">
+              <Label
+                htmlFor="revenue-share"
+                className="flex items-center gap-1.5"
+              >
                 <Percent className="h-3.5 w-3.5" /> Revenue Share %
               </Label>
               <Input
@@ -302,15 +353,30 @@ export default function ResellerApplicationsPage() {
                 onChange={(e) => setMaxChildOrgs(e.target.value)}
               />
             </div>
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-              <p><strong>Billing model:</strong> {approveApp?.preferred_billing || 'invoice'}</p>
-              <p><strong>Estimated customers:</strong> {approveApp?.estimated_customers}</p>
-              <p><strong>Effective date:</strong> {new Date().toLocaleDateString()}</p>
+            <div className="space-y-1 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+              <p>
+                <strong>Billing model:</strong>{' '}
+                {approveApp?.preferred_billing || 'invoice'}
+              </p>
+              <p>
+                <strong>Estimated customers:</strong>{' '}
+                {approveApp?.estimated_customers}
+              </p>
+              <p>
+                <strong>Effective date:</strong>{' '}
+                {new Date().toLocaleDateString()}
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveApp(null)}>Cancel</Button>
-            <Button onClick={handleApprove} disabled={approving} className="bg-green-600 hover:bg-green-700">
+            <Button variant="outline" onClick={() => setApproveApp(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={approving}
+              className="bg-green-600 hover:bg-green-700"
+            >
               {approving ? 'Approving...' : 'Approve & Activate'}
             </Button>
           </DialogFooter>
@@ -323,11 +389,14 @@ export default function ResellerApplicationsPage() {
           <DialogHeader>
             <DialogTitle>Reject Application</DialogTitle>
             <DialogDescription>
-              Reject the reseller application from <strong>{rejectApp?.company_legal_name}</strong>.
+              Reject the reseller application from{' '}
+              <strong>{rejectApp?.company_legal_name}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label htmlFor="reject-notes">Review Notes (optional — shown internally)</Label>
+            <Label htmlFor="reject-notes">
+              Review Notes (optional — shown internally)
+            </Label>
             <Textarea
               id="reject-notes"
               placeholder="Reason for rejection..."
@@ -337,8 +406,14 @@ export default function ResellerApplicationsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectApp(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
+            <Button variant="outline" onClick={() => setRejectApp(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={rejecting}
+            >
               {rejecting ? 'Rejecting...' : 'Reject Application'}
             </Button>
           </DialogFooter>
@@ -364,14 +439,16 @@ function ApplicationCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5">
-            <CardTitle className="text-base">{app.company_legal_name}</CardTitle>
+            <CardTitle className="text-base">
+              {app.company_legal_name}
+            </CardTitle>
             {app.organization && (
               <CardDescription className="text-xs">
                 Org: {app.organization.name} ({app.organization.slug})
               </CardDescription>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <StatusBadge status={app.status} />
             <span className="text-xs text-muted-foreground">
               {new Date(app.created_at).toLocaleDateString()}
@@ -383,7 +460,10 @@ function ApplicationCard({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <User className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{app.applicant_name}{app.applicant_title ? `, ${app.applicant_title}` : ''}</span>
+            <span className="truncate">
+              {app.applicant_name}
+              {app.applicant_title ? `, ${app.applicant_title}` : ''}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Mail className="h-3.5 w-3.5 shrink-0" />
@@ -398,8 +478,12 @@ function ApplicationCard({
           {app.company_website && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Globe className="h-3.5 w-3.5 shrink-0" />
-              <a href={app.company_website} target="_blank" rel="noopener noreferrer"
-                className="truncate hover:underline text-blue-500">
+              <a
+                href={app.company_website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-blue-500 hover:underline"
+              >
                 {app.company_website.replace(/^https?:\/\//, '')}
               </a>
             </div>
@@ -430,7 +514,11 @@ function ApplicationCard({
 
         {isPending && onApprove && onReject && (
           <div className="flex gap-2 pt-1">
-            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={onApprove}>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={onApprove}
+            >
               <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
               Approve
             </Button>

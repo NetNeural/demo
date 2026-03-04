@@ -41,8 +41,8 @@ export function PreferencesTab() {
   const [useOrgDefault, setUseOrgDefault] = useState(true) // Default to organization theme
   const [theme, setTheme] = useState('system')
   const [language, setLanguage] = useState('en')
-  const [timezone, setTimezone] = useState(() =>
-    Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
+  const [timezone, setTimezone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
   )
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
   const [timeFormat, setTimeFormat] = useState('12h')
@@ -528,15 +528,35 @@ export function PreferencesTab() {
                   } catch {
                     // Fallback for older browsers
                     const fallback = [
-                      'America/New_York', 'America/Chicago', 'America/Denver',
-                      'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu',
-                      'America/Sao_Paulo', 'America/Argentina/Buenos_Aires',
-                      'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
-                      'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
-                      'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore',
-                      'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Seoul',
-                      'Australia/Sydney', 'Australia/Melbourne', 'Australia/Perth',
-                      'Pacific/Auckland', 'Pacific/Fiji', 'UTC',
+                      'America/New_York',
+                      'America/Chicago',
+                      'America/Denver',
+                      'America/Los_Angeles',
+                      'America/Anchorage',
+                      'Pacific/Honolulu',
+                      'America/Sao_Paulo',
+                      'America/Argentina/Buenos_Aires',
+                      'Europe/London',
+                      'Europe/Paris',
+                      'Europe/Berlin',
+                      'Europe/Moscow',
+                      'Africa/Cairo',
+                      'Africa/Johannesburg',
+                      'Africa/Lagos',
+                      'Asia/Dubai',
+                      'Asia/Kolkata',
+                      'Asia/Bangkok',
+                      'Asia/Singapore',
+                      'Asia/Shanghai',
+                      'Asia/Hong_Kong',
+                      'Asia/Tokyo',
+                      'Asia/Seoul',
+                      'Australia/Sydney',
+                      'Australia/Melbourne',
+                      'Australia/Perth',
+                      'Pacific/Auckland',
+                      'Pacific/Fiji',
+                      'UTC',
                     ]
                     return fallback.map((tz) => (
                       <SelectItem key={tz} value={tz}>

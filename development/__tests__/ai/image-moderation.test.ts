@@ -7,7 +7,11 @@ describe('Image Moderation (GPT-4o-mini Vision)', () => {
   })
 
   it('rejected image has reason', () => {
-    const result = { allowed: false, reason: 'Contains inappropriate content', confidence: 0.95 }
+    const result = {
+      allowed: false,
+      reason: 'Contains inappropriate content',
+      confidence: 0.95,
+    }
     expect(result.allowed).toBe(false)
     expect(result.reason).not.toBeNull()
   })

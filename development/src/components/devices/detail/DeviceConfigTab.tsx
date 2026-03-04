@@ -4,8 +4,20 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { DeviceTypeSelector } from '@/components/device-types/DeviceTypeSelector'
 import { Save, Trash2, Loader2, Network, Info } from 'lucide-react'
@@ -30,13 +42,21 @@ export function DeviceConfigTab({
 }: DeviceConfigTabProps) {
   const [name, setName] = useState(device.name || '')
   const [deviceType, setDeviceType] = useState(device.device_type || '')
-  const [deviceTypeId, setDeviceTypeId] = useState<string | null>(device.device_type_id || null)
+  const [deviceTypeId, setDeviceTypeId] = useState<string | null>(
+    device.device_type_id || null
+  )
   const [model, setModel] = useState(device.model || '')
   const [serialNumber, setSerialNumber] = useState(device.serial_number || '')
-  const [firmwareVersion, setFirmwareVersion] = useState(device.firmware_version || '')
-  const [isGateway, setIsGateway] = useState(device.is_gateway || device.metadata?.is_gateway === true)
+  const [firmwareVersion, setFirmwareVersion] = useState(
+    device.firmware_version || ''
+  )
+  const [isGateway, setIsGateway] = useState(
+    device.is_gateway || device.metadata?.is_gateway === true
+  )
   const [locationId, setLocationId] = useState(device.location_id || '')
-  const [status, setStatus] = useState<Device['status']>(device.status || 'offline')
+  const [status, setStatus] = useState<Device['status']>(
+    device.status || 'offline'
+  )
 
   const handleSave = () => {
     if (!name.trim()) return
@@ -57,13 +77,20 @@ export function DeviceConfigTab({
     <Card>
       <CardHeader>
         <CardTitle>Edit Device</CardTitle>
-        <CardDescription>Update device information and configuration</CardDescription>
+        <CardDescription>
+          Update device information and configuration
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">Device Name *</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter device name" />
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter device name"
+            />
           </div>
 
           {/* Gateway Toggle */}
@@ -71,11 +98,23 @@ export function DeviceConfigTab({
             <div className="flex items-center gap-2">
               <Network className="h-4 w-4 text-muted-foreground" />
               <div>
-                <Label htmlFor="edit-is-gateway" className="cursor-pointer font-medium">Gateway Device</Label>
-                <p className="text-xs text-muted-foreground">Hub that relays data from child sensors</p>
+                <Label
+                  htmlFor="edit-is-gateway"
+                  className="cursor-pointer font-medium"
+                >
+                  Gateway Device
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Hub that relays data from child sensors
+                </p>
               </div>
             </div>
-            <Switch id="edit-is-gateway" checked={!!isGateway} onCheckedChange={setIsGateway} disabled={saving || deleting} />
+            <Switch
+              id="edit-is-gateway"
+              checked={!!isGateway}
+              onCheckedChange={setIsGateway}
+              disabled={saving || deleting}
+            />
           </div>
 
           <div className="space-y-2">
@@ -91,7 +130,9 @@ export function DeviceConfigTab({
               placeholder="Select or assign a device type..."
             />
             {!deviceTypeId && deviceType && (
-              <p className="text-xs text-muted-foreground">Legacy type: {deviceType}</p>
+              <p className="text-xs text-muted-foreground">
+                Legacy type: {deviceType}
+              </p>
             )}
           </div>
 
@@ -114,32 +155,60 @@ export function DeviceConfigTab({
 
           <div className="space-y-2">
             <Label htmlFor="model">Model</Label>
-            <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Enter device model" />
+            <Input
+              id="model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="Enter device model"
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="serialNumber">Serial Number</Label>
-            <Input id="serialNumber" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="Enter serial number" />
+            <Input
+              id="serialNumber"
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value)}
+              placeholder="Enter serial number"
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="firmwareVersion">Firmware Version</Label>
-            <Input id="firmwareVersion" value={firmwareVersion} onChange={(e) => setFirmwareVersion(e.target.value)} placeholder="e.g., 1.0.0" />
+            <Input
+              id="firmwareVersion"
+              value={firmwareVersion}
+              onChange={(e) => setFirmwareVersion(e.target.value)}
+              placeholder="e.g., 1.0.0"
+            />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="location">Location</Label>
-            <Select value={locationId || '__none__'} onValueChange={(v) => setLocationId(v === '__none__' ? '' : v)}>
-              <SelectTrigger><SelectValue placeholder="No location assigned" /></SelectTrigger>
+            <Select
+              value={locationId || '__none__'}
+              onValueChange={(v) => setLocationId(v === '__none__' ? '' : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No location assigned" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">No location</SelectItem>
                 {locations.map((loc) => (
-                  <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {locationId && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setLocationId('')} className="h-8 text-xs">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocationId('')}
+                className="h-8 text-xs"
+              >
                 Clear location
               </Button>
             )}
@@ -147,11 +216,38 @@ export function DeviceConfigTab({
         </div>
 
         <div className="flex justify-between gap-4 pt-4">
-          <Button variant="destructive" onClick={onDelete} disabled={saving || deleting || !!device.is_externally_managed}>
-            {deleting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Deleting...</>) : (<><Trash2 className="mr-2 h-4 w-4" />Delete Device</>)}
+          <Button
+            variant="destructive"
+            onClick={onDelete}
+            disabled={saving || deleting || !!device.is_externally_managed}
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Device
+              </>
+            )}
           </Button>
-          <Button onClick={handleSave} disabled={saving || deleting || !name.trim()}>
-            {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>) : (<><Save className="mr-2 h-4 w-4" />Save Changes</>)}
+          <Button
+            onClick={handleSave}
+            disabled={saving || deleting || !name.trim()}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
           </Button>
         </div>
 
@@ -160,8 +256,12 @@ export function DeviceConfigTab({
             <p className="flex items-start gap-2 text-sm text-yellow-800 dark:text-yellow-200">
               <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>
-                This device is managed by <strong>{device.integration_name || 'an external integration'}</strong>.
-                Deletion is disabled. Device properties (except location) may be overwritten by the integration.
+                This device is managed by{' '}
+                <strong>
+                  {device.integration_name || 'an external integration'}
+                </strong>
+                . Deletion is disabled. Device properties (except location) may
+                be overwritten by the integration.
               </span>
             </p>
           </div>

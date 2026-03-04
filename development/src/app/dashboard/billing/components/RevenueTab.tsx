@@ -49,11 +49,19 @@ export function RevenueTab() {
   const [summary, setSummary] = useState<RevenueSummary | null>(null)
   const [mrrTrend, setMrrTrend] = useState<MrrDataPoint[]>([])
   const [planRevenue, setPlanRevenue] = useState<PlanRevenue[]>([])
-  const [customersByPlan, setCustomersByPlan] = useState<PlanCustomerCount[]>([])
+  const [customersByPlan, setCustomersByPlan] = useState<PlanCustomerCount[]>(
+    []
+  )
   const [waterfall, setWaterfall] = useState<WaterfallDataPoint[]>([])
 
   const months =
-    dateRange === '30' ? 1 : dateRange === '90' ? 3 : dateRange === '180' ? 6 : 12
+    dateRange === '30'
+      ? 1
+      : dateRange === '90'
+        ? 3
+        : dateRange === '180'
+          ? 6
+          : 12
 
   const loadData = useCallback(async () => {
     const supabase = getSupabase()
@@ -109,7 +117,10 @@ export function RevenueTab() {
         ['Churn Rate', `${summary.churnRate.toFixed(1)}%`],
         ['Churned This Month', String(summary.churnedCount)],
         ['Trial → Paid Rate', `${summary.trialToPaidRate.toFixed(1)}%`],
-        ['MRR Change', `$${summary.netRevenueChange.toFixed(2)} (${summary.netRevenueChangePct.toFixed(1)}%)`],
+        [
+          'MRR Change',
+          `$${summary.netRevenueChange.toFixed(2)} (${summary.netRevenueChangePct.toFixed(1)}%)`,
+        ],
       ],
       headStyles: { fillColor: [30, 64, 175] },
       columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
@@ -124,20 +135,31 @@ export function RevenueTab() {
       autoTable(doc, {
         startY: yPos + 4,
         head: [['Month', 'MRR', 'Active Subscriptions']],
-        body: mrrTrend.map((pt) => [pt.label, `$${pt.mrr.toFixed(2)}`, String(pt.activeSubscriptions)]),
+        body: mrrTrend.map((pt) => [
+          pt.label,
+          `$${pt.mrr.toFixed(2)}`,
+          String(pt.activeSubscriptions),
+        ]),
         headStyles: { fillColor: [30, 64, 175] },
       })
       yPos = (doc as any).lastAutoTable.finalY + 10
     }
 
     if (planRevenue.length > 0) {
-      if (yPos > 160) { doc.addPage(); yPos = 14 }
+      if (yPos > 160) {
+        doc.addPage()
+        yPos = 14
+      }
       doc.setFontSize(12)
       doc.text('Revenue by Plan', 14, yPos)
       autoTable(doc, {
         startY: yPos + 4,
         head: [['Plan', 'MRR', 'Customers']],
-        body: planRevenue.map((p) => [p.planName, `$${p.mrr.toFixed(2)}`, String(p.customerCount)]),
+        body: planRevenue.map((p) => [
+          p.planName,
+          `$${p.mrr.toFixed(2)}`,
+          String(p.customerCount),
+        ]),
         headStyles: { fillColor: [30, 64, 175] },
       })
     }
@@ -176,17 +198,34 @@ export function RevenueTab() {
           </SelectContent>
         </Select>
 
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+          />
           Refresh
         </Button>
 
-        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!summary}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCsv}
+          disabled={!summary}
+        >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
 
-        <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!summary}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPdf}
+          disabled={!summary}
+        >
           <FileDown className="mr-2 h-4 w-4" />
           Export PDF
         </Button>

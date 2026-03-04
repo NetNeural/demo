@@ -199,7 +199,11 @@ export function exportTableToPDF(options: TablePDFOptions): void {
  *
  * @param onComplete - Callback fired after the print dialog is dismissed.
  */
-export function printHtmlAsPdf(html: string, title: string, onComplete?: () => void): void {
+export function printHtmlAsPdf(
+  html: string,
+  title: string,
+  onComplete?: () => void
+): void {
   const uid = `nn-pdf-${Date.now()}`
   const prevTitle = document.title
 
@@ -247,7 +251,9 @@ export function printHtmlAsPdf(html: string, title: string, onComplete?: () => v
 
   // Safety fallback: clean up if afterprint never fires (e.g. after PDF save in Chrome)
   const fallbackTimer = setTimeout(() => cleanup(), 30_000)
-  window.addEventListener('afterprint', () => clearTimeout(fallbackTimer), { once: true })
+  window.addEventListener('afterprint', () => clearTimeout(fallbackTimer), {
+    once: true,
+  })
 
   setTimeout(() => {
     document.title = title

@@ -144,10 +144,7 @@
     ],
     "quiet": false,
     "reporter": [
-      [
-        "html",
-        null
-      ],
+      ["html", null],
       [
         "json",
         {

@@ -138,7 +138,7 @@ export function InventoryTable({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, SKU, model, vendor, manufacturer..."
@@ -193,13 +193,13 @@ export function InventoryTable({
       {/* Table */}
       {paged.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12">
-          <Package className="h-12 w-12 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground font-medium">
+          <Package className="mb-3 h-12 w-12 text-muted-foreground" />
+          <p className="font-medium text-muted-foreground">
             {items.length === 0
               ? 'No inventory items yet'
               : 'No items match your filters'}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             {items.length === 0
               ? 'Add your first item to start tracking inventory'
               : 'Try adjusting your search or filters'}
@@ -207,7 +207,7 @@ export function InventoryTable({
         </div>
       ) : (
         <>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -303,7 +303,7 @@ export function InventoryTable({
                       <TableCell className="font-mono text-sm">
                         {item.sku}
                       </TableCell>
-                      <TableCell className="font-medium max-w-[200px] truncate">
+                      <TableCell className="max-w-[200px] truncate font-medium">
                         {item.name}
                       </TableCell>
                       <TableCell>
@@ -311,23 +311,21 @@ export function InventoryTable({
                           {CATEGORY_LABELS[item.category]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                      <TableCell className="max-w-[120px] truncate text-sm text-muted-foreground">
                         {item.manufacturer_name || '—'}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">
+                      <TableCell className="max-w-[120px] truncate text-sm text-muted-foreground">
                         {item.vendor_name || '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         <span
                           className={
-                            isLowStock
-                              ? 'text-red-600 font-semibold'
-                              : ''
+                            isLowStock ? 'font-semibold text-red-600' : ''
                           }
                         >
                           {item.quantity_available}
                         </span>
-                        <span className="text-muted-foreground text-xs ml-1">
+                        <span className="ml-1 text-xs text-muted-foreground">
                           / {item.quantity_total}
                         </span>
                         {isLowStock && (
@@ -340,10 +338,7 @@ export function InventoryTable({
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
-                        {formatCurrency(
-                          item.manufacturing_cost,
-                          item.currency
-                        )}
+                        {formatCurrency(item.manufacturing_cost, item.currency)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
                         {formatCurrency(item.retail_price, item.currency)}

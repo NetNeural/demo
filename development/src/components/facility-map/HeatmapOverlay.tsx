@@ -41,19 +41,27 @@ function valueToColor(t: number): [number, number, number] {
   if (v < 0.25) {
     // blue → cyan
     const f = v / 0.25
-    r = 0; g = Math.round(f * 200); b = 255
+    r = 0
+    g = Math.round(f * 200)
+    b = 255
   } else if (v < 0.5) {
     // cyan → green
     const f = (v - 0.25) / 0.25
-    r = 0; g = 200 + Math.round(f * 55); b = Math.round(255 * (1 - f))
+    r = 0
+    g = 200 + Math.round(f * 55)
+    b = Math.round(255 * (1 - f))
   } else if (v < 0.75) {
     // green → yellow
     const f = (v - 0.5) / 0.25
-    r = Math.round(255 * f); g = 255; b = 0
+    r = Math.round(255 * f)
+    g = 255
+    b = 0
   } else {
     // yellow → red
     const f = (v - 0.75) / 0.25
-    r = 255; g = Math.round(255 * (1 - f)); b = 0
+    r = 255
+    g = Math.round(255 * (1 - f))
+    b = 0
   }
   return [r, g, b]
 }
@@ -89,12 +97,16 @@ export function HeatmapOverlay({
   // Compute min/max for normalization
   const { minVal, maxVal } = useMemo(() => {
     if (dataPoints.length === 0) return { minVal: 0, maxVal: 1 }
-    let min = Infinity, max = -Infinity
+    let min = Infinity,
+      max = -Infinity
     for (const dp of dataPoints) {
       if (dp.value < min) min = dp.value
       if (dp.value > max) max = dp.value
     }
-    if (min === max) { min -= 1; max += 1 }
+    if (min === max) {
+      min -= 1
+      max += 1
+    }
     return { minVal: min, maxVal: max }
   }, [dataPoints])
 
@@ -143,8 +155,16 @@ export function HeatmapOverlay({
         const [r, g, b] = valueToColor(normalized)
 
         // Fill the cell in the image data
-        for (let py = row * CELL_SIZE; py < Math.min((row + 1) * CELL_SIZE, height); py++) {
-          for (let px = col * CELL_SIZE; px < Math.min((col + 1) * CELL_SIZE, width); px++) {
+        for (
+          let py = row * CELL_SIZE;
+          py < Math.min((row + 1) * CELL_SIZE, height);
+          py++
+        ) {
+          for (
+            let px = col * CELL_SIZE;
+            px < Math.min((col + 1) * CELL_SIZE, width);
+            px++
+          ) {
             const idx = (py * width + px) * 4
             data[idx] = r
             data[idx + 1] = g
@@ -161,7 +181,7 @@ export function HeatmapOverlay({
   if (dataPoints.length < 2 || width < 10 || height < 10) return null
 
   return (
-    <div className="absolute inset-0 z-[3] pointer-events-none">
+    <div className="pointer-events-none absolute inset-0 z-[3]">
       <canvas
         ref={canvasRef}
         style={{ width, height, opacity }}
@@ -169,15 +189,20 @@ export function HeatmapOverlay({
       />
       {/* Legend bar */}
       <div className="absolute bottom-1 right-1 z-[4] flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 backdrop-blur-sm">
-        <span className="text-[9px] text-blue-300 font-mono">{minVal.toFixed(1)}</span>
+        <span className="font-mono text-[9px] text-blue-300">
+          {minVal.toFixed(1)}
+        </span>
         <div
           className="h-2 w-16 rounded-sm"
           style={{
-            background: 'linear-gradient(to right, #0000FF, #00C8FF, #00FF00, #FFFF00, #FF0000)',
+            background:
+              'linear-gradient(to right, #0000FF, #00C8FF, #00FF00, #FFFF00, #FF0000)',
           }}
         />
-        <span className="text-[9px] text-red-300 font-mono">{maxVal.toFixed(1)}</span>
-        <span className="text-[8px] text-gray-300 ml-0.5">{metricKey}</span>
+        <span className="font-mono text-[9px] text-red-300">
+          {maxVal.toFixed(1)}
+        </span>
+        <span className="ml-0.5 text-[8px] text-gray-300">{metricKey}</span>
       </div>
     </div>
   )

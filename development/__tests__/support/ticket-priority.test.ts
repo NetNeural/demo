@@ -12,12 +12,20 @@ describe('Ticket Priority Logic', () => {
   })
 
   it('priority affects SLA response time', () => {
-    const sla: Record<string, number> = { low: 72, normal: 24, high: 4, urgent: 1 }
+    const sla: Record<string, number> = {
+      low: 72,
+      normal: 24,
+      high: 4,
+      urgent: 1,
+    }
     expect(sla.urgent).toBeLessThan(sla.normal)
   })
 
   it('default priority is normal', () => {
-    const ticket = { subject: 'Question', description: 'How do I add a device?' }
+    const ticket = {
+      subject: 'Question',
+      description: 'How do I add a device?',
+    }
     const defaultPriority = 'normal'
     expect(defaultPriority).toBe('normal')
   })

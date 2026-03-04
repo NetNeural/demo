@@ -84,9 +84,7 @@ function QualityStars({ rating }: { rating: number }) {
         <Star
           key={i}
           className={`h-3.5 w-3.5 ${
-            i <= rating
-              ? 'fill-yellow-400 text-yellow-400'
-              : 'text-gray-300'
+            i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
           }`}
         />
       ))}
@@ -152,7 +150,10 @@ export function VendorManufacturerPanel({
     setDialogOpen(true)
   }
 
-  const update = (field: keyof VendorFormValues, value: string | HardwareCategory[]) => {
+  const update = (
+    field: keyof VendorFormValues,
+    value: string | HardwareCategory[]
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -207,9 +208,7 @@ export function VendorManufacturerPanel({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Manufacturers
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Manufacturers</CardTitle>
             <Factory className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -231,7 +230,7 @@ export function VendorManufacturerPanel({
 
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search vendors / manufacturers..."
@@ -265,18 +264,18 @@ export function VendorManufacturerPanel({
       {/* Vendor Table */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12">
-          <Building className="h-12 w-12 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground font-medium">
+          <Building className="mb-3 h-12 w-12 text-muted-foreground" />
+          <p className="font-medium text-muted-foreground">
             {vendors.length === 0
               ? 'No vendors or manufacturers yet'
               : 'No results match your search'}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             Add your vendors, manufacturers, and OEM partners
           </p>
         </div>
       ) : (
-        <div className="rounded-md border overflow-x-auto">
+        <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -304,17 +303,15 @@ export function VendorManufacturerPanel({
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {vendor.contact_name && (
-                          <p>{vendor.contact_name}</p>
-                        )}
+                        {vendor.contact_name && <p>{vendor.contact_name}</p>}
                         {vendor.contact_email && (
-                          <p className="text-muted-foreground flex items-center gap-1">
+                          <p className="flex items-center gap-1 text-muted-foreground">
                             <Mail className="h-3 w-3" />
                             {vendor.contact_email}
                           </p>
                         )}
                         {vendor.contact_phone && (
-                          <p className="text-muted-foreground flex items-center gap-1">
+                          <p className="flex items-center gap-1 text-muted-foreground">
                             <Phone className="h-3 w-3" />
                             {vendor.contact_phone}
                           </p>
@@ -382,11 +379,16 @@ export function VendorManufacturerPanel({
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(o) => !o && setDialogOpen(false)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(o) => !o && setDialogOpen(false)}
+      >
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editVendor ? 'Edit Vendor / Manufacturer' : 'Add Vendor / Manufacturer'}
+              {editVendor
+                ? 'Edit Vendor / Manufacturer'
+                : 'Add Vendor / Manufacturer'}
             </DialogTitle>
             <DialogDescription>
               Manage your supply chain partners
@@ -396,7 +398,7 @@ export function VendorManufacturerPanel({
           <div className="grid gap-6 py-4">
             {/* Basic Info */}
             <div>
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Basic Information
               </h4>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -419,11 +421,13 @@ export function VendorManufacturerPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(VENDOR_TYPE_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      {Object.entries(VENDOR_TYPE_LABELS).map(
+                        ([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -461,7 +465,7 @@ export function VendorManufacturerPanel({
 
             {/* Contact */}
             <div>
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Contact
               </h4>
               <div className="grid gap-4 sm:grid-cols-3">
@@ -498,7 +502,7 @@ export function VendorManufacturerPanel({
 
             {/* Address */}
             <div>
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Address
               </h4>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -561,7 +565,7 @@ export function VendorManufacturerPanel({
 
             {/* Business Details */}
             <div>
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Business Details
               </h4>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -627,7 +631,7 @@ export function VendorManufacturerPanel({
 
             {/* Product Categories */}
             <div>
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Product Categories Supplied
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -705,10 +709,7 @@ export function VendorManufacturerPanel({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteConfirm(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

@@ -2,7 +2,12 @@
 
 describe('Hydra Payouts', () => {
   it('payout has positive amount', () => {
-    const payout = { id: 'payout-1', amount_cents: 15000, status: 'pending', reseller_id: 'org-1' }
+    const payout = {
+      id: 'payout-1',
+      amount_cents: 15000,
+      status: 'pending',
+      reseller_id: 'org-1',
+    }
     expect(payout.amount_cents).toBeGreaterThan(0)
   })
 

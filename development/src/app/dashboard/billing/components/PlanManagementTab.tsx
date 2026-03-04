@@ -157,7 +157,10 @@ export function PlanManagementTab() {
       const supabase = getSupabase() as any
       const { error } = await supabase
         .from('billing_plans')
-        .update({ is_active: !plan.is_active, updated_at: new Date().toISOString() })
+        .update({
+          is_active: !plan.is_active,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', plan.id)
 
       if (error) throw error
@@ -210,7 +213,10 @@ export function PlanManagementTab() {
             <CardDescription>Full Plan Editor</CardDescription>
             <CardTitle className="text-sm">
               <Button variant="outline" size="sm" asChild>
-                <a href="/dashboard/plans-pricing" className="flex items-center gap-1">
+                <a
+                  href="/dashboard/plans-pricing"
+                  className="flex items-center gap-1"
+                >
                   <ExternalLink className="h-3 w-3" />
                   Open Plans &amp; Pricing
                 </a>
@@ -229,12 +235,19 @@ export function PlanManagementTab() {
               Billing Plans
             </CardTitle>
             <CardDescription>
-              Create, edit, archive, and restore billing plans. Use the full editor for
-              resource limits and feature flags.
+              Create, edit, archive, and restore billing plans. Use the full
+              editor for resource limits and feature flags.
             </CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
           </Button>
         </CardHeader>
         <CardContent>
@@ -253,21 +266,30 @@ export function PlanManagementTab() {
               <TableBody>
                 {plans.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No billing plans found. Create your first plan in the Plans &amp; Pricing editor.
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No billing plans found. Create your first plan in the
+                      Plans &amp; Pricing editor.
                     </TableCell>
                   </TableRow>
                 ) : (
                   plans.map((plan) => {
                     const Icon = getPlanIcon(plan.slug)
                     return (
-                      <TableRow key={plan.id} className={!plan.is_active ? 'opacity-60' : ''}>
+                      <TableRow
+                        key={plan.id}
+                        className={!plan.is_active ? 'opacity-60' : ''}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Icon className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <p className="font-medium">{plan.name}</p>
-                              <p className="text-xs text-muted-foreground">{plan.slug}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {plan.slug}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -290,15 +312,23 @@ export function PlanManagementTab() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-xs text-muted-foreground space-y-0.5">
-                            <p>{plan.max_devices === -1 ? '∞' : plan.max_devices} devices</p>
-                            <p>{plan.max_users === -1 ? '∞' : plan.max_users} users</p>
+                          <div className="space-y-0.5 text-xs text-muted-foreground">
+                            <p>
+                              {plan.max_devices === -1 ? '∞' : plan.max_devices}{' '}
+                              devices
+                            </p>
+                            <p>
+                              {plan.max_users === -1 ? '∞' : plan.max_users}{' '}
+                              users
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1">
                             <Users className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium">{plan.subscriber_count}</span>
+                            <span className="font-medium">
+                              {plan.subscriber_count}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -318,8 +348,11 @@ export function PlanManagementTab() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="sm" asChild>
-                              <a href="/dashboard/plans-pricing" title="Edit plan">
-                                <ExternalLink className="h-3 w-3 mr-1" />
+                              <a
+                                href="/dashboard/plans-pricing"
+                                title="Edit plan"
+                              >
+                                <ExternalLink className="mr-1 h-3 w-3" />
                                 Edit
                               </a>
                             </Button>
@@ -327,16 +360,18 @@ export function PlanManagementTab() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleToggleArchive(plan)}
-                              title={plan.is_active ? 'Archive plan' : 'Restore plan'}
+                              title={
+                                plan.is_active ? 'Archive plan' : 'Restore plan'
+                              }
                             >
                               {plan.is_active ? (
                                 <>
-                                  <Archive className="h-3 w-3 mr-1" />
+                                  <Archive className="mr-1 h-3 w-3" />
                                   Archive
                                 </>
                               ) : (
                                 <>
-                                  <ArchiveRestore className="h-3 w-3 mr-1" />
+                                  <ArchiveRestore className="mr-1 h-3 w-3" />
                                   Restore
                                 </>
                               )}
@@ -345,10 +380,18 @@ export function PlanManagementTab() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(plan)}
-                              title={plan.subscriber_count > 0 ? `Cannot delete — ${plan.subscriber_count} active subscriber(s)` : 'Delete plan permanently'}
-                              className={plan.subscriber_count > 0 ? 'opacity-40 cursor-not-allowed text-destructive' : 'text-destructive hover:bg-destructive/10 hover:text-destructive'}
+                              title={
+                                plan.subscriber_count > 0
+                                  ? `Cannot delete — ${plan.subscriber_count} active subscriber(s)`
+                                  : 'Delete plan permanently'
+                              }
+                              className={
+                                plan.subscriber_count > 0
+                                  ? 'cursor-not-allowed text-destructive opacity-40'
+                                  : 'text-destructive hover:bg-destructive/10 hover:text-destructive'
+                              }
                             >
-                              <Trash2 className="h-3 w-3 mr-1" />
+                              <Trash2 className="mr-1 h-3 w-3" />
                               Delete
                             </Button>
                           </div>

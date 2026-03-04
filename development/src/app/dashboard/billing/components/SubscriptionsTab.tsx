@@ -48,7 +48,11 @@ import {
 } from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import type { SubscriptionStatus } from '@/types/billing'
-import { formatSubscriptionStatus, isSubscriptionActive, formatPlanPrice } from '@/types/billing'
+import {
+  formatSubscriptionStatus,
+  isSubscriptionActive,
+  formatPlanPrice,
+} from '@/types/billing'
 
 let _supabase: ReturnType<typeof createClient> | null = null
 function getSupabase() {
@@ -94,11 +98,14 @@ const STATUS_ICONS: Record<SubscriptionStatus, React.ReactNode> = {
 }
 
 const STATUS_BADGE_COLORS: Record<SubscriptionStatus, string> = {
-  active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+  active:
+    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  past_due: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  past_due:
+    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   canceled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  incomplete: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  incomplete:
+    'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 }
 
 export function SubscriptionsTab() {
@@ -118,7 +125,8 @@ export function SubscriptionsTab() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: subData, error } = await (supabase as any)
         .from('subscriptions')
-        .select(`
+        .select(
+          `
           id,
           organization_id,
           status,
@@ -129,7 +137,8 @@ export function SubscriptionsTab() {
           cancel_at_period_end,
           created_at,
           plan:plan_id (name, slug, price_per_device, price_monthly, pricing_model)
-        `)
+        `
+        )
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -138,7 +147,9 @@ export function SubscriptionsTab() {
       }
 
       // Fetch org names
-      const orgIds = [...new Set((subData || []).map((s: any) => s.organization_id))] as string[]
+      const orgIds = [
+        ...new Set((subData || []).map((s: any) => s.organization_id)),
+      ] as string[]
       let orgMap: Record<string, string> = {}
       if (orgIds.length > 0) {
         const { data: orgs } = await supabase
@@ -156,7 +167,7 @@ export function SubscriptionsTab() {
         .select('organization_id')
         .in('organization_id', orgIds)
         .is('deleted_at', null)
-      
+
       const deviceCountMap: Record<string, number> = {}
       if (deviceCounts) {
         for (const d of deviceCounts) {
@@ -225,19 +236,35 @@ export function SubscriptionsTab() {
   }
 
   const handleExportCsv = () => {
-    const headers = ['Organization', 'Plan', 'Status', 'MRR', 'Devices', 'Period Start', 'Period End', 'Stripe ID', 'Created']
+    const headers = [
+      'Organization',
+      'Plan',
+      'Status',
+      'MRR',
+      'Devices',
+      'Period Start',
+      'Period End',
+      'Stripe ID',
+      'Created',
+    ]
     const csvRows = filteredSubscriptions.map((s) => [
       s.organization_name,
       s.plan_name,
       s.status,
       `$${(s.mrr / 100).toFixed(2)}`,
       s.device_count,
-      s.current_period_start ? new Date(s.current_period_start).toISOString().split('T')[0] : '',
-      s.current_period_end ? new Date(s.current_period_end).toISOString().split('T')[0] : '',
+      s.current_period_start
+        ? new Date(s.current_period_start).toISOString().split('T')[0]
+        : '',
+      s.current_period_end
+        ? new Date(s.current_period_end).toISOString().split('T')[0]
+        : '',
       s.stripe_subscription_id || '',
       new Date(s.created_at).toISOString().split('T')[0],
     ])
-    const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n')
+    const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join(
+      '\n'
+    )
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -253,11 +280,25 @@ export function SubscriptionsTab() {
     doc.text('Subscriptions Report', 14, 16)
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
-    doc.text(`Exported: ${new Date().toLocaleDateString()} • ${filteredSubscriptions.length} subscriptions`, 14, 22)
+    doc.text(
+      `Exported: ${new Date().toLocaleDateString()} • ${filteredSubscriptions.length} subscriptions`,
+      14,
+      22
+    )
     doc.setTextColor(0, 0, 0)
     autoTable(doc, {
       startY: 28,
-      head: [['Organization', 'Plan', 'Status', 'MRR', 'Devices', 'Period End', 'Stripe ID']],
+      head: [
+        [
+          'Organization',
+          'Plan',
+          'Status',
+          'MRR',
+          'Devices',
+          'Period End',
+          'Stripe ID',
+        ],
+      ],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       body: filteredSubscriptions.map((s): any[] => [
         s.organization_name,
@@ -265,7 +306,9 @@ export function SubscriptionsTab() {
         s.status ?? '',
         `$${(s.mrr / 100).toFixed(2)}`,
         String(s.device_count),
-        s.current_period_end ? new Date(s.current_period_end).toISOString().split('T')[0] : '—',
+        s.current_period_end
+          ? new Date(s.current_period_end).toISOString().split('T')[0]
+          : '—',
         s.stripe_subscription_id ?? '—',
       ]),
       styles: { fontSize: 7 },
@@ -308,7 +351,9 @@ export function SubscriptionsTab() {
         <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Subscriptions</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Subscriptions
+              </CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -321,7 +366,9 @@ export function SubscriptionsTab() {
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">{summary.active}</div>
+              <div className="text-2xl font-bold text-emerald-600">
+                {summary.active}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -330,7 +377,9 @@ export function SubscriptionsTab() {
               <Clock className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{summary.trialing}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {summary.trialing}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -339,7 +388,9 @@ export function SubscriptionsTab() {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{summary.pastDue}</div>
+              <div className="text-2xl font-bold text-amber-600">
+                {summary.pastDue}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -348,7 +399,12 @@ export function SubscriptionsTab() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${(summary.totalMrr / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <div className="text-2xl font-bold">
+                $
+                {(summary.totalMrr / 100).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                })}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -381,15 +437,32 @@ export function SubscriptionsTab() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filteredSubscriptions.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={filteredSubscriptions.length === 0}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={filteredSubscriptions.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={filteredSubscriptions.length === 0}
+          >
             <FileDown className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
@@ -403,7 +476,9 @@ export function SubscriptionsTab() {
             <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="text-sm font-medium">No subscriptions found</p>
             <p className="text-xs text-muted-foreground">
-              {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Subscriptions will appear here once organizations subscribe to plans'}
+              {searchQuery || statusFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Subscriptions will appear here once organizations subscribe to plans'}
             </p>
           </div>
         </div>
@@ -419,16 +494,16 @@ export function SubscriptionsTab() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-1 cursor-default">
+                        <span className="inline-flex cursor-default items-center gap-1">
                           Devices
                           <Info className="h-3 w-3 text-muted-foreground" />
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p className="text-xs">
-                          Live count of non-deleted devices for this organization.
-                          The navigation panel displays a cached count refreshed
-                          at login.
+                          Live count of non-deleted devices for this
+                          organization. The navigation panel displays a cached
+                          count refreshed at login.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -445,7 +520,11 @@ export function SubscriptionsTab() {
                   <TableCell className="font-medium">
                     <button
                       className="text-left hover:underline"
-                      onClick={() => router.push(`/dashboard/admin/customers/${sub.organization_id}`)}
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/admin/customers/${sub.organization_id}`
+                        )
+                      }
                     >
                       {sub.organization_name}
                     </button>
@@ -454,20 +533,28 @@ export function SubscriptionsTab() {
                     <Badge variant="outline">{sub.plan_name}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`gap-1 ${STATUS_BADGE_COLORS[sub.status]}`}>
+                    <Badge
+                      className={`gap-1 ${STATUS_BADGE_COLORS[sub.status]}`}
+                    >
                       {STATUS_ICONS[sub.status]}
                       {formatSubscriptionStatus(sub.status)}
                     </Badge>
                     {sub.cancel_at_period_end && (
-                      <Badge variant="outline" className="ml-1 text-[10px]">Cancels</Badge>
+                      <Badge variant="outline" className="ml-1 text-[10px]">
+                        Cancels
+                      </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">{sub.device_count}</TableCell>
+                  <TableCell className="text-right">
+                    {sub.device_count}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     ${(sub.mrr / 100).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {sub.current_period_end ? fmt.shortDate(new Date(sub.current_period_end)) : '—'}
+                    {sub.current_period_end
+                      ? fmt.shortDate(new Date(sub.current_period_end))
+                      : '—'}
                   </TableCell>
                   <TableCell>
                     {sub.stripe_subscription_id ? (

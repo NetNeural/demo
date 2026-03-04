@@ -167,33 +167,21 @@ export default function InventoryControlPage() {
   }, [])
 
   // ── Persist helpers ─────────────────────────────────────────
-  const persistItems = useCallback(
-    (newItems: InventoryItem[]) => {
-      setItems(newItems)
-      saveToLS(LS_INVENTORY, newItems)
-    },
-    []
-  )
-  const persistIssuances = useCallback(
-    (newIssuances: HardwareIssuance[]) => {
-      setIssuances(newIssuances)
-      saveToLS(LS_ISSUANCES, newIssuances)
-    },
-    []
-  )
-  const persistVendors = useCallback(
-    (newVendors: Vendor[]) => {
-      setVendors(newVendors)
-      saveToLS(LS_VENDORS, newVendors)
-    },
-    []
-  )
+  const persistItems = useCallback((newItems: InventoryItem[]) => {
+    setItems(newItems)
+    saveToLS(LS_INVENTORY, newItems)
+  }, [])
+  const persistIssuances = useCallback((newIssuances: HardwareIssuance[]) => {
+    setIssuances(newIssuances)
+    saveToLS(LS_ISSUANCES, newIssuances)
+  }, [])
+  const persistVendors = useCallback((newVendors: Vendor[]) => {
+    setVendors(newVendors)
+    saveToLS(LS_VENDORS, newVendors)
+  }, [])
 
   // ── Inventory CRUD ──────────────────────────────────────────
-  const handleSaveItem = async (
-    form: InventoryFormValues,
-    editId?: string
-  ) => {
+  const handleSaveItem = async (form: InventoryFormValues, editId?: string) => {
     const now = new Date().toISOString()
     const qty = parseInt(form.quantity_total, 10) || 0
     const mfgVendor = vendors.find((v) => v.id === form.manufacturer_id)
@@ -334,9 +322,7 @@ export default function InventoryControlPage() {
             quantity_available: i.quantity_available - qty,
             quantity_issued: i.quantity_issued + qty,
             status:
-              i.quantity_available - qty <= 0
-                ? ('issued' as const)
-                : i.status,
+              i.quantity_available - qty <= 0 ? ('issued' as const) : i.status,
             updated_at: new Date().toISOString(),
           }
         : i
@@ -385,10 +371,7 @@ export default function InventoryControlPage() {
   }
 
   // ── Vendor CRUD ─────────────────────────────────────────────
-  const handleSaveVendor = async (
-    form: VendorFormValues,
-    editId?: string
-  ) => {
+  const handleSaveVendor = async (form: VendorFormValues, editId?: string) => {
     const now = new Date().toISOString()
     if (editId) {
       const updated = vendors.map((v) =>

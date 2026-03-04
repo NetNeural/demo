@@ -105,7 +105,9 @@ export function BillingOperationsTab() {
       // Fetch recent billing admin actions from audit log
       const { data: auditRows } = await supabase
         .from('user_audit_log')
-        .select('id, action_type, resource_type, resource_name, changes, created_at, status')
+        .select(
+          'id, action_type, resource_type, resource_name, changes, created_at, status'
+        )
         .in('action_type', [
           'manual_invoice_created',
           'credit_issued',
@@ -168,7 +170,7 @@ export function BillingOperationsTab() {
         <Card className="flex flex-col items-center justify-center p-4">
           <RotateCcw className="mb-2 h-8 w-8 text-muted-foreground" />
           <p className="text-sm font-medium">Refunds</p>
-          <p className="mt-1 text-xs text-muted-foreground text-center">
+          <p className="mt-1 text-center text-xs text-muted-foreground">
             Use the Payments tab to initiate refunds on individual payments
           </p>
         </Card>
@@ -217,7 +219,7 @@ export function BillingOperationsTab() {
                       <TableCell className="text-sm">
                         {action.resource_name || action.resource_type}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                      <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
                         {action.changes
                           ? JSON.stringify(action.changes).slice(0, 80)
                           : '—'}
@@ -320,7 +322,9 @@ function ManualInvoiceDialog({
         status: 'success',
       })
 
-      toast.success(`Manual invoice created for $${(amountCents / 100).toFixed(2)}`)
+      toast.success(
+        `Manual invoice created for $${(amountCents / 100).toFixed(2)}`
+      )
       resetForm()
       onOpenChange(false)
       await onComplete()
@@ -335,11 +339,11 @@ function ManualInvoiceDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+        <Card className="cursor-pointer transition-colors hover:border-primary/50">
           <CardContent className="flex flex-col items-center justify-center p-4">
             <FileText className="mb-2 h-8 w-8 text-blue-500" />
             <p className="text-sm font-medium">Manual Invoice</p>
-            <p className="mt-1 text-xs text-muted-foreground text-center">
+            <p className="mt-1 text-center text-xs text-muted-foreground">
               Create one-off invoice for any org
             </p>
           </CardContent>
@@ -512,11 +516,11 @@ function IssueCreditDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+        <Card className="cursor-pointer transition-colors hover:border-primary/50">
           <CardContent className="flex flex-col items-center justify-center p-4">
             <Gift className="mb-2 h-8 w-8 text-green-500" />
             <p className="text-sm font-medium">Issue Credit</p>
-            <p className="mt-1 text-xs text-muted-foreground text-center">
+            <p className="mt-1 text-center text-xs text-muted-foreground">
               Apply account credit to an org
             </p>
           </CardContent>
@@ -529,8 +533,8 @@ function IssueCreditDialog({
             Issue Account Credit
           </DialogTitle>
           <DialogDescription>
-            Apply a credit to an organization&apos;s account. Credits can be used
-            to offset future invoices.
+            Apply a credit to an organization&apos;s account. Credits can be
+            used to offset future invoices.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -612,11 +616,15 @@ function SubscriptionOverrideDialog({
   onComplete: () => Promise<void>
 }) {
   const [orgId, setOrgId] = useState('')
-  const [action, setAction] = useState<'change_plan' | 'extend_trial' | 'pause' | 'resume'>('change_plan')
+  const [action, setAction] = useState<
+    'change_plan' | 'extend_trial' | 'pause' | 'resume'
+  >('change_plan')
   const [planId, setPlanId] = useState('')
   const [trialDays, setTrialDays] = useState('')
   const [reason, setReason] = useState('')
-  const [plans, setPlans] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [plans, setPlans] = useState<
+    { id: string; name: string; slug: string }[]
+  >([])
   const [submitting, setSubmitting] = useState(false)
 
   // Load plans on first open
@@ -755,11 +763,11 @@ function SubscriptionOverrideDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+        <Card className="cursor-pointer transition-colors hover:border-primary/50">
           <CardContent className="flex flex-col items-center justify-center p-4">
             <Settings2 className="mb-2 h-8 w-8 text-amber-500" />
             <p className="text-sm font-medium">Subscription Override</p>
-            <p className="mt-1 text-xs text-muted-foreground text-center">
+            <p className="mt-1 text-center text-xs text-muted-foreground">
               Change plan, extend trial, pause/resume
             </p>
           </CardContent>

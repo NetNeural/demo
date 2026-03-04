@@ -2,7 +2,12 @@
 
 describe('Billing Plans', () => {
   it('plan has required fields', () => {
-    const plan = { id: 'plan-1', name: 'Starter', price_monthly: 49, max_devices: 10 }
+    const plan = {
+      id: 'plan-1',
+      name: 'Starter',
+      price_monthly: 49,
+      max_devices: 10,
+    }
     expect(plan).toHaveProperty('id')
     expect(plan).toHaveProperty('name')
     expect(plan).toHaveProperty('price_monthly')

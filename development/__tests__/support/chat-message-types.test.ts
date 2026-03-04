@@ -3,7 +3,8 @@
 describe('Chat Message Types', () => {
   it('mercury messages are left-aligned', () => {
     const msg = { sender_type: 'mercury', content: 'Hello!' }
-    const isLeftAligned = msg.sender_type === 'mercury' || msg.sender_type === 'admin'
+    const isLeftAligned =
+      msg.sender_type === 'mercury' || msg.sender_type === 'admin'
     expect(isLeftAligned).toBe(true)
   })
 

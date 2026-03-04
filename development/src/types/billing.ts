@@ -67,11 +67,7 @@ export interface BillingPlan {
 export type BillingPlanSlug = 'starter' | 'business' | 'enterprise'
 
 /** Legacy slugs (deactivated, kept for historical subscription references) */
-export type LegacyBillingPlanSlug =
-  | 'free'
-  | 'monitor'
-  | 'protect'
-  | 'command'
+export type LegacyBillingPlanSlug = 'free' | 'monitor' | 'protect' | 'command'
 
 /** Feature display metadata for plan comparison UI */
 export interface PlanFeatureDisplay {
@@ -590,7 +586,13 @@ export interface PlanDraft {
 export type HealthStatus = 'healthy' | 'at_risk' | 'critical'
 
 /** Lifecycle stage for a customer (matches customer_lifecycle_stage DB enum) */
-export type LifecycleStage = 'trial' | 'onboarding' | 'active' | 'at_risk' | 'churned' | 'reactivated'
+export type LifecycleStage =
+  | 'trial'
+  | 'onboarding'
+  | 'active'
+  | 'at_risk'
+  | 'churned'
+  | 'reactivated'
 
 /** Trigger type for lifecycle transitions */
 export type LifecycleTriggerType = 'automatic' | 'manual' | 'system'
@@ -611,7 +613,14 @@ export interface LifecycleEvent {
 /** Activity timeline entry (unified across multiple tables) */
 export interface TimelineEntry {
   id: string
-  type: 'lifecycle' | 'device' | 'payment' | 'subscription' | 'member' | 'alert' | 'login'
+  type:
+    | 'lifecycle'
+    | 'device'
+    | 'payment'
+    | 'subscription'
+    | 'member'
+    | 'alert'
+    | 'login'
   title: string
   description: string | null
   timestamp: string
@@ -670,18 +679,28 @@ export function getHealthStatus(score: number): HealthStatus {
 /** Human-readable health status label */
 export function formatHealthStatus(status: HealthStatus): string {
   switch (status) {
-    case 'healthy': return 'Healthy'
-    case 'at_risk': return 'At Risk'
-    case 'critical': return 'Critical'
+    case 'healthy':
+      return 'Healthy'
+    case 'at_risk':
+      return 'At Risk'
+    case 'critical':
+      return 'Critical'
   }
 }
 
 /** Derive lifecycle stage from customer data (client-side fallback when DB column not yet populated) */
-export function getLifecycleStage(customer: CustomerOverviewRow): LifecycleStage {
+export function getLifecycleStage(
+  customer: CustomerOverviewRow
+): LifecycleStage {
   // Churned: subscription canceled and past end date
   if (customer.subscription_status === 'canceled') return 'churned'
   // At risk: health score < 50 or past_due or canceling
-  if (customer.cancel_at_period_end || customer.health_score < 50 || customer.subscription_status === 'past_due') return 'at_risk'
+  if (
+    customer.cancel_at_period_end ||
+    customer.health_score < 50 ||
+    customer.subscription_status === 'past_due'
+  )
+    return 'at_risk'
   // Trial: created within last 14 days with no subscription
   const created = new Date(customer.created_at)
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
@@ -694,12 +713,18 @@ export function getLifecycleStage(customer: CustomerOverviewRow): LifecycleStage
 /** Human-readable lifecycle label */
 export function formatLifecycleStage(stage: LifecycleStage): string {
   switch (stage) {
-    case 'trial': return 'Trial'
-    case 'onboarding': return 'Onboarding'
-    case 'active': return 'Active'
-    case 'at_risk': return 'At Risk'
-    case 'churned': return 'Churned'
-    case 'reactivated': return 'Reactivated'
+    case 'trial':
+      return 'Trial'
+    case 'onboarding':
+      return 'Onboarding'
+    case 'active':
+      return 'Active'
+    case 'at_risk':
+      return 'At Risk'
+    case 'churned':
+      return 'Churned'
+    case 'reactivated':
+      return 'Reactivated'
   }
 }
 

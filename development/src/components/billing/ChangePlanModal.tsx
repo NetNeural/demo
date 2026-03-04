@@ -184,7 +184,9 @@ export function ChangePlanModal({
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}))
         throw new Error(
-          errBody?.error || errBody?.message || 'Failed to create checkout session'
+          errBody?.error ||
+            errBody?.message ||
+            'Failed to create checkout session'
         )
       }
 
@@ -199,7 +201,9 @@ export function ChangePlanModal({
       await logClientAction({
         organizationId,
         actionCategory: 'organization_management',
-        actionType: isUpgrade ? 'plan_upgrade_initiated' : 'plan_downgrade_initiated',
+        actionType: isUpgrade
+          ? 'plan_upgrade_initiated'
+          : 'plan_downgrade_initiated',
         resourceType: 'subscription',
         resourceName: selectedPlan.name,
         changes: {
@@ -212,9 +216,7 @@ export function ChangePlanModal({
       // Redirect to Stripe Checkout
       window.location.href = checkoutUrl
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong'
-      )
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setActionLoading(false)
     }
@@ -267,7 +269,7 @@ export function ChangePlanModal({
                       </Badge>
                     )}
                     {plan.slug === 'business' && !isCurrent && (
-                      <Badge className="absolute -top-2 right-2 text-xs bg-primary">
+                      <Badge className="absolute -top-2 right-2 bg-primary text-xs">
                         Popular
                       </Badge>
                     )}
@@ -340,9 +342,7 @@ export function ChangePlanModal({
                 <div>
                   <p className="text-sm font-medium">
                     {isUpgrade ? 'Upgrade' : 'Switch'} to{' '}
-                    <span className="font-bold">
-                      {selectedPlan?.name}
-                    </span>
+                    <span className="font-bold">{selectedPlan?.name}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {selectedPlan?.slug === 'enterprise'

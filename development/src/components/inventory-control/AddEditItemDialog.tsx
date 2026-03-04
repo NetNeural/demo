@@ -107,7 +107,7 @@ export function AddEditItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editItem ? 'Edit Inventory Item' : 'Add Inventory Item'}
@@ -122,7 +122,7 @@ export function AddEditItemDialog({
         <div className="grid gap-6 py-4">
           {/* Section: Identification */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Identification
             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -188,7 +188,7 @@ export function AddEditItemDialog({
 
           {/* Section: Quantities */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Quantities
             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -217,7 +217,7 @@ export function AddEditItemDialog({
 
           {/* Section: Pricing */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Pricing
             </h4>
             <div className="grid gap-4 sm:grid-cols-4">
@@ -229,9 +229,7 @@ export function AddEditItemDialog({
                   step="0.01"
                   min="0"
                   value={form.manufacturing_cost}
-                  onChange={(e) =>
-                    update('manufacturing_cost', e.target.value)
-                  }
+                  onChange={(e) => update('manufacturing_cost', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -278,7 +276,7 @@ export function AddEditItemDialog({
 
           {/* Section: Vendor / Manufacturer */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Vendor / Manufacturer
             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -338,7 +336,7 @@ export function AddEditItemDialog({
 
           {/* Section: Hardware Details */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Hardware Details
             </h4>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -374,7 +372,7 @@ export function AddEditItemDialog({
 
           {/* Section: Tracking */}
           <div>
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Tracking
             </h4>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -384,9 +382,7 @@ export function AddEditItemDialog({
                   id="warehouse"
                   placeholder="Warehouse A, Shelf 3"
                   value={form.warehouse_location}
-                  onChange={(e) =>
-                    update('warehouse_location', e.target.value)
-                  }
+                  onChange={(e) => update('warehouse_location', e.target.value)}
                 />
               </div>
               <div className="space-y-2">

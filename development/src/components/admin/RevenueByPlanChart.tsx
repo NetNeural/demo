@@ -20,7 +20,10 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts'
-import type { PlanRevenue, PlanCustomerCount } from '@/lib/admin/revenue-queries'
+import type {
+  PlanRevenue,
+  PlanCustomerCount,
+} from '@/lib/admin/revenue-queries'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -93,10 +96,12 @@ export function RevenueByPlanChart({
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={((value: number, name: string) => [
-                    `$${value.toFixed(2)}`,
-                    name,
-                  ]) as any}
+                  formatter={
+                    ((value: number, name: string) => [
+                      `$${value.toFixed(2)}`,
+                      name,
+                    ]) as any
+                  }
                   contentStyle={{
                     borderRadius: '8px',
                     border: '1px solid #e5e7eb',

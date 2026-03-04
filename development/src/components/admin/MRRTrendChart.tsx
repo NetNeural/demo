@@ -49,11 +49,16 @@ export function MRRTrendChart({ data, loading }: MRRTrendChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>MRR Trend</CardTitle>
-        <CardDescription>Monthly Recurring Revenue — last {data.length} months</CardDescription>
+        <CardDescription>
+          Monthly Recurring Revenue — last {data.length} months
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+          <LineChart
+            data={data}
+            margin={{ top: 5, right: 20, bottom: 5, left: 10 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="label"
@@ -69,7 +74,9 @@ export function MRRTrendChart({ data, loading }: MRRTrendChartProps) {
             />
             <Tooltip
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={((value: number) => [`$${value.toFixed(2)}`, 'MRR']) as any}
+              formatter={
+                ((value: number) => [`$${value.toFixed(2)}`, 'MRR']) as any
+              }
               labelStyle={{ fontWeight: 600 }}
               contentStyle={{
                 borderRadius: '8px',

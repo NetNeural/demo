@@ -74,14 +74,23 @@ const WELCOME_MSG: ChatMessage = {
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-async function invoke(supabase: ReturnType<typeof createClient>, action: string, extra: Record<string, unknown> = {}) {
+async function invoke(
+  supabase: ReturnType<typeof createClient>,
+  action: string,
+  extra: Record<string, unknown> = {}
+) {
   // Explicitly include the session token — createBrowserClient doesn't always
   // auto-attach the Authorization header when calling edge functions in App Router.
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const headers: Record<string, string> = session
     ? { Authorization: `Bearer ${session.access_token}` }
     : {}
-  return supabase.functions.invoke('mercury-chat', { body: { action, ...extra }, headers })
+  return supabase.functions.invoke('mercury-chat', {
+    body: { action, ...extra },
+    headers,
+  })
 }
 
 // ─── Component ────────────────────────────────────────────────────
@@ -148,7 +157,9 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { loadStatus() }, [loadStatus])
+  useEffect(() => {
+    loadStatus()
+  }, [loadStatus])
 
   // ─── Send message ─────────────────────────────────────────────
 
@@ -161,10 +172,13 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
 
     // Add user message (clear welcome-only state on first chat)
     const userMsg: ChatMessage = { sender_type: 'user', content: text }
-    const typingMsg: ChatMessage = { sender_type: 'mercury', content: '…', id: '__typing__' }
+    const typingMsg: ChatMessage = {
+      sender_type: 'mercury',
+      content: '…',
+      id: '__typing__',
+    }
     setMessages((prev) => {
-      const base =
-        prev.length === 1 && prev[0] === WELCOME_MSG ? [] : prev
+      const base = prev.length === 1 && prev[0] === WELCOME_MSG ? [] : prev
       return [...base, userMsg, typingMsg]
     })
 
@@ -188,9 +202,7 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
       if (newSessionId && !sessionId) setSessionId(newSessionId)
 
       setMessages((prev) =>
-        prev
-          .filter((m) => m.id !== '__typing__')
-          .concat(mercury_message)
+        prev.filter((m) => m.id !== '__typing__').concat(mercury_message)
       )
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== '__typing__'))
@@ -224,7 +236,9 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
       })
 
       if (raw?.data?.ticket) {
-        toast.success('Support ticket created! A NetNeural engineer will follow up via email.')
+        toast.success(
+          'Support ticket created! A NetNeural engineer will follow up via email.'
+        )
         setShowTicketDialog(false)
         setTicketSubject('')
         setTicketDescription('')
@@ -267,8 +281,11 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
         setOnDuty(true)
         loadStatus()
       }
-    } catch { toast.error('Failed to clock in.') }
-    finally { setClockingIn(false) }
+    } catch {
+      toast.error('Failed to clock in.')
+    } finally {
+      setClockingIn(false)
+    }
   }
 
   const handleClockOut = async () => {
@@ -276,12 +293,17 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
     try {
       const { data: raw } = await invoke(supabase, 'clock_out')
       if (raw?.data) {
-        toast.success(raw.data.message || 'You have clocked out of support duty.')
+        toast.success(
+          raw.data.message || 'You have clocked out of support duty.'
+        )
         setOnDuty(false)
         loadStatus()
       }
-    } catch { toast.error('Failed to clock out.') }
-    finally { setClockingOut(false) }
+    } catch {
+      toast.error('Failed to clock out.')
+    } finally {
+      setClockingOut(false)
+    }
   }
 
   // ─── Render ────────────────────────────────────────────────────
@@ -301,7 +323,9 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
               </div>
               <div>
                 <p className="font-semibold leading-none">Mercury</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">NetNeural AI Support</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  NetNeural AI Support
+                </p>
               </div>
               {!loadingStatus && (
                 <Badge
@@ -314,9 +338,16 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                   )}
                 >
                   {dutyOnline ? (
-                    <><CheckCircle2 className="mr-1 h-3 w-3" />{status!.duty_admins_online} admin{status!.duty_admins_online !== 1 ? 's' : ''} on duty</>
+                    <>
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                      {status!.duty_admins_online} admin
+                      {status!.duty_admins_online !== 1 ? 's' : ''} on duty
+                    </>
                   ) : (
-                    <><AlertCircle className="mr-1 h-3 w-3" />No admin on duty</>
+                    <>
+                      <AlertCircle className="mr-1 h-3 w-3" />
+                      No admin on duty
+                    </>
                   )}
                 </Badge>
               )}
@@ -324,30 +355,62 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
 
             <div className="flex items-center gap-2">
               {/* Super admin: clock in/out */}
-              {status?.is_super_admin && (
-                onDuty ? (
-                  <Button size="sm" variant="outline" onClick={handleClockOut} disabled={clockingOut} className="gap-1.5 text-xs">
-                    {clockingOut ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
+              {status?.is_super_admin &&
+                (onDuty ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleClockOut}
+                    disabled={clockingOut}
+                    className="gap-1.5 text-xs"
+                  >
+                    {clockingOut ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <LogOut className="h-3 w-3" />
+                    )}
                     Clock Out
                   </Button>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={handleClockIn} disabled={clockingIn} className="gap-1.5 border-green-500/40 text-xs text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30">
-                    {clockingIn ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="h-3 w-3" />}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleClockIn}
+                    disabled={clockingIn}
+                    className="gap-1.5 border-green-500/40 text-xs text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+                  >
+                    {clockingIn ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <LogIn className="h-3 w-3" />
+                    )}
                     Go On Duty
                   </Button>
-                )
-              )}
+                ))}
 
               {/* Open tickets badge */}
               {(status?.open_ticket_count ?? 0) > 0 && (
-                <Button size="sm" variant="ghost" onClick={loadTickets} className="gap-1.5 text-xs">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={loadTickets}
+                  className="gap-1.5 text-xs"
+                >
                   <Ticket className="h-3.5 w-3.5" />
-                  {status!.open_ticket_count} ticket{status!.open_ticket_count !== 1 ? 's' : ''}
+                  {status!.open_ticket_count} ticket
+                  {status!.open_ticket_count !== 1 ? 's' : ''}
                 </Button>
               )}
 
-              <Button size="sm" variant="ghost" onClick={loadStatus} className="h-7 w-7 p-0">
-                <RefreshCw className={cn('h-3.5 w-3.5', loadingStatus && 'animate-spin')} />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={loadStatus}
+                className="h-7 w-7 p-0"
+              >
+                <RefreshCw
+                  className={cn('h-3.5 w-3.5', loadingStatus && 'animate-spin')}
+                />
               </Button>
             </div>
           </div>
@@ -367,11 +430,18 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                 )
               }
 
-              const isMercury = msg.sender_type === 'mercury' || msg.sender_type === 'admin'
+              const isMercury =
+                msg.sender_type === 'mercury' || msg.sender_type === 'admin'
               const isTyping = msg.id === '__typing__'
 
               return (
-                <div key={msg.id || idx} className={cn('flex gap-2', isMercury ? 'justify-start' : 'justify-end')}>
+                <div
+                  key={msg.id || idx}
+                  className={cn(
+                    'flex gap-2',
+                    isMercury ? 'justify-start' : 'justify-end'
+                  )}
+                >
                   {isMercury && (
                     <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-500/10">
                       <Bot className="h-3.5 w-3.5 text-cyan-500" />
@@ -387,7 +457,9 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                     )}
                   >
                     {isTyping ? (
-                      <span className="tracking-widest text-muted-foreground">●●●</span>
+                      <span className="tracking-widest text-muted-foreground">
+                        ●●●
+                      </span>
                     ) : (
                       msg.content
                     )}
@@ -413,15 +485,25 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
               disabled={sending}
               className="flex-1"
             />
-            <Button onClick={handleSend} disabled={sending || !input.trim()} size="icon">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Button
+              onClick={handleSend}
+              disabled={sending || !input.trim()}
+              size="icon"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
           {/* Actions row */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              {dutyOnline ? 'Admins online — escalate anytime' : 'AI support active · No live agents on duty'}
+              {dutyOnline
+                ? 'Admins online — escalate anytime'
+                : 'AI support active · No live agents on duty'}
             </p>
             <Button
               variant="outline"
@@ -430,9 +512,14 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                 setTicketSubject('')
                 setTicketDescription(
                   messages
-                    .filter((m) => m.sender_type !== 'system' && m.id !== '__typing__')
+                    .filter(
+                      (m) => m.sender_type !== 'system' && m.id !== '__typing__'
+                    )
                     .slice(-6)
-                    .map((m) => `${m.sender_type === 'user' ? 'User' : 'Mercury'}: ${m.content}`)
+                    .map(
+                      (m) =>
+                        `${m.sender_type === 'user' ? 'User' : 'Mercury'}: ${m.content}`
+                    )
                     .join('\n')
                 )
                 setShowTicketDialog(true)
@@ -453,9 +540,14 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Ticket className="h-4 w-4 text-muted-foreground" />
-                <p className="font-semibold text-sm">Your Support Tickets</p>
+                <p className="text-sm font-semibold">Your Support Tickets</p>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowTickets(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowTickets(false)}
+              >
                 Hide
               </Button>
             </div>
@@ -463,11 +555,15 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
           <CardContent className="pt-0">
             <div className="space-y-2">
               {tickets.map((t) => (
-                <div key={t.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5">
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5"
+                >
                   <div>
                     <p className="text-sm font-medium">{t.subject}</p>
                     <p className="text-xs text-muted-foreground">
-                      #{t.id.slice(0, 8).toUpperCase()} · {new Date(t.created_at).toLocaleDateString()}
+                      #{t.id.slice(0, 8).toUpperCase()} ·{' '}
+                      {new Date(t.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -475,10 +571,13 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                       variant="outline"
                       className={cn(
                         'text-xs',
-                        t.priority === 'urgent' && 'border-red-500/40 text-red-500',
-                        t.priority === 'high'   && 'border-orange-500/40 text-orange-500',
-                        t.priority === 'normal' && 'border-blue-500/40 text-blue-500',
-                        t.priority === 'low'    && 'text-muted-foreground'
+                        t.priority === 'urgent' &&
+                          'border-red-500/40 text-red-500',
+                        t.priority === 'high' &&
+                          'border-orange-500/40 text-orange-500',
+                        t.priority === 'normal' &&
+                          'border-blue-500/40 text-blue-500',
+                        t.priority === 'low' && 'text-muted-foreground'
                       )}
                     >
                       {t.priority}
@@ -486,10 +585,14 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                     <Badge
                       className={cn(
                         'text-xs',
-                        t.status === 'open'        && 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-                        t.status === 'in_progress' && 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-                        t.status === 'resolved'    && 'bg-green-500/15 text-green-600 dark:text-green-400',
-                        t.status === 'closed'      && 'bg-muted text-muted-foreground'
+                        t.status === 'open' &&
+                          'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
+                        t.status === 'in_progress' &&
+                          'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+                        t.status === 'resolved' &&
+                          'bg-green-500/15 text-green-600 dark:text-green-400',
+                        t.status === 'closed' &&
+                          'bg-muted text-muted-foreground'
                       )}
                     >
                       {t.status.replace('_', ' ')}
@@ -511,7 +614,8 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
               Create Support Ticket
             </DialogTitle>
             <DialogDescription>
-              A NetNeural engineer will review your ticket and respond via email.
+              A NetNeural engineer will review your ticket and respond via
+              email.
             </DialogDescription>
           </DialogHeader>
 
@@ -542,22 +646,37 @@ export default function MercuryChat({ organizationId }: MercuryChatProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low — general question or feedback</SelectItem>
-                  <SelectItem value="normal">Normal — issue affecting workflow</SelectItem>
-                  <SelectItem value="high">High — significant impact on operations</SelectItem>
-                  <SelectItem value="urgent">Urgent — system down or data loss</SelectItem>
+                  <SelectItem value="low">
+                    Low — general question or feedback
+                  </SelectItem>
+                  <SelectItem value="normal">
+                    Normal — issue affecting workflow
+                  </SelectItem>
+                  <SelectItem value="high">
+                    High — significant impact on operations
+                  </SelectItem>
+                  <SelectItem value="urgent">
+                    Urgent — system down or data loss
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTicketDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowTicketDialog(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleCreateTicket}
-              disabled={submittingTicket || !ticketSubject.trim() || !ticketDescription.trim()}
+              disabled={
+                submittingTicket ||
+                !ticketSubject.trim() ||
+                !ticketDescription.trim()
+              }
             >
               {submittingTicket ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

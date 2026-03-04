@@ -125,7 +125,10 @@ export function FirmwareManagementPanel() {
 
       if (error) {
         // Table might not exist yet — show empty state
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        if (
+          error.code === '42P01' ||
+          error.message?.includes('does not exist')
+        ) {
           setReleases([])
           return
         }
@@ -139,7 +142,7 @@ export function FirmwareManagementPanel() {
     } finally {
       setLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOrganization?.id])
 
   useEffect(() => {
@@ -165,7 +168,10 @@ export function FirmwareManagementPanel() {
 
       if (storageError) {
         // Storage bucket may not exist — inform user
-        if (storageError.message?.includes('not found') || storageError.message?.includes('Bucket')) {
+        if (
+          storageError.message?.includes('not found') ||
+          storageError.message?.includes('Bucket')
+        ) {
           toast.error(
             'Firmware storage bucket not configured. A database migration is needed to create it.'
           )
@@ -235,7 +241,9 @@ export function FirmwareManagementPanel() {
     try {
       const { data, error } = await supabase
         .from('devices')
-        .select('id, name, serial_number, firmware_version, device_type, status')
+        .select(
+          'id, name, serial_number, firmware_version, device_type, status'
+        )
         .eq('organization_id', currentOrganization?.id || '')
         .ilike('device_type', `%${release.device_type.replace('_', ' ')}%`)
 
@@ -621,9 +629,7 @@ export function FirmwareManagementPanel() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (
-                        selectedDevices.length === eligibleDevices.length
-                      ) {
+                      if (selectedDevices.length === eligibleDevices.length) {
                         setSelectedDevices([])
                       } else {
                         setSelectedDevices(eligibleDevices.map((d) => d.id))

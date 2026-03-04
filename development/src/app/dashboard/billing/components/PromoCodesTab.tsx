@@ -101,10 +101,7 @@ export function PromoCodesTab() {
           .from('promotional_codes')
           .select('*')
           .order('created_at', { ascending: false }),
-        supabase
-          .from('organizations')
-          .select('id, name')
-          .order('name'),
+        supabase.from('organizations').select('id, name').order('name'),
       ])
       setPromos(promoRows || [])
       setOrgs(orgRows || [])
@@ -180,7 +177,9 @@ export function PromoCodesTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Active</CardDescription>
-            <CardTitle className="text-2xl text-green-600">{activePromos.length}</CardTitle>
+            <CardTitle className="text-2xl text-green-600">
+              {activePromos.length}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -212,8 +211,15 @@ export function PromoCodesTab() {
               Create, manage, and track promotional discount codes
             </CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
           </Button>
         </CardHeader>
         <CardContent>
@@ -241,7 +247,8 @@ export function PromoCodesTab() {
                 <TableBody>
                   {promos.map((promo) => {
                     const isExpired =
-                      promo.valid_until && new Date(promo.valid_until) < new Date()
+                      promo.valid_until &&
+                      new Date(promo.valid_until) < new Date()
                     const isMaxedOut =
                       promo.max_redemptions !== null &&
                       promo.current_redemptions >= promo.max_redemptions
@@ -253,7 +260,7 @@ export function PromoCodesTab() {
                       >
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono font-bold">
+                            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm font-bold">
                               {promo.code}
                             </code>
                             <Button
@@ -297,9 +304,7 @@ export function PromoCodesTab() {
                               Org-specific
                             </Badge>
                           ) : (
-                            <Badge
-                              className="bg-blue-100 text-blue-800 text-xs dark:bg-blue-900 dark:text-blue-200"
-                            >
+                            <Badge className="bg-blue-100 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                               Global
                             </Badge>
                           )}
@@ -387,7 +392,9 @@ function CreatePromoDialog({
 }) {
   const [code, setCode] = useState('')
   const [description, setDescription] = useState('')
-  const [discountType, setDiscountType] = useState<'percent' | 'amount'>('percent')
+  const [discountType, setDiscountType] = useState<'percent' | 'amount'>(
+    'percent'
+  )
   const [discountValue, setDiscountValue] = useState('')
   const [durationMonths, setDurationMonths] = useState('')
   const [maxRedemptions, setMaxRedemptions] = useState('')
@@ -515,7 +522,12 @@ function CreatePromoDialog({
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 className="font-mono"
               />
-              <Button variant="outline" type="button" onClick={generateCode} title="Generate random code">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={generateCode}
+                title="Generate random code"
+              >
                 Generate
               </Button>
             </div>
@@ -545,7 +557,11 @@ function CreatePromoDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>{discountType === 'percent' ? 'Percent Off' : 'Amount Off (USD)'}</Label>
+              <Label>
+                {discountType === 'percent'
+                  ? 'Percent Off'
+                  : 'Amount Off (USD)'}
+              </Label>
               <div className="relative">
                 {discountType === 'percent' ? (
                   <Percent className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -594,7 +610,9 @@ function CreatePromoDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="global">Global (all organizations)</SelectItem>
+                <SelectItem value="global">
+                  Global (all organizations)
+                </SelectItem>
                 {orgs.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.name} only

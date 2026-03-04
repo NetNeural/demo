@@ -75,10 +75,38 @@ const NETNEURAL_ROOT_ORG_ID = '00000000-0000-0000-0000-000000000001'
 
 type BillingMode = 'off' | 'testing' | 'live'
 
-const BILLING_MODES: { value: BillingMode; label: string; icon: typeof Power; color: string; bg: string; description: string }[] = [
-  { value: 'off', label: 'Off', icon: Power, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', description: 'Billing disabled — no charges processed' },
-  { value: 'testing', label: 'Testing', icon: FlaskConical, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950', description: 'Stripe test mode — sandbox charges only' },
-  { value: 'live', label: 'Live', icon: Zap, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950', description: 'Production billing — real charges active' },
+const BILLING_MODES: {
+  value: BillingMode
+  label: string
+  icon: typeof Power
+  color: string
+  bg: string
+  description: string
+}[] = [
+  {
+    value: 'off',
+    label: 'Off',
+    icon: Power,
+    color: 'text-gray-500',
+    bg: 'bg-gray-100 dark:bg-gray-800',
+    description: 'Billing disabled — no charges processed',
+  },
+  {
+    value: 'testing',
+    label: 'Testing',
+    icon: FlaskConical,
+    color: 'text-amber-600',
+    bg: 'bg-amber-50 dark:bg-amber-950',
+    description: 'Stripe test mode — sandbox charges only',
+  },
+  {
+    value: 'live',
+    label: 'Live',
+    icon: Zap,
+    color: 'text-green-600',
+    bg: 'bg-green-50 dark:bg-green-950',
+    description: 'Production billing — real charges active',
+  },
 ]
 
 // ── Tab configuration (mirrors the support page pattern) ─────────────
@@ -179,7 +207,10 @@ function ARAgingPanel() {
     const supabase = createClient()
     fetchARAgingReport(supabase)
       .then(setData)
-      .catch((err) => { console.error('AR Aging load error', err); toast.error('Failed to load AR Aging report') })
+      .catch((err) => {
+        console.error('AR Aging load error', err)
+        toast.error('Failed to load AR Aging report')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -207,7 +238,17 @@ function ARAgingPanel() {
     doc.text(`Generated: ${date}`, 14, 22)
     autoTable(doc, {
       startY: 28,
-      head: [['Organization', 'Current', '1–30 Days', '31–60 Days', '61–90 Days', '90+ Days', 'Total']],
+      head: [
+        [
+          'Organization',
+          'Current',
+          '1–30 Days',
+          '31–60 Days',
+          '61–90 Days',
+          '90+ Days',
+          'Total',
+        ],
+      ],
       body: [
         ...data.rows.map((r) => [
           r.organizationName,
@@ -237,11 +278,21 @@ function ARAgingPanel() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!canExport}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCsv}
+          disabled={!canExport}
+        >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!canExport}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPdf}
+          disabled={!canExport}
+        >
           <FileDown className="mr-2 h-4 w-4" />
           Export PDF
         </Button>
@@ -259,7 +310,10 @@ function PaymentFailuresPanel() {
     const supabase = createClient()
     fetchPaymentFailureReport(supabase, 6)
       .then(setData)
-      .catch((err) => { console.error('Payment Failures load error', err); toast.error('Failed to load Payment Failures report') })
+      .catch((err) => {
+        console.error('Payment Failures load error', err)
+        toast.error('Failed to load Payment Failures report')
+      })
       .finally(() => setLoading(false))
   }, [])
   return <PaymentFailureReport data={data} loading={loading} />
@@ -274,7 +328,10 @@ function TaxSummaryPanel() {
     const currentYear = new Date().getFullYear()
     fetchTaxSummaryReport(supabase, currentYear)
       .then(setData)
-      .catch((err) => { console.error('Tax Summary load error', err); toast.error('Failed to load Tax Summary report') })
+      .catch((err) => {
+        console.error('Tax Summary load error', err)
+        toast.error('Failed to load Tax Summary report')
+      })
       .finally(() => setLoading(false))
   }, [])
   return <TaxSummaryReport data={data} loading={loading} />
@@ -283,7 +340,8 @@ function TaxSummaryPanel() {
 function BillingAdminContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { currentOrganization, isLoading, userRole, permissions } = useOrganization()
+  const { currentOrganization, isLoading, userRole, permissions } =
+    useOrganization()
   const { user, loading: userLoading } = useUser()
   const isSuperAdmin = user?.isSuperAdmin || false
 
@@ -329,7 +387,8 @@ function BillingAdminContent() {
           .select('settings')
           .eq('id', NETNEURAL_ROOT_ORG_ID)
           .single()
-        const mode = (data?.settings as Record<string, unknown>)?.billing_mode as BillingMode
+        const mode = (data?.settings as Record<string, unknown>)
+          ?.billing_mode as BillingMode
         if (mode && ['off', 'testing', 'live'].includes(mode)) {
           setBillingMode(mode)
         }
@@ -342,51 +401,61 @@ function BillingAdminContent() {
     loadBillingMode()
   }, [supabase])
 
-  const handleBillingModeChange = useCallback(async (newMode: BillingMode) => {
-    if (!isSuperAdmin) return
-    if (newMode === billingMode) return
+  const handleBillingModeChange = useCallback(
+    async (newMode: BillingMode) => {
+      if (!isSuperAdmin) return
+      if (newMode === billingMode) return
 
-    // Confirmation for going live
-    if (newMode === 'live') {
-      const confirmed = window.confirm(
-        '⚠️ GOING LIVE — This will enable real billing charges.\n\n' +
-        'All subscriptions will process real payments through Stripe.\n\n' +
-        'Are you sure you want to activate live billing?'
-      )
-      if (!confirmed) return
-    }
+      // Confirmation for going live
+      if (newMode === 'live') {
+        const confirmed = window.confirm(
+          '⚠️ GOING LIVE — This will enable real billing charges.\n\n' +
+            'All subscriptions will process real payments through Stripe.\n\n' +
+            'Are you sure you want to activate live billing?'
+        )
+        if (!confirmed) return
+      }
 
-    setBillingModeSaving(true)
-    try {
-      // Get current settings via edge function to merge
-      const { data: orgData } = await supabase
-        .from('organizations')
-        .select('settings')
-        .eq('id', NETNEURAL_ROOT_ORG_ID)
-        .single()
+      setBillingModeSaving(true)
+      try {
+        // Get current settings via edge function to merge
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('settings')
+          .eq('id', NETNEURAL_ROOT_ORG_ID)
+          .single()
 
-      const currentSettings = (orgData?.settings as Record<string, unknown>) || {}
-      const updatedSettings = { ...currentSettings, billing_mode: newMode }
+        const currentSettings =
+          (orgData?.settings as Record<string, unknown>) || {}
+        const updatedSettings = { ...currentSettings, billing_mode: newMode }
 
-      // Use edge function to bypass RLS (uses supabaseAdmin)
-      const result = await edgeFunctions.organizations.update(NETNEURAL_ROOT_ORG_ID, {
-        settings: updatedSettings,
-      })
+        // Use edge function to bypass RLS (uses supabaseAdmin)
+        const result = await edgeFunctions.organizations.update(
+          NETNEURAL_ROOT_ORG_ID,
+          {
+            settings: updatedSettings,
+          }
+        )
 
-      if (!result.success) throw new Error(typeof result.error === 'string' ? result.error : 'Update failed')
+        if (!result.success)
+          throw new Error(
+            typeof result.error === 'string' ? result.error : 'Update failed'
+          )
 
-      setBillingMode(newMode)
-      const modeInfo = BILLING_MODES.find(m => m.value === newMode)!
-      toast.success(`Billing mode set to ${modeInfo.label}`, {
-        description: modeInfo.description,
-      })
-    } catch (err) {
-      console.error('Failed to update billing mode:', err)
-      toast.error('Failed to update billing mode')
-    } finally {
-      setBillingModeSaving(false)
-    }
-  }, [isSuperAdmin, billingMode, supabase])
+        setBillingMode(newMode)
+        const modeInfo = BILLING_MODES.find((m) => m.value === newMode)!
+        toast.success(`Billing mode set to ${modeInfo.label}`, {
+          description: modeInfo.description,
+        })
+      } catch (err) {
+        console.error('Failed to update billing mode:', err)
+        toast.error('Failed to update billing mode')
+      } finally {
+        setBillingModeSaving(false)
+      }
+    },
+    [isSuperAdmin, billingMode, supabase]
+  )
 
   const handleOpenPortal = useCallback(async () => {
     if (!currentOrganization) return
@@ -433,15 +502,20 @@ function BillingAdminContent() {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Billing Administration</h2>
-          <p className="text-muted-foreground">Select an organization to continue</p>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Billing Administration
+          </h2>
+          <p className="text-muted-foreground">
+            Select an organization to continue
+          </p>
         </div>
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-4 text-center">
             <Building2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold">No organization selected</p>
             <p className="max-w-md text-sm text-muted-foreground">
-              Use the organization dropdown in the sidebar to select an organization.
+              Use the organization dropdown in the sidebar to select an
+              organization.
             </p>
           </div>
         </div>
@@ -455,16 +529,23 @@ function BillingAdminContent() {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Billing Administration</h2>
-          <p className="text-muted-foreground">NetNeural platform billing management</p>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Billing Administration
+          </h2>
+          <p className="text-muted-foreground">
+            NetNeural platform billing management
+          </p>
         </div>
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-4 text-center">
             <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-semibold">NetNeural Organization Required</p>
+            <p className="text-lg font-semibold">
+              NetNeural Organization Required
+            </p>
             <p className="max-w-md text-sm text-muted-foreground">
-              Billing Administration is only available when the NetNeural organization is selected.
-              Switch to the NetNeural organization from the sidebar to access this page.
+              Billing Administration is only available when the NetNeural
+              organization is selected. Switch to the NetNeural organization
+              from the sidebar to access this page.
             </p>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -477,21 +558,27 @@ function BillingAdminContent() {
   }
 
   // Permission check: only owner, billing role, or super_admin
-  const hasAccess = isSuperAdmin || userRole === 'owner' || userRole === 'billing'
+  const hasAccess =
+    isSuperAdmin || userRole === 'owner' || userRole === 'billing'
   if (!hasAccess) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Billing Administration</h2>
-          <p className="text-muted-foreground">NetNeural platform billing management</p>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Billing Administration
+          </h2>
+          <p className="text-muted-foreground">
+            NetNeural platform billing management
+          </p>
         </div>
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-4 text-center">
             <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold">Access Restricted</p>
             <p className="max-w-md text-sm text-muted-foreground">
-              You need Owner or Billing role in the NetNeural organization to access
-              Billing Administration. Contact your administrator for access.
+              You need Owner or Billing role in the NetNeural organization to
+              access Billing Administration. Contact your administrator for
+              access.
             </p>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -506,7 +593,8 @@ function BillingAdminContent() {
   const canManage = isSuperAdmin || permissions.canManageBilling
 
   // Owner/billing tabs visible to org owners, billing role, and super admins
-  const canAccessOwnerTabs = isSuperAdmin || userRole === 'owner' || userRole === 'billing'
+  const canAccessOwnerTabs =
+    isSuperAdmin || userRole === 'owner' || userRole === 'billing'
 
   const visibleTabs = billingTabs.filter(
     (tab) => !tab.ownerOnly || canAccessOwnerTabs
@@ -541,13 +629,20 @@ function BillingAdminContent() {
                       className={cn(
                         'flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-all',
                         isActive
-                          ? cn(mode.bg, mode.color, 'shadow-sm ring-1 ring-inset',
-                              mode.value === 'off' && 'ring-gray-300 dark:ring-gray-600',
-                              mode.value === 'testing' && 'ring-amber-300 dark:ring-amber-700',
-                              mode.value === 'live' && 'ring-green-300 dark:ring-green-700',
+                          ? cn(
+                              mode.bg,
+                              mode.color,
+                              'shadow-sm ring-1 ring-inset',
+                              mode.value === 'off' &&
+                                'ring-gray-300 dark:ring-gray-600',
+                              mode.value === 'testing' &&
+                                'ring-amber-300 dark:ring-amber-700',
+                              mode.value === 'live' &&
+                                'ring-green-300 dark:ring-green-700'
                             )
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                        (billingModeSaving || billingModeLoading) && 'opacity-50 cursor-not-allowed',
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                        (billingModeSaving || billingModeLoading) &&
+                          'cursor-not-allowed opacity-50'
                       )}
                       title={mode.description}
                     >
@@ -577,20 +672,35 @@ function BillingAdminContent() {
       <Tabs
         value={(() => {
           const groupMap: Record<string, string> = {
-            revenue: 'reports', 'ar-aging': 'reports', 'payment-failures': 'reports', 'tax-summary': 'reports',
-            invoices: 'transactions', payments: 'transactions',
-            subscriptions: 'reports', usage: 'reports', expenses: 'reports', customers: 'management',
-            'plan-management': 'operations', operations: 'operations', 'promo-codes': 'operations',
-            plans: 'reseller', 'hydra-kpis': 'reseller', 'reseller-applications': 'reseller',
-            'admin-customers': 'administration', onboarding: 'administration',
+            revenue: 'reports',
+            'ar-aging': 'reports',
+            'payment-failures': 'reports',
+            'tax-summary': 'reports',
+            invoices: 'transactions',
+            payments: 'transactions',
+            subscriptions: 'reports',
+            usage: 'reports',
+            expenses: 'reports',
+            customers: 'management',
+            'plan-management': 'operations',
+            operations: 'operations',
+            'promo-codes': 'operations',
+            plans: 'reseller',
+            'hydra-kpis': 'reseller',
+            'reseller-applications': 'reseller',
+            'admin-customers': 'administration',
+            onboarding: 'administration',
           }
           return groupMap[activeTab] || 'reports'
         })()}
         onValueChange={(group) => {
           const defaults: Record<string, string> = {
-            reports: 'revenue', transactions: 'invoices',
-            management: 'customers', operations: 'plan-management',
-            reseller: 'plans', administration: 'admin-customers',
+            reports: 'revenue',
+            transactions: 'invoices',
+            management: 'customers',
+            operations: 'plan-management',
+            reseller: 'plans',
+            administration: 'admin-customers',
           }
           handleTabChange(defaults[group] || 'financial-reports')
         }}
@@ -617,7 +727,10 @@ function BillingAdminContent() {
             <Network className="h-4 w-4" />
             <span>Reseller</span>
           </TabsTrigger>
-          <TabsTrigger value="administration" className="flex items-center gap-2">
+          <TabsTrigger
+            value="administration"
+            className="flex items-center gap-2"
+          >
             <UsersRound className="h-4 w-4" />
             <span>Administration</span>
           </TabsTrigger>
@@ -635,15 +748,24 @@ function BillingAdminContent() {
                 <FileBarChart className="h-4 w-4" />
                 AR Aging
               </TabsTrigger>
-              <TabsTrigger value="payment-failures" className="flex items-center gap-2">
+              <TabsTrigger
+                value="payment-failures"
+                className="flex items-center gap-2"
+              >
                 <FileBarChart className="h-4 w-4" />
                 Payment Failures
               </TabsTrigger>
-              <TabsTrigger value="tax-summary" className="flex items-center gap-2">
+              <TabsTrigger
+                value="tax-summary"
+                className="flex items-center gap-2"
+              >
                 <FileBarChart className="h-4 w-4" />
                 Tax Summary
               </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+              <TabsTrigger
+                value="subscriptions"
+                className="flex items-center gap-2"
+              >
                 <Repeat className="h-4 w-4" />
                 Subscriptions
               </TabsTrigger>
@@ -712,7 +834,10 @@ function BillingAdminContent() {
         <TabsContent value="management">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="customers" className="flex items-center gap-2">
+              <TabsTrigger
+                value="customers"
+                className="flex items-center gap-2"
+              >
                 <Users className="h-4 w-4" />
                 Customers
               </TabsTrigger>
@@ -731,11 +856,17 @@ function BillingAdminContent() {
                 <DollarSign className="h-4 w-4" />
                 Plans & Pricing
               </TabsTrigger>
-              <TabsTrigger value="hydra-kpis" className="flex items-center gap-2">
+              <TabsTrigger
+                value="hydra-kpis"
+                className="flex items-center gap-2"
+              >
                 <Network className="h-4 w-4" />
                 Hydra KPIs
               </TabsTrigger>
-              <TabsTrigger value="reseller-applications" className="flex items-center gap-2">
+              <TabsTrigger
+                value="reseller-applications"
+                className="flex items-center gap-2"
+              >
                 <FileText className="h-4 w-4" />
                 Applications
               </TabsTrigger>
@@ -756,11 +887,17 @@ function BillingAdminContent() {
         <TabsContent value="administration">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="admin-customers" className="flex items-center gap-2">
+              <TabsTrigger
+                value="admin-customers"
+                className="flex items-center gap-2"
+              >
                 <UsersRound className="h-4 w-4" />
                 Customers
               </TabsTrigger>
-              <TabsTrigger value="onboarding" className="flex items-center gap-2">
+              <TabsTrigger
+                value="onboarding"
+                className="flex items-center gap-2"
+              >
                 <UserCheck className="h-4 w-4" />
                 Onboarding
               </TabsTrigger>
@@ -778,15 +915,24 @@ function BillingAdminContent() {
         <TabsContent value="operations">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="plan-management" className="flex items-center gap-2">
+              <TabsTrigger
+                value="plan-management"
+                className="flex items-center gap-2"
+              >
                 <Settings className="h-4 w-4" />
                 Plan Management
               </TabsTrigger>
-              <TabsTrigger value="operations" className="flex items-center gap-2">
+              <TabsTrigger
+                value="operations"
+                className="flex items-center gap-2"
+              >
                 <Wrench className="h-4 w-4" />
                 Billing Ops
               </TabsTrigger>
-              <TabsTrigger value="promo-codes" className="flex items-center gap-2">
+              <TabsTrigger
+                value="promo-codes"
+                className="flex items-center gap-2"
+              >
                 <Tag className="h-4 w-4" />
                 Promo Codes
               </TabsTrigger>

@@ -75,7 +75,10 @@ function CustomerDetailContent() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    const { data, error: fetchError } = await fetchCustomerDetail(supabase, orgId)
+    const { data, error: fetchError } = await fetchCustomerDetail(
+      supabase,
+      orgId
+    )
     if (fetchError) {
       setError(fetchError)
       setLoading(false)
@@ -144,7 +147,10 @@ function CustomerDetailContent() {
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold">Error loading customer</p>
             <p className="text-sm text-muted-foreground">{error}</p>
-            <Button variant="outline" onClick={() => router.push('/dashboard/admin/customers')}>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/dashboard/admin/customers')}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Customers
             </Button>
@@ -154,7 +160,9 @@ function CustomerDetailContent() {
     )
   }
 
-  const currentStage: LifecycleStage = customer ? getLifecycleStage(customer) : 'trial'
+  const currentStage: LifecycleStage = customer
+    ? getLifecycleStage(customer)
+    : 'trial'
 
   async function handleStageOverride(toStage: LifecycleStage, reason: string) {
     if (!customer || !user) return
@@ -187,12 +195,12 @@ function CustomerDetailContent() {
           <div>
             {loading ? (
               <>
-                <Skeleton className="h-8 w-48 mb-1" />
+                <Skeleton className="mb-1 h-8 w-48" />
                 <Skeleton className="h-4 w-32" />
               </>
             ) : customer ? (
               <>
-                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                   <Building2 className="h-6 w-6" />
                   {customer.name}
                 </h2>
@@ -213,7 +221,7 @@ function CustomerDetailContent() {
 
       {loading ? (
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             <Skeleton className="h-40 w-full" />
             <Skeleton className="h-64 w-full" />
           </div>
@@ -222,11 +230,11 @@ function CustomerDetailContent() {
       ) : customer ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column: Details + Lifecycle */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* Lifecycle stage card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Activity className="h-5 w-5" />
                   Lifecycle Stage
                 </CardTitle>
@@ -240,7 +248,9 @@ function CustomerDetailContent() {
                 {/* Stage history */}
                 {lifecycleEvents.length > 0 && (
                   <div className="mt-6 space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Stage History</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Stage History
+                    </p>
                     <div className="space-y-1">
                       {lifecycleEvents.slice(0, 5).map((event) => (
                         <div
@@ -249,7 +259,9 @@ function CustomerDetailContent() {
                         >
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground">
-                              {event.from_stage ? formatLifecycleStage(event.from_stage) : 'Initial'}
+                              {event.from_stage
+                                ? formatLifecycleStage(event.from_stage)
+                                : 'Initial'}
                             </span>
                             <span className="text-muted-foreground">→</span>
                             <span className="font-medium">
@@ -277,7 +289,9 @@ function CustomerDetailContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">Devices</p>
-                      <p className="text-2xl font-bold">{customer.device_count}</p>
+                      <p className="text-2xl font-bold">
+                        {customer.device_count}
+                      </p>
                       <p className="text-xs text-emerald-600">
                         {customer.active_device_count} active
                       </p>
@@ -292,7 +306,9 @@ function CustomerDetailContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">Members</p>
-                      <p className="text-2xl font-bold">{customer.member_count}</p>
+                      <p className="text-2xl font-bold">
+                        {customer.member_count}
+                      </p>
                     </div>
                     <Users className="h-8 w-8 text-muted-foreground/30" />
                   </div>
@@ -319,7 +335,9 @@ function CustomerDetailContent() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground">Health Score</p>
+                      <p className="text-xs text-muted-foreground">
+                        Health Score
+                      </p>
                       <HealthScoreBadge
                         score={customer.health_score}
                         breakdown={{
@@ -339,7 +357,7 @@ function CustomerDetailContent() {
             {/* Subscription info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Calendar className="h-5 w-5" />
                   Subscription
                 </CardTitle>
@@ -349,7 +367,9 @@ function CustomerDetailContent() {
                   <div>
                     <p className="text-xs text-muted-foreground">Plan</p>
                     <p className="text-sm font-semibold">
-                      {customer.plan_name || customer.subscription_tier || 'No plan'}
+                      {customer.plan_name ||
+                        customer.subscription_tier ||
+                        'No plan'}
                     </p>
                   </div>
                   <div>
@@ -373,14 +393,20 @@ function CustomerDetailContent() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Last Active</p>
-                    <p className="text-sm flex items-center gap-1">
+                    <p className="flex items-center gap-1 text-sm">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      {customer.last_active ? fmt.timeAgo(customer.last_active) : 'Never'}
+                      {customer.last_active
+                        ? fmt.timeAgo(customer.last_active)
+                        : 'Never'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Customer Since</p>
-                    <p className="text-sm">{fmt.dateOnly(customer.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Customer Since
+                    </p>
+                    <p className="text-sm">
+                      {fmt.dateOnly(customer.created_at)}
+                    </p>
                   </div>
                 </div>
               </CardContent>

@@ -17,7 +17,10 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { TaxSummaryReport as TaxSummaryData, JurisdictionRevenue } from '@/lib/admin/financial-report-queries'
+import type {
+  TaxSummaryReport as TaxSummaryData,
+  JurisdictionRevenue,
+} from '@/lib/admin/financial-report-queries'
 import { Receipt, MapPin } from 'lucide-react'
 
 interface TaxSummaryReportProps {
@@ -34,7 +37,11 @@ function fmtUsd(value: number): string {
   }).format(value)
 }
 
-function JurisdictionTable({ jurisdictions }: { jurisdictions: JurisdictionRevenue[] }) {
+function JurisdictionTable({
+  jurisdictions,
+}: {
+  jurisdictions: JurisdictionRevenue[]
+}) {
   if (jurisdictions.length === 0) {
     return (
       <p className="py-4 text-center text-sm text-muted-foreground">
@@ -103,7 +110,9 @@ export function TaxSummaryReport({ data, loading }: TaxSummaryReportProps) {
             <Receipt className="h-5 w-5" />
             Tax Summary
           </CardTitle>
-          <CardDescription>Revenue by jurisdiction for tax reporting</CardDescription>
+          <CardDescription>
+            Revenue by jurisdiction for tax reporting
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -126,9 +135,7 @@ export function TaxSummaryReport({ data, loading }: TaxSummaryReportProps) {
             <Receipt className="h-5 w-5" />
             Quarterly Tax Summary
           </CardTitle>
-          <CardDescription>
-            Revenue by jurisdiction per quarter
-          </CardDescription>
+          <CardDescription>Revenue by jurisdiction per quarter</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">

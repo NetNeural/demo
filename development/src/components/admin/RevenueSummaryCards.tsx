@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DollarSign,
   TrendingUp,
@@ -28,7 +23,10 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`
 }
 
-export function RevenueSummaryCards({ summary, loading }: RevenueSummaryCardsProps) {
+export function RevenueSummaryCards({
+  summary,
+  loading,
+}: RevenueSummaryCardsProps) {
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -94,7 +92,8 @@ export function RevenueSummaryCards({ summary, loading }: RevenueSummaryCardsPro
       value: `${summary.trialToPaidRate.toFixed(1)}%`,
       subtitle: 'Conversion rate',
       icon: ArrowUpRight,
-      iconColor: summary.trialToPaidRate > 50 ? 'text-emerald-600' : 'text-amber-600',
+      iconColor:
+        summary.trialToPaidRate > 50 ? 'text-emerald-600' : 'text-amber-600',
     },
   ]
 
@@ -113,7 +112,9 @@ export function RevenueSummaryCards({ summary, loading }: RevenueSummaryCardsPro
               <div className="text-2xl font-bold">{card.value}</div>
               {card.badge}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{card.subtitle}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {card.subtitle}
+            </p>
           </CardContent>
         </Card>
       ))}

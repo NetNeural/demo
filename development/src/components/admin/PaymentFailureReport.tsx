@@ -28,7 +28,12 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts'
-import { AlertCircle, TrendingDown, CheckCircle2, Building2 } from 'lucide-react'
+import {
+  AlertCircle,
+  TrendingDown,
+  CheckCircle2,
+  Building2,
+} from 'lucide-react'
 
 interface PaymentFailureReportProps {
   data: PaymentFailureData | null
@@ -60,7 +65,10 @@ function getReasonStyle(reason: string): string {
   return 'bg-muted text-muted-foreground'
 }
 
-export function PaymentFailureReport({ data, loading }: PaymentFailureReportProps) {
+export function PaymentFailureReport({
+  data,
+  loading,
+}: PaymentFailureReportProps) {
   if (loading) {
     return (
       <Card>
@@ -104,7 +112,9 @@ export function PaymentFailureReport({ data, loading }: PaymentFailureReportProp
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total Failed</p>
-                <p className="text-2xl font-bold text-red-600">{data.totalFailed}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {data.totalFailed}
+                </p>
               </div>
               <TrendingDown className="h-8 w-8 text-red-500/30" />
             </div>
@@ -115,7 +125,9 @@ export function PaymentFailureReport({ data, loading }: PaymentFailureReportProp
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Recovered</p>
-                <p className="text-2xl font-bold text-emerald-600">{data.totalRecovered}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {data.totalRecovered}
+                </p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-emerald-500/30" />
             </div>
@@ -141,7 +153,9 @@ export function PaymentFailureReport({ data, loading }: PaymentFailureReportProp
             <TrendingDown className="h-5 w-5" />
             Payment Failure Trend
           </CardTitle>
-          <CardDescription>Failed vs recovered payments over time</CardDescription>
+          <CardDescription>
+            Failed vs recovered payments over time
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.trend.length > 0 ? (
@@ -226,7 +240,9 @@ export function PaymentFailureReport({ data, loading }: PaymentFailureReportProp
             <Building2 className="h-5 w-5" />
             Top Affected Organizations
           </CardTitle>
-          <CardDescription>Organizations with the most payment failures</CardDescription>
+          <CardDescription>
+            Organizations with the most payment failures
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.topOrgs.length > 0 ? (

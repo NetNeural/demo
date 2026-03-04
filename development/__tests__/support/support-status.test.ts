@@ -17,7 +17,8 @@ describe('Support Status', () => {
   })
 
   it('AI fallback message is provided when key missing', () => {
-    const fallback = "I'm having trouble connecting to my AI engine right now. You can still create a support ticket..."
+    const fallback =
+      "I'm having trouble connecting to my AI engine right now. You can still create a support ticket..."
     expect(fallback.length).toBeGreaterThan(0)
   })
 })

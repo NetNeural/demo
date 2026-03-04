@@ -33,7 +33,9 @@ function fileToBase64(file: File | Blob): Promise<string> {
  *
  * @param file  The image File or Blob to moderate
  */
-export async function moderateImage(file: File | Blob): Promise<ModerationResult> {
+export async function moderateImage(
+  file: File | Blob
+): Promise<ModerationResult> {
   try {
     // Skip moderation for SVGs (they're vector graphics, not photos)
     if (file.type === 'image/svg+xml') {
@@ -56,7 +58,9 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
     const base64 = await fileToBase64(file)
 
     const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -74,8 +78,8 @@ export async function moderateImage(file: File | Blob): Promise<ModerationResult
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}`,
-        'apikey': supabaseAnonKey,
+        Authorization: `Bearer ${session?.access_token || supabaseAnonKey}`,
+        apikey: supabaseAnonKey,
       },
       body: JSON.stringify({ imageBase64: base64 }),
       signal: controller.signal,

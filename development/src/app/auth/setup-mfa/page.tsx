@@ -143,7 +143,7 @@ export default function SetupMfaPage() {
           verifyError.message?.toLowerCase().includes('code')
         setError(
           isCodeError
-            ? 'Invalid code. Make sure you scanned the QR code and the code hasn\'t expired. Codes refresh every 30 seconds.'
+            ? "Invalid code. Make sure you scanned the QR code and the code hasn't expired. Codes refresh every 30 seconds."
             : `Verification failed: ${verifyError.message}`
         )
         setVerifyCode('')
@@ -261,7 +261,9 @@ export default function SetupMfaPage() {
                 {qrCodeError ? (
                   <div className="flex h-48 w-48 flex-col items-center justify-center gap-3 text-center">
                     <AlertCircle className="h-8 w-8 text-amber-500" />
-                    <p className="text-xs text-muted-foreground">QR code failed to load. Use the manual code below.</p>
+                    <p className="text-xs text-muted-foreground">
+                      QR code failed to load. Use the manual code below.
+                    </p>
                   </div>
                 ) : (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -283,7 +285,7 @@ export default function SetupMfaPage() {
                 Can&apos;t scan? Enter this code manually:
               </Label>
               <div className="mt-1 flex items-center gap-2">
-                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono break-all">
+                <code className="flex-1 break-all rounded bg-muted px-3 py-2 font-mono text-sm">
                   {showSecret ? secret : '••••••••••••••••'}
                 </code>
                 <Button
@@ -338,7 +340,7 @@ export default function SetupMfaPage() {
               />
             </div>
 
-          {error && (
+            {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>

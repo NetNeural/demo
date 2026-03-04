@@ -1066,8 +1066,8 @@ export function NetNeuralLinkConfigDialog({
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                NetNeural-Link supports seamless addition of new device types and
-                protocols. Contact support for assistance with custom device
+                NetNeural-Link supports seamless addition of new device types
+                and protocols. Contact support for assistance with custom device
                 integrations.
               </AlertDescription>
             </Alert>

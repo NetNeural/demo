@@ -45,7 +45,8 @@ export default function FacilityMapPage() {
               : 'Facility Maps'}
           </h2>
           <p className="text-muted-foreground">
-            Upload floor plans and place devices to visualize their real-time status
+            Upload floor plans and place devices to visualize their real-time
+            status
           </p>
         </div>
       </div>

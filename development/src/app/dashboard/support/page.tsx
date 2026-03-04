@@ -159,7 +159,11 @@ function SupportPageContent() {
 
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
   // Platform admins (NetNeural org owners) also get access
-  const canAccessPlatformTabs = isPlatformAdmin(user, currentOrganization?.id, userRole)
+  const canAccessPlatformTabs = isPlatformAdmin(
+    user,
+    currentOrganization?.id,
+    userRole
+  )
 
   const visibleTabs = tabs.filter(
     (tab) => !tab.superAdminOnly || canAccessPlatformTabs
@@ -193,8 +197,12 @@ function SupportPageContent() {
             'data-operations': 'customer-support',
             communication: 'customer-support',
             documentation: 'resources',
-            troubleshooting: 'platform', 'system-health': 'platform', tests: 'platform',
-            'platform-health': 'platform', 'security-audit': 'platform', permissions: 'platform',
+            troubleshooting: 'platform',
+            'system-health': 'platform',
+            tests: 'platform',
+            'platform-health': 'platform',
+            'security-audit': 'platform',
+            permissions: 'platform',
             'go-live-runbook': 'platform',
           }
           return groupMap[activeTab] || 'customer-support'
@@ -210,7 +218,10 @@ function SupportPageContent() {
         className="space-y-6"
       >
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="customer-support" className="flex items-center gap-2">
+          <TabsTrigger
+            value="customer-support"
+            className="flex items-center gap-2"
+          >
             <Users className="h-4 w-4" />
             <span>Customer Support</span>
           </TabsTrigger>
@@ -230,24 +241,36 @@ function SupportPageContent() {
         <TabsContent value="customer-support">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="access-requests" className="flex items-center gap-2">
+              <TabsTrigger
+                value="access-requests"
+                className="flex items-center gap-2"
+              >
                 <Bot className="h-4 w-4" />
                 Mercury Support
               </TabsTrigger>
               {!isSubOrg && (
-                <TabsTrigger value="executive-reports" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="executive-reports"
+                  className="flex items-center gap-2"
+                >
                   <FileBarChart className="h-4 w-4" />
                   Reports
                 </TabsTrigger>
               )}
               {!isSubOrg && (
-                <TabsTrigger value="data-operations" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="data-operations"
+                  className="flex items-center gap-2"
+                >
                   <Download className="h-4 w-4" />
                   Data & Operations
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="communication" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="communication"
+                  className="flex items-center gap-2"
+                >
                   <Mail className="h-4 w-4" />
                   Communication
                 </TabsTrigger>
@@ -287,11 +310,17 @@ function SupportPageContent() {
           <TabsContent value="platform">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
-                <TabsTrigger value="troubleshooting" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="troubleshooting"
+                  className="flex items-center gap-2"
+                >
                   <Wrench className="h-4 w-4" />
                   Troubleshooting
                 </TabsTrigger>
-                <TabsTrigger value="system-health" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="system-health"
+                  className="flex items-center gap-2"
+                >
                   <Activity className="h-4 w-4" />
                   System Health
                 </TabsTrigger>
@@ -299,19 +328,31 @@ function SupportPageContent() {
                   <FlaskConical className="h-4 w-4" />
                   Tests & Validation
                 </TabsTrigger>
-                <TabsTrigger value="platform-health" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="platform-health"
+                  className="flex items-center gap-2"
+                >
                   <Activity className="h-4 w-4" />
                   Platform Health
                 </TabsTrigger>
-                <TabsTrigger value="security-audit" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="security-audit"
+                  className="flex items-center gap-2"
+                >
                   <ShieldCheck className="h-4 w-4" />
                   Security Audit
                 </TabsTrigger>
-                <TabsTrigger value="permissions" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="permissions"
+                  className="flex items-center gap-2"
+                >
                   <KeyRound className="h-4 w-4" />
                   Permissions
                 </TabsTrigger>
-                <TabsTrigger value="go-live-runbook" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="go-live-runbook"
+                  className="flex items-center gap-2"
+                >
                   <Rocket className="h-4 w-4" />
                   Go-Live Runbook
                 </TabsTrigger>

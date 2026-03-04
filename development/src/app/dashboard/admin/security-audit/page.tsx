@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -67,9 +73,11 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'no-anon-sensitive',
         label: 'No anon/public access to sensitive tables',
-        description: 'Verify anon role has no SELECT on orgs, devices, users, telemetry',
+        description:
+          'Verify anon role has no SELECT on orgs, devices, users, telemetry',
         severity: 'critical',
-        howToVerify: 'Run: SELECT * FROM pg_policies WHERE roles @> ARRAY[\'anon\']',
+        howToVerify:
+          "Run: SELECT * FROM pg_policies WHERE roles @> ARRAY['anon']",
       },
     ],
   },
@@ -80,14 +88,16 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'no-service-role-client',
         label: 'Service role key not exposed to browser',
-        description: 'SUPABASE_SERVICE_ROLE_KEY must never appear in client bundle',
+        description:
+          'SUPABASE_SERVICE_ROLE_KEY must never appear in client bundle',
         severity: 'critical',
         howToVerify: 'grep -r "SUPABASE_SERVICE_ROLE" src/ — should be empty',
       },
       {
         id: 'anon-key-minimal',
         label: 'Anon key has minimal permissions',
-        description: 'Anon key is public — it should only hit public-safe endpoints',
+        description:
+          'Anon key is public — it should only hit public-safe endpoints',
         severity: 'high',
         howToVerify: 'Supabase → Settings → API → check anon key policies',
       },
@@ -101,7 +111,8 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'github-secrets-set',
         label: 'All GitHub Secrets set for all 3 repos',
-        description: 'DEV_, STAGING_, PROD_ prefixed secrets in respective repos',
+        description:
+          'DEV_, STAGING_, PROD_ prefixed secrets in respective repos',
         severity: 'high',
         howToVerify: 'gh secret list --repo NetNeural/MonoRepo',
       },
@@ -114,21 +125,25 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'ef-cors-origins',
         label: 'Edge Functions have restricted CORS origins',
-        description: 'Access-Control-Allow-Origin must not be wildcard (*) for sensitive functions',
+        description:
+          'Access-Control-Allow-Origin must not be wildcard (*) for sensitive functions',
         severity: 'high',
         howToVerify: 'Review supabase/functions/*/index.ts for corsHeaders',
       },
       {
         id: 'ef-auth-required',
         label: 'Sensitive Edge Functions verify JWT',
-        description: 'All non-public functions must validate Authorization header',
+        description:
+          'All non-public functions must validate Authorization header',
         severity: 'critical',
-        howToVerify: 'Review each function for createClient with auth.getUser() check',
+        howToVerify:
+          'Review each function for createClient with auth.getUser() check',
       },
       {
         id: 'ef-input-validation',
         label: 'Edge Functions validate and sanitize inputs',
-        description: 'No raw SQL from user input; JSON schema validation in place',
+        description:
+          'No raw SQL from user input; JSON schema validation in place',
         severity: 'high',
         howToVerify: 'Review function handlers for input validation logic',
       },
@@ -141,7 +156,8 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'storage-not-public',
         label: 'Sensitive buckets are not public',
-        description: 'organization-assets, avatars etc. should enforce owner access rules',
+        description:
+          'organization-assets, avatars etc. should enforce owner access rules',
         severity: 'high',
         howToVerify: 'Supabase → Storage → Policies per bucket',
       },
@@ -161,7 +177,8 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'auth-email-templates',
         label: 'Custom email templates configured',
-        description: 'Invite, password reset, and magic link emails are branded correctly',
+        description:
+          'Invite, password reset, and magic link emails are branded correctly',
         severity: 'medium',
         howToVerify: 'Supabase → Auth → Email Templates',
       },
@@ -182,7 +199,8 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'auth-session-expiry',
         label: 'JWT expiry set appropriately',
-        description: 'Access token expiry ≤ 1 hour; refresh token rotation enabled',
+        description:
+          'Access token expiry ≤ 1 hour; refresh token rotation enabled',
         severity: 'medium',
         howToVerify: 'Supabase → Auth → JWT expiry settings',
       },
@@ -195,16 +213,20 @@ const AUDIT_SECTIONS: Section[] = [
       {
         id: 'audit-admin-actions',
         label: 'Admin actions write to audit log',
-        description: 'Super admin operations (tier change, org delete, user ban) logged',
+        description:
+          'Super admin operations (tier change, org delete, user ban) logged',
         severity: 'high',
-        howToVerify: 'Check audit_log table; verify trigger or function inserts on sensitive ops',
+        howToVerify:
+          'Check audit_log table; verify trigger or function inserts on sensitive ops',
       },
       {
         id: 'audit-login-events',
         label: 'Login/logout events captured',
-        description: 'Supabase Auth logs or custom table tracks sign-in activity',
+        description:
+          'Supabase Auth logs or custom table tracks sign-in activity',
         severity: 'medium',
-        howToVerify: 'Supabase → Auth → Users → check last_sign_in_at; or custom audit table',
+        howToVerify:
+          'Supabase → Auth → Users → check last_sign_in_at; or custom audit table',
       },
     ],
   },
@@ -221,7 +243,7 @@ export default function SecurityAuditPage() {
   const { user, loading } = useUser()
   const isSuperAdmin = isPlatformAdmin(user)
 
-  const allIds = AUDIT_SECTIONS.flatMap(s => s.items.map(i => i.id))
+  const allIds = AUDIT_SECTIONS.flatMap((s) => s.items.map((i) => i.id))
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   // Persist to localStorage
@@ -229,14 +251,20 @@ export default function SecurityAuditPage() {
     try {
       const saved = localStorage.getItem('security_audit_v1')
       if (saved) setChecked(new Set(JSON.parse(saved) as string[]))
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const toggle = (id: string) => {
-    setChecked(prev => {
+    setChecked((prev) => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
-      try { localStorage.setItem('security_audit_v1', JSON.stringify([...next])) } catch { /* ignore */ }
+      try {
+        localStorage.setItem('security_audit_v1', JSON.stringify([...next]))
+      } catch {
+        /* ignore */
+      }
       return next
     })
   }
@@ -245,13 +273,13 @@ export default function SecurityAuditPage() {
   const done = checked.size
   const pct = Math.round((done / total) * 100)
 
-  const criticalUnchecked = AUDIT_SECTIONS.flatMap(s => s.items).filter(
-    i => i.severity === 'critical' && !checked.has(i.id)
+  const criticalUnchecked = AUDIT_SECTIONS.flatMap((s) => s.items).filter(
+    (i) => i.severity === 'critical' && !checked.has(i.id)
   ).length
 
   if (loading) {
     return (
-      <div className="flex-1 p-8 flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
@@ -264,7 +292,9 @@ export default function SecurityAuditPage() {
           <div className="space-y-4 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold">Super Admin Only</p>
-            <p className="text-sm text-muted-foreground">Security audit requires super admin access.</p>
+            <p className="text-sm text-muted-foreground">
+              Security audit requires super admin access.
+            </p>
           </div>
         </div>
       </div>
@@ -276,7 +306,7 @@ export default function SecurityAuditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
             <ShieldCheck className="h-8 w-8" />
             Security Audit Checklist
           </h2>
@@ -286,12 +316,14 @@ export default function SecurityAuditPage() {
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold">{pct}%</p>
-          <p className="text-xs text-muted-foreground">{done} / {total} complete</p>
+          <p className="text-xs text-muted-foreground">
+            {done} / {total} complete
+          </p>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-100 rounded-full h-3">
+      <div className="h-3 w-full rounded-full bg-gray-100">
         <div
           className={`h-3 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : pct > 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
           style={{ width: `${pct}%` }}
@@ -301,10 +333,15 @@ export default function SecurityAuditPage() {
       {/* Critical warning */}
       {criticalUnchecked > 0 && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-4 flex items-center gap-3">
-            <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+          <CardContent className="flex items-center gap-3 pt-4">
+            <XCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
             <p className="text-sm text-red-700">
-              <strong>{criticalUnchecked} critical item{criticalUnchecked > 1 ? 's' : ''}</strong> still unchecked. Do not launch until all critical items are verified.
+              <strong>
+                {criticalUnchecked} critical item
+                {criticalUnchecked > 1 ? 's' : ''}
+              </strong>{' '}
+              still unchecked. Do not launch until all critical items are
+              verified.
             </p>
           </CardContent>
         </Card>
@@ -312,55 +349,72 @@ export default function SecurityAuditPage() {
 
       {pct === 100 && (
         <Card className="border-green-200 bg-green-50">
-          <CardContent className="pt-4 flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-700 font-medium">All security checks complete — you are cleared for launch!</p>
+          <CardContent className="flex items-center gap-3 pt-4">
+            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
+            <p className="text-sm font-medium text-green-700">
+              All security checks complete — you are cleared for launch!
+            </p>
           </CardContent>
         </Card>
       )}
 
       {/* Sections */}
-      {AUDIT_SECTIONS.map(section => {
-        const sectionDone = section.items.filter(i => checked.has(i.id)).length
+      {AUDIT_SECTIONS.map((section) => {
+        const sectionDone = section.items.filter((i) =>
+          checked.has(i.id)
+        ).length
         return (
           <Card key={section.title}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">{section.icon}{section.title}</span>
-                <Badge variant="outline">{sectionDone}/{section.items.length}</Badge>
+                <span className="flex items-center gap-2">
+                  {section.icon}
+                  {section.title}
+                </span>
+                <Badge variant="outline">
+                  {sectionDone}/{section.items.length}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {section.items.map(item => (
+              {section.items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${checked.has(item.id) ? 'bg-green-50 border-green-200' : 'hover:bg-muted/50'}`}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${checked.has(item.id) ? 'border-green-200 bg-green-50' : 'hover:bg-muted/50'}`}
                   onClick={() => toggle(item.id)}
                 >
                   <Checkbox
                     checked={checked.has(item.id)}
                     onCheckedChange={() => toggle(item.id)}
                     className="mt-0.5"
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-medium text-sm ${checked.has(item.id) ? 'line-through text-muted-foreground' : ''}`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p
+                        className={`text-sm font-medium ${checked.has(item.id) ? 'text-muted-foreground line-through' : ''}`}
+                      >
                         {item.label}
                       </p>
-                      <Badge className={`${SEVERITY_COLORS[item.severity]} border text-xs`}>
+                      <Badge
+                        className={`${SEVERITY_COLORS[item.severity]} border text-xs`}
+                      >
                         {item.severity}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
-                    <p className="text-xs text-blue-600 mt-1 font-mono">→ {item.howToVerify}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {item.description}
+                    </p>
+                    <p className="mt-1 font-mono text-xs text-blue-600">
+                      → {item.howToVerify}
+                    </p>
                   </div>
                   {item.docsUrl && (
                     <a
                       href={item.docsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
                     </a>
@@ -372,7 +426,7 @@ export default function SecurityAuditPage() {
         )
       })}
 
-      <p className="text-xs text-muted-foreground pb-8">
+      <p className="pb-8 text-xs text-muted-foreground">
         Checklist progress is automatically saved to your browser.
       </p>
     </div>

@@ -4,11 +4,11 @@ import { Trend, Rate } from 'k6/metrics'
 
 /**
  * Scenario 4: Edge Function API Throughput
- * 
+ *
  * Sustained load against all major Edge Functions to measure p95 response
  * times and identify throughput limits.
  * Acceptance criteria: p95 < 2s across all functions, < 1% error rate
- * 
+ *
  * Run:
  *   k6 run 04-api-throughput.js \
  *     -e SUPABASE_URL=https://bldojxpockljyivldxwf.supabase.co \
@@ -17,7 +17,7 @@ import { Trend, Rate } from 'k6/metrics'
  */
 
 const fnLatency = new Trend('edge_fn_latency', true)
-const fnErrors  = new Rate('edge_fn_error_rate')
+const fnErrors = new Rate('edge_fn_error_rate')
 
 export const options = {
   scenarios: {
@@ -34,23 +34,25 @@ export const options = {
   },
 }
 
-const BASE_URL = __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
+const BASE_URL =
+  __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
 const ANON_KEY = __ENV.ANON_KEY || ''
 const ACCESS_TOKEN = __ENV.ACCESS_TOKEN || ANON_KEY
 
 const AUTH_HEADERS = {
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${ACCESS_TOKEN}`,
-  'apikey': ANON_KEY,
+  Authorization: `Bearer ${ACCESS_TOKEN}`,
+  apikey: ANON_KEY,
 }
 
 function callFn(name, method = 'GET', body = null) {
   const url = `${BASE_URL}/functions/v1/${name}`
   const params = { headers: AUTH_HEADERS, timeout: '10s' }
   const start = Date.now()
-  const res = method === 'GET'
-    ? http.get(url, params)
-    : http.post(url, JSON.stringify(body), params)
+  const res =
+    method === 'GET'
+      ? http.get(url, params)
+      : http.post(url, JSON.stringify(body), params)
   fnLatency.add(Date.now() - start)
   const ok = res.status < 500
   fnErrors.add(!ok)

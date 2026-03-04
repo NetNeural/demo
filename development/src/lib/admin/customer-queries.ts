@@ -4,7 +4,12 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { CustomerOverviewRow, CustomerSummaryStats, HealthStatus, LifecycleStage } from '@/types/billing'
+import type {
+  CustomerOverviewRow,
+  CustomerSummaryStats,
+  HealthStatus,
+  LifecycleStage,
+} from '@/types/billing'
 import { getHealthStatus, getLifecycleStage } from '@/types/billing'
 
 /** Columns selected from admin_customer_overview view */
@@ -111,7 +116,7 @@ export async function fetchCustomers(
 
   // Client-side lifecycle filter
   if (filters.lifecycleStage) {
-    rows = rows.filter(r => getLifecycleStage(r) === filters.lifecycleStage)
+    rows = rows.filter((r) => getLifecycleStage(r) === filters.lifecycleStage)
   }
 
   return { data: rows, count: count || 0, error: null }
@@ -125,7 +130,9 @@ export async function fetchCustomerSummary(
 ): Promise<CustomerSummaryStats> {
   const { data, error } = await supabase
     .from('admin_customer_overview')
-    .select('id, is_active, mrr, health_score, subscription_status, cancel_at_period_end')
+    .select(
+      'id, is_active, mrr, health_score, subscription_status, cancel_at_period_end'
+    )
 
   if (error || !data) {
     return {
@@ -140,12 +147,19 @@ export async function fetchCustomerSummary(
 
   const rows = data as CustomerOverviewRow[]
   const total = rows.length
-  const active = rows.filter(r => r.is_active).length
+  const active = rows.filter((r) => r.is_active).length
   const totalMrr = rows.reduce((sum, r) => sum + (Number(r.mrr) || 0), 0)
-  const avgHealth = total > 0 ? Math.round(rows.reduce((sum, r) => sum + (r.health_score || 0), 0) / total) : 0
-  const churned = rows.filter(r => r.subscription_status === 'canceled').length
+  const avgHealth =
+    total > 0
+      ? Math.round(
+          rows.reduce((sum, r) => sum + (r.health_score || 0), 0) / total
+        )
+      : 0
+  const churned = rows.filter(
+    (r) => r.subscription_status === 'canceled'
+  ).length
   const churnRate = total > 0 ? Math.round((churned / total) * 100) : 0
-  const atRisk = rows.filter(r => {
+  const atRisk = rows.filter((r) => {
     const status = getHealthStatus(r.health_score || 0)
     return status === 'at_risk' || status === 'critical'
   }).length
@@ -181,7 +195,9 @@ export async function fetchHealthStatusCounts(
 
   result.all = data.length
   for (const row of data) {
-    const status = getHealthStatus((row as { health_score: number }).health_score || 0)
+    const status = getHealthStatus(
+      (row as { health_score: number }).health_score || 0
+    )
     result[status]++
   }
 
@@ -203,7 +219,10 @@ export async function fetchPlanOptions(
   // Deduplicate
   const seen = new Set<string>()
   const plans: { slug: string; name: string }[] = []
-  for (const row of data as { plan_slug: string | null; plan_name: string | null }[]) {
+  for (const row of data as {
+    plan_slug: string | null
+    plan_name: string | null
+  }[]) {
     if (row.plan_slug && !seen.has(row.plan_slug)) {
       seen.add(row.plan_slug)
       plans.push({ slug: row.plan_slug, name: row.plan_name || row.plan_slug })

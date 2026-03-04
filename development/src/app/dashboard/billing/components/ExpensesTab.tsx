@@ -7,7 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -62,7 +68,13 @@ import autoTable from 'jspdf-autotable'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Category = 'infrastructure' | 'tooling' | 'ai' | 'monitoring' | 'hosting' | 'other'
+type Category =
+  | 'infrastructure'
+  | 'tooling'
+  | 'ai'
+  | 'monitoring'
+  | 'hosting'
+  | 'other'
 type BillingCycle = 'monthly' | 'annual' | 'one-time'
 
 interface Expense {
@@ -79,23 +91,59 @@ interface Expense {
   updated_at: string
 }
 
-const CATEGORY_META: Record<Category, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  infrastructure: { label: 'Infrastructure', icon: Server,      color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200' },
-  tooling:        { label: 'Tooling',        icon: Wrench,      color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
-  ai:             { label: 'AI / ML',        icon: Bot,         color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200' },
-  monitoring:     { label: 'Monitoring',     icon: Activity,    color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' },
-  hosting:        { label: 'Hosting',        icon: Globe,       color: 'text-teal-700',   bg: 'bg-teal-50 border-teal-200' },
-  other:          { label: 'Other',          icon: Package,     color: 'text-gray-700',   bg: 'bg-gray-50 border-gray-200' },
+const CATEGORY_META: Record<
+  Category,
+  { label: string; icon: React.ElementType; color: string; bg: string }
+> = {
+  infrastructure: {
+    label: 'Infrastructure',
+    icon: Server,
+    color: 'text-blue-700',
+    bg: 'bg-blue-50 border-blue-200',
+  },
+  tooling: {
+    label: 'Tooling',
+    icon: Wrench,
+    color: 'text-indigo-700',
+    bg: 'bg-indigo-50 border-indigo-200',
+  },
+  ai: {
+    label: 'AI / ML',
+    icon: Bot,
+    color: 'text-violet-700',
+    bg: 'bg-violet-50 border-violet-200',
+  },
+  monitoring: {
+    label: 'Monitoring',
+    icon: Activity,
+    color: 'text-orange-700',
+    bg: 'bg-orange-50 border-orange-200',
+  },
+  hosting: {
+    label: 'Hosting',
+    icon: Globe,
+    color: 'text-teal-700',
+    bg: 'bg-teal-50 border-teal-200',
+  },
+  other: {
+    label: 'Other',
+    icon: Package,
+    color: 'text-gray-700',
+    bg: 'bg-gray-50 border-gray-200',
+  },
 }
 
 const BILLING_CYCLE_LABELS: Record<BillingCycle, string> = {
-  monthly:   'Monthly',
-  annual:    'Annual',
+  monthly: 'Monthly',
+  annual: 'Annual',
   'one-time': 'One-time',
 }
 
 function fmt(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+  return (cents / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  })
 }
 
 /** Convert annual/one-time to monthly equivalent for total */
@@ -137,24 +185,33 @@ export function ExpensesTab() {
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
-  const load = useCallback(async (showRefresh = false) => {
-    if (showRefresh) setRefreshing(true)
-    else setLoading(true)
-    const { data, error } = await (supabase as any)
-      .from('platform_expenses')
-      .select('*')
-      .order('sort_order')
-      .order('name')
-    if (error) {
-      toast({ title: 'Failed to load expenses', description: error.message, variant: 'destructive' })
-    } else {
-      setExpenses(data || [])
-    }
-    setLoading(false)
-    setRefreshing(false)
-  }, [supabase, toast])
+  const load = useCallback(
+    async (showRefresh = false) => {
+      if (showRefresh) setRefreshing(true)
+      else setLoading(true)
+      const { data, error } = await (supabase as any)
+        .from('platform_expenses')
+        .select('*')
+        .order('sort_order')
+        .order('name')
+      if (error) {
+        toast({
+          title: 'Failed to load expenses',
+          description: error.message,
+          variant: 'destructive',
+        })
+      } else {
+        setExpenses(data || [])
+      }
+      setLoading(false)
+      setRefreshing(false)
+    },
+    [supabase, toast]
+  )
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   // ── Computed totals ───────────────────────────────────────────────────────
 
@@ -165,11 +222,16 @@ export function ExpensesTab() {
   )
   const totalAnnualCents = totalMonthlyCents * 12
 
-  const byCat = Object.entries(CATEGORY_META).map(([cat, meta]) => {
-    const items = active.filter((e) => e.category === cat)
-    const total = items.reduce((s, e) => s + toMonthlyEquivalent(e.amount_cents, e.billing_cycle), 0)
-    return { cat: cat as Category, meta, total, count: items.length }
-  }).filter((g) => g.count > 0)
+  const byCat = Object.entries(CATEGORY_META)
+    .map(([cat, meta]) => {
+      const items = active.filter((e) => e.category === cat)
+      const total = items.reduce(
+        (s, e) => s + toMonthlyEquivalent(e.amount_cents, e.billing_cycle),
+        0
+      )
+      return { cat: cat as Category, meta, total, count: items.length }
+    })
+    .filter((g) => g.count > 0)
 
   // ── Dialog helpers ────────────────────────────────────────────────────────
 
@@ -207,13 +269,22 @@ export function ExpensesTab() {
     }
     let error: any
     if (editingId) {
-      ;({ error } = await (supabase as any).from('platform_expenses').update(payload).eq('id', editingId))
+      ;({ error } = await (supabase as any)
+        .from('platform_expenses')
+        .update(payload)
+        .eq('id', editingId))
     } else {
-      ;({ error } = await (supabase as any).from('platform_expenses').insert(payload))
+      ;({ error } = await (supabase as any)
+        .from('platform_expenses')
+        .insert(payload))
     }
     setSaving(false)
     if (error) {
-      toast({ title: 'Save failed', description: error.message, variant: 'destructive' })
+      toast({
+        title: 'Save failed',
+        description: error.message,
+        variant: 'destructive',
+      })
     } else {
       toast({ title: editingId ? 'Expense updated' : 'Expense added' })
       setDialogOpen(false)
@@ -227,20 +298,35 @@ export function ExpensesTab() {
       .update({ is_active: !expense.is_active })
       .eq('id', expense.id)
     if (error) {
-      toast({ title: 'Update failed', description: error.message, variant: 'destructive' })
+      toast({
+        title: 'Update failed',
+        description: error.message,
+        variant: 'destructive',
+      })
     } else {
-      setExpenses((prev) => prev.map((e) => e.id === expense.id ? { ...e, is_active: !e.is_active } : e))
+      setExpenses((prev) =>
+        prev.map((e) =>
+          e.id === expense.id ? { ...e, is_active: !e.is_active } : e
+        )
+      )
     }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     setDeleting(true)
-    const { error } = await (supabase as any).from('platform_expenses').delete().eq('id', deleteId)
+    const { error } = await (supabase as any)
+      .from('platform_expenses')
+      .delete()
+      .eq('id', deleteId)
     setDeleting(false)
     setDeleteId(null)
     if (error) {
-      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' })
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      })
     } else {
       toast({ title: 'Expense removed' })
       load(true)
@@ -281,7 +367,8 @@ export function ExpensesTab() {
   }
 
   const exportCsv = () => {
-    const header = 'Name,Category,Vendor,Monthly Cost,Billing Cycle,Active,Notes'
+    const header =
+      'Name,Category,Vendor,Monthly Cost,Billing Cycle,Active,Notes'
     const rows = expenses.map((e) =>
       [
         `"${e.name}"`,
@@ -315,16 +402,24 @@ export function ExpensesTab() {
 
   return (
     <div className="space-y-6">
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Platform Expenses</h2>
-          <p className="text-sm text-muted-foreground">NetNeural operating costs — SaaS tools, hosting, and services</p>
+          <p className="text-sm text-muted-foreground">
+            NetNeural operating costs — SaaS tools, hosting, and services
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => load(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
@@ -353,7 +448,9 @@ export function ExpensesTab() {
             <CardTitle className="text-2xl">{fmt(totalMonthlyCents)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">{active.length} active line items</p>
+            <p className="text-xs text-muted-foreground">
+              {active.length} active line items
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -365,7 +462,9 @@ export function ExpensesTab() {
             <CardTitle className="text-2xl">{fmt(totalAnnualCents)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Annualised from monthly equivalent</p>
+            <p className="text-xs text-muted-foreground">
+              Annualised from monthly equivalent
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -375,9 +474,16 @@ export function ExpensesTab() {
           <CardContent className="pt-0">
             <div className="space-y-1">
               {byCat.map(({ cat, meta, total }) => (
-                <div key={cat} className="flex items-center justify-between text-xs">
-                  <span className={`font-medium ${meta.color}`}>{meta.label}</span>
-                  <span className="font-semibold tabular-nums">{fmt(total)}/mo</span>
+                <div
+                  key={cat}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span className={`font-medium ${meta.color}`}>
+                    {meta.label}
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {fmt(total)}/mo
+                  </span>
                 </div>
               ))}
             </div>
@@ -403,8 +509,12 @@ export function ExpensesTab() {
             <TableBody>
               {expenses.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                    No expenses recorded. Click <strong>Add Expense</strong> to get started.
+                  <TableCell
+                    colSpan={7}
+                    className="py-8 text-center text-muted-foreground"
+                  >
+                    No expenses recorded. Click <strong>Add Expense</strong> to
+                    get started.
                   </TableCell>
                 </TableRow>
               )}
@@ -412,17 +522,25 @@ export function ExpensesTab() {
                 const cat = CATEGORY_META[expense.category]
                 const Icon = cat.icon
                 return (
-                  <TableRow key={expense.id} className={expense.is_active ? '' : 'opacity-50'}>
+                  <TableRow
+                    key={expense.id}
+                    className={expense.is_active ? '' : 'opacity-50'}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium">{expense.name}</p>
                         {expense.notes && (
-                          <p className="text-xs text-muted-foreground">{expense.notes}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {expense.notes}
+                          </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`gap-1 text-xs ${cat.color} ${cat.bg}`}>
+                      <Badge
+                        variant="outline"
+                        className={`gap-1 text-xs ${cat.color} ${cat.bg}`}
+                      >
                         <Icon className="h-3 w-3" />
                         {cat.label}
                       </Badge>
@@ -447,9 +565,15 @@ export function ExpensesTab() {
                       <button
                         onClick={() => handleToggleActive(expense)}
                         className="cursor-pointer"
-                        title={expense.is_active ? 'Click to deactivate' : 'Click to activate'}
+                        title={
+                          expense.is_active
+                            ? 'Click to deactivate'
+                            : 'Click to activate'
+                        }
                       >
-                        <Badge variant={expense.is_active ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={expense.is_active ? 'default' : 'secondary'}
+                        >
                           {expense.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </button>
@@ -486,7 +610,9 @@ export function ExpensesTab() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? 'Edit Expense' : 'Add Expense'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -494,14 +620,23 @@ export function ExpensesTab() {
               <Input
                 placeholder="e.g. Supabase Pro"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                }
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Category *</Label>
-                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as Category }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.category}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, category: v as Category }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {Object.entries(CATEGORY_META).map(([v, m]) => (
                       <SelectItem key={v} value={v}>
@@ -516,8 +651,15 @@ export function ExpensesTab() {
               </div>
               <div className="space-y-1.5">
                 <Label>Billing Cycle *</Label>
-                <Select value={form.billing_cycle} onValueChange={(v) => setForm((f) => ({ ...f, billing_cycle: v as BillingCycle }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.billing_cycle}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, billing_cycle: v as BillingCycle }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Monthly</SelectItem>
                     <SelectItem value="annual">Annual</SelectItem>
@@ -530,7 +672,9 @@ export function ExpensesTab() {
               <div className="space-y-1.5">
                 <Label>Amount (USD) *</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    $
+                  </span>
                   <Input
                     className="pl-6"
                     placeholder="0.00"
@@ -538,7 +682,9 @@ export function ExpensesTab() {
                     min="0"
                     step="0.01"
                     value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, amount: e.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -547,7 +693,9 @@ export function ExpensesTab() {
                 <Input
                   placeholder="e.g. Supabase"
                   value={form.vendor}
-                  onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, vendor: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -557,7 +705,9 @@ export function ExpensesTab() {
                 placeholder="Optional notes about this expense"
                 rows={2}
                 value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, notes: e.target.value }))
+                }
               />
             </div>
             <div className="flex items-center gap-2">
@@ -565,7 +715,9 @@ export function ExpensesTab() {
                 id="is_active"
                 type="checkbox"
                 checked={form.is_active}
-                onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, is_active: e.target.checked }))
+                }
                 className="h-4 w-4 rounded border"
               />
               <Label htmlFor="is_active" className="cursor-pointer font-normal">
@@ -574,7 +726,9 @@ export function ExpensesTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={handleSave}
               disabled={saving || !form.name.trim() || !form.amount}
@@ -586,12 +740,18 @@ export function ExpensesTab() {
       </Dialog>
 
       {/* Delete confirm */}
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null) }}>
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(o) => {
+          if (!o) setDeleteId(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete expense?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the expense record. This action cannot be undone.
+              This will permanently remove the expense record. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -606,7 +766,6 @@ export function ExpensesTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   )
 }

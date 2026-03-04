@@ -1,10 +1,10 @@
 /**
  * Tier Features - Feature Flag System
- * 
+ *
  * Provides utilities for checking what features are enabled for a given
  * subscription tier or organization. This is the single source of truth
  * for feature gating across the platform.
- * 
+ *
  * @see #314 - Subscription Tier Data Model & Feature Flag System
  */
 
@@ -238,10 +238,13 @@ export async function getTierFeatures(
   try {
     const supabase = createClient()
     // Cast to 'any' until types are regenerated with tier_features table
-    const { data, error } = await (supabase as any)
+    const { data, error } = (await (supabase as any)
       .from('tier_features')
       .select('feature_key, enabled')
-      .eq('tier', tier) as { data: { feature_key: string; enabled: boolean }[] | null; error: any }
+      .eq('tier', tier)) as {
+      data: { feature_key: string; enabled: boolean }[] | null
+      error: any
+    }
 
     if (error || !data || data.length === 0) {
       console.warn(
@@ -320,14 +323,19 @@ export async function getAllTierFeatures(): Promise<
   try {
     const supabase = createClient()
     // Cast to 'any' until types are regenerated with tier_features table
-    const { data, error } = await (supabase as any)
+    const { data, error } = (await (supabase as any)
       .from('tier_features')
       .select('tier, feature_key, enabled')
       .order('tier')
-      .order('feature_key') as { data: { tier: string; feature_key: string; enabled: boolean }[] | null; error: any }
+      .order('feature_key')) as {
+      data: { tier: string; feature_key: string; enabled: boolean }[] | null
+      error: any
+    }
 
     if (error || !data) {
-      console.warn('[getAllTierFeatures] DB lookup failed, using static fallback')
+      console.warn(
+        '[getAllTierFeatures] DB lookup failed, using static fallback'
+      )
       return { ...STATIC_TIER_FEATURES }
     }
 
@@ -395,7 +403,5 @@ export function getUpgradeFeatures(
   const current = STATIC_TIER_FEATURES[currentTier] || {}
   const upgrade = STATIC_TIER_FEATURES[upgradeTier] || {}
 
-  return Object.keys(upgrade).filter(
-    (key) => upgrade[key] && !current[key]
-  )
+  return Object.keys(upgrade).filter((key) => upgrade[key] && !current[key])
 }

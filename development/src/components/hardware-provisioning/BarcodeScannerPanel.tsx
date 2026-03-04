@@ -194,9 +194,7 @@ export function BarcodeScannerPanel({
 
       const response = await edgeFunctions.devices.create(deviceData)
       if (!response.success) {
-        throw new Error(
-          response.error?.message || 'Failed to provision device'
-        )
+        throw new Error(response.error?.message || 'Failed to provision device')
       }
 
       toast.success(`Device "${deviceName}" provisioned successfully`)
@@ -226,21 +224,19 @@ export function BarcodeScannerPanel({
     setScanning(true)
     // Dynamic import to avoid SSR issues
     try {
-      const { default: BarcodeScannerComponent } = await import(
-        'react-qr-barcode-scanner'
-      )
+      const { default: BarcodeScannerComponent } =
+        await import('react-qr-barcode-scanner')
       // Store the component for rendering
       setScannerComponent(() => BarcodeScannerComponent)
     } catch {
-      toast.error(
-        'Camera scanner not available. Use manual entry instead.'
-      )
+      toast.error('Camera scanner not available. Use manual entry instead.')
       setScanning(false)
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [ScannerComponent, setScannerComponent] = useState<React.ComponentType<any> | null>(null)
+  const [ScannerComponent, setScannerComponent] =
+    useState<React.ComponentType<any> | null>(null)
 
   return (
     <Card>
@@ -287,7 +283,10 @@ export function BarcodeScannerPanel({
                   if (e.key === 'Enter') handleManualSubmit()
                 }}
               />
-              <Button onClick={handleManualSubmit} disabled={!manualCode.trim()}>
+              <Button
+                onClick={handleManualSubmit}
+                disabled={!manualCode.trim()}
+              >
                 Submit
               </Button>
             </div>
@@ -331,7 +330,9 @@ export function BarcodeScannerPanel({
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="font-medium">Barcode Scanned</span>
               </div>
-              <Badge variant={scannedData.isNetNeural ? 'default' : 'secondary'}>
+              <Badge
+                variant={scannedData.isNetNeural ? 'default' : 'secondary'}
+              >
                 {scannedData.isNetNeural
                   ? 'NetNeural Device'
                   : 'Third-Party Device'}
@@ -412,13 +413,18 @@ export function BarcodeScannerPanel({
             {/* Raw barcode value */}
             <div className="rounded border bg-muted p-2">
               <p className="text-xs text-muted-foreground">
-                Raw barcode: <code className="font-mono">{scannedData.raw}</code>
+                Raw barcode:{' '}
+                <code className="font-mono">{scannedData.raw}</code>
               </p>
             </div>
 
             {/* Actions */}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={resetForm} disabled={provisioning}>
+              <Button
+                variant="outline"
+                onClick={resetForm}
+                disabled={provisioning}
+              >
                 Scan Another
               </Button>
               <Button

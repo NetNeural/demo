@@ -145,7 +145,8 @@ const INTEGRATION_GUIDES = [
     name: 'NetNeural-Link',
     icon: '🌟',
     recommended: true,
-    description: 'Multi-protocol IoT hub supporting CoAP, MQTT, and HTTPS for any compatible device',
+    description:
+      'Multi-protocol IoT hub supporting CoAP, MQTT, and HTTPS for any compatible device',
     pros: [
       'Supports CoAP, MQTT, and HTTPS protocols',
       'Auto-discovery of devices across protocols',
@@ -985,7 +986,10 @@ export default function IntegrationsTab({
               >
                 {'recommended' in guide && guide.recommended && (
                   <div className="absolute left-2 top-2">
-                    <Badge variant="default" className="px-1.5 py-0 text-[10px]">
+                    <Badge
+                      variant="default"
+                      className="px-1.5 py-0 text-[10px]"
+                    >
                       ★ Recommended
                     </Badge>
                   </div>
@@ -1041,7 +1045,10 @@ export default function IntegrationsTab({
                         <span className="mr-2">{guide.icon}</span>
                         {guide.name}
                         {'recommended' in guide && guide.recommended && (
-                          <Badge variant="default" className="ml-2 px-1.5 py-0 text-[10px]">
+                          <Badge
+                            variant="default"
+                            className="ml-2 px-1.5 py-0 text-[10px]"
+                          >
                             ★ Recommended
                           </Badge>
                         )}
@@ -1746,7 +1753,8 @@ export default function IntegrationsTab({
                   {INTEGRATION_TYPES.filter((t) => t.category === 'device').map(
                     (type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}{'recommended' in type && type.recommended ? ' ★' : ''}
+                        {type.label}
+                        {'recommended' in type && type.recommended ? ' ★' : ''}
                       </SelectItem>
                     )
                   )}

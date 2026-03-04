@@ -109,7 +109,8 @@ export function PaymentMethodsCard({
       if (err) throw err
       setMethods(data ?? [])
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to load payment methods'
+      const msg =
+        e instanceof Error ? e.message : 'Failed to load payment methods'
       setError(msg)
     } finally {
       setLoading(false)
@@ -122,7 +123,9 @@ export function PaymentMethodsCard({
 
   const renderMethodRow = (pm: PaymentMethod) => {
     const expired = isExpired(pm.card_exp_month, pm.card_exp_year)
-    const brandLabel = pm.card_brand ? (BRAND_LABELS[pm.card_brand.toLowerCase()] ?? pm.card_brand) : null
+    const brandLabel = pm.card_brand
+      ? (BRAND_LABELS[pm.card_brand.toLowerCase()] ?? pm.card_brand)
+      : null
 
     let displayName = ''
     let subLabel = ''
@@ -138,9 +141,7 @@ export function PaymentMethodsCard({
       subLabel = brandLabel ? `via ${brandLabel}` : ''
     } else {
       displayName = brandLabel ?? 'Card'
-      subLabel = pm.card_last4
-        ? `•••• •••• •••• ${pm.card_last4}`
-        : ''
+      subLabel = pm.card_last4 ? `•••• •••• •••• ${pm.card_last4}` : ''
     }
 
     const expiryLabel =
@@ -160,7 +161,9 @@ export function PaymentMethodsCard({
         key={pm.id}
         data-testid="payment-method-row"
         className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
-          expired ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'bg-muted/30'
+          expired
+            ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30'
+            : 'bg-muted/30'
         }`}
       >
         <div className="flex items-center gap-3">
@@ -169,11 +172,15 @@ export function PaymentMethodsCard({
             <p className="text-sm font-medium">
               {displayName}{' '}
               {subLabel && (
-                <span className="font-mono text-muted-foreground">{subLabel}</span>
+                <span className="font-mono text-muted-foreground">
+                  {subLabel}
+                </span>
               )}
             </p>
             {expiryLabel && (
-              <p className={`text-xs ${expired ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+              <p
+                className={`text-xs ${expired ? 'font-medium text-red-600' : 'text-muted-foreground'}`}
+              >
                 {expired ? '⚠ Expired' : 'Expires'} {expiryLabel}
               </p>
             )}

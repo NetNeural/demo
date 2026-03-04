@@ -24,7 +24,10 @@ const STAGE_ORDER: LifecycleStage[] = [
   'reactivated',
 ]
 
-const stageColors: Record<LifecycleStage, { bg: string; ring: string; text: string; dot: string }> = {
+const stageColors: Record<
+  LifecycleStage,
+  { bg: string; ring: string; text: string; dot: string }
+> = {
   trial: {
     bg: 'bg-blue-100 dark:bg-blue-900/30',
     ring: 'ring-blue-400',
@@ -64,12 +67,16 @@ const stageColors: Record<LifecycleStage, { bg: string; ring: string; text: stri
 }
 
 /** Stepper-style lifecycle stage indicator */
-export function LifecycleStageIndicator({ currentStage, changedAt }: LifecycleStageIndicatorProps) {
+export function LifecycleStageIndicator({
+  currentStage,
+  changedAt,
+}: LifecycleStageIndicatorProps) {
   const currentIndex = STAGE_ORDER.indexOf(currentStage)
 
   // For the happy path (trial → onboarding → active), show sequential progression.
   // For negative stages (at_risk, churned), highlight them distinctly.
-  const isNegativeStage = currentStage === 'at_risk' || currentStage === 'churned'
+  const isNegativeStage =
+    currentStage === 'at_risk' || currentStage === 'churned'
   const isReactivated = currentStage === 'reactivated'
 
   // Happy-path stages to show in the stepper
@@ -80,7 +87,8 @@ export function LifecycleStageIndicator({ currentStage, changedAt }: LifecycleSt
       {/* Stepper */}
       <div className="flex items-center gap-1">
         {happyPath.map((stage, idx) => {
-          const isPast = !isNegativeStage && !isReactivated && currentIndex > idx
+          const isPast =
+            !isNegativeStage && !isReactivated && currentIndex > idx
           const isCurrent = currentStage === stage
           const colors = stageColors[stage]
 
@@ -102,7 +110,9 @@ export function LifecycleStageIndicator({ currentStage, changedAt }: LifecycleSt
                       {isPast ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                       ) : isCurrent ? (
-                        <span className={`h-3 w-3 rounded-full ${colors.dot}`} />
+                        <span
+                          className={`h-3 w-3 rounded-full ${colors.dot}`}
+                        />
                       ) : (
                         <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
                       )}
@@ -135,7 +145,9 @@ export function LifecycleStageIndicator({ currentStage, changedAt }: LifecycleSt
             <div
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${stageColors[currentStage].bg} ${stageColors[currentStage].text}`}
             >
-              <span className={`h-2 w-2 rounded-full ${stageColors[currentStage].dot}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${stageColors[currentStage].dot}`}
+              />
               {formatLifecycleStage(currentStage)}
             </div>
           </>
@@ -144,7 +156,9 @@ export function LifecycleStageIndicator({ currentStage, changedAt }: LifecycleSt
 
       {/* Current stage label */}
       <div className="flex items-center gap-2">
-        <span className={`text-sm font-semibold ${stageColors[currentStage].text}`}>
+        <span
+          className={`text-sm font-semibold ${stageColors[currentStage].text}`}
+        >
           {formatLifecycleStage(currentStage)}
         </span>
         {changedAt && (

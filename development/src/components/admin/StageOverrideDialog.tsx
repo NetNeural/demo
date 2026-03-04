@@ -30,16 +30,27 @@ interface StageOverrideDialogProps {
   onOverride: (toStage: LifecycleStage, reason: string) => Promise<void>
 }
 
-const ALL_STAGES: LifecycleStage[] = ['trial', 'onboarding', 'active', 'at_risk', 'churned', 'reactivated']
+const ALL_STAGES: LifecycleStage[] = [
+  'trial',
+  'onboarding',
+  'active',
+  'at_risk',
+  'churned',
+  'reactivated',
+]
 
-export function StageOverrideDialog({ currentStage, orgName, onOverride }: StageOverrideDialogProps) {
+export function StageOverrideDialog({
+  currentStage,
+  orgName,
+  onOverride,
+}: StageOverrideDialogProps) {
   const [open, setOpen] = useState(false)
   const [toStage, setToStage] = useState<LifecycleStage | ''>('')
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const availableStages = ALL_STAGES.filter(s => s !== currentStage)
+  const availableStages = ALL_STAGES.filter((s) => s !== currentStage)
 
   async function handleSubmit() {
     if (!toStage || !reason.trim()) {
@@ -77,8 +88,8 @@ export function StageOverrideDialog({ currentStage, orgName, onOverride }: Stage
             Manual Stage Override
           </DialogTitle>
           <DialogDescription>
-            Change the lifecycle stage for <strong>{orgName}</strong>. This action
-            will be logged with your name and reason.
+            Change the lifecycle stage for <strong>{orgName}</strong>. This
+            action will be logged with your name and reason.
           </DialogDescription>
         </DialogHeader>
 
@@ -86,7 +97,9 @@ export function StageOverrideDialog({ currentStage, orgName, onOverride }: Stage
           {/* Current stage */}
           <div className="rounded-lg bg-muted p-3">
             <p className="text-xs text-muted-foreground">Current stage</p>
-            <p className="text-sm font-semibold">{formatLifecycleStage(currentStage)}</p>
+            <p className="text-sm font-semibold">
+              {formatLifecycleStage(currentStage)}
+            </p>
           </div>
 
           {/* Target stage */}
@@ -121,16 +134,21 @@ export function StageOverrideDialog({ currentStage, orgName, onOverride }: Stage
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>
+          <Button
+            variant="ghost"
+            onClick={() => setOpen(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !toStage || !reason.trim()}>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !toStage || !reason.trim()}
+          >
             {submitting ? 'Updating...' : 'Confirm Override'}
           </Button>
         </DialogFooter>

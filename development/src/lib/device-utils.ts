@@ -25,18 +25,27 @@ export function isGatewayDevice(device: Device): boolean {
     type === 'netneural-gateway' ||
     type === 'cellular-gateway' ||
     type === 'nrf9151_cellular'
-  ) return true
+  )
+    return true
 
   if (name.includes('gateway') || name.includes('cellular')) return true
-  if (model.includes('gateway') || model.includes('nrf9151') || model.includes('nrf9160')) return true
+  if (
+    model.includes('gateway') ||
+    model.includes('nrf9151') ||
+    model.includes('nrf9160')
+  )
+    return true
 
   if (device.metadata) {
     if (
       device.metadata.is_gateway === true ||
       device.metadata.isGateway === true ||
       (typeof device.metadata.device_category === 'string' &&
-        (device.metadata.device_category as string).toLowerCase().includes('gateway'))
-    ) return true
+        (device.metadata.device_category as string)
+          .toLowerCase()
+          .includes('gateway'))
+    )
+      return true
   }
 
   return false
@@ -49,10 +58,15 @@ export function isTestDevice(device: Device): boolean {
   const name = (device.name || '').toLowerCase()
 
   if (type.includes('test') || type.includes('modular test sensor')) return true
-  if (name.includes('test sensor') || name.includes('modular test sensor')) return true
+  if (name.includes('test sensor') || name.includes('modular test sensor'))
+    return true
 
   if (device.metadata) {
-    if (device.metadata.is_test_device === true || device.metadata.isTestDevice === true) return true
+    if (
+      device.metadata.is_test_device === true ||
+      device.metadata.isTestDevice === true
+    )
+      return true
   }
 
   return false
@@ -86,19 +100,35 @@ export function normalizeTelemetryReadings(
   const result: TelemetryReading[] = []
   for (const row of readings) {
     const t = row.telemetry
-    if (!t) { result.push(row); continue }
+    if (!t) {
+      result.push(row)
+      continue
+    }
     // Golioth typed format: numeric type + numeric value — pass through
-    if (typeof t.type === 'number' && typeof t.value === 'number') { result.push(row); continue }
+    if (typeof t.type === 'number' && typeof t.value === 'number') {
+      result.push(row)
+      continue
+    }
     // Already normalized (sensor string + value number) — pass through
-    if (typeof t.sensor === 'string' && typeof t.value === 'number') { result.push(row); continue }
+    if (typeof t.sensor === 'string' && typeof t.value === 'number') {
+      result.push(row)
+      continue
+    }
     // Flat JSONB — expand each numeric field into its own row
     const entries = Object.entries(t).filter(([, v]) => typeof v === 'number')
-    if (entries.length === 0) { result.push(row); continue }
+    if (entries.length === 0) {
+      result.push(row)
+      continue
+    }
     for (const [key, val] of entries) {
       const config = FLAT_SENSOR_CONFIG[key]
       result.push({
         ...row,
-        telemetry: { sensor: config?.label ?? key, value: val as number, unit: config?.unit ?? '' },
+        telemetry: {
+          sensor: config?.label ?? key,
+          value: val as number,
+          unit: config?.unit ?? '',
+        },
       })
     }
   }
@@ -128,14 +158,21 @@ export function mapDeviceData(raw: Record<string, unknown>): Device {
     is_test_device: isTest,
     model: (d.model as string) || undefined,
     serial_number: (d.serial_number as string) || undefined,
-    external_device_id: (d.external_device_id as string) || (d.externalDeviceId as string) || null,
+    external_device_id:
+      (d.external_device_id as string) ||
+      (d.externalDeviceId as string) ||
+      null,
     status: ((d.status as string) || 'offline') as Device['status'],
     location: (d.location as string) || undefined,
     location_id: (d.location_id as string) || undefined,
     department_id: (d.department_id as string) || undefined,
     firmware_version: (d.firmware_version as string) || undefined,
-    battery_level: d.battery_level != null ? (d.battery_level as number) : (d.batteryLevel as number | undefined),
-    signal_strength: d.signal_strength != null ? (d.signal_strength as number) : undefined,
+    battery_level:
+      d.battery_level != null
+        ? (d.battery_level as number)
+        : (d.batteryLevel as number | undefined),
+    signal_strength:
+      d.signal_strength != null ? (d.signal_strength as number) : undefined,
     last_seen: (d.last_seen as string) || (d.lastSeen as string) || undefined,
     last_seen_online: (d.last_seen_online as string) || undefined,
     last_seen_offline: (d.last_seen_offline as string) || undefined,
@@ -145,11 +182,17 @@ export function mapDeviceData(raw: Record<string, unknown>): Device {
     hardware_ids: (d.hardware_ids as string[]) || [],
     cohort_id: (d.cohort_id as string) || undefined,
     parent_device_id: (d.parent_device_id as string) || null,
-    is_gateway: (d.is_gateway as boolean) ?? (metadata.is_gateway as boolean) ?? false,
+    is_gateway:
+      (d.is_gateway as boolean) ?? (metadata.is_gateway as boolean) ?? false,
     integration_id: (d.integration_id as string) || null,
-    is_externally_managed: (d.is_externally_managed as boolean) ?? (d.isExternallyManaged as boolean) ?? false,
-    integration_name: (d.integration_name as string) || (d.integrationName as string) || null,
-    integration_type: (d.integration_type as string) || (d.integrationType as string) || null,
+    is_externally_managed:
+      (d.is_externally_managed as boolean) ??
+      (d.isExternallyManaged as boolean) ??
+      false,
+    integration_name:
+      (d.integration_name as string) || (d.integrationName as string) || null,
+    integration_type:
+      (d.integration_type as string) || (d.integrationType as string) || null,
     created_at: (d.created_at as string) || undefined,
     updated_at: (d.updated_at as string) || undefined,
   }

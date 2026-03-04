@@ -44,7 +44,9 @@ export function FinancialReportsTab() {
 
   // Data
   const [arData, setArData] = useState<ARAgingSummary | null>(null)
-  const [failureData, setFailureData] = useState<PaymentFailureData | null>(null)
+  const [failureData, setFailureData] = useState<PaymentFailureData | null>(
+    null
+  )
   const [taxData, setTaxData] = useState<TaxSummaryData | null>(null)
 
   // Loading
@@ -75,7 +77,10 @@ export function FinancialReportsTab() {
   const loadFailureData = useCallback(async () => {
     setFailureLoading(true)
     try {
-      const data = await fetchPaymentFailureReport(supabase, Number(failureMonths))
+      const data = await fetchPaymentFailureReport(
+        supabase,
+        Number(failureMonths)
+      )
       setFailureData(data)
     } catch (err) {
       console.error('Payment failure error:', err)
@@ -101,7 +106,15 @@ export function FinancialReportsTab() {
     if (activeTab === 'ar-aging' && !arData) loadARData()
     if (activeTab === 'payment-failures' && !failureData) loadFailureData()
     if (activeTab === 'tax-summary' && !taxData) loadTaxData()
-  }, [activeTab, arData, failureData, taxData, loadARData, loadFailureData, loadTaxData])
+  }, [
+    activeTab,
+    arData,
+    failureData,
+    taxData,
+    loadARData,
+    loadFailureData,
+    loadTaxData,
+  ])
 
   // Reload on filter change
   useEffect(() => {
@@ -139,9 +152,15 @@ export function FinancialReportsTab() {
     if (activeTab === 'ar-aging' && arData) {
       downloadCsv(arAgingToCsv(arData), `ar-aging-${timestamp}.csv`)
     } else if (activeTab === 'payment-failures' && failureData) {
-      downloadCsv(paymentFailureToCsv(failureData), `payment-failures-${timestamp}.csv`)
+      downloadCsv(
+        paymentFailureToCsv(failureData),
+        `payment-failures-${timestamp}.csv`
+      )
     } else if (activeTab === 'tax-summary' && taxData) {
-      downloadCsv(taxSummaryToCsv(taxData), `tax-summary-${taxYear}-${timestamp}.csv`)
+      downloadCsv(
+        taxSummaryToCsv(taxData),
+        `tax-summary-${taxYear}-${timestamp}.csv`
+      )
     }
   }
 
@@ -154,10 +173,7 @@ export function FinancialReportsTab() {
 
   return (
     <div className="space-y-6">
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as TabKey)}
-      >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList>
             <TabsTrigger value="ar-aging">AR Aging</TabsTrigger>
@@ -201,7 +217,9 @@ export function FinancialReportsTab() {
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+              />
               Refresh
             </Button>
 

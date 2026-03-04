@@ -43,7 +43,10 @@ import {
 import { toast } from 'sonner'
 import JsBarcode from 'jsbarcode'
 import QRCode from 'qrcode'
-import type { InventoryItem, HardwareCategory } from '@/components/inventory-control/types'
+import type {
+  InventoryItem,
+  HardwareCategory,
+} from '@/components/inventory-control/types'
 import { CATEGORY_LABELS } from '@/components/inventory-control/types'
 
 /** NetNeural device types for barcode generation */
@@ -64,7 +67,9 @@ interface BarcodeEntry {
 
 type BarcodeFormat = 'code128' | 'qrcode'
 
-function generateBarcodeValue(entry: Omit<BarcodeEntry, 'id' | 'barcodeValue'>) {
+function generateBarcodeValue(
+  entry: Omit<BarcodeEntry, 'id' | 'barcodeValue'>
+) {
   return `NN|${entry.deviceType}|${entry.model}|${entry.serialNumber}|${entry.firmwareVersion}`
 }
 
@@ -404,7 +409,7 @@ export function BarcodeGeneratorPanel() {
         </div>
 
         {/* New Barcode Form */}
-        <div className="rounded-lg border p-4 space-y-4">
+        <div className="space-y-4 rounded-lg border p-4">
           <h3 className="text-sm font-semibold">New Barcode</h3>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -456,14 +461,17 @@ export function BarcodeGeneratorPanel() {
             </div>
           </div>
 
-          <Button onClick={addEntry} disabled={!deviceType || !model.trim() || !serialNumber.trim()}>
+          <Button
+            onClick={addEntry}
+            disabled={!deviceType || !model.trim() || !serialNumber.trim()}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Single Barcode
           </Button>
 
           {/* Batch Generation */}
-          <div className="border-t pt-4 mt-4">
-            <h4 className="text-sm font-medium mb-3">Batch Generate</h4>
+          <div className="mt-4 border-t pt-4">
+            <h4 className="mb-3 text-sm font-medium">Batch Generate</h4>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Serial Number Prefix</Label>
@@ -493,7 +501,10 @@ export function BarcodeGeneratorPanel() {
               className="mt-3"
               onClick={addBatch}
               disabled={
-                !deviceType || !model.trim() || !batchPrefix.trim() || batchCount < 1
+                !deviceType ||
+                !model.trim() ||
+                !batchPrefix.trim() ||
+                batchCount < 1
               }
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -514,7 +525,11 @@ export function BarcodeGeneratorPanel() {
                   <Trash2 className="mr-1 h-3 w-3" />
                   Clear All
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleAddAllToInventory}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddAllToInventory}
+                >
                   <Warehouse className="mr-1 h-3 w-3" />
                   Add All to Inventory
                 </Button>

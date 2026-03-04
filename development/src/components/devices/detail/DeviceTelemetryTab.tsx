@@ -27,8 +27,13 @@ export function DeviceTelemetryTab({
   if (isGateway) {
     return (
       <div className="py-12 text-center text-muted-foreground">
-        <p className="text-lg font-medium">Gateway devices don&apos;t produce sensor telemetry</p>
-        <p className="mt-1 text-sm">Gateways relay data from child sensors. View child sensors for telemetry data.</p>
+        <p className="text-lg font-medium">
+          Gateway devices don&apos;t produce sensor telemetry
+        </p>
+        <p className="mt-1 text-sm">
+          Gateways relay data from child sensors. View child sensors for
+          telemetry data.
+        </p>
       </div>
     )
   }

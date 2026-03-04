@@ -74,10 +74,7 @@ export function SessionTimeoutModal({
                 </span>
                 <span className="text-xs text-muted-foreground">remaining</span>
               </div>
-              <Progress
-                value={progress}
-                className="h-2"
-              />
+              <Progress value={progress} className="h-2" />
             </div>
             <p className="text-xs text-muted-foreground">
               Click &quot;Stay logged in&quot; to continue your session.

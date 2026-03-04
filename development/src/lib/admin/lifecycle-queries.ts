@@ -103,11 +103,20 @@ export async function fetchActivityTimeline(
   const entries: TimelineEntry[] = []
 
   // Parallel queries for different activity types
-  const [lifecycleResult, devicesResult, invoicesResult, membersResult, alertsResult, loginResult] = await Promise.all([
+  const [
+    lifecycleResult,
+    devicesResult,
+    invoicesResult,
+    membersResult,
+    alertsResult,
+    loginResult,
+  ] = await Promise.all([
     // Lifecycle events
     supabase
       .from('customer_lifecycle_events')
-      .select('id, from_stage, to_stage, trigger_type, trigger_reason, created_at, metadata')
+      .select(
+        'id, from_stage, to_stage, trigger_type, trigger_reason, created_at, metadata'
+      )
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
       .limit(limit),
@@ -244,7 +253,9 @@ export async function fetchActivityTimeline(
   }
 
   // Sort all entries by timestamp descending
-  entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  entries.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
 
   return entries.slice(0, limit)
 }

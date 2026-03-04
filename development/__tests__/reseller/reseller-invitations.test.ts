@@ -2,7 +2,12 @@
 
 describe('Reseller Invitations', () => {
   it('invitation has email and status', () => {
-    const invite = { id: 'inv-1', email: 'partner@example.com', status: 'pending', invited_by: 'admin-1' }
+    const invite = {
+      id: 'inv-1',
+      email: 'partner@example.com',
+      status: 'pending',
+      invited_by: 'admin-1',
+    }
     expect(invite.email).toContain('@')
     expect(invite.status).toBe('pending')
   })

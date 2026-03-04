@@ -115,7 +115,8 @@ export function AddDeviceDialog({
   const [manualBarcodeCode, setManualBarcodeCode] = useState('')
   const [scannedData, setScannedData] = useState<ParsedBarcode | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [ScannerComponent, setScannerComponent] = useState<React.ComponentType<any> | null>(null)
+  const [ScannerComponent, setScannerComponent] =
+    useState<React.ComponentType<any> | null>(null)
 
   // Form state
   const [name, setName] = useState('')
@@ -229,9 +230,8 @@ export function AddDeviceDialog({
   const startCameraScan = async () => {
     setScanning(true)
     try {
-      const { default: BarcodeScannerComp } = await import(
-        'react-qr-barcode-scanner'
-      )
+      const { default: BarcodeScannerComp } =
+        await import('react-qr-barcode-scanner')
       setScannerComponent(() => BarcodeScannerComp)
     } catch {
       toast.error('Camera scanner not available. Use manual entry instead.')
@@ -415,10 +415,7 @@ export function AddDeviceDialog({
                     <ScannerComponent
                       width={500}
                       height={300}
-                      onUpdate={(
-                        _err: unknown,
-                        result?: { text: string }
-                      ) => {
+                      onUpdate={(_err: unknown, result?: { text: string }) => {
                         if (result?.text) {
                           handleScanResult(result.text)
                         }
@@ -480,9 +477,7 @@ export function AddDeviceDialog({
                     Fields populated from barcode
                   </span>
                   <Badge
-                    variant={
-                      scannedData.isNetNeural ? 'default' : 'secondary'
-                    }
+                    variant={scannedData.isNetNeural ? 'default' : 'secondary'}
                     className="ml-auto"
                   >
                     {scannedData.isNetNeural
@@ -660,10 +655,7 @@ export function AddDeviceDialog({
         {/* Footer for choose mode */}
         {entryMode === 'choose' && (
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
           </DialogFooter>

@@ -2,19 +2,19 @@
 
 /**
  * useOrgTier - React hook for organization tier and feature flags
- * 
+ *
  * Provides the current organization's subscription tier, feature flags,
  * and helper functions for feature gating in UI components.
- * 
+ *
  * @example
  * ```tsx
  * const { tier, hasFeature, features, isLoading } = useOrgTier()
- * 
+ *
  * if (!hasFeature('ai_detection')) {
  *   return <UpgradePrompt feature="ai_detection" />
  * }
  * ```
- * 
+ *
  * @see #314 - Subscription Tier Data Model & Feature Flag System
  */
 

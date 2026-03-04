@@ -471,8 +471,8 @@ function LoginForm() {
           className="pointer-events-none absolute inset-0"
           aria-hidden="true"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Desktop background */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bgUrl}
             alt=""
@@ -494,8 +494,8 @@ function LoginForm() {
               minWidth: '100vw',
             }}
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           {/* Mobile background */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bgUrl}
             alt=""

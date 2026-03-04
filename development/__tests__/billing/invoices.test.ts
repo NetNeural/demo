@@ -2,7 +2,12 @@
 
 describe('Invoices', () => {
   it('invoice has amount and status', () => {
-    const invoice = { id: 'inv-1', amount_cents: 4900, status: 'paid', organization_id: 'org-1' }
+    const invoice = {
+      id: 'inv-1',
+      amount_cents: 4900,
+      status: 'paid',
+      organization_id: 'org-1',
+    }
     expect(invoice.amount_cents).toBeGreaterThan(0)
     expect(invoice.status).toBe('paid')
   })

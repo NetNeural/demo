@@ -104,7 +104,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const [resettingPassword, setResettingPassword] = useState(false)
   const [resettingMfa, setResettingMfa] = useState(false)
   const [showMfaResetDialog, setShowMfaResetDialog] = useState(false)
-  const [mfaResetMember, setMfaResetMember] = useState<OrganizationMember | null>(null)
+  const [mfaResetMember, setMfaResetMember] =
+    useState<OrganizationMember | null>(null)
 
   // ── Seat limit logic (#318) ────────────────────────────────────
   const { tier } = useOrgTier()
@@ -112,7 +113,9 @@ export function MembersTab({ organizationId }: MembersTabProps) {
   const isUnlimitedSeats = seatLimit === -1
   const memberCount = members.length
   const seatLimitReached = !isUnlimitedSeats && memberCount >= seatLimit
-  const seatUsagePercent = isUnlimitedSeats ? 0 : Math.min(100, Math.round((memberCount / seatLimit) * 100))
+  const seatUsagePercent = isUnlimitedSeats
+    ? 0
+    : Math.min(100, Math.round((memberCount / seatLimit) * 100))
 
   // Debug logging
   console.log('📋 MembersTab context:', {
@@ -377,7 +380,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to reset MFA',
+        description:
+          error instanceof Error ? error.message : 'Failed to reset MFA',
         variant: 'destructive',
       })
     } finally {
@@ -403,8 +407,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-3">
-                Organization Members ({members.length})
-                {/* Seat usage badge */}
+                Organization Members ({members.length}){/* Seat usage badge */}
                 {!isUnlimitedSeats && (
                   <Badge
                     variant={seatLimitReached ? 'destructive' : 'outline'}
@@ -436,8 +439,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                 </div>
               )}
             </div>
-            {canManageMembers && (
-              seatLimitReached ? (
+            {canManageMembers &&
+              (seatLimitReached ? (
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Lock className="h-4 w-4" />
@@ -455,8 +458,7 @@ export function MembersTab({ organizationId }: MembersTabProps) {
                   <UserPlus className="mr-2 h-4 w-4" />
                   Add Member
                 </Button>
-              )
-            )}
+              ))}
           </div>
         </CardHeader>
         <CardContent>
@@ -633,7 +635,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           )}
         </CardContent>
       </Card>
-
       {/* Add Member Dialog */}
       <AddMemberDialog
         organizationId={organizationId}
@@ -643,7 +644,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         userRole={userRole || 'member'}
         isSuperAdmin={isSuperAdmin}
       />
-
       {/* Edit Member Dialog */}
       <EditMemberDialog
         organizationId={organizationId}
@@ -652,7 +652,6 @@ export function MembersTab({ organizationId }: MembersTabProps) {
         member={editingMember}
         onMemberUpdated={fetchMembers}
       />
-
       {/* MFA Reset Confirmation Dialog */}
       <Dialog open={showMfaResetDialog} onOpenChange={setShowMfaResetDialog}>
         <DialogContent>
@@ -688,8 +687,8 @@ export function MembersTab({ organizationId }: MembersTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Reset Password Dialog */}      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+      {/* Reset Password Dialog */}{' '}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>

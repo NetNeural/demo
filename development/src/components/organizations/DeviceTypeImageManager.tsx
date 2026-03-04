@@ -207,7 +207,9 @@ export function DeviceTypeImageManager({
       toast.info('Checking image content...')
       const moderation = await moderateImage(file)
       if (!moderation.safe) {
-        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        toast.error(
+          `Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`
+        )
         setUploadingType(null)
         return
       }

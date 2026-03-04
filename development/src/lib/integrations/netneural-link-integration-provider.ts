@@ -203,9 +203,14 @@ export class NetNeuralLinkIntegrationProvider extends DeviceIntegrationProvider 
     discoveryTopics.forEach((topic) => {
       this.mqttClient?.subscribe(topic, (err) => {
         if (err) {
-          console.error(`[NetNeural-Link] Failed to subscribe to ${topic}:`, err)
+          console.error(
+            `[NetNeural-Link] Failed to subscribe to ${topic}:`,
+            err
+          )
         } else {
-          console.log(`[NetNeural-Link] Subscribed to discovery topic: ${topic}`)
+          console.log(
+            `[NetNeural-Link] Subscribed to discovery topic: ${topic}`
+          )
         }
       })
     })

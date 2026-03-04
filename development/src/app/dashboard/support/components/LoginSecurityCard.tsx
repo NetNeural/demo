@@ -21,7 +21,13 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ShieldAlert, Unlock, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import {
+  ShieldAlert,
+  Unlock,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface LoginAttempt {
@@ -63,10 +69,13 @@ export function LoginSecurityCard() {
       } = await supabase.auth.getSession()
       if (!session) return
 
-      const { data: raw, error } = await supabase.functions.invoke('auth-monitor', {
-        body: { event: 'LIST_ATTEMPTS' },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
+      const { data: raw, error } = await supabase.functions.invoke(
+        'auth-monitor',
+        {
+          body: { event: 'LIST_ATTEMPTS' },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      )
       if (error) throw error
       setData(raw?.data ?? { attempts: [], lockouts: [] })
     } catch (e) {
@@ -104,11 +113,13 @@ export function LoginSecurityCard() {
     }
   }
 
-  const activeLockouts = data?.lockouts.filter(
-    (l) => !l.unlocked_at && new Date(l.locked_until) > new Date()
-  ) ?? []
+  const activeLockouts =
+    data?.lockouts.filter(
+      (l) => !l.unlocked_at && new Date(l.locked_until) > new Date()
+    ) ?? []
 
-  const recentFailures = data?.attempts.filter((a) => !a.success).slice(0, 20) ?? []
+  const recentFailures =
+    data?.attempts.filter((a) => !a.success).slice(0, 20) ?? []
 
   return (
     <div className="space-y-6">
@@ -118,15 +129,25 @@ export function LoginSecurityCard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-destructive" />
-              <CardTitle className="text-base">Active Account Lockouts</CardTitle>
+              <CardTitle className="text-base">
+                Active Account Lockouts
+              </CardTitle>
             </div>
-            <Button size="sm" variant="outline" onClick={loadData} disabled={loading}>
-              <RefreshCw className={`mr-1 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={loadData}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`mr-1 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+              />
               Refresh
             </Button>
           </div>
           <CardDescription>
-            Accounts locked due to repeated failed login attempts (5 failures in 10 min → 30 min lockout)
+            Accounts locked due to repeated failed login attempts (5 failures in
+            10 min → 30 min lockout)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -151,8 +172,13 @@ export function LoginSecurityCard() {
                     <p className="text-sm font-medium">{lockout.user_email}</p>
                     <p className="text-xs text-muted-foreground">
                       {lockout.attempt_count} failures · locked{' '}
-                      {formatDistanceToNow(new Date(lockout.locked_at), { addSuffix: true })} ·
-                      expires {formatDistanceToNow(new Date(lockout.locked_until), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(lockout.locked_at), {
+                        addSuffix: true,
+                      })}{' '}
+                      · expires{' '}
+                      {formatDistanceToNow(new Date(lockout.locked_until), {
+                        addSuffix: true,
+                      })}
                     </p>
                   </div>
                   <Button
@@ -180,9 +206,13 @@ export function LoginSecurityCard() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <CardTitle className="text-base">Recent Failed Login Attempts</CardTitle>
+            <CardTitle className="text-base">
+              Recent Failed Login Attempts
+            </CardTitle>
           </div>
-          <CardDescription>Last 20 failed authentication attempts across all users</CardDescription>
+          <CardDescription>
+            Last 20 failed authentication attempts across all users
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading && !data ? (
@@ -210,7 +240,9 @@ export function LoginSecurityCard() {
                 <tbody className="divide-y">
                   {recentFailures.map((attempt) => (
                     <tr key={attempt.id} className="py-1.5">
-                      <td className="py-1.5 pr-4 font-medium">{attempt.user_email}</td>
+                      <td className="py-1.5 pr-4 font-medium">
+                        {attempt.user_email}
+                      </td>
                       <td className="py-1.5 pr-4">
                         <Badge variant="destructive" className="text-xs">
                           {attempt.failure_reason ?? 'unknown'}
@@ -220,7 +252,9 @@ export function LoginSecurityCard() {
                         {attempt.ip_address ?? '—'}
                       </td>
                       <td className="py-1.5 text-muted-foreground">
-                        {formatDistanceToNow(new Date(attempt.attempted_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(attempt.attempted_at), {
+                          addSuffix: true,
+                        })}
                       </td>
                     </tr>
                   ))}

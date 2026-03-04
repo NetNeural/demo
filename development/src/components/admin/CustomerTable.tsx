@@ -39,7 +39,12 @@ import {
 import { useDateFormatter } from '@/hooks/useDateFormatter'
 import { HealthScoreBadge } from '@/components/admin/HealthScoreBadge'
 import { CustomerSummaryCards } from '@/components/admin/CustomerSummaryCards'
-import type { CustomerOverviewRow, CustomerSummaryStats, HealthStatus, LifecycleStage } from '@/types/billing'
+import type {
+  CustomerOverviewRow,
+  CustomerSummaryStats,
+  HealthStatus,
+  LifecycleStage,
+} from '@/types/billing'
 import { getLifecycleStage, formatLifecycleStage } from '@/types/billing'
 import {
   fetchCustomers,
@@ -60,14 +65,25 @@ const PAGE_SIZE = 25
 
 const lifecycleColors: Record<LifecycleStage, string> = {
   trial: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  onboarding: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-  at_risk: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  onboarding:
+    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  active:
+    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+  at_risk:
+    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   churned: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  reactivated: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
+  reactivated:
+    'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
 }
 
-type SortColumn = 'name' | 'health_score' | 'mrr' | 'device_count' | 'member_count' | 'last_active' | 'created_at'
+type SortColumn =
+  | 'name'
+  | 'health_score'
+  | 'mrr'
+  | 'device_count'
+  | 'member_count'
+  | 'last_active'
+  | 'created_at'
 
 export function CustomerTable() {
   const router = useRouter()
@@ -78,8 +94,12 @@ export function CustomerTable() {
   const [customers, setCustomers] = useState<CustomerOverviewRow[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [summary, setSummary] = useState<CustomerSummaryStats | null>(null)
-  const [healthCounts, setHealthCounts] = useState<Record<HealthStatus | 'all', number>>({ all: 0, healthy: 0, at_risk: 0, critical: 0 })
-  const [planOptions, setPlanOptions] = useState<{ slug: string; name: string }[]>([])
+  const [healthCounts, setHealthCounts] = useState<
+    Record<HealthStatus | 'all', number>
+  >({ all: 0, healthy: 0, at_risk: 0, critical: 0 })
+  const [planOptions, setPlanOptions] = useState<
+    { slug: string; name: string }[]
+  >([])
 
   // UI state
   const [loading, setLoading] = useState(true)
@@ -89,7 +109,9 @@ export function CustomerTable() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [healthFilter, setHealthFilter] = useState<HealthStatus | undefined>()
   const [planFilter, setPlanFilter] = useState<string | undefined>()
-  const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleStage | undefined>()
+  const [lifecycleFilter, setLifecycleFilter] = useState<
+    LifecycleStage | undefined
+  >()
   const [sortBy, setSortBy] = useState<SortColumn>('name')
   const [sortDesc, setSortDesc] = useState(false)
 
@@ -102,7 +124,14 @@ export function CustomerTable() {
   // Reset page when filters change
   useEffect(() => {
     setPage(0)
-  }, [debouncedSearch, healthFilter, planFilter, lifecycleFilter, sortBy, sortDesc])
+  }, [
+    debouncedSearch,
+    healthFilter,
+    planFilter,
+    lifecycleFilter,
+    sortBy,
+    sortDesc,
+  ])
 
   // Load summary + plan options (once)
   useEffect(() => {
@@ -120,7 +149,9 @@ export function CustomerTable() {
       }
     }
     loadMeta()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [supabase])
 
   // Load customers
@@ -144,9 +175,20 @@ export function CustomerTable() {
     setTotalCount(result.count)
     setHealthCounts(counts)
     setLoading(false)
-  }, [supabase, page, debouncedSearch, healthFilter, planFilter, lifecycleFilter, sortBy, sortDesc])
+  }, [
+    supabase,
+    page,
+    debouncedSearch,
+    healthFilter,
+    planFilter,
+    lifecycleFilter,
+    sortBy,
+    sortDesc,
+  ])
 
-  useEffect(() => { loadCustomers() }, [loadCustomers])
+  useEffect(() => {
+    loadCustomers()
+  }, [loadCustomers])
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
@@ -160,10 +202,13 @@ export function CustomerTable() {
   }
 
   function SortIcon({ column }: { column: SortColumn }) {
-    if (sortBy !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />
-    return sortDesc
-      ? <ArrowDown className="ml-1 h-3 w-3" />
-      : <ArrowUp className="ml-1 h-3 w-3" />
+    if (sortBy !== column)
+      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />
+    return sortDesc ? (
+      <ArrowDown className="ml-1 h-3 w-3" />
+    ) : (
+      <ArrowUp className="ml-1 h-3 w-3" />
+    )
   }
 
   function formatMrr(mrr: number | null): string {
@@ -186,7 +231,7 @@ export function CustomerTable() {
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Search */}
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative max-w-sm flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name or slug..."
@@ -200,23 +245,35 @@ export function CustomerTable() {
               {/* Health status filter */}
               <Select
                 value={healthFilter || 'all'}
-                onValueChange={(v) => setHealthFilter(v === 'all' ? undefined : v as HealthStatus)}
+                onValueChange={(v) =>
+                  setHealthFilter(v === 'all' ? undefined : (v as HealthStatus))
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Health" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Health ({healthCounts.all})</SelectItem>
-                  <SelectItem value="healthy">Healthy ({healthCounts.healthy})</SelectItem>
-                  <SelectItem value="at_risk">At Risk ({healthCounts.at_risk})</SelectItem>
-                  <SelectItem value="critical">Critical ({healthCounts.critical})</SelectItem>
+                  <SelectItem value="all">
+                    All Health ({healthCounts.all})
+                  </SelectItem>
+                  <SelectItem value="healthy">
+                    Healthy ({healthCounts.healthy})
+                  </SelectItem>
+                  <SelectItem value="at_risk">
+                    At Risk ({healthCounts.at_risk})
+                  </SelectItem>
+                  <SelectItem value="critical">
+                    Critical ({healthCounts.critical})
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Plan filter */}
               <Select
                 value={planFilter || 'all'}
-                onValueChange={(v) => setPlanFilter(v === 'all' ? undefined : v)}
+                onValueChange={(v) =>
+                  setPlanFilter(v === 'all' ? undefined : v)
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Plan" />
@@ -224,7 +281,9 @@ export function CustomerTable() {
                 <SelectContent>
                   <SelectItem value="all">All Plans</SelectItem>
                   {planOptions.map((p) => (
-                    <SelectItem key={p.slug} value={p.slug}>{p.name}</SelectItem>
+                    <SelectItem key={p.slug} value={p.slug}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -232,7 +291,11 @@ export function CustomerTable() {
               {/* Lifecycle filter */}
               <Select
                 value={lifecycleFilter || 'all'}
-                onValueChange={(v) => setLifecycleFilter(v === 'all' ? undefined : v as LifecycleStage)}
+                onValueChange={(v) =>
+                  setLifecycleFilter(
+                    v === 'all' ? undefined : (v as LifecycleStage)
+                  )
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Stage" />
@@ -249,8 +312,15 @@ export function CustomerTable() {
               </Select>
 
               {/* Refresh */}
-              <Button variant="outline" size="icon" onClick={loadCustomers} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={loadCustomers}
+                disabled={loading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                />
               </Button>
             </div>
           </div>
@@ -261,7 +331,7 @@ export function CustomerTable() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-6 space-y-3">
+            <div className="space-y-3 p-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
@@ -271,7 +341,10 @@ export function CustomerTable() {
               <Inbox className="mb-4 h-12 w-12 text-muted-foreground" />
               <p className="text-lg font-semibold">No customers found</p>
               <p className="text-sm text-muted-foreground">
-                {debouncedSearch || healthFilter || planFilter || lifecycleFilter
+                {debouncedSearch ||
+                healthFilter ||
+                planFilter ||
+                lifecycleFilter
                   ? 'Try adjusting your filters'
                   : 'No organizations exist yet'}
               </p>
@@ -279,40 +352,58 @@ export function CustomerTable() {
           ) : (
             <>
               {/* Desktop table */}
-              <div className="hidden lg:block overflow-x-auto">
+              <div className="hidden overflow-x-auto lg:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('name')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('name')}
+                        >
                           Organization <SortIcon column="name" />
                         </button>
                       </TableHead>
                       <TableHead>Plan</TableHead>
                       <TableHead>Reseller</TableHead>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('device_count')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('device_count')}
+                        >
                           Devices <SortIcon column="device_count" />
                         </button>
                       </TableHead>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('member_count')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('member_count')}
+                        >
                           Members <SortIcon column="member_count" />
                         </button>
                       </TableHead>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('health_score')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('health_score')}
+                        >
                           Health <SortIcon column="health_score" />
                         </button>
                       </TableHead>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('mrr')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('mrr')}
+                        >
                           MRR <SortIcon column="mrr" />
                         </button>
                       </TableHead>
                       <TableHead>Stage</TableHead>
                       <TableHead>
-                        <button className="flex items-center font-medium" onClick={() => handleSort('last_active')}>
+                        <button
+                          className="flex items-center font-medium"
+                          onClick={() => handleSort('last_active')}
+                        >
                           Last Active <SortIcon column="last_active" />
                         </button>
                       </TableHead>
@@ -326,26 +417,36 @@ export function CustomerTable() {
                         <TableRow
                           key={c.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/dashboard/admin/customers/${c.id}`)}
+                          onClick={() =>
+                            router.push(`/dashboard/admin/customers/${c.id}`)
+                          }
                         >
                           <TableCell>
                             <div>
                               <p className="font-medium">{c.name}</p>
-                              <p className="text-xs text-muted-foreground">{c.slug}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {c.slug}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">
-                              {c.plan_name || (c.subscription_tier === 'reseller' ? 'starter' : c.subscription_tier) || 'None'}
+                              {c.plan_name ||
+                                (c.subscription_tier === 'reseller'
+                                  ? 'starter'
+                                  : c.subscription_tier) ||
+                                'None'}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             {c.is_reseller ? (
-                              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                              <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                 Reseller
                               </Badge>
                             ) : c.parent_organization_id ? (
-                              <Badge variant="outline" className="text-xs">Sub-org</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                Sub-org
+                              </Badge>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
@@ -405,33 +506,43 @@ export function CustomerTable() {
               </div>
 
               {/* Mobile cards */}
-              <div className="lg:hidden divide-y">
+              <div className="divide-y lg:hidden">
                 {customers.map((c) => {
                   const stage = getLifecycleStage(c)
                   return (
                     <div
                       key={c.id}
-                      className="p-4 cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/dashboard/admin/customers/${c.id}`)}
+                      className="cursor-pointer p-4 hover:bg-muted/50"
+                      onClick={() =>
+                        router.push(`/dashboard/admin/customers/${c.id}`)
+                      }
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="mb-2 flex items-start justify-between">
                         <div>
                           <p className="font-medium">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">{c.slug}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.slug}
+                          </p>
                         </div>
                         <HealthScoreBadge score={c.health_score} size="sm" />
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Badge variant="outline" className="capitalize">
-                          {c.plan_name || (c.subscription_tier === 'reseller' ? 'starter' : c.subscription_tier) || 'None'}
+                          {c.plan_name ||
+                            (c.subscription_tier === 'reseller'
+                              ? 'starter'
+                              : c.subscription_tier) ||
+                            'None'}
                         </Badge>
                         {c.is_reseller && (
-                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 text-xs">
+                          <Badge className="border-0 bg-amber-100 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                             Reseller
                           </Badge>
                         )}
                         {!c.is_reseller && c.parent_organization_id && (
-                          <Badge variant="outline" className="text-xs">Sub-org</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Sub-org
+                          </Badge>
                         )}
                         <Badge
                           variant="outline"
@@ -463,7 +574,8 @@ export function CustomerTable() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+            Showing {page * PAGE_SIZE + 1}–
+            {Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
           </p>
           <div className="flex items-center gap-2">
             <Button

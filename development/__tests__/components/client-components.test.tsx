@@ -7,7 +7,12 @@ import React from 'react'
 import { render, waitFor } from '@testing-library/react'
 
 // Mock contexts
-const mockUser = { id: '1', email: 'test@example.com', name: 'Test User', isSuperAdmin: false }
+const mockUser = {
+  id: '1',
+  email: 'test@example.com',
+  name: 'Test User',
+  isSuperAdmin: false,
+}
 const mockOrg = { id: '1', name: 'Test Org' }
 
 jest.mock('@/contexts/UserContext', () => ({
@@ -68,15 +73,22 @@ jest.mock('@/lib/auth/user-context', () => ({
 jest.mock('@/lib/edge-functions/client', () => ({
   edgeFunctions: {
     alerts: {
-      list: jest.fn(() => Promise.resolve({ success: true, data: { alerts: [] } })),
+      list: jest.fn(() =>
+        Promise.resolve({ success: true, data: { alerts: [] } })
+      ),
     },
     organizations: {
       stats: jest.fn(() =>
         Promise.resolve({
           success: true,
           data: {
-            totalDevices: 0, onlineDevices: 0, offlineDevices: 0,
-            activeAlerts: 0, totalOrganizations: 0, totalUsers: 0, dataPoints: 0,
+            totalDevices: 0,
+            onlineDevices: 0,
+            offlineDevices: 0,
+            activeAlerts: 0,
+            totalOrganizations: 0,
+            totalUsers: 0,
+            dataPoints: 0,
           },
         })
       ),
@@ -85,7 +97,9 @@ jest.mock('@/lib/edge-functions/client', () => ({
       list: jest.fn(() => Promise.resolve({ success: true, data: [] })),
     },
     accessRequests: {
-      list: jest.fn(() => Promise.resolve({ success: true, data: { requests: [] } })),
+      list: jest.fn(() =>
+        Promise.resolve({ success: true, data: { requests: [] } })
+      ),
     },
   },
 }))
@@ -93,15 +107,21 @@ jest.mock('@/lib/edge-functions/client', () => ({
 jest.mock('@/lib/edge-functions', () => ({
   edgeFunctions: {
     alerts: {
-      list: jest.fn(() => Promise.resolve({ success: true, data: { alerts: [] } })),
+      list: jest.fn(() =>
+        Promise.resolve({ success: true, data: { alerts: [] } })
+      ),
     },
     organizations: {
       stats: jest.fn(() =>
         Promise.resolve({
           success: true,
           data: {
-            totalDevices: 0, onlineDevices: 0, offlineDevices: 0,
-            activeAlerts: 0, totalOrganizations: 0, totalUsers: 0,
+            totalDevices: 0,
+            onlineDevices: 0,
+            offlineDevices: 0,
+            activeAlerts: 0,
+            totalOrganizations: 0,
+            totalUsers: 0,
           },
         })
       ),
@@ -119,24 +139,55 @@ jest.mock('@/lib/supabase/client', () => ({
     const makeChain = (): any => {
       const chain: any = {}
       ;[
-        'select', 'eq', 'neq', 'not', 'gt', 'gte', 'lt', 'lte',
-        'in', 'is', 'like', 'ilike', 'or', 'and', 'filter',
-        'order', 'limit', 'range', 'match',
-        'insert', 'update', 'upsert', 'delete',
-      ].forEach((m) => { chain[m] = () => chain })
-      chain.single = () => Promise.resolve({ data: { full_name: 'NetNeural Admin' }, error: null })
+        'select',
+        'eq',
+        'neq',
+        'not',
+        'gt',
+        'gte',
+        'lt',
+        'lte',
+        'in',
+        'is',
+        'like',
+        'ilike',
+        'or',
+        'and',
+        'filter',
+        'order',
+        'limit',
+        'range',
+        'match',
+        'insert',
+        'update',
+        'upsert',
+        'delete',
+      ].forEach((m) => {
+        chain[m] = () => chain
+      })
+      chain.single = () =>
+        Promise.resolve({ data: { full_name: 'NetNeural Admin' }, error: null })
       chain.then = (resolve: any, reject?: any) =>
         Promise.resolve({ data: [], error: null }).then(resolve, reject)
-      chain.catch = (reject: any) => Promise.resolve({ data: [], error: null }).catch(reject)
+      chain.catch = (reject: any) =>
+        Promise.resolve({ data: [], error: null }).catch(reject)
       return chain
     }
     return {
       auth: {
         getUser: async () => ({
-          data: { user: { id: 'user1', email: 'admin@netneural.ai', user_metadata: {} } },
+          data: {
+            user: {
+              id: 'user1',
+              email: 'admin@netneural.ai',
+              user_metadata: {},
+            },
+          },
         }),
         getSession: async () => ({
-          data: { session: { access_token: 'tok12345', expires_at: Date.now() } },
+          data: {
+            session: { access_token: 'tok12345', expires_at: Date.now() },
+          },
         }),
         updateUser: async () => ({ data: null, error: null }),
         signInWithPassword: async () => ({ error: null }),

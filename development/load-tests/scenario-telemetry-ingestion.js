@@ -12,7 +12,8 @@ const ingestLatency = new Trend('telemetry_ingest_latency_ms')
 const ingestSuccess = new Rate('telemetry_ingest_success')
 const totalIngested = new Counter('telemetry_records_ingested')
 
-const SUPABASE_URL = __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
+const SUPABASE_URL =
+  __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
 const ANON_KEY = __ENV.ANON_KEY || ''
 const SERVICE_KEY = __ENV.SERVICE_KEY || '' // for direct DB inserts under load
 
@@ -29,9 +30,9 @@ export const options = {
     },
   },
   thresholds: {
-    'telemetry_ingest_latency_ms': ['p(95)<2000'],
-    'telemetry_ingest_success': ['rate>0.99'],
-    'http_req_failed': ['rate<0.01'],
+    telemetry_ingest_latency_ms: ['p(95)<2000'],
+    telemetry_ingest_success: ['rate>0.99'],
+    http_req_failed: ['rate<0.01'],
   },
 }
 
@@ -78,13 +79,14 @@ export default function () {
   totalIngested.add(1)
 
   const ok = check(res, {
-    'telemetry: accepted (200/201/204)': (r) => [200, 201, 204].includes(r.status),
+    'telemetry: accepted (200/201/204)': (r) =>
+      [200, 201, 204].includes(r.status),
     'telemetry: <2s': () => latency < 2000,
   })
   ingestSuccess.add(ok)
 
   // Devices send every ~60s; divide by VU count for stagger
-  sleep(60 / DEVICE_COUNT * 5 + Math.random() * 2)
+  sleep((60 / DEVICE_COUNT) * 5 + Math.random() * 2)
 }
 
 export function handleSummary(data) {
@@ -99,7 +101,7 @@ p99 Latency: ${data.metrics.telemetry_ingest_latency_ms?.values['p(99)']?.toFixe
 HTTP Error Rate: ${((data.metrics.http_req_failed?.values.rate ?? 0) * 100).toFixed(2)}%
 
 Threshold: p95 < 2000ms — ${(data.metrics.telemetry_ingest_latency_ms?.values['p(95)'] ?? 9999) < 2000 ? '✓ PASS' : '✗ FAIL'}
-Threshold: success rate > 99% — ${((data.metrics.telemetry_ingest_success?.values.rate ?? 0) * 100) > 99 ? '✓ PASS' : '✗ FAIL'}
+Threshold: success rate > 99% — ${(data.metrics.telemetry_ingest_success?.values.rate ?? 0) * 100 > 99 ? '✓ PASS' : '✗ FAIL'}
 `,
     'load-tests/results/telemetry-ingestion.json': JSON.stringify(data),
   }

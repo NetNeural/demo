@@ -68,7 +68,10 @@ import type {
   PlacementMode,
   MapZone,
 } from '@/types/facility-map'
-import { extractMetricValue, METRIC_TO_SENSOR_TYPE } from '@/lib/telemetry-utils'
+import {
+  extractMetricValue,
+  METRIC_TO_SENSOR_TYPE,
+} from '@/lib/telemetry-utils'
 
 interface FacilityMapViewProps {
   organizationId: string
@@ -85,47 +88,78 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const [loading, setLoading] = useState(true)
   const [loadingDevices, setLoadingDevices] = useState(true)
   const [mode, setMode] = useState<PlacementMode>('view')
-  const [selectedPlacementId, setSelectedPlacementId] = useState<string | null>(null)
+  const [selectedPlacementId, setSelectedPlacementId] = useState<string | null>(
+    null
+  )
   const [deviceToPlace, setDeviceToPlace] = useState<string | null>(null)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingMap, setEditingMap] = useState<FacilityMap | null>(null)
   const [deleteMapId, setDeleteMapId] = useState<string | null>(null)
-  const [mapPlacementCounts, setMapPlacementCounts] = useState<Record<string, number>>({})
-  const [telemetryMap, setTelemetryMap] = useState<Record<string, Record<string, unknown>>>({})
+  const [mapPlacementCounts, setMapPlacementCounts] = useState<
+    Record<string, number>
+  >({})
+  const [telemetryMap, setTelemetryMap] = useState<
+    Record<string, Record<string, unknown>>
+  >({})
   const [viewMode, _setViewMode] = useState<'single' | 'collage'>(() => {
     if (typeof window === 'undefined') return 'single'
     try {
       const saved = localStorage.getItem('facility-map-view-mode')
       if (saved === 'collage') return 'collage'
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return 'single'
   })
   const setViewMode = useCallback((m: 'single' | 'collage') => {
     _setViewMode(m)
-    try { localStorage.setItem('facility-map-view-mode', m) } catch { /* ignore */ }
+    try {
+      localStorage.setItem('facility-map-view-mode', m)
+    } catch {
+      /* ignore */
+    }
   }, [])
   const [isCollageFullscreen, setIsCollageFullscreen] = useState(false)
   /** Persistent display options (stored in localStorage) */
   const [mapDisplayOpts, setMapDisplayOpts] = useState(() => {
-    if (typeof window === 'undefined') return { deviceName: false, deviceType: false, location: false, deviceCount: false }
+    if (typeof window === 'undefined')
+      return {
+        deviceName: false,
+        deviceType: false,
+        location: false,
+        deviceCount: false,
+      }
     try {
       const saved = localStorage.getItem('facility-map-display')
       if (saved) return JSON.parse(saved) as Record<string, boolean>
-    } catch { /* ignore */ }
-    return { deviceName: false, deviceType: false, location: false, deviceCount: false }
+    } catch {
+      /* ignore */
+    }
+    return {
+      deviceName: false,
+      deviceType: false,
+      location: false,
+      deviceCount: false,
+    }
   })
   /** All placements across all maps, keyed by map id */
-  const [allPlacements, setAllPlacements] = useState<Record<string, DeviceMapPlacement[]>>({})
+  const [allPlacements, setAllPlacements] = useState<
+    Record<string, DeviceMapPlacement[]>
+  >({})
   /** Device type filter — hidden device types */
-  const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set()
-    try {
-      const saved = localStorage.getItem('facility-map-hidden-types')
-      if (saved) return new Set(JSON.parse(saved) as string[])
-    } catch { /* ignore */ }
-    return new Set()
-  })
+  const [hiddenDeviceTypes, setHiddenDeviceTypes] = useState<Set<string>>(
+    () => {
+      if (typeof window === 'undefined') return new Set()
+      try {
+        const saved = localStorage.getItem('facility-map-hidden-types')
+        if (saved) return new Set(JSON.parse(saved) as string[])
+      } catch {
+        /* ignore */
+      }
+      return new Set()
+    }
+  )
 
   /** Zones for the current map */
   const [zones, setZones] = useState<MapZone[]>([])
@@ -143,7 +177,11 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   const toggleDisplayOpt = useCallback((key: string) => {
     setMapDisplayOpts((prev) => {
       const next = { ...prev, [key]: !prev[key as keyof typeof prev] }
-      try { localStorage.setItem('facility-map-display', JSON.stringify(next)) } catch { /* ignore */ }
+      try {
+        localStorage.setItem('facility-map-display', JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
       return next
     })
   }, [])
@@ -154,20 +192,38 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       const next = new Set(prev)
       if (next.has(deviceType)) next.delete(deviceType)
       else next.add(deviceType)
-      try { localStorage.setItem('facility-map-hidden-types', JSON.stringify([...next])) } catch { /* ignore */ }
+      try {
+        localStorage.setItem(
+          'facility-map-hidden-types',
+          JSON.stringify([...next])
+        )
+      } catch {
+        /* ignore */
+      }
       return next
     })
   }, [])
 
   const showAllDeviceTypes = useCallback(() => {
     setHiddenDeviceTypes(new Set())
-    try { localStorage.setItem('facility-map-hidden-types', '[]') } catch { /* ignore */ }
+    try {
+      localStorage.setItem('facility-map-hidden-types', '[]')
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const hideAllDeviceTypes = useCallback(() => {
     const allTypes = new Set(devices.map((d) => d.device_type).filter(Boolean))
     setHiddenDeviceTypes(allTypes)
-    try { localStorage.setItem('facility-map-hidden-types', JSON.stringify([...allTypes])) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(
+        'facility-map-hidden-types',
+        JSON.stringify([...allTypes])
+      )
+    } catch {
+      /* ignore */
+    }
   }, [devices])
 
   // Compute device types with counts from currently placed devices
@@ -182,8 +238,11 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
   }, [placements])
 
   // Filtered placements (respects device type filter)
-  const filteredPlacements = useMemo(() =>
-    placements.filter((p) => !hiddenDeviceTypes.has(p.device?.device_type || 'Unknown')),
+  const filteredPlacements = useMemo(
+    () =>
+      placements.filter(
+        (p) => !hiddenDeviceTypes.has(p.device?.device_type || 'Unknown')
+      ),
     [placements, hiddenDeviceTypes]
   )
 
@@ -231,10 +290,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     try {
       const { data, error } = await supabaseRef.current
         .from('device_map_placements')
-        .select(`
+        .select(
+          `
           *,
           device:devices(id, name, device_type, status, battery_level, signal_strength, last_seen)
-        `)
+        `
+        )
         .eq('facility_map_id', selectedMapId)
 
       if (error) throw error
@@ -249,7 +310,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     try {
       const { data, error } = await supabaseRef.current
         .from('devices')
-        .select('id, name, device_type, status, battery_level, signal_strength, last_seen')
+        .select(
+          'id, name, device_type, status, battery_level, signal_strength, last_seen'
+        )
         .eq('organization_id', organizationId)
         .order('name')
 
@@ -283,7 +346,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       const { data, error } = await supabaseRef.current
         .from('device_map_placements')
         .select('facility_map_id')
-        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
+        .in(
+          'facility_map_id',
+          maps.map((m: { id: string }) => m.id)
+        )
 
       if (error) throw error
       const counts: Record<string, number> = {}
@@ -302,11 +368,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     try {
       const { data, error } = await supabaseRef.current
         .from('device_map_placements')
-        .select(`
+        .select(
+          `
           *,
           device:devices(id, name, device_type, status, battery_level, signal_strength, last_seen)
-        `)
-        .in('facility_map_id', maps.map((m: { id: string }) => m.id))
+        `
+        )
+        .in(
+          'facility_map_id',
+          maps.map((m: { id: string }) => m.id)
+        )
 
       if (error) throw error
       const grouped: Record<string, DeviceMapPlacement[]> = {}
@@ -377,7 +448,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
   // --- Zones ---
   const loadZones = useCallback(async () => {
-    if (!selectedMapId) { setZones([]); return }
+    if (!selectedMapId) {
+      setZones([])
+      return
+    }
     try {
       const { data, error } = await supabaseRef.current
         .from('facility_map_zones')
@@ -392,32 +466,38 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [selectedMapId])
 
-  useEffect(() => { loadZones() }, [loadZones])
+  useEffect(() => {
+    loadZones()
+  }, [loadZones])
 
-  const handleCreateZone = useCallback(async (points: { x: number; y: number }[]) => {
-    if (!selectedMapId || points.length < 3) return
-    setZoneDrawing(false)
-    const name = prompt('Zone name:')
-    if (!name) return
-    const color = prompt('Zone color (hex, e.g. #3B82F6):', '#3B82F6') || '#3B82F6'
-    try {
-      const { error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .insert({
-          facility_map_id: selectedMapId,
-          name,
-          color,
-          points,
-          z_order: zones.length,
-        })
-      if (error) throw error
-      toast.success(`Zone "${name}" created`)
-      await loadZones()
-    } catch (err) {
-      console.error('Create zone error:', err)
-      toast.error('Failed to create zone')
-    }
-  }, [selectedMapId, zones.length, loadZones])
+  const handleCreateZone = useCallback(
+    async (points: { x: number; y: number }[]) => {
+      if (!selectedMapId || points.length < 3) return
+      setZoneDrawing(false)
+      const name = prompt('Zone name:')
+      if (!name) return
+      const color =
+        prompt('Zone color (hex, e.g. #3B82F6):', '#3B82F6') || '#3B82F6'
+      try {
+        const { error } = await supabaseRef.current
+          .from('facility_map_zones')
+          .insert({
+            facility_map_id: selectedMapId,
+            name,
+            color,
+            points,
+            z_order: zones.length,
+          })
+        if (error) throw error
+        toast.success(`Zone "${name}" created`)
+        await loadZones()
+      } catch (err) {
+        console.error('Create zone error:', err)
+        toast.error('Failed to create zone')
+      }
+    },
+    [selectedMapId, zones.length, loadZones]
+  )
 
   const handleDeleteZone = useCallback(async () => {
     if (!selectedZoneId) return
@@ -436,21 +516,24 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }, [selectedZoneId, loadZones])
 
-  const handleDeleteZoneById = useCallback(async (zoneId: string) => {
-    try {
-      const { error } = await supabaseRef.current
-        .from('facility_map_zones')
-        .delete()
-        .eq('id', zoneId)
-      if (error) throw error
-      if (selectedZoneId === zoneId) setSelectedZoneId(null)
-      toast.success('Zone deleted')
-      await loadZones()
-    } catch (err) {
-      console.error('Delete zone error:', err)
-      toast.error('Failed to delete zone')
-    }
-  }, [selectedZoneId, loadZones])
+  const handleDeleteZoneById = useCallback(
+    async (zoneId: string) => {
+      try {
+        const { error } = await supabaseRef.current
+          .from('facility_map_zones')
+          .delete()
+          .eq('id', zoneId)
+        if (error) throw error
+        if (selectedZoneId === zoneId) setSelectedZoneId(null)
+        toast.success('Zone deleted')
+        await loadZones()
+      } catch (err) {
+        console.error('Delete zone error:', err)
+        toast.error('Failed to delete zone')
+      }
+    },
+    [selectedZoneId, loadZones]
+  )
 
   // --- Heatmap available metrics ---
   // Detect which semantic metrics have numeric values across placed devices.
@@ -471,20 +554,36 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     for (const metric of knownMetrics) {
       for (const tele of allTelemetry) {
         const val = extractMetricValue(tele, metric)
-        if (val !== null) { found.add(metric); break }
+        if (val !== null) {
+          found.add(metric)
+          break
+        }
       }
     }
 
     // 2. Also include any flat numeric keys that aren't transport/envelope metadata.
     //    These are common in MQTT or custom integrations with arbitrary field names.
     const TRANSPORT_META = new Set([
-      'type', 'units', 'sensor', 'value',      // Golioth envelope fields
-      'ts', 'timestamp', 'received_at', 'time', // Timestamp fields
-      'device_id', 'id', 'seq', 'version',      // Identity/sequencing
+      'type',
+      'units',
+      'sensor',
+      'value', // Golioth envelope fields
+      'ts',
+      'timestamp',
+      'received_at',
+      'time', // Timestamp fields
+      'device_id',
+      'id',
+      'seq',
+      'version', // Identity/sequencing
     ])
     for (const tele of allTelemetry) {
       for (const [key, val] of Object.entries(tele)) {
-        if (typeof val === 'number' && !TRANSPORT_META.has(key) && !found.has(key)) {
+        if (
+          typeof val === 'number' &&
+          !TRANSPORT_META.has(key) &&
+          !found.has(key)
+        ) {
           found.add(key)
         }
       }
@@ -577,7 +676,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               name: data.name,
               description: data.description,
               floor_level: data.floor_level,
-              location_id: data.location_id === 'none' ? null : data.location_id,
+              location_id:
+                data.location_id === 'none' ? null : data.location_id,
               image_url: data.image_url,
               image_path: data.image_path,
               image_width: data.image_width,
@@ -596,7 +696,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
               name: data.name,
               description: data.description,
               floor_level: data.floor_level || 0,
-              location_id: data.location_id === 'none' ? null : data.location_id,
+              location_id:
+                data.location_id === 'none' ? null : data.location_id,
               image_url: data.image_url,
               image_path: data.image_path,
               image_width: data.image_width,
@@ -672,10 +773,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             x_percent: xPercent,
             y_percent: yPercent,
           })
-          .select(`
+          .select(
+            `
             *,
             device:devices(id, name, device_type, status, battery_level, signal_strength, last_seen)
-          `)
+          `
+          )
           .single()
 
         if (error) throw error
@@ -683,12 +786,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         setPlacements((prev) => [...prev, data as DeviceMapPlacement])
 
         // Bulk placement: auto-select next unplaced device
-        const allPlacedIds = new Set([...placements.map((p) => p.device_id), deviceId])
+        const allPlacedIds = new Set([
+          ...placements.map((p) => p.device_id),
+          deviceId,
+        ])
         const nextUnplaced = devices.find((d) => !allPlacedIds.has(d.id))
         if (nextUnplaced) {
           setDeviceToPlace(nextUnplaced.id)
           // Stay in 'place' mode
-          const remaining = devices.filter((d) => !allPlacedIds.has(d.id)).length - 1
+          const remaining =
+            devices.filter((d) => !allPlacedIds.has(d.id)).length - 1
           toast.success(
             remaining > 0
               ? `Device placed! ${remaining} more available to place`
@@ -719,7 +826,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
         setPlacements((prev) =>
           prev.map((p) =>
-            p.id === placementId ? { ...p, x_percent: xPercent, y_percent: yPercent } : p
+            p.id === placementId
+              ? { ...p, x_percent: xPercent, y_percent: yPercent }
+              : p
           )
         )
       } catch (err) {
@@ -772,8 +881,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             </div>
             <h3 className="mb-2 text-lg font-semibold">No Facility Maps Yet</h3>
             <p className="mb-6 max-w-sm text-center text-sm text-muted-foreground">
-              Upload a floor plan or site image, then drag and drop devices to see their
-              real-time status overlaid on your facility layout.
+              Upload a floor plan or site image, then drag and drop devices to
+              see their real-time status overlaid on your facility layout.
             </p>
             <Button
               onClick={() => {
@@ -815,7 +924,8 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             className="h-7 text-xs"
             onClick={() => {
               setViewMode('single')
-              if (!selectedMapId && maps.length > 0) setSelectedMapId(maps[0]!.id)
+              if (!selectedMapId && maps.length > 0)
+                setSelectedMapId(maps[0]!.id)
             }}
           >
             <ImageIcon className="mr-1 h-3 w-3" />
@@ -834,13 +944,13 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
         {/* Map thumbnails + Add Map */}
         {maps.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          <div className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto">
             {maps.map((m) => (
               <button
                 key={m.id}
                 className={`relative h-9 w-14 shrink-0 overflow-hidden rounded border transition-all ${
                   m.id === selectedMapId && viewMode === 'single'
-                    ? 'ring-2 ring-primary border-primary'
+                    ? 'border-primary ring-2 ring-primary'
                     : 'border-muted hover:border-foreground/30'
                 }`}
                 onClick={() => {
@@ -904,22 +1014,30 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             }}
           >
             {mode === 'view' ? (
-              <><Plus className="mr-1 h-3 w-3" />Add Devices to Map</>            ) : (
-              <><Eye className="mr-1 h-3 w-3" />Done Editing</>            )}
+              <>
+                <Plus className="mr-1 h-3 w-3" />
+                Add Devices to Map
+              </>
+            ) : (
+              <>
+                <Eye className="mr-1 h-3 w-3" />
+                Done Editing
+              </>
+            )}
           </Button>
         )}
-
-
 
         {/* Show device name labels checkbox (single view) */}
         {viewMode === 'single' && selectedMap && (
           <div className="flex flex-wrap items-center gap-3">
-            {([
-              ['deviceName', 'Device Name'],
-              ['deviceType', 'Device Type'],
-              ['location', 'Location'],
-              ['deviceCount', 'Device Count'],
-            ] as const).map(([key, label]) => (
+            {(
+              [
+                ['deviceName', 'Device Name'],
+                ['deviceType', 'Device Type'],
+                ['location', 'Location'],
+                ['deviceCount', 'Device Count'],
+              ] as const
+            ).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
                   id={`opt-${key}`}
@@ -927,7 +1045,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onCheckedChange={() => toggleDisplayOpt(key)}
                   className="h-3.5 w-3.5"
                 />
-                <Label htmlFor={`opt-${key}`} className="text-xs cursor-pointer select-none">
+                <Label
+                  htmlFor={`opt-${key}`}
+                  className="cursor-pointer select-none text-xs"
+                >
                   {label}
                 </Label>
               </div>
@@ -941,7 +1062,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onCheckedChange={() => setShowHeatmap(!showHeatmap)}
                   className="h-3.5 w-3.5"
                 />
-                <Label htmlFor="opt-show-heatmap" className="text-xs cursor-pointer select-none">
+                <Label
+                  htmlFor="opt-show-heatmap"
+                  className="cursor-pointer select-none text-xs"
+                >
                   Show Heatmap
                 </Label>
               </div>
@@ -954,7 +1078,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 onCheckedChange={() => setShowZones(!showZones)}
                 className="h-3.5 w-3.5"
               />
-              <Label htmlFor="opt-show-zones" className="text-xs cursor-pointer select-none">
+              <Label
+                htmlFor="opt-show-zones"
+                className="cursor-pointer select-none text-xs"
+              >
                 Show Zones
               </Label>
             </div>
@@ -964,12 +1091,14 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         {/* Collage display options */}
         {viewMode === 'collage' && (
           <div className="flex flex-wrap items-center gap-3">
-            {([
-              ['deviceName', 'Device Name'],
-              ['deviceType', 'Device Type'],
-              ['location', 'Location'],
-              ['deviceCount', 'Device Count'],
-            ] as const).map(([key, label]) => (
+            {(
+              [
+                ['deviceName', 'Device Name'],
+                ['deviceType', 'Device Type'],
+                ['location', 'Location'],
+                ['deviceCount', 'Device Count'],
+              ] as const
+            ).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <Checkbox
                   id={`opt-col-${key}`}
@@ -977,7 +1106,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onCheckedChange={() => toggleDisplayOpt(key)}
                   className="h-3.5 w-3.5"
                 />
-                <Label htmlFor={`opt-col-${key}`} className="text-xs cursor-pointer select-none">
+                <Label
+                  htmlFor={`opt-col-${key}`}
+                  className="cursor-pointer select-none text-xs"
+                >
                   {label}
                 </Label>
               </div>
@@ -991,7 +1123,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onCheckedChange={() => setShowHeatmap(!showHeatmap)}
                   className="h-3.5 w-3.5"
                 />
-                <Label htmlFor="opt-col-show-heatmap" className="text-xs cursor-pointer select-none">
+                <Label
+                  htmlFor="opt-col-show-heatmap"
+                  className="cursor-pointer select-none text-xs"
+                >
                   Show Heatmap
                 </Label>
               </div>
@@ -1004,7 +1139,10 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 onCheckedChange={() => setShowZones(!showZones)}
                 className="h-3.5 w-3.5"
               />
-              <Label htmlFor="opt-col-show-zones" className="text-xs cursor-pointer select-none">
+              <Label
+                htmlFor="opt-col-show-zones"
+                className="cursor-pointer select-none text-xs"
+              >
                 Show Zones
               </Label>
             </div>
@@ -1019,20 +1157,26 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             className="h-7 text-xs"
             onClick={toggleCollageFullscreen}
           >
-            {isCollageFullscreen ? <Minimize2 className="mr-1 h-3 w-3" /> : <Maximize2 className="mr-1 h-3 w-3" />}
+            {isCollageFullscreen ? (
+              <Minimize2 className="mr-1 h-3 w-3" />
+            ) : (
+              <Maximize2 className="mr-1 h-3 w-3" />
+            )}
             {isCollageFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </Button>
         )}
-
-
 
         {/* Map title + actions (single view) */}
         {viewMode === 'single' && selectedMap && (
           <div className="ml-auto flex items-center gap-2">
             <span className="text-sm font-medium">{selectedMap.name}</span>
-            <span className="text-xs text-muted-foreground">{selectedMapIndex + 1}/{maps.length}</span>
+            <span className="text-xs text-muted-foreground">
+              {selectedMapIndex + 1}/{maps.length}
+            </span>
             {selectedMap.floor_level !== 0 && (
-              <Badge variant="outline" className="text-[10px]">Floor {selectedMap.floor_level}</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                Floor {selectedMap.floor_level}
+              </Badge>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1064,7 +1208,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
         {/* Map counter (collage) */}
         {viewMode === 'collage' && (
-          <span className="ml-auto text-sm text-muted-foreground">{maps.length} map{maps.length !== 1 ? 's' : ''}</span>
+          <span className="ml-auto text-sm text-muted-foreground">
+            {maps.length} map{maps.length !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
 
@@ -1107,7 +1253,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onMovePlacement={handleMovePlacement}
                   onSelectPlacement={setSelectedPlacementId}
                   onRemovePlacement={handleRemovePlacement}
-                  onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+                  onDeviceNavigate={(deviceId) =>
+                    router.push(`/dashboard/devices/view?id=${deviceId}`)
+                  }
                   telemetryMap={telemetryMap}
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
@@ -1144,16 +1292,30 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                             )
                           })}
                           {hiddenDeviceTypes.size > 0 && (
-                            <button onClick={showAllDeviceTypes} className="text-[10px] text-primary underline hover:no-underline">Show All</button>
+                            <button
+                              onClick={showAllDeviceTypes}
+                              className="text-[10px] text-primary underline hover:no-underline"
+                            >
+                              Show All
+                            </button>
                           )}
-                          {hiddenDeviceTypes.size === 0 && deviceTypeChips.length > 2 && (
-                            <button onClick={hideAllDeviceTypes} className="text-[10px] text-muted-foreground underline hover:no-underline">Hide All</button>
-                          )}
+                          {hiddenDeviceTypes.size === 0 &&
+                            deviceTypeChips.length > 2 && (
+                              <button
+                                onClick={hideAllDeviceTypes}
+                                className="text-[10px] text-muted-foreground underline hover:no-underline"
+                              >
+                                Hide All
+                              </button>
+                            )}
                         </div>
                       )}
 
                       {/* Heatmap + Zone controls box — right-aligned, grid for vertical alignment */}
-                      {(availableMetrics.length > 0 || zones.length > 0 || mode === 'edit' || mode === 'place') && (
+                      {(availableMetrics.length > 0 ||
+                        zones.length > 0 ||
+                        mode === 'edit' ||
+                        mode === 'place') && (
                         <div className="ml-auto grid grid-cols-[auto_auto_auto] items-center gap-x-1.5 gap-y-0.5 rounded border bg-muted/20 px-2 py-1">
                           {/* Row 1: Heatmap */}
                           {availableMetrics.length > 0 && (
@@ -1161,8 +1323,12 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                               <Button
                                 variant={heatmapMetric ? 'default' : 'outline'}
                                 size="sm"
-                                className={`h-6 text-[10px] px-2 ${heatmapMetric ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
-                                onClick={() => setHeatmapMetric(heatmapMetric ? null : availableMetrics[0]!)}
+                                className={`h-6 px-2 text-[10px] ${heatmapMetric ? 'bg-red-600 text-white hover:bg-red-700' : ''}`}
+                                onClick={() =>
+                                  setHeatmapMetric(
+                                    heatmapMetric ? null : availableMetrics[0]!
+                                  )
+                                }
                               >
                                 <Flame className="mr-1 h-3 w-3" />
                                 Heatmap
@@ -1171,38 +1337,70 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                 {heatmapMetric && (
                                   <select
                                     value={heatmapMetric}
-                                    onChange={(e) => setHeatmapMetric(e.target.value)}
+                                    onChange={(e) =>
+                                      setHeatmapMetric(e.target.value)
+                                    }
                                     className="h-6 rounded border bg-background px-1 text-[10px]"
                                   >
                                     {availableMetrics.map((m) => (
-                                      <option key={m} value={m}>{m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                                      <option key={m} value={m}>
+                                        {m
+                                          .replace(/_/g, ' ')
+                                          .replace(/\b\w/g, (c) =>
+                                            c.toUpperCase()
+                                          )}
+                                      </option>
                                     ))}
                                   </select>
                                 )}
                               </div>
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
+                                  <button className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground">
                                     <Info className="h-3 w-3" /> Help
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent side="left" className="w-72 text-xs space-y-2">
-                                  <p className="font-semibold">Heatmap Overlay</p>
-                                  <p className="text-muted-foreground">The heatmap uses <strong>Inverse Distance Weighting (IDW)</strong> to interpolate telemetry values between device positions.</p>
+                                <PopoverContent
+                                  side="left"
+                                  className="w-72 space-y-2 text-xs"
+                                >
+                                  <p className="font-semibold">
+                                    Heatmap Overlay
+                                  </p>
+                                  <p className="text-muted-foreground">
+                                    The heatmap uses{' '}
+                                    <strong>
+                                      Inverse Distance Weighting (IDW)
+                                    </strong>{' '}
+                                    to interpolate telemetry values between
+                                    device positions.
+                                  </p>
                                   <div className="flex items-center gap-1">
                                     <span className="h-3 w-3 rounded-sm bg-blue-500" />
-                                    <span className="text-muted-foreground">Low</span>
+                                    <span className="text-muted-foreground">
+                                      Low
+                                    </span>
                                     <span className="h-3 w-3 rounded-sm bg-cyan-400" />
                                     <span className="h-3 w-3 rounded-sm bg-green-500" />
-                                    <span className="text-muted-foreground">Mid</span>
+                                    <span className="text-muted-foreground">
+                                      Mid
+                                    </span>
                                     <span className="h-3 w-3 rounded-sm bg-yellow-400" />
                                     <span className="h-3 w-3 rounded-sm bg-red-500" />
-                                    <span className="text-muted-foreground">High</span>
+                                    <span className="text-muted-foreground">
+                                      High
+                                    </span>
                                   </div>
-                                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                  <ul className="list-inside list-disc space-y-1 text-muted-foreground">
                                     <li>Select a metric from the dropdown</li>
-                                    <li>Requires 2+ devices with numeric telemetry</li>
-                                    <li>Use the <strong>Show Heatmap</strong> checkbox in the toolbar above to toggle visibility</li>
+                                    <li>
+                                      Requires 2+ devices with numeric telemetry
+                                    </li>
+                                    <li>
+                                      Use the <strong>Show Heatmap</strong>{' '}
+                                      checkbox in the toolbar above to toggle
+                                      visibility
+                                    </li>
                                   </ul>
                                 </PopoverContent>
                               </Popover>
@@ -1215,7 +1413,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                               <Button
                                 variant={zoneDrawing ? 'default' : 'outline'}
                                 size="sm"
-                                className="h-6 text-[10px] px-2"
+                                className="h-6 px-2 text-[10px]"
                                 onClick={() => setZoneDrawing(!zoneDrawing)}
                               >
                                 <PenTool className="mr-1 h-3 w-3" />
@@ -1226,23 +1424,42 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                                   <Popover>
                                     <PopoverTrigger asChild>
                                       <button className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
-                                        <Layers className="h-3 w-3" />{zones.length} zone{zones.length !== 1 ? 's' : ''}
+                                        <Layers className="h-3 w-3" />
+                                        {zones.length} zone
+                                        {zones.length !== 1 ? 's' : ''}
                                       </button>
                                     </PopoverTrigger>
-                                    <PopoverContent side="left" className="w-56 p-2">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-semibold">Zones</span>
+                                    <PopoverContent
+                                      side="left"
+                                      className="w-56 p-2"
+                                    >
+                                      <div className="mb-2 flex items-center justify-between">
+                                        <span className="text-xs font-semibold">
+                                          Zones
+                                        </span>
                                       </div>
-                                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                                      <div className="max-h-40 space-y-1 overflow-y-auto">
                                         {zones.map((z) => (
-                                          <div key={z.id} className="flex items-center justify-between rounded px-1.5 py-1 hover:bg-muted/50 group">
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: z.color }} />
-                                              <span className="text-[11px] truncate">{z.name}</span>
+                                          <div
+                                            key={z.id}
+                                            className="group flex items-center justify-between rounded px-1.5 py-1 hover:bg-muted/50"
+                                          >
+                                            <div className="flex min-w-0 items-center gap-1.5">
+                                              <span
+                                                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                                                style={{
+                                                  backgroundColor: z.color,
+                                                }}
+                                              />
+                                              <span className="truncate text-[11px]">
+                                                {z.name}
+                                              </span>
                                             </div>
                                             <button
-                                              onClick={() => handleDeleteZoneById(z.id)}
-                                              className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                                              onClick={() =>
+                                                handleDeleteZoneById(z.id)
+                                              }
+                                              className="p-0.5 text-destructive opacity-0 transition-opacity group-hover:opacity-100"
                                               title={`Delete ${z.name}`}
                                             >
                                               <Trash2 className="h-3 w-3" />
@@ -1256,19 +1473,31 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                               </div>
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button className="text-[10px] text-muted-foreground flex items-center gap-0.5 hover:text-foreground">
+                                  <button className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground">
                                     <Info className="h-3 w-3" /> Help
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent side="left" className="w-64 text-xs space-y-2">
-                                  <p className="font-semibold">How to Draw Zones</p>
-                                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                                    <li>Click <strong>Draw Zone</strong> to start</li>
-                                    <li>Click on the map to place polygon points</li>
+                                <PopoverContent
+                                  side="left"
+                                  className="w-64 space-y-2 text-xs"
+                                >
+                                  <p className="font-semibold">
+                                    How to Draw Zones
+                                  </p>
+                                  <ol className="list-inside list-decimal space-y-1 text-muted-foreground">
+                                    <li>
+                                      Click <strong>Draw Zone</strong> to start
+                                    </li>
+                                    <li>
+                                      Click on the map to place polygon points
+                                    </li>
                                     <li>Double-click to finish the polygon</li>
                                     <li>Enter a name and color for the zone</li>
                                   </ol>
-                                  <p className="text-muted-foreground">Click a zone to select it. Use the zone list to manage or delete zones.</p>
+                                  <p className="text-muted-foreground">
+                                    Click a zone to select it. Use the zone list
+                                    to manage or delete zones.
+                                  </p>
                                 </PopoverContent>
                               </Popover>
                             </>
@@ -1287,7 +1516,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                     <button
                       key={m.id}
                       className={`h-2 rounded-full transition-all ${
-                        m.id === selectedMapId ? 'w-6 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                        m.id === selectedMapId
+                          ? 'w-6 bg-primary'
+                          : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
                       }`}
                       onClick={() => {
                         setSelectedMapId(m.id)
@@ -1304,7 +1535,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
 
             {/* Device palette (only in edit mode) */}
             {(mode === 'edit' || mode === 'place') && (
-              <div className="min-h-[300px] max-h-[520px]">
+              <div className="max-h-[520px] min-h-[300px]">
                 <DevicePalette
                   devices={devices}
                   placements={placements}
@@ -1340,25 +1571,28 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
             maps.length === 1
               ? 'grid-cols-1'
               : maps.length === 2
-              ? 'grid-cols-2'
-              : maps.length === 3
-              ? 'grid-cols-3'
-              : 'grid-cols-2 lg:grid-cols-4'
-          } ${isCollageFullscreen ? 'bg-background p-4 overflow-hidden' : ''}`}
+                ? 'grid-cols-2'
+                : maps.length === 3
+                  ? 'grid-cols-3'
+                  : 'grid-cols-2 lg:grid-cols-4'
+          } ${isCollageFullscreen ? 'overflow-hidden bg-background p-4' : ''}`}
         >
           {maps.map((m) => {
             const mapPlacements = (allPlacements[m.id] || []).filter(
               (p) => !hiddenDeviceTypes.has(p.device?.device_type || 'Unknown')
             )
             return (
-              <Card key={m.id} className="overflow-hidden relative">
+              <Card key={m.id} className="relative overflow-hidden">
                 {/* Map label overlay — location only */}
                 {mapDisplayOpts.location && m.location?.name && (
-                <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-xs font-medium shadow-sm bg-background/90 backdrop-blur-sm">
-                    {m.location.name}
-                  </Badge>
-                </div>
+                  <div className="absolute left-2 top-2 z-20 flex items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className="bg-background/90 text-xs font-medium shadow-sm backdrop-blur-sm"
+                    >
+                      {m.location.name}
+                    </Badge>
+                  </div>
                 )}
                 <FacilityMapCanvas
                   facilityMap={m}
@@ -1371,7 +1605,9 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                   onMovePlacement={() => {}}
                   onSelectPlacement={() => {}}
                   onRemovePlacement={() => {}}
-                  onDeviceNavigate={(deviceId) => router.push(`/dashboard/devices/view?id=${deviceId}`)}
+                  onDeviceNavigate={(deviceId) =>
+                    router.push(`/dashboard/devices/view?id=${deviceId}`)
+                  }
                   telemetryMap={telemetryMap}
                   showLabels={mapDisplayOpts.deviceName}
                   showDeviceType={mapDisplayOpts.deviceType}
@@ -1399,13 +1635,16 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
       />
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteMapId} onOpenChange={(o) => !o && setDeleteMapId(null)}>
+      <AlertDialog
+        open={!!deleteMapId}
+        onOpenChange={(o) => !o && setDeleteMapId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Facility Map?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the map, its floor plan image, and all device
-              placements. This action cannot be undone.
+              This will permanently delete the map, its floor plan image, and
+              all device placements. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -93,7 +93,13 @@ describe('Tier Features System', () => {
     })
 
     test('all tiers have same number of feature keys', () => {
-      const tiers = ['free', 'starter', 'professional', 'enterprise', 'reseller']
+      const tiers = [
+        'free',
+        'starter',
+        'professional',
+        'enterprise',
+        'reseller',
+      ]
       const keyCounts = tiers.map(
         (t) => Object.keys(getStaticTierFeatures(t)).length
       )
@@ -135,12 +141,10 @@ describe('Tier Features System', () => {
     })
 
     test('works with FEATURE_KEYS constants', () => {
-      expect(
-        tierHasFeature('enterprise', FEATURE_KEYS.PREDICTIVE_AI)
-      ).toBe(true)
-      expect(
-        tierHasFeature('starter', FEATURE_KEYS.PREDICTIVE_AI)
-      ).toBe(false)
+      expect(tierHasFeature('enterprise', FEATURE_KEYS.PREDICTIVE_AI)).toBe(
+        true
+      )
+      expect(tierHasFeature('starter', FEATURE_KEYS.PREDICTIVE_AI)).toBe(false)
     })
   })
 
@@ -161,7 +165,8 @@ describe('Tier Features System', () => {
 
       // Professional must have more features than starter
       const starterCount = Object.values(starter).filter(Boolean).length
-      const professionalCount = Object.values(professional).filter(Boolean).length
+      const professionalCount =
+        Object.values(professional).filter(Boolean).length
       expect(professionalCount).toBeGreaterThan(starterCount)
     })
 
@@ -175,7 +180,8 @@ describe('Tier Features System', () => {
         }
       }
 
-      const professionalCount = Object.values(professional).filter(Boolean).length
+      const professionalCount =
+        Object.values(professional).filter(Boolean).length
       const enterpriseCount = Object.values(enterprise).filter(Boolean).length
       expect(enterpriseCount).toBeGreaterThan(professionalCount)
     })
@@ -223,7 +229,9 @@ describe('Tier Features System', () => {
   // ========================================================================
   describe('getFeatureDisplayName', () => {
     test('returns proper display names', () => {
-      expect(getFeatureDisplayName('device_monitoring')).toBe('Device Monitoring')
+      expect(getFeatureDisplayName('device_monitoring')).toBe(
+        'Device Monitoring'
+      )
       expect(getFeatureDisplayName('ai_detection')).toBe('AI Detection')
       expect(getFeatureDisplayName('sso')).toBe('Single Sign-On (SSO)')
       expect(getFeatureDisplayName('data_export')).toBe('Data Export')

@@ -114,9 +114,16 @@ const nextConfig = {
           // Referrer policy: send origin only on same-origin, full URL cross-origin
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // HSTS: enforce HTTPS for 1 year including subdomains
-          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
           // Disable browser features we don't use
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+          },
           // Content Security Policy
           {
             key: 'Content-Security-Policy',

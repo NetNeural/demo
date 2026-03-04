@@ -46,11 +46,31 @@ import { ApiKeysTab } from '../../organizations/components/ApiKeysTab'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 const SUPPORTED_EVENTS = [
-  { value: 'alert.created',  label: 'Alert Created',   description: 'Fires when a new alert is triggered' },
-  { value: 'alert.resolved', label: 'Alert Resolved',  description: 'Fires when an alert is resolved' },
-  { value: 'device.online',  label: 'Device Online',   description: 'Fires when a device comes online' },
-  { value: 'device.offline', label: 'Device Offline',  description: 'Fires when a device goes offline' },
-  { value: 'device.warning', label: 'Device Warning',  description: 'Fires when a device enters warning state' },
+  {
+    value: 'alert.created',
+    label: 'Alert Created',
+    description: 'Fires when a new alert is triggered',
+  },
+  {
+    value: 'alert.resolved',
+    label: 'Alert Resolved',
+    description: 'Fires when an alert is resolved',
+  },
+  {
+    value: 'device.online',
+    label: 'Device Online',
+    description: 'Fires when a device comes online',
+  },
+  {
+    value: 'device.offline',
+    label: 'Device Offline',
+    description: 'Fires when a device goes offline',
+  },
+  {
+    value: 'device.warning',
+    label: 'Device Warning',
+    description: 'Fires when a device enters warning state',
+  },
 ]
 
 interface WebhookSubscription {
@@ -67,7 +87,11 @@ interface WebhookSubscription {
 
 // ── Webhook Subscriptions Section ────────────────────────────────────────────
 
-function WebhookSubscriptionsSection({ organizationId }: { organizationId: string }) {
+function WebhookSubscriptionsSection({
+  organizationId,
+}: {
+  organizationId: string
+}) {
   const supabase = createClient()
   const [subs, setSubs] = useState<WebhookSubscription[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -82,7 +106,9 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
   const [copiedSecret, setCopiedSecret] = useState(false)
 
   const authHeaders = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     return {
       Authorization: `Bearer ${session?.access_token ?? ''}`,
       'Content-Type': 'application/json',
@@ -108,26 +134,40 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
     }
   }, [organizationId, authHeaders])
 
-  useEffect(() => { fetchSubs() }, [fetchSubs])
+  useEffect(() => {
+    fetchSubs()
+  }, [fetchSubs])
 
   const handleCreate = async () => {
-    if (!newUrl.trim()) { toast.error('Webhook URL is required'); return }
-    if (!newUrl.startsWith('https://')) { toast.error('Webhook URL must use HTTPS'); return }
-    if (newEvents.length === 0) { toast.error('Select at least one event type'); return }
+    if (!newUrl.trim()) {
+      toast.error('Webhook URL is required')
+      return
+    }
+    if (!newUrl.startsWith('https://')) {
+      toast.error('Webhook URL must use HTTPS')
+      return
+    }
+    if (newEvents.length === 0) {
+      toast.error('Select at least one event type')
+      return
+    }
 
     setIsCreating(true)
     try {
       const headers = await authHeaders()
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/webhook-subscriptions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          organization_id: organizationId,
-          name: newName || newUrl,
-          url: newUrl,
-          event_types: newEvents,
-        }),
-      })
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/webhook-subscriptions`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            organization_id: organizationId,
+            name: newName || newUrl,
+            url: newUrl,
+            event_types: newEvents,
+          }),
+        }
+      )
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err.error || 'Failed to create webhook')
@@ -141,7 +181,9 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
       await fetchSubs()
       toast.success('Webhook subscription created — save the secret below!')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create webhook')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to create webhook'
+      )
     } finally {
       setIsCreating(false)
     }
@@ -159,7 +201,9 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
       await fetchSubs()
       toast.success('Webhook subscription deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete webhook')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete webhook'
+      )
     } finally {
       setDeletingId(null)
     }
@@ -183,8 +227,8 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
   }
 
   const toggleEvent = (event: string) => {
-    setNewEvents(prev =>
-      prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
+    setNewEvents((prev) =>
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
     )
   }
 
@@ -209,8 +253,9 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
           </Button>
         </div>
         <CardDescription>
-          Receive real-time HTTP POST notifications when events occur in your organisation.
-          Payloads are signed with HMAC-SHA256 via the <code>X-NetNeural-Signature</code> header.
+          Receive real-time HTTP POST notifications when events occur in your
+          organisation. Payloads are signed with HMAC-SHA256 via the{' '}
+          <code>X-NetNeural-Signature</code> header.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -219,51 +264,76 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
         ) : subs.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
             <Webhook className="mx-auto h-8 w-8 text-muted-foreground/50" />
-            <p className="mt-2 text-sm text-muted-foreground">No webhook subscriptions yet.</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowCreate(true)}>
+            <p className="mt-2 text-sm text-muted-foreground">
+              No webhook subscriptions yet.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => setShowCreate(true)}
+            >
               <Plus className="mr-2 h-4 w-4" /> Create your first webhook
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            {subs.map(sub => (
-              <div key={sub.id} className="flex items-start justify-between rounded-lg border p-4">
-                <div className="space-y-1 min-w-0 flex-1 mr-4">
+            {subs.map((sub) => (
+              <div
+                key={sub.id}
+                className="flex items-start justify-between rounded-lg border p-4"
+              >
+                <div className="mr-4 min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">{sub.name}</span>
-                    <Badge variant={sub.is_active ? 'default' : 'secondary'} className="shrink-0">
+                    <span className="truncate text-sm font-medium">
+                      {sub.name}
+                    </span>
+                    <Badge
+                      variant={sub.is_active ? 'default' : 'secondary'}
+                      className="shrink-0"
+                    >
                       {sub.is_active ? 'Active' : 'Paused'}
                     </Badge>
                     {sub.failure_count > 0 && (
                       <Badge variant="destructive" className="shrink-0">
                         <AlertTriangle className="mr-1 h-3 w-3" />
-                        {sub.failure_count} failure{sub.failure_count !== 1 ? 's' : ''}
+                        {sub.failure_count} failure
+                        {sub.failure_count !== 1 ? 's' : ''}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground font-mono truncate">{sub.url}</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {sub.event_types.map(e => (
-                      <Badge key={e} variant="outline" className="text-xs">{e}</Badge>
+                  <p className="truncate font-mono text-xs text-muted-foreground">
+                    {sub.url}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {sub.event_types.map((e) => (
+                      <Badge key={e} variant="outline" className="text-xs">
+                        {e}
+                      </Badge>
                     ))}
                   </div>
                   {sub.last_triggered_at && (
                     <p className="text-xs text-muted-foreground">
-                      Last triggered: {new Date(sub.last_triggered_at).toLocaleString()}
-                      {sub.last_status_code ? ` (HTTP ${sub.last_status_code})` : ''}
+                      Last triggered:{' '}
+                      {new Date(sub.last_triggered_at).toLocaleString()}
+                      {sub.last_status_code
+                        ? ` (HTTP ${sub.last_status_code})`
+                        : ''}
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex shrink-0 gap-2">
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleTest(sub.id)}
                     disabled={testingId === sub.id}
                   >
                     <Send className="h-3 w-3" />
                   </Button>
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleDelete(sub.id)}
                     disabled={deletingId === sub.id}
                     className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -283,40 +353,56 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
           <DialogHeader>
             <DialogTitle>New Webhook Subscription</DialogTitle>
             <DialogDescription>
-              NetNeural will POST a signed JSON payload to your URL when the selected events occur.
+              NetNeural will POST a signed JSON payload to your URL when the
+              selected events occur.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Display Name <span className="text-muted-foreground">(optional)</span></Label>
+              <Label>
+                Display Name{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Input
                 placeholder="My webhook"
                 value={newName}
-                onChange={e => setNewName(e.target.value)}
+                onChange={(e) => setNewName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Endpoint URL <span className="text-destructive">*</span></Label>
+              <Label>
+                Endpoint URL <span className="text-destructive">*</span>
+              </Label>
               <Input
                 placeholder="https://your-server.com/webhook"
                 value={newUrl}
-                onChange={e => setNewUrl(e.target.value)}
+                onChange={(e) => setNewUrl(e.target.value)}
                 type="url"
               />
             </div>
             <div className="space-y-2">
-              <Label>Events to subscribe to <span className="text-destructive">*</span></Label>
+              <Label>
+                Events to subscribe to{' '}
+                <span className="text-destructive">*</span>
+              </Label>
               <div className="space-y-2 rounded-lg border p-3">
-                {SUPPORTED_EVENTS.map(ev => (
+                {SUPPORTED_EVENTS.map((ev) => (
                   <div key={ev.value} className="flex items-start gap-3">
                     <Checkbox
                       id={`ev-${ev.value}`}
                       checked={newEvents.includes(ev.value)}
                       onCheckedChange={() => toggleEvent(ev.value)}
                     />
-                    <label htmlFor={`ev-${ev.value}`} className="space-y-0.5 cursor-pointer">
-                      <p className="text-sm font-medium leading-none">{ev.label}</p>
-                      <p className="text-xs text-muted-foreground">{ev.description}</p>
+                    <label
+                      htmlFor={`ev-${ev.value}`}
+                      className="cursor-pointer space-y-0.5"
+                    >
+                      <p className="text-sm font-medium leading-none">
+                        {ev.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {ev.description}
+                      </p>
                     </label>
                   </div>
                 ))}
@@ -324,7 +410,9 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleCreate} disabled={isCreating}>
               {isCreating ? 'Creating…' : 'Create Webhook'}
             </Button>
@@ -333,7 +421,10 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
       </Dialog>
 
       {/* Secret reveal dialog — shown once after creation */}
-      <Dialog open={!!createdSecret} onOpenChange={() => setCreatedSecret(null)}>
+      <Dialog
+        open={!!createdSecret}
+        onOpenChange={() => setCreatedSecret(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -341,16 +432,21 @@ function WebhookSubscriptionsSection({ organizationId }: { organizationId: strin
               Webhook Created — Save Your Secret
             </DialogTitle>
             <DialogDescription>
-              This signing secret is shown <strong>only once</strong>. Use it to verify
-              incoming webhook payloads via the <code>X-NetNeural-Signature</code> header.
+              This signing secret is shown <strong>only once</strong>. Use it to
+              verify incoming webhook payloads via the{' '}
+              <code>X-NetNeural-Signature</code> header.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg bg-muted p-3 font-mono text-sm break-all">
+          <div className="break-all rounded-lg bg-muted p-3 font-mono text-sm">
             {createdSecret}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={copySecret}>
-              {copiedSecret ? <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copiedSecret ? (
+                <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
               {copiedSecret ? 'Copied!' : 'Copy Secret'}
             </Button>
             <Button onClick={() => setCreatedSecret(null)}>Done</Button>
@@ -393,8 +489,7 @@ export function DeveloperTab() {
           >
             Export API <ExternalLink className="h-3 w-3" />
           </a>
-          .{' '}
-          Rate limits and scopes apply per key.
+          . Rate limits and scopes apply per key.
         </p>
         <ApiKeysTab organizationId={orgId} />
       </div>
@@ -406,7 +501,7 @@ export function DeveloperTab() {
 
       {/* API Reference link */}
       <Card className="bg-muted/50">
-        <CardContent className="pt-4 pb-4">
+        <CardContent className="pb-4 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Code className="h-4 w-4 text-muted-foreground" />
@@ -423,8 +518,8 @@ export function DeveloperTab() {
             </Button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Interactive API docs with try-it-out for all export endpoints. Supports CSV export,
-            keyset pagination, and rate-limited access.
+            Interactive API docs with try-it-out for all export endpoints.
+            Supports CSV export, keyset pagination, and rate-limited access.
           </p>
         </CardContent>
       </Card>

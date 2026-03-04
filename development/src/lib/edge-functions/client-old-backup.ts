@@ -250,7 +250,11 @@ export class EdgeFunctionClient {
       data: {
         name?: string
         description?: string
-        subscriptionTier?: 'starter' | 'professional' | 'enterprise' | 'unlimited'
+        subscriptionTier?:
+          | 'starter'
+          | 'professional'
+          | 'enterprise'
+          | 'unlimited'
         isActive?: boolean
       }
     ) =>

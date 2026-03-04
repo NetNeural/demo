@@ -11,19 +11,19 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface RevenueSummary {
   totalMrr: number
   totalArr: number
-  netRevenueChange: number       // MRR delta vs previous month
-  netRevenueChangePct: number    // % change
-  churnRate: number              // % orgs churned this month
+  netRevenueChange: number // MRR delta vs previous month
+  netRevenueChangePct: number // % change
+  churnRate: number // % orgs churned this month
   churnedCount: number
   activeCount: number
-  trialToPaidRate: number        // % trials that converted
+  trialToPaidRate: number // % trials that converted
   totalCustomers: number
 }
 
 /** Monthly MRR data point */
 export interface MrrDataPoint {
-  month: string          // ISO month string e.g. "2026-02"
-  label: string          // display label e.g. "Feb 2026"
+  month: string // ISO month string e.g. "2026-02"
+  label: string // display label e.g. "Feb 2026"
   mrr: number
   activeSubscriptions: number
 }
@@ -78,7 +78,9 @@ export async function fetchRevenueSummary(
   // 1. Current MRR from active subscriptions
   const { data: activeData } = await supabase
     .from('subscriptions')
-    .select('id, billing_plan:billing_plans!inner(price_monthly, price_per_device, pricing_model)')
+    .select(
+      'id, billing_plan:billing_plans!inner(price_monthly, price_per_device, pricing_model)'
+    )
     .eq('status', 'active')
 
   let totalMrr = 0
@@ -116,7 +118,8 @@ export async function fetchRevenueSummary(
   }
 
   const netRevenueChange = totalMrr - prevMrr
-  const netRevenueChangePct = prevMrr > 0 ? (netRevenueChange / prevMrr) * 100 : 0
+  const netRevenueChangePct =
+    prevMrr > 0 ? (netRevenueChange / prevMrr) * 100 : 0
 
   // 3. Churn rate from lifecycle stages
   const { count: churnedCount } = await supabase
@@ -170,8 +173,18 @@ export async function fetchMrrTrend(
   months: number = 12
 ): Promise<MrrDataPoint[]> {
   const monthLabels = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ]
 
   // Build list of month boundaries
@@ -219,7 +232,10 @@ export async function fetchRevenueByPlan(
 
   if (!data?.length) return []
 
-  const planMap = new Map<string, { name: string; slug: string; mrr: number; count: number }>()
+  const planMap = new Map<
+    string,
+    { name: string; slug: string; mrr: number; count: number }
+  >()
   for (const sub of data) {
     const plan = sub.billing_plan as any
     if (!plan) continue
@@ -259,7 +275,10 @@ export async function fetchCustomersByPlan(
     .select('id, billing_plan:billing_plans!inner(name, slug)')
     .eq('status', 'active')
 
-  const planMap = new Map<string, { name: string; slug: string; count: number }>()
+  const planMap = new Map<
+    string,
+    { name: string; slug: string; count: number }
+  >()
   if (data) {
     for (const sub of data) {
       const plan = sub.billing_plan as any
@@ -311,8 +330,18 @@ export async function fetchMrrWaterfall(
   months: number = 6
 ): Promise<WaterfallDataPoint[]> {
   const monthLabels = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ]
   const now = new Date()
   const points: WaterfallDataPoint[] = []
@@ -352,7 +381,9 @@ export async function fetchMrrWaterfall(
       const orgIds = [...new Set(churnEvents.map((e) => e.organization_id))]
       const { data: churnedSubs } = await supabase
         .from('subscriptions')
-        .select('organization_id, billing_plan:billing_plans!inner(price_monthly)')
+        .select(
+          'organization_id, billing_plan:billing_plans!inner(price_monthly)'
+        )
         .in('organization_id', orgIds)
 
       if (churnedSubs) {
@@ -363,7 +394,13 @@ export async function fetchMrrWaterfall(
       }
     }
 
-    points.push({ month, label, newMrr, churnedMrr, netMrr: newMrr - churnedMrr })
+    points.push({
+      month,
+      label,
+      newMrr,
+      churnedMrr,
+      netMrr: newMrr - churnedMrr,
+    })
   }
 
   return points

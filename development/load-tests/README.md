@@ -16,6 +16,7 @@ winget install k6 --source winget
 ## Scenarios
 
 ### 1. Concurrent Users (`scenario-concurrent-users.js`)
+
 Simulates 50 simultaneous user sessions — login, dashboard load, API calls.
 
 ```bash
@@ -29,6 +30,7 @@ k6 run \
 ```
 
 **Thresholds:**
+
 - `p95 < 2000ms` overall
 - `p95 login < 3000ms`
 - Error rate `< 1%`
@@ -36,6 +38,7 @@ k6 run \
 ---
 
 ### 2. Telemetry Ingestion (`scenario-telemetry-ingestion.js`)
+
 Simulates 500 devices sending telemetry every 60 seconds.
 
 ```bash
@@ -47,12 +50,14 @@ k6 run \
 ```
 
 **Thresholds:**
+
 - Ingest `p95 < 2000ms`
 - Success rate `> 99%`
 
 ---
 
 ### 3. Edge Functions (`scenario-edge-functions.js`)
+
 Tests response times for all key edge functions under load.
 
 ```bash
@@ -64,6 +69,7 @@ k6 run \
 ```
 
 **Thresholds:**
+
 - All edge functions `p95 < 2000ms`
 - Success rate `> 95%`
 
@@ -86,9 +92,9 @@ Run against **staging** first, then **production** once staging passes.
 
 ## Interpreting Results
 
-| Metric | Target | Action if failing |
-|--------|--------|-------------------|
-| p95 latency | < 2s | Check DB query plans, add indexes, optimize edge functions |
-| Error rate | < 1% | Check Supabase logs for DB errors, EF timeouts |
-| Telemetry success | > 99% | Check `ingest-telemetry` EF logs, DB connection pool |
-| DB connections | < 80% pool | Increase Supabase connection pool size or add PgBouncer |
+| Metric            | Target     | Action if failing                                          |
+| ----------------- | ---------- | ---------------------------------------------------------- |
+| p95 latency       | < 2s       | Check DB query plans, add indexes, optimize edge functions |
+| Error rate        | < 1%       | Check Supabase logs for DB errors, EF timeouts             |
+| Telemetry success | > 99%      | Check `ingest-telemetry` EF logs, DB connection pool       |
+| DB connections    | < 80% pool | Increase Supabase connection pool size or add PgBouncer    |

@@ -3,7 +3,8 @@
 describe('Billing Status', () => {
   it('active org has billing access', () => {
     const org = { billing_status: 'active' }
-    const hasAccess = org.billing_status === 'active' || org.billing_status === 'trialing'
+    const hasAccess =
+      org.billing_status === 'active' || org.billing_status === 'trialing'
     expect(hasAccess).toBe(true)
   })
 

@@ -29,7 +29,10 @@ type LazyProviderLoader = () => Promise<ProviderConstructor>
  * Registry of available integration providers
  * Supports both eager (ProviderConstructor) and lazy (dynamic import) registration
  */
-const providerRegistry = new Map<string, ProviderConstructor | LazyProviderLoader>()
+const providerRegistry = new Map<
+  string,
+  ProviderConstructor | LazyProviderLoader
+>()
 
 /**
  * Register a provider type (eager — class already loaded)
@@ -152,19 +155,23 @@ registerProvider('golioth', GoliothIntegrationProvider)
 // Heavy SDK providers are lazily loaded via dynamic import to keep them
 // out of the initial client bundle (~500-700 KB savings)
 registerLazyProvider('aws_iot', async () => {
-  const { AwsIotIntegrationProvider } = await import('./aws-iot-integration-provider')
+  const { AwsIotIntegrationProvider } =
+    await import('./aws-iot-integration-provider')
   return AwsIotIntegrationProvider
 })
 registerLazyProvider('azure_iot', async () => {
-  const { AzureIotIntegrationProvider } = await import('./azure-iot-integration-provider')
+  const { AzureIotIntegrationProvider } =
+    await import('./azure-iot-integration-provider')
   return AzureIotIntegrationProvider
 })
 registerLazyProvider('mqtt', async () => {
-  const { MqttIntegrationProvider } = await import('./mqtt-integration-provider')
+  const { MqttIntegrationProvider } =
+    await import('./mqtt-integration-provider')
   return MqttIntegrationProvider
 })
 registerLazyProvider('netneural_hub', async () => {
-  const { NetNeuralLinkIntegrationProvider } = await import('./netneural-link-integration-provider')
+  const { NetNeuralLinkIntegrationProvider } =
+    await import('./netneural-link-integration-provider')
   return NetNeuralLinkIntegrationProvider
 })
 

@@ -14,14 +14,25 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { moderateImage } from '@/lib/image-moderation'
 
-const VALID_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml']
+const VALID_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/svg+xml',
+]
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
 interface FacilityMapUploaderProps {
   organizationId: string
   currentImageUrl?: string | null
   currentImagePath?: string | null
-  onUploadComplete: (url: string, path: string, width: number, height: number) => void
+  onUploadComplete: (
+    url: string,
+    path: string,
+    width: number,
+    height: number
+  ) => void
   onRemove?: () => void
   compact?: boolean
 }
@@ -56,7 +67,9 @@ export function FacilityMapUploader({
         toast.info('Checking image content...')
         const moderation = await moderateImage(file)
         if (!moderation.safe) {
-          toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+          toast.error(
+            `Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`
+          )
           setUploading(false)
           return
         }
@@ -70,7 +83,10 @@ export function FacilityMapUploader({
 
         // Remove old image if replacing
         if (currentImagePath) {
-          await supabase.storage.from('facility-maps').remove([currentImagePath]).catch(() => {})
+          await supabase.storage
+            .from('facility-maps')
+            .remove([currentImagePath])
+            .catch(() => {})
         }
 
         const { data, error } = await supabase.storage
@@ -87,7 +103,12 @@ export function FacilityMapUploader({
           data: { publicUrl },
         } = supabase.storage.from('facility-maps').getPublicUrl(data.path)
 
-        onUploadComplete(publicUrl, data.path, dimensions.width, dimensions.height)
+        onUploadComplete(
+          publicUrl,
+          data.path,
+          dimensions.width,
+          dimensions.height
+        )
         toast.success('Floor plan uploaded')
       } catch (err) {
         console.error('Upload error:', err)
@@ -125,7 +146,11 @@ export function FacilityMapUploader({
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Replace className="mr-2 h-4 w-4" />}
+          {uploading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Replace className="mr-2 h-4 w-4" />
+          )}
           Replace Image
         </Button>
         <Button
@@ -190,7 +215,9 @@ export function FacilityMapUploader({
         )}
 
         <p className="mb-1 text-sm font-medium">
-          {currentImageUrl ? 'Replace floor plan image' : 'Upload a floor plan or site image'}
+          {currentImageUrl
+            ? 'Replace floor plan image'
+            : 'Upload a floor plan or site image'}
         </p>
         <p className="mb-4 text-xs text-muted-foreground">
           PNG, JPG, WebP, or SVG — up to 10 MB
@@ -251,7 +278,9 @@ export function FacilityMapUploader({
   )
 }
 
-function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+function getImageDimensions(
+  file: File
+): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {

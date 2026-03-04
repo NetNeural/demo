@@ -6,7 +6,11 @@ const { defineConfig } = require('@playwright/test')
 module.exports = defineConfig({
   testDir: '.',
   /* Match tests in e2e/, tests/playwright/, and root-level spec files */
-  testMatch: ['e2e/**/*.spec.ts', 'tests/playwright/**/*.spec.ts', 'test-app.spec.ts'],
+  testMatch: [
+    'e2e/**/*.spec.ts',
+    'tests/playwright/**/*.spec.ts',
+    'test-app.spec.ts',
+  ],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

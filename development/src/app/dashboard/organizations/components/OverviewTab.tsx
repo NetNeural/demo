@@ -41,7 +41,8 @@ interface AuditEntry {
 }
 
 function activityIcon(category: string, resourceType: string | null) {
-  if (resourceType === 'device' || resourceType === 'sensor') return <Cpu className="h-4 w-4" />
+  if (resourceType === 'device' || resourceType === 'sensor')
+    return <Cpu className="h-4 w-4" />
   if (resourceType === 'alert') return <Bell className="h-4 w-4" />
   if (category === 'auth') return <LogIn className="h-4 w-4" />
   if (category === 'security') return <ShieldCheck className="h-4 w-4" />
@@ -50,14 +51,18 @@ function activityIcon(category: string, resourceType: string | null) {
 }
 
 function activityColor(status: string) {
-  if (status === 'failure' || status === 'error') return 'text-red-500 bg-red-50 dark:bg-red-950'
-  if (status === 'warning') return 'text-amber-500 bg-amber-50 dark:bg-amber-950'
+  if (status === 'failure' || status === 'error')
+    return 'text-red-500 bg-red-50 dark:bg-red-950'
+  if (status === 'warning')
+    return 'text-amber-500 bg-amber-50 dark:bg-amber-950'
   return 'text-blue-500 bg-blue-50 dark:bg-blue-950'
 }
 
 function formatAction(entry: AuditEntry) {
   const a = entry.action_type.replace(/_/g, ' ')
-  const r = entry.resource_name ? `"${entry.resource_name}"` : entry.resource_type || ''
+  const r = entry.resource_name
+    ? `"${entry.resource_name}"`
+    : entry.resource_type || ''
   return r ? `${a}: ${r}` : a
 }
 
@@ -78,7 +83,9 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
     try {
       const { data, error } = await supabase
         .from('user_audit_log')
-        .select('id, action_type, action_category, resource_type, resource_name, user_email, status, created_at')
+        .select(
+          'id, action_type, action_category, resource_type, resource_name, user_email, status, created_at'
+        )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(10)
@@ -90,7 +97,9 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
     }
   }, [organizationId, supabase])
 
-  useEffect(() => { loadActivity() }, [loadActivity])
+  useEffect(() => {
+    loadActivity()
+  }, [loadActivity])
 
   if (!currentOrganization) {
     return <div>No organization selected</div>
@@ -233,18 +242,31 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
           ) : (
             <div className="space-y-2">
               {activities.map((entry) => (
-                <div key={entry.id} className="flex items-start gap-3 rounded-lg p-2 hover:bg-muted/50">
-                  <div className={`mt-0.5 rounded-full p-1.5 ${activityColor(entry.status)}`}>
+                <div
+                  key={entry.id}
+                  className="flex items-start gap-3 rounded-lg p-2 hover:bg-muted/50"
+                >
+                  <div
+                    className={`mt-0.5 rounded-full p-1.5 ${activityColor(entry.status)}`}
+                  >
                     {activityIcon(entry.action_category, entry.resource_type)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium capitalize">{formatAction(entry)}</p>
+                    <p className="truncate text-sm font-medium capitalize">
+                      {formatAction(entry)}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.user_email ?? 'System'} &middot; {fmt.timeAgo(entry.created_at)}
+                      {entry.user_email ?? 'System'} &middot;{' '}
+                      {fmt.timeAgo(entry.created_at)}
                     </p>
                   </div>
                   {entry.status !== 'success' && (
-                    <Badge variant={entry.status === 'failure' ? 'destructive' : 'outline'} className="shrink-0 text-[10px]">
+                    <Badge
+                      variant={
+                        entry.status === 'failure' ? 'destructive' : 'outline'
+                      }
+                      className="shrink-0 text-[10px]"
+                    >
                       {entry.status}
                     </Badge>
                   )}

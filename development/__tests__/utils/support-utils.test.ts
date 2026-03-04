@@ -21,7 +21,9 @@ describe('Support Utility Functions', () => {
     ]
     const context = messages
       .slice(-6)
-      .map(m => `${m.sender_type === 'user' ? 'User' : 'Mercury'}: ${m.content}`)
+      .map(
+        (m) => `${m.sender_type === 'user' ? 'User' : 'Mercury'}: ${m.content}`
+      )
       .join('\n')
     expect(context).toContain('User:')
     expect(context).toContain('Mercury:')

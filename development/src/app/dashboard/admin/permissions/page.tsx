@@ -32,7 +32,10 @@ import {
   Loader2,
 } from 'lucide-react'
 import type { OrganizationRole } from '@/types/organization'
-import { getOrganizationPermissions, getRoleDisplayInfo } from '@/types/organization'
+import {
+  getOrganizationPermissions,
+  getRoleDisplayInfo,
+} from '@/types/organization'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +55,14 @@ type AllRole = OrganizationRole | 'super_admin'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ALL_ROLES: AllRole[] = ['viewer', 'member', 'admin', 'owner', 'billing', 'super_admin']
+const ALL_ROLES: AllRole[] = [
+  'viewer',
+  'member',
+  'admin',
+  'owner',
+  'billing',
+  'super_admin',
+]
 
 const ROLE_COLORS: Record<AllRole, string> = {
   viewer: 'bg-gray-100 text-gray-700',
@@ -129,8 +139,16 @@ const NETNEURAL_OWNER_SA: Record<AllRole, AccessLevel> = {
   super_admin: 'enabled',
 }
 
-function buildActionDefaults(key: keyof ReturnType<typeof getOrganizationPermissions>): Record<AllRole, AccessLevel> {
-  const roles: OrganizationRole[] = ['viewer', 'member', 'admin', 'owner', 'billing']
+function buildActionDefaults(
+  key: keyof ReturnType<typeof getOrganizationPermissions>
+): Record<AllRole, AccessLevel> {
+  const roles: OrganizationRole[] = [
+    'viewer',
+    'member',
+    'admin',
+    'owner',
+    'billing',
+  ]
   const result: Record<AllRole, AccessLevel> = {
     viewer: 'disabled',
     member: 'disabled',
@@ -140,7 +158,9 @@ function buildActionDefaults(key: keyof ReturnType<typeof getOrganizationPermiss
     super_admin: 'enabled',
   }
   for (const role of roles) {
-    result[role] = getOrganizationPermissions(role)[key] ? 'enabled' : 'disabled'
+    result[role] = getOrganizationPermissions(role)[key]
+      ? 'enabled'
+      : 'disabled'
   }
   return result
 }
@@ -471,7 +491,11 @@ function groupBy<T>(arr: T[], key: (item: T) => string): Record<string, T[]> {
 
 function nextAccessLevel(current: AccessLevel): AccessLevel {
   const idx = ACCESS_LEVELS.indexOf(current)
-  return ACCESS_LEVELS[(idx + 1) % ACCESS_LEVELS.length] ?? ACCESS_LEVELS[0] ?? 'enabled'
+  return (
+    ACCESS_LEVELS[(idx + 1) % ACCESS_LEVELS.length] ??
+    ACCESS_LEVELS[0] ??
+    'enabled'
+  )
 }
 
 // ─── AccessCell ───────────────────────────────────────────────────────────────
@@ -506,9 +530,15 @@ function AccessCell({
         <TooltipContent side="top" className="max-w-xs text-xs">
           <p className="font-semibold">{cfg.label}</p>
           {!isDefault && (
-            <p className="mt-1 text-orange-300">⚠ Override active (differs from code default)</p>
+            <p className="mt-1 text-orange-300">
+              ⚠ Override active (differs from code default)
+            </p>
           )}
-          {!readOnly && <p className="mt-1 text-muted-foreground">Click to cycle to next state</p>}
+          {!readOnly && (
+            <p className="mt-1 text-muted-foreground">
+              Click to cycle to next state
+            </p>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -551,11 +581,15 @@ function PermissionMatrix({
               Feature
             </th>
             {ALL_ROLES.map((role) => {
-              const info = role === 'super_admin'
-                ? { label: 'Super Admin', color: 'red' }
-                : getRoleDisplayInfo(role as OrganizationRole)
+              const info =
+                role === 'super_admin'
+                  ? { label: 'Super Admin', color: 'red' }
+                  : getRoleDisplayInfo(role as OrganizationRole)
               return (
-                <th key={role} className="min-w-[100px] px-2 py-3 text-center font-semibold">
+                <th
+                  key={role}
+                  className="min-w-[100px] px-2 py-3 text-center font-semibold"
+                >
                   <span
                     className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[role]}`}
                   >
@@ -586,7 +620,9 @@ function PermissionMatrix({
                     <div className="flex items-start gap-2">
                       <div>
                         <p className="font-medium">{feature.label}</p>
-                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {feature.description}
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -598,7 +634,11 @@ function PermissionMatrix({
                         readOnly={readOnly}
                         onClick={() => {
                           const current = getLevel(feature, role)
-                          onCellChange(feature.id, role, nextAccessLevel(current))
+                          onCellChange(
+                            feature.id,
+                            role,
+                            nextAccessLevel(current)
+                          )
                         }}
                       />
                     </td>
@@ -619,11 +659,18 @@ export default function PermissionsPage() {
   const { user, loading } = useUser()
   const isSuperAdmin = isPlatformAdmin(user)
 
-  const [overrides, setOverrides] = useState<Record<string, Record<AllRole, AccessLevel>>>({})
-  const [originalOverrides, setOriginalOverrides] = useState<Record<string, Record<AllRole, AccessLevel>>>({})
+  const [overrides, setOverrides] = useState<
+    Record<string, Record<AllRole, AccessLevel>>
+  >({})
+  const [originalOverrides, setOriginalOverrides] = useState<
+    Record<string, Record<AllRole, AccessLevel>>
+  >({})
   const [saving, setSaving] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const supabase = createClient()
 
@@ -648,7 +695,8 @@ export default function PermissionsPage() {
             map[row.feature_id] = {} as Record<AllRole, AccessLevel>
           }
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          map[row.feature_id]![row.role as AllRole] = row.access_level as AccessLevel
+          map[row.feature_id]![row.role as AllRole] =
+            row.access_level as AccessLevel
         }
         setOverrides(map)
         setOriginalOverrides(JSON.parse(JSON.stringify(map)))
@@ -718,7 +766,10 @@ export default function PermissionsPage() {
       }
 
       setOriginalOverrides(JSON.parse(JSON.stringify(overrides)))
-      setSaveMessage({ type: 'success', text: 'Permissions saved successfully.' })
+      setSaveMessage({
+        type: 'success',
+        text: 'Permissions saved successfully.',
+      })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       setSaveMessage({ type: 'error', text: `Save failed: ${message}` })
@@ -733,7 +784,8 @@ export default function PermissionsPage() {
     setSaveMessage(null)
   }
 
-  const hasChanges = JSON.stringify(overrides) !== JSON.stringify(originalOverrides)
+  const hasChanges =
+    JSON.stringify(overrides) !== JSON.stringify(originalOverrides)
 
   // ── Guards ──
   if (loading) {
@@ -766,9 +818,10 @@ export default function PermissionsPage() {
             <h1 className="text-2xl font-bold">Permission Manager</h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            View and override which roles can access each feature. Changes are stored as DB overrides —
-            the underlying code defaults are shown for reference but may not reflect live gating logic until
-            consumed by app code.
+            View and override which roles can access each feature. Changes are
+            stored as DB overrides — the underlying code defaults are shown for
+            reference but may not reflect live gating logic until consumed by
+            app code.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -781,7 +834,11 @@ export default function PermissionsPage() {
             <RotateCcw className="mr-1.5 h-4 w-4" />
             Reset
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={!hasChanges || saving}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+          >
             {saving ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
@@ -809,7 +866,8 @@ export default function PermissionsPage() {
       {hasChanges && (
         <div className="flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-700">
           <Info className="h-4 w-4 shrink-0" />
-          You have unsaved changes. Click&nbsp;<strong>Save Changes</strong>&nbsp;to persist them.
+          You have unsaved changes. Click&nbsp;<strong>Save Changes</strong>
+          &nbsp;to persist them.
         </div>
       )}
 
@@ -818,7 +876,8 @@ export default function PermissionsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Access Level Legend</CardTitle>
           <CardDescription className="text-xs">
-            Click any cell to cycle through access levels. Cells with an orange ring differ from the code default.
+            Click any cell to cycle through access levels. Cells with an orange
+            ring differ from the code default.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -847,7 +906,9 @@ export default function PermissionsPage() {
       {loadingData ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-sm text-muted-foreground">Loading permission overrides…</span>
+          <span className="ml-2 text-sm text-muted-foreground">
+            Loading permission overrides…
+          </span>
         </div>
       ) : (
         <Tabs defaultValue="nav">
@@ -861,11 +922,13 @@ export default function PermissionsPage() {
             <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <strong>Navigation Access:</strong> Controls which sidebar links are visible per role.
+                <strong>Navigation Access:</strong> Controls which sidebar links
+                are visible per role.
                 <br />
                 <span className="text-xs">
-                  <em>NetNeural Only</em> — shown only when the NetNeural root org is active.{' '}
-                  <em>Super Admin Only</em> — shown only when isSuperAdmin = true regardless of org role.
+                  <em>NetNeural Only</em> — shown only when the NetNeural root
+                  org is active. <em>Super Admin Only</em> — shown only when
+                  isSuperAdmin = true regardless of org role.
                 </span>
               </div>
             </div>
@@ -881,12 +944,14 @@ export default function PermissionsPage() {
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <strong>Action Permissions:</strong> Maps to the <code>OrganizationPermissions</code> interface
-                computed by <code>getOrganizationPermissions(role)</code>.
+                <strong>Action Permissions:</strong> Maps to the{' '}
+                <code>OrganizationPermissions</code> interface computed by{' '}
+                <code>getOrganizationPermissions(role)</code>.
                 <br />
                 <span className="text-xs">
-                  Code defaults are shown. DB overrides stored here are available via the{' '}
-                  <code>feature_permissions</code> table for custom runtime enforcement.
+                  Code defaults are shown. DB overrides stored here are
+                  available via the <code>feature_permissions</code> table for
+                  custom runtime enforcement.
                 </span>
               </div>
             </div>
@@ -920,7 +985,9 @@ export default function PermissionsPage() {
                 >
                   {info.label}
                 </Badge>
-                <p className="text-xs text-muted-foreground">{info.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {info.description}
+                </p>
               </Card>
             )
           })}

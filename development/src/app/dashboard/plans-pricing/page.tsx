@@ -123,7 +123,12 @@ interface PriceAdjustment {
   newValue: number
 }
 
-function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogProps) {
+function PriceAdjustDialog({
+  open,
+  onClose,
+  plans,
+  onApply,
+}: PriceAdjustDialogProps) {
   const [mode, setMode] = useState<'percentage' | 'fixed'>('percentage')
   const [percentage, setPercentage] = useState('3')
   const [scope, setScope] = useState<PriceChangeScope>('new_only')
@@ -138,8 +143,8 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
     d.setDate(1)
     return d.toISOString().split('T')[0]
   })
-  const [selectedPlans, setSelectedPlans] = useState<Set<string>>(() =>
-    new Set(plans.filter((p) => p.is_active).map((p) => p.id))
+  const [selectedPlans, setSelectedPlans] = useState<Set<string>>(
+    () => new Set(plans.filter((p) => p.is_active).map((p) => p.id))
   )
 
   // Preview the calculated changes
@@ -204,7 +209,9 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
         <div className="space-y-5 py-2">
           {/* Adjustment method */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Adjustment Type</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Adjustment Type
+            </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -239,7 +246,10 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
 
           {/* Amount */}
           <div>
-            <label htmlFor="adj-amount" className="mb-1.5 block text-sm font-medium">
+            <label
+              htmlFor="adj-amount"
+              className="mb-1.5 block text-sm font-medium"
+            >
               {mode === 'percentage' ? 'Increase (%)' : 'Increase ($)'}
             </label>
             <div className="relative">
@@ -295,7 +305,10 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
 
           {/* Effective date */}
           <div>
-            <label htmlFor="adj-date" className="mb-1.5 block text-sm font-medium">
+            <label
+              htmlFor="adj-date"
+              className="mb-1.5 block text-sm font-medium"
+            >
               Effective Date
             </label>
             <input
@@ -309,7 +322,10 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
 
           {/* Reason */}
           <div>
-            <label htmlFor="adj-reason" className="mb-1.5 block text-sm font-medium">
+            <label
+              htmlFor="adj-reason"
+              className="mb-1.5 block text-sm font-medium"
+            >
               Reason (internal audit trail)
             </label>
             <input
@@ -324,7 +340,9 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
 
           {/* Select plans */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Select Plans</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Select Plans
+            </label>
             <div className="space-y-1.5">
               {plans
                 .filter((p) => p.is_active)
@@ -359,11 +377,17 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
                 <Bell className="h-4 w-4 text-blue-500" />
                 <span className="text-sm font-medium">Notify Customers</span>
               </div>
-              <Switch checked={sendNotification} onCheckedChange={setSendNotification} />
+              <Switch
+                checked={sendNotification}
+                onCheckedChange={setSendNotification}
+              />
             </div>
             {sendNotification && (
               <div className="mt-3">
-                <label htmlFor="notif-msg" className="mb-1 block text-xs text-muted-foreground">
+                <label
+                  htmlFor="notif-msg"
+                  className="mb-1 block text-xs text-muted-foreground"
+                >
                   Notification message
                 </label>
                 <textarea
@@ -386,11 +410,18 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
               </h4>
               <div className="space-y-1.5">
                 {previewChanges.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between text-sm"
+                  >
                     <span>
                       {c.planName}{' '}
                       <span className="text-muted-foreground">
-                        ({c.field === 'price_per_device' ? 'per sensor' : 'monthly'})
+                        (
+                        {c.field === 'price_per_device'
+                          ? 'per sensor'
+                          : 'monthly'}
+                        )
                       </span>
                     </span>
                     <span>
@@ -406,7 +437,8 @@ function PriceAdjustDialog({ open, onClose, plans, onApply }: PriceAdjustDialogP
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Scope: {scope === 'all' ? 'All subscribers' : 'New subscribers only'} •
+                Scope:{' '}
+                {scope === 'all' ? 'All subscribers' : 'New subscribers only'} •
                 Effective: {effectiveDate}
               </p>
             </div>
@@ -455,7 +487,9 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
   const [isActive, setIsActive] = useState(true)
   const [isPublic, setIsPublic] = useState(true)
   const [sortOrder, setSortOrder] = useState('1')
-  const [features, setFeatures] = useState<BillingPlanFeatures>({ ...EMPTY_FEATURES })
+  const [features, setFeatures] = useState<BillingPlanFeatures>({
+    ...EMPTY_FEATURES,
+  })
 
   // Reset form when plan changes
   useEffect(() => {
@@ -543,7 +577,11 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isNew ? <Plus className="h-5 w-5" /> : <Pencil className="h-5 w-5" />}
+            {isNew ? (
+              <Plus className="h-5 w-5" />
+            ) : (
+              <Pencil className="h-5 w-5" />
+            )}
             {isNew ? 'Create New Plan' : `Edit Plan: ${plan.name}`}
           </DialogTitle>
           <DialogDescription>
@@ -557,7 +595,10 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="plan-name" className="mb-1.5 block text-sm font-medium">
+              <label
+                htmlFor="plan-name"
+                className="mb-1.5 block text-sm font-medium"
+              >
                 Plan Name *
               </label>
               <input
@@ -573,7 +614,10 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
               />
             </div>
             <div>
-              <label htmlFor="plan-slug" className="mb-1.5 block text-sm font-medium">
+              <label
+                htmlFor="plan-slug"
+                className="mb-1.5 block text-sm font-medium"
+              >
                 Slug
               </label>
               <input
@@ -588,7 +632,10 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
           </div>
 
           <div>
-            <label htmlFor="plan-desc" className="mb-1.5 block text-sm font-medium">
+            <label
+              htmlFor="plan-desc"
+              className="mb-1.5 block text-sm font-medium"
+            >
               Description
             </label>
             <textarea
@@ -609,10 +656,14 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Pricing Model</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Pricing Model
+                </label>
                 <select
                   value={pricingModel}
-                  onChange={(e) => setPricingModel(e.target.value as PricingModel)}
+                  onChange={(e) =>
+                    setPricingModel(e.target.value as PricingModel)
+                  }
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="per_device">Per Device</option>
@@ -669,11 +720,15 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
             <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
               <ArrowUpDown className="h-4 w-4 text-blue-500" />
               Resource Limits
-              <span className="text-xs font-normal text-muted-foreground">(-1 = Unlimited)</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                (-1 = Unlimited)
+              </span>
             </h4>
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Max Devices</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Max Devices
+                </label>
                 <input
                   type="number"
                   value={maxDevices}
@@ -682,7 +737,9 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Max Users</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Max Users
+                </label>
                 <input
                   type="number"
                   value={maxUsers}
@@ -691,7 +748,9 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Max Integrations</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Max Integrations
+                </label>
                 <input
                   type="number"
                   value={maxIntegrations}
@@ -700,7 +759,9 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Retention (days)</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Retention (days)
+                </label>
                 <input
                   type="number"
                   value={retentionDays}
@@ -722,7 +783,9 @@ function EditPlanDialog({ open, onClose, plan, onSave }: EditPlanDialogProps) {
               <span className="text-sm">Public (pricing page)</span>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Sort Order</label>
+              <label className="mb-1 block text-xs text-muted-foreground">
+                Sort Order
+              </label>
               <input
                 type="number"
                 value={sortOrder}
@@ -785,7 +848,12 @@ interface DeleteDialogProps {
   onConfirm: () => void
 }
 
-function DeletePlanDialog({ open, onClose, plan, onConfirm }: DeleteDialogProps) {
+function DeletePlanDialog({
+  open,
+  onClose,
+  plan,
+  onConfirm,
+}: DeleteDialogProps) {
   const [confirmSlug, setConfirmSlug] = useState('')
 
   useEffect(() => {
@@ -801,8 +869,8 @@ function DeletePlanDialog({ open, onClose, plan, onConfirm }: DeleteDialogProps)
             Delete Plan: {plan?.name}
           </DialogTitle>
           <DialogDescription>
-            This will deactivate the plan. Existing subscribers will be grandfathered.
-            Type <strong>{plan?.slug}</strong> to confirm.
+            This will deactivate the plan. Existing subscribers will be
+            grandfathered. Type <strong>{plan?.slug}</strong> to confirm.
           </DialogDescription>
         </DialogHeader>
         <input
@@ -877,7 +945,10 @@ function PlansPricingContent() {
   }, [isAllowed, loadPlans])
 
   const activePlans = useMemo(() => plans.filter((p) => p.is_active), [plans])
-  const inactivePlans = useMemo(() => plans.filter((p) => !p.is_active), [plans])
+  const inactivePlans = useMemo(
+    () => plans.filter((p) => !p.is_active),
+    [plans]
+  )
 
   // ── Save a plan (create or update) ──────────────────────────────────
   const handleSavePlan = useCallback(
@@ -906,7 +977,9 @@ function PlansPricingContent() {
           {
             timestamp: new Date().toISOString(),
             user: user?.email || 'admin',
-            summary: isNew ? `Created plan: ${plan.name}` : `Updated plan: ${plan.name}`,
+            summary: isNew
+              ? `Created plan: ${plan.name}`
+              : `Updated plan: ${plan.name}`,
           },
           ...prev,
         ])
@@ -930,7 +1003,11 @@ function PlansPricingContent() {
         const supabase = db()
         const { error } = await supabase
           .from('billing_plans')
-          .update({ is_active: false, is_public: false, updated_at: new Date().toISOString() })
+          .update({
+            is_active: false,
+            is_public: false,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', plan.id)
         if (error) throw error
 
@@ -965,7 +1042,8 @@ function PlansPricingContent() {
         const byPlan = new Map<string, Partial<BillingPlan>>()
         for (const c of changes) {
           const existing = byPlan.get(c.planId) || {}
-          if (c.field === 'price_per_device') existing.price_per_device = c.newValue
+          if (c.field === 'price_per_device')
+            existing.price_per_device = c.newValue
           if (c.field === 'price_monthly') existing.price_monthly = c.newValue
           if (c.field === 'price_annual') existing.price_annual = c.newValue
           byPlan.set(c.planId, existing)
@@ -982,7 +1060,10 @@ function PlansPricingContent() {
 
         // Log the price change
         const summary = changes
-          .map((c) => `${c.planName}: $${c.oldValue.toFixed(2)} → $${c.newValue.toFixed(2)}`)
+          .map(
+            (c) =>
+              `${c.planName}: $${c.oldValue.toFixed(2)} → $${c.newValue.toFixed(2)}`
+          )
           .join(', ')
 
         // Insert price change records for audit trail
@@ -997,7 +1078,10 @@ function PlansPricingContent() {
         }))
 
         // Try inserting into price_change_log (may not exist yet — graceful fail)
-        await supabase.from('price_change_log').insert(records).then(() => {})
+        await supabase
+          .from('price_change_log')
+          .insert(records)
+          .then(() => {})
 
         setChangeLog((prev) => [
           {
@@ -1030,7 +1114,8 @@ function PlansPricingContent() {
             <Shield className="h-12 w-12 text-red-500" />
             <h2 className="text-xl font-bold">Access Denied</h2>
             <p className="text-muted-foreground">
-              Plans &amp; Pricing administration requires Owner or Super Admin privileges.
+              Plans &amp; Pricing administration requires Owner or Super Admin
+              privileges.
             </p>
           </CardContent>
         </Card>
@@ -1094,7 +1179,9 @@ function PlansPricingContent() {
                 {activePlans.map((plan) => {
                   const Icon = getPlanIcon(plan.slug)
                   const color = getPlanColor(plan.slug)
-                  const featureCount = Object.values(plan.features || {}).filter(Boolean).length
+                  const featureCount = Object.values(
+                    plan.features || {}
+                  ).filter(Boolean).length
 
                   return (
                     <Card key={plan.id} className="relative overflow-hidden">
@@ -1112,7 +1199,9 @@ function PlansPricingContent() {
                               <Icon className="h-4.5 w-4.5" style={{ color }} />
                             </div>
                             <div>
-                              <CardTitle className="text-base">{plan.name}</CardTitle>
+                              <CardTitle className="text-base">
+                                {plan.name}
+                              </CardTitle>
                               <CardDescription className="text-xs">
                                 {plan.slug} • {plan.pricing_model}
                               </CardDescription>
@@ -1156,10 +1245,14 @@ function PlansPricingContent() {
                             {plan.max_users === -1 ? '∞' : plan.max_users} users
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
-                            {plan.max_devices === -1 ? '∞' : plan.max_devices} devices
+                            {plan.max_devices === -1 ? '∞' : plan.max_devices}{' '}
+                            devices
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
-                            {plan.max_integrations === -1 ? '∞' : plan.max_integrations} integrations
+                            {plan.max_integrations === -1
+                              ? '∞'
+                              : plan.max_integrations}{' '}
+                            integrations
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
                             {plan.telemetry_retention_days === -1
@@ -1172,16 +1265,21 @@ function PlansPricingContent() {
                         {/* Features summary */}
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          {featureCount} of {PLAN_FEATURE_DISPLAY.length} features enabled
+                          {featureCount} of {PLAN_FEATURE_DISPLAY.length}{' '}
+                          features enabled
                         </div>
 
                         {/* Status badges */}
                         <div className="flex gap-1.5">
                           {plan.is_public && (
-                            <Badge className="bg-emerald-600 text-xs">Public</Badge>
+                            <Badge className="bg-emerald-600 text-xs">
+                              Public
+                            </Badge>
                           )}
                           {!plan.is_public && (
-                            <Badge variant="secondary" className="text-xs">Hidden</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Hidden
+                            </Badge>
                           )}
                           {plan.sort_order && (
                             <Badge variant="outline" className="text-xs">
@@ -1191,7 +1289,9 @@ function PlansPricingContent() {
                         </div>
 
                         {plan.description && (
-                          <p className="text-xs text-muted-foreground">{plan.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {plan.description}
+                          </p>
                         )}
                       </CardContent>
                     </Card>
@@ -1210,7 +1310,9 @@ function PlansPricingContent() {
                       <Card key={plan.id} className="opacity-60">
                         <CardHeader className="p-4 pb-2">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm">{plan.name}</CardTitle>
+                            <CardTitle className="text-sm">
+                              {plan.name}
+                            </CardTitle>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1242,7 +1344,9 @@ function PlansPricingContent() {
         <TabsContent value="features">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Feature Comparison Matrix</CardTitle>
+              <CardTitle className="text-base">
+                Feature Comparison Matrix
+              </CardTitle>
               <CardDescription>
                 Toggle features per plan. Click a cell to enable/disable.
               </CardDescription>
@@ -1252,12 +1356,17 @@ function PlansPricingContent() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="pb-3 pr-4 text-left font-medium">Feature</th>
+                      <th className="pb-3 pr-4 text-left font-medium">
+                        Feature
+                      </th>
                       {activePlans.map((plan) => (
                         <th
                           key={plan.id}
                           className="pb-3 text-center font-medium"
-                          style={{ color: getPlanColor(plan.slug), minWidth: 100 }}
+                          style={{
+                            color: getPlanColor(plan.slug),
+                            minWidth: 100,
+                          }}
                         >
                           {plan.name}
                         </th>
@@ -1267,7 +1376,9 @@ function PlansPricingContent() {
                   <tbody>
                     {PLAN_FEATURE_DISPLAY.map(({ key, label }) => (
                       <tr key={key} className="border-b border-border/50">
-                        <td className="py-2 pr-4 text-muted-foreground">{label}</td>
+                        <td className="py-2 pr-4 text-muted-foreground">
+                          {label}
+                        </td>
                         {activePlans.map((plan) => {
                           const enabled = plan.features?.[key] || false
                           return (
@@ -1334,7 +1445,8 @@ function PlansPricingContent() {
             <CardContent>
               {changeLog.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  No changes recorded this session. Changes persist to the database automatically.
+                  No changes recorded this session. Changes persist to the
+                  database automatically.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -1347,7 +1459,8 @@ function PlansPricingContent() {
                       <div className="flex-1">
                         <p className="text-sm">{entry.summary}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {new Date(entry.timestamp).toLocaleString()} • {entry.user}
+                          {new Date(entry.timestamp).toLocaleString()} •{' '}
+                          {entry.user}
                         </p>
                       </div>
                     </div>

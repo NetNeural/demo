@@ -102,54 +102,56 @@ export function BillingAdminTab({ organizationId }: BillingAdminTabProps) {
 
       // For each child org, fetch subscription + device/user counts
       const enriched: ChildOrgBilling[] = await Promise.all(
-        children.map(async (org: { id: string; name: string; slug: string }) => {
-          // Subscription + plan
-          const { data: sub } = await (supabase as any)
-            .from('subscriptions')
-            .select(
-              'status, current_period_end, cancel_at_period_end, plan:plan_id(name, slug, price_per_device)'
-            )
-            .eq('organization_id', org.id)
-            .in('status', ['active', 'trialing', 'past_due'])
-            .limit(1)
-            .single()
+        children.map(
+          async (org: { id: string; name: string; slug: string }) => {
+            // Subscription + plan
+            const { data: sub } = await (supabase as any)
+              .from('subscriptions')
+              .select(
+                'status, current_period_end, cancel_at_period_end, plan:plan_id(name, slug, price_per_device)'
+              )
+              .eq('organization_id', org.id)
+              .in('status', ['active', 'trialing', 'past_due'])
+              .limit(1)
+              .single()
 
-          // Device count
-          const { count: deviceCount } = await supabase
-            .from('devices')
-            .select('id', { count: 'exact', head: true })
-            .eq('organization_id', org.id)
+            // Device count
+            const { count: deviceCount } = await supabase
+              .from('devices')
+              .select('id', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
 
-          // User count
-          const { count: userCount } = await supabase
-            .from('organization_members')
-            .select('user_id', { count: 'exact', head: true })
-            .eq('organization_id', org.id)
+            // User count
+            const { count: userCount } = await supabase
+              .from('organization_members')
+              .select('user_id', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
 
-          const plan = sub?.plan as {
-            name: string
-            slug: string
-            price_per_device: number
-          } | null
-          const devices = deviceCount ?? 0
-          const pricePerDevice = plan?.price_per_device ?? 0
-          const mrr = pricePerDevice * devices
+            const plan = sub?.plan as {
+              name: string
+              slug: string
+              price_per_device: number
+            } | null
+            const devices = deviceCount ?? 0
+            const pricePerDevice = plan?.price_per_device ?? 0
+            const mrr = pricePerDevice * devices
 
-          return {
-            id: org.id,
-            name: org.name,
-            slug: org.slug,
-            plan_name: plan?.name ?? null,
-            plan_slug: plan?.slug ?? null,
-            plan_price_per_device: pricePerDevice,
-            subscription_status: sub?.status ?? null,
-            device_count: devices,
-            user_count: userCount ?? 0,
-            estimated_mrr: mrr,
-            current_period_end: sub?.current_period_end ?? null,
-            cancel_at_period_end: sub?.cancel_at_period_end ?? false,
+            return {
+              id: org.id,
+              name: org.name,
+              slug: org.slug,
+              plan_name: plan?.name ?? null,
+              plan_slug: plan?.slug ?? null,
+              plan_price_per_device: pricePerDevice,
+              subscription_status: sub?.status ?? null,
+              device_count: devices,
+              user_count: userCount ?? 0,
+              estimated_mrr: mrr,
+              current_period_end: sub?.current_period_end ?? null,
+              cancel_at_period_end: sub?.cancel_at_period_end ?? false,
+            }
           }
-        })
+        )
       )
 
       setChildOrgs(enriched)
@@ -178,10 +180,7 @@ export function BillingAdminTab({ organizationId }: BillingAdminTabProps) {
   }
 
   const totalMRR = childOrgs.reduce((sum, org) => sum + org.estimated_mrr, 0)
-  const totalDevices = childOrgs.reduce(
-    (sum, org) => sum + org.device_count,
-    0
-  )
+  const totalDevices = childOrgs.reduce((sum, org) => sum + org.device_count, 0)
   const totalUsers = childOrgs.reduce((sum, org) => sum + org.user_count, 0)
   const activeOrgs = childOrgs.filter(
     (org) => org.subscription_status === 'active'
@@ -210,9 +209,7 @@ export function BillingAdminTab({ organizationId }: BillingAdminTabProps) {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Estimated MRR
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Estimated MRR</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -225,9 +222,7 @@ export function BillingAdminTab({ organizationId }: BillingAdminTabProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Customer Orgs
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Customer Orgs</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -240,9 +235,7 @@ export function BillingAdminTab({ organizationId }: BillingAdminTabProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Sensors
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Sensors</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -388,10 +381,7 @@ function SubscriptionStatusBadge({
 }) {
   if (!status) {
     return (
-      <Badge
-        variant="outline"
-        className="text-gray-500 dark:text-gray-400"
-      >
+      <Badge variant="outline" className="text-gray-500 dark:text-gray-400">
         <XCircle className="mr-1 h-3 w-3" />
         None
       </Badge>

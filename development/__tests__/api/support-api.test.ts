@@ -1,7 +1,15 @@
 ﻿import { describe, it, expect } from 'vitest'
 
 describe('Mercury Chat Edge Function Actions', () => {
-  const validActions = ['get_status', 'get_messages', 'chat', 'create_ticket', 'clock_in', 'clock_out', 'list_tickets']
+  const validActions = [
+    'get_status',
+    'get_messages',
+    'chat',
+    'create_ticket',
+    'clock_in',
+    'clock_out',
+    'list_tickets',
+  ]
 
   it('all 7 actions are defined', () => {
     expect(validActions).toHaveLength(7)
@@ -14,7 +22,12 @@ describe('Mercury Chat Edge Function Actions', () => {
   })
 
   it('create_ticket requires subject and description', () => {
-    const body = { action: 'create_ticket', subject: 'My issue', description: 'Details here', priority: 'normal' }
+    const body = {
+      action: 'create_ticket',
+      subject: 'My issue',
+      description: 'Details here',
+      priority: 'normal',
+    }
     expect(body.subject).toBeDefined()
     expect(body.description).toBeDefined()
   })

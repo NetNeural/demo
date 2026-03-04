@@ -292,10 +292,9 @@ export const integrationService = {
 
     let query = supabase
       .from('integration_activity_log')
-      .select(
-        '*, device_integrations:integration_id(name, integration_type)',
-        { count: 'exact' }
-      )
+      .select('*, device_integrations:integration_id(name, integration_type)', {
+        count: 'exact',
+      })
       .eq('organization_id', organizationId)
       .in('activity_type', notificationTypes)
       .order('created_at', { ascending: false })
@@ -363,19 +362,28 @@ export const integrationService = {
 
     // Extract original notification details from metadata
     const metadata = (logEntry.metadata || {}) as Record<string, unknown>
-    const integrationType = (
-      logEntry.activity_type as string
-    ).replace('notification_', '') as 'email' | 'slack' | 'webhook'
+    const integrationType = (logEntry.activity_type as string).replace(
+      'notification_',
+      ''
+    ) as 'email' | 'slack' | 'webhook'
 
     // Re-send using the integration service
     return integrationService.sendNotification({
       organizationId,
       integrationType,
       integrationId: logEntry.integration_id,
-      message: (metadata.message as string) || (metadata.subject as string) || 'Retry notification',
+      message:
+        (metadata.message as string) ||
+        (metadata.subject as string) ||
+        'Retry notification',
       subject: metadata.subject as string | undefined,
       recipients: metadata.recipients as string[] | undefined,
-      priority: metadata.severity as 'low' | 'medium' | 'high' | 'critical' | undefined,
+      priority: metadata.severity as
+        | 'low'
+        | 'medium'
+        | 'high'
+        | 'critical'
+        | undefined,
       data: metadata.data as Record<string, unknown> | undefined,
     })
   },

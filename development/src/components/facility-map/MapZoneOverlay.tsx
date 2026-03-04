@@ -43,9 +43,13 @@ export function MapZoneOverlay({
   drawing = false,
 }: MapZoneOverlayProps) {
   // Points being drawn (percentage coords)
-  const [drawingPoints, setDrawingPoints] = useState<{ x: number; y: number }[]>([])
+  const [drawingPoints, setDrawingPoints] = useState<
+    { x: number; y: number }[]
+  >([])
   // Mouse position for the "live" edge from last point to cursor
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(
+    null
+  )
 
   const handleSvgClick = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
@@ -85,17 +89,22 @@ export function MapZoneOverlay({
   // Convert percentage points to SVG polygon points string
   const toSvgPoints = useCallback(
     (points: { x: number; y: number }[]) =>
-      points.map((p) => `${(p.x / 100) * width},${(p.y / 100) * height}`).join(' '),
+      points
+        .map((p) => `${(p.x / 100) * width},${(p.y / 100) * height}`)
+        .join(' '),
     [width, height]
   )
 
   // Compute label position (centroid of polygon)
-  const centroid = useCallback((points: { x: number; y: number }[]) => {
-    if (points.length === 0) return { x: 0, y: 0 }
-    const cx = points.reduce((sum, p) => sum + p.x, 0) / points.length
-    const cy = points.reduce((sum, p) => sum + p.y, 0) / points.length
-    return { x: (cx / 100) * width, y: (cy / 100) * height }
-  }, [width, height])
+  const centroid = useCallback(
+    (points: { x: number; y: number }[]) => {
+      if (points.length === 0) return { x: 0, y: 0 }
+      const cx = points.reduce((sum, p) => sum + p.x, 0) / points.length
+      const cy = points.reduce((sum, p) => sum + p.y, 0) / points.length
+      return { x: (cx / 100) * width, y: (cy / 100) * height }
+    },
+    [width, height]
+  )
 
   // Sort zones by z_order
   const sortedZones = useMemo(
@@ -108,7 +117,7 @@ export function MapZoneOverlay({
   return (
     <svg
       className={cn(
-        'absolute inset-0 z-[5] pointer-events-none',
+        'pointer-events-none absolute inset-0 z-[5]',
         (drawing || editMode) && 'pointer-events-auto',
         drawing && 'cursor-crosshair'
       )}
@@ -125,7 +134,8 @@ export function MapZoneOverlay({
         const center = centroid(zone.points)
         // Compute bounding box width for label truncation
         const xs = zone.points.map((p) => (p.x / 100) * width)
-        const zonePixelWidth = xs.length > 0 ? Math.max(...xs) - Math.min(...xs) : 100
+        const zonePixelWidth =
+          xs.length > 0 ? Math.max(...xs) - Math.min(...xs) : 100
 
         return (
           <g key={zone.id}>
@@ -138,7 +148,8 @@ export function MapZoneOverlay({
               strokeDasharray={isSelected ? 'none' : '4 2'}
               className={cn(
                 'transition-all',
-                editMode && 'pointer-events-auto cursor-pointer hover:fill-opacity-25'
+                editMode &&
+                  'hover:fill-opacity-25 pointer-events-auto cursor-pointer'
               )}
               onClick={(e) => {
                 if (!editMode) return
@@ -154,7 +165,10 @@ export function MapZoneOverlay({
               dominantBaseline="central"
               className="pointer-events-none select-none"
               fill={zone.color}
-              fontSize={Math.max(10, Math.min(14, zonePixelWidth / zone.name.length * 1.2))}
+              fontSize={Math.max(
+                10,
+                Math.min(14, (zonePixelWidth / zone.name.length) * 1.2)
+              )}
               fontWeight="600"
               opacity={0.8}
             >

@@ -81,12 +81,7 @@ export async function fetchPayments(
   supabase: SupabaseClient,
   filters: PaymentFilters
 ): Promise<PaymentQueryResult> {
-  const {
-    organizationId,
-    status = 'all',
-    page = 1,
-    pageSize = 20,
-  } = filters
+  const { organizationId, status = 'all', page = 1, pageSize = 20 } = filters
 
   const offset = (page - 1) * pageSize
 
@@ -142,7 +137,12 @@ export async function fetchPaymentStatusCounts(
 
   counts.all = total ?? 0
 
-  for (const status of ['succeeded', 'failed', 'refunded', 'pending'] as PaymentStatus[]) {
+  for (const status of [
+    'succeeded',
+    'failed',
+    'refunded',
+    'pending',
+  ] as PaymentStatus[]) {
     const { count } = await (supabase as any)
       .from('payment_history')
       .select('id', { count: 'exact', head: true })

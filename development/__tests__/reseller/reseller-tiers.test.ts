@@ -2,7 +2,12 @@
 
 describe('Reseller Tiers (Project Hydra)', () => {
   it('tier has name and sensor threshold', () => {
-    const tier = { name: 'Silver', min_sensors: 10, max_sensors: 50, commission_rate: 0.15 }
+    const tier = {
+      name: 'Silver',
+      min_sensors: 10,
+      max_sensors: 50,
+      commission_rate: 0.15,
+    }
     expect(tier.name).toBeDefined()
     expect(tier.min_sensors).toBeGreaterThanOrEqual(0)
   })
@@ -20,7 +25,7 @@ describe('Reseller Tiers (Project Hydra)', () => {
       { name: 'Gold', min: 50, max: 199 },
     ]
     for (let i = 1; i < tiers.length; i++) {
-      expect(tiers[i].min).toBeGreaterThan(tiers[i-1].max)
+      expect(tiers[i].min).toBeGreaterThan(tiers[i - 1].max)
     }
   })
 })

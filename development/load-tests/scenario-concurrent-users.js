@@ -14,7 +14,8 @@ const totalRequests = new Counter('total_requests')
 //   k6 run -e BASE_URL=https://demo-stage.netneural.ai scenario-concurrent-users.js
 // ──────────────────────────────────────
 const BASE_URL = __ENV.BASE_URL || 'https://sentinel.netneural.ai'
-const SUPABASE_URL = __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
+const SUPABASE_URL =
+  __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
 const ANON_KEY = __ENV.ANON_KEY || ''
 const TEST_EMAIL = __ENV.TEST_EMAIL || 'loadtest@netneural.ai'
 const TEST_PASSWORD = __ENV.TEST_PASSWORD || 'LoadTest123!'
@@ -22,18 +23,18 @@ const TEST_PASSWORD = __ENV.TEST_PASSWORD || 'LoadTest123!'
 export const options = {
   // 50 concurrent users ramping up over 2m, holding for 5m, then ramping down
   stages: [
-    { duration: '1m', target: 10 },   // warm up
-    { duration: '1m', target: 50 },   // ramp to 50
-    { duration: '5m', target: 50 },   // sustain 50 concurrent users
-    { duration: '1m', target: 0 },    // ramp down
+    { duration: '1m', target: 10 }, // warm up
+    { duration: '1m', target: 50 }, // ramp to 50
+    { duration: '5m', target: 50 }, // sustain 50 concurrent users
+    { duration: '1m', target: 0 }, // ramp down
   ],
   thresholds: {
-    'http_req_duration': ['p(95)<2000'],       // p95 < 2s
-    'http_req_failed': ['rate<0.01'],          // error rate < 1%
-    'login_latency_ms': ['p(95)<3000'],
-    'dashboard_latency_ms': ['p(95)<2000'],
-    'api_latency_ms': ['p(95)<2000'],
-    'error_rate': ['rate<0.05'],
+    http_req_duration: ['p(95)<2000'], // p95 < 2s
+    http_req_failed: ['rate<0.01'], // error rate < 1%
+    login_latency_ms: ['p(95)<3000'],
+    dashboard_latency_ms: ['p(95)<2000'],
+    api_latency_ms: ['p(95)<2000'],
+    error_rate: ['rate<0.05'],
   },
 }
 
@@ -43,7 +44,7 @@ function getAuthToken() {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': ANON_KEY,
+      apikey: ANON_KEY,
     },
   }
   const start = Date.now()
@@ -54,8 +55,11 @@ function getAuthToken() {
   const ok = check(res, {
     'auth: status 200': (r) => r.status === 200,
     'auth: has access_token': (r) => {
-      try { return !!JSON.parse(r.body).access_token }
-      catch { return false }
+      try {
+        return !!JSON.parse(r.body).access_token
+      } catch {
+        return false
+      }
     },
   })
   errorRate.add(!ok)
@@ -76,7 +80,8 @@ function callOrganizationsAPI(token) {
   totalRequests.add(1)
 
   const ok = check(res, {
-    'organizations API: 200 or 403': (r) => r.status === 200 || r.status === 403,
+    'organizations API: 200 or 403': (r) =>
+      r.status === 200 || r.status === 403,
     'organizations API: <2s': (r) => r.timings.duration < 2000,
   })
   errorRate.add(!ok)
@@ -85,13 +90,16 @@ function callOrganizationsAPI(token) {
 
 function callDevicesAPI(token) {
   const start = Date.now()
-  const res = http.get(`${SUPABASE_URL}/rest/v1/devices?select=id,name&limit=20`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey: ANON_KEY,
-      'Content-Type': 'application/json',
-    },
-  })
+  const res = http.get(
+    `${SUPABASE_URL}/rest/v1/devices?select=id,name&limit=20`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+    }
+  )
   apiLatency.add(Date.now() - start)
   totalRequests.add(1)
 

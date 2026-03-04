@@ -53,7 +53,9 @@ interface BillingContactCardProps {
   organizationId: string
 }
 
-export function BillingContactCard({ organizationId }: BillingContactCardProps) {
+export function BillingContactCard({
+  organizationId,
+}: BillingContactCardProps) {
   const [profile, setProfile] = useState<BillingProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +106,8 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
         })
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to load billing contact'
+      const msg =
+        e instanceof Error ? e.message : 'Failed to load billing contact'
       setError(msg)
     } finally {
       setLoading(false)
@@ -137,7 +140,8 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
       setEditing(false)
       fetchProfile()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to save billing contact'
+      const msg =
+        e instanceof Error ? e.message : 'Failed to save billing contact'
       toast.error(msg)
     } finally {
       setSaving(false)
@@ -169,15 +173,19 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
   const setField = (key: keyof EditableProfile, value: string) =>
     setDraft((prev) => ({ ...prev, [key]: value || null }))
 
-  const hasAddress = profile?.address_line1 || profile?.city || profile?.postal_code
-  const hasContactInfo = profile?.billing_name || profile?.billing_email || profile?.company_name
+  const hasAddress =
+    profile?.address_line1 || profile?.city || profile?.postal_code
+  const hasContactInfo =
+    profile?.billing_name || profile?.billing_email || profile?.company_name
 
   return (
     <Card data-testid="billing-contact-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-lg">Billing Contact</CardTitle>
-          <CardDescription>Name, email, and address that appear on invoices</CardDescription>
+          <CardDescription>
+            Name, email, and address that appear on invoices
+          </CardDescription>
         </div>
         {!editing && (
           <Button
@@ -361,12 +369,18 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
                 <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
                   {profile.billing_name && (
-                    <p data-testid="billing-name-display" className="text-sm font-medium">
+                    <p
+                      data-testid="billing-name-display"
+                      className="text-sm font-medium"
+                    >
                       {profile.billing_name}
                     </p>
                   )}
                   {profile.company_name && (
-                    <p data-testid="company-name-display" className="text-sm text-muted-foreground">
+                    <p
+                      data-testid="company-name-display"
+                      className="text-sm text-muted-foreground"
+                    >
                       {profile.company_name}
                     </p>
                   )}
@@ -391,7 +405,9 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
                     <p data-testid="address-display">{profile.address_line1}</p>
                   )}
                   {profile?.address_line2 && <p>{profile.address_line2}</p>}
-                  {(profile?.city || profile?.state || profile?.postal_code) && (
+                  {(profile?.city ||
+                    profile?.state ||
+                    profile?.postal_code) && (
                     <p>
                       {[profile.city, profile.state, profile.postal_code]
                         .filter(Boolean)
@@ -408,7 +424,10 @@ export function BillingContactCard({ organizationId }: BillingContactCardProps) 
             {profile?.tax_id && (
               <div className="flex items-center gap-2">
                 <Receipt className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <p data-testid="tax-id-display" className="text-sm text-muted-foreground">
+                <p
+                  data-testid="tax-id-display"
+                  className="text-sm text-muted-foreground"
+                >
                   Tax ID: {profile.tax_id}
                 </p>
               </div>

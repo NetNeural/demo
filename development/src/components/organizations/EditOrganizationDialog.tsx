@@ -74,7 +74,9 @@ export function EditOrganizationDialog({
       )
       setSubscriptionTier(
         ('subscriptionTier' in organization
-          ? (organization.subscriptionTier === 'free' ? 'starter' : organization.subscriptionTier)
+          ? organization.subscriptionTier === 'free'
+            ? 'starter'
+            : organization.subscriptionTier
           : 'starter') as typeof subscriptionTier
       )
       setIsActive(organization.is_active)
@@ -244,7 +246,9 @@ export function EditOrganizationDialog({
                   <SelectItem value="business">Business</SelectItem>
                   <SelectItem value="reseller">Reseller</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
-                  <SelectItem value="unlimited">Unlimited (NetNeural)</SelectItem>
+                  <SelectItem value="unlimited">
+                    Unlimited (NetNeural)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

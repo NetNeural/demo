@@ -2,12 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -135,9 +130,7 @@ export function TierManagement() {
     if (!form.name.trim()) return 'Tier name is required'
     const min = parseInt(form.min_sensors)
     if (isNaN(min) || min < 0) return 'Min sensors must be 0 or greater'
-    const max = form.max_sensors.trim()
-      ? parseInt(form.max_sensors)
-      : null
+    const max = form.max_sensors.trim() ? parseInt(form.max_sensors) : null
     if (max !== null && (isNaN(max) || max <= min))
       return 'Max sensors must be greater than min sensors'
     const disc = parseFloat(form.discount_pct)
@@ -289,7 +282,8 @@ export function TierManagement() {
 
           {activeTiers.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500">
-              No tiers configured. Click &quot;Add Tier&quot; to create the first one.
+              No tiers configured. Click &quot;Add Tier&quot; to create the
+              first one.
             </p>
           ) : (
             <Table>
@@ -381,8 +375,7 @@ export function TierManagement() {
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-500">{tier.name}</span>
                       <span className="text-xs text-gray-600">
-                        {tier.min_sensors}–
-                        {tier.max_sensors ?? '∞'} sensors ·{' '}
+                        {tier.min_sensors}–{tier.max_sensors ?? '∞'} sensors ·{' '}
                         {(tier.discount_pct * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -450,8 +443,7 @@ export function TierManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="max-sensors" className="text-gray-300">
-                  Max Sensors{' '}
-                  <span className="text-gray-500">(empty = ∞)</span>
+                  Max Sensors <span className="text-gray-500">(empty = ∞)</span>
                 </Label>
                 <Input
                   id="max-sensors"

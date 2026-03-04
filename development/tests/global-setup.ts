@@ -16,7 +16,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 /** File where the admin TOTP secret is persisted across test runs */
-const TOTP_SECRET_FILE = path.join(__dirname, 'playwright', '.playwright-admin-totp.json')
+const TOTP_SECRET_FILE = path.join(
+  __dirname,
+  'playwright',
+  '.playwright-admin-totp.json'
+)
 
 // Well-known local Supabase CLI keys (safe to commit — only work on localhost)
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321'
@@ -28,8 +32,12 @@ const TEST_EMAIL = process.env.TEST_USER_EMAIL || 'admin@netneural.ai'
 const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'password123'
 
 export default async function globalSetup() {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || LOCAL_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || LOCAL_SERVICE_ROLE_KEY
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    LOCAL_SUPABASE_URL
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || LOCAL_SERVICE_ROLE_KEY
 
   console.log(`\n🔧 Playwright Global Setup`)
   console.log(`   Supabase URL: ${supabaseUrl}`)
@@ -40,10 +48,14 @@ export default async function globalSetup() {
   })
 
   // Check if test user already exists
-  const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
+  const { data: existingUsers, error: listError } =
+    await supabase.auth.admin.listUsers()
 
   if (listError) {
-    console.error('   ❌ Failed to list users — is Supabase running?', listError.message)
+    console.error(
+      '   ❌ Failed to list users — is Supabase running?',
+      listError.message
+    )
     console.error('   💡 Start Supabase: cd development && npx supabase start')
     throw new Error(`Global setup failed: ${listError.message}`)
   }
@@ -51,25 +63,30 @@ export default async function globalSetup() {
   const existingUser = existingUsers?.users?.find((u) => u.email === TEST_EMAIL)
 
   if (existingUser) {
-    console.log(`   ✅ Test user already exists (id: ${existingUser.id.slice(0, 8)}...)`)
+    console.log(
+      `   ✅ Test user already exists (id: ${existingUser.id.slice(0, 8)}...)`
+    )
   } else {
     // Create the test user via admin API
-    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-      email_confirm: true, // Skip email verification
-      user_metadata: {
-        full_name: 'Test Admin',
-        role: 'superadmin',
-      },
-    })
+    const { data: newUser, error: createError } =
+      await supabase.auth.admin.createUser({
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+        email_confirm: true, // Skip email verification
+        user_metadata: {
+          full_name: 'Test Admin',
+          role: 'superadmin',
+        },
+      })
 
     if (createError) {
       console.error('   ❌ Failed to create test user:', createError.message)
       throw new Error(`Global setup failed: ${createError.message}`)
     }
 
-    console.log(`   ✅ Test user created (id: ${newUser.user.id.slice(0, 8)}...)`)
+    console.log(
+      `   ✅ Test user created (id: ${newUser.user.id.slice(0, 8)}...)`
+    )
 
     // Give the trigger a moment to create the profile
     await new Promise((resolve) => setTimeout(resolve, 500))
@@ -82,7 +99,10 @@ export default async function globalSetup() {
   })
 
   if (signInError) {
-    console.error('   ❌ Test user sign-in verification failed:', signInError.message)
+    console.error(
+      '   ❌ Test user sign-in verification failed:',
+      signInError.message
+    )
     throw new Error(`Global setup sign-in check failed: ${signInError.message}`)
   }
 
@@ -92,7 +112,10 @@ export default async function globalSetup() {
   // would prevent reaching the dashboard during tests.
   const adminUserId = existingUser?.id
   if (adminUserId) {
-    await supabase.from('users').update({ password_change_required: false }).eq('id', adminUserId)
+    await supabase
+      .from('users')
+      .update({ password_change_required: false })
+      .eq('id', adminUserId)
     console.log('   ✅ Admin password_change_required cleared')
   }
 
@@ -113,10 +136,15 @@ export default async function globalSetup() {
     })
 
     if (uSignInErr) {
-      console.warn('   ⚠️ Could not sign in for MFA enrollment:', uSignInErr.message)
+      console.warn(
+        '   ⚠️ Could not sign in for MFA enrollment:',
+        uSignInErr.message
+      )
     } else {
       const { data: factorsData } = await userClient.auth.mfa.listFactors()
-      const existingFactor = factorsData?.totp?.find((f) => f.status === 'verified')
+      const existingFactor = factorsData?.totp?.find(
+        (f) => f.status === 'verified'
+      )
       const secretOnDisk = fs.existsSync(TOTP_SECRET_FILE)
 
       if (existingFactor && secretOnDisk) {
@@ -159,7 +187,9 @@ export default async function globalSetup() {
           const totpSecret = secretMatch?.[1]
 
           if (!totpSecret) {
-            console.warn('   ⚠️ Could not parse TOTP secret from enrollment URI')
+            console.warn(
+              '   ⚠️ Could not parse TOTP secret from enrollment URI'
+            )
           } else {
             // Give the server a moment, then generate + verify the first code
             await new Promise((r) => setTimeout(r, 500))
@@ -204,7 +234,9 @@ export default async function globalSetup() {
                 `   ✅ Admin TOTP enrolled — secret saved to ${path.basename(TOTP_SECRET_FILE)}`
               )
             } else {
-              console.warn('   ⚠️ TOTP verification failed — admin login tests may fail')
+              console.warn(
+                '   ⚠️ TOTP verification failed — admin login tests may fail'
+              )
             }
           }
         }

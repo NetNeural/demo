@@ -11,18 +11,28 @@ import { InvitesPanel } from '@/components/reseller/InvitesPanel'
 import { useResellerTier } from '@/hooks/useResellerTier'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from '@/components/ui/tabs'
-import {
-  DollarSign, Wifi, TrendingUp, Users, Link2, Copy, Check,
-  Bell, ExternalLink, Layers, UserPlus,
+  DollarSign,
+  Wifi,
+  TrendingUp,
+  Users,
+  Link2,
+  Copy,
+  Check,
+  Bell,
+  ExternalLink,
+  Layers,
+  UserPlus,
 } from 'lucide-react'
 import type { ResellerPayout, SupportModel } from '@/types/reseller'
 import { cn } from '@/lib/utils'
@@ -47,17 +57,24 @@ function ResellerSignupLinkCard({ orgSlug }: { orgSlug: string }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-          <span className="flex-1 truncate font-mono text-xs text-muted-foreground">{signupUrl}</span>
-          <button onClick={copy} className="shrink-0 rounded p-1 hover:bg-muted transition-colors">
-            {copied
-              ? <Check className="h-3.5 w-3.5 text-emerald-400" />
-              : <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-            }
+          <span className="flex-1 truncate font-mono text-xs text-muted-foreground">
+            {signupUrl}
+          </span>
+          <button
+            onClick={copy}
+            className="shrink-0 rounded p-1 transition-colors hover:bg-muted"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
           </button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Share this link. New customers who sign up will automatically be placed under your account.
-          Your branding (logo, colors) will appear on their signup page.
+          Share this link. New customers who sign up will automatically be
+          placed under your account. Your branding (logo, colors) will appear on
+          their signup page.
         </p>
         <Button asChild size="sm" variant="outline" className="w-full text-xs">
           <a href={signupUrl} target="_blank" rel="noreferrer">
@@ -71,39 +88,54 @@ function ResellerSignupLinkCard({ orgSlug }: { orgSlug: string }) {
 
 function PayoutStatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
-    paid:    'bg-emerald-500/15 text-emerald-400',
+    paid: 'bg-emerald-500/15 text-emerald-400',
     pending: 'bg-amber-500/15 text-amber-400',
-    failed:  'bg-red-500/15 text-red-400',
+    failed: 'bg-red-500/15 text-red-400',
   }
-  return <Badge className={variants[status] ?? 'bg-gray-700 text-gray-300'}>{status}</Badge>
+  return (
+    <Badge className={variants[status] ?? 'bg-gray-700 text-gray-300'}>
+      {status}
+    </Badge>
+  )
 }
 
 function ResellerDashboardContent() {
   const searchParams = useSearchParams()
-  const [orgId, setOrgId]                     = useState<string | null>(null)
-  const [orgSlug, setOrgSlug]                 = useState<string>('')
-  const [payouts, setPayouts]                 = useState<ResellerPayout[]>([])
-  const [supportModel, setSupportModel]       = useState<SupportModel>('hybrid')
-  const [notifications, setNotifications]     = useState<{ id: string; notification_type: string; sent_at: string }[]>([])
+  const [orgId, setOrgId] = useState<string | null>(null)
+  const [orgSlug, setOrgSlug] = useState<string>('')
+  const [payouts, setPayouts] = useState<ResellerPayout[]>([])
+  const [supportModel, setSupportModel] = useState<SupportModel>('hybrid')
+  const [notifications, setNotifications] = useState<
+    { id: string; notification_type: string; sent_at: string }[]
+  >([])
   const { data: tierData, loading: tierLoading } = useResellerTier(orgId)
 
   useEffect(() => {
     const loadOrg = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: member } = await (supabase as any)
         .from('organization_members')
-        .select('organization_id, organizations!inner(id, slug, is_reseller, support_model)')
+        .select(
+          'organization_id, organizations!inner(id, slug, is_reseller, support_model)'
+        )
         .eq('user_id', user.id)
         .eq('organizations.is_reseller', true)
         .limit(1)
         .single()
 
       if (!member) return
-      const org = (member as { organization_id: string; organizations: { id: string; slug: string; support_model: string } }).organizations
+      const org = (
+        member as {
+          organization_id: string
+          organizations: { id: string; slug: string; support_model: string }
+        }
+      ).organizations
       setOrgId(member.organization_id)
       setOrgSlug(org.slug)
       setSupportModel((org.support_model ?? 'hybrid') as SupportModel)
@@ -126,7 +158,13 @@ function ResellerDashboardContent() {
         .eq('organization_id', member.organization_id)
         .order('sent_at', { ascending: false })
         .limit(10)
-      setNotifications((notifs as { id: string; notification_type: string; sent_at: string }[]) ?? [])
+      setNotifications(
+        (notifs as {
+          id: string
+          notification_type: string
+          sent_at: string
+        }[]) ?? []
+      )
     }
     loadOrg()
   }, [])
@@ -139,22 +177,31 @@ function ResellerDashboardContent() {
     return (
       <div className="flex min-h-[400px] items-center justify-center text-gray-500">
         <div className="text-center">
-          <p className="text-sm">No reseller organization found for your account.</p>
+          <p className="text-sm">
+            No reseller organization found for your account.
+          </p>
         </div>
       </div>
     )
   }
 
-  const totalPaid    = payouts.filter(p => p.status === 'paid').reduce((s, p) => s + p.payout_amount, 0)
-  const totalPending = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + p.payout_amount, 0)
+  const totalPaid = payouts
+    .filter((p) => p.status === 'paid')
+    .reduce((s, p) => s + p.payout_amount, 0)
+  const totalPending = payouts
+    .filter((p) => p.status === 'pending')
+    .reduce((s, p) => s + p.payout_amount, 0)
 
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Reseller Dashboard</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Reseller Dashboard
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your reseller network, track sensor counts, and monitor payouts.
+          Manage your reseller network, track sensor counts, and monitor
+          payouts.
         </p>
       </div>
 
@@ -165,28 +212,32 @@ function ResellerDashboardContent() {
             icon: Wifi,
             label: 'Active Sensors',
             value: tierData ? tierData.effective_total.toLocaleString() : '—',
-            sub:   tierData ? `${tierData.direct_sensors} direct · ${tierData.downstream_sensors} downstream` : '',
+            sub: tierData
+              ? `${tierData.direct_sensors} direct · ${tierData.downstream_sensors} downstream`
+              : '',
             color: 'text-cyan-400',
           },
           {
             icon: TrendingUp,
             label: 'Partner Discount',
-            value: tierData ? `${(tierData.discount_pct * 100).toFixed(0)}%` : '—',
-            sub:   tierData?.current_tier ?? '',
+            value: tierData
+              ? `${(tierData.discount_pct * 100).toFixed(0)}%`
+              : '—',
+            sub: tierData?.current_tier ?? '',
             color: 'text-emerald-400',
           },
           {
             icon: DollarSign,
             label: 'Total Paid Out',
             value: `$${totalPaid.toFixed(2)}`,
-            sub:   `$${totalPending.toFixed(2)} pending`,
+            sub: `$${totalPending.toFixed(2)} pending`,
             color: 'text-amber-400',
           },
           {
             icon: Users,
             label: 'Sub-Resellers',
             value: '—',
-            sub:   'See Downline tab',
+            sub: 'See Downline tab',
             color: 'text-violet-400',
           },
         ].map(({ icon: Icon, label, value, sub, color }) => (
@@ -194,32 +245,49 @@ function ResellerDashboardContent() {
             <CardContent className="p-4">
               <Icon className={cn('mb-2 h-4 w-4', color)} />
               <p className="text-xl font-bold text-foreground">{value}</p>
-              <p className="text-xs font-medium text-muted-foreground">{label}</p>
-              {sub && <p className="mt-0.5 text-xs text-muted-foreground/60">{sub}</p>}
+              <p className="text-xs font-medium text-muted-foreground">
+                {label}
+              </p>
+              {sub && (
+                <p className="mt-0.5 text-xs text-muted-foreground/60">{sub}</p>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Fleet progress bar */}
-      {tierData && !tierLoading && (
-        <FleetProgressBar tierData={tierData} />
-      )}
+      {tierData && !tierLoading && <FleetProgressBar tierData={tierData} />}
 
       {/* Tabs */}
       <Tabs defaultValue={searchParams.get('tab') || 'payouts'}>
         <TabsList className="border-b border-border bg-transparent">
-          {['payouts', 'downline', 'invites', 'support', 'notifications', ...(isPlatformAdmin ? ['tiers'] : [])].map(tab => (
+          {[
+            'payouts',
+            'downline',
+            'invites',
+            'support',
+            'notifications',
+            ...(isPlatformAdmin ? ['tiers'] : []),
+          ].map((tab) => (
             <TabsTrigger
               key={tab}
               value={tab}
               className="capitalize data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-foreground"
             >
               {tab === 'tiers' ? (
-                <span className="flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />Tiers</span>
+                <span className="flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5" />
+                  Tiers
+                </span>
               ) : tab === 'invites' ? (
-                <span className="flex items-center gap-1.5"><UserPlus className="h-3.5 w-3.5" />Invites</span>
-              ) : tab}
+                <span className="flex items-center gap-1.5">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Invites
+                </span>
+              ) : (
+                tab
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -228,25 +296,42 @@ function ResellerDashboardContent() {
         <TabsContent value="payouts" className="mt-4">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold text-foreground">Payout History</CardTitle>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Payout History
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {payouts.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No payouts recorded yet.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No payouts recorded yet.
+                </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-muted-foreground">Date</TableHead>
-                      <TableHead className="text-muted-foreground">Amount</TableHead>
-                      <TableHead className="text-muted-foreground">Spread %</TableHead>
-                      <TableHead className="text-muted-foreground">Sensors</TableHead>
-                      <TableHead className="text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Date
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Amount
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Spread %
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Sensors
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Status
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payouts.map(p => (
-                      <TableRow key={p.id} className="border-border/60 hover:bg-muted/30">
+                    {payouts.map((p) => (
+                      <TableRow
+                        key={p.id}
+                        className="border-border/60 hover:bg-muted/30"
+                      >
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(p.calculated_at).toLocaleDateString()}
                         </TableCell>
@@ -289,8 +374,12 @@ function ResellerDashboardContent() {
             currentModel={supportModel}
             currentMargin={tierData?.discount_pct ?? 0}
             activeSensors={tierData?.effective_total ?? 0}
-            pricePerSensor={10}   // TODO: pull from billing config
-            nextBillingDate={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()}
+            pricePerSensor={10} // TODO: pull from billing config
+            nextBillingDate={new Date(
+              new Date().getFullYear(),
+              new Date().getMonth() + 1,
+              1
+            ).toISOString()}
             onChanged={setSupportModel}
           />
         </TabsContent>
@@ -306,14 +395,19 @@ function ResellerDashboardContent() {
             </CardHeader>
             <CardContent>
               {notifications.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No notifications.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No notifications.
+                </p>
               ) : (
                 <div className="space-y-2">
-                  {notifications.map(n => (
-                    <div key={n.id} className="flex items-start gap-3 rounded-lg bg-muted/30 p-3">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="flex items-start gap-3 rounded-lg bg-muted/30 p-3"
+                    >
                       <Bell className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
                       <div>
-                        <p className="text-sm text-foreground capitalize">
+                        <p className="text-sm capitalize text-foreground">
                           {n.notification_type.replace(/_/g, ' ')}
                         </p>
                         <p className="text-xs text-muted-foreground">

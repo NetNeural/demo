@@ -95,7 +95,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const MAX_SCREENSHOTS = 3
   const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
-  const handleScreenshotAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshotAdd = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
@@ -123,7 +125,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
     for (const file of validFiles) {
       const moderation = await moderateImage(file)
       if (!moderation.safe) {
-        toast.error(`Screenshot "${file.name}" rejected: ${moderation.reason || 'Inappropriate content detected'}.`)
+        toast.error(
+          `Screenshot "${file.name}" rejected: ${moderation.reason || 'Inappropriate content detected'}.`
+        )
         return
       }
     }
@@ -412,7 +416,10 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
 
               <div className="space-y-2">
                 <Label>Time Zone</Label>
-                <Select value={bugTimezone} onValueChange={handleTimezoneChange}>
+                <Select
+                  value={bugTimezone}
+                  onValueChange={handleTimezoneChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select time zone" />
                   </SelectTrigger>
@@ -424,7 +431,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
                       </SelectItem>
                     )}
                     {TZ_OPTIONS.map((tz) => (
-                      <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                      <SelectItem key={tz} value={tz}>
+                        {tz}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

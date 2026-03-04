@@ -18,7 +18,13 @@ describe('Support Chat Sessions', () => {
   })
 
   it('session has required fields', () => {
-    const session = { id: 'sess-4', user_id: 'user-1', organization_id: 'org-1', status: 'active', created_at: new Date().toISOString() }
+    const session = {
+      id: 'sess-4',
+      user_id: 'user-1',
+      organization_id: 'org-1',
+      status: 'active',
+      created_at: new Date().toISOString(),
+    }
     expect(session).toHaveProperty('id')
     expect(session).toHaveProperty('user_id')
     expect(session).toHaveProperty('organization_id')

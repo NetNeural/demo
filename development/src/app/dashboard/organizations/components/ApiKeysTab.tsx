@@ -77,7 +77,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
   const fetchKeys = useCallback(async () => {
     setIsLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) return
 
       const res = await fetch(
@@ -118,7 +120,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
 
     setIsCreating(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
 
       const expiryMap: Record<string, number | undefined> = {
@@ -154,7 +158,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
       toast.success('API key created successfully')
       fetchKeys()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create API key')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to create API key'
+      )
     } finally {
       setIsCreating(false)
     }
@@ -163,7 +169,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
   const handleRevoke = async (keyId: string) => {
     setRevokingId(keyId)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
 
       const res = await fetch(
@@ -184,18 +192,27 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
       toast.success('API key revoked')
       fetchKeys()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to revoke API key')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to revoke API key'
+      )
     } finally {
       setRevokingId(null)
     }
   }
 
   const handleRotate = async (keyId: string) => {
-    if (!confirm('Rotate this API key? The current key will be immediately revoked and a new one issued. Update any systems using the current key.')) return
+    if (
+      !confirm(
+        'Rotate this API key? The current key will be immediately revoked and a new one issued. Update any systems using the current key.'
+      )
+    )
+      return
 
     setRotatingId(keyId)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
 
       const res = await fetch(
@@ -219,7 +236,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
       toast.success('API key rotated — copy your new key now')
       fetchKeys()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to rotate API key')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to rotate API key'
+      )
     } finally {
       setRotatingId(null)
     }
@@ -252,16 +271,19 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                   API Keys
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  Manage API keys for programmatic access to your organization&apos;s
-                  data. Keys are scoped to this organization.
+                  Manage API keys for programmatic access to your
+                  organization&apos;s data. Keys are scoped to this
+                  organization.
                 </CardDescription>
               </div>
-              <Button onClick={() => {
-                setNewKeyName('')
-                setNewKeyExpiry('never')
-                setCreatedKey(null)
-                setShowCreateDialog(true)
-              }}>
+              <Button
+                onClick={() => {
+                  setNewKeyName('')
+                  setNewKeyExpiry('never')
+                  setCreatedKey(null)
+                  setShowCreateDialog(true)
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Create API Key
               </Button>
@@ -302,7 +324,10 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
+                  <div
+                    key={i}
+                    className="h-16 animate-pulse rounded-lg bg-muted"
+                  />
                 ))}
               </div>
             ) : activeKeys.length === 0 ? (
@@ -324,24 +349,28 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>Scopes: {key.scopes.join(', ')}</span>
                         <span>
-                          Scopes: {key.scopes.join(', ')}
-                        </span>
-                        <span>
-                          Rate: {key.rate_limit_per_minute === -1 ? 'Unlimited' : `${key.rate_limit_per_minute}/min`}
+                          Rate:{' '}
+                          {key.rate_limit_per_minute === -1
+                            ? 'Unlimited'
+                            : `${key.rate_limit_per_minute}/min`}
                         </span>
                         {key.expires_at && (
                           <span>
-                            Expires: {new Date(key.expires_at).toLocaleDateString()}
+                            Expires:{' '}
+                            {new Date(key.expires_at).toLocaleDateString()}
                           </span>
                         )}
                         {key.last_used_at && (
                           <span>
-                            Last used: {new Date(key.last_used_at).toLocaleDateString()}
+                            Last used:{' '}
+                            {new Date(key.last_used_at).toLocaleDateString()}
                           </span>
                         )}
                         <span>
-                          Created: {new Date(key.created_at).toLocaleDateString()}
+                          Created:{' '}
+                          {new Date(key.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -351,10 +380,14 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                         size="sm"
                         className="text-muted-foreground hover:text-foreground"
                         onClick={() => handleRotate(key.id)}
-                        disabled={rotatingId === key.id || revokingId === key.id}
+                        disabled={
+                          rotatingId === key.id || revokingId === key.id
+                        }
                         title="Rotate key — issues a new key and revokes this one"
                       >
-                        <RefreshCw className={`mr-1 h-4 w-4 ${rotatingId === key.id ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`mr-1 h-4 w-4 ${rotatingId === key.id ? 'animate-spin' : ''}`}
+                        />
                         {rotatingId === key.id ? 'Rotating...' : 'Rotate'}
                       </Button>
                       <Button
@@ -362,7 +395,9 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                         size="sm"
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleRevoke(key.id)}
-                        disabled={revokingId === key.id || rotatingId === key.id}
+                        disabled={
+                          revokingId === key.id || rotatingId === key.id
+                        }
                       >
                         <Trash2 className="mr-1 h-4 w-4" />
                         {revokingId === key.id ? 'Revoking...' : 'Revoke'}
@@ -410,12 +445,15 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
         )}
 
         {/* Create Key Dialog */}
-        <Dialog open={showCreateDialog} onOpenChange={(open) => {
-          if (!open) {
-            setCreatedKey(null)
-          }
-          setShowCreateDialog(open)
-        }}>
+        <Dialog
+          open={showCreateDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreatedKey(null)
+            }
+            setShowCreateDialog(open)
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -432,7 +470,7 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
               <div className="space-y-4">
                 <div className="rounded-lg border bg-muted/50 p-4">
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 break-all text-sm font-mono">
+                    <code className="flex-1 break-all font-mono text-sm">
                       {createdKey}
                     </code>
                     <Button
@@ -456,10 +494,12 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                   </p>
                 </div>
                 <DialogFooter>
-                  <Button onClick={() => {
-                    setShowCreateDialog(false)
-                    setCreatedKey(null)
-                  }}>
+                  <Button
+                    onClick={() => {
+                      setShowCreateDialog(false)
+                      setCreatedKey(null)
+                    }}
+                  >
                     Done
                   </Button>
                 </DialogFooter>
@@ -477,10 +517,7 @@ export function ApiKeysTab({ organizationId }: ApiKeysTabProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>Expiration</Label>
-                  <Select
-                    value={newKeyExpiry}
-                    onValueChange={setNewKeyExpiry}
-                  >
+                  <Select value={newKeyExpiry} onValueChange={setNewKeyExpiry}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

@@ -60,14 +60,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
 
   // SOC 2 CC6.2: idle session timeout
-  const { showWarning, secondsRemaining, extendSession, signOutNow } = useSessionTimeout()
+  const { showWarning, secondsRemaining, extendSession, signOutNow } =
+    useSessionTimeout()
 
   // Always show sentinel logo from root NetNeural org, regardless of selected org
   const sentinelLogoUrl = (() => {
     const rootOrg = userOrganizations.find(
-      (org) => org.id === '00000000-0000-0000-0000-000000000001' || (!org.parent_organization_id && org.name === 'NetNeural')
+      (org) =>
+        org.id === '00000000-0000-0000-0000-000000000001' ||
+        (!org.parent_organization_id && org.name === 'NetNeural')
     )
-    return rootOrg?.settings?.branding?.sentinel_logo_url || currentOrganization?.settings?.branding?.sentinel_logo_url
+    return (
+      rootOrg?.settings?.branding?.sentinel_logo_url ||
+      currentOrganization?.settings?.branding?.sentinel_logo_url
+    )
   })()
 
   // Keep browser tab title in sync with current page + org
@@ -116,7 +122,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       icon: Building2,
     },
     ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
-      (isSuperAdmin || isPlAdmin || userRole === 'owner' || userRole === 'billing')
+    (isSuperAdmin ||
+      isPlAdmin ||
+      userRole === 'owner' ||
+      userRole === 'billing')
       ? [
           {
             href: '/dashboard/billing',
@@ -125,10 +134,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           },
         ]
       : []),
-    ...(currentOrganization?.subscription_tier === 'reseller' || currentOrganization?.is_reseller === true
-      ? [
-          { href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network },
-        ]
+    ...(currentOrganization?.subscription_tier === 'reseller' ||
+    currentOrganization?.is_reseller === true
+      ? [{ href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network }]
       : []),
     { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
     ...(canAccessSupport(user, userRole)
@@ -178,7 +186,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 />
               )}
               <h1 className="nav-brand">
-                {currentOrganization?.name === 'NetNeural' || !currentOrganization
+                {currentOrganization?.name === 'NetNeural' ||
+                !currentOrganization
                   ? 'Sentinel by NetNeural'
                   : `Sentinel for ${currentOrganization.name}`}
               </h1>
@@ -264,9 +273,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   <span className="hidden sm:inline">Super Admin</span>
                 </Badge>
               ) : isPlAdmin ? (
-                <Badge
-                  className="flex items-center gap-1 bg-purple-600 text-white hover:bg-purple-600"
-                >
+                <Badge className="flex items-center gap-1 bg-purple-600 text-white hover:bg-purple-600">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="12"

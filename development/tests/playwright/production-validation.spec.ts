@@ -17,7 +17,6 @@ async function login(page: Page) {
 }
 
 test.describe('Production Smoke Tests', () => {
-
   test.describe('Login & Auth', () => {
     test('login page loads and shows branding', async ({ page }) => {
       await page.goto('/auth/login')
@@ -42,9 +41,16 @@ test.describe('Production Smoke Tests', () => {
     })
 
     test('dashboard loads with stat cards', async ({ page }) => {
-      const expectedCards = ['Total Devices', 'Online Devices', 'Active Alerts', 'Team Members']
+      const expectedCards = [
+        'Total Devices',
+        'Online Devices',
+        'Active Alerts',
+        'Team Members',
+      ]
       for (const cardTitle of expectedCards) {
-        await expect(page.locator(`text=${cardTitle}`)).toBeVisible({ timeout: 10000 })
+        await expect(page.locator(`text=${cardTitle}`)).toBeVisible({
+          timeout: 10000,
+        })
       }
     })
 
@@ -55,7 +61,10 @@ test.describe('Production Smoke Tests', () => {
         { text: 'Settings', url: /settings/ },
       ]
       for (const item of navItems) {
-        const link = page.locator(`a, button`).filter({ hasText: new RegExp(item.text, 'i') }).first()
+        const link = page
+          .locator(`a, button`)
+          .filter({ hasText: new RegExp(item.text, 'i') })
+          .first()
         if (await link.isVisible({ timeout: 3000 }).catch(() => false)) {
           await link.click()
           await page.waitForLoadState('networkidle')
@@ -140,7 +149,9 @@ test.describe('Production Smoke Tests', () => {
     })
 
     test('organizations tab is accessible', async ({ page }) => {
-      const orgTab = page.locator('[role="tab"]').filter({ hasText: 'Organizations' })
+      const orgTab = page
+        .locator('[role="tab"]')
+        .filter({ hasText: 'Organizations' })
       await expect(orgTab).toBeVisible({ timeout: 10000 })
       await orgTab.click()
       await page.waitForTimeout(1000)

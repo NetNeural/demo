@@ -84,7 +84,8 @@ function OrganizationsPageContent() {
   const isSuperAdmin = user?.isSuperAdmin || false
 
   const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
-  const isNetNeuralOwner = isOwner && currentOrganization?.id === NETNEURAL_ORG_ID
+  const isNetNeuralOwner =
+    isOwner && currentOrganization?.id === NETNEURAL_ORG_ID
 
   // Show loading state while fetching organizations
   if (isLoading) {
@@ -174,8 +175,11 @@ function OrganizationsPageContent() {
           const groupMap: Record<string, string> = {
             overview: 'overview',
             members: 'people',
-            locations: 'infrastructure', integrations: 'infrastructure', 'api-keys': 'infrastructure',
-            billing: 'business', customers: 'business',
+            locations: 'infrastructure',
+            integrations: 'infrastructure',
+            'api-keys': 'infrastructure',
+            billing: 'business',
+            customers: 'business',
             documents: 'documents',
             settings: 'settings',
           }
@@ -184,8 +188,12 @@ function OrganizationsPageContent() {
         onValueChange={(group) => {
           // When switching groups, navigate to default sub-tab
           const defaults: Record<string, string> = {
-            overview: 'overview', people: 'members', infrastructure: 'locations',
-            business: 'billing', documents: 'documents', settings: 'settings',
+            overview: 'overview',
+            people: 'members',
+            infrastructure: 'locations',
+            business: 'billing',
+            documents: 'documents',
+            settings: 'settings',
           }
           handleTabChange(defaults[group] || 'overview')
         }}
@@ -202,7 +210,10 @@ function OrganizationsPageContent() {
             <span>People</span>
           </TabsTrigger>
 
-          <TabsTrigger value="infrastructure" className="flex items-center gap-2">
+          <TabsTrigger
+            value="infrastructure"
+            className="flex items-center gap-2"
+          >
             <Network className="h-4 w-4" />
             <span>Infrastructure</span>
           </TabsTrigger>
@@ -231,42 +242,66 @@ function OrganizationsPageContent() {
 
         {/* Overview — single tab, no sub-tabs */}
         <TabsContent value="overview">
-          <OverviewTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+          <OverviewTab
+            key={currentOrganization.id}
+            organizationId={currentOrganization.id}
+          />
         </TabsContent>
 
         {/* People — Members */}
         <TabsContent value="people">
-          <MembersTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+          <MembersTab
+            key={currentOrganization.id}
+            organizationId={currentOrganization.id}
+          />
         </TabsContent>
 
         {/* Infrastructure — Locations + Integrations + API Keys */}
         <TabsContent value="infrastructure">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="locations" className="flex items-center gap-2">
+              <TabsTrigger
+                value="locations"
+                className="flex items-center gap-2"
+              >
                 <MapPin className="h-4 w-4" />
                 Locations
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="flex items-center gap-2">
+              <TabsTrigger
+                value="integrations"
+                className="flex items-center gap-2"
+              >
                 <Plug className="h-4 w-4" />
                 Integrations
               </TabsTrigger>
               {(isSuperAdmin || isOwner || isAdmin) && (
-                <TabsTrigger value="api-keys" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="api-keys"
+                  className="flex items-center gap-2"
+                >
                   <Key className="h-4 w-4" />
                   API Keys
                 </TabsTrigger>
               )}
             </TabsList>
             <TabsContent value="locations" className="mt-6">
-              <LocationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+              <LocationsTab
+                key={currentOrganization.id}
+                organizationId={currentOrganization.id}
+              />
             </TabsContent>
             <TabsContent value="integrations" className="mt-6">
-              <OrganizationIntegrationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+              <OrganizationIntegrationsTab
+                key={currentOrganization.id}
+                organizationId={currentOrganization.id}
+              />
             </TabsContent>
             {(isSuperAdmin || isOwner || isAdmin) && (
               <TabsContent value="api-keys" className="mt-6">
-                <ApiKeysTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+                <ApiKeysTab
+                  key={currentOrganization.id}
+                  organizationId={currentOrganization.id}
+                />
               </TabsContent>
             )}
           </Tabs>
@@ -277,23 +312,35 @@ function OrganizationsPageContent() {
           <TabsContent value="business">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList>
-                <TabsTrigger value="billing" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="billing"
+                  className="flex items-center gap-2"
+                >
                   <CreditCard className="h-4 w-4" />
                   Billing
                 </TabsTrigger>
                 {(isSuperAdmin || canCreateChildOrgs) && (
-                  <TabsTrigger value="customers" className="flex items-center gap-2">
+                  <TabsTrigger
+                    value="customers"
+                    className="flex items-center gap-2"
+                  >
                     <Crown className="h-4 w-4" />
                     Customer Orgs
                   </TabsTrigger>
                 )}
               </TabsList>
               <TabsContent value="billing" className="mt-6">
-                <BillingTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+                <BillingTab
+                  key={currentOrganization.id}
+                  organizationId={currentOrganization.id}
+                />
               </TabsContent>
               {(isSuperAdmin || canCreateChildOrgs) && (
                 <TabsContent value="customers" className="mt-6">
-                  <ChildOrganizationsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+                  <ChildOrganizationsTab
+                    key={currentOrganization.id}
+                    organizationId={currentOrganization.id}
+                  />
                 </TabsContent>
               )}
             </Tabs>
@@ -303,14 +350,20 @@ function OrganizationsPageContent() {
         {/* Settings — single tab, no sub-tabs */}
         {(isSuperAdmin || isOwner) && (
           <TabsContent value="settings">
-            <OrganizationSettingsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+            <OrganizationSettingsTab
+              key={currentOrganization.id}
+              organizationId={currentOrganization.id}
+            />
           </TabsContent>
         )}
 
         {/* Documents — Data Room (NetNeural super admins + NetNeural org owners only) */}
         {(isSuperAdmin || isNetNeuralOwner) && (
           <TabsContent value="documents">
-            <DocumentsTab key={currentOrganization.id} organizationId={currentOrganization.id} />
+            <DocumentsTab
+              key={currentOrganization.id}
+              organizationId={currentOrganization.id}
+            />
           </TabsContent>
         )}
       </Tabs>

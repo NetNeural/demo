@@ -56,7 +56,11 @@ export default function DashboardPage() {
   const { user } = useUser()
 
   const isSuperAdmin = user?.isSuperAdmin ?? false
-  const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, currentOrganization?.role)
+  const isPlAdmin = isPlatformAdmin(
+    user,
+    currentOrganization?.id,
+    currentOrganization?.role
+  )
   const canManage = isPlAdmin || isOwner || isAdmin
 
   if (isLoadingOrg) {
@@ -230,7 +234,6 @@ export default function DashboardPage() {
 
       {/* Main Content - 2 Column Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-
         {/* Quick Navigation */}
         {canManage && (
           <Card className="md:col-span-2">
@@ -239,11 +242,12 @@ export default function DashboardPage() {
                 <Wand2 className="h-4 w-4" />
                 Quick Navigation
               </CardTitle>
-              <CardDescription>Shortcuts to key areas based on your role</CardDescription>
+              <CardDescription>
+                Shortcuts to key areas based on your role
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-
                 {/* Always visible to managers */}
                 <button
                   onClick={() => router.push('/dashboard/reports')}
@@ -251,7 +255,9 @@ export default function DashboardPage() {
                 >
                   <FileText className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">Reports</span>
-                  <span className="text-xs text-muted-foreground">Device &amp; alert reports</span>
+                  <span className="text-xs text-muted-foreground">
+                    Device &amp; alert reports
+                  </span>
                 </button>
 
                 <button
@@ -260,7 +266,9 @@ export default function DashboardPage() {
                 >
                   <BarChart3 className="h-4 w-4 text-violet-500" />
                   <span className="text-sm font-medium">Analytics</span>
-                  <span className="text-xs text-muted-foreground">Trends &amp; insights</span>
+                  <span className="text-xs text-muted-foreground">
+                    Trends &amp; insights
+                  </span>
                 </button>
 
                 <button
@@ -269,7 +277,9 @@ export default function DashboardPage() {
                 >
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium">Alert Rules</span>
-                  <span className="text-xs text-muted-foreground">Configure thresholds</span>
+                  <span className="text-xs text-muted-foreground">
+                    Configure thresholds
+                  </span>
                 </button>
 
                 <button
@@ -278,7 +288,9 @@ export default function DashboardPage() {
                 >
                   <Users className="h-4 w-4 text-cyan-500" />
                   <span className="text-sm font-medium">Users</span>
-                  <span className="text-xs text-muted-foreground">Manage team members</span>
+                  <span className="text-xs text-muted-foreground">
+                    Manage team members
+                  </span>
                 </button>
 
                 <button
@@ -287,7 +299,9 @@ export default function DashboardPage() {
                 >
                   <Network className="h-4 w-4 text-emerald-500" />
                   <span className="text-sm font-medium">Integrations</span>
-                  <span className="text-xs text-muted-foreground">MQTT &amp; connections</span>
+                  <span className="text-xs text-muted-foreground">
+                    MQTT &amp; connections
+                  </span>
                 </button>
 
                 {/* Owner + Super Admin */}
@@ -298,7 +312,9 @@ export default function DashboardPage() {
                   >
                     <CreditCard className="h-4 w-4 text-pink-500" />
                     <span className="text-sm font-medium">Billing</span>
-                    <span className="text-xs text-muted-foreground">Plans &amp; invoices</span>
+                    <span className="text-xs text-muted-foreground">
+                      Plans &amp; invoices
+                    </span>
                   </button>
                 )}
 
@@ -309,19 +325,27 @@ export default function DashboardPage() {
                   >
                     <Building2 className="h-4 w-4 text-orange-500" />
                     <span className="text-sm font-medium">Resellers</span>
-                    <span className="text-xs text-muted-foreground">Reseller dashboard</span>
+                    <span className="text-xs text-muted-foreground">
+                      Reseller dashboard
+                    </span>
                   </button>
                 )}
 
                 {/* Platform Admin (super_admin + NetNeural org owners) */}
                 {isPlAdmin && (
                   <button
-                    onClick={() => router.push('/dashboard/admin/reseller-applications')}
+                    onClick={() =>
+                      router.push('/dashboard/admin/reseller-applications')
+                    }
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <PackageSearch className="h-4 w-4 text-violet-500" />
-                    <span className="text-sm font-medium">Reseller Approvals</span>
-                    <span className="text-xs text-muted-foreground">Review applications</span>
+                    <span className="text-sm font-medium">
+                      Reseller Approvals
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Review applications
+                    </span>
                   </button>
                 )}
 
@@ -332,7 +356,9 @@ export default function DashboardPage() {
                   >
                     <UserCog className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium">Customers</span>
-                    <span className="text-xs text-muted-foreground">All orgs &amp; accounts</span>
+                    <span className="text-xs text-muted-foreground">
+                      All orgs &amp; accounts
+                    </span>
                   </button>
                 )}
 
@@ -343,7 +369,9 @@ export default function DashboardPage() {
                   >
                     <TrendingUp className="h-4 w-4 text-green-600" />
                     <span className="text-sm font-medium">Revenue</span>
-                    <span className="text-xs text-muted-foreground">Financial overview</span>
+                    <span className="text-xs text-muted-foreground">
+                      Financial overview
+                    </span>
                   </button>
                 )}
 
@@ -353,33 +381,44 @@ export default function DashboardPage() {
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <Layers className="h-4 w-4 text-indigo-500" />
-                    <span className="text-sm font-medium">Plans &amp; Pricing</span>
-                    <span className="text-xs text-muted-foreground">Manage subscription tiers</span>
+                    <span className="text-sm font-medium">
+                      Plans &amp; Pricing
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Manage subscription tiers
+                    </span>
                   </button>
                 )}
 
                 {isPlAdmin && (
                   <button
-                    onClick={() => router.push('/dashboard/admin/security-audit')}
+                    onClick={() =>
+                      router.push('/dashboard/admin/security-audit')
+                    }
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <ShieldCheck className="h-4 w-4 text-rose-500" />
                     <span className="text-sm font-medium">Security Audit</span>
-                    <span className="text-xs text-muted-foreground">Logs &amp; access review</span>
+                    <span className="text-xs text-muted-foreground">
+                      Logs &amp; access review
+                    </span>
                   </button>
                 )}
 
                 {isPlAdmin && (
                   <button
-                    onClick={() => router.push('/dashboard/admin/platform-health')}
+                    onClick={() =>
+                      router.push('/dashboard/admin/platform-health')
+                    }
                     className="flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <Activity className="h-4 w-4 text-teal-500" />
                     <span className="text-sm font-medium">Platform Health</span>
-                    <span className="text-xs text-muted-foreground">System monitoring</span>
+                    <span className="text-xs text-muted-foreground">
+                      System monitoring
+                    </span>
                   </button>
                 )}
-
               </div>
             </CardContent>
           </Card>

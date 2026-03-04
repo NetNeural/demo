@@ -130,7 +130,12 @@ export function InventoryDashboard({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            {(Object.entries(stats.categoryCounts) as [HardwareCategory, number][])
+            {(
+              Object.entries(stats.categoryCounts) as [
+                HardwareCategory,
+                number,
+              ][]
+            )
               .filter(([, count]) => count > 0)
               .sort(([, a], [, b]) => b - a)
               .map(([cat, count]) => (

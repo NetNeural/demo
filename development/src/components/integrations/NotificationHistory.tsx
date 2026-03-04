@@ -224,7 +224,9 @@ export function NotificationHistory({ organizationId }: Props) {
         ]
       }),
     ]
-      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      )
       .join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -240,7 +242,10 @@ export function NotificationHistory({ organizationId }: Props) {
 
   const getRecipientDisplay = (entry: NotificationEntry) => {
     const meta = (entry.metadata || {}) as Record<string, unknown>
-    if (Array.isArray(meta.recipients) && (meta.recipients as string[]).length > 0) {
+    if (
+      Array.isArray(meta.recipients) &&
+      (meta.recipients as string[]).length > 0
+    ) {
       const recipients = meta.recipients as string[]
       return recipients.length === 1
         ? recipients[0]
@@ -680,11 +685,7 @@ export function NotificationHistory({ organizationId }: Props) {
                         Full Metadata
                       </label>
                       <pre className="mt-1 max-h-40 overflow-auto rounded-lg bg-muted p-3 text-xs">
-                        {JSON.stringify(
-                          selectedNotification.metadata,
-                          null,
-                          2
-                        )}
+                        {JSON.stringify(selectedNotification.metadata, null, 2)}
                       </pre>
                     </div>
                   )}

@@ -495,16 +495,28 @@ const PLATFORM_FEATURES: FeatureSection[] = [
   },
 ]
 
-const TOTAL_FEATURE_COUNT = PLATFORM_FEATURES.reduce((sum, s) => sum + s.features.length, 0)
+const TOTAL_FEATURE_COUNT = PLATFORM_FEATURES.reduce(
+  (sum, s) => sum + s.features.length,
+  0
+)
 
 /**
  * Generate a styled HTML report for the Platform Feature Report.
  * Used for both Preview and Send — no edge function needed.
  */
 function generateFeatureReportHtml(): string {
-  const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const now = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
   const sections = PLATFORM_FEATURES.map((s) => {
-    const items = s.features.map((f) => `<li style="padding:3px 0;color:#374151;font-size:13px;">${f}</li>`).join('')
+    const items = s.features
+      .map(
+        (f) =>
+          `<li style="padding:3px 0;color:#374151;font-size:13px;">${f}</li>`
+      )
+      .join('')
     return `
       <div style="margin-bottom:20px;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
         <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:600;color:#111827;text-transform:uppercase;letter-spacing:0.05em;">
@@ -686,10 +698,14 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
   // Build request body for AI report functions
   // -------------------------------------------------------------------------
 
-  const buildAIReportBody = async (reportType: string): Promise<Record<string, unknown>> => {
+  const buildAIReportBody = async (
+    reportType: string
+  ): Promise<Record<string, unknown>> => {
     // For AI functions, fetch live alert data to generate a real summary
     const now = new Date()
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = new Date(
+      now.getTime() - 7 * 24 * 60 * 60 * 1000
+    ).toISOString()
     const dateRange = `${sevenDaysAgo.split('T')[0]} to ${now.toISOString().split('T')[0]}`
 
     // Fetch alerts for context
@@ -711,7 +727,9 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
         reportData: {
           dateRange,
           totalRecords: alertData.length,
-          criticalCount: alertData.filter((a: Record<string, unknown>) => a.severity === 'critical').length,
+          criticalCount: alertData.filter(
+            (a: Record<string, unknown>) => a.severity === 'critical'
+          ).length,
         },
         organizationId,
       }
@@ -757,26 +775,40 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
           preview: false,
           html,
           subject: `NetNeural Platform Feature Report — ${TOTAL_FEATURE_COUNT} Features`,
-          ...(selectedRecipients.length > 0 ? { recipients: selectedRecipients } : {}),
+          ...(selectedRecipients.length > 0
+            ? { recipients: selectedRecipients }
+            : {}),
         }
         // Use daily-report edge function as the email transport
-        const { data, error } = await supabase.functions.invoke('daily-report', {
-          method: 'POST',
-          body,
-        })
+        const { data, error } = await supabase.functions.invoke(
+          'daily-report',
+          {
+            method: 'POST',
+            body,
+          }
+        )
         const durationMs = Date.now() - startTime
         if (error) throw error
         if (runRow?.id) {
           await untypedFrom(supabase, 'report_runs')
-            .update({ status: 'success', duration_ms: durationMs, summary: `Feature report with ${TOTAL_FEATURE_COUNT} features sent` })
+            .update({
+              status: 'success',
+              duration_ms: durationMs,
+              summary: `Feature report with ${TOTAL_FEATURE_COUNT} features sent`,
+            })
             .eq('id', runRow.id)
         }
-        toast.success('Platform Feature Report sent', { description: `${TOTAL_FEATURE_COUNT} features · ${(durationMs / 1000).toFixed(1)}s` })
+        toast.success('Platform Feature Report sent', {
+          description: `${TOTAL_FEATURE_COUNT} features · ${(durationMs / 1000).toFixed(1)}s`,
+        })
         return
       }
 
       // AI report functions need structured input data
-      if (reportType === 'generate-report-summary' || reportType === 'ai-report-summary') {
+      if (
+        reportType === 'generate-report-summary' ||
+        reportType === 'ai-report-summary'
+      ) {
         body = await buildAIReportBody(reportType)
       } else {
         if (selectedRecipients.length > 0) {
@@ -810,10 +842,15 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
       const reportLabel =
         REPORT_TYPES.find((r) => r.key === reportType)?.label ?? reportType
-      const isAIReport = reportType === 'generate-report-summary' || reportType === 'ai-report-summary'
-      toast.success(`${reportLabel} ${isAIReport ? 'generated' : 'sent'} successfully`, {
-        description: `Completed in ${(durationMs / 1000).toFixed(1)}s`,
-      })
+      const isAIReport =
+        reportType === 'generate-report-summary' ||
+        reportType === 'ai-report-summary'
+      toast.success(
+        `${reportLabel} ${isAIReport ? 'generated' : 'sent'} successfully`,
+        {
+          description: `Completed in ${(durationMs / 1000).toFixed(1)}s`,
+        }
+      )
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       const durationMs = Date.now() - startTime
@@ -855,7 +892,10 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
 
       // AI report functions need structured input, not { preview: true }
       let body: Record<string, unknown>
-      if (reportType === 'generate-report-summary' || reportType === 'ai-report-summary') {
+      if (
+        reportType === 'generate-report-summary' ||
+        reportType === 'ai-report-summary'
+      ) {
         body = await buildAIReportBody(reportType)
       } else {
         body = { preview: true }
@@ -1156,14 +1196,16 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       >
                         {isRunning ? (
                           <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : key === 'generate-report-summary' || key === 'ai-report-summary' ? (
+                        ) : key === 'generate-report-summary' ||
+                          key === 'ai-report-summary' ? (
                           <Sparkles className="mr-1 h-4 w-4" />
                         ) : (
                           <Send className="mr-1 h-4 w-4" />
                         )}
                         {isRunning
                           ? 'Running...'
-                          : key === 'generate-report-summary' || key === 'ai-report-summary'
+                          : key === 'generate-report-summary' ||
+                              key === 'ai-report-summary'
                             ? 'Generate'
                             : 'Send Now'}
                       </Button>
@@ -1173,8 +1215,6 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
               }
             )}
           </div>
-
-
         </CardContent>
       </Card>
 
@@ -1392,7 +1432,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       <span className="text-xs text-muted-foreground">
                         {run.triggered_by === 'scheduler' ? (
                           <>
-                            <Clock className="mr-0.5 inline h-3 w-3" /> Scheduled
+                            <Clock className="mr-0.5 inline h-3 w-3" />{' '}
+                            Scheduled
                           </>
                         ) : (
                           <>
@@ -1435,7 +1476,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary'
+              {confirmSendType === 'generate-report-summary' ||
+              confirmSendType === 'ai-report-summary'
                 ? 'Generate AI Summary'
                 : 'Send Report'}
             </AlertDialogTitle>
@@ -1443,7 +1485,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
               <div className="space-y-3">
                 <p>
                   You are about to{' '}
-                  {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary'
+                  {confirmSendType === 'generate-report-summary' ||
+                  confirmSendType === 'ai-report-summary'
                     ? 'generate'
                     : 'send'}{' '}
                   the{' '}
@@ -1453,9 +1496,12 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                   </strong>
                   .
                 </p>
-                {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary' ? (
+                {confirmSendType === 'generate-report-summary' ||
+                confirmSendType === 'ai-report-summary' ? (
                   <p className="text-sm text-muted-foreground">
-                    This will use OpenAI to analyze recent alert data and generate an AI-powered summary with key findings, red flags, and recommendations.
+                    This will use OpenAI to analyze recent alert data and
+                    generate an AI-powered summary with key findings, red flags,
+                    and recommendations.
                   </p>
                 ) : (
                   <div>
@@ -1490,10 +1536,15 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                 }
               }}
             >
-              {confirmSendType === 'generate-report-summary' || confirmSendType === 'ai-report-summary' ? (
-                <><Sparkles className="mr-1 h-4 w-4" /> Generate</>
+              {confirmSendType === 'generate-report-summary' ||
+              confirmSendType === 'ai-report-summary' ? (
+                <>
+                  <Sparkles className="mr-1 h-4 w-4" /> Generate
+                </>
               ) : (
-                <><Send className="mr-1 h-4 w-4" /> Send Now</>
+                <>
+                  <Send className="mr-1 h-4 w-4" /> Send Now
+                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1510,7 +1561,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
             <>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
-                  In the print dialog, set Destination to <strong>Save as PDF</strong> to download the file.
+                  In the print dialog, set Destination to{' '}
+                  <strong>Save as PDF</strong> to download the file.
                 </p>
                 <div className="flex shrink-0 gap-2">
                   <Button
@@ -1528,7 +1580,8 @@ function ExecutiveReportsCardInner({ organizationId }: Props) {
                       const title = previewTitle
                       // Close dialog immediately — don't wait for afterprint
                       setPreviewHtml(null)
-                      const { printHtmlAsPdf } = await import('@/lib/pdf-export')
+                      const { printHtmlAsPdf } =
+                        await import('@/lib/pdf-export')
                       printHtmlAsPdf(html, title)
                     }}
                   >
@@ -1562,21 +1615,44 @@ function formatAISummaryAsHtml(
 ): string {
   if (!data) return '<p style="color:#6b7280;">No data returned.</p>'
 
-  const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  const title = reportType === 'generate-report-summary' ? 'AI Report Summary' : 'AI Insights Summary'
+  const now = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const title =
+    reportType === 'generate-report-summary'
+      ? 'AI Report Summary'
+      : 'AI Insights Summary'
 
   // Extract summary — might be at top level or nested under 'summary'
   const summary = (data.summary ?? data) as Record<string, unknown>
-  const keyFindings = Array.isArray(summary.keyFindings) ? summary.keyFindings : []
+  const keyFindings = Array.isArray(summary.keyFindings)
+    ? summary.keyFindings
+    : []
   const redFlags = Array.isArray(summary.redFlags) ? summary.redFlags : []
-  const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : []
-  const trendAnalysis = typeof summary.trendAnalysis === 'string' ? summary.trendAnalysis : ''
-  const confidence = typeof summary.confidence === 'number' ? summary.confidence : null
+  const recommendations = Array.isArray(summary.recommendations)
+    ? summary.recommendations
+    : []
+  const trendAnalysis =
+    typeof summary.trendAnalysis === 'string' ? summary.trendAnalysis : ''
+  const confidence =
+    typeof summary.confidence === 'number' ? summary.confidence : null
   const cached = data.cached === true
 
-  const section = (icon: string, heading: string, items: string[], color: string) => {
+  const section = (
+    icon: string,
+    heading: string,
+    items: string[],
+    color: string
+  ) => {
     if (items.length === 0) return ''
-    const list = items.map((item) => `<li style="padding:3px 0;color:#374151;font-size:13px;">${item}</li>`).join('')
+    const list = items
+      .map(
+        (item) =>
+          `<li style="padding:3px 0;color:#374151;font-size:13px;">${item}</li>`
+      )
+      .join('')
     return `
       <div style="margin-bottom:16px;">
         <h3 style="font-size:13px;font-weight:600;color:${color};margin:0 0 6px;">${icon} ${heading}</h3>
@@ -1592,19 +1668,29 @@ function formatAISummaryAsHtml(
           Generated ${now}${cached ? ' · <span style="color:#8b5cf6;">Cached</span>' : ''}${confidence != null ? ` · Confidence: ${Math.round(confidence * 100)}%` : ''}
         </p>
       </div>
-      ${trendAnalysis ? `
+      ${
+        trendAnalysis
+          ? `
         <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:14px;margin-bottom:16px;">
           <div style="font-size:13px;color:#4c1d95;font-weight:500;">✨ Trend Analysis</div>
           <p style="margin:6px 0 0;font-size:13px;color:#374151;">${trendAnalysis}</p>
-        </div>` : ''}
+        </div>`
+          : ''
+      }
       ${section('✅', 'Key Findings', keyFindings, '#059669')}
       ${section('🚩', 'Red Flags', redFlags, '#dc2626')}
       ${section('💡', 'Recommendations', recommendations, '#2563eb')}
-      ${keyFindings.length === 0 && redFlags.length === 0 && recommendations.length === 0 ? `
+      ${
+        keyFindings.length === 0 &&
+        redFlags.length === 0 &&
+        recommendations.length === 0
+          ? `
         <div style="text-align:center;padding:24px;color:#9ca3af;">
           <p style="font-size:14px;">No AI insights available.</p>
           <p style="font-size:12px;">The AI service may not be configured. Rule-based summaries are shown in reports.</p>
-        </div>` : ''}
+        </div>`
+          : ''
+      }
       <div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:16px;text-align:center;color:#9ca3af;font-size:11px;">
         AI insights are suggestions only. Always verify critical findings with your data.
       </div>
@@ -1637,9 +1723,7 @@ function buildReportSummary(
         const billing = dims.find(
           (d: Record<string, unknown>) => d.name === 'Monetization'
         )
-        const billingNote = billing
-          ? ` · Billing: ${billing.grade}`
-          : ''
+        const billingNote = billing ? ` · Billing: ${billing.grade}` : ''
         return `Grade: ${grade} (${score}/100)${roadmap ? ` · Roadmap: ${roadmap}` : ''}${billingNote}`
       }
       case 'executive-summary': {

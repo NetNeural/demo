@@ -212,11 +212,8 @@ export function createAlertsAPI(
      * Get alert statistics for an organization
      */
     stats: (organizationId) =>
-      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>(
-        'alerts',
-        {
-          params: { action: 'stats', organization_id: organizationId },
-        }
-      ),
+      call<{ stats: AlertStats; topDevices: AlertDeviceRanking[] }>('alerts', {
+        params: { action: 'stats', organization_id: organizationId },
+      }),
   }
 }

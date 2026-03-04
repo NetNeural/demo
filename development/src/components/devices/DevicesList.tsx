@@ -1204,7 +1204,9 @@ export function DevicesList() {
                     size="sm"
                     className="flex-1"
                     onClick={() =>
-                      router.push(`/dashboard/devices/view?id=${device.id}&tab=telemetry`)
+                      router.push(
+                        `/dashboard/devices/view?id=${device.id}&tab=telemetry`
+                      )
                     }
                   >
                     {isGatewayDevice(device.device_type, device.name)

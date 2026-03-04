@@ -55,25 +55,26 @@ export default function PrivacyPolicyPage() {
             <p className="mb-3">
               When you create an account, we collect your name, email address,
               and organization affiliation. If you sign in via Single Sign-On
-              (SSO), we receive the identity attributes provided by your identity
-              provider.
+              (SSO), we receive the identity attributes provided by your
+              identity provider.
             </p>
             <h3 className="mb-2 font-medium text-gray-200">
               2.2 Device & Sensor Data
             </h3>
             <p className="mb-3">
-              The Platform receives telemetry data from IoT devices registered to
-              your organization, including temperature readings, humidity levels,
-              battery status, signal strength, and device health metrics. This
-              data is associated with your organization, not individual users.
+              The Platform receives telemetry data from IoT devices registered
+              to your organization, including temperature readings, humidity
+              levels, battery status, signal strength, and device health
+              metrics. This data is associated with your organization, not
+              individual users.
             </p>
             <h3 className="mb-2 font-medium text-gray-200">
               2.3 Usage & Analytics Data
             </h3>
             <p>
               We collect anonymized usage analytics such as pages visited,
-              features used, and session duration to improve the Platform. We use
-              Sentry for error monitoring and performance tracking. No
+              features used, and session duration to improve the Platform. We
+              use Sentry for error monitoring and performance tracking. No
               personally identifiable information is sent to third-party
               analytics services.
             </p>
@@ -111,9 +112,7 @@ export default function PrivacyPolicyPage() {
                 safety) as required by your organization.
               </li>
               <li>
-                <strong className="text-gray-200">
-                  Platform Improvement:
-                </strong>{' '}
+                <strong className="text-gray-200">Platform Improvement:</strong>{' '}
                 To analyze usage patterns and improve features, performance, and
                 reliability.
               </li>
@@ -125,16 +124,15 @@ export default function PrivacyPolicyPage() {
               4. Data Storage & Security
             </h2>
             <p className="mb-3">
-              All data is stored in Supabase (PostgreSQL) with encryption at rest
-              and in transit (TLS 1.2+). We implement Row-Level Security (RLS)
-              policies to ensure organizations can only access their own data.
+              All data is stored in Supabase (PostgreSQL) with encryption at
+              rest and in transit (TLS 1.2+). We implement Row-Level Security
+              (RLS) policies to ensure organizations can only access their own
+              data.
             </p>
             <ul className="list-disc space-y-2 pl-5">
               <li>256-bit AES encryption at rest</li>
               <li>TLS 1.2+ encryption in transit</li>
-              <li>
-                Row-Level Security (RLS) for multi-tenant data isolation
-              </li>
+              <li>Row-Level Security (RLS) for multi-tenant data isolation</li>
               <li>Audit logging of all administrative actions</li>
               <li>Regular security assessments and updates</li>
             </ul>
@@ -242,10 +240,10 @@ export default function PrivacyPolicyPage() {
               9. Changes to This Policy
             </h2>
             <p>
-              We may update this Privacy Policy from time to time. We will notify
-              you of material changes via email or a notice on the Platform.
-              Continued use of the Platform after changes constitutes acceptance
-              of the updated policy.
+              We may update this Privacy Policy from time to time. We will
+              notify you of material changes via email or a notice on the
+              Platform. Continued use of the Platform after changes constitutes
+              acceptance of the updated policy.
             </p>
           </section>
 

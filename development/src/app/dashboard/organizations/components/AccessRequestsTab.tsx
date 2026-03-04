@@ -83,7 +83,9 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
   const [activeView, setActiveView] = useState<'sent' | 'received'>('sent')
 
   // All organizations for request target dropdown
-  const [allOrgs, setAllOrgs] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [allOrgs, setAllOrgs] = useState<
+    { id: string; name: string; slug: string }[]
+  >([])
   const [loadingOrgs, setLoadingOrgs] = useState(false)
 
   // New request dialog
@@ -359,8 +361,8 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
                   <Send className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>No admin access requests sent yet.</p>
                   <p className="mt-1 text-sm">
-                    Use &quot;Request Admin Access&quot; to request temporary admin
-                    access to a customer organization.
+                    Use &quot;Request Admin Access&quot; to request temporary
+                    admin access to a customer organization.
                   </p>
                 </div>
               ) : (
@@ -664,9 +666,10 @@ export function AccessRequestsTab({ organizationId }: AccessRequestsTabProps) {
             <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 dark:bg-amber-950/30">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                This grants <strong>admin-level</strong> access for the requested
-                duration. The customer will receive a notification and can remove
-                access at any time. All activity is logged in the audit trail.
+                This grants <strong>admin-level</strong> access for the
+                requested duration. The customer will receive a notification and
+                can remove access at any time. All activity is logged in the
+                audit trail.
               </p>
             </div>
           </div>

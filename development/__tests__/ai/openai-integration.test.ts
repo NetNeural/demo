@@ -9,7 +9,7 @@ describe('OpenAI Integration', () => {
       { name: 'generate-report-summary', model: 'gpt-4o-mini' },
       { name: 'email-broadcast', model: 'gpt-4o-mini' },
     ]
-    functions.forEach(fn => expect(fn.model).toBe('gpt-4o-mini'))
+    functions.forEach((fn) => expect(fn.model).toBe('gpt-4o-mini'))
   })
 
   it('API key guard prevents unauthenticated calls', () => {

@@ -30,7 +30,10 @@ function formatCurrencyTick(value: number): string {
   return `$${value}`
 }
 
-export function ChurnWaterfallChart({ data, loading }: ChurnWaterfallChartProps) {
+export function ChurnWaterfallChart({
+  data,
+  loading,
+}: ChurnWaterfallChartProps) {
   if (loading) {
     return (
       <Card>
@@ -58,7 +61,8 @@ export function ChurnWaterfallChart({ data, loading }: ChurnWaterfallChartProps)
       <CardHeader>
         <CardTitle>New vs Churned MRR</CardTitle>
         <CardDescription>
-          Monthly revenue gains (green) and losses from churn (red) — last {data.length} months
+          Monthly revenue gains (green) and losses from churn (red) — last{' '}
+          {data.length} months
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,11 +77,7 @@ export function ChurnWaterfallChart({ data, loading }: ChurnWaterfallChartProps)
               margin={{ top: 5, right: 20, bottom: 5, left: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-              />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} tickLine={false} />
               <YAxis
                 tickFormatter={formatCurrencyTick}
                 tick={{ fontSize: 12 }}
@@ -85,10 +85,12 @@ export function ChurnWaterfallChart({ data, loading }: ChurnWaterfallChartProps)
               />
               <Tooltip
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={((value: number, name: string) => {
-                  const label = name === 'newMrr' ? 'New MRR' : 'Churned MRR'
-                  return [`$${Math.abs(value).toFixed(2)}`, label]
-                }) as any}
+                formatter={
+                  ((value: number, name: string) => {
+                    const label = name === 'newMrr' ? 'New MRR' : 'Churned MRR'
+                    return [`$${Math.abs(value).toFixed(2)}`, label]
+                  }) as any
+                }
                 contentStyle={{
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb',

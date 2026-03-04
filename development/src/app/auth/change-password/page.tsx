@@ -15,7 +15,17 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Lock, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff, Wand2, Check, X } from 'lucide-react'
+import {
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Wand2,
+  Check,
+  X,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import {
   PASSWORD_REQUIREMENTS,
@@ -99,7 +109,9 @@ export default function ChangePasswordPage() {
       // Use change-password edge function with forceChange mode
       // (admin API bypass — the client-side supabase.auth.updateUser silently
       // fails when "Secure password change" is enabled in Supabase settings)
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
         setError('Session expired. Please log in again.')
@@ -123,7 +135,9 @@ export default function ChangePasswordPage() {
       const result = await res.json()
 
       if (!res.ok) {
-        throw new Error(result?.error || result?.message || 'Failed to change password')
+        throw new Error(
+          result?.error || result?.message || 'Failed to change password'
+        )
       }
 
       // Update phone numbers in public.users table
@@ -203,9 +217,9 @@ export default function ChangePasswordPage() {
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Your password must be at least 12 characters and include uppercase,
-              lowercase, numbers, and special characters. A primary SMS phone
-              number is required to continue.
+              Your password must be at least 12 characters and include
+              uppercase, lowercase, numbers, and special characters. A primary
+              SMS phone number is required to continue.
             </AlertDescription>
           </Alert>
 
@@ -341,16 +355,20 @@ export default function ChangePasswordPage() {
                   )}
                 </button>
               </div>
-              {confirmPassword && newPassword && confirmPassword !== newPassword && (
-                <p className="flex items-center gap-1 text-xs text-red-500">
-                  <X className="h-3 w-3" /> Passwords do not match
-                </p>
-              )}
-              {confirmPassword && newPassword && confirmPassword === newPassword && (
-                <p className="flex items-center gap-1 text-xs text-green-600">
-                  <Check className="h-3 w-3" /> Passwords match
-                </p>
-              )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword !== newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-red-500">
+                    <X className="h-3 w-3" /> Passwords do not match
+                  </p>
+                )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword === newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-green-600">
+                    <Check className="h-3 w-3" /> Passwords match
+                  </p>
+                )}
             </div>
 
             <div className="space-y-2">

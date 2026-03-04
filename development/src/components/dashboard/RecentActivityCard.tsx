@@ -30,11 +30,16 @@ export function RecentActivityCard() {
   const [loading, setLoading] = useState(true)
 
   const fetchActivities = useCallback(async () => {
-    if (!currentOrganization?.id) { setLoading(false); return }
+    if (!currentOrganization?.id) {
+      setLoading(false)
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('user_audit_log')
-        .select('id, action_type, action_category, resource_type, resource_name, user_email, status, created_at')
+        .select(
+          'id, action_type, action_category, resource_type, resource_name, user_email, status, created_at'
+        )
         .eq('organization_id', currentOrganization.id)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -45,10 +50,20 @@ export function RecentActivityCard() {
         const rt = row.resource_type ?? ''
         let type: ActivityItem['type'] = 'system_event'
         if (rt === 'device' || rt === 'sensor') {
-          type = row.action_type.includes('creat') || row.action_type.includes('add') ? 'device_added' : 'device_updated'
+          type =
+            row.action_type.includes('creat') || row.action_type.includes('add')
+              ? 'device_added'
+              : 'device_updated'
         } else if (rt === 'alert') {
-          type = row.action_type.includes('resolv') || row.action_type.includes('close') ? 'alert_resolved' : 'alert_created'
-        } else if (row.action_category === 'auth' || row.action_category === 'user') {
+          type =
+            row.action_type.includes('resolv') ||
+            row.action_type.includes('close')
+              ? 'alert_resolved'
+              : 'alert_created'
+        } else if (
+          row.action_category === 'auth' ||
+          row.action_category === 'user'
+        ) {
           type = 'user_action'
         }
         const title = `${row.action_type.replace(/_/g, ' ')}${row.resource_name ? `: ${row.resource_name}` : ''}`
@@ -56,7 +71,9 @@ export function RecentActivityCard() {
           id: row.id,
           type,
           title: title.charAt(0).toUpperCase() + title.slice(1),
-          description: row.resource_type ? `${row.resource_type} · ${row.status}` : row.status,
+          description: row.resource_type
+            ? `${row.resource_type} · ${row.status}`
+            : row.status,
           user: row.user_email ?? undefined,
           timestamp: new Date(row.created_at).toLocaleString(),
         }
@@ -70,7 +87,9 @@ export function RecentActivityCard() {
     }
   }, [currentOrganization?.id, supabase])
 
-  useEffect(() => { fetchActivities() }, [fetchActivities])
+  useEffect(() => {
+    fetchActivities()
+  }, [fetchActivities])
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {

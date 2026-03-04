@@ -24,18 +24,24 @@ test.describe('Alert Management', () => {
 
   test.describe('Alert Listing', () => {
     test('should load alerts page', async ({ page }) => {
-      await expect(page.locator('text=/alerts/i').first()).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('text=/alerts/i').first()).toBeVisible({
+        timeout: 10000,
+      })
     })
 
     test('should show alerts or empty state', async ({ page }) => {
       await page.waitForTimeout(3000)
-      const content = page.locator('[class*="card"], text=/no.*alert/i, text=/all clear/i, text=/no.*organization/i')
+      const content = page.locator(
+        '[class*="card"], text=/no.*alert/i, text=/all clear/i, text=/no.*organization/i'
+      )
       await expect(content.first()).toBeVisible({ timeout: 10000 })
     })
 
     test('should show search input for alerts', async ({ page }) => {
       await page.waitForTimeout(2000)
-      const searchInput = page.locator('input[placeholder*="Search"], input[type="search"]')
+      const searchInput = page.locator(
+        'input[placeholder*="Search"], input[type="search"]'
+      )
       if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await searchInput.fill('temperature')
         await page.waitForTimeout(1000)
@@ -47,8 +53,15 @@ test.describe('Alert Management', () => {
     test('should have filter tabs or buttons', async ({ page }) => {
       await page.waitForTimeout(2000)
       // Check for status filter tabs
-      const filterButtons = page.locator('button:has-text("All"), button:has-text("Active"), button:has-text("Acknowledged")')
-      if (await filterButtons.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      const filterButtons = page.locator(
+        'button:has-text("All"), button:has-text("Active"), button:has-text("Acknowledged")'
+      )
+      if (
+        await filterButtons
+          .first()
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
         console.log('Filter buttons found')
         await filterButtons.first().click()
         await page.waitForTimeout(500)
@@ -60,13 +73,21 @@ test.describe('Alert Management', () => {
     test('should show alert detail on click', async ({ page }) => {
       await page.waitForTimeout(3000)
       // Click first alert card/row
-      const alertItem = page.locator('[class*="card"]').filter({ hasText: /alert|temperature|battery|threshold/i }).first()
+      const alertItem = page
+        .locator('[class*="card"]')
+        .filter({ hasText: /alert|temperature|battery|threshold/i })
+        .first()
       if (await alertItem.isVisible({ timeout: 5000 }).catch(() => false)) {
         await alertItem.click()
         await page.waitForTimeout(1000)
         // Check for dialog/modal or expanded details
         const details = page.locator('[role="dialog"], [class*="detail"]')
-        if (await details.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+        if (
+          await details
+            .first()
+            .isVisible({ timeout: 5000 })
+            .catch(() => false)
+        ) {
           console.log('Alert details dialog opened')
         }
       }
@@ -79,7 +100,12 @@ test.describe('Alert Management', () => {
       await page.reload()
       await page.waitForTimeout(3000)
       const errorContent = page.locator('text=/error|failed|retry/i')
-      if (await errorContent.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (
+        await errorContent
+          .first()
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
         console.log('Error state shown correctly')
       }
       await page.context().setOffline(false)

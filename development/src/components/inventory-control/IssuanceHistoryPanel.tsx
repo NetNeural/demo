@@ -45,7 +45,10 @@ const PAGE_SIZE = 10
 
 const ISSUANCE_STATUS_CONFIG: Record<
   HardwareIssuance['status'],
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+  {
+    label: string
+    variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  }
 > = {
   issued: { label: 'Issued', variant: 'default' },
   delivered: { label: 'Delivered', variant: 'secondary' },
@@ -109,7 +112,7 @@ export function IssuanceHistoryPanel({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by item, customer, tracking #, serial..."
@@ -145,8 +148,8 @@ export function IssuanceHistoryPanel({
       {/* Table */}
       {paged.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12">
-          <ClipboardList className="h-12 w-12 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground font-medium">
+          <ClipboardList className="mb-3 h-12 w-12 text-muted-foreground" />
+          <p className="font-medium text-muted-foreground">
             {issuances.length === 0
               ? 'No hardware issued yet'
               : 'No issuances match your filters'}
@@ -154,7 +157,7 @@ export function IssuanceHistoryPanel({
         </div>
       ) : (
         <>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -177,7 +180,7 @@ export function IssuanceHistoryPanel({
                       <TableCell className="text-sm">
                         {formatDate(iss.issued_at)}
                       </TableCell>
-                      <TableCell className="font-medium max-w-[160px] truncate">
+                      <TableCell className="max-w-[160px] truncate font-medium">
                         {iss.inventory_item_name}
                       </TableCell>
                       <TableCell className="max-w-[140px] truncate">
@@ -189,31 +192,28 @@ export function IssuanceHistoryPanel({
                       <TableCell className="text-right font-mono text-sm">
                         {formatCurrency(iss.total_price)}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground font-mono max-w-[120px] truncate">
+                      <TableCell className="max-w-[120px] truncate font-mono text-sm text-muted-foreground">
                         {iss.tracking_number || '—'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1 max-w-[120px]">
+                        <div className="flex max-w-[120px] flex-wrap gap-1">
                           {iss.serial_numbers.length > 0 ? (
                             iss.serial_numbers.slice(0, 2).map((sn) => (
                               <Badge
                                 key={sn}
                                 variant="outline"
-                                className="text-[10px] font-mono"
+                                className="font-mono text-[10px]"
                               >
                                 {sn}
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-muted-foreground text-xs">
+                            <span className="text-xs text-muted-foreground">
                               —
                             </span>
                           )}
                           {iss.serial_numbers.length > 2 && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px]"
-                            >
+                            <Badge variant="secondary" className="text-[10px]">
                               +{iss.serial_numbers.length - 2}
                             </Badge>
                           )}

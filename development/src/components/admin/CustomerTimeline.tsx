@@ -20,7 +20,10 @@ interface CustomerTimelineProps {
   loading: boolean
 }
 
-const typeConfig: Record<TimelineEntry['type'], { icon: typeof Smartphone; color: string; bgColor: string }> = {
+const typeConfig: Record<
+  TimelineEntry['type'],
+  { icon: typeof Smartphone; color: string; bgColor: string }
+> = {
   lifecycle: {
     icon: ArrowRightLeft,
     color: 'text-purple-600',
@@ -59,10 +62,13 @@ const typeConfig: Record<TimelineEntry['type'], { icon: typeof Smartphone; color
 }
 
 const typeBadgeColors: Record<TimelineEntry['type'], string> = {
-  lifecycle: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  lifecycle:
+    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   device: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  payment: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-  subscription: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+  payment:
+    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+  subscription:
+    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
   member: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
   alert: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   login: 'bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400',
@@ -96,7 +102,7 @@ export function CustomerTimeline({ entries, loading }: CustomerTimelineProps) {
         ) : (
           <div className="relative">
             {/* Vertical line */}
-            <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+            <div className="absolute bottom-0 left-4 top-0 w-px bg-border" />
 
             <div className="space-y-0">
               {entries.map((entry, idx) => {
@@ -105,19 +111,26 @@ export function CustomerTimeline({ entries, loading }: CustomerTimelineProps) {
                 const isLast = idx === entries.length - 1
 
                 return (
-                  <div key={entry.id} className={`relative flex gap-3 ${isLast ? '' : 'pb-4'}`}>
+                  <div
+                    key={entry.id}
+                    className={`relative flex gap-3 ${isLast ? '' : 'pb-4'}`}
+                  >
                     {/* Icon */}
-                    <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.bgColor}`}>
+                    <div
+                      className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.bgColor}`}
+                    >
                       <Icon className={`h-4 w-4 ${config.color}`} />
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0 pt-0.5">
+                    <div className="min-w-0 flex-1 pt-0.5">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium leading-tight">{entry.title}</p>
+                          <p className="text-sm font-medium leading-tight">
+                            {entry.title}
+                          </p>
                           {entry.description && (
-                            <p className="mt-0.5 text-xs text-muted-foreground truncate">
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
                               {entry.description}
                             </p>
                           )}
@@ -125,11 +138,11 @@ export function CustomerTimeline({ entries, loading }: CustomerTimelineProps) {
                         <div className="flex shrink-0 items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={`border-0 text-[10px] px-1.5 py-0 ${typeBadgeColors[entry.type]}`}
+                            className={`border-0 px-1.5 py-0 text-[10px] ${typeBadgeColors[entry.type]}`}
                           >
                             {entry.type}
                           </Badge>
-                          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          <span className="whitespace-nowrap text-[11px] text-muted-foreground">
                             {fmt.timeAgo(entry.timestamp)}
                           </span>
                         </div>

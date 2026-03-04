@@ -70,10 +70,19 @@ function RevenuePageContent() {
   const [summary, setSummary] = useState<RevenueSummary | null>(null)
   const [mrrTrend, setMrrTrend] = useState<MrrDataPoint[]>([])
   const [planRevenue, setPlanRevenue] = useState<PlanRevenue[]>([])
-  const [customersByPlan, setCustomersByPlan] = useState<PlanCustomerCount[]>([])
+  const [customersByPlan, setCustomersByPlan] = useState<PlanCustomerCount[]>(
+    []
+  )
   const [waterfall, setWaterfall] = useState<WaterfallDataPoint[]>([])
 
-  const months = dateRange === '30' ? 1 : dateRange === '90' ? 3 : dateRange === '180' ? 6 : 12
+  const months =
+    dateRange === '30'
+      ? 1
+      : dateRange === '90'
+        ? 3
+        : dateRange === '180'
+          ? 6
+          : 12
 
   const loadData = useCallback(async () => {
     const supabase = getSupabase()
@@ -203,12 +212,24 @@ function RevenuePageContent() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
 
-          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!summary}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={!summary}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
@@ -217,10 +238,19 @@ function RevenuePageContent() {
 
       {/* KPI Summary Cards */}
       <RevenueSummaryCards
-        summary={summary ?? {
-          totalMrr: 0, totalArr: 0, netRevenueChange: 0, netRevenueChangePct: 0,
-          churnRate: 0, churnedCount: 0, activeCount: 0, trialToPaidRate: 0, totalCustomers: 0,
-        }}
+        summary={
+          summary ?? {
+            totalMrr: 0,
+            totalArr: 0,
+            netRevenueChange: 0,
+            netRevenueChangePct: 0,
+            churnRate: 0,
+            churnedCount: 0,
+            activeCount: 0,
+            trialToPaidRate: 0,
+            totalCustomers: 0,
+          }
+        }
         loading={loading}
       />
 

@@ -99,10 +99,12 @@ const CATEGORY_LABELS: Record<DocumentCategory, string> = {
 
 const CATEGORY_COLORS: Record<DocumentCategory, string> = {
   contract: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  compliance: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  compliance:
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   report: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   invoice: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  agreement: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+  agreement:
+    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
   other: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 }
 
@@ -130,20 +132,19 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
 
   const isSuperAdmin = user?.isSuperAdmin || false
   const canManage = isSuperAdmin || isOwner || isAdmin
-  const canUpload =
-    isSuperAdmin ||
-    isOwner ||
-    isAdmin ||
-    userRole === 'billing'
+  const canUpload = isSuperAdmin || isOwner || isAdmin || userRole === 'billing'
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [documents, setDocuments] = useState<OrgDocument[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterCategory, setFilterCategory] = useState<DocumentCategory | 'all'>('all')
+  const [filterCategory, setFilterCategory] = useState<
+    DocumentCategory | 'all'
+  >('all')
 
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadCategory, setUploadCategory] = useState<DocumentCategory>('other')
+  const [uploadCategory, setUploadCategory] =
+    useState<DocumentCategory>('other')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadVisibleToMembers, setUploadVisibleToMembers] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -151,7 +152,9 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<OrgDocument | null>(null)
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<OrgDocument | null>(
+    null
+  )
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchDocuments = useCallback(async () => {
@@ -165,24 +168,28 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('org_documents')
-        .select(`
+        .select(
+          `
           *,
           uploader:uploaded_by (
             full_name,
             email
           )
-        `)
+        `
+        )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setDocuments((data || []).map((d: any) => ({
-        ...d,
-        uploader_name: d.uploader?.full_name || null,
-        uploader_email: d.uploader?.email || null,
-      })))
+      setDocuments(
+        (data || []).map((d: any) => ({
+          ...d,
+          uploader_name: d.uploader?.full_name || null,
+          uploader_email: d.uploader?.email || null,
+        }))
+      )
     } catch (err) {
       console.error('Failed to fetch documents:', err)
       toast({
@@ -231,17 +238,19 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
 
       // 2. Save metadata row
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase as any).from('org_documents').insert({
-        organization_id: organizationId,
-        uploaded_by: user.id,
-        file_name: selectedFile.name,
-        file_size: selectedFile.size,
-        file_type: selectedFile.type || 'application/octet-stream',
-        storage_path: storagePath,
-        category: uploadCategory,
-        description: uploadDescription.trim() || null,
-        is_visible_to_members: uploadVisibleToMembers,
-      })
+      const { error: dbError } = await (supabase as any)
+        .from('org_documents')
+        .insert({
+          organization_id: organizationId,
+          uploaded_by: user.id,
+          file_name: selectedFile.name,
+          file_size: selectedFile.size,
+          file_type: selectedFile.type || 'application/octet-stream',
+          storage_path: storagePath,
+          category: uploadCategory,
+          description: uploadDescription.trim() || null,
+          is_visible_to_members: uploadVisibleToMembers,
+        })
 
       if (dbError) {
         // Clean up storage if metadata insert fails
@@ -376,7 +385,8 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Secure document storage — contracts, compliance, reports, and more.
+                Secure document storage — contracts, compliance, reports, and
+                more.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -433,7 +443,9 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
             >
               <FolderOpen className="mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm font-medium text-muted-foreground">
-                {filterCategory === 'all' ? 'No documents yet' : `No ${CATEGORY_LABELS[filterCategory]} documents`}
+                {filterCategory === 'all'
+                  ? 'No documents yet'
+                  : `No ${CATEGORY_LABELS[filterCategory]} documents`}
               </p>
               {canUpload && (
                 <p className="mt-1 text-xs text-muted-foreground/70">
@@ -473,7 +485,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                               {doc.file_name}
                             </p>
                             {doc.description && (
-                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                                 {doc.description}
                               </p>
                             )}
@@ -581,7 +593,10 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                 onDrop={(e) => {
                   e.preventDefault()
                   const file = e.dataTransfer.files?.[0]
-                  if (file) { setSelectedFile(file); setUploadError('') }
+                  if (file) {
+                    setSelectedFile(file)
+                    setUploadError('')
+                  }
                 }}
               >
                 {selectedFile ? (
@@ -595,8 +610,12 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                 ) : (
                   <div className="flex flex-col items-center gap-1 text-center text-muted-foreground">
                     <Upload className="h-8 w-8" />
-                    <p className="text-sm font-medium">Click or drag to select</p>
-                    <p className="text-xs">PDF, Word, Excel, CSV, ZIP — up to 50 MB</p>
+                    <p className="text-sm font-medium">
+                      Click or drag to select
+                    </p>
+                    <p className="text-xs">
+                      PDF, Word, Excel, CSV, ZIP — up to 50 MB
+                    </p>
                   </div>
                 )}
               </div>
@@ -635,7 +654,9 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
             <div className="space-y-2">
               <Label>
                 Description{' '}
-                <span className="text-muted-foreground font-normal">(optional)</span>
+                <span className="font-normal text-muted-foreground">
+                  (optional)
+                </span>
               </Label>
               <Textarea
                 value={uploadDescription}
@@ -707,9 +728,8 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Permanently delete{' '}
-              <strong>{confirmDeleteDoc?.file_name}</strong>? This cannot be
-              undone.
+              Permanently delete <strong>{confirmDeleteDoc?.file_name}</strong>?
+              This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -722,9 +742,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
             </Button>
             <Button
               variant="destructive"
-              onClick={() =>
-                confirmDeleteDoc && handleDelete(confirmDeleteDoc)
-              }
+              onClick={() => confirmDeleteDoc && handleDelete(confirmDeleteDoc)}
               disabled={!!deletingId}
             >
               {deletingId ? (

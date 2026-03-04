@@ -25,7 +25,13 @@ const WARNING_SECONDS = 120 // show warning 2 min before expiry
 const IDLE_MS = IDLE_MINUTES * 60 * 1000
 const WARNING_MS = WARNING_SECONDS * 1000
 const ACTIVITY_KEY = 'nn_last_activity'
-const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+const ACTIVITY_EVENTS = [
+  'mousemove',
+  'keydown',
+  'click',
+  'scroll',
+  'touchstart',
+]
 
 export interface SessionTimeoutState {
   showWarning: boolean

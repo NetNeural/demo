@@ -13,5 +13,6 @@ describe('Tier Computation Engine', () => {
   it('10 sensors = Silver', () => expect(computeTier(10)).toBe('Silver'))
   it('50 sensors = Gold', () => expect(computeTier(50)).toBe('Gold'))
   it('200 sensors = Platinum', () => expect(computeTier(200)).toBe('Platinum'))
-  it('1000 sensors = Platinum', () => expect(computeTier(1000)).toBe('Platinum'))
+  it('1000 sensors = Platinum', () =>
+    expect(computeTier(1000)).toBe('Platinum'))
 })

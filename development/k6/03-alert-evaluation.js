@@ -4,10 +4,10 @@ import { Rate, Trend } from 'k6/metrics'
 
 /**
  * Scenario 3: Alert Evaluation Under Load
- * 
+ *
  * Simulates the alert evaluation pipeline processing 100+ active rules
  * while new telemetry arrives. Tests threshold evaluation performance.
- * 
+ *
  * Run:
  *   k6 run 03-alert-evaluation.js \
  *     -e SUPABASE_URL=https://bldojxpockljyivldxwf.supabase.co \
@@ -25,7 +25,7 @@ export const options = {
       startVUs: 1,
       stages: [
         { duration: '30s', target: 20 },
-        { duration: '2m',  target: 20 },
+        { duration: '2m', target: 20 },
         { duration: '30s', target: 0 },
       ],
     },
@@ -36,14 +36,15 @@ export const options = {
   },
 }
 
-const BASE_URL = __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
+const BASE_URL =
+  __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
 const ANON_KEY = __ENV.ANON_KEY || ''
 const ACCESS_TOKEN = __ENV.ACCESS_TOKEN || ANON_KEY
 
 const REST_HEADERS = {
   'Content-Type': 'application/json',
-  'apikey': ANON_KEY,
-  'Authorization': `Bearer ${ACCESS_TOKEN}`,
+  apikey: ANON_KEY,
+  Authorization: `Bearer ${ACCESS_TOKEN}`,
 }
 
 export default function () {
@@ -68,18 +69,22 @@ export default function () {
   // Trigger edge function evaluation
   const evalRes = http.post(
     `${BASE_URL}/functions/v1/evaluate-alerts`,
-    JSON.stringify({ trigger: 'load_test', timestamp: new Date().toISOString() }),
+    JSON.stringify({
+      trigger: 'load_test',
+      timestamp: new Date().toISOString(),
+    }),
     {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'apikey': ANON_KEY,
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        apikey: ANON_KEY,
       },
       timeout: '10s',
     }
   )
   // 200 = evaluated, 204 = no rules to evaluate, 404 = function not found (skip)
-  const evalOk = evalRes.status === 200 || evalRes.status === 204 || evalRes.status === 404
+  const evalOk =
+    evalRes.status === 200 || evalRes.status === 204 || evalRes.status === 404
   check(evalRes, { 'eval function ok': () => evalOk })
   evalErrors.add(!evalOk)
 

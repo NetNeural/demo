@@ -25,7 +25,11 @@ export type HardwareCategory =
   | 'other'
 
 /** Vendor/Manufacturer type */
-export type VendorType = 'manufacturer' | 'vendor' | 'distributor' | 'oem_partner'
+export type VendorType =
+  | 'manufacturer'
+  | 'vendor'
+  | 'distributor'
+  | 'oem_partner'
 
 /** Vendor/Manufacturer status */
 export type VendorStatus = 'active' | 'inactive' | 'pending' | 'suspended'
@@ -226,7 +230,10 @@ export const VENDOR_TYPE_LABELS: Record<VendorType, string> = {
 /** Vendor status config */
 export const VENDOR_STATUS_CONFIG: Record<
   VendorStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+  {
+    label: string
+    variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  }
 > = {
   active: { label: 'Active', variant: 'default' },
   inactive: { label: 'Inactive', variant: 'outline' },
@@ -237,7 +244,10 @@ export const VENDOR_STATUS_CONFIG: Record<
 /** Status display labels and colors */
 export const STATUS_CONFIG: Record<
   InventoryStatus,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
+  {
+    label: string
+    variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  }
 > = {
   in_stock: { label: 'In Stock', variant: 'default' },
   allocated: { label: 'Allocated', variant: 'secondary' },

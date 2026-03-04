@@ -16,7 +16,9 @@ test.describe('NetNeural App Health Check', () => {
     await expect(page.locator('#email')).toBeVisible({ timeout: 10000 })
   })
 
-  test('should redirect unauthenticated dashboard to login', async ({ page }) => {
+  test('should redirect unauthenticated dashboard to login', async ({
+    page,
+  }) => {
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(3000)

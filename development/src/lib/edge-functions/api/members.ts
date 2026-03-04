@@ -36,7 +36,9 @@ export interface MembersAPI {
     password: string
   ) => Promise<EdgeFunctionResponse<unknown>>
   /** Reset all MFA factors for a user (admin action) */
-  resetMfa: (userId: string) => Promise<EdgeFunctionResponse<{ removed: number; message: string }>>
+  resetMfa: (
+    userId: string
+  ) => Promise<EdgeFunctionResponse<{ removed: number; message: string }>>
 }
 
 export function createMembersAPI(

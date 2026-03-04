@@ -325,7 +325,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       toast.info('Checking image content...')
       const moderation = await moderateImage(file)
       if (!moderation.safe) {
-        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        toast.error(
+          `Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`
+        )
         setIsUploadingLogo(false)
         return
       }
@@ -337,14 +339,20 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       // Remove background if checkbox is checked
       if (removeLogoBg && file.type !== 'image/svg+xml') {
         try {
-          toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          toast.info(
+            'Removing background... This may take 15-30 seconds while the AI model loads.'
+          )
           const { removeBackground } = await import('@imgly/background-removal')
           const bgRemovedBlob = await removeBackground(file)
-          processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+          processedFile = new File([bgRemovedBlob], file.name, {
+            type: 'image/png',
+          })
           toast.success('Background removed successfully')
         } catch (bgError: any) {
           console.error('Background removal failed:', bgError)
-          toast.error(`Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`)
+          toast.error(
+            `Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`
+          )
           // Continue with original file
         }
       }
@@ -456,7 +464,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       toast.info('Checking image content...')
       const moderation = await moderateImage(file)
       if (!moderation.safe) {
-        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        toast.error(
+          `Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`
+        )
         setIsUploadingSentinelLogo(false)
         return
       }
@@ -468,14 +478,20 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       // Remove background if checkbox is checked
       if (removeSentinelBg && file.type !== 'image/svg+xml') {
         try {
-          toast.info('Removing background... This may take 15-30 seconds while the AI model loads.')
+          toast.info(
+            'Removing background... This may take 15-30 seconds while the AI model loads.'
+          )
           const { removeBackground } = await import('@imgly/background-removal')
           const bgRemovedBlob = await removeBackground(file)
-          processedFile = new File([bgRemovedBlob], file.name, { type: 'image/png' })
+          processedFile = new File([bgRemovedBlob], file.name, {
+            type: 'image/png',
+          })
           toast.success('Background removed successfully')
         } catch (bgError: any) {
           console.error('Background removal failed:', bgError)
-          toast.error(`Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`)
+          toast.error(
+            `Background removal failed: ${bgError?.message || 'Unknown error'}. Uploading with original background.`
+          )
           // Continue with original file
         }
       }
@@ -535,16 +551,25 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const supabase = createClient()
       const oldPath = logoUrl.split('/').slice(-2).join('/')
       await supabase.storage.from('organization-assets').remove([oldPath])
-      const currentSettings: OrganizationSettings = currentOrganization.settings || {}
+      const currentSettings: OrganizationSettings =
+        currentOrganization.settings || {}
       const updatedSettings: OrganizationSettings = {
         ...currentSettings,
         branding: { ...currentSettings.branding, logo_url: '' },
       }
-      const response = await edgeFunctions.organizations.update(currentOrganization.id, {
-        name: currentOrganization.name,
-        settings: updatedSettings,
-      })
-      if (!response.success) throw new Error(typeof response.error === 'string' ? response.error : 'Failed to remove logo')
+      const response = await edgeFunctions.organizations.update(
+        currentOrganization.id,
+        {
+          name: currentOrganization.name,
+          settings: updatedSettings,
+        }
+      )
+      if (!response.success)
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to remove logo'
+        )
       setLogoUrl('')
       toast.success('Logo removed')
       await refreshOrganizations()
@@ -563,16 +588,25 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       const supabase = createClient()
       const oldPath = sentinelLogoUrl.split('/').slice(-2).join('/')
       await supabase.storage.from('organization-assets').remove([oldPath])
-      const currentSettings: OrganizationSettings = currentOrganization.settings || {}
+      const currentSettings: OrganizationSettings =
+        currentOrganization.settings || {}
       const updatedSettings: OrganizationSettings = {
         ...currentSettings,
         branding: { ...currentSettings.branding, sentinel_logo_url: '' },
       }
-      const response = await edgeFunctions.organizations.update(currentOrganization.id, {
-        name: currentOrganization.name,
-        settings: updatedSettings,
-      })
-      if (!response.success) throw new Error(typeof response.error === 'string' ? response.error : 'Failed to remove Sentinel logo')
+      const response = await edgeFunctions.organizations.update(
+        currentOrganization.id,
+        {
+          name: currentOrganization.name,
+          settings: updatedSettings,
+        }
+      )
+      if (!response.success)
+        throw new Error(
+          typeof response.error === 'string'
+            ? response.error
+            : 'Failed to remove Sentinel logo'
+        )
       setSentinelLogoUrl('')
       toast.success('Sentinel logo removed')
       await refreshOrganizations()
@@ -606,7 +640,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
       toast.info('Checking image content...')
       const moderation = await moderateImage(file)
       if (!moderation.safe) {
-        toast.error(`Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`)
+        toast.error(
+          `Image rejected: ${moderation.reason || 'Inappropriate content detected'}. Please upload an appropriate image.`
+        )
         setIsUploadingBg(false)
         return
       }
@@ -872,7 +908,9 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className={`grid gap-6 ${isNetNeuralRoot ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+          <div
+            className={`grid gap-6 ${isNetNeuralRoot ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}
+          >
             {/* Organization Logo */}
             <div className="space-y-3">
               <Label>Organization Logo</Label>
@@ -895,7 +933,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 </div>
 
                 {/* Upload controls */}
-                <div className="flex-1 min-w-0 space-y-2">
+                <div className="min-w-0 flex-1 space-y-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -917,15 +955,21 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                     <Checkbox
                       id="remove-logo-bg"
                       checked={removeLogoBg}
-                      onCheckedChange={(checked) => setRemoveLogoBg(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setRemoveLogoBg(checked === true)
+                      }
                     />
-                    <Label htmlFor="remove-logo-bg" className="text-xs font-normal cursor-pointer">
+                    <Label
+                      htmlFor="remove-logo-bg"
+                      className="cursor-pointer text-xs font-normal"
+                    >
                       Remove background
                     </Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px.
-                    Check &quot;Remove background&quot; before uploading to strip the background.
+                    PNG, JPG, WebP, or SVG. Auto-compressed to 400×400px. Check
+                    &quot;Remove background&quot; before uploading to strip the
+                    background.
                   </p>
                   {logoUrl && (
                     <Button
@@ -934,7 +978,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       size="sm"
                       onClick={handleDeleteLogo}
                       disabled={isDeletingLogo || isUploadingLogo}
-                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                      className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
                       {isDeletingLogo ? 'Removing...' : 'Delete Logo'}
@@ -967,7 +1011,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   </div>
 
                   {/* Upload controls */}
-                  <div className="flex-1 min-w-0 space-y-2">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <input
                       ref={sentinelFileInputRef}
                       type="file"
@@ -991,15 +1035,21 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       <Checkbox
                         id="remove-sentinel-bg"
                         checked={removeSentinelBg}
-                        onCheckedChange={(checked) => setRemoveSentinelBg(checked === true)}
+                        onCheckedChange={(checked) =>
+                          setRemoveSentinelBg(checked === true)
+                        }
                       />
-                      <Label htmlFor="remove-sentinel-bg" className="text-xs font-normal cursor-pointer">
+                      <Label
+                        htmlFor="remove-sentinel-bg"
+                        className="cursor-pointer text-xs font-normal"
+                      >
                         Remove background
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Sentinel brand logo. PNG, JPG, WebP, or SVG. Auto-compressed to 800×800px.
-                      Check &quot;Remove background&quot; before uploading to strip the background.
+                      Sentinel brand logo. PNG, JPG, WebP, or SVG.
+                      Auto-compressed to 800×800px. Check &quot;Remove
+                      background&quot; before uploading to strip the background.
                     </p>
                     {sentinelLogoUrl && (
                       <Button
@@ -1007,11 +1057,15 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         variant="outline"
                         size="sm"
                         onClick={handleDeleteSentinelLogo}
-                        disabled={isDeletingSentinelLogo || isUploadingSentinelLogo}
-                        className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                        disabled={
+                          isDeletingSentinelLogo || isUploadingSentinelLogo
+                        }
+                        className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                       >
                         <Trash2 className="mr-2 h-3.5 w-3.5" />
-                        {isDeletingSentinelLogo ? 'Removing...' : 'Delete Sentinel Logo'}
+                        {isDeletingSentinelLogo
+                          ? 'Removing...'
+                          : 'Delete Sentinel Logo'}
                       </Button>
                     )}
                   </div>

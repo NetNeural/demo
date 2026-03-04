@@ -45,7 +45,9 @@ export function PaymentMethodIcon({
       <div className="flex items-center gap-1.5">
         <CreditCard className="h-4 w-4 text-muted-foreground" />
         {showLabel && (
-          <span className="text-sm capitalize">{methodType.replace(/_/g, ' ')}</span>
+          <span className="text-sm capitalize">
+            {methodType.replace(/_/g, ' ')}
+          </span>
         )}
       </div>
     )
@@ -58,9 +60,7 @@ export function PaymentMethodIcon({
         <span className="text-sm">
           {displayBrand}
           {last4 && (
-            <span className="ml-1 text-muted-foreground">
-              •••• {last4}
-            </span>
+            <span className="ml-1 text-muted-foreground">•••• {last4}</span>
           )}
         </span>
       )}

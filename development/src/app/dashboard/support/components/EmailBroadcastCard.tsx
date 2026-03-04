@@ -80,27 +80,46 @@ const EMAIL_TYPE_CONFIG: Record<
     label: 'Maintenance',
     icon: <Wrench className="h-4 w-4" />,
     description: 'Scheduled downtime, system maintenance, service disruptions',
-    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    color:
+      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
   },
   newsletter: {
     label: 'Newsletter',
     icon: <Newspaper className="h-4 w-4" />,
     description: 'Monthly/quarterly updates, tips, success stories',
-    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    color:
+      'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
   },
   update: {
     label: 'Platform Update',
     icon: <Bell className="h-4 w-4" />,
     description: 'General platform improvements, policy changes',
-    color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    color:
+      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   },
 }
 
 const TIER_OPTIONS = [
-  { value: 'all', label: 'All Users', description: 'Every user on the platform' },
-  { value: 'starter', label: 'Starter', description: 'Starter tier organizations' },
-  { value: 'business', label: 'Business', description: 'Business tier organizations' },
-  { value: 'enterprise', label: 'Enterprise', description: 'Enterprise tier organizations' },
+  {
+    value: 'all',
+    label: 'All Users',
+    description: 'Every user on the platform',
+  },
+  {
+    value: 'starter',
+    label: 'Starter',
+    description: 'Starter tier organizations',
+  },
+  {
+    value: 'business',
+    label: 'Business',
+    description: 'Business tier organizations',
+  },
+  {
+    value: 'enterprise',
+    label: 'Enterprise',
+    description: 'Enterprise tier organizations',
+  },
 ]
 
 export function EmailBroadcastCard() {
@@ -124,10 +143,14 @@ export function EmailBroadcastCard() {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
   const [broadcastHistory, setBroadcastHistory] = useState<BroadcastLog[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null)
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
+    null
+  )
 
   const getAuthHeaders = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session) throw new Error('Not authenticated')
     return {
       Authorization: `Bearer ${session.access_token}`,
@@ -209,7 +232,9 @@ export function EmailBroadcastCard() {
       setHtmlBody(data.html || '')
       toast.success('AI draft generated — review and edit before sending')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate AI draft')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to generate AI draft'
+      )
     } finally {
       setIsGenerating(false)
     }
@@ -319,7 +344,10 @@ export function EmailBroadcastCard() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Email Type</Label>
-              <Select value={emailType} onValueChange={(v) => setEmailType(v as EmailType)}>
+              <Select
+                value={emailType}
+                onValueChange={(v) => setEmailType(v as EmailType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -395,7 +423,8 @@ export function EmailBroadcastCard() {
                 AI Email Assistant
               </CardTitle>
               <CardDescription>
-                Describe what you want to communicate and AI will draft the email
+                Describe what you want to communicate and AI will draft the
+                email
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -502,7 +531,10 @@ export function EmailBroadcastCard() {
           {loadingHistory ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
+                <div
+                  key={i}
+                  className="h-14 animate-pulse rounded-lg bg-muted"
+                />
               ))}
             </div>
           ) : broadcastHistory.length === 0 ? (
@@ -520,10 +552,13 @@ export function EmailBroadcastCard() {
                         variant="outline"
                         className={`flex-shrink-0 text-xs ${EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.color || ''}`}
                       >
-                        {EMAIL_TYPE_CONFIG[log.email_type as EmailType]?.label || log.email_type}
+                        {EMAIL_TYPE_CONFIG[log.email_type as EmailType]
+                          ?.label || log.email_type}
                       </Badge>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{log.subject}</p>
+                        <p className="truncate text-sm font-medium">
+                          {log.subject}
+                        </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           <span>{new Date(log.sent_at).toLocaleString()}</span>
@@ -535,7 +570,9 @@ export function EmailBroadcastCard() {
                           {log.error_message && (
                             <>
                               <span>·</span>
-                              <span className="text-red-500">{log.error_message}</span>
+                              <span className="text-red-500">
+                                {log.error_message}
+                              </span>
                             </>
                           )}
                         </div>
@@ -561,18 +598,26 @@ export function EmailBroadcastCard() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => setExpandedHistoryId(expandedHistoryId === log.id ? null : log.id)}
+                        onClick={() =>
+                          setExpandedHistoryId(
+                            expandedHistoryId === log.id ? null : log.id
+                          )
+                        }
                       >
-                        {expandedHistoryId === log.id
-                          ? <ChevronUp className="h-3 w-3" />
-                          : <ChevronDown className="h-3 w-3" />}
+                        {expandedHistoryId === log.id ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   </div>
                   {/* Expanded body preview */}
                   {expandedHistoryId === log.id && log.html_body && (
                     <div className="border-t px-3 pb-3">
-                      <p className="mb-1 mt-2 text-xs font-medium text-muted-foreground">Email Body Preview</p>
+                      <p className="mb-1 mt-2 text-xs font-medium text-muted-foreground">
+                        Email Body Preview
+                      </p>
                       <div
                         className="max-h-64 overflow-y-auto rounded border bg-white p-3 text-sm dark:bg-gray-950"
                         dangerouslySetInnerHTML={{ __html: log.html_body }}
@@ -607,7 +652,10 @@ export function EmailBroadcastCard() {
               />
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline" className={EMAIL_TYPE_CONFIG[emailType].color}>
+              <Badge
+                variant="outline"
+                className={EMAIL_TYPE_CONFIG[emailType].color}
+              >
                 {EMAIL_TYPE_CONFIG[emailType].label}
               </Badge>
               <span>·</span>
@@ -618,7 +666,10 @@ export function EmailBroadcastCard() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreviewDialog(false)}
+            >
               Close
             </Button>
             <Button
@@ -649,13 +700,18 @@ export function EmailBroadcastCard() {
           <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Type</span>
-              <Badge variant="outline" className={EMAIL_TYPE_CONFIG[emailType].color}>
+              <Badge
+                variant="outline"
+                className={EMAIL_TYPE_CONFIG[emailType].color}
+              >
                 {EMAIL_TYPE_CONFIG[emailType].label}
               </Badge>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subject</span>
-              <span className="max-w-[250px] truncate font-medium">{subject}</span>
+              <span className="max-w-[250px] truncate font-medium">
+                {subject}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Target Tiers</span>

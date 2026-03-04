@@ -81,7 +81,7 @@ export interface JurisdictionRevenue {
 
 /** Quarterly tax summary */
 export interface QuarterlyTaxSummary {
-  quarter: string      // e.g. "Q1 2026"
+  quarter: string // e.g. "Q1 2026"
   year: number
   quarterNum: number
   totalRevenue: number
@@ -125,14 +125,16 @@ export async function fetchARAgingReport(
 ): Promise<ARAgingSummary> {
   const { data: invoices, error } = await (supabase as any)
     .from('invoices')
-    .select(`
+    .select(
+      `
       id,
       amount_cents,
       period_end,
       status,
       organization_id,
       organizations:organization_id(name)
-    `)
+    `
+    )
     .in('status', ['open'])
 
   if (error) throw new Error(`AR Aging query failed: ${error.message}`)
@@ -145,7 +147,10 @@ export async function fetchARAgingReport(
     const orgName = (inv.organizations as any)?.name ?? orgId
     const amount = centsToUsd(inv.amount_cents ?? 0)
     const dueDate = new Date(inv.period_end ?? inv.created_at)
-    const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / 86400000))
+    const daysOverdue = Math.max(
+      0,
+      Math.floor((now.getTime() - dueDate.getTime()) / 86400000)
+    )
 
     if (!orgMap.has(orgId)) {
       orgMap.set(orgId, {
@@ -176,7 +181,9 @@ export async function fetchARAgingReport(
     }
   }
 
-  const rows = Array.from(orgMap.values()).sort((a, b) => b.days90plus - a.days90plus)
+  const rows = Array.from(orgMap.values()).sort(
+    (a, b) => b.days90plus - a.days90plus
+  )
 
   const totals = rows.reduce(
     (acc, r) => ({
@@ -187,7 +194,14 @@ export async function fetchARAgingReport(
       days90plus: acc.days90plus + r.days90plus,
       total: acc.total + r.total,
     }),
-    { current: 0, days1to30: 0, days31to60: 0, days61to90: 0, days90plus: 0, total: 0 }
+    {
+      current: 0,
+      days1to30: 0,
+      days31to60: 0,
+      days61to90: 0,
+      days90plus: 0,
+      total: 0,
+    }
   )
 
   return { rows, totals }
@@ -208,7 +222,8 @@ export async function fetchPaymentFailureReport(
 
   const { data: payments, error } = await (supabase as any)
     .from('payment_history')
-    .select(`
+    .select(
+      `
       id,
       amount_cents,
       status,
@@ -216,7 +231,8 @@ export async function fetchPaymentFailureReport(
       created_at,
       organization_id,
       organizations:organization_id(name)
-    `)
+    `
+    )
     .gte('created_at', since.toISOString())
     .in('status', ['failed', 'succeeded'])
 
@@ -237,7 +253,9 @@ export async function fetchPaymentFailureReport(
     r.count += 1
     r.totalAmount += centsToUsd(p.amount_cents ?? 0)
   }
-  const byReason = Array.from(reasonMap.values()).sort((a, b) => b.count - a.count)
+  const byReason = Array.from(reasonMap.values()).sort(
+    (a, b) => b.count - a.count
+  )
 
   // 2. Monthly trend
   const trendMap = new Map<string, FailureTrendPoint>()
@@ -304,9 +322,10 @@ export async function fetchPaymentFailureReport(
   // 4. Recovery rate
   const totalFailed = failed.length
   const totalRecovered = succeeded.length
-  const recoveryRate = totalFailed > 0
-    ? Math.round((totalRecovered / (totalFailed + totalRecovered)) * 100)
-    : 0
+  const recoveryRate =
+    totalFailed > 0
+      ? Math.round((totalRecovered / (totalFailed + totalRecovered)) * 100)
+      : 0
 
   return {
     byReason,
@@ -334,14 +353,16 @@ export async function fetchTaxSummaryReport(
 
   const { data: invoices, error } = await (supabase as any)
     .from('invoices')
-    .select(`
+    .select(
+      `
       id,
       amount_cents,
       status,
       created_at,
       organization_id,
       organizations:organization_id(name, settings)
-    `)
+    `
+    )
     .in('status', ['paid', 'open', 'overdue', 'sent'])
     .gte('created_at', startDate)
     .lt('created_at', endDate)
@@ -453,8 +474,9 @@ export async function fetchTaxSummaryReport(
 
   // Attach jurisdictions to quarters
   for (const [qKey, quarter] of quarterMap.entries()) {
-    quarter.jurisdictions = Array.from(qJurisdictions.get(qKey)?.values() ?? [])
-      .sort((a, b) => b.revenue - a.revenue)
+    quarter.jurisdictions = Array.from(
+      qJurisdictions.get(qKey)?.values() ?? []
+    ).sort((a, b) => b.revenue - a.revenue)
   }
 
   const quarterly = Array.from(quarterMap.values()).sort(
@@ -478,7 +500,8 @@ export async function fetchTaxSummaryReport(
 
 /** Convert AR aging report to CSV */
 export function arAgingToCsv(report: ARAgingSummary): string {
-  const header = 'Organization,Current,1-30 Days,31-60 Days,61-90 Days,90+ Days,Total'
+  const header =
+    'Organization,Current,1-30 Days,31-60 Days,61-90 Days,90+ Days,Total'
   const rows = report.rows.map(
     (r) =>
       `"${r.organizationName}",${r.current.toFixed(2)},${r.days1to30.toFixed(2)},${r.days31to60.toFixed(2)},${r.days61to90.toFixed(2)},${r.days90plus.toFixed(2)},${r.total.toFixed(2)}`
@@ -500,7 +523,9 @@ export function paymentFailureToCsv(report: PaymentFailureReport): string {
 
   sections.push('')
   sections.push('Monthly Trend')
-  sections.push('Month,Failed Count,Failed Amount,Recovered Count,Recovered Amount')
+  sections.push(
+    'Month,Failed Count,Failed Amount,Recovered Count,Recovered Amount'
+  )
   for (const t of report.trend) {
     sections.push(
       `${t.label},${t.failedCount},${t.failedAmount.toFixed(2)},${t.recoveredCount},${t.recoveredAmount.toFixed(2)}`
@@ -511,7 +536,9 @@ export function paymentFailureToCsv(report: PaymentFailureReport): string {
   sections.push('Top Affected Organizations')
   sections.push('Organization,Failed Count,Failed Amount')
   for (const o of report.topOrgs) {
-    sections.push(`"${o.organizationName}",${o.failedCount},${o.failedAmount.toFixed(2)}`)
+    sections.push(
+      `"${o.organizationName}",${o.failedCount},${o.failedAmount.toFixed(2)}`
+    )
   }
 
   sections.push('')
@@ -528,7 +555,9 @@ export function taxSummaryToCsv(report: TaxSummaryReport): string {
     sections.push(`${q.quarter}`)
     sections.push('Jurisdiction,Revenue,Invoices,Customers')
     for (const j of q.jurisdictions) {
-      sections.push(`"${j.jurisdiction}",${j.revenue.toFixed(2)},${j.invoiceCount},${j.customerCount}`)
+      sections.push(
+        `"${j.jurisdiction}",${j.revenue.toFixed(2)},${j.invoiceCount},${j.customerCount}`
+      )
     }
     sections.push(`Total,${q.totalRevenue.toFixed(2)},,`)
     sections.push('')
@@ -539,7 +568,9 @@ export function taxSummaryToCsv(report: TaxSummaryReport): string {
     sections.push(`Annual Summary ${a.year}`)
     sections.push('Jurisdiction,Revenue,Invoices,Customers')
     for (const j of a.jurisdictions) {
-      sections.push(`"${j.jurisdiction}",${j.revenue.toFixed(2)},${j.invoiceCount},${j.customerCount}`)
+      sections.push(
+        `"${j.jurisdiction}",${j.revenue.toFixed(2)},${j.invoiceCount},${j.customerCount}`
+      )
     }
     sections.push(`Total,${a.totalRevenue.toFixed(2)},,`)
   }

@@ -54,7 +54,6 @@ describe('useKeyboardShortcuts hook', () => {
   })
 })
 
-
 describe('usePageTitle hook', () => {
   test('exports usePageTitle', async () => {
     const mod = await import('@/hooks/usePageTitle')
@@ -89,4 +88,3 @@ describe('useKeyboardShortcuts hook', () => {
     expect(mod.useKeyboardShortcuts ?? mod.default).toBeDefined()
   })
 })
-

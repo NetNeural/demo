@@ -11,7 +11,9 @@ interface DeviceAlertsTabProps {
 }
 
 export function DeviceAlertsTab({ device, isGateway }: DeviceAlertsTabProps) {
-  const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>(() => {
+  const [temperatureUnit, setTemperatureUnit] = useState<
+    'celsius' | 'fahrenheit'
+  >(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('temperatureUnit')
       if (stored === 'C') return 'celsius'

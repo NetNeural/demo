@@ -35,7 +35,8 @@ const STEPS: OnboardingStep[] = [
     id: 'org_setup',
     icon: Building2,
     title: 'Configure your organization',
-    description: 'Add your logo, set your timezone, and customize your organization profile.',
+    description:
+      'Add your logo, set your timezone, and customize your organization profile.',
     href: '/dashboard/organizations',
     cta: 'Go to Organization Settings',
   },
@@ -94,18 +95,28 @@ export function OnboardingChecklist() {
       if (d === '1') setDismissed(true)
       const c = localStorage.getItem(CHECKED_KEY)
       if (c) setChecked(JSON.parse(c))
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const dismiss = () => {
     setDismissed(true)
-    try { localStorage.setItem(DISMISS_KEY, '1') } catch { /* ignore */ }
+    try {
+      localStorage.setItem(DISMISS_KEY, '1')
+    } catch {
+      /* ignore */
+    }
   }
 
   const markDone = (id: string) => {
     setChecked((prev) => {
       const next = { ...prev, [id]: !prev[id] }
-      try { localStorage.setItem(CHECKED_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      try {
+        localStorage.setItem(CHECKED_KEY, JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
       return next
     })
   }
@@ -128,12 +139,19 @@ export function OnboardingChecklist() {
               {doneCount}/{STEPS.length} done
             </Badge>
           </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={dismiss}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={dismiss}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
         {allDone ? (
-          <p className="text-sm text-muted-foreground">You&apos;ve completed the setup. Your platform is ready to use.</p>
+          <p className="text-sm text-muted-foreground">
+            You&apos;ve completed the setup. Your platform is ready to use.
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
             Complete these steps to get the most out of your new account.
@@ -149,7 +167,9 @@ export function OnboardingChecklist() {
               <div
                 key={step.id}
                 className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
-                  done ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-blue-300'
+                  done
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-gray-200 bg-white hover:border-blue-300'
                 }`}
               >
                 <button
@@ -157,19 +177,24 @@ export function OnboardingChecklist() {
                   onClick={() => markDone(step.id)}
                   aria-label={done ? 'Mark as not done' : 'Mark as done'}
                 >
-                  {done
-                    ? <CheckCircle className="h-5 w-5 text-green-600" />
-                    : <Circle className="h-5 w-5 text-muted-foreground" />
-                  }
+                  {done ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-muted-foreground" />
+                  )}
                 </button>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium leading-tight ${done ? 'line-through text-muted-foreground' : ''}`}>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-sm font-medium leading-tight ${done ? 'text-muted-foreground line-through' : ''}`}
+                  >
                     {step.title}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{step.description}</p>
+                  <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
+                    {step.description}
+                  </p>
                   {!done && (
                     <button
-                      className="mt-1.5 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      className="mt-1.5 flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
                       onClick={() => {
                         if (step.href.startsWith('http')) {
                           window.open(step.href, '_blank')

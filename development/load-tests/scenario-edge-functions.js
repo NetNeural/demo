@@ -7,7 +7,8 @@ import http from 'k6/http'
 import { check, group, sleep } from 'k6'
 import { Trend, Rate } from 'k6/metrics'
 
-const SUPABASE_URL = __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
+const SUPABASE_URL =
+  __ENV.SUPABASE_URL || 'https://bldojxpockljyivldxwf.supabase.co'
 const ANON_KEY = __ENV.ANON_KEY || ''
 const ACCESS_TOKEN = __ENV.ACCESS_TOKEN || ANON_KEY
 
@@ -25,12 +26,12 @@ export const options = {
     { duration: '30s', target: 0 },
   ],
   thresholds: {
-    'ef_organizations_latency_ms': ['p(95)<2000'],
-    'ef_devices_latency_ms': ['p(95)<2000'],
-    'ef_alerts_latency_ms': ['p(95)<2000'],
-    'ef_analytics_latency_ms': ['p(95)<2000'],
-    'ef_success_rate': ['rate>0.95'],
-    'http_req_failed': ['rate<0.05'],
+    ef_organizations_latency_ms: ['p(95)<2000'],
+    ef_devices_latency_ms: ['p(95)<2000'],
+    ef_alerts_latency_ms: ['p(95)<2000'],
+    ef_analytics_latency_ms: ['p(95)<2000'],
+    ef_success_rate: ['rate>0.95'],
+    http_req_failed: ['rate<0.05'],
   },
 }
 
@@ -45,9 +46,10 @@ function callEF(name, path, method = 'GET', body = null, latencyMetric) {
   }
 
   const start = Date.now()
-  const res = method === 'GET'
-    ? http.get(url, params)
-    : http.post(url, body ? JSON.stringify(body) : null, params)
+  const res =
+    method === 'GET'
+      ? http.get(url, params)
+      : http.post(url, body ? JSON.stringify(body) : null, params)
   const latency = Date.now() - start
 
   if (latencyMetric) latencyMetric.add(latency)
@@ -77,7 +79,13 @@ export default function () {
   })
 
   group('Analytics Edge Function', () => {
-    callEF('analytics', 'get-analytics', 'POST', { period: '7d', limit: 10 }, analyticsLatency)
+    callEF(
+      'analytics',
+      'get-analytics',
+      'POST',
+      { period: '7d', limit: 10 },
+      analyticsLatency
+    )
     sleep(0.5)
   })
 
@@ -92,11 +100,13 @@ export function handleSummary(data) {
     { name: 'analytics', metric: 'ef_analytics_latency_ms' },
   ]
 
-  const rows = functions.map(f => {
-    const p95 = data.metrics[f.metric]?.values['p(95)']?.toFixed(0) ?? '?'
-    const pass = (data.metrics[f.metric]?.values['p(95)'] ?? 9999) < 2000
-    return `  ${f.name.padEnd(20)} p95=${p95}ms   ${pass ? '✓ PASS' : '✗ FAIL'}`
-  }).join('\n')
+  const rows = functions
+    .map((f) => {
+      const p95 = data.metrics[f.metric]?.values['p(95)']?.toFixed(0) ?? '?'
+      const pass = (data.metrics[f.metric]?.values['p(95)'] ?? 9999) < 2000
+      return `  ${f.name.padEnd(20)} p95=${p95}ms   ${pass ? '✓ PASS' : '✗ FAIL'}`
+    })
+    .join('\n')
 
   return {
     stdout: `

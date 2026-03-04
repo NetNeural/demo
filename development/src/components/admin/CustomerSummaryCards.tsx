@@ -17,7 +17,10 @@ interface CustomerSummaryCardsProps {
   loading: boolean
 }
 
-export function CustomerSummaryCards({ stats, loading }: CustomerSummaryCardsProps) {
+export function CustomerSummaryCards({
+  stats,
+  loading,
+}: CustomerSummaryCardsProps) {
   const cards = [
     {
       title: 'Total Customers',
@@ -48,16 +51,18 @@ export function CustomerSummaryCards({ stats, loading }: CustomerSummaryCardsPro
       value: stats?.avgHealth ?? 0,
       format: (v: number) => `${v}/100`,
       icon: HeartPulse,
-      color: stats && stats.avgHealth >= 80
-        ? 'text-emerald-600'
-        : stats && stats.avgHealth >= 50
-          ? 'text-amber-600'
-          : 'text-red-600',
-      bgColor: stats && stats.avgHealth >= 80
-        ? 'bg-emerald-50 dark:bg-emerald-900/20'
-        : stats && stats.avgHealth >= 50
-          ? 'bg-amber-50 dark:bg-amber-900/20'
-          : 'bg-red-50 dark:bg-red-900/20',
+      color:
+        stats && stats.avgHealth >= 80
+          ? 'text-emerald-600'
+          : stats && stats.avgHealth >= 50
+            ? 'text-amber-600'
+            : 'text-red-600',
+      bgColor:
+        stats && stats.avgHealth >= 80
+          ? 'bg-emerald-50 dark:bg-emerald-900/20'
+          : stats && stats.avgHealth >= 50
+            ? 'bg-amber-50 dark:bg-amber-900/20'
+            : 'bg-red-50 dark:bg-red-900/20',
       subtitle: undefined,
     },
     {
@@ -88,9 +93,13 @@ export function CustomerSummaryCards({ stats, loading }: CustomerSummaryCardsPro
                   <p className="text-sm font-medium text-muted-foreground">
                     {card.title}
                   </p>
-                  <p className="text-2xl font-bold">{card.format(card.value)}</p>
+                  <p className="text-2xl font-bold">
+                    {card.format(card.value)}
+                  </p>
                   {card.subtitle && (
-                    <p className="text-xs text-muted-foreground">{card.subtitle}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {card.subtitle}
+                    </p>
                   )}
                 </div>
                 <div className={`rounded-lg p-2 ${card.bgColor}`}>

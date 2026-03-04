@@ -178,17 +178,20 @@ export class AzureIotIntegrationProvider extends DeviceIntegrationProvider {
 
       // Use IoT Hub query language with server-side pagination
       // This avoids loading ALL devices into memory (the previous approach)
-      const query = this.registry.createQuery(
-        'SELECT * FROM devices',
-        limit
-      )
+      const query = this.registry.createQuery('SELECT * FROM devices', limit)
 
       // Skip pages by consuming continuation tokens
       let currentPage = 0
-      let queryResult: { result: AzureDevice[]; hasMoreResults: boolean } | null = null
+      let queryResult: {
+        result: AzureDevice[]
+        hasMoreResults: boolean
+      } | null = null
       while (query.hasMoreResults && currentPage <= page) {
         const response = await query.next()
-        queryResult = response as unknown as { result: AzureDevice[]; hasMoreResults: boolean }
+        queryResult = response as unknown as {
+          result: AzureDevice[]
+          hasMoreResults: boolean
+        }
         currentPage++
       }
 

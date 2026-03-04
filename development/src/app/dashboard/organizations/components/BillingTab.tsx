@@ -463,24 +463,30 @@ export function BillingTab({ organizationId }: BillingTabProps) {
             </div>
 
             {/* Retention warning for limited plans */}
-            {plan.telemetry_retention_days > 0 && plan.telemetry_retention_days <= 90 && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Limited Retention</AlertTitle>
-                <AlertDescription className="flex items-center justify-between">
-                  <span>
-                    Data older than {plan.telemetry_retention_days} days is removed daily.
-                    Export important data before it expires.
-                  </span>
-                  <Button variant="outline" size="sm" className="ml-3 shrink-0" asChild>
-                    <a href="/dashboard/reports">
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      Export
-                    </a>
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
+            {plan.telemetry_retention_days > 0 &&
+              plan.telemetry_retention_days <= 90 && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Limited Retention</AlertTitle>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>
+                      Data older than {plan.telemetry_retention_days} days is
+                      removed daily. Export important data before it expires.
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-3 shrink-0"
+                      asChild
+                    >
+                      <a href="/dashboard/reports">
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Export
+                      </a>
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
             {/* Retention tiers comparison */}
             <div className="rounded-lg border p-3">
@@ -488,15 +494,21 @@ export function BillingTab({ organizationId }: BillingTabProps) {
                 Retention by Plan
               </p>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className={`rounded-md p-2 ${plan.slug === 'starter' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'starter' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
                   <p>Starter</p>
                   <p className="mt-0.5 text-muted-foreground">90 days</p>
                 </div>
-                <div className={`rounded-md p-2 ${plan.slug === 'business' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'business' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
                   <p>Business</p>
                   <p className="mt-0.5 text-muted-foreground">1 year</p>
                 </div>
-                <div className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-md p-2 ${plan.slug === 'enterprise' ? 'bg-primary/10 font-semibold' : 'bg-muted'}`}
+                >
                   <p>Enterprise</p>
                   <p className="mt-0.5 text-muted-foreground">Unlimited</p>
                 </div>

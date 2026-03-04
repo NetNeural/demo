@@ -104,7 +104,14 @@ export function UsageMeteringTab() {
       const { data: usageData, error } = await (supabase as any)
         .from('usage_metrics')
         .select('organization_id, metric_type, current_value, period_start')
-        .eq('period_start', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+        .eq(
+          'period_start',
+          new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            1
+          ).toISOString()
+        )
         .order('organization_id')
 
       if (error) {
@@ -113,7 +120,9 @@ export function UsageMeteringTab() {
       }
 
       // Fetch org names
-      const orgIds = [...new Set((usageData || []).map((u: any) => u.organization_id))] as string[]
+      const orgIds = [
+        ...new Set((usageData || []).map((u: any) => u.organization_id)),
+      ] as string[]
       let orgMap: Record<string, string> = {}
       if (orgIds.length > 0) {
         const { data: orgs } = await supabase
@@ -132,7 +141,10 @@ export function UsageMeteringTab() {
         .select('organization_id, plan:plan_id (name, max_devices, max_users)')
         .in('status', ['active', 'trialing'])
 
-      const planMap: Record<string, { name: string; max_devices: number; max_users: number }> = {}
+      const planMap: Record<
+        string,
+        { name: string; max_devices: number; max_users: number }
+      > = {}
       if (subData) {
         for (const s of subData) {
           if (s.plan) {
@@ -147,10 +159,14 @@ export function UsageMeteringTab() {
 
       // Group by org
       const orgGroups: Record<string, OrgUsageRow> = {}
-      for (const row of (usageData || [])) {
+      for (const row of usageData || []) {
         const orgId = row.organization_id
         if (!orgGroups[orgId]) {
-          const plan = planMap[orgId] || { name: 'No Plan', max_devices: 5, max_users: 3 }
+          const plan = planMap[orgId] || {
+            name: 'No Plan',
+            max_devices: 5,
+            max_users: 3,
+          }
           orgGroups[orgId] = {
             organization_id: orgId,
             organization_name: orgMap[orgId] || 'Unknown',
@@ -158,13 +174,20 @@ export function UsageMeteringTab() {
             metrics: [],
           }
         }
-        const plan = planMap[orgId] || { name: 'No Plan', max_devices: 5, max_users: 3 }
+        const plan = planMap[orgId] || {
+          name: 'No Plan',
+          max_devices: 5,
+          max_users: 3,
+        }
         let planLimit = -1
         if (row.metric_type === 'device_count') planLimit = plan.max_devices
         else if (row.metric_type === 'user_count') planLimit = plan.max_users
 
         const isUnlimited = planLimit === -1
-        const usagePercent = isUnlimited || planLimit === 0 ? 0 : Math.round((row.current_value / planLimit) * 100)
+        const usagePercent =
+          isUnlimited || planLimit === 0
+            ? 0
+            : Math.round((row.current_value / planLimit) * 100)
 
         orgGroups[orgId].metrics.push({
           metric_type: row.metric_type,
@@ -218,7 +241,15 @@ export function UsageMeteringTab() {
   }
 
   const handleExportCsv = () => {
-    const headers = ['Organization', 'Plan', 'Metric', 'Current', 'Limit', 'Usage %', 'Status']
+    const headers = [
+      'Organization',
+      'Plan',
+      'Metric',
+      'Current',
+      'Limit',
+      'Usage %',
+      'Status',
+    ]
     const csvRows: string[][] = []
     for (const org of filteredOrgs) {
       for (const m of org.metrics) {
@@ -233,7 +264,9 @@ export function UsageMeteringTab() {
         ])
       }
     }
-    const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n')
+    const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join(
+      '\n'
+    )
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -271,7 +304,17 @@ export function UsageMeteringTab() {
     }
     autoTable(doc, {
       startY: 28,
-      head: [['Organization', 'Plan', 'Metric', 'Current', 'Limit', 'Usage %', 'Status']],
+      head: [
+        [
+          'Organization',
+          'Plan',
+          'Metric',
+          'Current',
+          'Limit',
+          'Usage %',
+          'Status',
+        ],
+      ],
       body: rows,
       styles: { fontSize: 7 },
       headStyles: { fillColor: [30, 64, 175] },
@@ -290,7 +333,10 @@ export function UsageMeteringTab() {
   const filteredOrgs = orgUsage.filter((org) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      if (!org.organization_name.toLowerCase().includes(q) && !org.plan_name.toLowerCase().includes(q)) {
+      if (
+        !org.organization_name.toLowerCase().includes(q) &&
+        !org.plan_name.toLowerCase().includes(q)
+      ) {
         return false
       }
     }
@@ -323,17 +369,23 @@ export function UsageMeteringTab() {
         <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Organizations</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Organizations
+              </CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{summary.totalOrgs}</div>
-              <p className="text-xs text-muted-foreground">with active metrics</p>
+              <p className="text-xs text-muted-foreground">
+                with active metrics
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Devices
+              </CardTitle>
               <Cpu className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -357,7 +409,9 @@ export function UsageMeteringTab() {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{summary.orgsAtWarning}</div>
+              <div className="text-2xl font-bold text-amber-600">
+                {summary.orgsAtWarning}
+              </div>
               <p className="text-xs text-muted-foreground">&ge; 80% usage</p>
             </CardContent>
           </Card>
@@ -367,7 +421,9 @@ export function UsageMeteringTab() {
               <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{summary.orgsExceeded}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {summary.orgsExceeded}
+              </div>
               <p className="text-xs text-muted-foreground">&ge; 100% usage</p>
             </CardContent>
           </Card>
@@ -398,15 +454,32 @@ export function UsageMeteringTab() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={filteredOrgs.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={filteredOrgs.length === 0}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={filteredOrgs.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={filteredOrgs.length === 0}
+          >
             <FileDown className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
@@ -420,7 +493,9 @@ export function UsageMeteringTab() {
             <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="text-sm font-medium">No usage data found</p>
             <p className="text-xs text-muted-foreground">
-              {searchQuery || filterMetric !== 'all' ? 'Try adjusting your filters' : 'Usage metrics will populate once organizations have active subscriptions'}
+              {searchQuery || filterMetric !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Usage metrics will populate once organizations have active subscriptions'}
             </p>
           </div>
         </div>
@@ -439,15 +514,25 @@ export function UsageMeteringTab() {
             </TableHeader>
             <TableBody>
               {filteredOrgs.map((org) => {
-                const deviceMetric = org.metrics.find((m) => m.metric_type === 'device_count')
-                const userMetric = org.metrics.find((m) => m.metric_type === 'user_count')
-                const apiMetric = org.metrics.find((m) => m.metric_type === 'api_calls')
-                const hasWarning = org.metrics.some((m) => m.is_warning && !m.is_exceeded)
+                const deviceMetric = org.metrics.find(
+                  (m) => m.metric_type === 'device_count'
+                )
+                const userMetric = org.metrics.find(
+                  (m) => m.metric_type === 'user_count'
+                )
+                const apiMetric = org.metrics.find(
+                  (m) => m.metric_type === 'api_calls'
+                )
+                const hasWarning = org.metrics.some(
+                  (m) => m.is_warning && !m.is_exceeded
+                )
                 const hasExceeded = org.metrics.some((m) => m.is_exceeded)
 
                 return (
                   <TableRow key={org.organization_id}>
-                    <TableCell className="font-medium">{org.organization_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {org.organization_name}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{org.plan_name}</Badge>
                     </TableCell>
@@ -458,7 +543,10 @@ export function UsageMeteringTab() {
                             {METRIC_ICONS.device_count}
                             <span>{deviceMetric.current_value}</span>
                             <span className="text-muted-foreground">
-                              / {deviceMetric.is_unlimited ? '∞' : deviceMetric.plan_limit}
+                              /{' '}
+                              {deviceMetric.is_unlimited
+                                ? '∞'
+                                : deviceMetric.plan_limit}
                             </span>
                           </div>
                           {!deviceMetric.is_unlimited && (
@@ -479,7 +567,10 @@ export function UsageMeteringTab() {
                             {METRIC_ICONS.user_count}
                             <span>{userMetric.current_value}</span>
                             <span className="text-muted-foreground">
-                              / {userMetric.is_unlimited ? '∞' : userMetric.plan_limit}
+                              /{' '}
+                              {userMetric.is_unlimited
+                                ? '∞'
+                                : userMetric.plan_limit}
                             </span>
                           </div>
                           {!userMetric.is_unlimited && (
@@ -497,7 +588,9 @@ export function UsageMeteringTab() {
                       {apiMetric ? (
                         <div className="flex items-center gap-1 text-sm">
                           {METRIC_ICONS.api_calls}
-                          <span>{apiMetric.current_value.toLocaleString()}</span>
+                          <span>
+                            {apiMetric.current_value.toLocaleString()}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>

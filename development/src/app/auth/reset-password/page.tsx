@@ -97,7 +97,10 @@ export default function ResetPasswordPage() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
-          setLinkExpiredError(error.message ?? 'This password reset link is invalid or has expired.')
+          setLinkExpiredError(
+            error.message ??
+              'This password reset link is invalid or has expired.'
+          )
           setChecking(false)
           return
         }
@@ -106,7 +109,9 @@ export default function ResetPasswordPage() {
       }
 
       // Fallback: check if there's already an active session (page refresh)
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (session) {
         setHasSession(true)
       }
@@ -168,7 +173,9 @@ export default function ResetPasswordPage() {
       setSuccess(true)
     } catch (err) {
       console.error('Password reset error:', err)
-      setError('Failed to reset password. The link may have expired. Please request a new one.')
+      setError(
+        'Failed to reset password. The link may have expired. Please request a new one.'
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -228,7 +235,8 @@ export default function ResetPasswordPage() {
               Invalid or Expired Link
             </CardTitle>
             <CardDescription className="text-center">
-              {linkExpiredError ?? 'This password reset link is invalid or has expired.'}
+              {linkExpiredError ??
+                'This password reset link is invalid or has expired.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -253,7 +261,11 @@ export default function ResetPasswordPage() {
                   required
                   autoFocus
                 />
-                <Button type="submit" className="w-full" disabled={resendLoading}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={resendLoading}
+                >
                   {resendLoading ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -460,16 +472,20 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
-              {confirmPassword && newPassword && confirmPassword !== newPassword && (
-                <p className="flex items-center gap-1 text-xs text-red-500">
-                  <X className="h-3 w-3" /> Passwords do not match
-                </p>
-              )}
-              {confirmPassword && newPassword && confirmPassword === newPassword && (
-                <p className="flex items-center gap-1 text-xs text-green-600">
-                  <Check className="h-3 w-3" /> Passwords match
-                </p>
-              )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword !== newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-red-500">
+                    <X className="h-3 w-3" /> Passwords do not match
+                  </p>
+                )}
+              {confirmPassword &&
+                newPassword &&
+                confirmPassword === newPassword && (
+                  <p className="flex items-center gap-1 text-xs text-green-600">
+                    <Check className="h-3 w-3" /> Passwords match
+                  </p>
+                )}
             </div>
 
             {error && (

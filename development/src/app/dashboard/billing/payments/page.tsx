@@ -7,12 +7,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
 import { PaymentTable } from '@/components/billing/PaymentTable'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import {
-  ArrowLeft,
-  CreditCard,
-  ShieldAlert,
-  Building2,
-} from 'lucide-react'
+import { ArrowLeft, CreditCard, ShieldAlert, Building2 } from 'lucide-react'
 
 export default function PaymentsPage() {
   return (
@@ -24,11 +19,7 @@ export default function PaymentsPage() {
 
 function PaymentsPageContent() {
   const router = useRouter()
-  const {
-    currentOrganization,
-    isLoading,
-    permissions,
-  } = useOrganization()
+  const { currentOrganization, isLoading, permissions } = useOrganization()
   const { user } = useUser()
   const isSuperAdmin = user?.isSuperAdmin || false
 
@@ -87,13 +78,10 @@ function PaymentsPageContent() {
             <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold">Access Restricted</p>
             <p className="max-w-md text-sm text-muted-foreground">
-              You don&apos;t have permission to view payment information. Contact
-              your organization owner or admin for access.
+              You don&apos;t have permission to view payment information.
+              Contact your organization owner or admin for access.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dashboard')}
-            >
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
@@ -119,7 +107,7 @@ function PaymentsPageContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
               <CreditCard className="h-7 w-7" />
               Payments
             </h2>

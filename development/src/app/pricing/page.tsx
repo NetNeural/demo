@@ -103,7 +103,8 @@ export default function PricingPage() {
   const handleSelectPlan = async (plan: BillingPlan) => {
     // Enterprise → contact sales
     if (plan.slug === 'enterprise') {
-      window.location.href = 'mailto:sales@netneural.ai?subject=Enterprise%20Plan%20Inquiry'
+      window.location.href =
+        'mailto:sales@netneural.ai?subject=Enterprise%20Plan%20Inquiry'
       return
     }
 
@@ -201,7 +202,6 @@ export default function PricingPage() {
           >
             Annual
           </span>
-
         </div>
 
         {/* Sensor count slider */}

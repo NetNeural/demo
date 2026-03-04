@@ -7,7 +7,11 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import type { DeviceMapPlacement, PlacedDevice, PlacementMode } from '@/types/facility-map'
+import type {
+  DeviceMapPlacement,
+  PlacedDevice,
+  PlacementMode,
+} from '@/types/facility-map'
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +19,15 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
-import { Wifi, WifiOff, AlertTriangle, Battery, Wrench, ExternalLink, Clock } from 'lucide-react'
+import {
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+  Battery,
+  Wrench,
+  ExternalLink,
+  Clock,
+} from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
   online: 'bg-green-500 shadow-green-500/50',
@@ -112,7 +124,12 @@ export function DeviceMarker({
   const size = SIZE_MAP[placement.icon_size] || SIZE_MAP.medium
   const [dragging, setDragging] = useState(false)
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
-  const dragStartRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
+  const dragStartRef = useRef<{
+    startX: number
+    startY: number
+    origX: number
+    origY: number
+  } | null>(null)
 
   const displayName = placement.label || device?.name || 'Unknown Device'
 
@@ -149,16 +166,26 @@ export function DeviceMarker({
           const r = containerRef.current.getBoundingClientRect()
           // Check if dropped outside the container
           const isOutside =
-            ev.clientX < r.left || ev.clientX > r.right ||
-            ev.clientY < r.top || ev.clientY > r.bottom
+            ev.clientX < r.left ||
+            ev.clientX > r.right ||
+            ev.clientY < r.top ||
+            ev.clientY > r.bottom
           if (isOutside && onDragRemove) {
             setDragPos(null)
             onDragRemove()
           } else {
-            const dx = ((ev.clientX - dragStartRef.current.startX) / r.width) * 100
-            const dy = ((ev.clientY - dragStartRef.current.startY) / r.height) * 100
-            const nx = Math.max(0, Math.min(100, dragStartRef.current.origX + dx))
-            const ny = Math.max(0, Math.min(100, dragStartRef.current.origY + dy))
+            const dx =
+              ((ev.clientX - dragStartRef.current.startX) / r.width) * 100
+            const dy =
+              ((ev.clientY - dragStartRef.current.startY) / r.height) * 100
+            const nx = Math.max(
+              0,
+              Math.min(100, dragStartRef.current.origX + dx)
+            )
+            const ny = Math.max(
+              0,
+              Math.min(100, dragStartRef.current.origY + dy)
+            )
             setDragPos(null)
             onDragEnd?.(nx, ny)
           }
@@ -169,7 +196,14 @@ export function DeviceMarker({
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [mode, containerRef, placement.x_percent, placement.y_percent, onDragEnd, onDragRemove]
+    [
+      mode,
+      containerRef,
+      placement.x_percent,
+      placement.y_percent,
+      onDragEnd,
+      onDragRemove,
+    ]
   )
 
   const posX = dragPos ? dragPos.x : placement.x_percent
@@ -184,7 +218,7 @@ export function DeviceMarker({
               'absolute z-10 transition-shadow',
               mode === 'view' && onNavigate && 'cursor-pointer',
               mode === 'edit' && 'cursor-grab',
-              dragging && 'cursor-grabbing z-50',
+              dragging && 'z-50 cursor-grabbing',
               selected && 'z-40'
             )}
             style={{
@@ -206,7 +240,7 @@ export function DeviceMarker({
             {status === 'online' && !dragging && (
               <span
                 className={cn(
-                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 animate-ping',
+                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full opacity-30',
                   STATUS_COLORS[status],
                   size.pulse
                 )}
@@ -216,7 +250,7 @@ export function DeviceMarker({
             {(status === 'warning' || status === 'error') && !dragging && (
               <span
                 className={cn(
-                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 animate-pulse',
+                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full opacity-40',
                   STATUS_COLORS[status],
                   size.pulse
                 )}
@@ -233,7 +267,7 @@ export function DeviceMarker({
             />
             {/* Device name / type pill labels — stacked */}
             {(showLabel || showDeviceType) && (
-              <div className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 flex flex-col items-center gap-px pointer-events-none">
+              <div className="pointer-events-none absolute left-1/2 top-full mt-0.5 flex -translate-x-1/2 flex-col items-center gap-px">
                 {showLabel && (
                   <span className="whitespace-nowrap rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium leading-tight text-white">
                     {displayName}
@@ -244,23 +278,32 @@ export function DeviceMarker({
                     {device.device_type}
                   </span>
                 )}
-                {showReadings && telemetry && Object.keys(telemetry).length > 0 && (
-                  <span className="whitespace-nowrap rounded bg-black/60 px-1 py-0.5 text-[8px] font-mono leading-tight text-green-300">
-                    {Object.entries(telemetry).slice(0, 3).map(([k, v]) =>
-                      `${formatTelemetryKey(k)}: ${typeof v === 'number' ? v.toFixed(1) : String(v ?? '')}`
-                    ).join(' | ')}
-                  </span>
-                )}
+                {showReadings &&
+                  telemetry &&
+                  Object.keys(telemetry).length > 0 && (
+                    <span className="whitespace-nowrap rounded bg-black/60 px-1 py-0.5 font-mono text-[8px] leading-tight text-green-300">
+                      {Object.entries(telemetry)
+                        .slice(0, 3)
+                        .map(
+                          ([k, v]) =>
+                            `${formatTelemetryKey(k)}: ${typeof v === 'number' ? v.toFixed(1) : String(v ?? '')}`
+                        )
+                        .join(' | ')}
+                    </span>
+                  )}
               </div>
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[280px] bg-gray-900 text-gray-100 border-gray-700 shadow-xl">
+        <TooltipContent
+          side="top"
+          className="max-w-[280px] border-gray-700 bg-gray-900 text-gray-100 shadow-xl"
+        >
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-sm text-white">{displayName}</p>
+              <p className="text-sm font-medium text-white">{displayName}</p>
               {mode === 'view' && onNavigate && (
-                <ExternalLink className="h-3 w-3 text-gray-400 shrink-0" />
+                <ExternalLink className="h-3 w-3 shrink-0 text-gray-400" />
               )}
             </div>
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -268,7 +311,7 @@ export function DeviceMarker({
               <Badge
                 variant="outline"
                 className={cn(
-                  'text-[10px] px-1.5 py-0',
+                  'px-1.5 py-0 text-[10px]',
                   status === 'online' && 'border-green-400 text-green-400',
                   status === 'offline' && 'border-gray-400 text-gray-300',
                   status === 'warning' && 'border-amber-400 text-amber-400',
@@ -296,22 +339,35 @@ export function DeviceMarker({
             )}
             {/* Telemetry readings */}
             {telemetry && Object.keys(telemetry).length > 0 && (
-              <div className="border-t border-gray-700 pt-1.5 mt-0.5">
-                <p className="text-[10px] font-medium uppercase text-gray-500 mb-1">Latest Readings</p>
+              <div className="mt-0.5 border-t border-gray-700 pt-1.5">
+                <p className="mb-1 text-[10px] font-medium uppercase text-gray-500">
+                  Latest Readings
+                </p>
                 <div className="space-y-0.5">
-                  {Object.entries(telemetry).slice(0, 6).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between text-xs gap-3">
-                      <span className="text-gray-400 truncate">{formatTelemetryKey(key)}</span>
-                      <span className="font-mono text-gray-100 shrink-0">
-                        {typeof value === 'number' ? value.toFixed(1) : String(value ?? '')}
-                      </span>
-                    </div>
-                  ))}
+                  {Object.entries(telemetry)
+                    .slice(0, 6)
+                    .map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between gap-3 text-xs"
+                      >
+                        <span className="truncate text-gray-400">
+                          {formatTelemetryKey(key)}
+                        </span>
+                        <span className="shrink-0 font-mono text-gray-100">
+                          {typeof value === 'number'
+                            ? value.toFixed(1)
+                            : String(value ?? '')}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}
             {mode === 'view' && onNavigate && (
-              <p className="text-[10px] text-gray-500 italic pt-0.5">Click icon to view details</p>
+              <p className="pt-0.5 text-[10px] italic text-gray-500">
+                Click icon to view details
+              </p>
             )}
           </div>
         </TooltipContent>

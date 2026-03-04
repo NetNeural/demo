@@ -481,8 +481,14 @@ export function AlertHistoryReport() {
   // Export to PDF
   const handleExportPDF = async () => {
     const headers = [
-      'Date', 'Alert Type', 'Severity', 'Device', 'Status',
-      'Response Time (min)', 'Acknowledged By', 'Title',
+      'Date',
+      'Alert Type',
+      'Severity',
+      'Device',
+      'Status',
+      'Response Time (min)',
+      'Acknowledged By',
+      'Title',
     ]
     const rows = alerts.map((alert) => [
       format(new Date(alert.created_at), 'yyyy-MM-dd HH:mm'),
@@ -497,19 +503,25 @@ export function AlertHistoryReport() {
     const { exportTableToPDF } = await import('@/lib/pdf-export')
     exportTableToPDF({
       title: 'Alert History Report',
-      subtitle: startDate && endDate
-        ? `${format(startDate, 'MMM d, yyyy')} — ${format(endDate, 'MMM d, yyyy')}${severityFilter !== 'all' ? ` · Severity: ${severityFilter}` : ''}`
-        : undefined,
+      subtitle:
+        startDate && endDate
+          ? `${format(startDate, 'MMM d, yyyy')} — ${format(endDate, 'MMM d, yyyy')}${severityFilter !== 'all' ? ` · Severity: ${severityFilter}` : ''}`
+          : undefined,
       headers,
       rows,
       filename: 'alert-history',
       organization: currentOrganization?.name,
-      summary: stats ? [
-        { label: 'Total Alerts', value: String(stats.totalAlerts) },
-        { label: 'Critical', value: String(stats.criticalAlerts) },
-        { label: 'Unresolved', value: String(stats.unresolvedAlerts) },
-        { label: 'Avg Response', value: `${stats.avgResponseTimeMinutes.toFixed(1)} min` },
-      ] : undefined,
+      summary: stats
+        ? [
+            { label: 'Total Alerts', value: String(stats.totalAlerts) },
+            { label: 'Critical', value: String(stats.criticalAlerts) },
+            { label: 'Unresolved', value: String(stats.unresolvedAlerts) },
+            {
+              label: 'Avg Response',
+              value: `${stats.avgResponseTimeMinutes.toFixed(1)} min`,
+            },
+          ]
+        : undefined,
     })
     toast.success('PDF exported successfully')
   }
