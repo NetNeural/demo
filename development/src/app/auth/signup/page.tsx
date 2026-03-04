@@ -174,7 +174,7 @@ const FALLBACK_PLANS: PlanTier[] = [
     icon: Building2,
     color: '#10b981',
     features: [
-      'Everything in Business, plus:',,
+      'Everything in Business, plus:',
       'AI optimization insights',
       'Chain benchmarking',
       'ESG & carbon reporting',

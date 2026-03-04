@@ -14,7 +14,7 @@ function getLocalTime() {
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null
   const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
-  return m ? decodeURIComponent(m[1]) : null
+  return m ? decodeURIComponent(m[1]!) : null
 }
 function writeCookie(name: string, value: string, days = 365) {
   const exp = new Date(Date.now() + days * 864e5).toUTCString()

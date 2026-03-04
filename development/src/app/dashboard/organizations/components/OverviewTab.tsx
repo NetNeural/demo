@@ -240,7 +240,7 @@ export function OverviewTab({ organizationId }: OverviewTabProps) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium capitalize">{formatAction(entry)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.user_email ?? 'System'} &middot; {fmt.relativeTime(entry.created_at)}
+                      {entry.user_email ?? 'System'} &middot; {fmt.timeAgo(entry.created_at)}
                     </p>
                   </div>
                   {entry.status !== 'success' && (
