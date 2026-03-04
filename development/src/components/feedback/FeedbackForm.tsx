@@ -1,6 +1,40 @@
 'use client'
 
 import { useState } from 'react'
+
+// --- timezone cookie helpers ---
+function getLocalDate() {
+  // YYYY-MM-DD in the browser's local timezone
+  return new Date().toLocaleDateString('en-CA')
+}
+function getLocalTime() {
+  // HH:MM in the browser's local timezone
+  return new Date().toTimeString().slice(0, 5)
+}
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
+  return m ? decodeURIComponent(m[1]) : null
+}
+function writeCookie(name: string, value: string, days = 365) {
+  const exp = new Date(Date.now() + days * 864e5).toUTCString()
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${exp}; path=/; SameSite=Lax`
+}
+// Ordered list of static timezone options for the dropdown
+const TZ_OPTIONS = [
+  'UTC',
+  'America/Los_Angeles',
+  'America/Denver',
+  'America/Chicago',
+  'America/New_York',
+  'America/Phoenix',
+  'Europe/London',
+  'Europe/Berlin',
+  'Asia/Kolkata',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Australia/Sydney',
+]
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,11 +71,21 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<string>('medium')
-  const [bugOccurredDate, setBugOccurredDate] = useState('')
-  const [bugOccurredTime, setBugOccurredTime] = useState('')
-  const [bugTimezone, setBugTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  )
+  const [bugOccurredDate, setBugOccurredDate] = useState(() => getLocalDate())
+  const [bugOccurredTime, setBugOccurredTime] = useState(() => getLocalTime())
+  const [bugTimezone, setBugTimezone] = useState(() => {
+    // Prefer saved cookie, then browser IANA timezone, then UTC
+    return (
+      readCookie('nn_timezone') ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      'UTC'
+    )
+  })
+
+  const handleTimezoneChange = (tz: string) => {
+    setBugTimezone(tz)
+    writeCookie('nn_timezone', tz)
+  }
   const [screenshots, setScreenshots] = useState<File[]>([])
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([])
   const [uploadingScreenshots, setUploadingScreenshots] = useState(false)
@@ -214,9 +258,9 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
       setTitle('')
       setDescription('')
       setSeverity('medium')
-      setBugOccurredDate('')
-      setBugOccurredTime('')
-      setBugTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
+      setBugOccurredDate(getLocalDate())
+      setBugOccurredTime(getLocalTime())
+      // Keep the saved timezone preference
       setScreenshots([])
       setScreenshotPreviews([])
       setRecentlySubmitted(true)
@@ -368,41 +412,24 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
 
               <div className="space-y-2">
                 <Label>Time Zone</Label>
-                <Select value={bugTimezone} onValueChange={setBugTimezone}>
+                <Select value={bugTimezone} onValueChange={handleTimezoneChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select time zone" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/Los_Angeles">
-                      America/Los_Angeles
-                    </SelectItem>
-                    <SelectItem value="America/Denver">
-                      America/Denver
-                    </SelectItem>
-                    <SelectItem value="America/Chicago">
-                      America/Chicago
-                    </SelectItem>
-                    <SelectItem value="America/New_York">
-                      America/New_York
-                    </SelectItem>
-                    <SelectItem value="America/Phoenix">
-                      America/Phoenix
-                    </SelectItem>
-                    <SelectItem value="Europe/London">Europe/London</SelectItem>
-                    <SelectItem value="Europe/Berlin">Europe/Berlin</SelectItem>
-                    <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
-                    <SelectItem value="Asia/Singapore">
-                      Asia/Singapore
-                    </SelectItem>
-                    <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
-                    <SelectItem value="Australia/Sydney">
-                      Australia/Sydney
-                    </SelectItem>
+                    {/* Always show the auto-detected timezone first if not in the static list */}
+                    {!TZ_OPTIONS.includes(bugTimezone) && (
+                      <SelectItem value={bugTimezone}>
+                        {bugTimezone} (detected)
+                      </SelectItem>
+                    )}
+                    {TZ_OPTIONS.map((tz) => (
+                      <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Add when the issue occurred for accurate debugging timelines.
+                  Auto-filled from your system clock. Change if needed.
                 </p>
               </div>
             </div>
