@@ -231,6 +231,7 @@ curl -X POST https://api.netneural.io/organizations \\
 | **AWS IoT Core** | All AWS-compatible | 🔄 Beta | 15 min |
 | **Azure IoT Hub** | Azure-compatible | 📋 Planned | - |
 | **Generic MQTT** | Any MQTT device | ✅ Active | 20 min |
+| **NetNeural-Link** | Multi-protocol (CoAP/MQTT/HTTPS) | ✅ Active | 15 min |
 
 ### 3.2 Golioth Integration
 
@@ -346,6 +347,54 @@ curl -X POST https://api.netneural.io/organizations \\
 4. **Device Registration:**
    - Manually add devices via UI or API
    - Match Device ID to MQTT client ID
+
+### 3.5 NetNeural-Link Integration
+
+**NetNeural's proprietary multi-protocol bridge for mixed-device fleets (CoAP + MQTT + HTTPS).**
+
+**Prerequisites:**
+- Device endpoints accessible from NetNeural Edge Functions
+- Auth credentials for each enabled protocol (API tokens, PSK, or certificates)
+
+**Setup Steps:**
+
+1. **Go to Settings → Integrations → "+ Add Integration"**
+   - Select **"NetNeural-Link"**
+
+2. **Configure Protocols:**
+   Enable the protocols your devices use:
+   - **CoAP:** Enter broker endpoint (e.g., `coap://devices.example.com:5683`) and PSK credentials
+   - **MQTT:** Enter broker URL and token/username credentials
+   - **HTTPS:** Enter API base URL and bearer token
+   - At least one protocol must be enabled
+
+3. **Set Device Routing:**
+   Define protocol priority per device type:
+   - `sensor`: CoAP → MQTT → HTTPS (prefer low-overhead protocols)
+   - `actuator`: MQTT → HTTPS (prefer reliable delivery)
+   - Custom types: add entries with preferred protocol order
+
+4. **Test Connection:**
+   - Click **"Test Connection"** — NetNeural-Link probes each enabled protocol
+   - Green checkmark = protocol reachable and authenticated
+   - Fix any failing protocols before saving
+
+5. **Save and Discover:**
+   - Click **"Save"**
+   - Click **"Discover Devices"** — auto-discovery scans all enabled protocols
+   - Devices appear in the Devices list with their detected protocol
+
+**✅ NetNeural-Link Active!** Mixed-protocol devices are now unified under one integration.
+
+**Routing Logic:**
+- Operations route to the first available protocol in the device type's preference list
+- Automatic fallback if a protocol times out (`fallback_timeout_ms`, default 3–5s)
+- Protocol health is cached in memory; a failed protocol is retried every 60 seconds
+
+**Troubleshooting:**
+- **Device not discovered:** Verify endpoint is reachable from NetNeural's Edge Function IPs
+- **Protocol fallback too slow:** Reduce `fallback_timeout_ms` (minimum 500ms recommended)
+- **Auth failures:** Rotate credentials in the integration config — no service restart needed
 
 ---
 

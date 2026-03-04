@@ -2,7 +2,7 @@
 
 ## Overview
 
-NetNeural supports 8 different integration types for IoT device management, notifications, and cloud platform synchronization. Each integration can be configured through the UI and triggered programmatically.
+NetNeural supports 10 different integration types for IoT device management, notifications, and cloud platform synchronization. Each integration can be configured through the UI and triggered programmatically.
 
 ## Supported Integration Types
 
@@ -122,6 +122,47 @@ NetNeural supports 8 different integration types for IoT device management, noti
 - **Note:** When transferring devices between orgs, `mqtt_external` integrations
   are MOVED (not cloned) to preserve the broker's `clientId` reference.
   See `transfer-device` edge function. (Issues #367, #370)
+
+### 10. **NetNeural-Link**
+- **Type:** `netneural_link`
+- **Purpose:** NetNeural's proprietary multi-protocol device management bridge supporting CoAP, MQTT, and HTTPS simultaneously
+- **Backend:** ✅ Implemented (`netneural-hub-integration-provider.ts`)
+- **Story:** #101 — Epic #95
+- **Features:**
+  - Intelligent device routing with configurable protocol preferences (CoAP → MQTT → HTTPS)
+  - Automatic protocol fallback on timeout or error
+  - Auto-discovery of devices across all enabled protocols
+  - Unified telemetry collection from heterogeneous device fleets
+  - Per-device-type capability detection
+  - Bidirectional command & control
+- **Protocols Supported:**
+  - **CoAP** (RFC 7252) — constrained devices, UDP-based
+  - **MQTT** (3.1.1 / 5.0) — pub/sub messaging
+  - **HTTPS** — RESTful API + webhooks + SSE
+- **Configuration Fields:**
+  ```json
+  {
+    "name": "NetNeural-Link Production",
+    "protocols": {
+      "coap": { "enabled": true, "endpoint": "coap://devices.example.com:5683", "auth": { "method": "psk" } },
+      "mqtt": { "enabled": true, "endpoint": "mqtt://broker.example.com:1883", "auth": { "method": "token" } },
+      "https": { "enabled": true, "endpoint": "https://api.example.com", "auth": { "method": "token" } }
+    },
+    "device_routing": {
+      "sensor": { "preferred_protocols": ["coap", "mqtt", "https"], "fallback_timeout_ms": 3000 },
+      "actuator": { "preferred_protocols": ["mqtt", "https"], "fallback_timeout_ms": 5000 }
+    },
+    "global_settings": {
+      "max_retry_attempts": 3,
+      "device_discovery_enabled": true
+    }
+  }
+  ```
+- **Notes:**
+  - Enables or disables each protocol independently; at least one must be active
+  - Protocol preference order determines routing priority; first available protocol wins
+  - Device discovery caches results in memory and syncs to the `device_integrations` table
+  - Use NetNeural-Link when managing mixed-protocol device fleets from a single integration
 
 ---
 
