@@ -41,6 +41,7 @@ import {
   KeyRound,
   Code,
   Cpu,
+  Warehouse,
 } from 'lucide-react'
 import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
@@ -107,6 +108,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             href: '/dashboard/hardware-provisioning',
             label: 'Hardware Provisioning',
             icon: Cpu,
+          },
+          {
+            href: '/dashboard/inventory-control',
+            label: 'Inventory Control',
+            icon: Warehouse,
           },
         ]
       : []),

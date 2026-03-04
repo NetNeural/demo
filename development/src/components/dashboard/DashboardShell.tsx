@@ -23,6 +23,7 @@ import {
   Shield,
   SlidersHorizontal,
   Cpu,
+  Warehouse,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -70,6 +71,11 @@ export default function DashboardShell({
       name: 'Hardware Provisioning',
       href: '/dashboard/hardware-provisioning',
       icon: Cpu,
+    },
+    {
+      name: 'Inventory Control',
+      href: '/dashboard/inventory-control',
+      icon: Warehouse,
     },
     { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
