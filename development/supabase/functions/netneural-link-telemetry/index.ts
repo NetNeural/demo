@@ -1,5 +1,5 @@
 // ===========================================================================
-// NetNeural Hub Edge Functions - Multi-Protocol Telemetry Ingestion
+// NetNeural-Link Edge Functions - Multi-Protocol Telemetry Ingestion
 // ===========================================================================
 // Unified endpoint for all NetNeural device protocols (CoAP, MQTT, HTTPS)
 // Automatically routes to appropriate device handlers and stores telemetry
@@ -18,7 +18,7 @@ import {
   createErrorResponse,
 } from '../_shared/create-edge-function.ts'
 import { corsHeaders } from '../_shared/cors.ts'
-import { NetNeuralHubClient } from '../_shared/netneural-hub-client.ts'
+import { NetNeuralLinkClient } from '../_shared/netneural-link-client.ts'
 
 // Protocol detection from request
 function detectProtocol(req: Request): string {
@@ -264,9 +264,9 @@ serve(async (request: Request): Promise<Response> => {
       }
 
       if (deviceError || !device) {
-        console.warn(`[NetNeuralHub] Device not found: ${deviceId}`)
+        console.warn(`[NetNeuralLink] Device not found: ${deviceId}`)
         return createErrorResponse(
-          'Device not registered in NetNeural Hub',
+          'Device not registered in NetNeural-Link',
           404
         )
       }
@@ -292,7 +292,7 @@ serve(async (request: Request): Promise<Response> => {
 
       if (telemetryError) {
         console.error(
-          `[NetNeuralHub] Failed to store telemetry for ${deviceId}:`,
+          `[NetNeuralLink] Failed to store telemetry for ${deviceId}:`,
           telemetryError
         )
         return createErrorResponse('Failed to store telemetry', 500)
@@ -319,7 +319,7 @@ serve(async (request: Request): Promise<Response> => {
         timestamp: new Date().toISOString(),
       })
     } catch (error) {
-      console.error('[NetNeuralHub] Telemetry processing error:', error)
+      console.error('[NetNeuralLink] Telemetry processing error:', error)
       return createErrorResponse(
         error instanceof Error ? error.message : 'Unknown error',
         500
@@ -393,11 +393,11 @@ async function checkDeviceAlerts(
         })
 
         console.log(
-          `[NetNeuralHub] 🚨 Alert triggered for ${device.name}: ${field} ${operator} ${threshold}`
+          `[NetNeuralLink] 🚨 Alert triggered for ${device.name}: ${field} ${operator} ${threshold}`
         )
       }
     }
   } catch (error) {
-    console.error('[NetNeuralHub] Alert checking failed:', error)
+    console.error('[NetNeuralLink] Alert checking failed:', error)
   }
 }

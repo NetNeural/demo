@@ -1,5 +1,5 @@
 // ===========================================================================
-// NetNeural Hub Client - Multi-Protocol Integration Client
+// NetNeural-Link Client - Multi-Protocol Integration Client
 // ===========================================================================
 // Extensible integration client for NetNeural custom devices
 // Supports multiple protocols (CoAP, MQTT, HTTPS) and device types
@@ -42,7 +42,7 @@ export interface DeviceCapability {
   metadata: Record<string, unknown>
 }
 
-export interface NetNeuralHubConfig {
+export interface NetNeuralLinkConfig {
   protocols: {
     coap?: ProtocolConfig
     mqtt?: ProtocolConfig
@@ -459,7 +459,7 @@ export class MqttProtocolHandler extends ProtocolHandler {
           JSON.stringify({
             type: 'subscribe',
             subscriptions,
-            client_id: `netneural_hub_${deviceId}_${Date.now()}`,
+            client_id: `netneural_link_${deviceId}_${Date.now()}`,
             clean_session: false,
             keep_alive: 60,
           })
@@ -989,7 +989,7 @@ export class VmarkProtocolAdapter extends DeviceAdapter {
       handle: command.type || 'command',
       paras: command.params || {},
       time: new Date().toISOString().replace('T', '_').split('.')[0],
-      service: 'netneural-hub',
+      service: 'netneural-link',
     }
   }
 
@@ -1009,11 +1009,11 @@ export class VmarkProtocolAdapter extends DeviceAdapter {
 }
 
 // ===========================================================================
-// Main NetNeural Hub Client
+// Main NetNeural-Link Client
 // ===========================================================================
 
-export class NetNeuralHubClient extends BaseIntegrationClient {
-  private hubConfig!: NetNeuralHubConfig
+export class NetNeuralLinkClient extends BaseIntegrationClient {
+  private hubConfig!: NetNeuralLinkConfig
   private protocolHandlers: Map<string, ProtocolHandler> = new Map()
   private deviceAdapters: Map<string, DeviceAdapter> = new Map()
   private deviceCapabilities: Map<string, DeviceCapability[]> = new Map()
@@ -1024,11 +1024,11 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
   }
 
   protected validateConfig(): void {
-    const settings = this.config.settings as unknown as NetNeuralHubConfig
+    const settings = this.config.settings as unknown as NetNeuralLinkConfig
 
     if (!settings.protocols) {
       throw new IntegrationError(
-        'NetNeural Hub configuration missing protocols',
+        'NetNeural-Link configuration missing protocols',
         'INVALID_CONFIG'
       )
     }
@@ -1039,7 +1039,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
     )
     if (enabledProtocols.length === 0) {
       throw new IntegrationError(
-        'NetNeural Hub must have at least one protocol enabled',
+        'NetNeural-Link must have at least one protocol enabled',
         'NO_PROTOCOLS'
       )
     }
@@ -1111,7 +1111,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
     return {
       success: allSuccess,
       message: allSuccess
-        ? 'All NetNeural Hub protocols operational'
+        ? 'All NetNeural-Link protocols operational'
         : `${results.filter((r) => !r.success).length} protocol(s) failed`,
       details: { protocol_results: results },
     }
@@ -1124,7 +1124,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
     const errors: string[] = []
     const logs: string[] = []
 
-    logs.push('[NetNeuralHub] Starting multi-protocol device import...')
+    logs.push('[NetNeuralLink] Starting multi-protocol device import...')
 
     // Load device capabilities from database
     await this.loadDeviceCapabilities()
@@ -1133,7 +1133,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
     for (const [protocol, handler] of this.protocolHandlers) {
       try {
         logs.push(
-          `[NetNeuralHub] Importing devices from ${protocol.toUpperCase()}...`
+          `[NetNeuralLink] Importing devices from ${protocol.toUpperCase()}...`
         )
 
         const devices = await handler.getDevices()
@@ -1176,7 +1176,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
             } else {
               totalSucceeded++
               logs.push(
-                `[NetNeuralHub] ✅ Imported ${normalizedDevice.name} (${normalizedDevice.metadata?.device_type})`
+                `[NetNeuralLink] ✅ Imported ${normalizedDevice.name} (${normalizedDevice.metadata?.device_type})`
               )
             }
           } catch (deviceError) {
@@ -1197,13 +1197,13 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
             : 'Unknown error'
         errors.push(`${protocol} import failed: ${errorMsg}`)
         logs.push(
-          `[NetNeuralHub] ❌ ${protocol.toUpperCase()} import failed: ${errorMsg}`
+          `[NetNeuralLink] ❌ ${protocol.toUpperCase()} import failed: ${errorMsg}`
         )
       }
     }
 
     logs.push(
-      `[NetNeuralHub] Import complete: ${totalSucceeded}/${totalProcessed} devices imported successfully`
+      `[NetNeuralLink] Import complete: ${totalSucceeded}/${totalProcessed} devices imported successfully`
     )
 
     return {
@@ -1226,7 +1226,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
     const errors: string[] = []
     const logs: string[] = []
 
-    logs.push(`[NetNeuralHub] Starting export of ${devices.length} devices...`)
+    logs.push(`[NetNeuralLink] Starting export of ${devices.length} devices...`)
 
     for (const device of devices) {
       totalProcessed++
@@ -1257,7 +1257,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
         if (success) {
           totalSucceeded++
           logs.push(
-            `[NetNeuralHub] ✅ Exported ${device.name} via ${protocol.toUpperCase()}`
+            `[NetNeuralLink] ✅ Exported ${device.name} via ${protocol.toUpperCase()}`
           )
         } else {
           totalFailed++
@@ -1269,13 +1269,13 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
           error instanceof Error ? error.message : 'Unknown error'
         errors.push(`Export failed for ${device.name}: ${errorMsg}`)
         logs.push(
-          `[NetNeuralHub] ❌ Export failed for ${device.name}: ${errorMsg}`
+          `[NetNeuralLink] ❌ Export failed for ${device.name}: ${errorMsg}`
         )
       }
     }
 
     logs.push(
-      `[NetNeuralHub] Export complete: ${totalSucceeded}/${totalProcessed} devices exported successfully`
+      `[NetNeuralLink] Export complete: ${totalSucceeded}/${totalProcessed} devices exported successfully`
     )
 
     return {
@@ -1302,7 +1302,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
 
       if (error) {
         console.warn(
-          '[NetNeuralHub] Failed to load device capabilities:',
+          '[NetNeuralLink] Failed to load device capabilities:',
           error.message
         )
         return
@@ -1316,7 +1316,7 @@ export class NetNeuralHubClient extends BaseIntegrationClient {
         this.deviceCapabilities.get(capability.device_type)!.push(capability)
       }
     } catch (error) {
-      console.warn('[NetNeuralHub] Error loading device capabilities:', error)
+      console.warn('[NetNeuralLink] Error loading device capabilities:', error)
     }
   }
 

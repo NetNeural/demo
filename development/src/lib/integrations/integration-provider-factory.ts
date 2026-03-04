@@ -164,8 +164,8 @@ registerLazyProvider('mqtt', async () => {
   return MqttIntegrationProvider
 })
 registerLazyProvider('netneural_hub', async () => {
-  const { NetNeuralHubIntegrationProvider } = await import('./netneural-hub-integration-provider')
-  return NetNeuralHubIntegrationProvider
+  const { NetNeuralLinkIntegrationProvider } = await import('./netneural-link-integration-provider')
+  return NetNeuralLinkIntegrationProvider
 })
 
 // Note: Google IoT Core was removed (discontinued by Google Aug 2023).

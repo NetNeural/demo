@@ -129,7 +129,7 @@ Also added `category` field to `INTEGRATION_TYPES` for better organization:
   - ☁️ AWS IoT Core
   - 🔵 Azure IoT Hub
   - 📡 MQTT Broker
-  - 🚀 NetNeural Hub
+  - 🚀 NetNeural-Link
 
 - **Notifications** (`category: 'notification'`):
   - 📧 Email (SMTP)

@@ -10,7 +10,7 @@
 // - Azure IoT Hub
 // - Google Cloud IoT Core
 // - MQTT Brokers
-// - NetNeural Hub (Multi-Protocol)
+// - NetNeural-Link (Multi-Protocol)
 //
 // Operations:
 // - test: Verify connection to integration
@@ -33,7 +33,7 @@ import { GoliothClient } from '../_shared/golioth-client.ts'
 import { AwsIotClient } from '../_shared/aws-iot-client.ts'
 import { AzureIotClient } from '../_shared/azure-iot-client.ts'
 import { MqttClient } from '../_shared/mqtt-client.ts'
-import { NetNeuralHubClient } from '../_shared/netneural-hub-client.ts'
+import { NetNeuralLinkClient } from '../_shared/netneural-link-client.ts'
 import {
   detectConflict,
   logConflict,
@@ -314,14 +314,14 @@ function createIntegrationClient(
       })
 
     case 'netneural_hub':
-      console.log('[device-sync] Creating NetNeural Hub client with:', {
+      console.log('[device-sync] Creating NetNeural-Link client with:', {
         protocolsEnabled: Object.keys(settings.protocols || {}).filter(
           (p) => settings.protocols?.[p]?.enabled
         ),
         deviceTypesSupported: Object.keys(settings.device_routing || {}),
         globalSettings: settings.global_settings,
       })
-      return new NetNeuralHubClient({
+      return new NetNeuralLinkClient({
         type: 'netneural_hub' as any,
         settings: {
           protocols: settings.protocols || {},

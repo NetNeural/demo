@@ -32,7 +32,7 @@ import { Settings, Info, Zap, Wifi, Globe, Loader2 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions'
 import { toast } from 'sonner'
 
-interface NetNeuralHubConfigProps {
+interface NetNeuralLinkConfigProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   integrationId?: string
@@ -76,7 +76,7 @@ interface ProtocolConfig {
   }
 }
 
-interface NetNeuralHubConfig {
+interface NetNeuralLinkConfig {
   name: string
   protocols: {
     coap?: ProtocolConfig
@@ -97,7 +97,7 @@ interface NetNeuralHubConfig {
   }
 }
 
-const DEFAULT_CONFIG: NetNeuralHubConfig = {
+const DEFAULT_CONFIG: NetNeuralLinkConfig = {
   name: 'NetNeural-Link Integration',
   protocols: {
     coap: {
@@ -245,21 +245,21 @@ const PROTOCOL_INFO = {
   },
 }
 
-export function NetNeuralHubConfigDialog({
+export function NetNeuralLinkConfigDialog({
   open,
   onOpenChange,
   integrationId,
   organizationId,
   onSaved,
   mode = 'dialog',
-}: NetNeuralHubConfigProps) {
-  const [config, setConfig] = useState<NetNeuralHubConfig>(DEFAULT_CONFIG)
+}: NetNeuralLinkConfigProps) {
+  const [config, setConfig] = useState<NetNeuralLinkConfig>(DEFAULT_CONFIG)
   const [activeTab, setActiveTab] = useState('protocols')
   const [isSaving, setIsSaving] = useState(false)
 
   // Load configuration from localStorage on component mount
   useEffect(() => {
-    const savedConfig = localStorage.getItem('netneural-hub-config')
+    const savedConfig = localStorage.getItem('netneural-link-config')
     if (savedConfig) {
       try {
         const parsedConfig = JSON.parse(savedConfig)
@@ -334,7 +334,7 @@ export function NetNeuralHubConfigDialog({
 
   const updateDeviceRouting = (
     deviceType: string,
-    updates: Partial<NetNeuralHubConfig['device_routing'][string]>
+    updates: Partial<NetNeuralLinkConfig['device_routing'][string]>
   ) => {
     setConfig((prev) => ({
       ...prev,
@@ -343,7 +343,7 @@ export function NetNeuralHubConfigDialog({
         [deviceType]: {
           ...prev.device_routing[deviceType],
           ...updates,
-        } as NetNeuralHubConfig['device_routing'][string],
+        } as NetNeuralLinkConfig['device_routing'][string],
       },
     }))
   }
@@ -416,7 +416,7 @@ export function NetNeuralHubConfigDialog({
       }
 
       // Also store in localStorage for quick access
-      localStorage.setItem('netneural-hub-config', JSON.stringify(config))
+      localStorage.setItem('netneural-link-config', JSON.stringify(config))
 
       toast.success('NetNeural-Link configuration saved successfully')
       onSaved()

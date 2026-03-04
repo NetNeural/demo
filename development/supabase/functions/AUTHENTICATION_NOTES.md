@@ -32,13 +32,13 @@ Authorization: Bearer <YOUR_SUPABASE_SERVICE_ROLE_KEY>
 
 ```bash
 # Test endpoint (works)
-curl -X POST "http://127.0.0.1:54321/functions/v1/netneural-hub-test?device_id=test-device-123" \
+curl -X POST "http://127.0.0.1:54321/functions/v1/netneural-link-test?device_id=test-device-123" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer [ANON_KEY]" \
   -d '{"temperature": 22.5, "humidity": 45}'
 
 # Main telemetry endpoint
-curl -X POST "http://127.0.0.1:54321/functions/v1/netneural-hub-telemetry?device_id=device-789" \
+curl -X POST "http://127.0.0.1:54321/functions/v1/netneural-link-telemetry?device_id=device-789" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer [ANON_KEY]" \
   -d '{"temperature": 25.0, "humidity": 60}'

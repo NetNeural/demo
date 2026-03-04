@@ -1,12 +1,13 @@
 // ===========================================================================
-// NetNeural Hub Edge Functions - Simple Telemetry Test
+// NetNeural-Link Edge Functions - Simple Telemetry Test
 // ===========================================================================
 // Simple test endpoint for NetNeural device telemetry without authentication
 // ===========================================================================
 
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-export default async function handler(req: Request): Promise<Response> {
+serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -29,7 +30,7 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const url = new URL(req.url)
     console.log(
-      `[NetNeural Hub Test] Received request: ${req.method} ${url.pathname}`
+      `[NetNeural-Link Test] Received request: ${req.method} ${url.pathname}`
     )
 
     // Extract device ID from various sources
@@ -55,8 +56,8 @@ export default async function handler(req: Request): Promise<Response> {
       deviceId = body.device_id
     }
 
-    console.log(`[NetNeural Hub Test] Device ID: ${deviceId}`)
-    console.log(`[NetNeural Hub Test] Body:`, body)
+    console.log(`[NetNeural-Link Test] Device ID: ${deviceId}`)
+    console.log(`[NetNeural-Link Test] Body:`, body)
 
     if (!deviceId) {
       return new Response(
@@ -74,7 +75,7 @@ export default async function handler(req: Request): Promise<Response> {
     // For testing, just return success without database operations
     const response = {
       success: true,
-      message: 'NetNeural Hub telemetry test received',
+      message: 'NetNeural-Link telemetry test received',
       data: {
         device_id: deviceId,
         protocol: 'https',
@@ -83,14 +84,14 @@ export default async function handler(req: Request): Promise<Response> {
       },
     }
 
-    console.log(`[NetNeural Hub Test] ✅ Success for device ${deviceId}`)
+    console.log(`[NetNeural-Link Test] ✅ Success for device ${deviceId}`)
 
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.error('[NetNeural Hub Test] Error:', error)
+    console.error('[NetNeural-Link Test] Error:', error)
 
     return new Response(
       JSON.stringify({
@@ -103,4 +104,4 @@ export default async function handler(req: Request): Promise<Response> {
       }
     )
   }
-}
+})

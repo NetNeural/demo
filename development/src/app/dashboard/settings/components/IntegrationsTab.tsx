@@ -18,7 +18,7 @@ import { EmailConfigDialog } from '@/components/integrations/EmailConfigDialog'
 import { SlackConfigDialog } from '@/components/integrations/SlackConfigDialog'
 import { WebhookConfigDialog } from '@/components/integrations/WebhookConfigDialog'
 import { MqttConfigDialog } from '@/components/integrations/MqttConfigDialog'
-import { NetNeuralHubConfigDialog } from '@/components/integrations/NetNeuralHubConfigDialog'
+import { NetNeuralLinkConfigDialog } from '@/components/integrations/NetNeuralLinkConfigDialog'
 import { CopyIntegrationDialog } from '@/components/integrations/CopyIntegrationDialog'
 import {
   Select,
@@ -451,7 +451,7 @@ export default function IntegrationsTab({
   const [showSlackConfig, setShowSlackConfig] = useState(false)
   const [showWebhookConfig, setShowWebhookConfig] = useState(false)
   const [showMqttConfig, setShowMqttConfig] = useState(false)
-  const [showNetNeuralHubConfig, setShowNetNeuralHubConfig] = useState(false)
+  const [showNetNeuralLinkConfig, setShowNetNeuralLinkConfig] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [integrationToDelete, setIntegrationToDelete] =
     useState<Integration | null>(null)
@@ -2040,13 +2040,13 @@ export default function IntegrationsTab({
             }}
           />
 
-          <NetNeuralHubConfigDialog
-            open={showNetNeuralHubConfig}
-            onOpenChange={setShowNetNeuralHubConfig}
+          <NetNeuralLinkConfigDialog
+            open={showNetNeuralLinkConfig}
+            onOpenChange={setShowNetNeuralLinkConfig}
             integrationId={selectedIntegration?.id}
             organizationId={selectedOrganization}
             onSaved={() => {
-              setShowNetNeuralHubConfig(false)
+              setShowNetNeuralLinkConfig(false)
               loadIntegrations()
             }}
           />

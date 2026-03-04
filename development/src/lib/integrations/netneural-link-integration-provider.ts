@@ -46,7 +46,7 @@ import { FrontendActivityLogger } from '@/lib/monitoring/activity-logger'
 // NetNeural-Link Types
 // ============================================================================
 
-export interface NetNeuralHubConfig {
+export interface NetNeuralLinkConfig {
   name: string
   protocols: {
     coap?: ProtocolConfig
@@ -93,12 +93,12 @@ interface CachedDevice {
 // NetNeural-Link Integration Provider
 // ============================================================================
 
-export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
+export class NetNeuralLinkIntegrationProvider extends DeviceIntegrationProvider {
   override providerId: string
   override providerType = 'netneural_hub'
   override providerName = 'NetNeural-Link'
 
-  private config: NetNeuralHubConfig
+  private config: NetNeuralLinkConfig
   private organizationId: string
   private integrationId: string
   private activityLogger: FrontendActivityLogger
@@ -116,13 +116,13 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
     this.integrationId =
       (config.credentials?.integrationId as string) ||
       config.projectId ||
-      'netneural-hub'
+      'netneural-link'
     this.providerId = this.integrationId
     this.activityLogger = new FrontendActivityLogger()
 
     // Extract NetNeural-Link config from ProviderConfig
     const hubConfig =
-      (config.credentials?.config as NetNeuralHubConfig) ||
+      (config.credentials?.config as NetNeuralLinkConfig) ||
       this.getDefaultConfig()
     this.config = hubConfig
 
@@ -130,7 +130,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
     this.initializeProtocolClients()
   }
 
-  private getDefaultConfig(): NetNeuralHubConfig {
+  private getDefaultConfig(): NetNeuralLinkConfig {
     return {
       name: 'NetNeural-Link Integration',
       protocols: {
@@ -168,7 +168,7 @@ export class NetNeuralHubIntegrationProvider extends DeviceIntegrationProvider {
       this.mqttClient = mqtt.connect(mqttConfig.endpoint, {
         username: authCreds.username as string,
         password: authCreds.password as string,
-        clientId: `netneural-hub-${Date.now()}`,
+        clientId: `netneural-link-${Date.now()}`,
         clean: true,
         reconnectPeriod: 5000,
       })

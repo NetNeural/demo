@@ -1325,7 +1325,7 @@ export default function TestsTab({ organizationId }: Props) {
       },
     },
     {
-      id: 'integration-netneural-hub',
+      id: 'integration-netneural-link',
       name: 'NetNeural-Link Integration',
       description:
         'Test connection to configured NetNeural-Link integration (CoAP, MQTT, HTTPS)',
@@ -1354,10 +1354,10 @@ export default function TestsTab({ organizationId }: Props) {
           }
 
           // Import and instantiate the NetNeural-Link provider
-          const { NetNeuralHubIntegrationProvider } =
-            await import('@/lib/integrations/netneural-hub-integration-provider')
+          const { NetNeuralLinkIntegrationProvider } =
+            await import('@/lib/integrations/netneural-link-integration-provider')
 
-          const provider = new NetNeuralHubIntegrationProvider({
+          const provider = new NetNeuralLinkIntegrationProvider({
             type: 'netneural_hub',
             projectId: integration.id,
             credentials: {
