@@ -159,6 +159,7 @@ export default createEdgeFunction(
           id: device.id,
           name: device.name,
           device_type: device.device_type,
+          device_type_id: device.device_type_id,
           model: device.model,
           serial_number: device.serial_number,
           status: device.status || 'offline',
@@ -261,12 +262,13 @@ export default createEdgeFunction(
         [key: string]: unknown
       }
 
-      const transformedDevices =
+        const transformedDevices =
         devices?.map((device: DeviceWithRelations) => ({
           // Database fields
           id: device.id,
           name: device.name,
           device_type: device.device_type,
+          device_type_id: device.device_type_id,
           model: device.model,
           serial_number: device.serial_number,
           status: device.status || 'offline',
