@@ -426,6 +426,13 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     loadLocations()
   }, [loadMaps, loadDevices, loadLocations])
 
+  // Refresh devices when a new device is added elsewhere (e.g. AddDeviceDialog)
+  useEffect(() => {
+    const handler = () => loadDevices()
+    window.addEventListener('device-added', handler)
+    return () => window.removeEventListener('device-added', handler)
+  }, [loadDevices])
+
   // Load placements when map changes
   useEffect(() => {
     loadPlacements()
@@ -629,7 +636,7 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }
 
-  // Real-time device status subscription
+  // Real-time device status subscription (UPDATE + INSERT)
   useEffect(() => {
     const channel = supabaseRef.current
       .channel('facility-map-devices')
@@ -655,6 +662,26 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
                 : p
             )
           )
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const newDevice = payload.new as PlacedDevice
+          setDevices((prev) => {
+            // Avoid duplicates
+            if (prev.some((d) => d.id === newDevice.id)) return prev
+            return [...prev, newDevice].sort((a, b) =>
+              a.name.localeCompare(b.name)
+            )
+          })
         }
       )
       .subscribe()
