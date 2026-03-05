@@ -228,14 +228,14 @@ export const locationSchemas = {
   create: z.object({
     organization_id: schemas.organizationId,
     name: z.string().min(1, 'name is required'),
-    description: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    postal_code: z.string().optional(),
-    latitude: z.number().min(-90).max(90).optional(),
-    longitude: z.number().min(-180).max(180).optional(),
+    description: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    state: z.string().nullable().optional(),
+    country: z.string().nullable().optional(),
+    postal_code: z.string().nullable().optional(),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
   }),
 
   update: z.object({

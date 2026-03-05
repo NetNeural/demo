@@ -240,10 +240,17 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
         }
       )
 
+      // Clean latitude/longitude: convert null to undefined so Zod .optional() accepts them
+      const cleanedFormData = {
+        ...formData,
+        latitude: formData.latitude ?? undefined,
+        longitude: formData.longitude ?? undefined,
+      }
+
       const response = editingLocation
-        ? await edgeFunctions.locations.update(editingLocation.id, formData)
+        ? await edgeFunctions.locations.update(editingLocation.id, cleanedFormData)
         : await edgeFunctions.locations.create({
-            ...formData,
+            ...cleanedFormData,
             organization_id: organizationId,
           })
 
