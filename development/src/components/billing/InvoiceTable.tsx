@@ -118,6 +118,33 @@ export function InvoiceTable({
     load()
   }, [loadInvoices, loadCounts])
 
+  useEffect(() => {
+    const handleInvoiceCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ organizationId?: string }>
+      const invoiceOrgId = customEvent.detail?.organizationId
+
+      if (invoiceOrgId && invoiceOrgId !== organizationId) return
+
+      setRefreshing(true)
+      Promise.all([loadInvoices(), loadCounts()]).finally(() => {
+        setRefreshing(false)
+      })
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('billing:invoice-created', handleInvoiceCreated)
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener(
+          'billing:invoice-created',
+          handleInvoiceCreated
+        )
+      }
+    }
+  }, [organizationId, loadInvoices, loadCounts])
+
   // Refresh handler
   const handleRefresh = async () => {
     setRefreshing(true)

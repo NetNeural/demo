@@ -163,6 +163,13 @@ const EMPTY_FORM = {
   is_active: true,
 }
 
+function sortExpenses(items: Expense[]): Expense[] {
+  return [...items].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+    return a.name.localeCompare(b.name)
+  })
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ExpensesTab() {
@@ -257,26 +264,45 @@ export function ExpensesTab() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.amount) return
+    const parsedAmount = parseFloat(form.amount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Please enter a valid non-negative amount.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setSaving(true)
     const payload = {
       name: form.name.trim(),
       category: form.category,
-      amount_cents: Math.round(parseFloat(form.amount) * 100),
+      amount_cents: Math.round(parsedAmount * 100),
       billing_cycle: form.billing_cycle,
       vendor: form.vendor.trim() || null,
       notes: form.notes.trim() || null,
       is_active: form.is_active,
     }
     let error: any
+    let returnedExpense: Expense | null = null
     if (editingId) {
-      ;({ error } = await (supabase as any)
+      const { data, error: updateError } = await (supabase as any)
         .from('platform_expenses')
         .update(payload)
-        .eq('id', editingId))
+        .eq('id', editingId)
+        .select('*')
+        .maybeSingle()
+      error = updateError
+      returnedExpense = (data as Expense | null) || null
     } else {
-      ;({ error } = await (supabase as any)
+      const { data, error: insertError } = await (supabase as any)
         .from('platform_expenses')
-        .insert(payload))
+        .insert(payload)
+        .select('*')
+        .maybeSingle()
+      error = insertError
+      returnedExpense = (data as Expense | null) || null
     }
     setSaving(false)
     if (error) {
@@ -286,6 +312,19 @@ export function ExpensesTab() {
         variant: 'destructive',
       })
     } else {
+      if (returnedExpense) {
+        setExpenses((prev) => {
+          if (editingId) {
+            return sortExpenses(
+              prev.map((expense) =>
+                expense.id === returnedExpense!.id ? returnedExpense! : expense
+              )
+            )
+          }
+          return sortExpenses([...prev, returnedExpense])
+        })
+      }
+
       toast({ title: editingId ? 'Expense updated' : 'Expense added' })
       setDialogOpen(false)
       load(true)

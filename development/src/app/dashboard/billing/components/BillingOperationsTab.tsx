@@ -295,15 +295,30 @@ function ManualInvoiceDialog({
       const supabase = getSupabase() as any
 
       // Create the invoice
-      const { error: invoiceErr } = await supabase.from('invoices').insert({
-        organization_id: orgId,
-        amount_cents: amountCents,
-        currency: 'usd',
-        status: 'open',
-        period_start: new Date().toISOString(),
-        period_end: dueDate ? new Date(dueDate).toISOString() : null,
-      })
+      const { data: createdInvoice, error: invoiceErr } = await supabase
+        .from('invoices')
+        .insert({
+          organization_id: orgId,
+          amount_cents: amountCents,
+          currency: 'usd',
+          status: 'open',
+          period_start: new Date().toISOString(),
+          period_end: dueDate ? new Date(dueDate).toISOString() : null,
+        })
+        .select('id, organization_id')
+        .maybeSingle()
       if (invoiceErr) throw invoiceErr
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('billing:invoice-created', {
+            detail: {
+              organizationId: orgId,
+              invoiceId: createdInvoice?.id ?? null,
+            },
+          })
+        )
+      }
 
       // Audit log
       await supabase.from('user_audit_log').insert({
