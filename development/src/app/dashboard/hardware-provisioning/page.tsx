@@ -31,6 +31,7 @@ import { DeviceTypeFormDialog } from '@/components/device-types/DeviceTypeFormDi
 import { FacilityMapView } from '@/components/facility-map'
 import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
+import { OrganizationIntegrationsTab } from '@/app/dashboard/organizations/components/OrganizationIntegrationsTab'
 import {
   ScanBarcode,
   QrCode,
@@ -38,6 +39,7 @@ import {
   Cpu,
   Smartphone,
   SlidersHorizontal,
+  Plug,
   Plus,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -164,6 +166,10 @@ export default function HardwareProvisioningPage() {
               </Badge>
             </TabsTrigger>
           )}
+          <TabsTrigger value="integrations" className="flex items-center gap-1.5">
+            <Plug className="h-4 w-4" />
+            Integrations
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab: Devices — full device list with facility map */}
@@ -235,6 +241,16 @@ export default function HardwareProvisioningPage() {
             <FirmwareManagementPanel />
           </TabsContent>
         )}
+
+        {/* Tab: Integrations — Golioth, AWS IoT, Azure, MQTT, etc. */}
+        <TabsContent value="integrations" className="mt-4">
+          {currentOrganization && (
+            <OrganizationIntegrationsTab
+              key={currentOrganization.id}
+              organizationId={currentOrganization.id}
+            />
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   )

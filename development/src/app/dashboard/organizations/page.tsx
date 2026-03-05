@@ -6,16 +6,13 @@ import {
   LayoutDashboard,
   Users,
   MapPin,
-  Plug,
   Settings,
   Building2,
   Shield,
   Crown,
   Plus,
   CreditCard,
-  Key,
   Briefcase,
-  Network,
   FolderOpen,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -27,13 +24,11 @@ import { useUser } from '@/contexts/UserContext'
 import { OverviewTab } from './components/OverviewTab'
 import { MembersTab } from './components/MembersTab'
 import { LocationsTab } from './components/LocationsTab'
-import { OrganizationIntegrationsTab } from './components/OrganizationIntegrationsTab'
 import { OrganizationSettingsTab } from './components/OrganizationSettingsTab'
 import { AccessRequestsTab } from './components/AccessRequestsTab'
 import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 import { BillingTab } from './components/BillingTab'
-import { ApiKeysTab } from './components/ApiKeysTab'
 import { DocumentsTab } from './components/DocumentsTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
@@ -176,8 +171,6 @@ function OrganizationsPageContent() {
             overview: 'overview',
             members: 'people',
             locations: 'infrastructure',
-            integrations: 'infrastructure',
-            'api-keys': 'infrastructure',
             billing: 'business',
             customers: 'business',
             documents: 'documents',
@@ -214,8 +207,8 @@ function OrganizationsPageContent() {
             value="infrastructure"
             className="flex items-center gap-2"
           >
-            <Network className="h-4 w-4" />
-            <span>Infrastructure</span>
+            <MapPin className="h-4 w-4" />
+            <span>Locations</span>
           </TabsTrigger>
 
           {(isSuperAdmin || isOwner || isAdmin) && (
@@ -256,55 +249,12 @@ function OrganizationsPageContent() {
           />
         </TabsContent>
 
-        {/* Infrastructure — Locations + Integrations + API Keys */}
+        {/* Infrastructure — Locations */}
         <TabsContent value="infrastructure">
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList>
-              <TabsTrigger
-                value="locations"
-                className="flex items-center gap-2"
-              >
-                <MapPin className="h-4 w-4" />
-                Locations
-              </TabsTrigger>
-              <TabsTrigger
-                value="integrations"
-                className="flex items-center gap-2"
-              >
-                <Plug className="h-4 w-4" />
-                Integrations
-              </TabsTrigger>
-              {(isSuperAdmin || isOwner || isAdmin) && (
-                <TabsTrigger
-                  value="api-keys"
-                  className="flex items-center gap-2"
-                >
-                  <Key className="h-4 w-4" />
-                  API Keys
-                </TabsTrigger>
-              )}
-            </TabsList>
-            <TabsContent value="locations" className="mt-6">
-              <LocationsTab
-                key={currentOrganization.id}
-                organizationId={currentOrganization.id}
-              />
-            </TabsContent>
-            <TabsContent value="integrations" className="mt-6">
-              <OrganizationIntegrationsTab
-                key={currentOrganization.id}
-                organizationId={currentOrganization.id}
-              />
-            </TabsContent>
-            {(isSuperAdmin || isOwner || isAdmin) && (
-              <TabsContent value="api-keys" className="mt-6">
-                <ApiKeysTab
-                  key={currentOrganization.id}
-                  organizationId={currentOrganization.id}
-                />
-              </TabsContent>
-            )}
-          </Tabs>
+          <LocationsTab
+            key={currentOrganization.id}
+            organizationId={currentOrganization.id}
+          />
         </TabsContent>
 
         {/* Business — Billing + Customer Orgs */}
