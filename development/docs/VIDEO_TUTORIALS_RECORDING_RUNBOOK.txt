@@ -1,0 +1,117 @@
+# NetNeural Video Tutorials - Recording Runbook
+Version: 2026-03-04
+
+=================================================================
+PURPOSE
+=================================================================
+This runbook standardizes recording quality across all tutorial videos.
+Use with: VIDEO_TUTORIALS_MASTER_CATALOG.txt
+
+=================================================================
+PRE-RECORD CHECKLIST (EVERY SESSION)
+=================================================================
+1. Environment
+   - Use demo/staging environment only.
+   - Confirm correct organization selected in switcher.
+   - Seed sample data if required.
+
+2. Privacy/Security
+   - No real customer PII on screen.
+   - No API keys, tokens, or secrets visible.
+   - Browser autofill OFF.
+
+3. Visual Settings
+   - Browser zoom 100%.
+   - Resolution 1920x1080.
+   - Cursor highlight ON.
+   - Notifications popups OFF.
+
+4. Audio
+   - Mic level target: -12 dB average.
+   - Noise reduction ON.
+   - Script printed/open on secondary screen.
+
+=================================================================
+ON-SCREEN STYLE GUIDE
+=================================================================
+- Click rhythm: intentional and slow enough to follow.
+- Pause 1 second after route loads.
+- Read visible labels exactly as shown in UI.
+- Do not ad-lib technical claims you cannot verify in-screen.
+- Use callouts:
+  * "Notice" for context
+  * "Tip" for best practice
+  * "Warning" for destructive actions
+
+=================================================================
+VOICEOVER TEMPLATE (PER VIDEO)
+=================================================================
+Intro (10-15s):
+- "In this tutorial, we’ll walk through [feature] in [X] minutes."
+- "You’ll learn how to [primary outcome]."
+
+Body (main steps):
+- Narrate click + reason + expected result.
+
+Outro (10s):
+- "You now know how to [outcome]."
+- "Next, watch [next module ID/title]."
+
+=================================================================
+EDITING STANDARDS
+=================================================================
+- Remove dead time > 2 seconds unless needed for load explanation.
+- Add chapter markers for each major step.
+- Add caption track and verify spelling of product terms.
+- Add zoom emphasis on key forms/modals.
+- Keep total runtime in module target range.
+
+=================================================================
+FILE NAMING CONVENTION
+=================================================================
+Video:
+- M##_feature-name_v1.mp4
+
+Caption:
+- M##_feature-name_v1.srt
+
+Thumbnail:
+- M##_feature-name_thumbnail.png
+
+Example:
+- M07_alert-rules-wizard_v1.mp4
+- M07_alert-rules-wizard_v1.srt
+- M07_alert-rules-wizard_thumbnail.png
+
+=================================================================
+QA CHECKLIST (REQUIRED BEFORE PUBLISH)
+=================================================================
+[ ] All scripted steps completed without mismatch.
+[ ] No secrets/PII exposed.
+[ ] Labels and routes match current UI.
+[ ] Captions synced and reviewed.
+[ ] Audio clear and consistent.
+[ ] Intro/outro includes next-step guidance.
+[ ] Link target in docs/support is valid.
+
+=================================================================
+PUBLISH WORKFLOW
+=================================================================
+1. Upload final MP4 + SRT + thumbnail.
+2. Add entry in support/docs tutorials section.
+3. Tag by audience: Core, Admin, Specialist.
+4. Announce release in product updates channel.
+5. Track feedback and patch video if UI changed.
+
+=================================================================
+MAINTENANCE POLICY
+=================================================================
+Re-record trigger if any of the following changes:
+- Navigation path changes.
+- Field names or buttons change.
+- Required steps increase/decrease.
+- Role permissions altered.
+
+Review cadence:
+- Monthly for core modules.
+- Quarterly for admin/specialist modules.

@@ -1,0 +1,404 @@
+# NetNeural Video Tutorials - Master Catalog
+Version: 2026-03-04
+Owner: Product + CS + Enablement
+Status: Ready for Recording
+
+=================================================================
+CURRENT FEATURE INVENTORY (from code)
+=================================================================
+- Dashboard route pages: 43
+- Top-level dashboard areas: 22
+- Recommended video modules: 26
+
+Counting basis:
+- Routes scanned from: src/app/dashboard/**/page.tsx
+- Goal is training usability, so closely related pages are grouped into one module.
+
+=================================================================
+HOW TO USE THIS CATALOG
+=================================================================
+For each module below:
+1) Open Start Route
+2) Follow Point-and-Click Steps exactly
+3) Keep recording length in target range
+4) End on Success Criteria screen state
+
+Recording defaults:
+- Resolution: 1920x1080
+- Zoom: 100%
+- Cursor highlight: ON
+- Pace: 1 click every 2-3 seconds with short pauses
+
+=================================================================
+MODULES (ALL FEATURES)
+=================================================================
+
+M01 - Dashboard Overview
+Type: Core
+Target Length: 3-4 min
+Start Route: /dashboard
+Point-and-Click Steps:
+1. Login and land on Dashboard.
+2. Hover key KPI cards (devices, alerts, activity).
+3. Click each quick action card once.
+4. Open organization switcher and return to original org.
+5. Show top nav quick actions and keyboard shortcuts modal.
+Success Criteria:
+- Viewer can identify where to begin daily monitoring.
+
+M02 - Hardware Provisioning (Device Onboarding)
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/hardware-provisioning
+Point-and-Click Steps:
+1. Open Hardware Provisioning page.
+2. Click Add Device.
+3. Select Manual Entry.
+4. Fill name, serial, model, firmware.
+5. Select organization/location and submit.
+6. Confirm device appears in list.
+Success Criteria:
+- Viewer can add a device end-to-end.
+
+M03 - Device List and Actions
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/hardware-provisioning
+Point-and-Click Steps:
+1. Search for a device.
+2. Filter by status/organization.
+3. Open row actions menu.
+4. Navigate to details.
+5. Return to list and clear filters.
+Success Criteria:
+- Viewer can locate and act on a device quickly.
+
+M04 - Device Detail (Overview/Telemetry Tabs)
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/devices/view?id=<deviceId>
+Point-and-Click Steps:
+1. Open a device detail page.
+2. Move through Overview tab fields.
+3. Switch to Telemetry tab.
+4. Change time window/filter.
+5. Return to Overview and verify status indicators.
+Success Criteria:
+- Viewer can read health and telemetry from one device.
+
+M05 - Device Types
+Type: Core
+Target Length: 3-4 min
+Start Route: /dashboard/device-types
+Point-and-Click Steps:
+1. Open Device Types page.
+2. Show default type list.
+3. Open type details/config panel.
+4. Demonstrate inherited config reference.
+5. Return to provisioning flow where type is selected.
+Success Criteria:
+- Viewer understands device-type driven behavior.
+
+M06 - Alerts Inbox
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/alerts
+Point-and-Click Steps:
+1. Open Alerts page.
+2. Filter by severity/status.
+3. Open one alert detail.
+4. Acknowledge alert and add note.
+5. Return to list and confirm state change.
+Success Criteria:
+- Viewer can triage and acknowledge alerts.
+
+M07 - Alert Rules List + New Rule Wizard
+Type: Core
+Target Length: 6-8 min
+Start Route: /dashboard/alert-rules
+Point-and-Click Steps:
+1. Open Alert Rules list.
+2. Click New Rule.
+3. Complete wizard step 1 (name/type).
+4. Configure threshold/conditions.
+5. Configure channels/notifications.
+6. Save and verify new rule appears in list.
+Success Criteria:
+- Viewer can create a full alert rule.
+
+M08 - Analytics
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/analytics
+Point-and-Click Steps:
+1. Open AI Analytics page.
+2. Select a period and organization context.
+3. Open one insight card.
+4. Show trend interpretation and action suggestion.
+5. Return to dashboard.
+Success Criteria:
+- Viewer can interpret analytics for operations decisions.
+
+M09 - Reports Hub
+Type: Core
+Target Length: 2-3 min
+Start Route: /dashboard/reports
+Point-and-Click Steps:
+1. Open Reports page.
+2. Show report cards and filters.
+3. Navigate to Alerts report.
+4. Return and navigate to Telemetry report.
+5. Return and navigate to Audit Log report.
+Success Criteria:
+- Viewer knows where each report type lives.
+
+M10 - Reports: Alerts
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/reports/alerts
+Point-and-Click Steps:
+1. Set date range.
+2. Filter severity and status.
+3. Sort by time.
+4. Open one row details.
+5. Export/report action (if enabled).
+Success Criteria:
+- Viewer can analyze alert trends for period reviews.
+
+M11 - Reports: Telemetry
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/reports/telemetry
+Point-and-Click Steps:
+1. Choose device/sensor scope.
+2. Set time range.
+3. Show chart and table switch.
+4. Highlight spikes/anomalies.
+5. Export/report action.
+Success Criteria:
+- Viewer can retrieve telemetry evidence for audits.
+
+M12 - Reports: Audit Log
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/reports/audit-log
+Point-and-Click Steps:
+1. Open audit log page.
+2. Filter by actor/category/date.
+3. Use search bar.
+4. Expand one event row.
+5. Show export button behavior (enabled/disabled by data).
+Success Criteria:
+- Viewer can trace who changed what and when.
+
+M13 - Organizations: Overview
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/organizations
+Point-and-Click Steps:
+1. Open Organizations page.
+2. Move through top tabs (overview, members, etc.).
+3. Show organization metadata and ownership.
+4. Use org switcher and confirm context update.
+5. Return to original org.
+Success Criteria:
+- Viewer can navigate org context safely.
+
+M14 - Organizations: Members & Roles
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/organizations?tab=members
+Point-and-Click Steps:
+1. Open Members tab.
+2. Click Add Member.
+3. Fill email/name/role.
+4. Submit invite.
+5. Edit a role from list and save.
+Success Criteria:
+- Viewer can invite and manage member roles.
+
+M15 - Organizations: Locations
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/organizations?tab=locations
+Point-and-Click Steps:
+1. Open Locations tab.
+2. Click Add Location.
+3. Fill required fields.
+4. Save and verify list update.
+5. Open location detail/edit panel.
+Success Criteria:
+- Viewer can create operational locations.
+
+M16 - Organizations: Integrations Tab
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/organizations?tab=integrations
+Point-and-Click Steps:
+1. Open Integrations tab.
+2. Click Add Integration.
+3. Pick integration type.
+4. Configure minimum required fields.
+5. Save and confirm status appears.
+Success Criteria:
+- Viewer can add an integration from org context.
+
+M17 - Integrations Hub
+Type: Core
+Target Length: 3-4 min
+Start Route: /dashboard/integrations
+Point-and-Click Steps:
+1. Open Integrations page.
+2. Review existing integrations list/cards.
+3. Open one integration detail.
+4. Return and open create flow.
+5. Confirm where status/health is shown.
+Success Criteria:
+- Viewer can navigate lifecycle of integrations.
+
+M18 - Integration Detail View
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/integrations/view?id=<integrationId>
+Point-and-Click Steps:
+1. Open detail page for existing integration.
+2. Show configuration fields.
+3. Run test connection/validation (if available).
+4. Save update.
+5. Confirm status/result message.
+Success Criteria:
+- Viewer can validate and update integration config.
+
+M19 - MQTT Integration Deep Dive
+Type: Specialist
+Target Length: 5-7 min
+Start Route: /dashboard/integrations/mqtt/<id>
+Point-and-Click Steps:
+1. Open MQTT integration editor.
+2. Show hosted vs external broker options.
+3. Configure broker URL, port, auth fields.
+4. Configure topics/payload parser.
+5. Save and verify connection status.
+Success Criteria:
+- Viewer can configure MQTT safely end-to-end.
+
+M20 - Inventory Control
+Type: Core
+Target Length: 3-5 min
+Start Route: /dashboard/inventory-control
+Point-and-Click Steps:
+1. Open inventory page.
+2. Apply filters/search.
+3. Open one inventory item detail.
+4. Perform one update/action.
+5. Confirm list refresh.
+Success Criteria:
+- Viewer can operate inventory workflows.
+
+M21 - Facility Map
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/facility-map
+Point-and-Click Steps:
+1. Open map view.
+2. Pan/zoom map.
+3. Click a device marker.
+4. Jump to device detail.
+5. Return to map and switch floor/zone if available.
+Success Criteria:
+- Viewer can spatially locate and inspect devices.
+
+M25 - Plans & Pricing
+Type: Core
+Target Length: 3-4 min
+Start Route: /dashboard/plans-pricing
+Point-and-Click Steps:
+1. Open plans page.
+2. Compare plan cards.
+3. Open upgrade/downgrade CTA.
+4. Show confirmation step.
+5. Cancel out (training env) or complete (demo env).
+Success Criteria:
+- Viewer can evaluate and change plan options.
+
+M26 - Reseller Hub + Invite
+Type: Specialist
+Target Length: 4-6 min
+Start Route: /dashboard/reseller
+Point-and-Click Steps:
+1. Open Reseller hub.
+2. Show key tabs/metrics.
+3. Navigate to invite flow.
+4. Send invite (test account).
+5. Confirm invite appears in status list.
+Success Criteria:
+- Viewer can onboard downstream reseller/customer users.
+
+M27 - Support Center
+Type: Core
+Target Length: 4-6 min
+Start Route: /dashboard/support
+Point-and-Click Steps:
+1. Open Support page.
+2. Visit documentation tab.
+3. Visit troubleshooting tab.
+4. Show access requests or admin support tools (role-based).
+5. Return to dashboard.
+Success Criteria:
+- Viewer can self-serve and escalate correctly.
+
+M28 - Feedback Submission
+Type: Core
+Target Length: 2-3 min
+Start Route: /dashboard/feedback
+Point-and-Click Steps:
+1. Open Feedback page.
+2. Fill category, priority, title, details.
+3. Submit feedback.
+4. Confirm success state.
+Success Criteria:
+- Viewer can submit actionable product feedback.
+
+M29 - Personal Settings + Developer
+Type: Core
+Target Length: 4-6 min
+Start Routes:
+- /dashboard/settings
+- /dashboard/developer
+Point-and-Click Steps:
+1. Open Personal Settings.
+2. Update profile/preferences.
+3. Open notification/security preferences.
+4. Open Developer page.
+5. Show API/dev tools panel and return.
+Success Criteria:
+- Viewer can manage own account and dev-facing options.
+
+=================================================================
+RECORDING ORDER (RECOMMENDED)
+=================================================================
+Wave 1 (Customer-facing core, highest value):
+M01, M02, M04, M06, M07, M09, M13, M14, M16
+
+Wave 2 (Operational depth):
+M03, M05, M08, M10, M11, M12, M15, M17, M18, M20, M21, M25, M27, M29
+
+Wave 3 (Specialist + Admin):
+M19, M26, M28
+
+=================================================================
+DONE DEFINITION PER VIDEO
+=================================================================
+A video is "Done" when:
+- Script run was recorded in a clean org context.
+- Captions file exists.
+- Thumbnail exists.
+- QA checklist passed (no dead clicks, no sensitive data, accurate labels).
+- Linked from support/docs center.
+
+=================================================================
+NOTES
+=================================================================
+- Keep all demo credentials and API keys redacted.
+- Use seeded demo data for stable, repeatable recordings.
+- If a feature is role-gated, include role note in intro: "Requires Owner/Admin role".

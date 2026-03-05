@@ -1,0 +1,26 @@
+# NetNeural Video Tutorials - Wave 3 Voiceover Scripts
+Version: 2026-03-04
+Audience: Specialist
+Modules: M19, M26, M28
+
+=================================================================
+M19 - MQTT Integration Deep Dive (5-7 min)
+Start route: /dashboard/integrations/mqtt/<id>
+=================================================================
+"In this module, we’ll configure MQTT integration end-to-end. Open the MQTT integration editor. Compare hosted versus external broker mode and explain when to use each. Populate broker URL, port, username, and authentication fields. Configure topic mapping and payload parser settings where available. Save configuration and validate connection status. If connection tests are present, run one and narrate expected success or troubleshooting path. You now know how to configure MQTT safely for production telemetry flow."
+
+=================================================================
+M26 - Reseller Hub and Invite (4-6 min)
+Start route: /dashboard/reseller
+=================================================================
+"Open Reseller Hub and review current partner metrics and status cards. Navigate to the invite workflow. Create a new invite using test recipient details and submit. Confirm invite appears in list with expected status. Explain follow-up actions for accepted and pending invites. You now know how to onboard reseller-side users and track invite lifecycle."
+
+=================================================================
+M28 - Feedback Submission (2-3 min)
+Start route: /dashboard/feedback
+=================================================================
+"Open Feedback page. Select category and priority, then enter a clear title and detailed description. Submit feedback and confirm success state. Emphasize writing reproducible details so product and engineering can triage quickly. You now know how to submit actionable feedback directly from within the platform."
+
+=================================================================
+END OF WAVE 3
+=================================================================
