@@ -4,7 +4,10 @@
  */
 import { test, expect, Page } from '@playwright/test'
 
-const TEST_USER = { email: 'admin@netneural.ai', password: 'password123' }
+const TEST_USER = {
+  email: process.env.TEST_USER_EMAIL || 'admin@netneural.ai',
+  password: process.env.TEST_USER_PASSWORD || 'password123',
+}
 
 async function loginAndGoToDevices(page: Page) {
   await page.goto('/auth/login')
