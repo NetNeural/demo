@@ -69,32 +69,38 @@ const TIER_DISPLAY: Record<string, TierDisplayInfo> = {
   starter: {
     label: 'Starter',
     color: 'blue',
-    badge: 'bg-blue-100 text-blue-700',
+    badge: 'bg-blue-100 text-black',
     description: 'Essential IoT monitoring',
   },
   business: {
     label: 'Business',
     color: 'purple',
-    badge: 'bg-purple-100 text-purple-700',
+    badge: 'bg-purple-100 text-black',
     description: 'Advanced protection & analytics',
   },
   enterprise: {
     label: 'Enterprise',
     color: 'amber',
-    badge: 'bg-amber-100 text-amber-700',
+    badge: 'bg-amber-100 text-black',
     description: 'Full platform control',
   },
   reseller: {
     label: 'Reseller',
     color: 'emerald',
-    badge: 'bg-emerald-100 text-emerald-700',
+    badge: 'bg-emerald-100 text-black',
     description: 'Reseller partner tier',
   },
   unlimited: {
     label: 'Unlimited',
     color: 'violet',
-    badge: 'bg-violet-100 text-violet-700',
+    badge: 'bg-violet-100 text-black',
     description: 'NetNeural internal — unlimited everything',
+  },
+  platform_owner: {
+    label: 'Platform Owner',
+    color: 'indigo',
+    badge: 'bg-indigo-100 text-black',
+    description: 'Platform owner — full platform control',
   },
 }
 
@@ -106,9 +112,9 @@ export function getTierDisplayInfo(
 ): TierDisplayInfo {
   return (
     TIER_DISPLAY[tier] || {
-      label: tier.charAt(0).toUpperCase() + tier.slice(1),
+      label: tier.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
       color: 'gray',
-      badge: 'bg-gray-100 text-gray-700',
+      badge: 'bg-gray-100 text-black',
       description: '',
     }
   )

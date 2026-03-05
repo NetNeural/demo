@@ -88,7 +88,7 @@ function DefaultUpgradePrompt({
   const tierInfo = getTierDisplayInfo(currentTier)
 
   // Determine which tier unlocks this feature
-  const tierOrder = ['starter', 'business', 'enterprise', 'unlimited']
+  const tierOrder = ['starter', 'business', 'enterprise', 'reseller', 'unlimited', 'platform_owner']
   let requiredTier = 'enterprise'
   for (const t of tierOrder) {
     const features = getStaticTierFeatures(t)
