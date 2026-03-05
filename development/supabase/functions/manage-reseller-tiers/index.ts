@@ -10,7 +10,7 @@
 
 import { createServiceClient } from '../_shared/auth.ts'
 import { getUserContext } from '../_shared/auth.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 
 const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -22,6 +22,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = makeCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

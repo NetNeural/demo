@@ -367,9 +367,21 @@ export function hasPermission(
   }
 }
 
+import { getAllowedOrigin } from './cors.ts'
+
 /**
- * Standard CORS headers for Edge Functions
+ * Build CORS headers with validated origin for a given request.
  */
+export function getAuthCorsHeaders(req: Request): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type, x-integration-id, x-golioth-signature, x-amz-sns-message-id, x-azure-signature, x-webhook-signature',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  }
+}
+
+/** @deprecated Use getAuthCorsHeaders(req) for origin-validated responses */
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':

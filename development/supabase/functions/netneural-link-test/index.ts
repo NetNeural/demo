@@ -5,9 +5,10 @@
 // ===========================================================================
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 
 serve(async (req: Request): Promise<Response> => {
+  const corsHeaders = makeCorsHeaders(req)
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

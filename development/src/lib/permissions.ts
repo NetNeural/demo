@@ -23,6 +23,8 @@ export function isPlatformAdmin(
 ): boolean {
   if (!user) return false
   if (user.isSuperAdmin) return true
+  // Direct role check — covers platform_admin even without org context
+  if (user.role === 'platform_admin') return true
   // NetNeural org owner check — supports both membership role ('owner')
   // and global role ('org_owner')
   const isNetNeuralOrg =

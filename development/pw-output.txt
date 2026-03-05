@@ -1,0 +1,16 @@
+﻿[dotenv@17.3.1] injecting env (5) from .env.test.local -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+   ≡ƒôä Loaded env from .env.test.local
+
+≡ƒöº Playwright Global Setup
+   Supabase URL: https://tsomafkalaoarnuwgdyu.supabase.co
+   Test user:    admin@netneural.ai
+   Γ£à Test user already exists (id: 22222222...)
+   Γ£à Sign-in verification passed
+   Γ£à Admin password_change_required cleared
+   ≡ƒöÉ Checking admin MFA (TOTP) enrollment...
+   Γ£à Admin TOTP already enrolled (verified secret on disk)
+   ≡ƒÜÇ Global setup complete
+
+
+Running 10 tests using 8 workers
+┬╖┬╖┬╖┬╖┬╖┬╖├ù├ù├ù├ùFFF

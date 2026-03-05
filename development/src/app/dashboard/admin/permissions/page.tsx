@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -657,7 +658,8 @@ function PermissionMatrix({
 
 export default function PermissionsPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = isPlatformAdmin(user)
+  const { currentOrganization, userRole } = useOrganization()
+  const isSuperAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
 
   const [overrides, setOverrides] = useState<
     Record<string, Record<AllRole, AccessLevel>>
@@ -802,7 +804,7 @@ export default function PermissionsPage() {
         <Shield className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Access Restricted</h2>
         <p className="text-muted-foreground">
-          This page is only accessible to Super Admins.
+          This page is only accessible to Platform Admins.
         </p>
       </div>
     )
@@ -996,4 +998,3 @@ export default function PermissionsPage() {
     </div>
   )
 }
-export { PermissionsPage }

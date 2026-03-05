@@ -37,9 +37,9 @@ import { AccessRequestsTab } from '@/app/dashboard/organizations/components/Acce
 import MercuryChat from './components/MercuryChat'
 import TestsTab from './components/TestsTab'
 import DocumentationTab from './components/DocumentationTab'
-import { PlatformHealthPage } from '@/app/dashboard/admin/platform-health/page'
-import { SecurityAuditPage } from '@/app/dashboard/admin/security-audit/page'
-import { PermissionsPage } from '@/app/dashboard/admin/permissions/page'
+import PlatformHealthPage from '@/app/dashboard/admin/platform-health/page'
+import SecurityAuditPage from '@/app/dashboard/admin/security-audit/page'
+import PermissionsPage from '@/app/dashboard/admin/permissions/page'
 import RunbookPage from '@/app/dashboard/admin/go-live-runbook/page'
 
 const tabs = [

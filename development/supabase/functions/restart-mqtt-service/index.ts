@@ -1,11 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 
 interface RestartRequest {
   service?: 'mqtt' | 'all'
 }
 
 serve(async (req) => {
+  const corsHeaders = makeCorsHeaders(req)
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

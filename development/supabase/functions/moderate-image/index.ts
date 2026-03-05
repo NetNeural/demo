@@ -6,7 +6,7 @@
  * Expects POST with JSON body: { imageBase64: string } (data-URL or raw base64)
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 
 interface ModerationResult {
   safe: boolean
@@ -14,6 +14,7 @@ interface ModerationResult {
 }
 
 serve(async (req: Request) => {
+  const corsHeaders = makeCorsHeaders(req)
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

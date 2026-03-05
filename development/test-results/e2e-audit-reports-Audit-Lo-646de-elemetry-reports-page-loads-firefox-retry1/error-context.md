@@ -1,0 +1,50 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "NetNeural Demo" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Sentinel
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - heading "Welcome back" [level=2] [ref=e9]
+        - paragraph [ref=e10]: Sign in to continue
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]: Email address
+          - textbox "Email address" [ref=e14]:
+            - /placeholder: you@company.com
+        - generic [ref=e15]:
+          - generic [ref=e16]: Password
+          - generic [ref=e17]:
+            - textbox "Password" [ref=e18]:
+              - /placeholder: Enter your password
+            - button [ref=e19] [cursor=pointer]:
+              - img [ref=e20]
+        - generic [ref=e23]:
+          - checkbox "Keep me signed in" [ref=e24] [cursor=pointer]
+          - checkbox
+          - generic [ref=e25] [cursor=pointer]: Keep me signed in
+        - button "Sign in" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]:
+            - img [ref=e28]
+            - text: Sign in
+      - paragraph [ref=e31]:
+        - button "Forgot your password?" [ref=e32] [cursor=pointer]
+      - paragraph [ref=e33]:
+        - text: Don't have an account?
+        - link "Sign up" [ref=e34] [cursor=pointer]:
+          - /url: /auth/signup
+    - generic [ref=e35]:
+      - img [ref=e36]
+      - generic [ref=e38]: Enterprise-grade security
+      - generic [ref=e39]: •
+      - generic [ref=e40]: 256-bit encryption
+      - generic [ref=e41]: •
+      - link "Privacy Policy" [ref=e42] [cursor=pointer]:
+        - /url: /privacy
+    - paragraph [ref=e43]: Powered by NetNeural
+  - region "Notifications alt+T"
+  - alert [ref=e44]: Sentinel by NetNeural
+```

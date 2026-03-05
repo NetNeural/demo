@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 import {
   getUserContext,
   createAuthenticatedClient,
@@ -150,6 +150,7 @@ interface RecordActionRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = makeCorsHeaders(req)
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

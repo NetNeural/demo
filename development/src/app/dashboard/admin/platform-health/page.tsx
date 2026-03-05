@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { isPlatformAdmin } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -79,7 +80,8 @@ function StatusIcon({ status }: { status: HealthCheck['status'] }) {
 
 export default function PlatformHealthPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = isPlatformAdmin(user)
+  const { currentOrganization, userRole } = useOrganization()
+  const isSuperAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
   const [checks, setChecks] = useState<HealthCheck[]>([])
   const [stats, setStats] = useState<PlatformStats | null>(null)
   const [isChecking, setIsChecking] = useState(false)
@@ -284,9 +286,9 @@ export default function PlatformHealthPage() {
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-4 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-semibold">Super Admin Only</p>
+            <p className="text-lg font-semibold">Platform Admin Only</p>
             <p className="text-sm text-muted-foreground">
-              Platform health monitoring requires super admin access.
+              Platform health monitoring requires platform admin access.
             </p>
           </div>
         </div>
@@ -535,3 +537,4 @@ function Bell(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+

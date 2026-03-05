@@ -18,7 +18,7 @@
  */
 
 import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 import { createServiceClient } from '../_shared/auth.ts'
 
 // ── Stripe singleton ──────────────────────────────────────────────────
@@ -33,6 +33,7 @@ function getStripe(): Stripe {
 
 // ── Main handler ───────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
+  const corsHeaders = makeCorsHeaders(req)
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

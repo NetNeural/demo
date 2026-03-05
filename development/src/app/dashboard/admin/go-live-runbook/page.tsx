@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useUser } from '@/contexts/UserContext'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { isPlatformAdmin } from '@/lib/permissions'
 import {
   AlertTriangle,
@@ -350,7 +351,8 @@ const ALL_SECTIONS = [
 
 export default function RunbookPage() {
   const { user, loading } = useUser()
-  const isSuperAdmin = isPlatformAdmin(user)
+  const { currentOrganization, userRole } = useOrganization()
+  const isSuperAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   // Persist to localStorage
@@ -395,7 +397,7 @@ export default function RunbookPage() {
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-4 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-semibold">Super Admin Only</p>
+            <p className="text-lg font-semibold">Platform Admin Only</p>
           </div>
         </div>
       </div>

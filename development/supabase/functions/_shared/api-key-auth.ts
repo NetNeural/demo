@@ -141,6 +141,18 @@ export class ApiKeyAuthError extends Error {
   }
 }
 
+import { getAllowedOrigin } from './cors.ts'
+
+/** Build API key CORS headers with validated origin */
+export function getApiKeyCorsHeaders(req: Request): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  }
+}
+
+/** @deprecated Use getApiKeyCorsHeaders(req) */
 export const apiKeyCorsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',

@@ -10,6 +10,7 @@ import {
   getUserContext,
   createAuthenticatedClient,
   corsHeaders,
+  getAuthCorsHeaders,
   type UserContext,
 } from './auth.ts'
 import { IntegrationError } from './base-integration-client.ts'
@@ -59,9 +60,11 @@ export function createEdgeFunction(
   return Deno.serve(async (req: Request) => {
     // CORS preflight
     if (req.method === 'OPTIONS') {
-      return new Response('ok', { headers: corsHeaders })
+      return new Response('ok', { headers: getAuthCorsHeaders(req) })
     }
 
+    // Dynamic CORS headers for this request
+    const _corsHeaders = getAuthCorsHeaders(req)
     const startTime = Date.now()
 
     try {
@@ -139,7 +142,7 @@ export function createEdgeFunction(
         `[Error] ${req.method} ${new URL(req.url).pathname} - ${duration}ms`,
         error
       )
-      return handleEdgeFunctionError(error)
+      return handleEdgeFunctionError(error, _corsHeaders)
     }
   })
 }
@@ -147,15 +150,16 @@ export function createEdgeFunction(
 /**
  * Standardized error handler for all edge functions
  */
-export function handleEdgeFunctionError(error: unknown): Response {
+export function handleEdgeFunctionError(error: unknown, dynamicCors?: Record<string, string>): Response {
   console.error('[Edge Function Error]:', error)
+  const _cors = dynamicCors || corsHeaders
 
   // Handle DatabaseError with status code
   if (error instanceof DatabaseError) {
     return createErrorResponse(error.message, error.status, {
       error: getErrorType(error.status),
       ...(error.details && { details: error.details }),
-    })
+    }, _cors)
   }
 
   // Handle ValidationError (Zod) — structured field-level errors
@@ -163,7 +167,7 @@ export function handleEdgeFunctionError(error: unknown): Response {
     return createErrorResponse('Validation failed', 400, {
       error: 'Bad Request',
       details: error.errors,
-    })
+    }, _cors)
   }
 
   // Handle IntegrationError (from providers)
@@ -171,7 +175,7 @@ export function handleEdgeFunctionError(error: unknown): Response {
     return createErrorResponse(error.message, error.status || 500, {
       error: error.code || getErrorType(error.status || 500),
       details: error.details,
-    })
+    }, _cors)
   }
 
   // Handle standard errors
@@ -181,7 +185,7 @@ export function handleEdgeFunctionError(error: unknown): Response {
       error.message.includes('Unauthorized') ||
       error.message.includes('expired token')
     ) {
-      return createErrorResponse(error.message, 401, { error: 'Unauthorized' })
+      return createErrorResponse(error.message, 401, { error: 'Unauthorized' }, _cors)
     }
 
     // Validation errors
@@ -189,7 +193,7 @@ export function handleEdgeFunctionError(error: unknown): Response {
       error.message.includes('required') ||
       error.message.includes('Invalid')
     ) {
-      return createErrorResponse(error.message, 400, { error: 'Bad Request' })
+      return createErrorResponse(error.message, 400, { error: 'Bad Request' }, _cors)
     }
 
     // Permission errors
@@ -197,24 +201,24 @@ export function handleEdgeFunctionError(error: unknown): Response {
       error.message.includes('permission') ||
       error.message.includes('Forbidden')
     ) {
-      return createErrorResponse(error.message, 403, { error: 'Forbidden' })
+      return createErrorResponse(error.message, 403, { error: 'Forbidden' }, _cors)
     }
 
     // Not found errors
     if (error.message.includes('not found')) {
-      return createErrorResponse(error.message, 404, { error: 'Not Found' })
+      return createErrorResponse(error.message, 404, { error: 'Not Found' }, _cors)
     }
 
     // Generic error
     return createErrorResponse(error.message, 500, {
       error: 'Internal server error',
-    })
+    }, _cors)
   }
 
   // Unknown error
   return createErrorResponse('Internal server error', 500, {
     error: 'Internal server error',
-  })
+  }, _cors)
 }
 
 /**
@@ -249,9 +253,11 @@ export function createSuccessResponse<T>(
     status?: number
     message?: string
     meta?: Record<string, unknown>
-  } = {}
+  } = {},
+  dynamicCors?: Record<string, string>
 ): Response {
   const { status = 200, message, meta } = options
+  const _cors = dynamicCors || corsHeaders
 
   return new Response(
     JSON.stringify({
@@ -263,7 +269,7 @@ export function createSuccessResponse<T>(
     }),
     {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ..._cors, 'Content-Type': 'application/json' },
     }
   )
 }
@@ -275,9 +281,11 @@ export function createSuccessResponse<T>(
 export function createErrorResponse(
   message: string,
   status: number = 400,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  dynamicCors?: Record<string, string>
 ): Response {
   const errorType = details?.error || getErrorType(status)
+  const _cors = dynamicCors || corsHeaders
 
   return new Response(
     JSON.stringify({
@@ -293,7 +301,7 @@ export function createErrorResponse(
     }),
     {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ..._cors, 'Content-Type': 'application/json' },
     }
   )
 }

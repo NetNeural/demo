@@ -17,7 +17,7 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '../_shared/create-edge-function.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 import { NetNeuralLinkClient } from '../_shared/netneural-link-client.ts'
 
 // Protocol detection from request
@@ -152,6 +152,7 @@ function normalizeTelemetry(
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 serve(async (request: Request): Promise<Response> => {
+  const corsHeaders = makeCorsHeaders(request)
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

@@ -1,0 +1,5 @@
+   ▲ Next.js 15.5.12
+   - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+Terminate batch job (Y/N)? Terminate batch job (Y/N)? Terminate batch job (Y/N)? Terminate batch job (Y/N)? 

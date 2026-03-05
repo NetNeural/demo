@@ -12,9 +12,10 @@
 // ============================================================
 
 import { createServiceClient } from '../_shared/auth.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { makeCorsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = makeCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
