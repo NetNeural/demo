@@ -43,6 +43,7 @@ import {
 } from 'lucide-react'
 import { canAccessSupport, isPlatformAdmin } from '@/lib/permissions'
 import { getRoleDisplayInfo } from '@/types/organization'
+import { isPlatformOwnerTier } from '@/types/organization'
 import { Badge } from '@/components/ui/badge'
 
 // Lazy singleton — avoids calling createClient() at module eval time during static export
@@ -57,6 +58,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { currentOrganization, userOrganizations, userRole } = useOrganization()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isPlatformOwner = isPlatformOwnerTier(currentOrganization?.subscription_tier)
   const isSuperAdmin = user?.isSuperAdmin || false
   const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
 
@@ -162,8 +164,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             ]
           : []),
         ...(currentOrganization?.subscription_tier === 'reseller' ||
+        currentOrganization?.subscription_tier === 'platform_owner' ||
         currentOrganization?.is_reseller === true
-          ? [{ href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network }]
+          ? [{
+              href: '/dashboard/reseller',
+              label: isPlatformOwner ? 'Platform Hub' : 'Reseller Hub',
+              icon: isPlatformOwner ? ShieldCheck : Network,
+            }]
           : []),
       ],
     },

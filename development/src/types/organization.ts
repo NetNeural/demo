@@ -49,8 +49,14 @@ export type SubscriptionTier =
   | 'reseller'
   | 'enterprise'
   | 'unlimited'
+  | 'platform_owner'
 
-export const RESELLER_TIERS: SubscriptionTier[] = ['reseller', 'enterprise']
+export const RESELLER_TIERS: SubscriptionTier[] = ['reseller', 'enterprise', 'platform_owner']
+
+/** Platform Owner is the top-tier org that owns the platform (e.g., NetNeural) */
+export function isPlatformOwnerTier(tier?: string | null): boolean {
+  return tier === 'platform_owner'
+}
 
 export interface Organization {
   id: string

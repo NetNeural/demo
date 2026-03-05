@@ -222,6 +222,28 @@ const STATIC_TIER_FEATURES: { [tier: string]: TierFeaturesMap } = {
     white_label: true,
     dedicated_infra: true,
   },
+  platform_owner: {
+    device_monitoring: true,
+    alert_notifications: true,
+    dashboard_analytics: true,
+    data_export: true,
+    custom_branding: true,
+    api_access: true,
+    ai_detection: true,
+    predictive_ai: true,
+    fleet_analytics: true,
+    advanced_alerts: true,
+    sso: true,
+    audit_logs: true,
+    data_retention_extended: true,
+    multi_location: true,
+    firmware_management: true,
+    priority_support: true,
+    unlimited_users: true,
+    custom_integrations: true,
+    white_label: true,
+    dedicated_infra: true,
+  },
 }
 
 // ============================================================================

@@ -434,15 +434,23 @@ export function CustomerTable() {
                               {c.plan_name ||
                                 (c.subscription_tier === 'reseller'
                                   ? 'starter'
-                                  : c.subscription_tier) ||
+                                  : c.subscription_tier === 'platform_owner'
+                                    ? 'Platform Owner'
+                                    : c.subscription_tier) ||
                                 'None'}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             {c.is_reseller ? (
-                              <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                Reseller
-                              </Badge>
+                              c.subscription_tier === 'platform_owner' ? (
+                                <Badge className="border-0 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                  Platform Owner
+                                </Badge>
+                              ) : (
+                                <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                  Reseller
+                                </Badge>
+                              )
                             ) : c.parent_organization_id ? (
                               <Badge variant="outline" className="text-xs">
                                 Sub-org
@@ -531,13 +539,21 @@ export function CustomerTable() {
                           {c.plan_name ||
                             (c.subscription_tier === 'reseller'
                               ? 'starter'
-                              : c.subscription_tier) ||
+                              : c.subscription_tier === 'platform_owner'
+                                ? 'Platform Owner'
+                                : c.subscription_tier) ||
                             'None'}
                         </Badge>
                         {c.is_reseller && (
-                          <Badge className="border-0 bg-amber-100 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                            Reseller
-                          </Badge>
+                          c.subscription_tier === 'platform_owner' ? (
+                            <Badge className="border-0 bg-indigo-100 text-xs text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                              Platform Owner
+                            </Badge>
+                          ) : (
+                            <Badge className="border-0 bg-amber-100 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              Reseller
+                            </Badge>
+                          )
                         )}
                         {!c.is_reseller && c.parent_organization_id && (
                           <Badge variant="outline" className="text-xs">
