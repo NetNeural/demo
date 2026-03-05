@@ -217,26 +217,25 @@ function LoginForm() {
           return
         }
         if (session) {
-          // Check MFA enrollment before auto-redirecting to dashboard
+          // Check MFA enrollment — if user has verified TOTP, enforce aal2
           const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
           const hasVerifiedTotp = mfaFactors?.totp?.some(
             (f) => f.status === 'verified'
           )
-          if (!hasVerifiedTotp) {
-            hasCheckedAuth.current = true
-            router.replace('/auth/setup-mfa')
-            return
+
+          if (hasVerifiedTotp) {
+            // Verify session has aal2 (completed MFA challenge)
+            // Prevents back-button bypass: aal1 session should not auto-redirect to dashboard
+            const { data: aal } =
+              await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+            if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
+              hasCheckedAuth.current = true
+              return // Stay on login page — user must complete MFA
+            }
           }
 
-          // Verify session has aal2 (completed MFA challenge)
-          // Prevents back-button bypass: aal1 session should not auto-redirect to dashboard
-          const { data: aal } =
-            await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-          if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
-            hasCheckedAuth.current = true
-            return // Stay on login page — user must complete MFA
-          }
-
+          // MFA is optional — users without MFA can proceed directly
+          // TODO: Re-enable mandatory MFA redirect for SOC 2 compliance
           hasCheckedAuth.current = true
           router.replace('/dashboard')
         }
@@ -297,15 +296,16 @@ function LoginForm() {
           }
         }
 
-        // Force MFA setup if user has no enrolled TOTP factors
-        const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
-        const hasVerifiedTotp = mfaFactors?.totp?.some(
-          (f) => f.status === 'verified'
-        )
-        if (!hasVerifiedTotp) {
-          router.push('/auth/setup-mfa')
-          return
-        }
+        // MFA is optional until SOC 2 compliance phase
+        // TODO: Re-enable mandatory MFA setup redirect for SOC 2
+        // const { data: mfaFactors } = await supabase.auth.mfa.listFactors()
+        // const hasVerifiedTotp = mfaFactors?.totp?.some(
+        //   (f) => f.status === 'verified'
+        // )
+        // if (!hasVerifiedTotp) {
+        //   router.push('/auth/setup-mfa')
+        //   return
+        // }
 
         await new Promise((resolve) => setTimeout(resolve, 100))
         const {
