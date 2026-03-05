@@ -44,7 +44,7 @@ const config = {
   },
 
   // Transform ESM modules from node_modules
-  transformIgnorePatterns: ['node_modules/(?!(uuid|azure-iothub)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(uuid|azure-iothub|bad-words|badwords-list)/)'],
 
   // Coverage configuration
   collectCoverageFrom: [
@@ -123,4 +123,13 @@ const config = {
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(config)
+// We override transformIgnorePatterns after next/jest resolves, because next/jest
+// prepends its own node_modules ignore patterns that block our ESM packages.
+module.exports = async () => {
+  const jestConfig = await createJestConfig(config)()
+  jestConfig.transformIgnorePatterns = [
+    'node_modules/(?!(uuid|azure-iothub|bad-words|badwords-list)/)',
+    '^.+\\.module\\.(css|sass|scss)$',
+  ]
+  return jestConfig
+}
