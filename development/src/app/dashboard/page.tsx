@@ -121,7 +121,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Onboarding checklist — shows for new accounts, dismissible */}
-      {(stats?.totalDevices ?? 0) === 0 && <OnboardingChecklist />}
+      {stats && stats.totalDevices === 0 && <OnboardingChecklist />}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
