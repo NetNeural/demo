@@ -119,6 +119,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
           router.push('/auth/setup-mfa')
           return
         }
+
+        // Verify the session has completed MFA challenge (aal2)
+        // Prevents back-button bypass: user enters password but skips MFA verification
+        const { data: aal } =
+          await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
+          // Session is aal1 but aal2 is required — MFA challenge not completed
+          await supabase.auth.signOut()
+          router.push('/auth/login')
+          return
+        }
       }
 
       // Check if user needs to change password

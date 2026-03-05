@@ -227,6 +227,16 @@ function LoginForm() {
             router.replace('/auth/setup-mfa')
             return
           }
+
+          // Verify session has aal2 (completed MFA challenge)
+          // Prevents back-button bypass: aal1 session should not auto-redirect to dashboard
+          const { data: aal } =
+            await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+          if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
+            hasCheckedAuth.current = true
+            return // Stay on login page — user must complete MFA
+          }
+
           hasCheckedAuth.current = true
           router.replace('/dashboard')
         }
