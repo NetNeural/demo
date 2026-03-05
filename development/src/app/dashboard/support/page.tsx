@@ -8,7 +8,7 @@ import {
   Activity,
   FileBarChart,
   Download,
-  Mail,
+  Settings2,
   FlaskConical,
   BookOpen,
   Shield,
@@ -31,7 +31,8 @@ import TroubleshootingTab from './components/TroubleshootingTab'
 import SystemHealthTab from './components/SystemHealthTab'
 import DataOperationsTab from './components/DataOperationsTab'
 import ExecutiveReportsCard from './components/ExecutiveReportsCard'
-import { EmailBroadcastCard } from './components/EmailBroadcastCard'
+import CustomerAssistanceTab from './components/CustomerAssistanceTab'
+import AdminToolsTab from './components/AdminToolsTab'
 import { AccessRequestsTab } from '@/app/dashboard/organizations/components/AccessRequestsTab'
 import MercuryChat from './components/MercuryChat'
 import TestsTab from './components/TestsTab'
@@ -54,12 +55,6 @@ const tabs = [
     label: 'Data & Operations',
     icon: Download,
     superAdminOnly: false,
-  },
-  {
-    id: 'communication',
-    label: 'Communication',
-    icon: Mail,
-    superAdminOnly: true,
   },
   {
     id: 'documentation',
@@ -195,7 +190,8 @@ function SupportPageContent() {
             'access-requests': 'customer-support',
             'executive-reports': 'customer-support',
             'data-operations': 'customer-support',
-            communication: 'customer-support',
+            'customer-assistance': 'customer-support',
+            'admin-tools': 'customer-support',
             documentation: 'resources',
             troubleshooting: 'platform',
             'system-health': 'platform',
@@ -248,6 +244,20 @@ function SupportPageContent() {
                 <Bot className="h-4 w-4" />
                 Mercury Support
               </TabsTrigger>
+              <TabsTrigger
+                value="customer-assistance"
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Customer Assistance
+              </TabsTrigger>
+              <TabsTrigger
+                value="admin-tools"
+                className="flex items-center gap-2"
+              >
+                <Settings2 className="h-4 w-4" />
+                Admin Tools
+              </TabsTrigger>
               {!isSubOrg && (
                 <TabsTrigger
                   value="executive-reports"
@@ -266,21 +276,18 @@ function SupportPageContent() {
                   Data & Operations
                 </TabsTrigger>
               )}
-              {isSuperAdmin && (
-                <TabsTrigger
-                  value="communication"
-                  className="flex items-center gap-2"
-                >
-                  <Mail className="h-4 w-4" />
-                  Communication
-                </TabsTrigger>
-              )}
             </TabsList>
             <TabsContent value="access-requests" className="mt-6">
               <div className="space-y-6">
                 <MercuryChat key={`mercury-${orgId}`} organizationId={orgId} />
                 <AccessRequestsTab key={`ar-${orgId}`} organizationId={orgId} />
               </div>
+            </TabsContent>
+            <TabsContent value="customer-assistance" className="mt-6">
+              <CustomerAssistanceTab key={orgId} organizationId={orgId} />
+            </TabsContent>
+            <TabsContent value="admin-tools" className="mt-6">
+              <AdminToolsTab key={orgId} organizationId={orgId} />
             </TabsContent>
             {!isSubOrg && (
               <TabsContent value="executive-reports" className="mt-6">
@@ -290,11 +297,6 @@ function SupportPageContent() {
             {!isSubOrg && (
               <TabsContent value="data-operations" className="mt-6">
                 <DataOperationsTab key={orgId} organizationId={orgId} />
-              </TabsContent>
-            )}
-            {isSuperAdmin && (
-              <TabsContent value="communication" className="mt-6">
-                <EmailBroadcastCard />
               </TabsContent>
             )}
           </Tabs>

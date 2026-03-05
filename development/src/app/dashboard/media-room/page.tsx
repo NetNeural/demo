@@ -3,16 +3,9 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Newspaper,
   Share2,
-  Users,
-  Wrench,
-  Activity,
-  Settings2,
-  FlaskConical,
-  BookOpen,
+  Mail,
   Shield,
-  LifeBuoy,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -24,53 +17,7 @@ import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 import { SocialMediaTab } from './components/SocialMediaTab'
-
-// Support tab components (moved under Media Room)
-import CustomerAssistanceTab from '../support/components/CustomerAssistanceTab'
-import TroubleshootingTab from '../support/components/TroubleshootingTab'
-import SystemHealthTab from '../support/components/SystemHealthTab'
-import AdminToolsTab from '../support/components/AdminToolsTab'
-import TestsTab from '../support/components/TestsTab'
-import DocumentationTab from '../support/components/DocumentationTab'
-
-const supportTabs = [
-  {
-    id: 'customer-assistance',
-    label: 'Customer Assistance',
-    icon: Users,
-    superAdminOnly: false,
-  },
-  {
-    id: 'admin-tools',
-    label: 'Admin Tools',
-    icon: Settings2,
-    superAdminOnly: false,
-  },
-  {
-    id: 'documentation',
-    label: 'Documentation',
-    icon: BookOpen,
-    superAdminOnly: false,
-  },
-  {
-    id: 'troubleshooting',
-    label: 'Troubleshooting',
-    icon: Wrench,
-    superAdminOnly: true,
-  },
-  {
-    id: 'system-health',
-    label: 'System Health',
-    icon: Activity,
-    superAdminOnly: true,
-  },
-  {
-    id: 'tests',
-    label: 'Tests & Validation',
-    icon: FlaskConical,
-    superAdminOnly: true,
-  },
-]
+import { EmailBroadcastCard } from '../support/components/EmailBroadcastCard'
 
 export default function MediaRoomPage() {
   return (
@@ -132,16 +79,6 @@ function MediaRoomPageContent() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
-  const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
-  const isNetNeuralOrg = currentOrganization?.id === NETNEURAL_ORG_ID
-  const canAccessPlatformTabs =
-    isSuperAdmin ||
-    (isNetNeuralOrg && ['admin', 'owner'].includes(userRole ?? ''))
-
-  const visibleSupportTabs = supportTabs.filter(
-    (tab) => !tab.superAdminOnly || canAccessPlatformTabs
-  )
-
   return (
     <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
       <div className="flex items-center gap-3">
@@ -155,7 +92,7 @@ function MediaRoomPageContent() {
             {orgName ? `${orgName} Media Room` : 'Media Room'}
           </h2>
           <p className="text-muted-foreground">
-            Social media management, support communications, and customer tools
+            Social media management and communications
           </p>
         </div>
       </div>
@@ -165,73 +102,33 @@ function MediaRoomPageContent() {
         onValueChange={handleTabChange}
         className="space-y-6"
       >
-        <TabsList className="w-full flex-wrap justify-start">
-          {/* Media Room tabs */}
+        <TabsList className="w-full justify-start">
           <TabsTrigger
             value="social-media"
             className="flex items-center gap-2"
           >
             <Share2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Social Media</span>
+            <span>Social Media</span>
           </TabsTrigger>
-
-          {/* Divider indicator */}
-          <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
-
-          {/* Support Communications tabs */}
-          {visibleSupportTabs.map(
-            ({ id, label, icon: Icon, superAdminOnly }) => (
-              <TabsTrigger
-                key={id}
-                value={id}
-                className="flex items-center gap-2"
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{label}</span>
-                {superAdminOnly && (
-                  <Shield className="h-3 w-3 text-red-400" />
-                )}
-              </TabsTrigger>
-            )
+          {isSuperAdmin && (
+            <TabsTrigger
+              value="communication"
+              className="flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Communication</span>
+              <Shield className="h-3 w-3 text-red-400" />
+            </TabsTrigger>
           )}
         </TabsList>
 
-        {/* Social Media Tab */}
         <TabsContent value="social-media">
           <SocialMediaTab organizationId={orgId} />
         </TabsContent>
 
-        {/* Support Tabs */}
-        <TabsContent value="customer-assistance">
-          <CustomerAssistanceTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="admin-tools">
-          <AdminToolsTab organizationId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="documentation">
-          <DocumentationTab />
-        </TabsContent>
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="troubleshooting">
-            <TroubleshootingTab organizationId={orgId} />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="system-health">
-            <SystemHealthTab
-              organizationId={orgId}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </TabsContent>
-        )}
-
-        {canAccessPlatformTabs && (
-          <TabsContent value="tests">
-            <TestsTab organizationId={orgId} />
+        {isSuperAdmin && (
+          <TabsContent value="communication">
+            <EmailBroadcastCard />
           </TabsContent>
         )}
       </Tabs>
