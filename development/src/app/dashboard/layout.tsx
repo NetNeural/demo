@@ -93,61 +93,99 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     return <div className="p-6">Redirecting to login...</div>
   }
 
-  const navItems = [
+  type NavItem = {
+    href: string
+    label: string
+    icon: typeof LayoutDashboard
+    exact?: boolean
+  }
+  type NavGroup = { section: string; items: NavItem[] }
+
+  const navGroups: NavGroup[] = [
     {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      exact: true,
+      section: 'Overview',
+      items: [
+        {
+          href: '/dashboard',
+          label: 'Dashboard',
+          icon: LayoutDashboard,
+          exact: true,
+        },
+      ],
     },
     {
-      href: '/dashboard/hardware-provisioning',
-      label: 'Hardware Provisioning',
-      icon: Cpu,
+      section: 'Operations',
+      items: [
+        {
+          href: '/dashboard/hardware-provisioning',
+          label: 'Hardware Provisioning',
+          icon: Cpu,
+        },
+        ...(isSuperAdmin || isPlAdmin
+          ? [
+              {
+                href: '/dashboard/inventory-control',
+                label: 'Inventory Control',
+                icon: Warehouse,
+              },
+            ]
+          : []),
+        { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
+      ],
     },
-    ...(isSuperAdmin || isPlAdmin
-      ? [
-          {
-            href: '/dashboard/inventory-control',
-            label: 'Inventory Control',
-            icon: Warehouse,
-          },
-        ]
-      : []),
-    { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
-    { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
-    { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     {
-      href: '/dashboard/organizations',
-      label: 'Organization',
-      icon: Building2,
+      section: 'Insights',
+      items: [
+        { href: '/dashboard/analytics', label: 'AI Analytics', icon: BarChart3 },
+        { href: '/dashboard/reports', label: 'Reports', icon: FileText },
+      ],
     },
-    ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
-    (isSuperAdmin ||
-      isPlAdmin ||
-      userRole === 'owner' ||
-      userRole === 'billing')
-      ? [
-          {
-            href: '/dashboard/billing',
-            label: 'Billing Administration',
-            icon: FileBarChart,
-          },
-        ]
-      : []),
-    ...(currentOrganization?.subscription_tier === 'reseller' ||
-    currentOrganization?.is_reseller === true
-      ? [{ href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network }]
-      : []),
-    { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
-    ...(canAccessSupport(user, userRole)
-      ? [
-          { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
-          { href: '/dashboard/media-room', label: 'Media Room', icon: Newspaper },
-        ]
-      : []),
-    { href: '/dashboard/developer', label: 'Developer', icon: Code },
-    { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
+    {
+      section: 'Management',
+      items: [
+        {
+          href: '/dashboard/organizations',
+          label: 'Organization',
+          icon: Building2,
+        },
+        ...(currentOrganization?.id === '00000000-0000-0000-0000-000000000001' &&
+        (isSuperAdmin ||
+          isPlAdmin ||
+          userRole === 'owner' ||
+          userRole === 'billing')
+          ? [
+              {
+                href: '/dashboard/billing',
+                label: 'Billing Administration',
+                icon: FileBarChart,
+              },
+            ]
+          : []),
+        ...(currentOrganization?.subscription_tier === 'reseller' ||
+        currentOrganization?.is_reseller === true
+          ? [{ href: '/dashboard/reseller', label: 'Reseller Hub', icon: Network }]
+          : []),
+      ],
+    },
+    {
+      section: 'Support',
+      items: [
+        { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquarePlus },
+        ...(canAccessSupport(user, userRole)
+          ? [
+              { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
+              { href: '/dashboard/media-room', label: 'Media Room', icon: Newspaper },
+            ]
+          : []),
+      ],
+    },
+    {
+      section: 'System',
+      items: [
+        { href: '/dashboard/developer', label: 'Developer', icon: Code },
+        { href: '/dashboard/settings', label: 'Personal Settings', icon: Settings },
+      ],
+    },
   ]
 
   return (
@@ -204,22 +242,29 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="nav-menu">
-            {navItems.map(({ href, label, icon: Icon, exact }) => {
-              const isActive = exact
-                ? pathname === href
-                : pathname.startsWith(href)
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`nav-item ${isActive ? 'active' : ''}`}
-                  onClick={closeMobileMenu}
-                >
-                  <Icon className="mr-2 h-5 w-5" />
-                  {label}
-                </Link>
-              )
-            })}
+            {navGroups.map(({ section, items }) =>
+              items.length > 0 ? (
+                <div key={section} className="nav-section">
+                  <div className="nav-section-label">{section}</div>
+                  {items.map(({ href, label, icon: Icon, exact }) => {
+                    const isActive = exact
+                      ? pathname === href
+                      : pathname.startsWith(href)
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={`nav-item ${isActive ? 'active' : ''}`}
+                        onClick={closeMobileMenu}
+                      >
+                        <Icon className="mr-2 h-5 w-5" />
+                        {label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : null
+            )}
           </div>
           <div className="nav-user">
             <div className="user-info">

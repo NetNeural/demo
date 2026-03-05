@@ -998,12 +998,26 @@ body {
 }
 
 .nav-menu {
-  padding: var(--space-4);
+  padding: var(--space-2) var(--space-4);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+}
+
+.nav-section {
+  margin-bottom: var(--space-2);
+}
+
+.nav-section-label {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-400);
+  user-select: none;
 }
 
 .nav-item {
