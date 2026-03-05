@@ -80,14 +80,14 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome to Sentinel by NetNeural
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             Select an organization to view your dashboard
           </p>
         </div>
         <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-12">
           <div className="space-y-3 text-center">
-            <p className="text-muted-foreground">No organization selected</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-foreground">No organization selected</p>
+            <p className="text-sm text-foreground">
               Please select an organization from the sidebar to continue
             </p>
           </div>
