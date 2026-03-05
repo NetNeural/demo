@@ -91,14 +91,14 @@ export function OrganizationSwitcher({
               <div className="min-w-0 flex-1 text-left">
                 <span
                   className={cn(
-                    'font-medium text-muted-foreground',
+                    'font-medium text-foreground',
                     compact ? 'text-sm' : 'text-base'
                   )}
                 >
                   No Organization
                 </span>
                 {!compact && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-foreground">
                     Create your first organization
                   </p>
                 )}
@@ -110,7 +110,7 @@ export function OrganizationSwitcher({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="z-[200] w-[320px]">
-          <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+          <DropdownMenuLabel className="text-xs uppercase tracking-wide text-foreground">
             Get Started
           </DropdownMenuLabel>
         </DropdownMenuContent>

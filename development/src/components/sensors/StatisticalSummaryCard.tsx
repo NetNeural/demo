@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useMemo, useEffect, useState, useCallback } from 'react'
+import Markdown from 'react-markdown'
 import {
   Brain,
   TrendingUp,
@@ -909,9 +910,9 @@ export function StatisticalSummaryCard({
                             {insight.type}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {insight.message}
-                        </p>
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-muted-foreground">
+                          <Markdown>{insight.message}</Markdown>
+                        </div>
                       </div>
                     </div>
                   </div>

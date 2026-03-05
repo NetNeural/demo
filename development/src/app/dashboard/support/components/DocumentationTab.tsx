@@ -482,29 +482,7 @@ export default function DocumentationTab() {
             </div>
           )}
 
-          {/* Doc location info */}
-          <div className="mt-6 rounded-lg bg-muted p-4">
-            <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <ClipboardList className="h-4 w-4" />
-              Documentation Location
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              All documentation lives in{' '}
-              <code className="rounded bg-background px-1 py-0.5">
-                development/docs/
-              </code>{' '}
-              and is version-controlled alongside the codebase. Updates to
-              documentation should be made via pull requests and reviewed before
-              merge.
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              The changelog is maintained at{' '}
-              <code className="rounded bg-background px-1 py-0.5">
-                development/CHANGELOG.txt
-              </code>{' '}
-              following Keep a Changelog format.
-            </p>
-          </div>
+
         </CardContent>
       </Card>
     </div>

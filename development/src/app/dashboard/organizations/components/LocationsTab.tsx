@@ -24,6 +24,7 @@ import { MapPin, Plus, Edit, Trash2, Loader2 } from 'lucide-react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@/lib/sentry-utils'
+import { containsProfanity } from '@/lib/profanity-filter'
 
 interface Location {
   id: string
@@ -217,6 +218,14 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast.error('Location name is required')
+      return
+    }
+
+    if (
+      containsProfanity(formData.name) ||
+      containsProfanity(formData.description || '')
+    ) {
+      toast.error('Please remove inappropriate language before saving.')
       return
     }
 
@@ -442,7 +451,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto bg-white dark:bg-white">
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto bg-white text-black dark:bg-white dark:text-black">
           <DialogHeader>
             <DialogTitle>
               {editingLocation ? 'Edit Location' : 'Add New Location'}

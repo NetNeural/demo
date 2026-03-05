@@ -55,6 +55,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseUrl } from '@/lib/supabase/config'
 import { moderateImage } from '@/lib/image-moderation'
+import { containsProfanity, cleanText } from '@/lib/profanity-filter'
 
 interface FeedbackFormProps {
   onSubmitted?: () => void
@@ -195,6 +196,11 @@ export function FeedbackForm({ onSubmitted }: FeedbackFormProps) {
 
     if (!title.trim() || !description.trim()) {
       toast.error('Please fill in both the title and description.')
+      return
+    }
+
+    if (containsProfanity(title) || containsProfanity(description)) {
+      toast.error('Please remove inappropriate language before submitting.')
       return
     }
 

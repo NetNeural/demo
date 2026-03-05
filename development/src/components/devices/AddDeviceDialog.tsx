@@ -48,6 +48,7 @@ import { useOrganization } from '@/contexts/OrganizationContext'
 import { createClient } from '@/lib/supabase/client'
 import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
+import { containsProfanity } from '@/lib/profanity-filter'
 import type { DeviceType } from '@/types/device-types'
 
 /** Parsed barcode data */
@@ -242,6 +243,11 @@ export function AddDeviceDialog({
   const handleCreate = async () => {
     if (!name.trim()) {
       toast.error('Please enter a device name')
+      return
+    }
+
+    if (containsProfanity(name)) {
+      toast.error('Please remove inappropriate language from the device name.')
       return
     }
 
