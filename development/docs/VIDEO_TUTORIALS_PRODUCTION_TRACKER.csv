@@ -1,0 +1,27 @@
+module_id,title,wave,status,owner,target_minutes,script_file
+M01,Dashboard Overview,1,ready,,3-4,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M02,Hardware Provisioning,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M03,Device List and Actions,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M04,Device Detail Overview and Telemetry,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M05,Device Types,2,ready,,3-4,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M06,Alerts Inbox,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M07,Alert Rules Wizard,1,ready,,6-8,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M08,Analytics,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M09,Reports Hub,1,ready,,2-3,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M10,Reports Alerts,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M11,Reports Telemetry,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M12,Reports Audit Log,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M13,Organizations Overview,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M14,Members and Roles,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M15,Locations,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M16,Organization Integrations,1,ready,,4-6,VIDEO_TUTORIALS_WAVE1_SCRIPTS.txt
+M17,Integrations Hub,2,ready,,3-4,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M18,Integration Detail View,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M19,MQTT Integration Deep Dive,3,ready,,5-7,VIDEO_TUTORIALS_WAVE3_SCRIPTS.txt
+M20,Inventory Control,2,ready,,3-5,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M21,Facility Map,2,ready,,4-6,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M25,Plans and Pricing,2,ready,,3-4,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M26,Reseller Hub and Invite,3,ready,,4-6,VIDEO_TUTORIALS_WAVE3_SCRIPTS.txt
+M27,Support Center,2,ready,,4-6,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt
+M28,Feedback Submission,3,ready,,2-3,VIDEO_TUTORIALS_WAVE3_SCRIPTS.txt
+M29,Personal Settings and Developer,2,ready,,4-6,VIDEO_TUTORIALS_WAVE2_SCRIPTS.txt

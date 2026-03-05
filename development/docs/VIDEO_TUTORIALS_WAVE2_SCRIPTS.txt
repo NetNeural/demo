@@ -1,0 +1,92 @@
+# NetNeural Video Tutorials - Wave 2 Voiceover Scripts
+Version: 2026-03-04
+Audience: Operations depth
+Modules: M03, M05, M08, M10, M11, M12, M15, M17, M18, M20, M21, M25, M27, M29
+
+=================================================================
+M03 - Device List and Actions (3-5 min)
+Start route: /dashboard/hardware-provisioning
+=================================================================
+"In this tutorial, we’ll cover daily device list operations. Open Hardware Provisioning. Use the search bar to find a device by name or serial. Apply status and organization filters to narrow the list. Open row actions and select View Details. Return to list and clear filters. The goal is fast lookup and clean handoffs between operators. You now know the core list workflow for operations."
+
+=================================================================
+M05 - Device Types (3-4 min)
+Start route: /dashboard/device-types
+=================================================================
+"This module explains Device Types. Open Device Types and review available templates. Select one type to inspect expected behavior and configuration scope. Highlight how type selection influences onboarding and telemetry interpretation. Return to provisioning and show where type is chosen during add-device flow. You now understand why type consistency matters for scaling operations."
+
+=================================================================
+M08 - Analytics (3-5 min)
+Start route: /dashboard/analytics
+=================================================================
+"Open AI Analytics. Choose an organization scope and time window. Review trend cards and identify one spike or anomaly. Open a detailed insight and narrate what it means operationally. Emphasize that analytics guides prioritization, while alerts trigger immediate action. Return to dashboard. You can now use analytics to support preventive decisions."
+
+=================================================================
+M10 - Reports: Alerts (3-5 min)
+Start route: /dashboard/reports/alerts
+=================================================================
+"Open Alerts report. Set date range first, then filter by severity and status. Sort by newest to review current behavior, then switch to critical-only for risk view. Open one row detail and explain actionable fields. Use export if available. You can now generate alert trend evidence for weekly reviews and incident retrospectives."
+
+=================================================================
+M11 - Reports: Telemetry (3-5 min)
+Start route: /dashboard/reports/telemetry
+=================================================================
+"Open Telemetry report. Select device or sensor scope, then choose a time range. Walk through chart and table views. Identify one abnormal range and narrate likely next step. Export when needed for external analysis. You can now pull telemetry evidence for compliance, maintenance, and diagnostics."
+
+=================================================================
+M12 - Reports: Audit Log (3-5 min)
+Start route: /dashboard/reports/audit-log
+=================================================================
+"Open Audit Log report. Filter by date and category, then use search to locate a specific action. Expand one event to show actor, timestamp, and change context. Mention that export may be disabled when no data is present, which is expected behavior. You can now trace platform actions for governance and audit readiness."
+
+=================================================================
+M15 - Organizations: Locations (3-5 min)
+Start route: /dashboard/organizations?tab=locations
+=================================================================
+"Open Organizations and switch to Locations. Click Add Location and complete required fields. Save and confirm new location appears in the list. Open the location to verify metadata and edit options. Explain that location assignment improves routing, reporting, and ownership clarity. You can now manage operational geography in the platform."
+
+=================================================================
+M17 - Integrations Hub (3-4 min)
+Start route: /dashboard/integrations
+=================================================================
+"Open Integrations hub. Review configured integrations and status indicators. Open one integration from list and return to the hub. Start add-integration flow to show available types, then cancel. This page is your control plane for integration lifecycle monitoring. You now know where to discover and manage integrations quickly."
+
+=================================================================
+M18 - Integration Detail View (3-5 min)
+Start route: /dashboard/integrations/view?id=<integrationId>
+=================================================================
+"Open an integration detail page. Review required config fields and connection metadata. Use test connection or validation controls if available. Save an update and confirm feedback status. Return to integrations list and verify status remains visible there as well. You can now validate and maintain integration health from detail view."
+
+=================================================================
+M20 - Inventory Control (3-5 min)
+Start route: /dashboard/inventory-control
+=================================================================
+"Open Inventory Control. Use filter and search to locate inventory subsets. Open one item detail and perform a standard update action. Save and confirm list refresh. Explain expected ownership model for inventory changes in your team. You can now execute inventory workflows with traceable updates."
+
+=================================================================
+M21 - Facility Map (4-6 min)
+Start route: /dashboard/facility-map
+=================================================================
+"Open Facility Map. Pan and zoom to orient around zones or floors. Select a device marker to open quick context. Navigate from marker to device detail, then return to map. Show how map view accelerates physical troubleshooting and dispatch. You can now use spatial context to shorten incident resolution time."
+
+=================================================================
+M25 - Plans and Pricing (3-4 min)
+Start route: /dashboard/plans-pricing
+=================================================================
+"Open Plans and Pricing. Compare plan tiers and included capabilities. Click upgrade or downgrade call-to-action to show the confirmation stage. Explain approval policy before finalizing plan changes in production. Return to current plan state. You now know how to evaluate and initiate plan changes safely."
+
+=================================================================
+M27 - Support Center (4-6 min)
+Start route: /dashboard/support
+=================================================================
+"Open Support Center. Start in Documentation and show how to locate guides by topic. Switch to Troubleshooting and walk through one guided path. If role permits, show access requests or advanced support tools. Return to dashboard. You now know self-serve and escalation paths for operational support."
+
+=================================================================
+M29 - Personal Settings and Developer (4-6 min)
+Start routes: /dashboard/settings and /dashboard/developer
+=================================================================
+"Open Personal Settings and review profile preferences. Demonstrate one safe preference update and save. Move to notification or security-related options and explain intended use. Open Developer page and show available developer-facing controls or references. Return to dashboard. You can now manage personal configuration and developer utilities effectively."
+
+=================================================================
+END OF WAVE 2
+=================================================================

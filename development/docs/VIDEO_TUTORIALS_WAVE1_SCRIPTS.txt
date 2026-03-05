@@ -1,0 +1,245 @@
+# NetNeural Video Tutorials - Wave 1 Voiceover Scripts
+Version: 2026-03-04
+Audience: Customer-facing core users
+Modules included: M01, M02, M04, M06, M07, M09, M13, M14, M16
+
+Use with:
+- VIDEO_TUTORIALS_MASTER_CATALOG.txt
+- VIDEO_TUTORIALS_RECORDING_RUNBOOK.txt
+
+=================================================================
+GLOBAL NARRATION STYLE (APPLIES TO ALL 10)
+=================================================================
+- Speak at 130-150 words per minute.
+- Pause 0.5-1.0s after each click and page load.
+- Read button and tab labels exactly as shown in UI.
+- If UI differs slightly, keep intent and update wording live.
+
+=================================================================
+M01 - Dashboard Overview (3-4 min)
+Start route: /dashboard
+=================================================================
+[OPEN - 0:00-0:15]
+"Welcome to NetNeural Sentinel. In this quick tour, I’ll show you how to use the dashboard to monitor device health, alerts, and daily operations in one place."
+
+[STEP 1 - 0:15-0:45]
+"After login, you land on the Dashboard. Start by scanning the top KPI cards for total devices, alert counts, and recent activity. These numbers help you identify urgent issues in seconds."
+
+[STEP 2 - 0:45-1:20]
+"Next, review quick action cards. These shortcuts take you directly to provisioning, alerts, reports, and other high-traffic workflows. Use them to reduce navigation time during operations."
+
+[STEP 3 - 1:20-2:00]
+"Now open the organization switcher in the left navigation. Select another organization to change context, then verify dashboard metrics update for that org. Switch back to your original organization before continuing."
+
+[STEP 4 - 2:00-2:45]
+"Use the left menu to understand your operational map: Hardware Provisioning for device onboarding, Alerts for incidents, Reports for audits, and Organization for team and location management."
+
+[CLOSE - 2:45-3:10]
+"That’s your dashboard baseline. You now know how to read platform status and jump into key workflows fast. Next, watch M02 to onboard devices end-to-end."
+
+=================================================================
+M02 - Hardware Provisioning (4-6 min)
+Start route: /dashboard/hardware-provisioning
+=================================================================
+[OPEN - 0:00-0:15]
+"In this tutorial, you’ll learn the complete device onboarding workflow using Hardware Provisioning."
+
+[STEP 1 - 0:15-0:45]
+"Open Hardware Provisioning from the left menu. This page is your operational control center for adding and managing physical devices."
+
+[STEP 2 - 0:45-1:30]
+"Click Add Device, then choose Manual Entry. Enter the required details: device name, serial number, model, and firmware version. Use clear naming conventions so teams can find devices quickly later."
+
+[STEP 3 - 1:30-2:15]
+"Select the correct organization and location. This step is critical for routing telemetry, access control, and alert ownership to the right operational team."
+
+[STEP 4 - 2:15-3:00]
+"Submit the form to create the device. After save, verify the new device appears in the list with expected metadata."
+
+[STEP 5 - 3:00-4:00]
+"Use search and filters to confirm discoverability. A properly named and tagged device should be easy to locate by any operator."
+
+[CLOSE - 4:00-4:20]
+"You’ve completed device onboarding. Next, watch M04 to inspect a device in detail and validate telemetry."
+
+=================================================================
+M04 - Device Detail (Overview + Telemetry) (4-6 min)
+Start route: /dashboard/devices/view?id=<deviceId>
+=================================================================
+[OPEN - 0:00-0:12]
+"This tutorial shows how to inspect device health and telemetry in the device detail view."
+
+[STEP 1 - 0:12-0:50]
+"Open a device from the provisioning or devices list. You’ll land on the detail view with tabs for overview and telemetry."
+
+[STEP 2 - 0:50-1:40]
+"In Overview, validate identity and status fields first: name, serial, model, and current health indicators. This confirms you’re working on the correct asset."
+
+[STEP 3 - 1:40-2:40]
+"Switch to Telemetry. Set a time window and review trend behavior. Look for spikes, dropouts, or sustained drift outside expected range."
+
+[STEP 4 - 2:40-3:30]
+"If multiple telemetry channels exist, compare values and timestamps to verify sensor consistency."
+
+[STEP 5 - 3:30-4:20]
+"Return to Overview and confirm the status still reflects current operating condition after telemetry review."
+
+[CLOSE - 4:20-4:35]
+"You can now diagnose one device end-to-end from metadata to live behavior. Next, move to M06 for incident response in Alerts."
+
+=================================================================
+M06 - Alerts Inbox (4-6 min)
+Start route: /dashboard/alerts
+=================================================================
+[OPEN - 0:00-0:12]
+"In this walkthrough, you’ll triage and acknowledge alerts from the alerts inbox."
+
+[STEP 1 - 0:12-0:50]
+"Open Alerts. Start by filtering severity and status so the highest-risk incidents are visible first."
+
+[STEP 2 - 0:50-1:40]
+"Open one alert record to view context details: source device, timestamp, and trigger condition."
+
+[STEP 3 - 1:40-2:40]
+"Add operator notes with the action you’re taking. Good notes reduce handoff delays between shifts."
+
+[STEP 4 - 2:40-3:25]
+"Acknowledge the alert once ownership is clear. Then return to the list and verify the status transition is reflected in the inbox."
+
+[STEP 5 - 3:25-4:10]
+"Re-apply filters to confirm remaining unacknowledged critical items are still prioritized."
+
+[CLOSE - 4:10-4:25]
+"You now know the core alert triage loop: prioritize, inspect, document, acknowledge. Next, build proactive logic in M07 Alert Rules."
+
+=================================================================
+M07 - Alert Rules + New Rule Wizard (6-8 min)
+Start route: /dashboard/alert-rules
+=================================================================
+[OPEN - 0:00-0:15]
+"This tutorial covers creating a new alert rule using the step-by-step wizard."
+
+[STEP 1 - 0:15-1:00]
+"Open Alert Rules and click New Rule. On step one, enter a clear rule name and choose the appropriate rule type."
+
+[STEP 2 - 1:00-2:20]
+"Define trigger logic: select sensor or condition source, then set thresholds or match criteria. Keep thresholds realistic to avoid alert fatigue."
+
+[STEP 3 - 2:20-3:40]
+"Configure severity and escalation intent. Critical rules should target immediate response channels, while warning rules can route to monitoring queues."
+
+[STEP 4 - 3:40-4:50]
+"Select notification channels and recipients. Verify the right role groups are included for ownership and after-hours coverage."
+
+[STEP 5 - 4:50-6:00]
+"Review summary, save the rule, and confirm it appears in the Alert Rules list with expected status."
+
+[STEP 6 - 6:00-6:40]
+"Optionally sort or filter the list to verify discoverability and governance over active rules."
+
+[CLOSE - 6:40-6:55]
+"You’ve created an alert rule from scratch. Next, see where outcomes surface in M09 Reports Hub."
+
+=================================================================
+M09 - Reports Hub (2-3 min)
+Start route: /dashboard/reports
+=================================================================
+[OPEN - 0:00-0:10]
+"This quick guide shows how to navigate the reports hub and open the three core report types."
+
+[STEP 1 - 0:10-0:40]
+"Open Reports from the navigation. This is your entry point for operational and audit-ready summaries."
+
+[STEP 2 - 0:40-1:10]
+"Open Alerts report first to review incident trends. Return to the reports hub."
+
+[STEP 3 - 1:10-1:40]
+"Open Telemetry report to analyze sensor behavior over time. Return to the reports hub."
+
+[STEP 4 - 1:40-2:10]
+"Open Audit Log report to track user and system actions."
+
+[CLOSE - 2:10-2:25]
+"You now know where each report lives. Next, move into organization operations in M13."
+
+=================================================================
+M13 - Organizations Overview (4-6 min)
+Start route: /dashboard/organizations
+=================================================================
+[OPEN - 0:00-0:14]
+"In this tutorial, you’ll learn how to navigate organization context, tabs, and operational metadata."
+
+[STEP 1 - 0:14-0:55]
+"Open Organizations. Start on overview information and confirm you’re in the intended organization context."
+
+[STEP 2 - 0:55-1:45]
+"Move through key tabs to understand available management areas such as members, locations, and integrations."
+
+[STEP 3 - 1:45-2:35]
+"Open organization switcher from the sidebar and select another org. Confirm the organization page updates accordingly."
+
+[STEP 4 - 2:35-3:25]
+"Switch back to your original organization before making changes to members or settings."
+
+[STEP 5 - 3:25-4:15]
+"Review any org-level metadata visible on this page so role and ownership are clear before operational actions."
+
+[CLOSE - 4:15-4:30]
+"You can now manage context safely across organizations. Next, invite and manage users in M14."
+
+=================================================================
+M14 - Members & Roles (4-6 min)
+Start route: /dashboard/organizations?tab=members
+=================================================================
+[OPEN - 0:00-0:12]
+"This module covers inviting members and assigning role-based access."
+
+[STEP 1 - 0:12-0:45]
+"Open the Members tab and review current users and their roles."
+
+[STEP 2 - 0:45-1:35]
+"Click Add Member. Enter email, display name, and role. Choose least privilege needed for the job."
+
+[STEP 3 - 1:35-2:20]
+"Submit the invitation and confirm the new member appears in the list with pending or active status."
+
+[STEP 4 - 2:20-3:20]
+"Edit an existing member role to demonstrate lifecycle management. Save and verify the role badge updates."
+
+[STEP 5 - 3:20-4:10]
+"Review member actions available in the row controls so admins know where to maintain account access over time."
+
+[CLOSE - 4:10-4:25]
+"You now know how to onboard users and manage permissions by role. Next, connect external systems in M16."
+
+=================================================================
+M16 - Organization Integrations (4-6 min)
+Start route: /dashboard/organizations?tab=integrations
+=================================================================
+[OPEN - 0:00-0:12]
+"In this walkthrough, you’ll add an integration from organization context."
+
+[STEP 1 - 0:12-0:50]
+"Open Integrations tab under Organizations. This ensures new integrations are scoped to the correct organization."
+
+[STEP 2 - 0:50-1:35]
+"Click Add Integration and choose the integration type relevant to your workflow."
+
+[STEP 3 - 1:35-2:30]
+"Complete required fields only, then test connection if available."
+
+[STEP 4 - 2:30-3:20]
+"Save configuration and confirm the integration appears in the list with a status indicator."
+
+[STEP 5 - 3:20-4:15]
+"Open the integration detail view to verify editable settings and health feedback are visible."
+
+[CLOSE - 4:15-4:30]
+"Your organization integration is now configured and discoverable. Continue with Wave 2 modules for deeper reporting and operations coverage."
+
+=================================================================
+NEXT ACTIONS
+=================================================================
+1) Record these 9 scripts in order: M01, M02, M04, M06, M07, M09, M13, M14, M16.
+2) Export captions for each and run QA checklist from the Recording Runbook.
+3) Publish as "Wave 1 - Core Operations" in Support/Docs.

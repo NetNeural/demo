@@ -154,15 +154,15 @@ const DOCS: DocEntry[] = [
   },
   {
     id: 'video-tutorials',
-    title: 'Video Tutorials Plan',
+    title: 'Video Tutorials (Current)',
     filename: 'VIDEO_TUTORIALS_PLAN.txt',
     description:
-      'Planned video tutorial series — getting started, device management, integration setup, admin workflows, advanced features.',
+      'Current video tutorial production index — 26 modules, wave scripts, recording runbook, tracker, and distribution draft.',
     icon: Video,
     category: 'user',
-    lines: 854,
+    lines: 62,
     audience: ['All Roles'],
-    lastUpdated: '2026-02-18',
+    lastUpdated: '2026-03-04',
   },
   {
     id: 'changelog',
