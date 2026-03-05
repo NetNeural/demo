@@ -107,8 +107,9 @@ export function PreferencesTab() {
         root.classList.add('light')
       }
     } else {
-      // Custom theme
-      root.classList.add(effectiveTheme)
+      // Custom palette theme — also add .dark so sidebar and
+      // .dark-scoped overrides (--gray-*, body colors) activate
+      root.classList.add('dark', effectiveTheme)
     }
   }, [theme, useOrgDefault, orgTheme])
 

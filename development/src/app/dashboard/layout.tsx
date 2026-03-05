@@ -199,7 +199,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Organization Switcher */}
-          <div className="border-b border-gray-200 px-4 py-3">
+          <div className="border-b px-4 py-3" style={{ borderColor: 'var(--gray-200)' }}>
             <OrganizationSwitcherCompact />
           </div>
 
@@ -223,7 +223,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
           <div className="nav-user">
             <div className="user-info">
-              <p className="text-sm font-medium text-gray-900">{user.email}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--gray-900)' }}>{user.email}</p>
             </div>
             <button
               onClick={async () => {

@@ -53,6 +53,12 @@ export default function RootLayout({
         {/* Note: HSTS is provided by GitHub Pages automatically */}
         {/* Note: X-Frame-Options and Permissions-Policy require HTTP headers — */}
         {/* applied via next.config.js headers() in dynamic/server mode only.  */}
+        {/* Inline theme script — runs before first paint to prevent white flash (FOUC) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('theme')||'system';var palettes=['theme-slate','theme-navy','theme-emerald','theme-neutral','theme-high-contrast','theme-twilight','theme-crimson'];if(palettes.indexOf(t)!==-1){d.classList.add('dark',t)}else if(t==='dark'){d.classList.add('dark')}else if(t==='light'){d.classList.add('light')}else{if(window.matchMedia('(prefers-color-scheme:dark)').matches){d.classList.add('dark')}else{d.classList.add('light')}}}catch(e){}})()`
+          }}
+        />
       </head>
       <body className={inter.className}>
         <WebVitalsReporter />

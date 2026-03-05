@@ -83,6 +83,17 @@
     --border: 215 20% 20%;
     --input: 215 20% 20%;
     --ring: 217.2 91.2% 59.8%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(215 20% 8%);
+    --gray-100: hsl(215 20% 12%);
+    --gray-200: hsl(215 16% 18%);
+    --gray-300: hsl(215 12% 28%);
+    --gray-400: hsl(215 10% 42%);
+    --gray-500: hsl(215 8% 58%);
+    --gray-600: hsl(215 10% 78%);
+    --gray-700: hsl(215 12% 86%);
+    --gray-800: hsl(215 14% 92%);
+    --gray-900: hsl(215 16% 97%);
   }
 
   /* Navy - Corporate Blue */
@@ -106,6 +117,17 @@
     --border: 222 30% 20%;
     --input: 222 30% 20%;
     --ring: 199 89% 48%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(222 30% 9%);
+    --gray-100: hsl(222 28% 13%);
+    --gray-200: hsl(222 24% 19%);
+    --gray-300: hsl(222 18% 28%);
+    --gray-400: hsl(222 14% 42%);
+    --gray-500: hsl(222 10% 58%);
+    --gray-600: hsl(222 14% 78%);
+    --gray-700: hsl(222 16% 86%);
+    --gray-800: hsl(222 18% 92%);
+    --gray-900: hsl(222 20% 97%);
   }
 
   /* Emerald - Professional Green */
@@ -129,6 +151,17 @@
     --border: 160 30% 18%;
     --input: 160 30% 18%;
     --ring: 160 84% 39%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(160 30% 7%);
+    --gray-100: hsl(160 28% 11%);
+    --gray-200: hsl(160 22% 17%);
+    --gray-300: hsl(160 16% 26%);
+    --gray-400: hsl(160 12% 40%);
+    --gray-500: hsl(160 8% 56%);
+    --gray-600: hsl(160 10% 76%);
+    --gray-700: hsl(160 12% 86%);
+    --gray-800: hsl(160 14% 92%);
+    --gray-900: hsl(160 16% 97%);
   }
 
   /* Neutral - Minimal Contrast */
@@ -152,6 +185,17 @@
     --border: 240 4% 16%;
     --input: 240 4% 16%;
     --ring: 240 5% 84%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(240 6% 8%);
+    --gray-100: hsl(240 5% 12%);
+    --gray-200: hsl(240 4% 17%);
+    --gray-300: hsl(240 4% 26%);
+    --gray-400: hsl(240 3% 42%);
+    --gray-500: hsl(240 3% 58%);
+    --gray-600: hsl(240 4% 78%);
+    --gray-700: hsl(240 5% 86%);
+    --gray-800: hsl(240 5% 92%);
+    --gray-900: hsl(240 6% 97%);
   }
 
   /* High Contrast - Maximum Accessibility */
@@ -175,6 +219,17 @@
     --border: 0 0% 30%;
     --input: 0 0% 30%;
     --ring: 210 100% 50%;
+    /* High contrast grays */
+    --gray-50: hsl(0 0% 3%);
+    --gray-100: hsl(0 0% 8%);
+    --gray-200: hsl(0 0% 18%);
+    --gray-300: hsl(0 0% 30%);
+    --gray-400: hsl(0 0% 45%);
+    --gray-500: hsl(0 0% 60%);
+    --gray-600: hsl(0 0% 80%);
+    --gray-700: hsl(0 0% 90%);
+    --gray-800: hsl(0 0% 95%);
+    --gray-900: hsl(0 0% 100%);
   }
 
   /* Twilight - Purple/Indigo */
@@ -198,6 +253,17 @@
     --border: 250 30% 20%;
     --input: 250 30% 20%;
     --ring: 270 91% 65%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(250 25% 9%);
+    --gray-100: hsl(250 22% 13%);
+    --gray-200: hsl(250 18% 19%);
+    --gray-300: hsl(250 14% 28%);
+    --gray-400: hsl(250 10% 42%);
+    --gray-500: hsl(250 8% 58%);
+    --gray-600: hsl(250 10% 78%);
+    --gray-700: hsl(250 12% 86%);
+    --gray-800: hsl(250 14% 92%);
+    --gray-900: hsl(250 16% 97%);
   }
 
   /* Crimson - Executive Red */
@@ -221,6 +287,17 @@
     --border: 0 30% 18%;
     --input: 0 30% 18%;
     --ring: 346 77% 50%;
+    /* Tinted grays for sidebar & components */
+    --gray-50: hsl(0 20% 8%);
+    --gray-100: hsl(0 18% 12%);
+    --gray-200: hsl(0 14% 18%);
+    --gray-300: hsl(0 10% 28%);
+    --gray-400: hsl(0 8% 42%);
+    --gray-500: hsl(0 6% 58%);
+    --gray-600: hsl(0 8% 78%);
+    --gray-700: hsl(0 10% 86%);
+    --gray-800: hsl(0 12% 92%);
+    --gray-900: hsl(0 14% 97%);
   }
 }
 
@@ -354,8 +431,8 @@ body {
 
 .dark html,
 .dark body {
-  color: #e4e4e7;
-  background-color: #18181b;
+  color: var(--gray-800);
+  background-color: var(--gray-50);
 }
 
 /* Dark Mode Component Overrides */

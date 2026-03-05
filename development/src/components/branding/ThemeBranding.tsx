@@ -187,7 +187,8 @@ function applyTheme(theme: string) {
       root.classList.add('light')
     }
   } else {
-    // Custom theme
-    root.classList.add(theme)
+    // Custom palette themes are all dark — also add .dark so sidebar
+    // and other .dark-scoped overrides (--gray-*, body colors, etc.) activate
+    root.classList.add('dark', theme)
   }
 }
