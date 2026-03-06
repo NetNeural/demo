@@ -308,6 +308,31 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
         throw new Error(error?.message || 'Failed to generate download link')
       }
 
+      // Log the download for audit trail
+      if (user) {
+        // Check if user is a data room guest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: guestRecord } = await (supabase as any)
+          .from('data_room_guests')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('data_room_access_log')
+          .insert({
+            organization_id: organizationId,
+            user_id: user.id,
+            guest_id: guestRecord?.id || null,
+            document_id: doc.id,
+            document_name: doc.file_name,
+            action: 'download',
+          })
+      }
+
       // Open in new tab (browser handles PDF inline, others download)
       window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
     } catch (err) {

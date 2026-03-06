@@ -61,6 +61,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const isPlatformOwner = isPlatformOwnerTier(currentOrganization?.subscription_tier)
   const isSuperAdmin = user?.isSuperAdmin || false
   const isPlAdmin = isPlatformAdmin(user, currentOrganization?.id, userRole)
+  const isDataRoomGuest = userRole === 'viewer'
 
   // SOC 2 CC6.2: idle session timeout
   const { showWarning, secondsRemaining, extendSession, signOutNow } =
@@ -197,6 +198,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     },
   ]
 
+  // Data Room guests (viewer role) see only Organization + Settings
+  const filteredNavGroups = isDataRoomGuest
+    ? navGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter(
+            (item) =>
+              item.href === '/dashboard/organizations' ||
+              item.href === '/dashboard/settings'
+          ),
+        }))
+        .filter((group) => group.items.length > 0)
+    : navGroups
+
   return (
     <>
       <ThemeBranding />
@@ -251,7 +266,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="nav-menu">
-            {navGroups.map(({ section, items }) =>
+            {filteredNavGroups.map(({ section, items }) =>
               items.length > 0 ? (
                 <div key={section} className="nav-section">
                   <div className="nav-section-label">{section}</div>

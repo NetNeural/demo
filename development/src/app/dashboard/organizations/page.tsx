@@ -14,6 +14,7 @@ import {
   CreditCard,
   Briefcase,
   FolderOpen,
+  UserPlus,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -30,6 +31,7 @@ import { ChildOrganizationsTab } from './components/ChildOrganizationsTab'
 import { CreateOrganizationDialog } from './components/CreateOrganizationDialog'
 import { BillingTab } from './components/BillingTab'
 import { DocumentsTab } from './components/DocumentsTab'
+import { DataRoomAccessTab } from './components/DataRoomAccessTab'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function OrganizationsPage() {
@@ -44,7 +46,7 @@ function OrganizationsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  // Initialize activeTab from URL parameter or default to 'overview'
+  // Initialize activeTab from URL parameter or default
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get('tab') || 'overview'
   })
@@ -71,6 +73,7 @@ function OrganizationsPageContent() {
     isLoading,
     isOwner,
     isAdmin,
+    isViewer,
     isReseller,
     canCreateChildOrgs,
     refreshOrganizations,
@@ -174,9 +177,11 @@ function OrganizationsPageContent() {
             billing: 'business',
             customers: 'business',
             documents: 'documents',
+            'guest-access': 'documents',
             settings: 'settings',
           }
-          return groupMap[activeTab] || 'overview'
+          const mapped = groupMap[activeTab] || (isViewer ? 'documents' : 'overview')
+          return mapped
         })()}
         onValueChange={(group) => {
           // When switching groups, navigate to default sub-tab
@@ -193,23 +198,29 @@ function OrganizationsPageContent() {
         className="space-y-6"
       >
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Overview</span>
-          </TabsTrigger>
+          {!isViewer && (
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Overview</span>
+            </TabsTrigger>
+          )}
 
-          <TabsTrigger value="people" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>People</span>
-          </TabsTrigger>
+          {!isViewer && (
+            <TabsTrigger value="people" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>People</span>
+            </TabsTrigger>
+          )}
 
-          <TabsTrigger
-            value="infrastructure"
-            className="flex items-center gap-2"
-          >
-            <MapPin className="h-4 w-4" />
-            <span>Locations</span>
-          </TabsTrigger>
+          {!isViewer && (
+            <TabsTrigger
+              value="infrastructure"
+              className="flex items-center gap-2"
+            >
+              <MapPin className="h-4 w-4" />
+              <span>Locations</span>
+            </TabsTrigger>
+          )}
 
           {(isSuperAdmin || isOwner || isAdmin) && (
             <TabsTrigger value="business" className="flex items-center gap-2">
@@ -218,10 +229,10 @@ function OrganizationsPageContent() {
             </TabsTrigger>
           )}
 
-          {(isSuperAdmin || isNetNeuralOwner) && (
+          {(isSuperAdmin || isNetNeuralOwner || isViewer) && (
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
-              <span>Documents</span>
+              <span>Data Room</span>
             </TabsTrigger>
           )}
 
@@ -307,13 +318,47 @@ function OrganizationsPageContent() {
           </TabsContent>
         )}
 
-        {/* Documents — Data Room (NetNeural super admins + NetNeural org owners only) */}
-        {(isSuperAdmin || isNetNeuralOwner) && (
+        {/* Documents — Data Room */}
+        {(isSuperAdmin || isNetNeuralOwner || isViewer) && (
           <TabsContent value="documents">
-            <DocumentsTab
-              key={currentOrganization.id}
-              organizationId={currentOrganization.id}
-            />
+            {(isSuperAdmin || isNetNeuralOwner) ? (
+              <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList>
+                  <TabsTrigger
+                    value="documents"
+                    className="flex items-center gap-2"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    Files
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="guest-access"
+                    className="flex items-center gap-2"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Guest Access
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="documents" className="mt-6">
+                  <DocumentsTab
+                    key={currentOrganization.id}
+                    organizationId={currentOrganization.id}
+                  />
+                </TabsContent>
+                <TabsContent value="guest-access" className="mt-6">
+                  <DataRoomAccessTab
+                    key={currentOrganization.id}
+                    organizationId={currentOrganization.id}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              /* Viewers (Data Room guests) see only the documents list */
+              <DocumentsTab
+                key={currentOrganization.id}
+                organizationId={currentOrganization.id}
+              />
+            )}
           </TabsContent>
         )}
       </Tabs>
