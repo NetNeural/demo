@@ -151,9 +151,6 @@ function SupportPageContent() {
   const orgName = currentOrganization?.name || user?.organizationName || ''
   const isSuperAdmin = user?.isSuperAdmin || false
 
-  // Sub-orgs (customer orgs) don't see Reports or Data & Operations
-  const isSubOrg = !!currentOrganization?.parent_organization_id
-
   // Super admins get access to platform tabs (troubleshooting, system-health, tests)
   // Platform admins (NetNeural org owners) also get access
   const canAccessPlatformTabs = isPlatformAdmin(
@@ -161,6 +158,10 @@ function SupportPageContent() {
     currentOrganization?.id,
     userRole
   )
+
+  // Non-root orgs (customer orgs) don't see Reports or Data & Operations
+  const isRootOrg = currentOrganization?.id === '00000000-0000-0000-0000-000000000001'
+  const showAdminTabs = isRootOrg || canAccessPlatformTabs
 
   const visibleTabs = tabs.filter(
     (tab) => !tab.superAdminOnly || canAccessPlatformTabs
@@ -261,7 +262,7 @@ function SupportPageContent() {
                 <Settings2 className="h-4 w-4" />
                 Admin Tools
               </TabsTrigger>
-              {!isSubOrg && (
+              {showAdminTabs && (
                 <TabsTrigger
                   value="executive-reports"
                   className="flex items-center gap-2"
@@ -270,7 +271,7 @@ function SupportPageContent() {
                   Reports
                 </TabsTrigger>
               )}
-              {!isSubOrg && (
+              {showAdminTabs && (
                 <TabsTrigger
                   value="data-operations"
                   className="flex items-center gap-2"
@@ -301,12 +302,12 @@ function SupportPageContent() {
             <TabsContent value="admin-tools" className="mt-6">
               <AdminToolsTab key={orgId} organizationId={orgId} />
             </TabsContent>
-            {!isSubOrg && (
+            {showAdminTabs && (
               <TabsContent value="executive-reports" className="mt-6">
                 <ExecutiveReportsCard key={orgId} organizationId={orgId} />
               </TabsContent>
             )}
-            {!isSubOrg && (
+            {showAdminTabs && (
               <TabsContent value="data-operations" className="mt-6">
                 <DataOperationsTab key={orgId} organizationId={orgId} />
               </TabsContent>

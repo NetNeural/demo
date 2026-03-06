@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Building2, Check, ChevronDown } from 'lucide-react'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useUser } from '@/contexts/UserContext'
@@ -38,6 +39,7 @@ export function OrganizationSwitcher({
   } = useOrganization()
 
   const { user } = useUser()
+  const router = useRouter()
   const isSuperAdmin = user?.isSuperAdmin || false
 
   // 🔍 DEBUG: Log user info to console
@@ -228,6 +230,7 @@ export function OrganizationSwitcher({
                 onClick={() => {
                   switchOrganization(org.id)
                   setOpen(false)
+                  router.push('/dashboard')
                 }}
                 className="flex cursor-pointer items-start gap-3 p-3"
               >

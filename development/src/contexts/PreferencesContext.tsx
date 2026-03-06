@@ -21,6 +21,7 @@ export interface UserPreferences {
   dateFormat: DateFormatOption
   timeFormat: TimeFormatOption
   temperatureUnit: 'F' | 'C'
+  compactMode: boolean
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -29,6 +30,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   dateFormat: 'MM/DD/YYYY',
   timeFormat: '12h',
   temperatureUnit: 'F',
+  compactMode: false,
 }
 
 interface PreferencesContextValue {
@@ -78,6 +80,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
             dateFormat: prefs.dateFormat || prev.dateFormat,
             timeFormat: prefs.timeFormat || prev.timeFormat,
             temperatureUnit: prefs.temperatureUnit || prev.temperatureUnit,
+            compactMode: prefs.compactMode ?? prev.compactMode,
           }))
         }
       } catch (err) {

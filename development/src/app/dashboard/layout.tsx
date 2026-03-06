@@ -9,7 +9,7 @@ import {
   OrganizationProvider,
   useOrganization,
 } from '@/contexts/OrganizationContext'
-import { PreferencesProvider } from '@/contexts/PreferencesContext'
+import { PreferencesProvider, usePreferences } from '@/contexts/PreferencesContext'
 import { OrganizationSwitcherCompact } from '@/components/organizations/OrganizationSwitcher'
 import { QuickActionsDropdown } from '@/components/quick-actions/QuickActionsDropdown'
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts/KeyboardShortcutsModal'
@@ -56,6 +56,7 @@ function getSupabase() {
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser()
   const { currentOrganization, userOrganizations, userRole } = useOrganization()
+  const { preferences } = usePreferences()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isPlatformOwner = isPlatformOwnerTier(currentOrganization?.subscription_tier)
@@ -155,6 +156,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         (isSuperAdmin ||
           isPlAdmin ||
           userRole === 'owner' ||
+          userRole === 'admin' ||
           userRole === 'billing')
           ? [
               {
@@ -217,7 +219,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <ThemeBranding />
       <KeyboardShortcutsModal />
       <AccessRequestNotifier />
-      <div className="dashboard-container">
+      <div className="dashboard-container" data-compact={preferences.compactMode || undefined}>
         {/* Mobile Menu Toggle — visible only on < 1024px via CSS */}
         <button
           className="mobile-menu-toggle"

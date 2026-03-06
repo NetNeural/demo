@@ -559,7 +559,7 @@ function BillingAdminContent() {
 
   // Permission check: only owner, billing role, or super_admin
   const hasAccess =
-    isSuperAdmin || userRole === 'owner' || userRole === 'billing'
+    isSuperAdmin || userRole === 'owner' || userRole === 'admin' || userRole === 'billing'
   if (!hasAccess) {
     return (
       <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
@@ -594,7 +594,7 @@ function BillingAdminContent() {
 
   // Owner/billing tabs visible to org owners, billing role, and super admins
   const canAccessOwnerTabs =
-    isSuperAdmin || userRole === 'owner' || userRole === 'billing'
+    isSuperAdmin || userRole === 'owner' || userRole === 'admin' || userRole === 'billing'
 
   const visibleTabs = billingTabs.filter(
     (tab) => !tab.ownerOnly || canAccessOwnerTabs

@@ -247,6 +247,7 @@ export function PreferencesTab() {
         timeFormat:
           data.timeFormat as import('@/contexts/PreferencesContext').TimeFormatOption,
         temperatureUnit: data.temperatureUnit,
+        compactMode: data.compactMode ?? false,
       })
     },
     [updatePreferences]

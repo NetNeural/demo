@@ -45,10 +45,13 @@ interface PlanTier {
 // ─── Helpers: map DB billing_plans → UI PlanTier ──────────────────────
 function getPlanIcon(slug: string): LucideIcon {
   switch (slug) {
+    case 'monitor':
     case 'starter':
       return BarChart3
+    case 'protect':
     case 'business':
       return Brain
+    case 'command':
     case 'enterprise':
       return Building2
     default:
@@ -58,10 +61,13 @@ function getPlanIcon(slug: string): LucideIcon {
 
 function getPlanColor(slug: string): string {
   switch (slug) {
+    case 'monitor':
     case 'starter':
       return '#06b6d4'
+    case 'protect':
     case 'business':
       return '#8b5cf6'
+    case 'command':
     case 'enterprise':
       return '#10b981'
     default:
@@ -125,7 +131,7 @@ function billingPlanToTier(
     pricePerSensor: plan.price_per_device,
     icon: getPlanIcon(plan.slug),
     color: getPlanColor(plan.slug),
-    popular: plan.slug === 'business',
+    popular: plan.slug === 'protect' || plan.slug === 'business',
     features: buildFeatureList(plan, allPlans),
     limits: {
       users: formatUserLimit(plan.max_users),
@@ -138,8 +144,8 @@ function billingPlanToTier(
 // ─── Static fallback (used while DB is loading or on error) ───────────
 const FALLBACK_PLANS: PlanTier[] = [
   {
-    slug: 'starter',
-    name: 'Starter',
+    slug: 'monitor',
+    name: 'Monitor',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
     icon: BarChart3,
@@ -152,21 +158,21 @@ const FALLBACK_PLANS: PlanTier[] = [
       'Manual report export',
     ],
     limits: {
-      users: '3 users',
+      users: '5 users',
       integrations: '1 integration',
-      retention: '90-day retention',
+      retention: '30-day retention',
     },
   },
   {
-    slug: 'business',
-    name: 'Business',
+    slug: 'protect',
+    name: 'Protect',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
     icon: Brain,
     color: '#8b5cf6',
     popular: true,
     features: [
-      'Everything in Starter, plus:',
+      'Everything in Monitor, plus:',
       'AI anomaly detection',
       'Predictive alerts',
       'Multi-site dashboard',
@@ -182,14 +188,14 @@ const FALLBACK_PLANS: PlanTier[] = [
     },
   },
   {
-    slug: 'enterprise',
-    name: 'Enterprise',
+    slug: 'command',
+    name: 'Command',
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,
     icon: Building2,
     color: '#10b981',
     features: [
-      'Everything in Business, plus:',
+      'Everything in Protect, plus:',
       'AI optimization insights',
       'Chain benchmarking',
       'ESG & carbon reporting',
@@ -497,7 +503,13 @@ function SignupForm() {
           console.error('Provisioning error:', provisionErr)
         }
 
-        // Try to redirect to Stripe Checkout for payment collection.
+        // Zero-price plans: skip Stripe checkout and go directly to login
+        if (provisionedOrgId && selectedPlan.pricePerSensor === 0) {
+          router.push('/auth/login?signup=complete')
+          return
+        }
+
+        // Paid plans: redirect to Stripe Checkout for payment collection.
         // Stripe checkout is REQUIRED — if it fails, block signup.
         if (provisionedOrgId) {
           try {
@@ -518,27 +530,26 @@ function SignupForm() {
               }
             )
 
-            if (checkoutRes.ok) {
-              const checkoutData = await checkoutRes.json()
-              if (checkoutData.url) {
-                // Redirect to Stripe Checkout — user will return to login page
-                window.location.href = checkoutData.url
-                return
-              }
+            const checkoutData = await checkoutRes.json().catch(() => ({}))
+
+            if (checkoutRes.ok && checkoutData.url) {
+              // Redirect to Stripe Checkout — user will return to login page
+              window.location.href = checkoutData.url
+              return
             }
 
-            // Checkout call failed — log the reason and show error
-            const errDetail = await checkoutRes.json().catch(() => ({}))
-            console.error('Stripe checkout failed:', checkoutRes.status, errDetail)
+            // Checkout call failed — show the specific server error
+            const serverMsg = checkoutData.error || 'Unknown billing error'
+            console.error('Stripe checkout failed:', checkoutRes.status, checkoutData)
             setError(
-              'Unable to set up billing. Please try again or contact support.'
+              `Unable to set up billing: ${serverMsg}. Please try again or contact support.`
             )
             setIsLoading(false)
             return
           } catch (checkoutErr) {
             console.error('Stripe checkout error:', checkoutErr)
             setError(
-              'Unable to set up billing. Please try again or contact support.'
+              'Unable to connect to billing service. Please try again or contact support.'
             )
             setIsLoading(false)
             return

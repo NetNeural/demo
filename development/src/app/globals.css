@@ -2298,3 +2298,60 @@ body.modal-open {
     @apply bg-background text-foreground;
   }
 }
+
+/* ─── Compact Mode ─────────────────────────────────────────────────── */
+/* Reduces spacing, padding, and font sizes for a denser layout       */
+[data-compact] .space-y-6 {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
+}
+
+[data-compact] .p-4 {
+  padding: 0.5rem;
+}
+
+[data-compact] .p-6 {
+  padding: 0.75rem;
+}
+
+[data-compact] .pt-6 {
+  padding-top: 0.75rem;
+}
+
+[data-compact] .md\:p-8 {
+  padding: 1rem;
+}
+
+[data-compact] .gap-6 {
+  gap: 0.75rem;
+}
+
+[data-compact] .gap-4 {
+  gap: 0.5rem;
+}
+
+[data-compact] .text-3xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+[data-compact] .text-2xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+[data-compact] .nav-item {
+  padding: 6px 16px;
+  font-size: 0.8125rem;
+}
+
+[data-compact] .nav-section-label {
+  padding: 4px 16px;
+  margin-top: 8px;
+  font-size: 0.6875rem;
+}
+
+[data-compact] .nav-header {
+  padding: 8px 16px;
+}
