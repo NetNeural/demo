@@ -443,6 +443,57 @@ function SignupForm() {
           return
         }
 
+        // Provision organization via edge function using service role key.
+        // This works whether email confirmation is required or not,
+        // because we use the anon key + user ID rather than requiring a session.
+        const newUserId = data.user.id
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+          const response = await fetch(
+            `${apiUrl}/functions/v1/signup-provision`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${anonKey}`,
+              },
+              body: JSON.stringify({
+                userId: newUserId,
+                organizationName: orgName.trim(),
+                organizationSlug: slug,
+                subscriptionTier: selectedPlan.slug,
+                ...(parentOrgId ? { parentOrganizationId: parentOrgId } : {}),
+              }),
+            }
+          )
+
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}))
+            console.error('Org provisioning error:', errBody)
+          } else {
+            const orgResult = await response.json().catch(() => ({}))
+            console.log('Organization provisioned successfully')
+
+            // Record signup attribution for reseller analytics
+            if (parentOrgId && resellerSlug) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ;(supabase as any)
+                .from('signup_attribution')
+                .insert({
+                  reseller_org_id: parentOrgId,
+                  reseller_slug: resellerSlug,
+                  new_org_id: orgResult.data?.id ?? null,
+                  new_user_id: newUserId,
+                })
+                .then(() => {})
+                .catch(() => {})
+            }
+          }
+        } catch (provisionErr) {
+          console.error('Provisioning error:', provisionErr)
+        }
+
         // If email confirmation is required (no session returned), the user
         // must click the confirmation link before they can sign in.
         if (!data.session) {
@@ -452,66 +503,7 @@ function SignupForm() {
           return
         }
 
-        // Auto-confirmed — provision organization via edge function (uses
-        // admin client, bypasses RLS)
-        try {
-          const { data: sessionData } = await supabase.auth.getSession()
-          const accessToken = sessionData?.session?.access_token
-
-          if (accessToken) {
-            const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-            const response = await fetch(
-              `${apiUrl}/functions/v1/organizations`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                  name: orgName.trim(),
-                  slug,
-                  subscriptionTier: selectedPlan.slug,
-                  ...(parentOrgId ? { parentOrganizationId: parentOrgId } : {}),
-                }),
-              }
-            )
-
-            if (!response.ok) {
-              const errBody = await response.json().catch(() => ({}))
-              console.error('Org provisioning error:', errBody)
-              // Non-fatal — user is created, org can be provisioned later
-            } else {
-              const orgResult = await response.json().catch(() => ({}))
-              console.log(
-                'Organization provisioned successfully via edge function'
-              )
-
-              // Record signup attribution for reseller analytics (#399)
-              if (parentOrgId && resellerSlug) {
-                const {
-                  data: { user: newUser },
-                } = await supabase.auth.getUser()
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ;(supabase as any)
-                  .from('signup_attribution')
-                  .insert({
-                    reseller_org_id: parentOrgId,
-                    reseller_slug: resellerSlug,
-                    new_org_id: orgResult.data?.id ?? null,
-                    new_user_id: newUser?.id ?? null,
-                  })
-                  .then(() => {})
-                  .catch(() => {}) // fire-and-forget, non-fatal
-              }
-            }
-          }
-        } catch (provisionErr) {
-          console.error('Provisioning error:', provisionErr)
-          // Auth user is created — provisioning can be retried
-        }
-
-        // Move to success step
+        // Auto-confirmed — move to success step
         setStep(3)
         setIsLoading(false)
       } catch {
