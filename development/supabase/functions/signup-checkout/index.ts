@@ -11,9 +11,9 @@
  *   returns: { url: string } — redirect the user to Stripe Checkout
  */
 
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
 import { createServiceClient } from '../_shared/auth.ts'
 import { makeCorsHeaders } from '../_shared/cors.ts'
+import { getBillingStripe, pickPriceId } from '../_shared/stripe.ts'
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = makeCorsHeaders(req)
@@ -40,26 +40,16 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // ── Stripe init ──────────────────────────────────────────────────
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-    if (!stripeKey) {
-      return new Response(
-        JSON.stringify({ error: 'Stripe is not configured' }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-04-10',
-      httpClient: Stripe.createFetchHttpClient(),
-    })
-
     const db = createServiceClient()
+
+    // ── Stripe init (billing-mode aware) ─────────────────────────────
+    const billingConfig = await getBillingStripe(db)
+    const stripe = billingConfig.stripe
 
     // ── Look up plan by slug ─────────────────────────────────────────
     const { data: plan, error: planErr } = await db
       .from('billing_plans')
-      .select('id, name, slug, stripe_price_id_monthly, stripe_price_id_annual')
+      .select('id, name, slug, stripe_price_id_monthly, stripe_price_id_annual, stripe_live_price_monthly, stripe_live_price_annual')
       .eq('slug', planSlug)
       .eq('is_active', true)
       .single()
@@ -71,15 +61,7 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const priceId = billingInterval === 'annual'
-      ? plan.stripe_price_id_annual
-      : plan.stripe_price_id_monthly
-    if (!priceId) {
-      return new Response(
-        JSON.stringify({ error: `No Stripe price configured for ${plan.name} (${billingInterval})` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    const priceId = pickPriceId(plan, billingConfig, billingInterval as 'monthly' | 'annual')
 
     // ── Look up organization ─────────────────────────────────────────
     const { data: org, error: orgErr } = await db

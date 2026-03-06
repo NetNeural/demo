@@ -15,7 +15,6 @@
  * #241: Stripe Integration
  */
 
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
 import {
   createEdgeFunction,
   createSuccessResponse,
@@ -23,6 +22,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createServiceClient, getUserContext } from '../_shared/auth.ts'
+import { getBillingStripe } from '../_shared/stripe.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -39,19 +39,10 @@ export default createEdgeFunction(
       throw new DatabaseError('organizationId is required', 400)
     }
 
-    // ── Stripe init ──────────────────────────────────────────────────
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-    if (!stripeKey) {
-      throw new DatabaseError('Stripe is not configured', 500)
-    }
-
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-04-10',
-      httpClient: Stripe.createFetchHttpClient(),
-    })
-
-    // ── Look up customer ID ──────────────────────────────────────────
+    // ── Stripe init (billing-mode aware) ──────────────────────────────
     const db = createServiceClient()
+    const billingConfig = await getBillingStripe(db)
+    const stripe = billingConfig.stripe
 
     const { data: org } = await db
       .from('organizations')

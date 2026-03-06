@@ -13,7 +13,6 @@
  * #55: Payment history with retry mechanism
  */
 
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
 import {
   createEdgeFunction,
   createSuccessResponse,
@@ -21,6 +20,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createServiceClient, getUserContext } from '../_shared/auth.ts'
+import { getBillingStripe } from '../_shared/stripe.ts'
 
 const MAX_RETRIES_24H = 3
 
@@ -66,19 +66,10 @@ export default createEdgeFunction(
       throw new DatabaseError('paymentId is required', 400)
     }
 
-    // ── Stripe init ────────────────────────────────────────────────────
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-    if (!stripeKey) {
-      throw new DatabaseError('Stripe is not configured', 500)
-    }
-
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-04-10',
-      httpClient: Stripe.createFetchHttpClient(),
-    })
-
-    // ── Load payment record ────────────────────────────────────────────
+    // ── Stripe init (billing-mode aware) ────────────────────────────────
     const db = createServiceClient()
+    const billingConfig = await getBillingStripe(db)
+    const stripe = billingConfig.stripe
 
     const { data: payment, error: paymentErr } = await db
       .from('payment_history')

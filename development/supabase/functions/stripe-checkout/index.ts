@@ -9,7 +9,6 @@
  * #241: Stripe Integration
  */
 
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
 import {
   createEdgeFunction,
   createSuccessResponse,
@@ -17,6 +16,7 @@ import {
   DatabaseError,
 } from '../_shared/request-handler.ts'
 import { createServiceClient, getUserContext } from '../_shared/auth.ts'
+import { getBillingStripe, pickPriceId } from '../_shared/stripe.ts'
 
 export default createEdgeFunction(
   async ({ req }) => {
@@ -36,19 +36,12 @@ export default createEdgeFunction(
       throw new DatabaseError('planId is required', 400)
     }
 
-    // ── Stripe init ────────────────────────────────────────────────────
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
-    if (!stripeKey) {
-      throw new DatabaseError('Stripe is not configured', 500)
-    }
-
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-04-10',
-      httpClient: Stripe.createFetchHttpClient(),
-    })
-
-    // ── Load plan from DB ──────────────────────────────────────────────
+    // ── Stripe init (billing-mode aware) ────────────────────────────────
     const db = createServiceClient()
+    const billingConfig = await getBillingStripe(db)
+    const stripe = billingConfig.stripe
+
+    // ── Load plan from DB ──────────────────────────────────────────
 
     const { data: plan, error: planErr } = await db
       .from('billing_plans')
@@ -61,17 +54,7 @@ export default createEdgeFunction(
       throw new DatabaseError('Plan not found', 404)
     }
 
-    const priceId =
-      billingInterval === 'annual'
-        ? plan.stripe_price_id_annual
-        : plan.stripe_price_id_monthly
-
-    if (!priceId) {
-      throw new DatabaseError(
-        `No Stripe price configured for ${plan.name} (${billingInterval})`,
-        400
-      )
-    }
+    const priceId = pickPriceId(plan, billingConfig, billingInterval as 'monthly' | 'annual')
 
     // ── Get or create Stripe Customer ──────────────────────────────────
     const { data: org } = await db
