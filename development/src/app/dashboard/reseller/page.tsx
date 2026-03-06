@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import type { ResellerPayout, SupportModel } from '@/types/reseller'
 import { cn } from '@/lib/utils'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 function ResellerSignupLinkCard({ orgSlug }: { orgSlug: string }) {
   const [copied, setCopied] = useState(false)
@@ -101,6 +102,7 @@ function PayoutStatusBadge({ status }: { status: string }) {
 
 function ResellerDashboardContent() {
   const searchParams = useSearchParams()
+  const { currentOrganization } = useOrganization()
   const [orgId, setOrgId] = useState<string | null>(null)
   const [orgSlug, setOrgSlug] = useState<string>('')
   const [payouts, setPayouts] = useState<ResellerPayout[]>([])
@@ -219,11 +221,13 @@ function ResellerDashboardContent() {
           },
           {
             icon: TrendingUp,
-            label: 'Partner Discount',
-            value: tierData
-              ? `${(tierData.discount_pct * 100).toFixed(0)}%`
-              : '—',
-            sub: tierData?.current_tier ?? '',
+            label: isPlatformAdmin ? 'Plan' : 'Partner Discount',
+            value: isPlatformAdmin
+              ? 'Unlimited'
+              : tierData
+                ? `${(tierData.discount_pct * 100).toFixed(0)}%`
+                : '—',
+            sub: isPlatformAdmin ? 'Platform Owner' : (tierData?.current_tier ?? ''),
             color: 'text-emerald-400',
           },
           {
@@ -256,8 +260,10 @@ function ResellerDashboardContent() {
         ))}
       </div>
 
-      {/* Fleet progress bar */}
-      {tierData && !tierLoading && <FleetProgressBar tierData={tierData} />}
+      {/* Fleet progress bar — hide for platform_owner (they own the tiers, not subject to them) */}
+      {tierData && !tierLoading && currentOrganization?.subscription_tier !== 'platform_owner' && (
+        <FleetProgressBar tierData={tierData} />
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue={searchParams.get('tab') || 'payouts'}>

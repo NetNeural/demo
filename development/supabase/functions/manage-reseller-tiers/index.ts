@@ -14,15 +14,18 @@ import { makeCorsHeaders } from '../_shared/cors.ts'
 
 const NETNEURAL_ORG_ID = '00000000-0000-0000-0000-000000000001'
 
+let _corsHeaders: Record<string, string> = {}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ..._corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = makeCorsHeaders(req)
+  _corsHeaders = corsHeaders
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

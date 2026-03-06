@@ -179,7 +179,7 @@ function SettingsPageContent() {
                     <h3 className="text-lg font-semibold">Current Plan</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentOrganization?.subscription_tier
-                        ? `Your organization is on the ${currentOrganization.subscription_tier.charAt(0).toUpperCase() + currentOrganization.subscription_tier.slice(1)} plan.`
+                        ? `Your organization is on the ${currentOrganization.subscription_tier === 'platform_owner' ? 'Platform Owner' : currentOrganization.subscription_tier.charAt(0).toUpperCase() + currentOrganization.subscription_tier.slice(1)} plan.`
                         : 'No active subscription found.'}
                     </p>
                     <div className="mt-4 flex gap-3">

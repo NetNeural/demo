@@ -370,9 +370,11 @@ export function BillingTab({ organizationId }: BillingTabProps) {
             ) : (
               <div className="space-y-3">
                 <p className="text-2xl font-bold">
-                  {orgTier
-                    ? orgTier.charAt(0).toUpperCase() + orgTier.slice(1)
-                    : 'Starter'}
+                  {orgTier === 'platform_owner'
+                    ? 'Platform Owner'
+                    : orgTier
+                      ? orgTier.charAt(0).toUpperCase() + orgTier.slice(1)
+                      : 'Starter'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   No active subscription on record. Contact support or upgrade

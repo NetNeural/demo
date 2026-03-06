@@ -99,7 +99,7 @@ export function FleetProgressBar({
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-400">Partner Tier</p>
+          <p className="text-sm font-medium text-gray-400">Reseller Tier</p>
           <div className="mt-1 flex items-center gap-2">
             <Badge className={cn('text-sm font-semibold', tierBadgeClass)}>
               {current_tier}
