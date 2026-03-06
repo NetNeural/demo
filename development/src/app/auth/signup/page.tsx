@@ -498,8 +498,7 @@ function SignupForm() {
         }
 
         // Try to redirect to Stripe Checkout for payment collection.
-        // If Stripe is not configured or the plan has no price, fall through
-        // to the success step gracefully.
+        // Stripe checkout is REQUIRED — if it fails, block signup.
         if (provisionedOrgId) {
           try {
             const checkoutRes = await fetch(
@@ -527,22 +526,33 @@ function SignupForm() {
                 return
               }
             }
+
+            // Checkout call failed — log the reason and show error
+            const errDetail = await checkoutRes.json().catch(() => ({}))
+            console.error('Stripe checkout failed:', checkoutRes.status, errDetail)
+            setError(
+              'Unable to set up billing. Please try again or contact support.'
+            )
+            setIsLoading(false)
+            return
           } catch (checkoutErr) {
-            console.error('Stripe checkout redirect skipped:', checkoutErr)
+            console.error('Stripe checkout error:', checkoutErr)
+            setError(
+              'Unable to set up billing. Please try again or contact support.'
+            )
+            setIsLoading(false)
+            return
           }
         }
 
-        // If Stripe checkout was not available, fall through to success
-        if (!data.session) {
-          setNeedsEmailConfirmation(true)
-          setStep(3)
+        // Org provisioning failed — we can't proceed without billing
+        if (!provisionedOrgId) {
+          setError(
+            'Unable to create your organization. Please try again or contact support.'
+          )
           setIsLoading(false)
           return
         }
-
-        // Auto-confirmed — move to success step
-        setStep(3)
-        setIsLoading(false)
       } catch {
         setError('An unexpected error occurred. Please try again.')
         setIsLoading(false)
