@@ -395,6 +395,10 @@ function SignupForm() {
       try {
         const supabase = createClient()
 
+        // Sign out any existing session so the new signup isn't confused
+        // with a previously logged-in account
+        await supabase.auth.signOut().catch(() => {})
+
         // Generate organization slug from name
         const slug = orgName
           .trim()
@@ -431,78 +435,11 @@ function SignupForm() {
         // Detect Supabase "fake success" for already-registered emails.
         // Supabase returns a user object with an empty identities array
         // to prevent email enumeration attacks — no user is actually created.
-        // In this case, sign the user in and create a new org for them.
         if (!data.user.identities || data.user.identities.length === 0) {
-          // Try to sign in with the provided password
-          const { data: signInData, error: signInError } =
-            await supabase.auth.signInWithPassword({
-              email: email.trim(),
-              password,
-            })
-
-          if (signInError || !signInData.session) {
-            setError(
-              'An account with this email already exists. ' +
-                'Please enter the correct password for your existing account to create a new organization.'
-            )
-            setIsLoading(false)
-            return
-          }
-
-          // Signed in successfully — provision new org for existing user
-          try {
-            const accessToken = signInData.session.access_token
-            const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-            const response = await fetch(
-              `${apiUrl}/functions/v1/organizations`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                  name: orgName.trim(),
-                  slug,
-                  subscriptionTier: selectedPlan.slug,
-                  ...(parentOrgId
-                    ? { parentOrganizationId: parentOrgId }
-                    : {}),
-                }),
-              }
-            )
-
-            if (!response.ok) {
-              const errBody = await response.json().catch(() => ({}))
-              const errMsg =
-                errBody?.error || errBody?.message || 'Failed to create organization'
-              setError(errMsg)
-              setIsLoading(false)
-              return
-            }
-
-            const orgResult = await response.json().catch(() => ({}))
-
-            // Record signup attribution for reseller analytics
-            if (parentOrgId && resellerSlug) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ;(supabase as any)
-                .from('signup_attribution')
-                .insert({
-                  reseller_org_id: parentOrgId,
-                  reseller_slug: resellerSlug,
-                  new_org_id: orgResult.data?.id ?? null,
-                  new_user_id: signInData.user?.id ?? null,
-                })
-                .then(() => {})
-                .catch(() => {})
-            }
-          } catch (provisionErr) {
-            console.error('Provisioning error for existing user:', provisionErr)
-          }
-
-          // Redirect to dashboard — user is now signed in with new org available
-          router.push('/dashboard')
+          setError(
+            'An account with this email already exists. Please sign in instead, or use a different email address.'
+          )
+          setIsLoading(false)
           return
         }
 
