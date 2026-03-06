@@ -187,15 +187,23 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
     }
 
     setSavingEdit(true)
+    const wasResolved = editingItem.status === 'resolved' || editingItem.status === 'closed'
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from('feedback')
-        .update({
+      const updatePayload: Record<string, unknown> = {
           title: editTitle.trim(),
           description: editDescription.trim(),
           severity: editingItem.type === 'bug_report' ? editSeverity : null,
-        })
+      }
+      // If the ticket was closed/resolved, editing it reopens it
+      if (wasResolved) {
+        updatePayload.status = 'submitted'
+        updatePayload.github_resolution = null
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('feedback')
+        .update(updatePayload)
         .eq('id', editingItem.id)
         .eq('user_id', user.id)
         .select(
@@ -222,7 +230,8 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
               },
               body: JSON.stringify({
                 feedbackId: updated.id,
-                action: 'edit',
+                organizationId: currentOrganization?.id,
+                action: wasResolved ? 'reopen' : 'edit',
                 title: editTitle.trim(),
                 description: editDescription.trim(),
               }),
@@ -235,7 +244,7 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         )
-        toast.success('Feedback updated')
+        toast.success(wasResolved ? 'Ticket resubmitted' : 'Feedback updated')
         setEditingItem(null)
       }
     } catch (err) {
@@ -642,10 +651,10 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
               {savingEdit ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {editingItem?.status === 'resolved' || editingItem?.status === 'closed' ? 'Resubmitting...' : 'Saving...'}
                 </>
               ) : (
-                'Save Changes'
+                editingItem?.status === 'resolved' || editingItem?.status === 'closed' ? 'Resubmit' : 'Save Changes'
               )}
             </Button>
           </DialogFooter>

@@ -5,6 +5,7 @@
 //   POST /feedback-reply
 //     action: 'comment'  — Post a comment on the GitHub issue
 //     action: 'edit'     — Update the feedback + GitHub issue body
+//     action: 'reopen'   — Resubmit closed/resolved ticket + reopen GitHub issue
 //     action: 'request-info' — Admin sends back asking for more info
 //
 // Both submitters and admins can comment.
@@ -24,7 +25,7 @@ const GITHUB_REPO = 'NetNeural/MonoRepo-Staging'
 interface ReplyRequest {
   feedbackId: string
   organizationId: string
-  action: 'comment' | 'edit' | 'request-info'
+  action: 'comment' | 'edit' | 'reopen' | 'request-info'
   // For 'comment' and 'request-info':
   comment?: string
   // For 'edit':
@@ -50,9 +51,9 @@ export default createEdgeFunction(
       )
     }
 
-    if (!['comment', 'edit', 'request-info'].includes(action)) {
+    if (!['comment', 'edit', 'reopen', 'request-info'].includes(action)) {
       throw new DatabaseError(
-        'action must be "comment", "edit", or "request-info"',
+        'action must be "comment", "edit", "reopen", or "request-info"',
         400
       )
     }
@@ -85,7 +86,7 @@ export default createEdgeFunction(
     const { data: feedback, error: feedbackError } = await serviceClient
       .from('feedback')
       .select(
-        'id, user_id, title, description, severity, status, github_issue_number, github_issue_url, organization_id'
+        'id, user_id, type, title, description, severity, status, github_issue_number, github_issue_url, organization_id'
       )
       .eq('id', feedbackId)
       .eq('organization_id', organizationId)
@@ -248,6 +249,83 @@ ${newDescription || feedback.description}
       return createSuccessResponse({
         feedback: updated,
         message: 'Feedback updated successfully',
+        syncedToGitHub: !!feedback.github_issue_number,
+      })
+    }
+
+    // ─── ACTION: reopen ────────────────────────────────────────────
+    if (action === 'reopen') {
+      // Only the original submitter can reopen
+      if (!isSubmitter) {
+        throw new DatabaseError(
+          'Only the original submitter can reopen this feedback',
+          403
+        )
+      }
+
+      const newTitle = body.title?.trim()
+      const newDescription = body.description?.trim()
+
+      // Update local DB — set status back to submitted
+      const updates: Record<string, unknown> = {
+        status: 'submitted',
+        github_resolution: null,
+      }
+      if (newTitle) updates.title = newTitle
+      if (newDescription) updates.description = newDescription
+
+      await serviceClient
+        .from('feedback')
+        .update(updates)
+        .eq('id', feedbackId)
+        .eq('user_id', user.userId)
+
+      // Reopen the GitHub issue
+      if (feedback.github_issue_number && githubToken) {
+        // Reopen the issue
+        const ghRes = await fetch(
+          `https://api.github.com/repos/${GITHUB_REPO}/issues/${feedback.github_issue_number}`,
+          {
+            method: 'PATCH',
+            headers: {
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'NetNeural-Feedback-Reply',
+            },
+            body: JSON.stringify({
+              state: 'open',
+              ...(newTitle ? { title: `${feedback.type === 'bug_report' ? '[Bug]' : '[Feature Request]'} ${newTitle}` } : {}),
+            }),
+          }
+        )
+
+        if (!ghRes.ok) {
+          console.error(`GitHub reopen failed: ${ghRes.status}`)
+        } else {
+          console.log(`[feedback-reply] Reopened GitHub issue #${feedback.github_issue_number}`)
+        }
+
+        // Add a comment explaining the reopen
+        await fetch(
+          `https://api.github.com/repos/${GITHUB_REPO}/issues/${feedback.github_issue_number}/comments`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'NetNeural-Feedback-Reply',
+            },
+            body: JSON.stringify({
+              body: `### 🔄 Ticket Resubmitted\n\n**${user.email}** edited and resubmitted this ticket.\n\n${newDescription ? `**Updated description:**\n${newDescription}` : ''}`,
+            }),
+          }
+        )
+      }
+
+      return createSuccessResponse({
+        message: 'Feedback resubmitted and GitHub issue reopened',
         syncedToGitHub: !!feedback.github_issue_number,
       })
     }
