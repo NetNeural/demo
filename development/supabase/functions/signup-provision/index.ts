@@ -1,3 +1,5 @@
+// deno-lint-ignore-file
+/// <reference lib="deno.window" />
 /**
  * Edge Function: signup-provision
  * Provisions an organization for a newly-registered user during signup.

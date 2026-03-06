@@ -1,3 +1,5 @@
+// deno-lint-ignore-file
+/// <reference lib="deno.window" />
 /**
  * user-support edge function
  * Tier 1/2 support actions for NetNeural admins:
@@ -189,7 +191,7 @@ async function handleListUsers(supabaseAdmin: any, url: URL) {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
   // deno-lint-ignore no-explicit-any
-  const userIds = [...new Set((members || []).map((m: any) => m.user_id))]
+  const userIds: string[] = [...new Set((members || []).map((m: any) => m.user_id))]
   const mfaStatusMap: Record<string, boolean> = {}
 
   // Batch check MFA factors (limit concurrent requests)

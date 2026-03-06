@@ -59,12 +59,17 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type DocumentCategory =
-  | 'contract'
-  | 'compliance'
-  | 'report'
-  | 'invoice'
-  | 'agreement'
-  | 'other'
+  | 'investor_summary'
+  | 'corporate_matters'
+  | 'financial_matters'
+  | 'financing_cap_table'
+  | 'founders_employees_vendors'
+  | 'market_research'
+  | 'product_ip'
+  | 'sales_marketing'
+  | 'operating_contracts'
+  | 'insurance'
+  | 'dod_nih'
 
 interface OrgDocument {
   id: string
@@ -89,23 +94,31 @@ interface DocumentsTabProps {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<DocumentCategory, string> = {
-  contract: 'Contract',
-  compliance: 'Compliance',
-  report: 'Report',
-  invoice: 'Invoice',
-  agreement: 'Agreement',
-  other: 'Other',
+  investor_summary: 'A - Investor Summary',
+  corporate_matters: 'B - Corporate Matters',
+  financial_matters: 'C - Financial Matters',
+  financing_cap_table: 'D - Financing and Cap Table',
+  founders_employees_vendors: 'E - Founders, Employees, Key Vendors',
+  market_research: 'F - Market Research',
+  product_ip: 'G - Product & IP',
+  sales_marketing: 'H - Sales & Marketing',
+  operating_contracts: 'I - Operating Contracts',
+  insurance: 'J - Insurance',
+  dod_nih: 'K - DoD/NIH',
 }
 
 const CATEGORY_COLORS: Record<DocumentCategory, string> = {
-  contract: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  compliance:
-    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  report: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  invoice: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  agreement:
-    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  investor_summary: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  corporate_matters: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  financial_matters: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  financing_cap_table: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  founders_employees_vendors: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+  market_research: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  product_ip: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  sales_marketing: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+  operating_contracts: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+  insurance: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  dod_nih: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 }
 
 function formatBytes(bytes: number): string {
@@ -144,7 +157,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadCategory, setUploadCategory] =
-    useState<DocumentCategory>('other')
+    useState<DocumentCategory>('investor_summary')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadVisibleToMembers, setUploadVisibleToMembers] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -266,7 +279,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
       // Reset form
       setShowUploadDialog(false)
       setSelectedFile(null)
-      setUploadCategory('other')
+      setUploadCategory('investor_summary')
       setUploadDescription('')
       setUploadVisibleToMembers(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -385,8 +398,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Secure document storage — contracts, compliance, reports, and
-                more.
+                Secure document storage organized by category.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -397,7 +409,7 @@ export function DocumentsTab({ organizationId }: DocumentsTabProps) {
                   setFilterCategory(v as DocumentCategory | 'all')
                 }
               >
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-64">
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
