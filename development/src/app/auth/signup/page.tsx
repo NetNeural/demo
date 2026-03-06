@@ -23,6 +23,7 @@ import {
   Building2,
   Lock,
   DollarSign,
+  Wand2,
   type LucideIcon,
 } from 'lucide-react'
 import type { BillingPlan, BillingPlanFeatures } from '@/types/billing'
@@ -326,6 +327,36 @@ function SignupForm() {
 
   // Background nodes
   const nodes = useMemo(() => generateNodes(10), [])
+
+  // ── Generate strong password ───────────────────────────────────────
+  const generateStrongPassword = useCallback(() => {
+    const lower = 'abcdefghijkmnopqrstuvwxyz'
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+    const digits = '23456789'
+    const symbols = '!@#$%&*?'
+    const all = lower + upper + digits + symbols
+    const buf = new Uint32Array(16)
+    crypto.getRandomValues(buf)
+    const rand = (i: number) => buf[i]!
+    const pick = (s: string, n: number) => s.charAt(n % s.length)
+    // Guarantee at least one of each required type
+    const pwd = [
+      pick(lower, rand(0)),
+      pick(upper, rand(1)),
+      pick(digits, rand(2)),
+      pick(symbols, rand(3)),
+    ]
+    for (let i = 4; i < 16; i++) pwd.push(pick(all, rand(i)))
+    // Shuffle
+    for (let i = pwd.length - 1; i > 0; i--) {
+      const j = rand(i % 16) % (i + 1)
+      ;[pwd[i], pwd[j]] = [pwd[j]!, pwd[i]!]
+    }
+    const generated = pwd.join('')
+    setPassword(generated)
+    setConfirmPassword(generated)
+    setShowPassword(true)
+  }, [])
 
   // ── Validation ──────────────────────────────────────────────────────
   const passwordErrors = useMemo(() => {
@@ -919,12 +950,22 @@ function SignupForm() {
 
                 {/* Password */}
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-1.5 block text-sm font-medium text-gray-300"
-                  >
-                    Password
-                  </label>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-300"
+                    >
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={generateStrongPassword}
+                      className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-cyan-400 transition-colors hover:bg-cyan-500/10 hover:text-cyan-300"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      Generate Strong Password
+                    </button>
+                  </div>
                   <div className="relative">
                     <input
                       id="password"
@@ -1091,9 +1132,7 @@ function SignupForm() {
                 Go to Sign In
               </Button>
 
-              <p className="mt-4 text-xs text-gray-500">
-                Your 14-day free trial starts when you sign in.
-              </p>
+
             </div>
           </div>
         )}
