@@ -216,9 +216,9 @@ interface MediaAccountsTabProps {
 }
 
 export function MediaAccountsTab({ organizationId }: MediaAccountsTabProps) {
-  const { isOwner } = useOrganization()
+  const { isOwner, isAdmin: isOrgAdmin } = useOrganization()
   const { user } = useUser()
-  const isAdmin = isOwner || user?.isSuperAdmin
+  const isAdmin = isOwner || isOrgAdmin || user?.isSuperAdmin
   const supabase = createClient()
 
   const [accounts, setAccounts] = useState<MediaAccount[]>([])
