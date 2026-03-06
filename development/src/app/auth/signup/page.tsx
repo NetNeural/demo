@@ -447,9 +447,11 @@ function SignupForm() {
         // This works whether email confirmation is required or not,
         // because we use the anon key + user ID rather than requiring a session.
         const newUserId = data.user.id
+        const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+        let provisionedOrgId: string | null = null
+
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
           const response = await fetch(
             `${apiUrl}/functions/v1/signup-provision`,
             {
@@ -473,6 +475,7 @@ function SignupForm() {
             console.error('Org provisioning error:', errBody)
           } else {
             const orgResult = await response.json().catch(() => ({}))
+            provisionedOrgId = orgResult.data?.id ?? null
             console.log('Organization provisioned successfully')
 
             // Record signup attribution for reseller analytics
@@ -483,7 +486,7 @@ function SignupForm() {
                 .insert({
                   reseller_org_id: parentOrgId,
                   reseller_slug: resellerSlug,
-                  new_org_id: orgResult.data?.id ?? null,
+                  new_org_id: provisionedOrgId,
                   new_user_id: newUserId,
                 })
                 .then(() => {})
@@ -494,8 +497,42 @@ function SignupForm() {
           console.error('Provisioning error:', provisionErr)
         }
 
-        // If email confirmation is required (no session returned), the user
-        // must click the confirmation link before they can sign in.
+        // Try to redirect to Stripe Checkout for payment collection.
+        // If Stripe is not configured or the plan has no price, fall through
+        // to the success step gracefully.
+        if (provisionedOrgId) {
+          try {
+            const checkoutRes = await fetch(
+              `${apiUrl}/functions/v1/signup-checkout`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${anonKey}`,
+                },
+                body: JSON.stringify({
+                  organizationId: provisionedOrgId,
+                  planSlug: selectedPlan.slug,
+                  customerEmail: email.trim(),
+                  customerName: orgName.trim(),
+                }),
+              }
+            )
+
+            if (checkoutRes.ok) {
+              const checkoutData = await checkoutRes.json()
+              if (checkoutData.url) {
+                // Redirect to Stripe Checkout — user will return to login page
+                window.location.href = checkoutData.url
+                return
+              }
+            }
+          } catch (checkoutErr) {
+            console.error('Stripe checkout redirect skipped:', checkoutErr)
+          }
+        }
+
+        // If Stripe checkout was not available, fall through to success
         if (!data.session) {
           setNeedsEmailConfirmation(true)
           setStep(3)
@@ -768,7 +805,7 @@ function SignupForm() {
             </div>
 
             <p className="mt-4 text-center text-xs text-gray-500">
-              All plans include a 14-day free trial. No credit card required.
+              Secure payment details will be collected after account setup.
             </p>
           </div>
         )}

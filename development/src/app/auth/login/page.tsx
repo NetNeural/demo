@@ -94,6 +94,7 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [signupMessage, setSignupMessage] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
   const [forgotMode, setForgotMode] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
@@ -194,6 +195,30 @@ function LoginForm() {
       if (errorParam !== 'session_expired') {
         setError(decodeURIComponent(errorParam))
       }
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
+      )
+    }
+
+    // Signup flow completion messages
+    const signupParam = searchParams?.get('signup')
+    if (signupParam === 'complete') {
+      setSignupMessage({
+        type: 'success',
+        text: 'Account created and payment confirmed! Sign in to get started.',
+      })
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
+      )
+    } else if (signupParam === 'payment-skipped') {
+      setSignupMessage({
+        type: 'info',
+        text: 'Account created! You can add payment details later from your billing settings.',
+      })
       window.history.replaceState(
         {},
         '',
@@ -668,6 +693,27 @@ function LoginForm() {
                 : 'Sign in to continue'}
             </p>
           </div>
+
+          {/* Signup completion message */}
+          {signupMessage && (
+            <Alert
+              className={`mb-6 ${
+                signupMessage.type === 'success'
+                  ? 'border-emerald-800/60 bg-emerald-950/60'
+                  : 'border-blue-800/60 bg-blue-950/60'
+              }`}
+            >
+              <AlertDescription
+                className={
+                  signupMessage.type === 'success'
+                    ? 'text-emerald-200'
+                    : 'text-blue-200'
+                }
+              >
+                {signupMessage.text}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Error */}
           {error && (
