@@ -216,6 +216,44 @@ serve(async (req) => {
 
   // ─── chat ────────────────────────────────────────────────────────
   if (action === 'chat') {
+    // --- Tier-based AI gating ---
+    if (orgId) {
+      const { data: org } = await db
+        .from('organizations')
+        .select('billing_plan_id')
+        .eq('id', orgId)
+        .single()
+
+      if (org?.billing_plan_id) {
+        const { data: plan } = await db
+          .from('billing_plans')
+          .select('features, slug')
+          .eq('id', org.billing_plan_id)
+          .single()
+
+        if (plan && !plan.features?.ai_analytics) {
+          console.log(
+            `🚫 Mercury chat blocked for org ${orgId} — plan "${plan.slug}" does not include AI`
+          )
+          return err('AI features are not available on your current plan. Please upgrade to access Mercury Chat.', 403)
+        }
+      }
+    }
+
+    // --- Rate limiting (20 messages per user per hour) ---
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const { count: recentMessageCount } = await db
+      .from('support_chat_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender_id', user.id)
+      .eq('sender_type', 'user')
+      .gte('created_at', oneHourAgo)
+
+    if ((recentMessageCount ?? 0) >= 20) {
+      console.log(`🚫 Rate limit hit for user ${user.id} — ${recentMessageCount} messages in last hour`)
+      return err('Rate limit exceeded. You can send up to 20 messages per hour. Please try again later.', 429)
+    }
+
     const { message, sessionId: existingSessionId } = body
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return err('message required')

@@ -63,6 +63,36 @@ export default createEdgeFunction(async ({ req }) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
+  // --- Tier-based AI gating ---
+  if (userContext.organizationId) {
+    const { data: org } = await supabaseAdmin
+      .from('organizations')
+      .select('billing_plan_id')
+      .eq('id', userContext.organizationId)
+      .single()
+
+    if (org?.billing_plan_id) {
+      const { data: plan } = await supabaseAdmin
+        .from('billing_plans')
+        .select('features, slug')
+        .eq('id', org.billing_plan_id)
+        .single()
+
+      if (plan && !plan.features?.ai_analytics) {
+        console.log(
+          `🚫 Threshold AI blocked for org ${userContext.organizationId} — plan "${plan.slug}" does not include AI`
+        )
+        return createSuccessResponse({
+          error: 'AI features are not available on your current plan',
+          upgrade_required: true,
+          available: false,
+          recommended: null,
+          message: 'Upgrade your plan to access AI-powered threshold recommendations.',
+        })
+      }
+    }
+  }
+
   if (req.method !== 'GET') {
     throw new Error('Only GET method is supported')
   }
