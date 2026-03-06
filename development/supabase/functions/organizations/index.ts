@@ -1097,6 +1097,37 @@ export default createEdgeFunction(
           )
         }
 
+        // Before deleting the org, find members who are ONLY in this org
+        // so we can clean up their auth accounts (they'd be orphaned otherwise)
+        // @ts-expect-error - Dynamic select
+        const { data: members } = await supabaseAdmin
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', orgId)
+
+        const userIdsToDelete: string[] = []
+        if (members && members.length > 0) {
+          for (const member of members) {
+            // Skip the user performing the deletion (don't delete yourself)
+            // @ts-expect-error - user_id exists
+            if (member.user_id === userContext.userId) continue
+
+            // Check if this user belongs to any OTHER organization
+            // @ts-expect-error - Dynamic select
+            const { count } = await supabaseAdmin
+              .from('organization_members')
+              .select('*', { count: 'exact', head: true })
+              // @ts-expect-error - user_id exists
+              .eq('user_id', member.user_id)
+              .neq('organization_id', orgId)
+
+            if (count === 0) {
+              // @ts-expect-error - user_id exists
+              userIdsToDelete.push(member.user_id)
+            }
+          }
+        }
+
         // Perform actual deletion (CASCADE will handle related records)
         // This includes organization_members, devices, locations, etc.
         // Use admin client to bypass RLS
@@ -1113,11 +1144,23 @@ export default createEdgeFunction(
           )
         }
 
+        // Delete orphaned user accounts from auth.users
+        const deletedUsers: string[] = []
+        for (const userId of userIdsToDelete) {
+          const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+          if (authDeleteError) {
+            console.error(`Failed to delete auth user ${userId}:`, authDeleteError.message)
+          } else {
+            deletedUsers.push(userId)
+          }
+        }
+
         // @ts-expect-error - name exists
         return createSuccessResponse({
           // @ts-expect-error - name exists
           message: `Organization "${org.name}" has been deleted successfully`,
           organizationId: orgId,
+          deletedUserAccounts: deletedUsers.length,
           success: true,
         })
       }
