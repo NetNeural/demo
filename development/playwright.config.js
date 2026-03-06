@@ -13,6 +13,8 @@ module.exports = defineConfig({
   ],
   /* Run tests in files in parallel */
   fullyParallel: true,
+  /* Generous timeout for remote testing with MFA login */
+  timeout: 120000,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI or remote testing — transient profile_load_failed can cause flakes */

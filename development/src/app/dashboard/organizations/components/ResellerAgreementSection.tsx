@@ -204,7 +204,8 @@ export function ResellerAgreementSection({
         setShowApplyDialog(false)
         await fetchStatus()
       } else {
-        toast.error(response.error?.message || 'Failed to submit application')
+        const errorMsg = typeof response.error === 'object' ? response.error?.message : response.message || response.error
+        toast.error(errorMsg || 'Failed to submit application')
       }
     } catch (err) {
       console.error('Failed to submit application:', err)

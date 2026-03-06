@@ -304,7 +304,9 @@ ${additionalNotes || 'None'}
         applicant_phone: applicantPhone?.trim() || null,
         company_legal_name: companyLegalName.trim(),
         company_address: companyAddress.trim(),
-        company_website: companyWebsite?.trim() || null,
+        company_website: companyWebsite?.trim()
+          ? (/^https?:\/\//i.test(companyWebsite.trim()) ? companyWebsite.trim() : `https://${companyWebsite.trim()}`)
+          : null,
         company_tax_id: companyTaxId?.trim() || null,
         estimated_customers: estimatedCustomers,
         target_market: targetMarket?.trim() || null,

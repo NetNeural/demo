@@ -1,23 +1,13 @@
 /**
  * E2E Tests: Alert Management
  * Updated 2026-02-27 to match current AlertsList + AlertsHeader components.
+ * Updated 2026-03-05 to use shared MFA-aware login helper.
  */
 import { test, expect, Page } from '@playwright/test'
-
-const TEST_USER = {
-  email: process.env.TEST_USER_EMAIL || 'admin@netneural.ai',
-  password: process.env.TEST_USER_PASSWORD || 'password123',
-}
+import { loginAndGoTo } from './helpers/login'
 
 async function loginAndGoToAlerts(page: Page) {
-  await page.goto('/auth/login')
-  await page.waitForLoadState('networkidle')
-  await page.locator('#email').fill(TEST_USER.email)
-  await page.locator('#password').fill(TEST_USER.password)
-  await page.locator('button[type="submit"]').click()
-  await page.waitForURL('**/dashboard**', { timeout: 15000 })
-  await page.goto('/dashboard/alerts')
-  await page.waitForLoadState('networkidle')
+  await loginAndGoTo(page, '/dashboard/alerts')
 }
 
 test.describe('Alert Management', () => {

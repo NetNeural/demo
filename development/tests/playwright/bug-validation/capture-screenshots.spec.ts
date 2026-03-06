@@ -14,7 +14,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 1. Bug #22: Remember Me Checkbox on Login Page
     await page.goto('/auth/login')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.screenshot({
       path: 'screenshots/bug-22-remember-me.png',
       fullPage: true,
@@ -28,7 +28,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 2. Bug #7 & #12: Dashboard with Alerts and System Health
     await page.goto('/dashboard')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
     await page.screenshot({
       path: 'screenshots/bug-07-12-dashboard-alerts-locations.png',
@@ -37,7 +37,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 3. Settings - Profile Tab (Bug #11)
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
     await page.screenshot({
       path: 'screenshots/bug-11-profile-save.png',
@@ -72,7 +72,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 6. Organizations page
     await page.goto('/dashboard/organizations')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
     await page.screenshot({
       path: 'screenshots/bug-06-organization-settings.png',
@@ -81,7 +81,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 7. Devices page
     await page.goto('/dashboard/devices')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
     await page.screenshot({
       path: 'screenshots/devices-list.png',
@@ -90,7 +90,7 @@ test.describe('Bug Fix Screenshots', () => {
 
     // 8. Alerts page
     await page.goto('/dashboard/alerts')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
     await page.screenshot({
       path: 'screenshots/alerts-page.png',

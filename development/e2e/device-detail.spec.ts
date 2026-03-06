@@ -1,26 +1,21 @@
 /**
  * E2E Tests: Device Location Save
  * Created 2026-02-27 — validates the location save fix (edge function bypass of RLS).
+ * Updated 2026-03-05 to use shared MFA-aware login helper.
  *
  * Tests the consolidated device detail page (/dashboard/devices/view?id=X)
  * specifically the LocationDetailsCard which saves via edgeFunctions.devices.update().
  */
 import { test, expect, Page } from '@playwright/test'
-
-const TEST_USER = { email: 'admin@netneural.ai', password: 'password123' }
+import { loginAs } from './helpers/login'
 
 async function login(page: Page) {
-  await page.goto('/auth/login')
-  await page.waitForLoadState('networkidle')
-  await page.locator('#email').fill(TEST_USER.email)
-  await page.locator('#password').fill(TEST_USER.password)
-  await page.locator('button[type="submit"]').click()
-  await page.waitForURL('**/dashboard**', { timeout: 15000 })
+  await loginAs(page)
 }
 
 async function getFirstDeviceId(page: Page): Promise<string | null> {
   await page.goto('/dashboard/devices')
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('load')
   await page.waitForTimeout(3000)
 
   // Find first device link
@@ -46,7 +41,7 @@ test.describe('Device Location Save', () => {
     test.skip(!deviceId, 'No devices available')
 
     await page.goto(`/dashboard/devices/view?id=${deviceId}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     // Should show device name in header
     await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 })
@@ -61,7 +56,7 @@ test.describe('Device Location Save', () => {
     test.skip(!deviceId, 'No devices available')
 
     await page.goto(`/dashboard/devices/view?id=${deviceId}&tab=overview`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
 
     // LocationDetailsCard should be visible on overview
@@ -74,7 +69,7 @@ test.describe('Device Location Save', () => {
     test.skip(!deviceId, 'No devices available')
 
     await page.goto(`/dashboard/devices/view?id=${deviceId}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     const tabs = [
       'Overview',
@@ -102,7 +97,7 @@ test.describe('Device Location Save', () => {
     test.skip(!deviceId, 'No devices available')
 
     await page.goto(`/dashboard/devices/view?id=${deviceId}&tab=overview`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
 
     // Look for save button
@@ -119,7 +114,7 @@ test.describe('Device Location Save', () => {
     test.skip(!deviceId, 'No devices available')
 
     await page.goto(`/dashboard/devices/view?id=${deviceId}`)
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     const backButton = page.getByRole('button', { name: /back/i }).first()
     if (await backButton.isVisible({ timeout: 5000 }).catch(() => false)) {

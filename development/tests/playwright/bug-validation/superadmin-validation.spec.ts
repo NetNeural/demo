@@ -14,7 +14,7 @@ const TEST_PASSWORD = 'password123'
 test.describe('Bug Fixes Validation with Superadmin', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/auth/login')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.locator('#email').fill(TEST_EMAIL)
     await page.locator('#password').fill(TEST_PASSWORD)
     await page.locator('button[type="submit"]').click()
@@ -25,7 +25,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/auth/login')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     // Radix Checkbox with id="remember-me", label "Keep me signed in"
     const rememberMe = page.locator('#remember-me')
     await expect(rememberMe).toBeVisible({ timeout: 10000 })
@@ -38,7 +38,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
 
     // Dashboard has cards: "Recent Alerts" and System Health
@@ -55,7 +55,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
 
     const fullNameInput = page
@@ -74,7 +74,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     const preferencesTab = page.getByRole('tab', { name: /preferences/i })
     await preferencesTab.click()
@@ -93,7 +93,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     const securityTab = page.getByRole('tab', { name: /security/i })
     await securityTab.click()
@@ -116,7 +116,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     const securityTab = page.getByRole('tab', { name: /security/i })
     await securityTab.click()
@@ -131,7 +131,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/organizations')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
 
     const pageHeading = page
@@ -146,7 +146,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(3000)
 
     const statCard = page.getByText(/total devices|online devices/i).first()
@@ -158,7 +158,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard/organizations')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForTimeout(3000)
 
     const pageContent = await page.content()
@@ -172,12 +172,12 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     page,
   }) => {
     await page.goto('/dashboard')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 })
     console.log('✅ Journey: Dashboard accessible')
 
     await page.goto('/dashboard/settings')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     console.log('✅ Journey: Settings page accessible')
 
     const tabs = ['Profile', 'Preferences', 'Security']
@@ -191,7 +191,7 @@ test.describe('Bug Fixes Validation with Superadmin', () => {
     }
 
     await page.goto('/dashboard/organizations')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await expect(
       page
         .locator('h2')

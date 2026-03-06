@@ -1,18 +1,15 @@
 /**
  * E2E Tests: Authentication Flows
  * Updated 2026-02-27 to match current login page selectors.
+ * Updated 2026-03-05 to use shared MFA-aware login helper.
  * Login: #email, #password, #remember-me (Radix), "Sign in" button, "Keep me signed in" label
  */
 import { test, expect, Page } from '@playwright/test'
-
-const TEST_USER = {
-  email: process.env.TEST_USER_EMAIL || 'admin@netneural.ai',
-  password: process.env.TEST_USER_PASSWORD || 'password123',
-}
+import { loginAs, loginAndGoTo, TEST_USER } from './helpers/login'
 
 async function navigateToLogin(page: Page) {
   await page.goto('/auth/login')
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('load')
 }
 
 async function performLogin(page: Page, email: string, password: string) {
@@ -22,13 +19,7 @@ async function performLogin(page: Page, email: string, password: string) {
 }
 
 async function loginAndGo(page: Page, path = '/dashboard') {
-  await navigateToLogin(page)
-  await performLogin(page, TEST_USER.email, TEST_USER.password)
-  await page.waitForURL('**/dashboard**', { timeout: 15000 })
-  if (path !== '/dashboard') {
-    await page.goto(path)
-    await page.waitForLoadState('networkidle')
-  }
+  await loginAndGoTo(page, path)
 }
 
 test.describe('Authentication Flows', () => {
@@ -81,7 +72,7 @@ test.describe('Authentication Flows', () => {
     test('should persist session after refresh', async ({ page }) => {
       await loginAndGo(page)
       await page.reload()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       expect(page.url()).toMatch(/dashboard/)
     })
 
@@ -90,7 +81,7 @@ test.describe('Authentication Flows', () => {
     }) => {
       await loginAndGo(page)
       await page.goto('/auth/login')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForURL('**/dashboard**', { timeout: 10000 })
     })
 
@@ -105,7 +96,7 @@ test.describe('Authentication Flows', () => {
         '/dashboard/settings',
       ]) {
         await page.goto(route)
-        await page.waitForLoadState('networkidle')
+        await page.waitForLoadState('load')
         expect(page.url()).not.toMatch(/login/)
       }
     })
@@ -116,7 +107,7 @@ test.describe('Authentication Flows', () => {
     }) => {
       await context.clearCookies()
       await page.goto('/dashboard')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForURL('**/login**', { timeout: 10000 })
     })
   })

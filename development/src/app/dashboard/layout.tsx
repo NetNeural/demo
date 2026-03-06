@@ -181,7 +181,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         ...(canAccessSupport(user, userRole)
           ? [
               { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
-              { href: '/dashboard/media-room', label: 'Media Room', icon: Newspaper },
+              ...(isPlatformOwner
+                ? [{ href: '/dashboard/media-room', label: 'Media Room', icon: Newspaper }]
+                : []),
             ]
           : []),
       ],

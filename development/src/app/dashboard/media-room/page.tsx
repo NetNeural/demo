@@ -6,6 +6,7 @@ import {
   Share2,
   Mail,
   Shield,
+  Key,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -13,10 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/contexts/UserContext'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { canAccessSupport } from '@/lib/permissions'
+import { isPlatformOwnerTier } from '@/types/organization'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 import { SocialMediaTab } from './components/SocialMediaTab'
+import { MediaAccountsTab } from './components/MediaAccountsTab'
 import { EmailBroadcastCard } from '../support/components/EmailBroadcastCard'
 
 export default function MediaRoomPage() {
@@ -51,14 +54,17 @@ function MediaRoomPageContent() {
     router.push(`?${params.toString()}`, { scroll: false })
   }
 
+  const isPlatformOwner = isPlatformOwnerTier(currentOrganization?.subscription_tier)
+  const canAccess = canAccessSupport(user, userRole) && (isPlatformOwner || user?.isSuperAdmin)
+
   useEffect(() => {
-    if (!userLoading && !canAccessSupport(user, userRole)) {
+    if (!userLoading && !canAccess) {
       toast.error(
-        'You do not have permission to access the Media Room. Admin or Owner role required.'
+        'Media Room is only available to the NetNeural platform organization.'
       )
       router.replace('/dashboard')
     }
-  }, [user, userRole, userLoading, router])
+  }, [user, userRole, userLoading, router, canAccess, isPlatformOwner])
 
   if (userLoading) {
     return (
@@ -71,7 +77,7 @@ function MediaRoomPageContent() {
     )
   }
 
-  if (!canAccessSupport(user, userRole)) {
+  if (!canAccess) {
     return null
   }
 
@@ -110,6 +116,13 @@ function MediaRoomPageContent() {
             <Share2 className="h-4 w-4" />
             <span>Social Media</span>
           </TabsTrigger>
+          <TabsTrigger
+            value="accounts"
+            className="flex items-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            <span>Media Accounts</span>
+          </TabsTrigger>
           {isSuperAdmin && (
             <TabsTrigger
               value="communication"
@@ -124,6 +137,10 @@ function MediaRoomPageContent() {
 
         <TabsContent value="social-media">
           <SocialMediaTab organizationId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="accounts">
+          <MediaAccountsTab organizationId={orgId} />
         </TabsContent>
 
         {isSuperAdmin && (

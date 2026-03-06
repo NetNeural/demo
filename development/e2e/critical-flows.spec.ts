@@ -19,9 +19,7 @@
 
 import { test, expect, type Page } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { authenticator } from 'otplib'
-import * as fs from 'fs'
-import * as path from 'path'
+import { loginAs } from './helpers/login'
 
 // ── Config ──────────────────────────────────────────────────────────────────────
 const SUPABASE_URL =
@@ -53,173 +51,22 @@ function adminClient(): SupabaseClient {
   })
 }
 
-// ── TOTP helper ─────────────────────────────────────────────────────────────────
-// The global-setup.ts enrolls a TOTP factor for the admin user and saves the
-// secret to disk. We read it here so every worker can complete MFA challenges.
-const TOTP_SECRET_FILE = path.join(
-  __dirname,
-  '../tests/playwright/.playwright-admin-totp.json'
-)
-
-let _totpSecret: string | null = null
-function getTotpSecret(): string | null {
-  if (_totpSecret !== null) return _totpSecret
-  try {
-    const data = JSON.parse(fs.readFileSync(TOTP_SECRET_FILE, 'utf-8'))
-    _totpSecret = data.secret ?? null
-  } catch {
-    _totpSecret = null
-  }
-  return _totpSecret
-}
-
-async function dismissCookieBanner(page: Page) {
-  try {
-    const banner = page.locator('[role="dialog"][aria-label*="ookie"]')
-    await banner.waitFor({ state: 'visible', timeout: 3000 })
-    await page.evaluate(() => {
-      const dialog = document.querySelector('[role="dialog"]')
-      if (!dialog) return
-      const buttons = dialog.querySelectorAll('button')
-      if (buttons.length > 0) {
-        ;(buttons[buttons.length - 1] as HTMLElement).click()
-      }
-    })
-    await banner.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {})
-  } catch {
-    // No banner — continue
-  }
-}
-
-async function loginAs(page: Page, email: string, password: string) {
-  // Retry wrapper — remote sites can be slow; retry the full auth flow once on failure
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    await page.goto('/auth/login')
-    await page.waitForLoadState('load')
-    await dismissCookieBanner(page)
-    await page.locator('#email').fill(email)
-    await page.locator('#password').fill(password)
-    await page.locator('button[type="submit"]').click({ force: true })
-
-    // After login, expect one of: MFA challenge, setup-mfa, change-password, or dashboard
-    const mfaInput = page.locator('#mfa-code')
-    await Promise.race([
-      page
-        .waitForURL(/\/(dashboard|auth\/setup-mfa|auth\/change-password)/, {
-          timeout: 30000,
-        })
-        .catch(() => null),
-      mfaInput.waitFor({ state: 'visible', timeout: 30000 }).catch(() => null),
-    ])
-
-    // Handle MFA challenge (the expected path — global-setup enrolled a verified factor)
-    if (await mfaInput.isVisible().catch(() => false)) {
-      const secret = getTotpSecret()
-      if (!secret)
-        throw new Error(
-          'MFA challenge appeared but no TOTP secret on disk. ' +
-            'Ensure global-setup.ts enrolled MFA (check NEXT_PUBLIC_DISABLE_MFA_ENFORCEMENT is not set).'
-        )
-      const code = authenticator.generate(secret)
-      await mfaInput.fill(code)
-      await page.locator('button[type="submit"]').click({ force: true })
-      await page
-        .waitForURL(/\/(dashboard|auth\/setup-mfa|auth\/change-password)/, {
-          timeout: 30000,
-        })
-        .catch(async () => {
-          // Retry once in case TOTP code expired mid-entry
-          if (await mfaInput.isVisible().catch(() => false)) {
-            await mfaInput.fill(authenticator.generate(secret))
-            await page.locator('button[type="submit"]').click({ force: true })
-            await page
-              .waitForURL(
-                /\/(dashboard|auth\/setup-mfa|auth\/change-password)/,
-                { timeout: 20000 }
-              )
-              .catch(() => {})
-          }
-        })
-    }
-
-    // Fallback: if setup-mfa still appears, the factor may have been deleted.
-    if (page.url().includes('/auth/setup-mfa')) {
-      console.warn(
-        'Unexpected setup-mfa redirect — global-setup should have enrolled MFA'
-      )
-      await page.goto('/dashboard')
-      await page.waitForLoadState('load')
-      await page.waitForTimeout(2000)
-    }
-
-    // Handle password-change-required redirect
-    if (page.url().includes('/auth/change-password')) {
-      await page.goto('/dashboard')
-      await page.waitForLoadState('load')
-    }
-
-    // Ensure we end on the dashboard
-    if (!page.url().includes('/dashboard')) {
-      await page.goto('/dashboard')
-      await page.waitForLoadState('load')
-    }
-
-    // Stability check: the app's UserContext calls getCurrentUser() after
-    // navigating to /dashboard. If the profile API is slow, UserContext
-    // will sign out and redirect to /auth/login?error=profile_load_failed.
-    // Wait for either: dashboard content renders (profile loaded) OR
-    // login form reappears (profile failed / never left login).
-    // IMPORTANT: Do NOT match "welcome" — login page shows "Welcome back"!
-    const dashboardContent = page.locator('text=/Loading dashboard|No organization|Select an organization|Sentinel by NetNeural/i').first()
-    const loginForm = page.locator('#email, #password, #mfa-code').first()
-    await Promise.race([
-      dashboardContent.waitFor({ state: 'visible', timeout: 15000 }).catch(() => null),
-      loginForm.waitFor({ state: 'visible', timeout: 15000 }).catch(() => null),
-    ])
-
-    // Check if we're on the dashboard (not login page) with actual content
-    const onLoginPage = await loginForm.isVisible().catch(() => false)
-    const hasDashContent = await dashboardContent.isVisible().catch(() => false)
-    if (!onLoginPage && (hasDashContent || (page.url().includes('/dashboard') && !page.url().includes('/auth/')))) {
-      return // ✅ Login succeeded and profile loaded
-    }
-
-    // Login failed or profile_load_failed redirect — retry once
-    if (attempt === 1) {
-      console.warn(`loginAs: attempt ${attempt} failed (url: ${page.url()}), retrying...`)
-      await page.waitForTimeout(5000) // Longer pause before retry for transient API issues
-    }
-  }
-
-  // Both attempts failed
-  throw new Error(
-    `loginAs failed after 2 attempts — still on ${page.url()}. ` +
-      'Site may be experiencing high latency or auth issues.'
-  )
-}
-
 /**
  * Navigate to an authenticated page with retry on profile_load_failed.
- * The app's UserContext checks the session on every page transition.
- * If getCurrentUser() fails (transient Supabase API issue), it signs out
- * and redirects to /auth/login?error=profile_load_failed.
- * This helper detects that and re-logs in + retries the navigation.
  */
-async function navigateAuth(page: Page, path: string, email: string, password: string) {
+async function navigateAuth(page: Page, urlPath: string) {
   for (let attempt = 1; attempt <= 2; attempt++) {
-    await page.goto(path)
+    await page.goto(urlPath)
     await page.waitForLoadState('load')
     await page.waitForTimeout(2000)
-
-    // Check if we got redirected to login (profile_load_failed)
     if (page.url().includes('/auth/login') || page.url().includes('/auth/')) {
       if (attempt === 1) {
-        console.warn(`navigateAuth: profile_load_failed on ${path}, re-logging in...`)
-        await loginAs(page, email, password)
-        continue // retry navigation
+        console.warn(`navigateAuth: profile_load_failed on ${urlPath}, re-logging in...`)
+        await loginAs(page)
+        continue
       }
     }
-    return // ✅ Navigation succeeded
+    return
   }
 }
 
@@ -446,7 +293,7 @@ test.describe('Account Signup — Profile & Org Provisioning (#456)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('Location Creation (#436)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
   })
 
   test('can navigate to locations tab in organization settings', async ({
@@ -454,7 +301,7 @@ test.describe('Location Creation (#436)', () => {
   }) => {
     test.slow() // Allow extra time for first login + page load
     // Use ?tab=locations URL param for direct tab navigation
-    await navigateAuth(page, '/dashboard/organizations?tab=locations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations?tab=locations')
 
     // Wait for the "Add Location" button — same proven pattern as tests 7 and 8
     const addBtn = page
@@ -467,7 +314,7 @@ test.describe('Location Creation (#436)', () => {
   test('location creation form opens and has required fields', async ({
     page,
   }) => {
-    await navigateAuth(page, '/dashboard/organizations?tab=locations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations?tab=locations')
     await page.waitForTimeout(1000)
 
     // Click add location button
@@ -487,7 +334,7 @@ test.describe('Location Creation (#436)', () => {
   test('can create a location with name and address (#436)', async ({
     page,
   }) => {
-    await navigateAuth(page, '/dashboard/organizations?tab=locations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations?tab=locations')
     await page.waitForTimeout(1000)
 
     const addBtn = page
@@ -567,11 +414,11 @@ test.describe('Location Creation (#436)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('Alert Rule Creation (#455)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
   })
 
   test('can navigate to new rule wizard', async ({ page }) => {
-    await navigateAuth(page, '/dashboard/alert-rules', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/alert-rules')
 
     // Find "New Rule" or "Create Your First Rule" button
     const newRuleBtn = page
@@ -586,7 +433,7 @@ test.describe('Alert Rule Creation (#455)', () => {
   })
 
   test('rule wizard step 0 — name and type selection', async ({ page }) => {
-    await navigateAuth(page, '/dashboard/alert-rules/new', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/alert-rules/new')
 
     // Rule name field
     const nameInput = page.locator('#name')
@@ -627,7 +474,7 @@ test.describe('Alert Rule Creation (#455)', () => {
     page,
   }) => {
     test.slow() // Wizard has multiple steps with waits
-    await navigateAuth(page, '/dashboard/alert-rules/new', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/alert-rules/new')
 
     const ruleName = `E2E Rule ${RUN_ID}`
     const nextBtn = page
@@ -739,7 +586,7 @@ test.describe('Alert Rule Creation (#455)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('Reseller Agreement Application', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
   })
 
   test('organization overview loads and may show reseller section', async ({
@@ -748,7 +595,7 @@ test.describe('Reseller Agreement Application', () => {
     // The ResellerAgreementSection is rendered on the Overview tab,
     // but ONLY for non-root orgs (those with parent_organization_id).
     // Root org (NetNeural) won't show the section — that's expected.
-    await navigateAuth(page, '/dashboard/organizations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations')
 
     // Verify the overview tab loaded (should see org name or overview content)
     const orgContent = page.locator('text=/organization management|overview|members/i').first()
@@ -780,7 +627,7 @@ test.describe('Reseller Agreement Application', () => {
     page,
   }) => {
     test.slow() // Extra time for dialog interaction on slower networks
-    await navigateAuth(page, '/dashboard/organizations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations')
 
     // Check if reseller section is visible (only for non-root orgs)
     const applyBtn = page
@@ -819,7 +666,7 @@ test.describe('Reseller Agreement Application', () => {
   })
 
   test('reseller application validates required fields', async ({ page }) => {
-    await navigateAuth(page, '/dashboard/organizations', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/organizations')
 
     const applyBtn = page
       .locator('button')
@@ -865,7 +712,7 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
     // Clear all auth state
     await context.clearCookies()
     await page.goto('/dashboard')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForURL('**/login**', { timeout: 15000 })
     expect(page.url()).toContain('/auth/login')
   })
@@ -876,7 +723,7 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
   }) => {
     await context.clearCookies()
     await page.goto('/dashboard/hardware-provisioning')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForURL('**/login**', { timeout: 15000 })
 
     // Login form should be visible
@@ -885,7 +732,7 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
   })
 
   test('session timeout modal appears after idle period', async ({ page }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
 
     // The session timeout is 30 minutes — we can't wait that long in a test.
     // Instead, verify the SessionTimeoutModal component renders correctly
@@ -899,7 +746,7 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
 
   test('session persists during active use', async ({ page }) => {
     test.slow() // Extra time for multi-page navigation on slow sites
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
 
     // Navigate across multiple pages — session should not expire
     const routes = [
@@ -911,7 +758,7 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
     ]
 
     for (const route of routes) {
-      await navigateAuth(page, route, ADMIN_EMAIL, ADMIN_PASSWORD)
+      await navigateAuth(page, route)
       // Should NOT be redirected to login
       expect(page.url()).not.toContain('/auth/login')
     }
@@ -920,14 +767,14 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
   test('expired session redirects to login with appropriate message (#444)', async ({
     page,
   }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
 
     // Simulate session expiry by clearing auth cookies
     await page.context().clearCookies()
 
     // Try to perform an authenticated action
     await page.goto('/dashboard/hardware-provisioning')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
 
     // Should be redirected to login
     await page.waitForURL('**/login**', { timeout: 15000 })
@@ -944,17 +791,17 @@ test.describe('Session Timeout & Auth Guard (#444)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 test.describe('Device Map Refresh (#440)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await loginAs(page)
   })
 
   test('devices page loads and shows device list or empty state', async ({
     page,
   }) => {
     // Navigate to dashboard first to ensure org context loads
-    await navigateAuth(page, '/dashboard', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard')
 
     // Now navigate to hardware-provisioning
-    await navigateAuth(page, '/dashboard/hardware-provisioning', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/hardware-provisioning')
 
     // Wait for page content to appear (any of these indicates the page loaded)
     const heading = page.locator('h2').filter({ hasText: /hardware provisioning/i }).first()
@@ -986,9 +833,9 @@ test.describe('Device Map Refresh (#440)', () => {
 
   test('device map view is accessible', async ({ page }) => {
     // Navigate to dashboard first to ensure org context loads
-    await navigateAuth(page, '/dashboard', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard')
 
-    await navigateAuth(page, '/dashboard/hardware-provisioning', ADMIN_EMAIL, ADMIN_PASSWORD)
+    await navigateAuth(page, '/dashboard/hardware-provisioning')
 
     // Wait for page content — heading or tab buttons
     const heading = page.locator('h2').filter({ hasText: /hardware provisioning/i }).first()

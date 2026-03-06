@@ -330,7 +330,7 @@ export const resellerSchemas = {
     applicantPhone: z.string().optional(),
     companyLegalName: z.string().min(1, 'companyLegalName is required'),
     companyAddress: z.string().min(1, 'companyAddress is required'),
-    companyWebsite: z.string().url().optional().or(z.literal('')),
+    companyWebsite: z.string().optional().or(z.literal('')),
     companyTaxId: z.string().optional(),
     estimatedCustomers: z
       .number()

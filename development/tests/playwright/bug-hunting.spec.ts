@@ -9,7 +9,7 @@ const TEST_USER = { email: 'admin@netneural.ai', password: 'password123' }
 
 async function login(page: Page) {
   await page.goto('/auth/login')
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('load')
   await page.locator('#email').fill(TEST_USER.email)
   await page.locator('#password').fill(TEST_USER.password)
   await page.locator('button[type="submit"]').click()
@@ -24,7 +24,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
         if (msg.type() === 'error') errors.push(msg.text())
       })
       await page.goto('/auth/login')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(2000)
       const filtered = errors.filter(
         (e) => !e.includes('favicon') && !e.includes('404')
@@ -53,7 +53,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
       })
       await login(page)
       await page.goto('/dashboard/devices')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(3000)
       const filtered = errors.filter(
         (e) => !e.includes('favicon') && !e.includes('404')
@@ -69,7 +69,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
       })
       await login(page)
       await page.goto('/dashboard/alerts')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(3000)
       const filtered = errors.filter(
         (e) => !e.includes('favicon') && !e.includes('404')
@@ -85,7 +85,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
       })
       await login(page)
       await page.goto('/dashboard/settings')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(3000)
       const filtered = errors.filter(
         (e) => !e.includes('favicon') && !e.includes('404')
@@ -98,7 +98,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
   test.describe('404 / Broken Routes', () => {
     test('unknown routes redirect to login or 404', async ({ page }) => {
       await page.goto('/some-nonexistent-page')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(2000)
       const url = page.url()
       const is404orLogin = url.includes('login') || url.includes('404')
@@ -113,7 +113,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
       page,
     }) => {
       await page.goto('/dashboard')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(3000)
       await expect(page).toHaveURL(/login/)
     })
@@ -125,7 +125,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
       // Block Supabase API
       await page.route('**/rest/v1/**', (route) => route.abort())
       await page.goto('/dashboard/devices')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await page.waitForTimeout(5000)
       // Should not crash - check no uncaught error overlay
       const errorOverlay = page.locator(
@@ -168,7 +168,7 @@ test.describe('Bug Hunting - Page Traversal', () => {
     test('can switch between all settings tabs', async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/settings')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       const tabs = ['Profile', 'Preferences', 'Security', 'Organizations']
       for (const tab of tabs) {
         const tabEl = page.locator('[role="tab"]').filter({ hasText: tab })

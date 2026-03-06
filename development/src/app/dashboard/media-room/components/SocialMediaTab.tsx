@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -47,6 +47,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

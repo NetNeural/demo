@@ -9,7 +9,7 @@ const TEST_USER = { email: 'admin@netneural.ai', password: 'password123' }
 
 async function login(page: Page) {
   await page.goto('/auth/login')
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('load')
   await page.locator('#email').fill(TEST_USER.email)
   await page.locator('#password').fill(TEST_USER.password)
   await page.locator('button[type="submit"]').click()
@@ -20,7 +20,7 @@ test.describe('Production Smoke Tests', () => {
   test.describe('Login & Auth', () => {
     test('login page loads and shows branding', async ({ page }) => {
       await page.goto('/auth/login')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
       await expect(page.locator('#email')).toBeVisible({ timeout: 10000 })
       await expect(page.locator('#password')).toBeVisible()
       await expect(page.locator('button[type="submit"]')).toBeVisible()
@@ -67,11 +67,11 @@ test.describe('Production Smoke Tests', () => {
           .first()
         if (await link.isVisible({ timeout: 3000 }).catch(() => false)) {
           await link.click()
-          await page.waitForLoadState('networkidle')
+          await page.waitForLoadState('load')
           await expect(page).toHaveURL(item.url)
           // Navigate back to dashboard
           await page.goto('/dashboard')
-          await page.waitForLoadState('networkidle')
+          await page.waitForLoadState('load')
         }
       }
     })
@@ -81,7 +81,7 @@ test.describe('Production Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/devices')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
     })
 
     test('devices page loads', async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe('Production Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/settings')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
     })
 
     test('settings page has correct tabs', async ({ page }) => {
@@ -111,7 +111,7 @@ test.describe('Production Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/alerts')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
     })
 
     test('alerts page loads', async ({ page }) => {
@@ -125,7 +125,7 @@ test.describe('Production Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/billing')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
     })
 
     test('billing page loads with tab navigation', async ({ page }) => {
@@ -145,7 +145,7 @@ test.describe('Production Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
       await login(page)
       await page.goto('/dashboard/settings')
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('load')
     })
 
     test('organizations tab is accessible', async ({ page }) => {
@@ -195,7 +195,7 @@ test.describe('Production Smoke Tests', () => {
       for (const p of pages) {
         const start = Date.now()
         await page.goto(p)
-        await page.waitForLoadState('networkidle')
+        await page.waitForLoadState('load')
         const elapsed = Date.now() - start
         console.log(`${p} loaded in ${elapsed}ms`)
         expect(elapsed).toBeLessThan(10000)
