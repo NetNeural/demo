@@ -141,8 +141,8 @@ export default function DashboardShell({
                 href={item.href}
                 className={cn(
                   'mb-1 flex items-center rounded-md px-4 py-3 transition-all duration-150 ease-in-out',
-                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                  pathname === item.href && 'bg-blue-100 text-blue-700'
+                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
+                  pathname === item.href && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                 )}
                 onClick={() => setSidebarOpen(false)}
               >

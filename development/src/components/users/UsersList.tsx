@@ -184,19 +184,19 @@ export function UsersList() {
   const getRoleColor = (role: User['role']) => {
     switch (role) {
       case 'super_admin':
-        return 'text-purple-600 bg-purple-100'
+        return 'text-purple-600 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30'
       case 'platform_admin':
-        return 'text-purple-500 bg-purple-50'
+        return 'text-purple-500 bg-purple-50 dark:text-purple-300 dark:bg-purple-950/30'
       case 'org_admin':
-        return 'text-blue-600 bg-blue-100'
+        return 'text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30'
       case 'org_owner':
-        return 'text-indigo-600 bg-indigo-100'
+        return 'text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30'
       case 'user':
-        return 'text-green-600 bg-green-100'
+        return 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/30'
       case 'viewer':
-        return 'text-gray-600 bg-gray-100'
+        return 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-800'
       default:
-        return 'text-gray-400 bg-gray-50'
+        return 'text-gray-400 bg-gray-50 dark:text-gray-400 dark:bg-gray-800/50'
     }
   }
 

@@ -234,10 +234,10 @@ const AUDIT_SECTIONS: Section[] = [
 ]
 
 const SEVERITY_COLORS = {
-  critical: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  low: 'bg-gray-100 text-gray-600 border-gray-200',
+  critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
+  low: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
 }
 
 export default function SecurityAuditPage() {
@@ -325,7 +325,7 @@ export default function SecurityAuditPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="h-3 w-full rounded-full bg-gray-100">
+      <div className="h-3 w-full rounded-full bg-muted">
         <div
           className={`h-3 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : pct > 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
           style={{ width: `${pct}%` }}
@@ -334,10 +334,10 @@ export default function SecurityAuditPage() {
 
       {/* Critical warning */}
       {criticalUnchecked > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <CardContent className="flex items-center gap-3 pt-4">
-            <XCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
-            <p className="text-sm text-red-700">
+            <XCircle className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
+            <p className="text-sm text-red-700 dark:text-red-300">
               <strong>
                 {criticalUnchecked} critical item
                 {criticalUnchecked > 1 ? 's' : ''}
@@ -350,10 +350,10 @@ export default function SecurityAuditPage() {
       )}
 
       {pct === 100 && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
           <CardContent className="flex items-center gap-3 pt-4">
-            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
-            <p className="text-sm font-medium text-green-700">
+            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+            <p className="text-sm font-medium text-green-700 dark:text-green-300">
               All security checks complete — you are cleared for launch!
             </p>
           </CardContent>
@@ -382,7 +382,7 @@ export default function SecurityAuditPage() {
               {section.items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${checked.has(item.id) ? 'border-green-200 bg-green-50' : 'hover:bg-muted/50'}`}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${checked.has(item.id) ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30' : 'hover:bg-muted/50'}`}
                   onClick={() => toggle(item.id)}
                 >
                   <Checkbox

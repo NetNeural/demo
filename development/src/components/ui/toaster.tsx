@@ -16,11 +16,11 @@ export function Toaster() {
             'pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-lg border p-4 pr-8 shadow-lg transition-all',
             'animate-in slide-in-from-top-full',
             toast.variant === 'destructive' &&
-              'border-red-500 bg-red-50 text-red-900',
+              'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/50 dark:text-red-100',
             toast.variant === 'success' &&
-              'border-green-500 bg-green-50 text-green-900',
+              'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/50 dark:text-green-100',
             toast.variant === 'default' &&
-              'border-gray-200 bg-white text-gray-900'
+              'border-border bg-card text-foreground'
           )}
         >
           <div className="flex-1 space-y-1">

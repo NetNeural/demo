@@ -112,14 +112,14 @@ Mike Johnson,mike.johnson@example.com,viewer,pending,Support`
 
         <div className="space-y-4">
           {/* Download Template */}
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
             <div className="flex items-start gap-3">
-              <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
+              <FileText className="mt-0.5 h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div className="flex-1">
-                <h4 className="mb-1 text-sm font-medium text-blue-900">
+                <h4 className="mb-1 text-sm font-medium text-blue-900 dark:text-blue-100">
                   Need a template?
                 </h4>
-                <p className="mb-2 text-xs text-blue-700">
+                <p className="mb-2 text-xs text-blue-700 dark:text-blue-300">
                   Download our CSV template with example data and required
                   columns
                 </p>

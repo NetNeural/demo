@@ -127,15 +127,15 @@ export function UserOrganizationsTab() {
       </Card>
 
       {/* Info Card */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Building2 className="mt-0.5 h-5 w-5 text-blue-600" />
+            <Building2 className="mt-0.5 h-5 w-5 text-blue-600 dark:text-blue-400" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                 About Organizations
               </p>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 Organizations allow you to group devices, users, and resources.
                 You can be a member of multiple organizations with different
                 roles and permissions in each one. Use the organization switcher

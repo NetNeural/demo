@@ -506,11 +506,11 @@ export function AlertsList() {
               </div>
 
               {selectedAlert.acknowledged && selectedAlert.acknowledgedBy && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                  <h5 className="mb-1 font-medium text-green-800">
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+                  <h5 className="mb-1 font-medium text-green-800 dark:text-green-200">
                     Acknowledgment Details
                   </h5>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Acknowledged by{' '}
                     <span className="font-medium">
                       {selectedAlert.acknowledgedBy}

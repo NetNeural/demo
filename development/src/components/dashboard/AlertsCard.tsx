@@ -157,15 +157,15 @@ export function AlertsCard() {
   const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
       case 'critical':
-        return 'border-red-500 bg-red-50'
+        return 'border-red-500 bg-red-50 dark:bg-red-950/30'
       case 'high':
-        return 'border-orange-500 bg-orange-50'
+        return 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
       case 'medium':
-        return 'border-yellow-500 bg-yellow-50'
+        return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30'
       case 'low':
-        return 'border-blue-500 bg-blue-50'
+        return 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
       default:
-        return 'border-gray-500 bg-gray-50'
+        return 'border-gray-500 bg-gray-50 dark:bg-gray-950/30'
     }
   }
 

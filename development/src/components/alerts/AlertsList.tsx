@@ -935,7 +935,7 @@ export function AlertsList() {
                                           <Button
                                             variant="outline"
                                             size="sm"
-                                            className="text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400"
+                                            className="text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950/30"
                                             onClick={() =>
                                               openSnoozeDialog(alert.id)
                                             }

@@ -128,7 +128,7 @@ export function OnboardingChecklist() {
   const allDone = doneCount === STEPS.length
 
   return (
-    <Card className="border-blue-200 bg-blue-50/50">
+    <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -168,8 +168,8 @@ export function OnboardingChecklist() {
                 key={step.id}
                 className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
                   done
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-gray-200 bg-white hover:border-blue-300'
+                    ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'
+                    : 'border-border bg-card hover:border-blue-300 dark:hover:border-blue-700'
                 }`}
               >
                 <button
@@ -178,7 +178,7 @@ export function OnboardingChecklist() {
                   aria-label={done ? 'Mark as not done' : 'Mark as done'}
                 >
                   {done ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                   ) : (
                     <Circle className="h-5 w-5 text-muted-foreground" />
                   )}
@@ -194,7 +194,7 @@ export function OnboardingChecklist() {
                   </p>
                   {!done && (
                     <button
-                      className="mt-1.5 flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
+                      className="mt-1.5 flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                       onClick={() => {
                         if (step.href.startsWith('http')) {
                           window.open(step.href, '_blank')

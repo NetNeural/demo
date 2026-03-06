@@ -250,7 +250,7 @@ export default function OnboardingPage() {
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-14 animate-pulse rounded bg-gray-100"
+                  className="h-14 animate-pulse rounded bg-muted"
                 />
               ))}
             </div>
@@ -269,7 +269,7 @@ export default function OnboardingPage() {
                 return (
                   <div
                     key={u.id}
-                    className={`flex items-center gap-4 rounded-lg border p-3 ${isStuck ? 'border-yellow-200 bg-yellow-50/30' : isComplete ? 'border-green-200 bg-green-50/30' : ''}`}
+                    className={`flex items-center gap-4 rounded-lg border p-3 ${isStuck ? 'border-yellow-200 bg-yellow-50/30 dark:border-yellow-800 dark:bg-yellow-950/20' : isComplete ? 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20' : ''}`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -293,7 +293,7 @@ export default function OnboardingPage() {
                       </p>
                     </div>
                     <div className="flex min-w-[140px] items-center gap-2">
-                      <div className="h-2 flex-1 rounded-full bg-gray-100">
+                      <div className="h-2 flex-1 rounded-full bg-muted">
                         <div
                           className={`h-2 rounded-full ${isComplete ? 'bg-green-500' : isStuck ? 'bg-yellow-500' : 'bg-blue-500'}`}
                           style={{ width: `${pct}%` }}

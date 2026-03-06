@@ -66,12 +66,12 @@ const ALL_ROLES: AllRole[] = [
 ]
 
 const ROLE_COLORS: Record<AllRole, string> = {
-  viewer: 'bg-gray-100 text-gray-700',
-  member: 'bg-green-100 text-green-700',
-  admin: 'bg-blue-100 text-blue-700',
-  owner: 'bg-purple-100 text-purple-700',
-  billing: 'bg-amber-100 text-amber-700',
-  super_admin: 'bg-red-100 text-red-700',
+  viewer: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  member: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  billing: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  super_admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const ACCESS_LEVELS: AccessLevel[] = [
@@ -89,25 +89,25 @@ const ACCESS_CONFIG: Record<
     label: 'Enabled (all orgs)',
     shortLabel: 'Enabled',
     icon: <CheckCircle2 className="h-4 w-4" />,
-    classes: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
+    classes: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900/40',
   },
   netneural_only: {
     label: 'NetNeural org only',
     shortLabel: 'NN Only',
     icon: <Building2 className="h-4 w-4" />,
-    classes: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+    classes: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/40',
   },
   superadmin_only: {
     label: 'Super Admin only',
     shortLabel: 'SA Only',
     icon: <Crown className="h-4 w-4" />,
-    classes: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+    classes: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/40',
   },
   disabled: {
     label: 'Disabled / Hidden',
     shortLabel: 'Hidden',
     icon: <XCircle className="h-4 w-4" />,
-    classes: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+    classes: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/40',
   },
 }
 
@@ -856,8 +856,8 @@ export default function PermissionsPage() {
         <div
           className={`rounded-md border px-4 py-2 text-sm ${
             saveMessage.type === 'success'
-              ? 'border-green-200 bg-green-50 text-green-700'
-              : 'border-red-200 bg-red-50 text-red-700'
+              ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300'
+              : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300'
           }`}
         >
           {saveMessage.text}
@@ -866,7 +866,7 @@ export default function PermissionsPage() {
 
       {/* Unsaved changes banner */}
       {hasChanges && (
-        <div className="flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-700">
+        <div className="flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
           <Info className="h-4 w-4 shrink-0" />
           You have unsaved changes. Click&nbsp;<strong>Save Changes</strong>
           &nbsp;to persist them.
@@ -921,7 +921,7 @@ export default function PermissionsPage() {
 
           {/* Navigation Tab */}
           <TabsContent value="nav" className="mt-4 space-y-4">
-            <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700">
+            <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <strong>Navigation Access:</strong> Controls which sidebar links

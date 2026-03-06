@@ -338,7 +338,7 @@ export function DeviceTypeImageManager({
               className="flex items-center gap-3 rounded-lg border bg-card p-3"
             >
               {/* Thumbnail */}
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-card">
                 {deviceTypeImages[deviceType] ? (
                   <img
                     src={deviceTypeImages[deviceType]}
@@ -346,7 +346,7 @@ export function DeviceTypeImageManager({
                     className="h-full w-full object-contain p-0.5"
                   />
                 ) : (
-                  <ImageIcon className="h-4 w-4 text-gray-400" />
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
 

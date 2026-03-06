@@ -50,19 +50,19 @@ function StatusBadge({ status }: { status: HealthCheck['status'] }) {
   const map = {
     healthy: {
       label: 'Healthy',
-      className: 'bg-green-100 text-green-700 border-green-200',
+      className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
     },
     degraded: {
       label: 'Degraded',
-      className: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      className: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
     },
     down: {
       label: 'Down',
-      className: 'bg-red-100 text-red-700 border-red-200',
+      className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
     },
     unknown: {
       label: 'Unknown',
-      className: 'bg-gray-100 text-gray-600 border-gray-200',
+      className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
     },
   }
   const { label, className } = map[status]
@@ -345,12 +345,12 @@ export default function PlatformHealthPage() {
       <Card
         className={
           overallStatus === 'healthy'
-            ? 'border-green-200 bg-green-50'
+            ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'
             : overallStatus === 'degraded'
-              ? 'border-yellow-200 bg-yellow-50'
+              ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30'
               : overallStatus === 'down'
-                ? 'border-red-200 bg-red-50'
-                : 'border-gray-200'
+                ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30'
+                : 'border-border'
         }
       >
         <CardContent className="flex items-center gap-4 pt-6">
@@ -381,10 +381,10 @@ export default function PlatformHealthPage() {
           ? Array.from({ length: 5 }).map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
-                  <div className="h-4 w-32 rounded bg-gray-200" />
+                  <div className="h-4 w-32 rounded bg-muted" />
                 </CardHeader>
                 <CardContent>
-                  <div className="mt-2 h-3 w-48 rounded bg-gray-100" />
+                  <div className="mt-2 h-3 w-48 rounded bg-muted" />
                 </CardContent>
               </Card>
             ))

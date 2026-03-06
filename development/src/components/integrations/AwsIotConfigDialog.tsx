@@ -279,7 +279,7 @@ export function AwsIotConfigDialog({
   const renderContent = () => (
     <>
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
+        <TabsList className="w-full justify-start bg-muted">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="sync">Sync Settings</TabsTrigger>
           <TabsTrigger value="conflicts">Conflicts</TabsTrigger>

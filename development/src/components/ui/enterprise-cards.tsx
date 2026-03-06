@@ -211,13 +211,13 @@ export function ActionCard({
           className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl ${
             variant === 'primary'
               ? 'bg-primary-100 text-primary-600 group-hover:bg-primary-200'
-              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-gray-700'
           } transition-colors duration-200`}
         >
           {icon}
         </div>
-        <h3 className="mb-2 text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="mb-6 text-sm text-gray-600">{description}</p>
+        <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mb-6 text-sm text-muted-foreground">{description}</p>
         <button
           onClick={action.onClick}
           className={`rounded-lg px-6 py-2 text-sm font-medium transition-colors ${

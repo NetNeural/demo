@@ -268,8 +268,8 @@ export function SlackConfigDialog({
         <div
           className={`flex items-start gap-2 rounded-md p-3 ${
             testResult.success
-              ? 'bg-green-50 text-green-800'
-              : 'bg-red-50 text-red-800'
+              ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200'
+              : 'bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200'
           }`}
         >
           {testResult.success ? (

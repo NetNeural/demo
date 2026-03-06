@@ -375,27 +375,27 @@ function PostCard({
     queued: {
       label: 'Queued',
       variant: 'outline' as const,
-      color: 'text-amber-600 border-amber-300 bg-amber-50',
+      color: 'text-amber-600 border-amber-300 bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:bg-amber-950/30',
     },
     approved: {
       label: 'Approved',
       variant: 'outline' as const,
-      color: 'text-blue-600 border-blue-300 bg-blue-50',
+      color: 'text-blue-600 border-blue-300 bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:bg-blue-950/30',
     },
     posted: {
       label: 'Posted',
       variant: 'outline' as const,
-      color: 'text-green-600 border-green-300 bg-green-50',
+      color: 'text-green-600 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-700 dark:bg-green-950/30',
     },
     trashed: {
       label: 'Trashed',
       variant: 'outline' as const,
-      color: 'text-red-600 border-red-300 bg-red-50',
+      color: 'text-red-600 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-700 dark:bg-red-950/30',
     },
     draft: {
       label: 'Draft',
       variant: 'outline' as const,
-      color: 'text-gray-600 border-gray-300 bg-gray-50',
+      color: 'text-gray-600 border-gray-300 bg-gray-50 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800/50',
     },
   }
 
@@ -577,7 +577,7 @@ function PostCard({
                     size="sm"
                     variant="ghost"
                     onClick={() => onTrash(post.id)}
-                    className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                   >
                     <Trash2 className="mr-1 h-3 w-3" />
                     Trash
@@ -871,7 +871,7 @@ export function SocialMediaTab({
                     variant="outline"
                     size="sm"
                     onClick={handleTrashAll}
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                   >
                     <Trash2 className="mr-1 h-3 w-3" />
                     Trash All

@@ -918,7 +918,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                 {/* Logo preview */}
                 <div className="flex-shrink-0">
                   {logoUrl ? (
-                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-gray-200 bg-white">
+                    <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-border bg-card">
                       <img
                         src={logoUrl}
                         alt="Organization logo"
@@ -926,8 +926,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       />
                     </div>
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-                      <ImageIcon className="h-7 w-7 text-gray-400" />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted">
+                      <ImageIcon className="h-7 w-7 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -978,7 +978,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                       size="sm"
                       onClick={handleDeleteLogo}
                       disabled={isDeletingLogo || isUploadingLogo}
-                      className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                      className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
                       {isDeletingLogo ? 'Removing...' : 'Delete Logo'}
@@ -996,7 +996,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                   {/* Sentinel logo preview */}
                   <div className="flex-shrink-0">
                     {sentinelLogoUrl ? (
-                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-blue-200 bg-white">
+                      <div className="relative h-20 w-20 overflow-hidden rounded-lg border-2 border-blue-200 bg-card dark:border-blue-800">
                         <img
                           src={sentinelLogoUrl}
                           alt="Sentinel logo"
@@ -1004,7 +1004,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/30">
                         <Shield className="h-7 w-7 text-blue-400" />
                       </div>
                     )}
@@ -1060,7 +1060,7 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
                         disabled={
                           isDeletingSentinelLogo || isUploadingSentinelLogo
                         }
-                        className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                       >
                         <Trash2 className="mr-2 h-3.5 w-3.5" />
                         {isDeletingSentinelLogo
@@ -1889,8 +1889,8 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
             <div
               className={`mb-4 rounded-md p-3 text-sm ${
                 saveMessage.includes('success')
-                  ? 'border border-green-200 bg-green-50 text-green-900'
-                  : 'border border-red-200 bg-red-50 text-red-900'
+                  ? 'border border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950/30 dark:text-green-100'
+                  : 'border border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/30 dark:text-red-100'
               }`}
             >
               {saveMessage}
@@ -1974,19 +1974,19 @@ export function OrganizationSettingsTab({}: OrganizationSettingsTabProps) {
 
       {/* Show delete for all organizations except the NetNeural root org */}
       {currentOrganization?.id !== NETNEURAL_ROOT_ORG_ID && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-900">
+            <CardTitle className="flex items-center gap-2 text-red-900 dark:text-red-100">
               <Trash2 className="h-5 w-5" />
               Danger Zone
             </CardTitle>
-            <CardDescription className="text-red-800">
+            <CardDescription className="text-red-800 dark:text-red-300">
               Irreversible actions that permanently affect this organization
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <p className="text-sm text-red-900">
+              <p className="text-sm text-red-900 dark:text-red-200">
                 Deleting this organization will permanently remove all
                 associated devices, members, locations, integrations, and data.
                 This action cannot be undone.

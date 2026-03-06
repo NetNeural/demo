@@ -159,10 +159,10 @@ export function BatteryHealthOverview({
       {/* Progress Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Total devices with battery data</span>
-          <span className="font-semibold text-gray-900">{health.total}</span>
+          <span className="text-muted-foreground">Total devices with battery data</span>
+          <span className="font-semibold text-foreground">{health.total}</span>
         </div>
-        <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100">
+        <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted">
           {health.critical > 0 && (
             <div
               className="h-full bg-red-500 transition-all"

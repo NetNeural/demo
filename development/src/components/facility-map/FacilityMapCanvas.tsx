@@ -425,7 +425,7 @@ export function FacilityMapCanvas({
       {/* Canvas area */}
       <div
         className={cn(
-          'relative bg-gray-100',
+          'relative bg-gray-100 dark:bg-gray-900',
           !compact && 'overflow-hidden',
           mode === 'place' && deviceToPlace && 'cursor-crosshair'
         )}

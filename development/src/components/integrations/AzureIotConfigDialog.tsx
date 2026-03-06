@@ -201,7 +201,7 @@ export function AzureIotConfigDialog({
   const renderContent = () => (
     <>
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full justify-start bg-gray-100 dark:bg-gray-100">
+        <TabsList className="w-full justify-start bg-muted">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="run-sync">Run Sync</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
@@ -271,8 +271,8 @@ export function AzureIotConfigDialog({
             <div
               className={`flex items-start gap-2 rounded-md p-3 ${
                 testResult.success
-                  ? 'bg-green-50 text-green-800'
-                  : 'bg-red-50 text-red-800'
+                  ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200'
+                  : 'bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200'
               }`}
             >
               {testResult.success ? (

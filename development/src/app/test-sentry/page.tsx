@@ -279,7 +279,7 @@ export default function TestSentryPage() {
           )}
         </div>
 
-        <div className="rounded-lg border bg-blue-50 p-4">
+        <div className="rounded-lg border bg-blue-50 p-4 dark:bg-blue-950/30">
           <h2 className="mb-2 text-xl font-semibold">📊 Check Results</h2>
           <p className="mb-2 text-sm">
             After triggering errors, check your Sentry dashboard:
@@ -303,7 +303,7 @@ export default function TestSentryPage() {
           </ol>
         </div>
 
-        <div className="rounded-lg border bg-green-50 p-4">
+        <div className="rounded-lg border bg-green-50 p-4 dark:bg-green-950/30">
           <h2 className="mb-2 text-xl font-semibold">✅ What to Look For</h2>
           <ul className="list-inside list-disc space-y-1 text-sm">
             <li>

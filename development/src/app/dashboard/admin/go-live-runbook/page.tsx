@@ -430,7 +430,7 @@ export default function RunbookPage() {
           {section.steps.map((step) => (
             <div
               key={step.id}
-              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${checked.has(step.id) ? 'border-green-200 bg-green-50' : isRollback ? 'bg-red-50/30 hover:bg-red-50' : 'hover:bg-muted/50'}`}
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${checked.has(step.id) ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30' : isRollback ? 'bg-red-50/30 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/30' : 'hover:bg-muted/50'}`}
               onClick={() => toggle(step.id)}
             >
               <Checkbox
@@ -458,7 +458,7 @@ export default function RunbookPage() {
                   </p>
                 )}
                 {step.command && (
-                  <code className="mt-1 block rounded bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-800">
+                  <code className="mt-1 block rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
                     {step.command}
                   </code>
                 )}
@@ -492,7 +492,7 @@ export default function RunbookPage() {
       </div>
 
       {/* Progress */}
-      <div className="h-3 w-full rounded-full bg-gray-100">
+      <div className="h-3 w-full rounded-full bg-muted">
         <div
           className={`h-3 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : pct > 60 ? 'bg-yellow-500' : 'bg-blue-500'}`}
           style={{ width: `${pct}%` }}
@@ -500,10 +500,10 @@ export default function RunbookPage() {
       </div>
 
       {pct === 100 && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
           <CardContent className="flex items-center gap-3 pt-4">
-            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
-            <p className="text-sm font-medium text-green-700">
+            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+            <p className="text-sm font-medium text-green-700 dark:text-green-300">
               Runbook complete — you are cleared for launch!
             </p>
           </CardContent>
