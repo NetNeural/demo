@@ -59,6 +59,54 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    // Check if user already has an organization (re-signup after canceling Stripe)
+    const { data: existingUser } = await db
+      .from('users')
+      .select('id, organization_id')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (existingUser?.organization_id) {
+      // User already has an org — return it instead of creating a duplicate
+      const { data: existingOrg } = await db
+        .from('organizations')
+        .select('id, name, slug, subscription_tier')
+        .eq('id', existingUser.organization_id)
+        .single()
+
+      if (existingOrg) {
+        console.log('User already has org, returning existing:', existingOrg.id)
+        return new Response(
+          JSON.stringify({ data: existingOrg }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Also check via organization_members in case users table wasn't populated
+    const { data: existingMembership } = await db
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle()
+
+    if (existingMembership?.organization_id) {
+      const { data: existingOrg } = await db
+        .from('organizations')
+        .select('id, name, slug, subscription_tier')
+        .eq('id', existingMembership.organization_id)
+        .single()
+
+      if (existingOrg) {
+        console.log('User already member of org, returning existing:', existingOrg.id)
+        return new Response(
+          JSON.stringify({ data: existingOrg }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     // Sanitize slug
     const slug = organizationSlug
       .trim()
@@ -120,18 +168,18 @@ Deno.serve(async (req: Request) => {
     console.log('Organization created:', newOrg.id, newOrg.name)
 
     // Update user's primary organization_id if not already set
-    const { data: existingUser } = await db
+    const { data: userProfile } = await db
       .from('users')
       .select('id, organization_id')
       .eq('id', userId)
       .maybeSingle()
 
-    if (existingUser && !existingUser.organization_id) {
+    if (userProfile && !userProfile.organization_id) {
       await db
         .from('users')
         .update({ organization_id: newOrg.id, updated_at: new Date().toISOString() })
         .eq('id', userId)
-    } else if (!existingUser) {
+    } else if (!userProfile) {
       // User profile not created yet (trigger may not have fired), create it
       await db
         .from('users')
