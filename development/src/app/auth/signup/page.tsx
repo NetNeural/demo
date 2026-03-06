@@ -35,6 +35,7 @@ interface PlanTier {
   name: string
   tagline: string
   pricePerSensor: number
+  pricePerSensorAnnual: number // monthly-equivalent when billed yearly (2 months free)
   icon: LucideIcon
   color: string
   features: string[]
@@ -129,6 +130,7 @@ function billingPlanToTier(
     name: plan.name,
     tagline: plan.description || plan.name,
     pricePerSensor: plan.price_per_device,
+    pricePerSensorAnnual: Math.round(plan.price_per_device * 10 / 12 * 100) / 100,
     icon: getPlanIcon(plan.slug),
     color: getPlanColor(plan.slug),
     popular: plan.slug === 'protect' || plan.slug === 'business',
@@ -148,6 +150,7 @@ const FALLBACK_PLANS: PlanTier[] = [
     name: 'Monitor',
     tagline: 'Core compliance & visibility',
     pricePerSensor: 2,
+    pricePerSensorAnnual: 1.67,
     icon: BarChart3,
     color: '#06b6d4',
     features: [
@@ -168,6 +171,7 @@ const FALLBACK_PLANS: PlanTier[] = [
     name: 'Protect',
     tagline: 'Operational intelligence',
     pricePerSensor: 4,
+    pricePerSensorAnnual: 3.33,
     icon: Brain,
     color: '#8b5cf6',
     popular: true,
@@ -192,6 +196,7 @@ const FALLBACK_PLANS: PlanTier[] = [
     name: 'Command',
     tagline: 'Enterprise optimization & sustainability',
     pricePerSensor: 6,
+    pricePerSensorAnnual: 5.00,
     icon: Building2,
     color: '#10b981',
     features: [
@@ -273,6 +278,7 @@ function SignupForm() {
   // Step state: 1 = select plan, 2 = account details, 3 = success
   const [step, setStep] = useState(1)
   const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null)
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
 
   // Dynamic plans fetched from billing_plans table
   const [plans, setPlans] = useState<PlanTier[]>(FALLBACK_PLANS)
@@ -524,6 +530,7 @@ function SignupForm() {
                 body: JSON.stringify({
                   organizationId: provisionedOrgId,
                   planSlug: selectedPlan.slug,
+                  billingInterval,
                   customerEmail: email.trim(),
                   customerName: orgName.trim(),
                 }),
@@ -578,6 +585,7 @@ function SignupForm() {
       orgName,
       parentOrgId,
       resellerSlug,
+      billingInterval,
       router,
     ]
   )
@@ -631,10 +639,20 @@ function SignupForm() {
 
         {/* Price */}
         <div className="mb-4">
+          {billingInterval === 'annual' && plan.pricePerSensor > 0 && (
+            <span className="mr-1 text-sm text-gray-500 line-through">
+              ${plan.pricePerSensor}
+            </span>
+          )}
           <span className="text-3xl font-bold text-white">
-            ${plan.pricePerSensor}
+            ${billingInterval === 'annual' ? plan.pricePerSensorAnnual : plan.pricePerSensor}
           </span>
           <span className="text-sm text-gray-400">/sensor/mo</span>
+          {billingInterval === 'annual' && plan.pricePerSensor > 0 && (
+            <p className="mt-1 text-xs text-emerald-400">
+              Billed annually at ${Math.round(plan.pricePerSensor * 10)}/sensor/yr
+            </p>
+          )}
         </div>
 
         {/* Limits */}
@@ -791,6 +809,49 @@ function SignupForm() {
         {/* ── Step 1: Plan selection ──────────────────────────────── */}
         {step === 1 && (
           <div className="duration-500 animate-in fade-in slide-in-from-bottom-4">
+            {/* Billing interval toggle */}
+            <div className="mb-8 flex items-center justify-center gap-3">
+              <div className="relative flex rounded-full bg-gray-800/80 p-1 backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('monthly')}
+                  className={`relative z-10 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                    billingInterval === 'monthly'
+                      ? 'text-white'
+                      : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('annual')}
+                  className={`relative z-10 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                    billingInterval === 'annual'
+                      ? 'text-white'
+                      : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  Yearly
+                </button>
+                {/* Sliding pill indicator */}
+                <div
+                  className="absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-in-out"
+                  style={{
+                    left: billingInterval === 'monthly' ? '4px' : 'calc(50%)',
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                  }}
+                />
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-300 ${
+                billingInterval === 'annual'
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : 'bg-emerald-500/10 text-emerald-400/60'
+              }`}>
+                Save 17%
+              </span>
+            </div>
+
             {plansLoading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-500" />
@@ -850,8 +911,13 @@ function SignupForm() {
                       {selectedPlan.name}
                     </span>
                     <span className="text-xs text-gray-400">
-                      ${selectedPlan.pricePerSensor}/sensor/mo
+                      ${billingInterval === 'annual' ? selectedPlan.pricePerSensorAnnual : selectedPlan.pricePerSensor}/sensor/mo
                     </span>
+                    {billingInterval === 'annual' && (
+                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                        Yearly
+                      </span>
+                    )}
                   </div>
                   <button
                     type="button"

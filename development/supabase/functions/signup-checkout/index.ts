@@ -7,7 +7,7 @@
  * so there is no user session — uses anon key auth like signup-provision.
  *
  * POST /signup-checkout
- *   body: { organizationId, planSlug, customerEmail, customerName }
+ *   body: { organizationId, planSlug, customerEmail, customerName, billingInterval? }
  *   returns: { url: string } — redirect the user to Stripe Checkout
  */
 
@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json()
-    const { organizationId, planSlug, customerEmail, customerName } = body
+    const { organizationId, planSlug, customerEmail, customerName, billingInterval = 'monthly' } = body
 
     if (!organizationId || !planSlug) {
       return new Response(
@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
     // ── Look up plan by slug ─────────────────────────────────────────
     const { data: plan, error: planErr } = await db
       .from('billing_plans')
-      .select('id, name, slug, stripe_price_id_monthly')
+      .select('id, name, slug, stripe_price_id_monthly, stripe_price_id_annual')
       .eq('slug', planSlug)
       .eq('is_active', true)
       .single()
@@ -71,10 +71,12 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const priceId = plan.stripe_price_id_monthly
+    const priceId = billingInterval === 'annual'
+      ? plan.stripe_price_id_annual
+      : plan.stripe_price_id_monthly
     if (!priceId) {
       return new Response(
-        JSON.stringify({ error: `No Stripe price configured for ${plan.name}` }),
+        JSON.stringify({ error: `No Stripe price configured for ${plan.name} (${billingInterval})` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -147,8 +149,9 @@ Deno.serve(async (req: Request) => {
     )
   } catch (err) {
     console.error('signup-checkout error:', err)
+    const message = err instanceof Error ? err.message : String(err)
     return new Response(
-      JSON.stringify({ error: 'Failed to create checkout session' }),
+      JSON.stringify({ error: `Failed to create checkout session: ${message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

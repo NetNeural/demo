@@ -300,10 +300,13 @@ function LoginForm() {
         }
 
         if (!rememberMe && data.session) {
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          })
+          // Move session from localStorage to sessionStorage so it clears on browser close
+          const storageKey = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname.split('.')[0]}-auth-token`
+          const stored = localStorage.getItem(storageKey)
+          if (stored) {
+            sessionStorage.setItem(storageKey, stored)
+            localStorage.removeItem(storageKey)
+          }
         }
 
         // Check if MFA is required
