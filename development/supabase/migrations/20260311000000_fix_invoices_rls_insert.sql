@@ -16,6 +16,7 @@ CREATE POLICY "Super admins can read all invoices"
   );
 
 -- Allow super_admin / platform_admin to INSERT any invoice
+DROP POLICY IF EXISTS "Admins can create invoices" ON invoices;
 CREATE POLICY "Admins can create invoices"
   ON invoices FOR INSERT
   WITH CHECK (
@@ -27,6 +28,7 @@ CREATE POLICY "Admins can create invoices"
   );
 
 -- Allow org owners and billing members to INSERT invoices for their own org
+DROP POLICY IF EXISTS "Org owners and billing members can create invoices" ON invoices;
 CREATE POLICY "Org owners and billing members can create invoices"
   ON invoices FOR INSERT
   WITH CHECK (
@@ -39,6 +41,7 @@ CREATE POLICY "Org owners and billing members can create invoices"
   );
 
 -- Also allow super_admin / platform_admin to UPDATE invoices (e.g., void/mark paid)
+DROP POLICY IF EXISTS "Admins can update invoices" ON invoices;
 CREATE POLICY "Admins can update invoices"
   ON invoices FOR UPDATE
   USING (

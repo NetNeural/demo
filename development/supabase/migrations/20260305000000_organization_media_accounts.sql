@@ -87,9 +87,7 @@ CREATE POLICY "org_media_accounts_superadmin"
   ON organization_media_accounts FOR ALL
   TO authenticated
   USING (
-    auth.uid() IN (
-      SELECT id FROM users WHERE is_super_admin = true
-    )
+    is_super_admin(auth.uid())
   );
 
 -- Updated_at trigger

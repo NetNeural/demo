@@ -31,7 +31,8 @@ WHERE u.organization_id IS NOT NULL
     SELECT 1 FROM public.organization_members om
     WHERE om.user_id = u.id
       AND om.organization_id = u.organization_id
-  );
+  )
+ON CONFLICT DO NOTHING;
 
 
 -- ─── 2. Update create_user_profile() trigger ────────────────────────────────
@@ -256,7 +257,9 @@ CREATE TRIGGER trigger_audit_alert_rule_changes
 
 -- ─── 4. Ensure is_super_admin() helper exists ────────────────────────────────
 -- Required by RLS policies below; may already exist from 20260306 migration
-CREATE OR REPLACE FUNCTION public.is_super_admin(check_user_id uuid DEFAULT auth.uid())
+-- Use DROP + CREATE to allow parameter rename if needed
+DROP FUNCTION IF EXISTS public.is_super_admin(uuid);
+CREATE FUNCTION public.is_super_admin(check_user_id uuid DEFAULT auth.uid())
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
