@@ -45,6 +45,7 @@ export default function ResetPasswordPage() {
   const [resendEmail, setResendEmail] = useState('')
   const [resendSent, setResendSent] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+  const [resendError, setResendError] = useState('')
   const [mfaRequired, setMfaRequired] = useState(false)
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
   const [mfaCode, setMfaCode] = useState('')
@@ -277,9 +278,12 @@ export default function ResetPasswordPage() {
       setSuccess(true)
     } catch (err) {
       console.error('Password reset error:', err)
-      setError(
-        'Failed to reset password. The link may have expired. Please request a new one.'
-      )
+      // Sign out so the stale recovery session doesn't auto-log the user in
+      // when they navigate back to the login page.
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      setLinkExpiredError('Failed to reset password. The link may have expired. Please request a new one.')
+      setHasSession(false)
     } finally {
       setIsSubmitting(false)
     }
@@ -297,13 +301,14 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     if (!resendEmail) return
     setResendLoading(true)
+    setResendError('')
     try {
       // Use our admin edge function so we never hit Supabase's built-in email
       // rate limit. The function uses generate_link + Resend instead of SMTP.
       const supabase = createClient()
       // Get the Supabase URL to derive the edge function endpoint
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-      await fetch(`${supabaseUrl}/functions/v1/request-password-reset`, {
+      const res = await fetch(`${supabaseUrl}/functions/v1/request-password-reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -314,7 +319,11 @@ export default function ResetPasswordPage() {
           redirectTo: `${window.location.origin}/auth/reset-password/`,
         }),
       })
-      // Always show success (edge function always returns 200)
+      const data = await res.json()
+      if (data?.code === 'user_not_found') {
+        setResendError('No account found with that email address.')
+        return
+      }
       setResendSent(true)
     } catch (_err) {
       // Always show success to prevent email enumeration
@@ -348,8 +357,7 @@ export default function ResetPasswordPage() {
               <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700 dark:text-green-300">
-                  If that email is registered, a new reset link has been sent.
-                  Check your inbox (and spam folder).
+                  A new reset link has been sent. Check your inbox (and spam folder).
                 </AlertDescription>
               </Alert>
             ) : (
@@ -357,11 +365,19 @@ export default function ResetPasswordPage() {
                 <p className="text-sm text-muted-foreground">
                   Enter your email to receive a fresh reset link:
                 </p>
+                {resendError && (
+                  <Alert className="border-red-200 bg-red-50 dark:bg-red-900/20">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-700 dark:text-red-300">
+                      {resendError}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Input
                   type="email"
                   placeholder="your@email.com"
                   value={resendEmail}
-                  onChange={(e) => setResendEmail(e.target.value)}
+                  onChange={(e) => { setResendEmail(e.target.value); setResendError('') }}
                   required
                   autoFocus
                 />

@@ -77,7 +77,13 @@ serve(async (req) => {
     if (!genRes.ok) {
       const body = await genRes.text()
       console.error(`[request-password-reset] generate_link failed: ${genRes.status} ${body}`)
-      // User not found or other error — still return 200
+      // If user doesn't exist, tell the caller so the UI can give feedback
+      if (genRes.status === 422 || body.includes('User not found') || body.includes('user_not_found')) {
+        return new Response(
+          JSON.stringify({ success: false, code: 'user_not_found' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
       return ok()
     }
 

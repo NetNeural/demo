@@ -16,6 +16,7 @@ import {
   KeyRound,
   Bot,
   Rocket,
+  LifeBuoy,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrganizationLogo } from '@/components/organizations/OrganizationLogo'
@@ -41,6 +42,7 @@ import PlatformHealthPage from '@/app/dashboard/admin/platform-health/page'
 import SecurityAuditPage from '@/app/dashboard/admin/security-audit/page'
 import PermissionsPage from '@/app/dashboard/admin/permissions/page'
 import RunbookPage from '@/app/dashboard/admin/go-live-runbook/page'
+import UserSupportTab from './components/UserSupportTab'
 
 const tabs = [
   // Org-admin tabs — visible to all org admins
@@ -192,6 +194,7 @@ function SupportPageContent() {
             'data-operations': 'customer-support',
             'customer-assistance': 'customer-support',
             'admin-tools': 'customer-support',
+            'user-support': 'customer-support',
             documentation: 'resources',
             troubleshooting: 'platform',
             'system-health': 'platform',
@@ -276,6 +279,15 @@ function SupportPageContent() {
                   Data & Operations
                 </TabsTrigger>
               )}
+              {canAccessPlatformTabs && (
+                <TabsTrigger
+                  value="user-support"
+                  className="flex items-center gap-2"
+                >
+                  <LifeBuoy className="h-4 w-4" />
+                  User Support
+                </TabsTrigger>
+              )}
             </TabsList>
             <TabsContent value="access-requests" className="mt-6">
               <div className="space-y-6">
@@ -297,6 +309,11 @@ function SupportPageContent() {
             {!isSubOrg && (
               <TabsContent value="data-operations" className="mt-6">
                 <DataOperationsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
+            {canAccessPlatformTabs && (
+              <TabsContent value="user-support" className="mt-6">
+                <UserSupportTab />
               </TabsContent>
             )}
           </Tabs>

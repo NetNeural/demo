@@ -435,7 +435,7 @@ function LoginForm() {
       setError('')
       try {
         // Use admin edge function + Resend to bypass Supabase SMTP rate limit
-        await fetch(
+        const resetRes = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/request-password-reset`,
           {
             method: 'POST',
@@ -450,6 +450,11 @@ function LoginForm() {
           }
         )
         if (!isMounted.current) return
+        const resetData = await resetRes.json()
+        if (resetData?.code === 'user_not_found') {
+          setError('No account found with that email address. Please check the email or sign up.')
+          return
+        }
         setResetSent(true)
       } catch {
         if (!isMounted.current) return
