@@ -7,8 +7,9 @@ interface LocationMapProps {
   latitude: number
   longitude: number
   locationName: string
-  deviceName: string
+  deviceName?: string
   installedAt?: string
+  height?: string
 }
 
 function LocationMap({
@@ -17,6 +18,7 @@ function LocationMap({
   locationName,
   deviceName,
   installedAt,
+  height = '300px',
 }: LocationMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<any>(null)
@@ -72,13 +74,15 @@ function LocationMap({
       }).addTo(map)
 
       // Add marker with popup
-      const popupContent = `
-        <div style="min-width: 150px;">
-          <strong style="font-size: 14px;">${deviceName}</strong><br/>
-          <span style="color: #666; font-size: 12px;">${locationName}</span>
-          ${installedAt ? `<br/><span style="color: #666; font-size: 11px;">📍 ${installedAt}</span>` : ''}
-        </div>
-      `
+      const popupContent = deviceName
+        ? `<div style="min-width: 150px;">
+            <strong style="font-size: 14px;">${deviceName}</strong><br/>
+            <span style="color: #666; font-size: 12px;">${locationName}</span>
+            ${installedAt ? `<br/><span style="color: #666; font-size: 11px;">📍 ${installedAt}</span>` : ''}
+          </div>`
+        : `<div style="min-width: 120px;">
+            <strong style="font-size: 14px;">📍 ${locationName}</strong>
+          </div>`
 
       L.marker([latitude, longitude])
         .addTo(map)
@@ -107,8 +111,8 @@ function LocationMap({
   return (
     <div
       ref={mapRef}
-      className="h-[300px] w-full overflow-hidden rounded-lg border border-border"
-      style={{ zIndex: 0 }}
+      className="w-full overflow-hidden rounded-lg border border-border"
+      style={{ zIndex: 0, height }}
     />
   )
 }

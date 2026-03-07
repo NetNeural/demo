@@ -25,6 +25,16 @@ import { edgeFunctions } from '@/lib/edge-functions/client'
 import { toast } from 'sonner'
 import { handleApiError } from '@/lib/sentry-utils'
 import { containsProfanity } from '@/lib/profanity-filter'
+import dynamic from 'next/dynamic'
+
+const LocationMap = dynamic(() => import('@/components/sensors/LocationMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[180px] items-center justify-center rounded-lg bg-muted">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  ),
+})
 
 interface Location {
   id: string
@@ -449,6 +459,22 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                       {location.postal_code && <p>{location.postal_code}</p>}
                       {location.country && <p>{location.country}</p>}
                     </div>
+                    {location.latitude && location.longitude ? (
+                      <div className="mt-3">
+                        <LocationMap
+                          latitude={location.latitude}
+                          longitude={location.longitude}
+                          locationName={location.name}
+                          height="180px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mt-3 rounded-lg border border-dashed bg-muted/50 p-2">
+                        <p className="text-xs text-muted-foreground">
+                          📍 No GPS coordinates — edit to add map
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -577,7 +603,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
                   variant="outline"
                   size="sm"
                   onClick={handleGeocodeAddress}
-                  disabled={geocoding || !formData.address}
+                  disabled={geocoding || !(formData.address || formData.city || formData.state || formData.postal_code || formData.country)}
                 >
                   {geocoding ? (
                     <>
