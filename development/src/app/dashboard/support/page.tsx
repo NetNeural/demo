@@ -255,13 +255,15 @@ function SupportPageContent() {
                 <Users className="h-4 w-4" />
                 Customer Assistance
               </TabsTrigger>
-              <TabsTrigger
-                value="admin-tools"
-                className="flex items-center gap-2"
-              >
-                <Settings2 className="h-4 w-4" />
-                Admin Tools
-              </TabsTrigger>
+              {showAdminTabs && (
+                <TabsTrigger
+                  value="admin-tools"
+                  className="flex items-center gap-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Admin Tools
+                </TabsTrigger>
+              )}
               {showAdminTabs && (
                 <TabsTrigger
                   value="executive-reports"
@@ -299,9 +301,11 @@ function SupportPageContent() {
             <TabsContent value="customer-assistance" className="mt-6">
               <CustomerAssistanceTab key={orgId} organizationId={orgId} />
             </TabsContent>
-            <TabsContent value="admin-tools" className="mt-6">
-              <AdminToolsTab key={orgId} organizationId={orgId} />
-            </TabsContent>
+            {showAdminTabs && (
+              <TabsContent value="admin-tools" className="mt-6">
+                <AdminToolsTab key={orgId} organizationId={orgId} />
+              </TabsContent>
+            )}
             {showAdminTabs && (
               <TabsContent value="executive-reports" className="mt-6">
                 <ExecutiveReportsCard key={orgId} organizationId={orgId} />

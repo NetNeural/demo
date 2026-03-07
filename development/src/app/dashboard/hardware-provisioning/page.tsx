@@ -41,6 +41,7 @@ import {
   SlidersHorizontal,
   Plug,
   Plus,
+  Map,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { DeviceType } from '@/types/device-types'
@@ -166,21 +167,19 @@ export default function HardwareProvisioningPage() {
               </Badge>
             </TabsTrigger>
           )}
+          <TabsTrigger value="facility-map" className="flex items-center gap-1.5">
+            <Map className="h-4 w-4" />
+            Facility Map
+          </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-1.5">
             <Plug className="h-4 w-4" />
             Integrations
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Devices — full device list with facility map */}
+        {/* Tab: Devices — device list */}
         <TabsContent value="devices" className="mt-4 space-y-6">
           <DevicesHeader />
-          <Suspense fallback={<LoadingSpinner />}>
-            <FacilityMapView
-              key={`map-${currentOrganization.id}`}
-              organizationId={currentOrganization.id}
-            />
-          </Suspense>
           <Suspense fallback={<LoadingSpinner />}>
             <DevicesList key={currentOrganization.id} />
           </Suspense>
@@ -241,6 +240,16 @@ export default function HardwareProvisioningPage() {
             <FirmwareManagementPanel />
           </TabsContent>
         )}
+
+        {/* Tab: Facility Map — map sensors to physical locations */}
+        <TabsContent value="facility-map" className="mt-4 space-y-6">
+          <Suspense fallback={<LoadingSpinner />}>
+            <FacilityMapView
+              key={`map-${currentOrganization.id}`}
+              organizationId={currentOrganization.id}
+            />
+          </Suspense>
+        </TabsContent>
 
         {/* Tab: Integrations — Golioth, AWS IoT, Azure, MQTT, etc. */}
         <TabsContent value="integrations" className="mt-4">
