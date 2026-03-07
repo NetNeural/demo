@@ -55,6 +55,11 @@ export const DEVICE_CLASSES = [
     label: 'Gateway / Hub',
     suggestedUnits: ['dBm', 'dB', '%'],
   },
+  {
+    value: 'smartphone',
+    label: 'Smartphone / Mobile',
+    suggestedUnits: ['°', 'm/s²', '°/s', 'µT', 'lux', 'hPa', '%'],
+  },
   { value: 'other', label: 'Other', suggestedUnits: [] },
 ] as const
 
@@ -86,6 +91,10 @@ export const COMMON_UNITS = [
   'm',
   'kg',
   'g',
+  '°',
+  'm/s²',
+  '°/s',
+  'µT',
 ] as const
 
 /** Device type row from the database */
@@ -183,6 +192,10 @@ export const UNIT_FULL_NAMES: Record<string, string> = {
   oz: 'Ounces',
   dBm: 'Decibel-milliwatts',
   dB: 'Decibels',
+  '°': 'Degrees (GPS coordinates / heading)',
+  'm/s²': 'Meters per Second Squared (Acceleration)',
+  '°/s': 'Degrees per Second (Angular Velocity)',
+  'µT': 'Microtesla (Magnetic Field)',
 }
 
 /** Get full name for a unit abbreviation */

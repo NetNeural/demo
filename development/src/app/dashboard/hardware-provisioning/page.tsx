@@ -23,6 +23,7 @@ import {
   BarcodeScannerPanel,
   BarcodeGeneratorPanel,
   FirmwareManagementPanel,
+  PhoneAsDevicePanel,
 } from '@/components/hardware-provisioning'
 import { DevicesList } from '@/components/devices/DevicesList'
 import { DevicesHeader } from '@/components/devices/DevicesHeader'
@@ -171,6 +172,10 @@ export default function HardwareProvisioningPage() {
             <Map className="h-4 w-4" />
             Facility Map
           </TabsTrigger>
+          <TabsTrigger value="phone" className="flex items-center gap-1.5">
+            <Smartphone className="h-4 w-4" />
+            Phone as Device
+          </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-1.5">
             <Plug className="h-4 w-4" />
             Integrations
@@ -249,6 +254,11 @@ export default function HardwareProvisioningPage() {
               organizationId={currentOrganization.id}
             />
           </Suspense>
+        </TabsContent>
+
+        {/* Tab: Phone as Device — use phones as IoT sensors */}
+        <TabsContent value="phone" className="mt-4">
+          <PhoneAsDevicePanel />
         </TabsContent>
 
         {/* Tab: Integrations — Golioth, AWS IoT, Azure, MQTT, etc. */}
