@@ -327,6 +327,10 @@ function SignupForm() {
   const [error, setError] = useState('')
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false)
 
+  // Multi-phase signup flow
+  const [signupPhase, setSignupPhase] = useState<'info' | 'existing-user' | 'new-user'>('info')
+  const [checkingEmail, setCheckingEmail] = useState(false)
+
   // Colors
   const colors = useMemo(
     () => ({
@@ -370,6 +374,142 @@ function SignupForm() {
     setShowPassword(true)
   }, [])
 
+  // ── Check if email already exists ──────────────────────────────────
+  const checkEmail = useCallback(async () => {
+    if (!fullName.trim() || !orgName.trim() || !email.trim().includes('@')) return
+    setCheckingEmail(true)
+    setError('')
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+      const res = await fetch(`${apiUrl}/functions/v1/check-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      if (data.exists) {
+        setSignupPhase('existing-user')
+      } else {
+        setSignupPhase('new-user')
+      }
+    } catch {
+      // If check fails, assume new user
+      setSignupPhase('new-user')
+    } finally {
+      setCheckingEmail(false)
+    }
+  }, [fullName, orgName, email])
+
+  // ── Handle existing user creating a new org ────────────────────────
+  const handleExistingUserSignup = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!selectedPlan || !password) return
+      setIsLoading(true)
+      setError('')
+
+      try {
+        const supabase = createClient()
+
+        // Verify password by signing in
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          })
+
+        if (signInError) {
+          setError('Incorrect password. Please try again.')
+          setIsLoading(false)
+          return
+        }
+
+        const userId = signInData.user.id
+
+        // Provision a NEW org with forceNewOrg flag
+        const slug = orgName
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+
+        const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+
+        const provRes = await fetch(
+          `${apiUrl}/functions/v1/signup-provision`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${anonKey}`,
+            },
+            body: JSON.stringify({
+              userId,
+              organizationName: orgName.trim(),
+              organizationSlug: slug,
+              subscriptionTier: selectedPlan.slug,
+              forceNewOrg: true,
+              ...(parentOrgId
+                ? { parentOrganizationId: parentOrgId }
+                : {}),
+            }),
+          }
+        )
+
+        const provData = await provRes.json()
+        const provisionedOrgId = provData.data?.id
+
+        if (!provisionedOrgId) {
+          setError(
+            'Unable to create organization. Please try again or contact support.'
+          )
+          setIsLoading(false)
+          return
+        }
+
+        // Stripe checkout
+        const checkoutRes = await fetch(
+          `${apiUrl}/functions/v1/signup-checkout`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${anonKey}`,
+            },
+            body: JSON.stringify({
+              organizationId: provisionedOrgId,
+              planSlug: selectedPlan.slug,
+              billingInterval,
+              customerEmail: email.trim(),
+              customerName: orgName.trim(),
+            }),
+          }
+        )
+
+        const checkoutData = await checkoutRes.json()
+        if (checkoutRes.ok && checkoutData.url) {
+          window.location.href = checkoutData.url
+          return
+        }
+
+        const serverMsg = checkoutData.error || 'Unknown billing error'
+        setError(
+          `Unable to set up billing: ${serverMsg}. Please try again or contact support.`
+        )
+        setIsLoading(false)
+      } catch {
+        setError('An unexpected error occurred. Please try again.')
+        setIsLoading(false)
+      }
+    },
+    [selectedPlan, email, password, orgName, billingInterval, parentOrgId]
+  )
+
   // ── Validation ──────────────────────────────────────────────────────
   const passwordErrors = useMemo(() => {
     const errs: string[] = []
@@ -381,18 +521,34 @@ function SignupForm() {
     return errs
   }, [password])
 
-  const isStep2Valid = useMemo(() => {
+  const isInfoValid = useMemo(() => {
     return (
       fullName.trim().length >= 2 &&
       orgName.trim().length >= 2 &&
-      email.trim().includes('@') &&
+      email.trim().includes('@')
+    )
+  }, [fullName, orgName, email])
+
+  const isNewUserValid = useMemo(() => {
+    return (
+      isInfoValid &&
       password.length >= 8 &&
       /[A-Z]/.test(password) &&
       /[0-9]/.test(password) &&
       password === confirmPassword &&
       agreedToTerms
     )
-  }, [fullName, orgName, email, password, confirmPassword, agreedToTerms])
+  }, [isInfoValid, password, confirmPassword, agreedToTerms])
+
+  const isExistingUserValid = useMemo(() => {
+    return isInfoValid && password.length >= 1 && agreedToTerms
+  }, [isInfoValid, password, agreedToTerms])
+
+  const isStep2Valid = useMemo(() => {
+    if (signupPhase === 'existing-user') return isExistingUserValid
+    if (signupPhase === 'new-user') return isNewUserValid
+    return isInfoValid
+  }, [signupPhase, isInfoValid, isNewUserValid, isExistingUserValid])
 
   // ── Handle signup ───────────────────────────────────────────────────
   const handleSignup = useCallback(
@@ -762,7 +918,9 @@ function SignupForm() {
           </h1>
           <p className="mt-2 text-gray-400">
             {step === 1 && 'Choose the plan that fits your operation'}
-            {step === 2 && 'Create your account'}
+            {step === 2 && signupPhase === 'info' && 'Tell us about you'}
+            {step === 2 && signupPhase === 'existing-user' && 'Create another organization'}
+            {step === 2 && signupPhase === 'new-user' && 'Secure your account'}
             {step === 3 && "You're all set!"}
           </p>
 
@@ -859,6 +1017,10 @@ function SignupForm() {
               <Button
                 onClick={() => {
                   setError('')
+                  setSignupPhase('info')
+                  setPassword('')
+                  setConfirmPassword('')
+                  setAgreedToTerms(false)
                   setStep(2)
                 }}
                 disabled={!selectedPlan}
@@ -885,7 +1047,7 @@ function SignupForm() {
           </div>
         )}
 
-        {/* ── Step 2: Account details ─────────────────────────────── */}
+        {/* ── Step 2: Account details (multi-phase) ────────────── */}
         {step === 2 && (
           <div className="mx-auto max-w-md duration-500 animate-in fade-in slide-in-from-bottom-4">
             <div
@@ -933,203 +1095,360 @@ function SignupForm() {
                 </Alert>
               )}
 
-              <form onSubmit={handleSignup} className="space-y-4">
-                {/* Full Name */}
-                <div>
-                  <label
-                    htmlFor="fullName"
-                    className="mb-1.5 block text-sm font-medium text-gray-300"
-                  >
-                    Full Name
-                  </label>
-                  <input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Jane Smith"
-                    required
-                    autoComplete="name"
-                    className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
-                  />
-                </div>
-
-                {/* Organization Name */}
-                <div>
-                  <label
-                    htmlFor="orgName"
-                    className="mb-1.5 block text-sm font-medium text-gray-300"
-                  >
-                    Organization Name
-                  </label>
-                  <input
-                    id="orgName"
-                    type="text"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    placeholder="Acme Cold Storage"
-                    required
-                    autoComplete="organization"
-                    className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-1.5 block text-sm font-medium text-gray-300"
-                  >
-                    Work Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="jane@acmecold.com"
-                    required
-                    autoComplete="email"
-                    className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
-                  />
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
+              {/* ── Phase: Info (Name + Org + Email) ─────────────── */}
+              {signupPhase === 'info' && (
+                <div className="space-y-4">
+                  <div>
                     <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-300"
+                      htmlFor="fullName"
+                      className="mb-1.5 block text-sm font-medium text-gray-300"
                     >
-                      Password
+                      Full Name
                     </label>
-                    <button
-                      type="button"
-                      onClick={generateStrongPassword}
-                      className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-cyan-400 transition-colors hover:bg-cyan-500/10 hover:text-cyan-300"
-                    >
-                      <Wand2 className="h-3 w-3" />
-                      Generate Strong Password
-                    </button>
-                  </div>
-                  <div className="relative">
                     <input
-                      id="password"
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Jane Smith"
+                      required
+                      autoComplete="name"
+                      className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="orgName"
+                      className="mb-1.5 block text-sm font-medium text-gray-300"
+                    >
+                      Organization Name
+                    </label>
+                    <input
+                      id="orgName"
+                      type="text"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="Acme Cold Storage"
+                      required
+                      autoComplete="organization"
+                      className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="mb-1.5 block text-sm font-medium text-gray-300"
+                    >
+                      Work Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="jane@acmecold.com"
+                      required
+                      autoComplete="email"
+                      className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setError('')
+                        setStep(1)
+                      }}
+                      className="h-11 flex-1 rounded-lg border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800"
+                    >
+                      <ArrowLeft className="mr-1.5 h-4 w-4" />
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={!isInfoValid || checkingEmail}
+                      onClick={checkEmail}
+                      className="h-11 flex-[2] rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                        boxShadow: `0 4px 20px ${colors.primary}30`,
+                      }}
+                    >
+                      {checkingEmail ? (
+                        <span className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Checking...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          Next
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Phase: Existing User (verify password, create org) ── */}
+              {signupPhase === 'existing-user' && (
+                <form onSubmit={handleExistingUserSignup} className="space-y-4">
+                  <div className="rounded-lg border border-cyan-800/40 bg-cyan-900/15 p-4">
+                    <div className="flex items-start gap-3">
+                      <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan-400" />
+                      <div>
+                        <p className="text-sm font-medium text-cyan-300">
+                          Account found for {email}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Enter your existing password to create a new organization
+                          with cross-org access. You&apos;ll be able to switch between
+                          organizations from your dashboard.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="existingPassword"
+                      className="mb-1.5 block text-sm font-medium text-gray-300"
+                    >
+                      Your Existing Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="existingPassword"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your current password"
+                        required
+                        autoComplete="current-password"
+                        className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 pr-10 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-white"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Terms */}
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-gray-800/30">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500/30"
+                    />
+                    <span className="text-xs text-gray-400">
+                      I agree to the{' '}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        className="text-cyan-400 underline hover:text-cyan-300"
+                      >
+                        Privacy Policy
+                      </a>{' '}
+                      and <span className="text-gray-400">Terms of Service</span>
+                    </span>
+                  </label>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setError('')
+                        setPassword('')
+                        setAgreedToTerms(false)
+                        setSignupPhase('info')
+                      }}
+                      className="h-11 flex-1 rounded-lg border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800"
+                    >
+                      <ArrowLeft className="mr-1.5 h-4 w-4" />
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={!isExistingUserValid || isLoading}
+                      className="h-11 flex-[2] rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                        boxShadow: `0 4px 20px ${colors.primary}30`,
+                      }}
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Creating organization...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          Create Organization
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {/* ── Phase: New User (create password) ────────────── */}
+              {signupPhase === 'new-user' && (
+                <form onSubmit={handleSignup} className="space-y-4">
+                  {/* Password */}
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={generateStrongPassword}
+                        className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-cyan-400 transition-colors hover:bg-cyan-500/10 hover:text-cyan-300"
+                      >
+                        <Wand2 className="h-3 w-3" />
+                        Generate Strong Password
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        autoComplete="new-password"
+                        className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 pr-10 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-white"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {passwordErrors.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5">
+                        {passwordErrors.map((err) => (
+                          <li key={err} className="text-xs text-amber-400">
+                            • {err}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="mb-1.5 block text-sm font-medium text-gray-300"
+                    >
+                      Confirm Password
+                    </label>
+                    <input
+                      id="confirmPassword"
                       type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       required
                       autoComplete="new-password"
-                      className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 pr-10 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                      className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-white"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
+                    {confirmPassword.length > 0 &&
+                      password !== confirmPassword && (
+                        <p className="mt-1 text-xs text-red-400">
+                          Passwords don&apos;t match
+                        </p>
                       )}
-                    </button>
                   </div>
-                  {passwordErrors.length > 0 && (
-                    <ul className="mt-1.5 space-y-0.5">
-                      {passwordErrors.map((err) => (
-                        <li key={err} className="text-xs text-amber-400">
-                          • {err}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
 
-                {/* Confirm Password */}
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="mb-1.5 block text-sm font-medium text-gray-300"
-                  >
-                    Confirm Password
+                  {/* Terms */}
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-gray-800/30">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500/30"
+                    />
+                    <span className="text-xs text-gray-400">
+                      I agree to the{' '}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        className="text-cyan-400 underline hover:text-cyan-300"
+                      >
+                        Privacy Policy
+                      </a>{' '}
+                      and <span className="text-gray-400">Terms of Service</span>
+                    </span>
                   </label>
-                  <input
-                    id="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    autoComplete="new-password"
-                    className="h-11 w-full rounded-lg border border-gray-700 bg-gray-800/60 px-4 text-white placeholder-gray-500 transition-colors focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
-                  />
-                  {confirmPassword.length > 0 &&
-                    password !== confirmPassword && (
-                      <p className="mt-1 text-xs text-red-400">
-                        Passwords don&apos;t match
-                      </p>
-                    )}
-                </div>
 
-                {/* Terms */}
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-gray-800/30">
-                  <input
-                    type="checkbox"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500/30"
-                  />
-                  <span className="text-xs text-gray-400">
-                    I agree to the{' '}
-                    <a
-                      href="/privacy"
-                      target="_blank"
-                      className="text-cyan-400 underline hover:text-cyan-300"
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setError('')
+                        setPassword('')
+                        setConfirmPassword('')
+                        setAgreedToTerms(false)
+                        setSignupPhase('info')
+                      }}
+                      className="h-11 flex-1 rounded-lg border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800"
                     >
-                      Privacy Policy
-                    </a>{' '}
-                    and <span className="text-gray-400">Terms of Service</span>
-                  </span>
-                </label>
-
-                {/* Buttons */}
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setError('')
-                      setStep(1)
-                    }}
-                    className="h-11 flex-1 rounded-lg border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800"
-                  >
-                    <ArrowLeft className="mr-1.5 h-4 w-4" />
-                    Back
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={!isStep2Valid || isLoading}
-                    className="h-11 flex-[2] rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
-                    style={{
-                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
-                      boxShadow: `0 4px 20px ${colors.primary}30`,
-                    }}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Creating account...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        Create Account
-                      </span>
-                    )}
-                  </Button>
-                </div>
-              </form>
+                      <ArrowLeft className="mr-1.5 h-4 w-4" />
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={!isNewUserValid || isLoading}
+                      className="h-11 flex-[2] rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                        boxShadow: `0 4px 20px ${colors.primary}30`,
+                      }}
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Creating account...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          Create Account
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}
