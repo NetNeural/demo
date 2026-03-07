@@ -280,8 +280,9 @@ serve(async (req) => {
 
     // Send invitation email via Resend
     if (resendApiKey) {
-      const dataRoomRedirect = encodeURIComponent('/dashboard/organizations/?tab=documents')
-      const loginUrl = siteUrl ? `${siteUrl}/auth/login?redirect=${dataRoomRedirect}` : ''
+      // Link directly to the data room — if user is not logged in,
+      // UserProvider will redirect to login with a return URL param
+      const accessUrl = siteUrl ? `${siteUrl}/dashboard/organizations/?tab=documents` : ''
 
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -296,8 +297,8 @@ serve(async (req) => {
               </div>`
             : `<p>Log in with your existing account (<strong>${normalizedEmail}</strong>) to access the Data Room.</p>`
           }
-          ${loginUrl
-            ? `<a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; margin-top: 8px;">Log In to Data Room</a>`
+          ${accessUrl
+            ? `<a href="${accessUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; margin-top: 8px;">Access Data Room</a>`
             : ''
           }
           <p style="margin-top: 24px; font-size: 13px; color: #888;">This invitation was sent by ${orgName}. If you didn't expect this, you can ignore this email.</p>

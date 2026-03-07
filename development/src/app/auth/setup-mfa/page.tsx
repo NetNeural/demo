@@ -44,12 +44,24 @@ export default function SetupMfaPage() {
   const router = useRouter()
   const { toast } = useToast()
 
+  // Read redirect destination from URL (e.g. /auth/setup-mfa?redirect=/dashboard/organizations/?tab=documents)
+  const getRedirectDestination = () => {
+    if (typeof window === 'undefined') return '/dashboard'
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    return redirect?.startsWith('/dashboard') ? redirect : '/dashboard'
+  }
+
   // Auth guard — redirect unauthenticated users to login
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        router.replace('/auth/login')
+        // Preserve redirect param when redirecting to login
+        const params = new URLSearchParams(window.location.search)
+        const redirect = params.get('redirect')
+        const loginUrl = redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : '/auth/login'
+        router.replace(loginUrl)
       } else {
         // Check if user already has MFA enrolled — if so, skip to dashboard
         supabase.auth.mfa.listFactors().then(async ({ data: factors }) => {
@@ -57,7 +69,8 @@ export default function SetupMfaPage() {
             (f) => f.status === 'verified'
           )
           if (hasVerifiedTotp) {
-            router.replace('/dashboard')
+            const dest = getRedirectDestination()
+            router.replace(dest)
           } else {
             setAuthChecking(false)
             await startEnrollment()
@@ -215,11 +228,12 @@ export default function SetupMfaPage() {
         console.error('Failed to generate recovery codes:', codeErr)
       }
 
-      // If recovery code generation failed, continue to dashboard
+      // If recovery code generation failed, continue to destination
       if (needsPasswordChange) {
         router.push('/auth/change-password')
       } else {
-        router.push('/dashboard')
+        const dest = getRedirectDestination()
+        router.push(dest)
         setTimeout(() => router.refresh(), 50)
       }
     } catch (err) {
@@ -325,7 +339,8 @@ export default function SetupMfaPage() {
                   if (needsPasswordChange) {
                     router.push('/auth/change-password')
                   } else {
-                    router.push('/dashboard')
+                    const dest = getRedirectDestination()
+                    router.push(dest)
                     setTimeout(() => router.refresh(), 50)
                   }
                 }}

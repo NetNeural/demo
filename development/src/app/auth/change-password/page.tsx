@@ -185,8 +185,11 @@ export default function ChangePasswordPage() {
         description: 'Your password has been successfully changed.',
       })
 
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Redirect to original destination or dashboard
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+      const redirect = urlParams?.get('redirect')
+      const dest = redirect?.startsWith('/dashboard') ? redirect : '/dashboard'
+      router.push(dest)
     } catch (err) {
       console.error('Password change error:', err)
       setError('Failed to change password. Please try again.')

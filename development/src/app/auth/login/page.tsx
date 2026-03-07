@@ -191,17 +191,22 @@ function LoginForm() {
 
   // Error from URL
   useEffect(() => {
+    // Helper: build clean URL preserving org and redirect params
+    const buildCleanUrl = () => {
+      const params = new URLSearchParams()
+      if (orgSlug) params.set('org', orgSlug)
+      const redirectParam = searchParams?.get('redirect')
+      if (redirectParam) params.set('redirect', redirectParam)
+      return window.location.pathname + (params.toString() ? `?${params.toString()}` : '')
+    }
+
     const errorParam = searchParams?.get('error')
     if (errorParam) {
       // Silent redirect for expired sessions — not an actionable user error
       if (errorParam !== 'session_expired') {
         setError(decodeURIComponent(errorParam))
       }
-      window.history.replaceState(
-        {},
-        '',
-        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
-      )
+      window.history.replaceState({}, '', buildCleanUrl())
     }
 
     // Signup flow completion messages
@@ -211,31 +216,19 @@ function LoginForm() {
         type: 'info',
         text: 'Account created! Please check your email for a confirmation link, then sign in.',
       })
-      window.history.replaceState(
-        {},
-        '',
-        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
-      )
+      window.history.replaceState({}, '', buildCleanUrl())
     } else if (signupParam === 'complete') {
       setSignupMessage({
         type: 'success',
         text: 'Account created! Sign in to get started.',
       })
-      window.history.replaceState(
-        {},
-        '',
-        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
-      )
+      window.history.replaceState({}, '', buildCleanUrl())
     } else if (signupParam === 'payment-skipped') {
       setSignupMessage({
         type: 'info',
         text: 'Account created! You can add payment details later from your billing settings.',
       })
-      window.history.replaceState(
-        {},
-        '',
-        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
-      )
+      window.history.replaceState({}, '', buildCleanUrl())
     }
   }, [searchParams, orgSlug])
 

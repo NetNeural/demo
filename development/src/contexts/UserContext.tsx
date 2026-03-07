@@ -37,6 +37,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const hasRedirected = useRef(false)
   const retryCount = useRef(0)
 
+  // Build return URL from current path + query string for auth redirects
+  const getReturnUrl = () => {
+    const search = typeof window !== 'undefined' ? window.location.search : ''
+    return encodeURIComponent((pathname || '/dashboard') + search)
+  }
+
   const loadUser = async () => {
     try {
       // First check if we have a valid session
@@ -64,7 +70,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             sessionStorage.removeItem('manual_signout')
             router.push('/auth/login')
           } else {
-            router.push('/auth/login?error=session_expired')
+            router.push(`/auth/login?error=session_expired&redirect=${getReturnUrl()}`)
           }
         }
         setUser(null)
@@ -116,7 +122,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           (f) => f.status === 'verified'
         )
         if (!hasVerifiedTotp) {
-          router.push('/auth/setup-mfa')
+          router.push(`/auth/setup-mfa?redirect=${getReturnUrl()}`)
           return
         }
 
@@ -127,7 +133,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
           // Session is aal1 but aal2 is required — MFA challenge not completed
           await supabase.auth.signOut()
-          router.push('/auth/login')
+          router.push(`/auth/login?redirect=${getReturnUrl()}`)
           return
         }
       }
@@ -137,7 +143,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         userProfile.passwordChangeRequired &&
         pathname !== '/auth/change-password'
       ) {
-        router.push('/auth/change-password')
+        router.push(`/auth/change-password?redirect=${getReturnUrl()}`)
         return
       }
     } catch (error) {
@@ -154,7 +160,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       )
       if (!isPublicRoute && !hasRedirected.current && retryCount.current >= 2) {
         hasRedirected.current = true
-        router.push('/auth/login?error=auth_error')
+        router.push(`/auth/login?error=auth_error&redirect=${getReturnUrl()}`)
       }
     } finally {
       setLoading(false)
