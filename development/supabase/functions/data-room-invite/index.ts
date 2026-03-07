@@ -186,7 +186,7 @@ serve(async (req) => {
         id: guestUserId,
         email: normalizedEmail,
         full_name: normalizedEmail.split('@')[0],
-        role: 'org_admin', // lowest role that gets into the dashboard
+        role: 'user', // data room guests get minimal platform role; access is scoped via org membership (viewer)
       }, { onConflict: 'id' })
     }
 
@@ -250,7 +250,8 @@ serve(async (req) => {
 
     // Send invitation email via Resend
     if (resendApiKey) {
-      const loginUrl = siteUrl ? `${siteUrl}/auth/login` : ''
+      const dataRoomRedirect = encodeURIComponent('/dashboard/organizations/?tab=documents')
+      const loginUrl = siteUrl ? `${siteUrl}/auth/login?redirect=${dataRoomRedirect}` : ''
 
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

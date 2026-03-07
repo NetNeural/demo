@@ -380,7 +380,10 @@ function LoginForm() {
             return
           }
 
-          router.push('/dashboard')
+          // Support ?redirect= for deep-linking (e.g. data room guest invites)
+          const redirectTo = searchParams.get('redirect')
+          const destination = redirectTo?.startsWith('/dashboard') ? redirectTo : '/dashboard'
+          router.push(destination)
           setTimeout(() => router.refresh(), 50)
         } else {
           if (!isMounted.current) return
@@ -457,7 +460,9 @@ function LoginForm() {
           }
         }
 
-        router.push('/dashboard')
+        const redirectTo = searchParams.get('redirect')
+        const destination = redirectTo?.startsWith('/dashboard') ? redirectTo : '/dashboard'
+        router.push(destination)
         setTimeout(() => router.refresh(), 50)
       } catch {
         if (!isMounted.current) return
@@ -466,7 +471,7 @@ function LoginForm() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mfaFactorId, mfaCode, router]
+    [mfaFactorId, mfaCode, router, searchParams]
   )
 
   // ── Recovery code verification handler ───────────────────────────────
@@ -533,7 +538,9 @@ function LoginForm() {
           }
         }
 
-        router.push('/dashboard')
+        const redirectTo = searchParams.get('redirect')
+        const destination = redirectTo?.startsWith('/dashboard') ? redirectTo : '/dashboard'
+        router.push(destination)
         setTimeout(() => router.refresh(), 50)
       } catch {
         if (!isMounted.current) return
@@ -542,7 +549,7 @@ function LoginForm() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recoveryCode, router, email]
+    [recoveryCode, router, email, searchParams]
   )
 
   // ── Forgot password handler ──────────────────────────────────────────
