@@ -274,14 +274,17 @@ function LoginForm() {
           // MFA is optional — users without MFA can proceed directly
           // TODO: Re-enable mandatory MFA redirect for SOC 2 compliance
           hasCheckedAuth.current = true
-          router.replace('/dashboard')
+          const redirectTo = searchParams?.get('redirect')
+          const destination = redirectTo?.startsWith('/dashboard') ? redirectTo : '/dashboard'
+          router.replace(destination)
         }
       } catch {
         hasCheckedAuth.current = true
       }
     }
     checkAuth()
-  }, [router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, searchParams])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -396,7 +399,7 @@ function LoginForm() {
         setIsLoading(false)
       }
     },
-    [email, password, rememberMe, router]
+    [email, password, rememberMe, router, searchParams]
   )
 
   const handleMfaVerify = useCallback(
