@@ -26,6 +26,7 @@ import {
   Pencil,
   CheckCircle2,
   ArrowDownFromLine,
+  RotateCcw,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
@@ -110,6 +111,9 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
     'critical' | 'high' | 'medium' | 'low'
   >('medium')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [reopenItem, setReopenItem] = useState<FeedbackItem | null>(null)
+  const [reopenDescription, setReopenDescription] = useState('')
+  const [savingReopen, setSavingReopen] = useState(false)
 
   const fetchFeedback = useCallback(async () => {
     if (!currentOrganization) return
@@ -252,6 +256,73 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
       toast.error('Failed to update feedback')
     } finally {
       setSavingEdit(false)
+    }
+  }
+
+  const handleReopen = async () => {
+    if (!reopenItem || !user?.id || !reopenDescription.trim()) return
+
+    setSavingReopen(true)
+    try {
+      const updatedDescription = `${reopenItem.description}\n\n---\n**Still not working** (resubmitted ${new Date().toLocaleDateString()}):\n${reopenDescription.trim()}`
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('feedback')
+        .update({
+          description: updatedDescription,
+          status: 'submitted',
+          github_resolution: null,
+        })
+        .eq('id', reopenItem.id)
+        .eq('user_id', user.id)
+        .select(
+          'id, user_id, type, title, description, severity, status, github_issue_number, github_issue_url, github_resolution, created_at'
+        )
+        .single()
+
+      if (error) {
+        console.error('Error reopening feedback:', error)
+        toast.error(error.message || 'Could not reopen feedback')
+      } else {
+        const updated = data as FeedbackItem
+
+        // Sync reopen to GitHub
+        if (updated.github_issue_number) {
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const session = (await supabase.auth.getSession()).data.session
+            await fetch(`${supabaseUrl}/functions/v1/feedback-reply`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                feedbackId: updated.id,
+                organizationId: currentOrganization?.id,
+                action: 'reopen',
+                title: updated.title,
+                description: updatedDescription,
+              }),
+            })
+          } catch (syncErr) {
+            console.warn('GitHub sync failed (reopen saved locally):', syncErr)
+          }
+        }
+
+        setItems((prev) =>
+          prev.map((item) => (item.id === updated.id ? updated : item))
+        )
+        toast.success('Ticket resubmitted — moved back to Open Tickets')
+        setReopenItem(null)
+        setReopenDescription('')
+      }
+    } catch (err) {
+      console.error('Reopen feedback error:', err)
+      toast.error('Failed to reopen feedback')
+    } finally {
+      setSavingReopen(false)
     }
   }
 
@@ -424,15 +495,31 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
         {isOwner && (
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div onClick={(e) => e.stopPropagation()} className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 text-muted-foreground"
-              onClick={() => handleOpenEdit(item)}
-              aria-label={`Edit feedback ${item.title}`}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            {isResolved ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-orange-600 hover:text-orange-700"
+                onClick={() => {
+                  setReopenItem(item)
+                  setReopenDescription('')
+                }}
+                aria-label={`Reopen feedback ${item.title}`}
+                title="Still not working? Resubmit"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-muted-foreground"
+                onClick={() => handleOpenEdit(item)}
+                aria-label={`Edit feedback ${item.title}`}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -655,6 +742,71 @@ export function FeedbackHistory({ refreshKey }: FeedbackHistoryProps) {
                 </>
               ) : (
                 editingItem?.status === 'resolved' || editingItem?.status === 'closed' ? 'Resubmit' : 'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Still not working? Reopen dialog */}
+      <Dialog
+        open={!!reopenItem}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReopenItem(null)
+            setReopenDescription('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Still not working?</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Describe what&apos;s still happening and we&apos;ll reopen this ticket.
+            </p>
+
+            <div className="rounded-md border bg-muted/50 p-3">
+              <p className="text-xs font-medium text-muted-foreground">Original ticket</p>
+              <p className="mt-1 text-sm font-medium">{reopenItem?.title}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reopen-description">What&apos;s still happening?</Label>
+              <Textarea
+                id="reopen-description"
+                value={reopenDescription}
+                onChange={(e) => setReopenDescription(e.target.value)}
+                placeholder="Describe the current behavior you're seeing..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReopenItem(null)
+                setReopenDescription('')
+              }}
+              disabled={savingReopen}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReopen}
+              disabled={savingReopen || !reopenDescription.trim()}
+            >
+              {savingReopen ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resubmitting...
+                </>
+              ) : (
+                'Resubmit Ticket'
               )}
             </Button>
           </DialogFooter>
