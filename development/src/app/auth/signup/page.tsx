@@ -509,14 +509,7 @@ function SignupForm() {
           console.error('Provisioning error:', provisionErr)
         }
 
-        // Zero-price plans: skip Stripe checkout and go directly to login
-        if (provisionedOrgId && selectedPlan.pricePerSensor === 0) {
-          router.push('/auth/login?signup=complete')
-          return
-        }
-
-        // Paid plans: redirect to Stripe Checkout for payment collection.
-        // Stripe checkout is REQUIRED — if it fails, block signup.
+        // All plans require Stripe Checkout for payment collection.
         if (provisionedOrgId) {
           try {
             const checkoutRes = await fetch(

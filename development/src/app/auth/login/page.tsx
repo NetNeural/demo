@@ -206,10 +206,20 @@ function LoginForm() {
 
     // Signup flow completion messages
     const signupParam = searchParams?.get('signup')
-    if (signupParam === 'complete') {
+    if (signupParam === 'confirm-email') {
+      setSignupMessage({
+        type: 'info',
+        text: 'Account created! Please check your email for a confirmation link, then sign in.',
+      })
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname + (orgSlug ? `?org=${orgSlug}` : '')
+      )
+    } else if (signupParam === 'complete') {
       setSignupMessage({
         type: 'success',
-        text: 'Account created and payment confirmed! Sign in to get started.',
+        text: 'Account created! Sign in to get started.',
       })
       window.history.replaceState(
         {},

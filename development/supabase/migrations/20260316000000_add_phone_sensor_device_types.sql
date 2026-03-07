@@ -95,3 +95,24 @@ END;
 $$;
 
 COMMENT ON FUNCTION seed_organization_device_types IS 'Seeds 51 standard IoT device types (including 9 phone sensor types) for an organization';
+
+-- Backfill: insert the 9 phone sensor device types for ALL existing organizations
+-- that don't already have them (idempotent via NOT EXISTS check)
+INSERT INTO device_types (organization_id, name, description, device_class, unit, lower_normal, upper_normal, lower_alert, upper_alert, precision_digits)
+SELECT o.id, v.name, v.description, v.device_class, v.unit, v.lower_normal, v.upper_normal, v.lower_alert, v.upper_alert, v.precision_digits
+FROM organizations o
+CROSS JOIN (VALUES
+  ('Phone GPS Latitude',   'Smartphone GPS latitude (WGS84)',            'smartphone', '°',    -90.0,   90.0,   -90.0,   90.0,   6),
+  ('Phone GPS Longitude',  'Smartphone GPS longitude (WGS84)',           'smartphone', '°',    -180.0,  180.0,  -180.0,  180.0,  6),
+  ('Phone Accelerometer',  'Smartphone 3-axis acceleration sensor',      'smartphone', 'm/s²', -20.0,   20.0,   -40.0,   40.0,   2),
+  ('Phone Gyroscope',      'Smartphone 3-axis rotation rate sensor',     'smartphone', '°/s',  -500.0,  500.0,  -2000.0, 2000.0, 1),
+  ('Phone Magnetometer',   'Smartphone magnetic field sensor (compass)', 'smartphone', 'µT',   -100.0,  100.0,  -200.0,  200.0,  1),
+  ('Phone Barometer',      'Smartphone atmospheric pressure sensor',     'smartphone', 'hPa',  980.0,   1030.0, 950.0,   1050.0, 1),
+  ('Phone Ambient Light',  'Smartphone light level sensor',              'smartphone', 'lux',  0.0,     1000.0, 0.0,     100000.0, 0),
+  ('Phone Proximity',      'Smartphone proximity sensor (near/far)',     'smartphone', 'cm',   0.0,     10.0,   0.0,     20.0,   1),
+  ('Phone Sound Level',    'Smartphone microphone noise monitoring',     'smartphone', 'dBA',  30.0,    85.0,   0.0,     120.0,  1)
+) AS v(name, description, device_class, unit, lower_normal, upper_normal, lower_alert, upper_alert, precision_digits)
+WHERE NOT EXISTS (
+  SELECT 1 FROM device_types dt
+  WHERE dt.organization_id = o.id AND dt.name = v.name
+);
